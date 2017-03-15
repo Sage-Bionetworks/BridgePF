@@ -54,6 +54,9 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -285,6 +288,21 @@ public class ScheduledActivityServiceMockTest {
         assertEquals(scheduledActivities.get(1).getGuid(), publishedActivity1.getGuid());
         ScheduledActivity publishedActivity2 = publishCapture.getAllValues().get(1);
         assertEquals(scheduledActivities.get(2).getGuid(), publishedActivity2.getGuid());
+    }
+    
+    @Test(expected = BridgeServiceException.class)
+    public void activityListsWithTooLargeClientDataRejected() throws Exception {
+        JsonNode node = TestUtils.getClientData();
+        ArrayNode array = JsonNodeFactory.instance.arrayNode();
+        for (int i=0; i < 35; i++) {
+            array.add(node);
+        }
+        
+        ScheduleContext context = createScheduleContext(endsOn);
+        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
+        activities.get(0).setClientData(array);
+        
+        service.updateScheduledActivities("BBB", activities);
     }
     
     @Test(expected = BridgeServiceException.class)

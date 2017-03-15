@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static org.sagebionetworks.bridge.BridgeConstants.CLIENT_DATA_MAX_BYTES;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
@@ -10,6 +12,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableList;
 import static org.sagebionetworks.bridge.validators.ScheduleContextValidator.MAX_EXPIRES_ON_DAYS;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -158,6 +161,9 @@ public class ScheduledActivityService {
             if (schActivity.getGuid() == null) {
                 throw new BadRequestException(String.format("Task #%s has no GUID", i));
             }
+            if (byteLength(schActivity.getClientData()) > CLIENT_DATA_MAX_BYTES) {
+                throw new BadRequestException("Client data too large (max: "+CLIENT_DATA_MAX_BYTES+" bytes)");
+            }
             ScheduledActivity dbActivity = activityDao.getActivity(healthCode, schActivity.getGuid());
             boolean addToSaves = false;
             if (hasUpdatedClientData(schActivity, dbActivity)) {
@@ -181,17 +187,6 @@ public class ScheduledActivityService {
             }
         }
         activityDao.updateActivities(healthCode, activitiesToSave);
-    }
-    
-    public boolean hasUpdatedClientData(ScheduledActivity schActivity, ScheduledActivity dbActivity) {
-        JsonNode schNode = (schActivity == null || schActivity.getClientData() == null) ? 
-                null : schActivity.getClientData();
-        JsonNode dbNode = (dbActivity == null || dbActivity.getClientData() == null) ? 
-                null : dbActivity.getClientData();
-        
-        return (schNode == null && dbNode != null) ||
-               (schNode != null && dbNode == null) ||
-               (schNode != null && dbNode != null && !schNode.equals(dbNode));
     }
     
     public void deleteActivitiesForUser(String healthCode) {
@@ -233,6 +228,28 @@ public class ScheduledActivityService {
             .filter(activity -> ScheduledActivityStatus.VISIBLE_STATUSES.contains(activity.getStatus()))
             .sorted(comparing(ScheduledActivity::getScheduledOn))
             .collect(toImmutableList());
+    }
+    
+    private boolean hasUpdatedClientData(ScheduledActivity schActivity, ScheduledActivity dbActivity) {
+        JsonNode schNode = (schActivity == null || schActivity.getClientData() == null) ? 
+                null : schActivity.getClientData();
+        JsonNode dbNode = (dbActivity == null || dbActivity.getClientData() == null) ? 
+                null : dbActivity.getClientData();
+        
+        return (schNode == null && dbNode != null) ||
+               (schNode != null && dbNode == null) ||
+               (schNode != null && dbNode != null && !schNode.equals(dbNode));
+    }
+    
+    private int byteLength(JsonNode node) {
+        if (node == null) {
+            return 0;
+        }
+        try {
+            return node.toString().getBytes("UTF-8").length;    
+        } catch(UnsupportedEncodingException e) {
+            return Integer.MAX_VALUE; // force an error.
+        }
     }
     
     private Map<String, DateTime> createEventsMap(ScheduleContext context) {

@@ -52,6 +52,8 @@ public class BridgeConstants {
     public static final String CUSTOM_DATA_CONSENT_SIGNATURE_SUFFIX = "_consent_signature";
 
     public static final String CUSTOM_DATA_VERSION = "version";
+    
+    public static final int CLIENT_DATA_MAX_BYTES = 2048;
 
     /** Used to cap the number of dupe records we fetch from DDB and the number of log messages we write. */
     public static final int DUPE_RECORDS_MAX_COUNT = 10;
