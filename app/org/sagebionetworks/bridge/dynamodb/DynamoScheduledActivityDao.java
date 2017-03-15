@@ -120,13 +120,18 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
                 .withRangeKeyCondition(dateRangeCondition);
 
         if (offsetBy != null) {
-            // You need to include the primary hash/range key as well as the GSI keys in order for 
-            // the exclusive start key to work on a GSI.
+            RangeKeyCondition cursorPosCondition = new RangeKeyCondition(SCHEDULED_ON_UTC).gt(offsetBy);
+            spec.withRangeKeyCondition(cursorPosCondition);
+            /* This use of exclusive key works, but does not exclude the item represented by the key 
+             * itself. To work correctly, you'd need to retrieve pageSize+1, take the last key, and 
+             * then used *that* as the offsetBy key (also removing it from the page you return). This 
+             * did not seem faster to the range key condition, which is simpler, so using that instead. 
             spec.withExclusiveStartKey(
                 new KeyAttribute(HEALTH_CODE_ACTIVITY_GUID,healthCodeActivityGuid),
                 new KeyAttribute(SCHEDULED_ON_UTC,offsetBy),
                 new KeyAttribute(HEALTH_CODE, healthCode),
                 new KeyAttribute(GUID, activityGuid));
+            */
         }
         
         QueryOutcome queryOutcome = indexHelper.query(spec);
