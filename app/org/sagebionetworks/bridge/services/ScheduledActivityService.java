@@ -40,6 +40,7 @@ import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -157,20 +158,40 @@ public class ScheduledActivityService {
             if (schActivity.getGuid() == null) {
                 throw new BadRequestException(String.format("Task #%s has no GUID", i));
             }
+            ScheduledActivity dbActivity = activityDao.getActivity(healthCode, schActivity.getGuid());
+            boolean addToSaves = false;
+            if (hasUpdatedClientData(schActivity, dbActivity)) {
+                dbActivity.setClientData(schActivity.getClientData());
+                addToSaves = true;
+            }
             if (schActivity.getStartedOn() != null || schActivity.getFinishedOn() != null) {
                 // We do not need to add the time zone here. Not returning these to the user.
-                ScheduledActivity dbActivity = activityDao.getActivity(healthCode, schActivity.getGuid());
                 if (schActivity.getStartedOn() != null) {
                     dbActivity.setStartedOn(schActivity.getStartedOn());
+                    addToSaves = true;
                 }
                 if (schActivity.getFinishedOn() != null) {
                     dbActivity.setFinishedOn(schActivity.getFinishedOn());
                     activityEventService.publishActivityFinishedEvent(dbActivity);
+                    addToSaves = true;
                 }
+            }
+            if (addToSaves) {
                 activitiesToSave.add(dbActivity);
             }
         }
         activityDao.updateActivities(healthCode, activitiesToSave);
+    }
+    
+    public boolean hasUpdatedClientData(ScheduledActivity schActivity, ScheduledActivity dbActivity) {
+        JsonNode schNode = (schActivity == null || schActivity.getClientData() == null) ? 
+                null : schActivity.getClientData();
+        JsonNode dbNode = (dbActivity == null || dbActivity.getClientData() == null) ? 
+                null : dbActivity.getClientData();
+        
+        return (schNode == null && dbNode != null) ||
+               (schNode != null && dbNode == null) ||
+               (schNode != null && dbNode != null && !schNode.equals(dbNode));
     }
     
     public void deleteActivitiesForUser(String healthCode) {

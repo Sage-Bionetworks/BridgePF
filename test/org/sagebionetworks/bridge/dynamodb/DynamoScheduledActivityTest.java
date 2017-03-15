@@ -31,21 +31,14 @@ public class DynamoScheduledActivityTest {
     @Test
     public void equalsHashCode() throws Exception {
         EqualsVerifier.forClass(DynamoScheduledActivity.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed()
-                .withPrefabValues(JsonNode.class, getClientData(), getOtherClientData()).verify();
+                .withPrefabValues(JsonNode.class, TestUtils.getClientData(), getOtherClientData()).verify();
     }
 
-    private JsonNode getClientData() throws Exception {
-        String json = TestUtils.createJson("{'booleanFlag':true,'stringValue':'testUser','intValue':4}"); 
-        JsonNode clientData = BridgeObjectMapper.get().readTree(json);
-        return clientData;
-    }
-    
     private JsonNode getOtherClientData() throws Exception {
-        JsonNode clientData = getClientData();
+        JsonNode clientData = TestUtils.getClientData();
         ((ObjectNode)clientData).put("newField", "newValue");
         return clientData;
     }
-    
     
     @Test
     public void testComparator() {
@@ -120,7 +113,7 @@ public class DynamoScheduledActivityTest {
         schActivity.setPersistent(true);
         schActivity.setHealthCodeActivityGuid("FFF-GGG-HHH:AAA-BBB-CCC");
         schActivity.setScheduledOnUTC(scheduledOn.toDateTime(DateTimeZone.UTC).getMillis());
-        schActivity.setClientData(getClientData());
+        schActivity.setClientData(TestUtils.getClientData());
         
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
         String output = ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(schActivity);
@@ -134,7 +127,7 @@ public class DynamoScheduledActivityTest {
         assertTrue(node.get("persistent").asBoolean());
         assertNull(node.get("schedule"));
         assertEquals(8, node.size());
-        assertEquals(getClientData(), node.get("clientData"));
+        assertEquals(TestUtils.getClientData(), node.get("clientData"));
         
         JsonNode activityNode = node.get("activity");
         assertEquals("Activity3", activityNode.get("label").asText());

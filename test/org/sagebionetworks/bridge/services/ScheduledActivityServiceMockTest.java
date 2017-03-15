@@ -169,7 +169,7 @@ public class ScheduledActivityServiceMockTest {
         DateTimeUtils.setCurrentMillisFixed(STARTS_ON.getMillis());
         
         service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, null, null, null, 40);
-        verify(activityDao).getActivityHistoryV2(HEALTH_CODE, ACTIVITY_GUID, STARTS_ON.minusDays(10), STARTS_ON.plusDays(4), null, 40);
+        verify(activityDao).getActivityHistoryV2(HEALTH_CODE, ACTIVITY_GUID, STARTS_ON.minusDays(9), STARTS_ON.plusDays(5), null, 40);
         
         DateTimeUtils.setCurrentMillisSystem();
     }
@@ -250,7 +250,7 @@ public class ScheduledActivityServiceMockTest {
     
     @SuppressWarnings({"unchecked","rawtypes"})
     @Test
-    public void updateActivitiesWorks() {
+    public void updateActivitiesWorks() throws Exception {
         ScheduleContext context = createScheduleContext(endsOn);
         List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
         
@@ -258,6 +258,7 @@ public class ScheduledActivityServiceMockTest {
         scheduledActivities.get(0).setStartedOn(NOW.getMillis());
         scheduledActivities.get(1).setFinishedOn(NOW.getMillis());
         scheduledActivities.get(2).setFinishedOn(NOW.getMillis());
+        scheduledActivities.get(3).setClientData(TestUtils.getClientData());
         
         ArgumentCaptor<List> updateCapture = ArgumentCaptor.forClass(List.class);
         ArgumentCaptor<ScheduledActivity> publishCapture = ArgumentCaptor.forClass(ScheduledActivity.class);
@@ -266,24 +267,24 @@ public class ScheduledActivityServiceMockTest {
         
         verify(activityDao).updateActivities(anyString(), updateCapture.capture());
         // Three activities have timestamp updates and need to be persisted
-        verify(activityDao, times(3)).getActivity(anyString(), anyString());
+        verify(activityDao, times(count)).getActivity(anyString(), anyString());
         // Two activities have been finished and generate activity finished events
         verify(activityEventService, times(2)).publishActivityFinishedEvent(publishCapture.capture());
         
         List<DynamoScheduledActivity> dbActivities = (List<DynamoScheduledActivity>)updateCapture.getValue();
-        assertEquals(count-3, dbActivities.size());
+        assertEquals(4, dbActivities.size());
         
         // Correct saved activities
         assertEquals(scheduledActivities.get(0).getGuid(), dbActivities.get(0).getGuid());
         assertEquals(scheduledActivities.get(1).getGuid(), dbActivities.get(1).getGuid());
         assertEquals(scheduledActivities.get(2).getGuid(), dbActivities.get(2).getGuid());
+        assertEquals(scheduledActivities.get(3).getClientData(), dbActivities.get(3).getClientData());
         
         // Correct published activities
         ScheduledActivity publishedActivity1 = publishCapture.getAllValues().get(0);
         assertEquals(scheduledActivities.get(1).getGuid(), publishedActivity1.getGuid());
         ScheduledActivity publishedActivity2 = publishCapture.getAllValues().get(1);
         assertEquals(scheduledActivities.get(2).getGuid(), publishedActivity2.getGuid());
-        
     }
     
     @Test(expected = BridgeServiceException.class)
