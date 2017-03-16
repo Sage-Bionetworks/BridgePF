@@ -384,7 +384,7 @@ public final class DynamoStudy implements Study {
                 passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, active, strictUploadValidationEnabled,
                 healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled,
                 externalIdRequiredOnSignup, minSupportedAppVersions, synapseDataAccessTeamId, synapseProjectId,
-                usesCustomExportSchedule, pushNotificationARNs);
+                usesCustomExportSchedule, pushNotificationARNs, disableExport);
     }
 
     @Override
@@ -417,7 +417,8 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(emailVerificationEnabled, other.emailVerificationEnabled)
                 && Objects.equals(externalIdRequiredOnSignup, other.externalIdRequiredOnSignup)
                 && Objects.equals(minSupportedAppVersions, other.minSupportedAppVersions)
-                && Objects.equals(pushNotificationARNs, other.pushNotificationARNs);
+                && Objects.equals(pushNotificationARNs, other.pushNotificationARNs)
+                && Objects.equals(disableExport, other.disableExport);
     }
 
     @Override
@@ -429,11 +430,12 @@ public final class DynamoStudy implements Study {
                         + "dataGroups=%s, passwordPolicy=%s, verifyEmailTemplate=%s, resetPasswordTemplate=%s, "
                         + "strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, emailVerificationEnabled=%s, "
                         + "externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, minSupportedAppVersions=%s, "
-                        + "usesCustomExportSchedule=%s, pushNotificationARNs=%s]",
+                        + "usesCustomExportSchedule=%s, pushNotificationARNs=%s], "
+                        + "disableExport=%s]",
                 name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, supportEmail, synapseDataAccessTeamId, 
                 synapseProjectId, technicalEmail, consentNotificationEmail, version, profileAttributes, taskIdentifiers, 
                 dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, strictUploadValidationEnabled, 
                 healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled, externalIdRequiredOnSignup, 
-                minSupportedAppVersions, usesCustomExportSchedule, pushNotificationARNs);
+                minSupportedAppVersions, usesCustomExportSchedule, pushNotificationARNs, disableExport);
     }
 }

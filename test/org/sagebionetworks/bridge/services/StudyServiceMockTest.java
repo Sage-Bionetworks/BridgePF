@@ -724,12 +724,6 @@ public class StudyServiceMockTest {
     }
 
     @Test
-    public void changingDisableExportUpdatesDirectory() {
-        assertDirectoryUpdated(study -> study.setDisableExport(true));
-    }
-
-
-    @Test
     public void newStudyVerifiesSupportEmail() {
         Study study = getTestStudy();
         when(emailVerificationService.verifyEmailAddress(study.getSupportEmail()))
