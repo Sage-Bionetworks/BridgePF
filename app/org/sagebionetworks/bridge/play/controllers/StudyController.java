@@ -229,5 +229,4 @@ public class StudyController extends BaseController {
 
         return okResult(uploads);
     }
-
 }

@@ -237,4 +237,10 @@ public interface Study extends BridgeEntity, StudyIdentifier {
 
     /** @see #getPushNotificationARNs(); */
     void setPushNotificationARNs(Map<String, String> pushNotificationARNs);
+
+    /** The flag to disable exporting or not. */
+    boolean getDisableExport();
+
+    /** @see #getDisableExport */
+    void setDisableExport(boolean disable);
 }
