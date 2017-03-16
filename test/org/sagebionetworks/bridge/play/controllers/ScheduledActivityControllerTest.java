@@ -116,6 +116,9 @@ public class ScheduledActivityControllerTest {
     @Captor
     private ArgumentCaptor<DateTime> endsOnCaptor;
     
+    @Captor
+    private ArgumentCaptor<List<ScheduledActivity>> activitiesCaptor;
+    
     UserSession session;
     
     @Before
@@ -348,6 +351,30 @@ public class ScheduledActivityControllerTest {
                 endsOnCaptor.capture(), eq(2000L), eq(77));
         assertTrue(STARTS_ON.isEqual(startsOnCaptor.getValue()));
         assertTrue(ENDS_ON.isEqual(endsOnCaptor.getValue()));
+    }
+    
+    @Test
+    public void updateScheduledActivitiesWithClientData() throws Exception {
+        JsonNode clientData = TestUtils.getClientData();
+        
+        DynamoScheduledActivity schActivity = new DynamoScheduledActivity();
+        schActivity.setTimeZone(DateTimeZone.UTC);
+        schActivity.setGuid(BridgeUtils.generateGuid());
+        schActivity.setLocalScheduledOn(LocalDateTime.now().minusDays(1));
+        schActivity.setActivity(TestUtils.getActivity3());
+        schActivity.setClientData(clientData);
+        List<ScheduledActivity> list = Lists.newArrayList(schActivity);
+        
+        String json = BridgeObjectMapper.get().writeValueAsString(list);
+        TestUtils.mockPlayContextWithJson(json);
+        
+        Result result = controller.updateScheduledActivities();
+        assertEquals(200, result.status());
+        
+        verify(scheduledActivityService).updateScheduledActivities(eq(HEALTH_CODE), activitiesCaptor.capture());
+        
+        List<ScheduledActivity> capturedActivities = activitiesCaptor.getValue();
+        assertEquals(clientData, capturedActivities.get(0).getClientData());
     }
     
     private ForwardCursorPagedResourceList<ScheduledActivity> createActivityResultsV2(int pageSize) {
