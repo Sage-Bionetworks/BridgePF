@@ -4,7 +4,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
@@ -45,7 +44,10 @@ public class StormpathDirectoryDao implements DirectoryDao {
 
     private static final Logger logger = LoggerFactory.getLogger(StormpathDirectoryDao.class);
 
-    private static final ApplicationAccountStoreMappingCriteria asmCriteria = ApplicationAccountStoreMappings.criteria().limitTo(100);
+    // Package-scoped to facilitate unit tests.
+    static final ApplicationAccountStoreMappingCriteria ASM_CRITERIA = ApplicationAccountStoreMappings.criteria()
+            .limitTo(100);
+
     private BridgeConfig config;
     private Client client;
 
@@ -108,7 +110,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
         Directory directory = getDirectoryForStudy(study);
         adjustPasswordPolicies(study, directory);
         adjustVerifyEmailPolicies(study, directory);
-    };
+    }
 
     @Override
     public Directory getDirectoryForStudy(Study study) {
@@ -158,7 +160,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
     private static ApplicationAccountStoreMapping getApplicationMapping(String href, Application app) {
         // This is tedious but I see no way to search for or make a reference to this 
         // mapping without iterating through the application's mappings.
-        for (ApplicationAccountStoreMapping mapping : app.getAccountStoreMappings(asmCriteria)) {
+        for (ApplicationAccountStoreMapping mapping : app.getAccountStoreMappings(ASM_CRITERIA)) {
             if (mapping.getAccountStore().getHref().equals(href)) {
                 return mapping;
             }
@@ -234,9 +236,7 @@ public class StormpathDirectoryDao implements DirectoryDao {
     }
     
     private ModeledEmailTemplate findBridgeTemplate(ModeledEmailTemplateList list) {
-        Iterator<ModeledEmailTemplate> iterator = list.iterator();
-        while(iterator.hasNext()) {
-            ModeledEmailTemplate template = iterator.next();
+        for (ModeledEmailTemplate template : list) {
             String body = template.getTextBody();
             if (body == null) {
                 body = template.getHtmlBody();
