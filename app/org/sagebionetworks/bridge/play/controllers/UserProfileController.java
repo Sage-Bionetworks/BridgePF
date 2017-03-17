@@ -62,6 +62,7 @@ public class UserProfileController extends BaseController {
         this.externalIdService = externalIdService;
     }
 
+    @Deprecated
     public Result getUserProfile() throws Exception {
         final UserSession session = getAuthenticatedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
@@ -90,6 +91,7 @@ public class UserProfileController extends BaseController {
         return ok(json).as(BridgeConstants.JSON_MIME_TYPE);
     }
 
+    @Deprecated
     public Result updateUserProfile() throws Exception {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
@@ -120,6 +122,7 @@ public class UserProfileController extends BaseController {
         return okResult(UserSessionInfo.toJSON(session));
     }
     
+    @Deprecated
     public Result createExternalIdentifier() throws Exception {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
@@ -133,6 +136,7 @@ public class UserProfileController extends BaseController {
         return okResult(UserSessionInfo.toJSON(session));
     }
     
+    @Deprecated
     public Result getDataGroups() throws Exception {
         UserSession session = getAuthenticatedSession();
         
@@ -149,6 +153,7 @@ public class UserProfileController extends BaseController {
         return ok(node).as(BridgeConstants.JSON_MIME_TYPE);
     }
     
+    @Deprecated
     public Result updateDataGroups() throws Exception {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
