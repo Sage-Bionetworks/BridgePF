@@ -11,13 +11,11 @@ import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
-import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 
@@ -47,8 +45,6 @@ public class UserProfileController extends BaseController {
 
     private ParticipantService participantService;
     
-    private ConsentService consentService;
-    
     private ExternalIdService externalIdService;
     
     private ViewCache viewCache;
@@ -64,10 +60,6 @@ public class UserProfileController extends BaseController {
     @Autowired
     public final void setExternalIdService(ExternalIdService externalIdService) {
         this.externalIdService = externalIdService;
-    }
-    @Autowired
-    public final void setConsentService(ConsentService consentService) {
-        this.consentService = consentService;
     }
 
     public Result getUserProfile() throws Exception {
@@ -120,13 +112,12 @@ public class UserProfileController extends BaseController {
                 .withId(userId).build();
         participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
         
-        session.setParticipant(updated);
-        updateSession(session);
+        sessionUpdateService.updateParticipant(session, updated);
         
         ViewCacheKey<ObjectNode> cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, study.getIdentifier());
         viewCache.removeView(cacheKey);
         
-        return okResult("Profile updated.");
+        return okResult(UserSessionInfo.toJSON(session));
     }
     
     public Result createExternalIdentifier() throws Exception {
@@ -137,7 +128,9 @@ public class UserProfileController extends BaseController {
 
         externalIdService.assignExternalId(study, externalId.getIdentifier(), session.getHealthCode());
         
-        return okResult("External identifier added to user profile.");
+        sessionUpdateService.updateExternalId(session, externalId);
+        
+        return okResult(UserSessionInfo.toJSON(session));
     }
     
     public Result getDataGroups() throws Exception {
@@ -170,15 +163,18 @@ public class UserProfileController extends BaseController {
         
         participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
         
-        session.setParticipant(updated);
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withLanguages(getLanguagesFromAcceptLanguageHeader())
+                .withClientInfo(getClientInfoFromUserAgentHeader())
+                .withHealthCode(session.getHealthCode())
+                .withUserId(session.getId())
+                .withUserDataGroups(updated.getDataGroups())
+                .withStudyIdentifier(session.getStudyIdentifier())
+                .build();
         
-        CriteriaContext context = getCriteriaContext(session);
+        sessionUpdateService.updateDataGroups(session, context, updated.getDataGroups());
         
-        Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
-        session.setConsentStatuses(statuses);
-                
-        updateSession(session);
-        return okResult("Data groups updated.");
+        return okResult(UserSessionInfo.toJSON(session));
     }
     
 }

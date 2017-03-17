@@ -73,7 +73,7 @@ public class FPHSController extends BaseController {
         CriteriaContext context = getCriteriaContext(session);
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         session.setConsentStatuses(statuses);
-        updateSession(session);
+        cacheProvider.setUserSession(session);
         
         return okResult("External identifier added to user profile.");
     }

@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -38,6 +37,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.play.interceptors.RequestUtils;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
+import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import org.apache.commons.lang3.StringUtils;
@@ -74,6 +74,8 @@ public abstract class BaseController extends Controller {
     StudyService studyService;
 
     AuthenticationService authenticationService;
+    
+    SessionUpdateService sessionUpdateService;
 
     @Autowired
     final void setBridgeConfig(BridgeConfig bridgeConfig) {
@@ -98,6 +100,11 @@ public abstract class BaseController extends Controller {
     @Autowired
     final void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
+    }
+    
+    @Autowired
+    final void setSessionUpdateService(SessionUpdateService sessionUpdateService) {
+        this.sessionUpdateService = sessionUpdateService;
     }
 
     /**
@@ -183,15 +190,6 @@ public abstract class BaseController extends Controller {
         // user doesn't need to be consented or to possess any specific role.
         return session;
     }
-    
-    void setSessionToken(String sessionToken) {
-        response().setCookie(SESSION_TOKEN_HEADER, sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
-    }
-
-    void updateSession(UserSession session) {
-        cacheProvider.setUserSession(session);
-        setSessionToken(session.getSessionToken());
-    }
 
     /** Package-scoped to make available in unit tests. */
     String getSessionToken() {
@@ -233,9 +231,7 @@ public abstract class BaseController extends Controller {
             optionsService.setOrderedStringSet(
                     session.getStudyIdentifier(), session.getHealthCode(), LANGUAGES, languages);
             
-            session.setParticipant(new StudyParticipant.Builder()
-                    .copyOf(participant).withLanguages(languages).build());
-            updateSession(session);
+            sessionUpdateService.updateLanguage(session, languages);
         }
         return languages;
     }

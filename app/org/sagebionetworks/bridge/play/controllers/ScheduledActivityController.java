@@ -18,7 +18,6 @@ import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
@@ -147,11 +146,7 @@ public class ScheduledActivityController extends BaseController {
         optionsService.setDateTimeZone(session.getStudyIdentifier(), session.getHealthCode(),
                 ParticipantOption.TIME_ZONE, timeZone);
         
-        StudyParticipant participant = session.getParticipant();
-        session.setParticipant(new StudyParticipant.Builder()
-                .copyOf(participant)
-                .withTimeZone(timeZone).build());
-        updateSession(session);
+        sessionUpdateService.updateTimeZone(session, timeZone);
         
         return timeZone;
     }

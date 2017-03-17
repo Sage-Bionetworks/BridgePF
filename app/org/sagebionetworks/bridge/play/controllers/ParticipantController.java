@@ -39,15 +39,23 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.ParticipantService;
+import org.sagebionetworks.bridge.services.SessionUpdateService;
 
 @Controller
 public class ParticipantController extends BaseController {
     
     private ParticipantService participantService;
     
+    private SessionUpdateService sessionUpdateService;
+    
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
+    }
+    
+    @Autowired
+    final void setUpdateSessionService(SessionUpdateService sessionUpdateService) {
+        this.sessionUpdateService = sessionUpdateService;
     }
     
     public Result getSelfParticipant() throws Exception {
@@ -79,9 +87,16 @@ public class ParticipantController extends BaseController {
                 .withId(session.getId()).build();
         participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
         
-        CriteriaContext context = getCriteriaContext(session);
-        session = authenticationService.getSession(study, context);
-        updateSession(session);
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withLanguages(getLanguagesFromAcceptLanguageHeader())
+                .withClientInfo(getClientInfoFromUserAgentHeader())
+                .withHealthCode(session.getHealthCode())
+                .withUserId(session.getId())
+                .withUserDataGroups(updated.getDataGroups())
+                .withStudyIdentifier(session.getStudyIdentifier())
+                .build();
+        
+        sessionUpdateService.updateParticipant(session, context, updated);
         
         return okResult(UserSessionInfo.toJSON(session));
     }

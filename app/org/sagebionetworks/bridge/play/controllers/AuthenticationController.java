@@ -122,9 +122,6 @@ public class AuthenticationController extends BaseController {
             cacheProvider.updateRequestInfo(requestInfo);
         }
 
-        // Set session token. This way, even if we get a ConsentRequiredException, users are still able to sign consent
-        setSessionToken(session.getSessionToken());
-        
         // You can proceed if 1) you're some kind of system administrator (developer, researcher), or 2)
         // you've consented to research.
         if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {

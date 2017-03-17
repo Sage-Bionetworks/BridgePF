@@ -464,6 +464,10 @@ public class TestUtils {
         return json.replaceAll("'", "\"");
     }
     
+    public static JsonNode getJson(Result result) throws Exception {
+        return BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+    }
+    
     public static Criteria createCriteria(Integer minAppVersion, Integer maxAppVersion, Set<String> allOfGroups, Set<String> noneOfGroups) {
         DynamoCriteria crit = new DynamoCriteria();
         crit.setMinAppVersion(OperatingSystem.IOS, minAppVersion);
