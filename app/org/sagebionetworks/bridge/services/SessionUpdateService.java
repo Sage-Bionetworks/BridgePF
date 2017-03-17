@@ -41,21 +41,17 @@ public class SessionUpdateService {
     }
     
     public void updateTimeZone(UserSession session, DateTimeZone timeZone) {
-        session.setParticipant(new StudyParticipant.Builder()
-                .copyOf(session.getParticipant()).withTimeZone(timeZone).build());
+        session.setParticipant(builder(session).withTimeZone(timeZone).build());
         cacheProvider.setUserSession(session);
     }
     
     public void updateLanguage(UserSession session, LinkedHashSet<String> languages) {
-        session.setParticipant(new StudyParticipant.Builder()
-                .copyOf(session.getParticipant()).withLanguages(languages).build());
+        session.setParticipant(builder(session).withLanguages(languages).build());
         cacheProvider.setUserSession(session);
     }
     
     public void updateExternalId(UserSession session, ExternalIdentifier externalId) {
-        session.setParticipant(new StudyParticipant.Builder()
-                .copyOf(session.getParticipant()).withExternalId(externalId.getIdentifier())
-                .build());
+        session.setParticipant(builder(session).withExternalId(externalId.getIdentifier()).build());
         cacheProvider.setUserSession(session);
     }
     
@@ -74,9 +70,7 @@ public class SessionUpdateService {
     }
     
     public void updateDataGroups(UserSession session, CriteriaContext context, Set<String> dataGroups) {
-        session.setParticipant(new StudyParticipant.Builder()
-                .copyOf(session.getParticipant())
-                .withDataGroups(dataGroups).build());
+        session.setParticipant(builder(session).withDataGroups(dataGroups).build());
         
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         session.setConsentStatuses(statuses);
@@ -85,17 +79,13 @@ public class SessionUpdateService {
     }
     
     public void updateSharingScope(UserSession session, SharingScope sharingScope) {
-        session.setParticipant(new StudyParticipant.Builder()
-                .copyOf(session.getParticipant())
-                .withSharingScope(sharingScope).build());
+        session.setParticipant(builder(session).withSharingScope(sharingScope).build());
         
         cacheProvider.setUserSession(session);
     }
     
     public void updateAllConsents(UserSession session, SharingScope sharingScope, boolean consenting) {
-        session.setParticipant(new StudyParticipant.Builder()
-                .copyOf(session.getParticipant())
-                .withSharingScope(sharingScope).build());
+        session.setParticipant(builder(session).withSharingScope(sharingScope).build());
         
         Map<SubpopulationGuid, ConsentStatus> statuses = copy(session, consenting);
         session.setConsentStatuses(statuses);
@@ -113,7 +103,7 @@ public class SessionUpdateService {
         Map<SubpopulationGuid,ConsentStatus> updatedStatuses = updateMap(session.getConsentStatuses(), guid, updatedConsent);
         session.setConsentStatuses(updatedStatuses);
         
-        StudyParticipant.Builder builder = new StudyParticipant.Builder().copyOf(session.getParticipant());
+        StudyParticipant.Builder builder = builder(session);
         builder.withSharingScope(sharingScope);
         if (!session.doesConsent()) {
             builder.withSharingScope(SharingScope.NO_SHARING);
@@ -121,6 +111,10 @@ public class SessionUpdateService {
         session.setParticipant(builder.build());
         
         cacheProvider.setUserSession(session);
+    }
+    
+    private StudyParticipant.Builder builder(UserSession session) {
+        return new StudyParticipant.Builder().copyOf(session.getParticipant());
     }
     
     private Map<SubpopulationGuid, ConsentStatus> copy(UserSession session, boolean consenting) {
