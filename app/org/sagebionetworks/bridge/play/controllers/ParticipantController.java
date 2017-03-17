@@ -88,7 +88,7 @@ public class ParticipantController extends BaseController {
         participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
         
         CriteriaContext context = new CriteriaContext.Builder()
-                .withLanguages(getLanguagesFromAcceptLanguageHeader())
+                .withLanguages(session.getParticipant().getLanguages())
                 .withClientInfo(getClientInfoFromUserAgentHeader())
                 .withHealthCode(session.getHealthCode())
                 .withUserId(session.getId())
