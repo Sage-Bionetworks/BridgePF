@@ -156,7 +156,7 @@ public class SessionUpdateServiceTest {
         UserSession session = new UserSession();
         session.setConsentStatuses(consents);
         
-        service.updateConsentStatus(session, consentA, ALL_QUALIFIED_RESEARCHERS, true);
+        service.updateConsentStatus(session, ALL_QUALIFIED_RESEARCHERS, consentA, true);
         
         verify(mockCacheProvider).setUserSession(session);
         assertEquals(ALL_QUALIFIED_RESEARCHERS, session.getParticipant().getSharingScope());

@@ -444,9 +444,11 @@ public class ParticipantControllerTest {
         mockPlayContextWithJson(json);
 
         Result result = controller.updateSelfParticipant();
-        JsonNode node = TestUtils.getJson(result);
+        
         assertEquals(200, result.status());
+        JsonNode node = TestUtils.getJson(result);
         assertEquals("UserSessionInfo", node.get("type").asText());
+        assertNull(node.get("healthCode"));
         
         // verify the object is passed to service, one field is sufficient
         verify(cacheProvider).setUserSession(any());

@@ -5,7 +5,6 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 import java.util.Map;
 
 import org.joda.time.DateTime;
-
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -32,7 +31,7 @@ public class ConsentController extends BaseController {
     private ConsentService consentService;
 
     private ParticipantOptionsService optionsService;
-    
+
     @Autowired
     final void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
@@ -116,7 +115,7 @@ public class ConsentController extends BaseController {
         consentService.withdrawConsent(study, subpopGuid, session.getParticipant(), withdrawal,
                 withdrewOn);
         
-        sessionUpdateService.updateConsentStatus(session, subpopGuid, session.getParticipant().getSharingScope(), false);
+        sessionUpdateService.updateConsentStatus(session, session.getParticipant().getSharingScope(), subpopGuid, false);
 
         return okResult(UserSessionInfo.toJSON(session));
     }
@@ -170,7 +169,7 @@ public class ConsentController extends BaseController {
         consentService.consentToResearch(study, subpopGuid, session.getParticipant(), consentSignature,
                 sharing.getSharingScope(), true);
         
-        sessionUpdateService.updateConsentStatus(session, subpopGuid, sharing.getSharingScope(), true);
+        sessionUpdateService.updateConsentStatus(session, sharing.getSharingScope(), subpopGuid, true);
         
         return createdResult(UserSessionInfo.toJSON(session));
     }

@@ -93,7 +93,7 @@ public class SessionUpdateService {
         cacheProvider.setUserSession(session);
     }
     
-    public void updateConsentStatus(UserSession session, SubpopulationGuid guid, SharingScope sharingScope, boolean consenting) {
+    public void updateConsentStatus(UserSession session, SharingScope sharingScope, SubpopulationGuid guid, boolean consenting) {
         // Update consent status, add to session
         ConsentStatus oldConsent = session.getConsentStatuses().get(guid);
         ConsentStatus updatedConsent = new ConsentStatus.Builder()

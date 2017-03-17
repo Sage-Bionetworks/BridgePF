@@ -59,8 +59,11 @@ import play.test.Helpers;
 public class ConsentControllerMockedTest {
 
     private static final StudyIdentifierImpl STUDY_IDENTIFIER = new StudyIdentifierImpl("study-key");
+    
     private static final SubpopulationGuid DEFAULT_SUBPOP_GUID = SubpopulationGuid.create("study-key");
+    
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("GUID");
+    
     private static final long UNIX_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch();
     
     private ConsentController controller;
@@ -97,8 +100,8 @@ public class ConsentControllerMockedTest {
         
         // one default consent and one new consent (neither signed, both required)
         Map<SubpopulationGuid,ConsentStatus> map = Maps.newHashMap();
-        map.put(SubpopulationGuid.create(STUDY_IDENTIFIER.getIdentifier()), new ConsentStatus.Builder()
-                .withConsented(false).withGuid(SUBPOP_GUID).withName("Default Consent").withRequired(true).build());
+        map.put(DEFAULT_SUBPOP_GUID, new ConsentStatus.Builder().withConsented(false).withGuid(SUBPOP_GUID)
+                .withName("Default Consent").withRequired(true).build());
         map.put(SUBPOP_GUID, new ConsentStatus.Builder().withConsented(false).withGuid(SUBPOP_GUID)
                 .withName("Another Consent").withRequired(true).build());
         session.setConsentStatuses(map);
@@ -147,7 +150,7 @@ public class ConsentControllerMockedTest {
         ConsentSignature sig = new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1970-10-10")
                 .withImageData("data:asdf").withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
 
-        when(consentService.getConsentSignature(study, SubpopulationGuid.create(study.getIdentifier()), session.getId())).thenReturn(sig);
+        when(consentService.getConsentSignature(study, DEFAULT_SUBPOP_GUID, session.getId())).thenReturn(sig);
 
         Result result = controller.getConsentSignature();
 
@@ -176,8 +179,8 @@ public class ConsentControllerMockedTest {
         
         assertConsentInSession(result, SharingScope.NO_SHARING, DEFAULT_SUBPOP_GUID);
 
-        verify(consentService).consentToResearch(eq(study), any(SubpopulationGuid.class), eq(participant),
-                signatureCaptor.capture(), any(SharingScope.class), eq(true));
+        verify(consentService).consentToResearch(eq(study), eq(DEFAULT_SUBPOP_GUID), eq(participant),
+                signatureCaptor.capture(), eq(SharingScope.NO_SHARING), eq(true));
         validateSignature(signatureCaptor.getValue());
     }
     
@@ -193,8 +196,8 @@ public class ConsentControllerMockedTest {
         
         assertConsentInSession(result, SharingScope.NO_SHARING, DEFAULT_SUBPOP_GUID);
         
-        verify(consentService).consentToResearch(eq(study), any(SubpopulationGuid.class), eq(participant),
-                signatureCaptor.capture(), any(SharingScope.class), eq(true));
+        verify(consentService).consentToResearch(eq(study), eq(DEFAULT_SUBPOP_GUID), eq(participant),
+                signatureCaptor.capture(), eq(SharingScope.NO_SHARING), eq(true));
         validateSignature(signatureCaptor.getValue());
     }
     
@@ -210,7 +213,7 @@ public class ConsentControllerMockedTest {
         assertWithdrawnInSession(result, SharingScope.NO_SHARING, DEFAULT_SUBPOP_GUID);
         
         // Should call the service and withdraw
-        verify(consentService).withdrawConsent(study, SubpopulationGuid.create(study.getIdentifier()), participant,
+        verify(consentService).withdrawConsent(study, DEFAULT_SUBPOP_GUID, participant,
                 new Withdrawal("Because, reasons."), 20000);
         
         verify(cacheProvider).setUserSession(session);
@@ -228,8 +231,7 @@ public class ConsentControllerMockedTest {
         
         assertWithdrawnInSession(result, SharingScope.NO_SHARING, DEFAULT_SUBPOP_GUID);
         
-        verify(consentService).withdrawConsent(study, SubpopulationGuid.create(study.getIdentifier()), participant,
-                new Withdrawal(null), 20000);
+        verify(consentService).withdrawConsent(study, DEFAULT_SUBPOP_GUID, participant, new Withdrawal(null), 20000);
         DateTimeUtils.setCurrentMillisSystem();
     }
     
