@@ -64,7 +64,7 @@ public class ConsentControllerTest {
             node.put("scope", SharingScope.NO_SHARING.name().toLowerCase());
 
             // First, verify this header isn't on *every* endpoint
-            WSRequest request = WS.url(TEST_BASE_URL + "/v3/users/self");
+            WSRequest request = WS.url(TEST_BASE_URL + "/v3/activities");
             WSResponse response = request.post(node).get(TIMEOUT);
             String headerValue = response.getHeader(BRIDGE_API_STATUS_HEADER);
             assertNull(headerValue);
@@ -102,8 +102,7 @@ public class ConsentControllerTest {
             WSRequest request = WS.url(TEST_BASE_URL + SIGN_IN_URL);
             WSResponse response = request.post(node).get(TIMEOUT);
 
-            WSCookie cookie = response.getCookie(SESSION_TOKEN_HEADER);
-            String sessionToken = cookie.getValue();
+            String sessionToken = response.asJson().get("sessionToken").asText();
 
             node = JsonNodeFactory.instance.objectNode();
             node.put("birthdate", "1970-01-01");
