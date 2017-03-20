@@ -6,7 +6,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_API_STATUS_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_DEPRECATED_STATUS;
-import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.SIGN_IN_URL;
@@ -29,7 +28,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import play.libs.ws.WS;
-import play.libs.ws.WSCookie;
 import play.libs.ws.WSResponse;
 import play.libs.ws.WSRequest;
 

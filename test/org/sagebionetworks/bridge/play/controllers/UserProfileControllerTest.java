@@ -138,6 +138,7 @@ public class UserProfileControllerTest {
     }
     
     @Test
+    @SuppressWarnings("deprecation")
     public void getUserProfile() throws Exception {
         Map<String,String> attributes = Maps.newHashMap();
         attributes.put("bar","baz");
@@ -163,6 +164,7 @@ public class UserProfileControllerTest {
     
     
     @Test
+    @SuppressWarnings("deprecation")    
     public void getUserProfileWithNoName() throws Exception {
         Map<String,String> attributes = Maps.newHashMap();
         attributes.put("bar","baz");
@@ -186,6 +188,7 @@ public class UserProfileControllerTest {
     }
     
     @Test
+    @SuppressWarnings("deprecation")
     public void updateUserProfile() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("existingHealthCode")
@@ -225,6 +228,7 @@ public class UserProfileControllerTest {
     }
     
     @Test
+    @SuppressWarnings("deprecation")
     public void canSubmitExternalIdentifier() throws Exception {
         TestUtils.mockPlayContextWithJson("{\"identifier\":\"ABC-123-XYZ\"}");
                 
@@ -238,6 +242,7 @@ public class UserProfileControllerTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void validDataGroupsCanBeAdded() throws Exception {
         // We had a bug where this call lost the health code in the user's session, so verify in particular 
         // that healthCode (as well as something like firstName) are in the session. 
@@ -277,6 +282,7 @@ public class UserProfileControllerTest {
     // Validation is no longer done in the controller, but verify that user is not changed
     // when the service throws an InvalidEntityException.
     @Test
+    @SuppressWarnings("deprecation")
     public void invalidDataGroupsRejected() throws Exception {
         StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").build();
         doReturn(existing).when(participantService).getParticipant(study, ID, false);
@@ -292,6 +298,7 @@ public class UserProfileControllerTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void canGetDataGroups() throws Exception {
         Map<String,String> map = Maps.newHashMap();
         map.put(DATA_GROUPS.name(), "group1,group2");
@@ -311,7 +318,7 @@ public class UserProfileControllerTest {
         }
     }
     
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({ "rawtypes", "unchecked", "deprecation" })
     @Test
     public void evenEmptyJsonActsOK() throws Exception {
         StudyParticipant existing = new StudyParticipant.Builder()
