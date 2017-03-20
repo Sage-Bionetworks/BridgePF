@@ -53,6 +53,7 @@ public class BridgeConstants {
 
     public static final String CUSTOM_DATA_VERSION = "version";
     
+    /** Limit the total length of JSON string that is submitted as client data for a scheduled activity. */
     public static final int CLIENT_DATA_MAX_BYTES = 2048;
 
     /** Used to cap the number of dupe records we fetch from DDB and the number of log messages we write. */

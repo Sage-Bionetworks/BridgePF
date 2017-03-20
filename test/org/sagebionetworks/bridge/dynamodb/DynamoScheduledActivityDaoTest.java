@@ -242,11 +242,11 @@ public class DynamoScheduledActivityDaoTest {
         List<ScheduledActivity> newActivities = activityDao.getActivities(context.getInitialTimeZone(), savedActivities);
         assertEquals(savedActivities.size(), newActivities.size());
         
-        ScheduledActivity activityWithClienData = newActivities.stream()
+        ScheduledActivity activityWithClientData = newActivities.stream()
                 .filter(act -> act.getClientData() != null).findFirst().get();
-        assertTrue(activityWithClienData.getClientData().get("booleanFlag").asBoolean());
-        assertEquals("testString", activityWithClienData.getClientData().get("stringValue").asText());
-        assertEquals(4, activityWithClienData.getClientData().get("intValue").asInt());
+        assertTrue(activityWithClientData.getClientData().get("booleanFlag").asBoolean());
+        assertEquals("testString", activityWithClientData.getClientData().get("stringValue").asText());
+        assertEquals(4, activityWithClientData.getClientData().get("intValue").asInt());
         
         // This is a physical delete, and the activities will be gone.
         activityDao.deleteActivitiesForUser(healthCode);

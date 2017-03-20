@@ -161,7 +161,7 @@ public class ScheduledActivityService {
                 throw new BadRequestException(String.format("Task #%s has no GUID", i));
             }
             if (byteLength(schActivity.getClientData()) > CLIENT_DATA_MAX_BYTES) {
-                throw new BadRequestException("Client data too large (max: "+CLIENT_DATA_MAX_BYTES+" bytes)");
+                throw new BadRequestException("Client data too large ("+CLIENT_DATA_MAX_BYTES+" bytes limit)");
             }
             ScheduledActivity dbActivity = activityDao.getActivity(healthCode, schActivity.getGuid());
             boolean addToSaves = false;
@@ -229,6 +229,10 @@ public class ScheduledActivityService {
             .collect(toImmutableList());
     }
     
+    /**
+     * If the client data is being added or removed, or if it is different, then the activity is being 
+     * updated.
+     */
     private boolean hasUpdatedClientData(ScheduledActivity schActivity, ScheduledActivity dbActivity) {
         JsonNode schNode = (schActivity == null || schActivity.getClientData() == null) ? 
                 null : schActivity.getClientData();
@@ -241,13 +245,10 @@ public class ScheduledActivityService {
     }
     
     private int byteLength(JsonNode node) {
-        if (node == null) {
-            return 0;
-        }
         try {
-            return node.toString().getBytes("UTF-8").length;    
+            return (node == null) ? 0 : node.toString().getBytes("UTF-8").length;    
         } catch(UnsupportedEncodingException e) {
-            return Integer.MAX_VALUE; // force an error.
+            return Integer.MAX_VALUE; // UTF-8 is always supported, this should *never* happen
         }
     }
     
