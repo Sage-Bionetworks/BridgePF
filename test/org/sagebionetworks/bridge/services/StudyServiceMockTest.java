@@ -722,7 +722,7 @@ public class StudyServiceMockTest {
     public void changingEmailVerificationEnabledUpdatesDirectory() {
         assertDirectoryUpdated(study -> study.setEmailVerificationEnabled(false));
     }
-    
+
     @Test
     public void newStudyVerifiesSupportEmail() {
         Study study = getTestStudy();

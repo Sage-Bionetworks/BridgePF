@@ -6,13 +6,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate;
-import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
@@ -21,6 +14,13 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConvertedJson;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 @DynamoDBTable(tableName = "Study")
 @BridgeTypeName("Study")
@@ -52,6 +52,7 @@ public final class DynamoStudy implements Study {
     private boolean externalIdRequiredOnSignup;
     private Map<String, Integer> minSupportedAppVersions;
     private Map<String, String> pushNotificationARNs;
+    private boolean disableExport;
 
     public DynamoStudy() {
         profileAttributes = new HashSet<>();
@@ -358,6 +359,14 @@ public final class DynamoStudy implements Study {
         this.pushNotificationARNs = (map == null) ? new HashMap<>() : map;
     }
 
+    @Override public boolean getDisableExport() {
+        return this.disableExport;
+    }
+
+    @Override public void setDisableExport(boolean disable) {
+        this.disableExport = disable;
+    }
+
     @Override
     public boolean isExternalIdRequiredOnSignup() {
         return externalIdRequiredOnSignup;
@@ -375,7 +384,7 @@ public final class DynamoStudy implements Study {
                 passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, active, strictUploadValidationEnabled,
                 healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled,
                 externalIdRequiredOnSignup, minSupportedAppVersions, synapseDataAccessTeamId, synapseProjectId,
-                usesCustomExportSchedule, pushNotificationARNs);
+                usesCustomExportSchedule, pushNotificationARNs, disableExport);
     }
 
     @Override
@@ -408,7 +417,8 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(emailVerificationEnabled, other.emailVerificationEnabled)
                 && Objects.equals(externalIdRequiredOnSignup, other.externalIdRequiredOnSignup)
                 && Objects.equals(minSupportedAppVersions, other.minSupportedAppVersions)
-                && Objects.equals(pushNotificationARNs, other.pushNotificationARNs);
+                && Objects.equals(pushNotificationARNs, other.pushNotificationARNs)
+                && Objects.equals(disableExport, other.disableExport);
     }
 
     @Override
@@ -420,11 +430,12 @@ public final class DynamoStudy implements Study {
                         + "dataGroups=%s, passwordPolicy=%s, verifyEmailTemplate=%s, resetPasswordTemplate=%s, "
                         + "strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, emailVerificationEnabled=%s, "
                         + "externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, minSupportedAppVersions=%s, "
-                        + "usesCustomExportSchedule=%s, pushNotificationARNs=%s]",
+                        + "usesCustomExportSchedule=%s, pushNotificationARNs=%s], "
+                        + "disableExport=%s]",
                 name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, supportEmail, synapseDataAccessTeamId, 
                 synapseProjectId, technicalEmail, consentNotificationEmail, version, profileAttributes, taskIdentifiers, 
                 dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, strictUploadValidationEnabled, 
                 healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled, externalIdRequiredOnSignup, 
-                minSupportedAppVersions, usesCustomExportSchedule, pushNotificationARNs);
+                minSupportedAppVersions, usesCustomExportSchedule, pushNotificationARNs, disableExport);
     }
 }
