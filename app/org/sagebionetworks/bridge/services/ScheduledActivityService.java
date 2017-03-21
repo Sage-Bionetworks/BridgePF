@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -233,11 +234,7 @@ public class ScheduledActivityService {
     protected boolean hasUpdatedClientData(ScheduledActivity schActivity, ScheduledActivity dbActivity) {
         JsonNode schNode = (schActivity == null) ? null : schActivity.getClientData();
         JsonNode dbNode = (dbActivity == null) ? null : dbActivity.getClientData();
-        
-        // One is null and the other is not, or they are not equal (JsonNode equals() accepts 
-        // null parameter, so it is testing both).
-        return (schNode == null && dbNode != null) ||
-               (schNode != null && !schNode.equals(dbNode));
+        return !Objects.equals(schNode, dbNode);
     }
     
     private int byteLength(JsonNode node) {

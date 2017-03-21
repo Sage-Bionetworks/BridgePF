@@ -713,13 +713,6 @@ public class ScheduledActivityServiceMockTest {
         assertEquals("2017-02-20T11:00:00.000-08:00", timestamp);
     }
     
-    /*
-both null
-added
-removed
-changed
-same     */
-    
     @Test
     public void detectClientDataAdded() throws Exception {
         ScheduledActivity dbActivity = ScheduledActivity.create();
