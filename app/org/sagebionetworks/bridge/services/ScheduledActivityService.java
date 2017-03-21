@@ -169,17 +169,14 @@ public class ScheduledActivityService {
                 dbActivity.setClientData(schActivity.getClientData());
                 addToSaves = true;
             }
-            if (schActivity.getStartedOn() != null || schActivity.getFinishedOn() != null) {
-                // We do not need to add the time zone here. Not returning these to the user.
-                if (schActivity.getStartedOn() != null) {
-                    dbActivity.setStartedOn(schActivity.getStartedOn());
-                    addToSaves = true;
-                }
-                if (schActivity.getFinishedOn() != null) {
-                    dbActivity.setFinishedOn(schActivity.getFinishedOn());
-                    activityEventService.publishActivityFinishedEvent(dbActivity);
-                    addToSaves = true;
-                }
+            if (schActivity.getStartedOn() != null) {
+                dbActivity.setStartedOn(schActivity.getStartedOn());
+                addToSaves = true;
+            }
+            if (schActivity.getFinishedOn() != null) {
+                dbActivity.setFinishedOn(schActivity.getFinishedOn());
+                activityEventService.publishActivityFinishedEvent(dbActivity);
+                addToSaves = true;
             }
             if (addToSaves) {
                 activitiesToSave.add(dbActivity);
@@ -233,15 +230,14 @@ public class ScheduledActivityService {
      * If the client data is being added or removed, or if it is different, then the activity is being 
      * updated.
      */
-    private boolean hasUpdatedClientData(ScheduledActivity schActivity, ScheduledActivity dbActivity) {
-        JsonNode schNode = (schActivity == null || schActivity.getClientData() == null) ? 
-                null : schActivity.getClientData();
-        JsonNode dbNode = (dbActivity == null || dbActivity.getClientData() == null) ? 
-                null : dbActivity.getClientData();
+    protected boolean hasUpdatedClientData(ScheduledActivity schActivity, ScheduledActivity dbActivity) {
+        JsonNode schNode = (schActivity == null) ? null : schActivity.getClientData();
+        JsonNode dbNode = (dbActivity == null) ? null : dbActivity.getClientData();
         
+        // One is null and the other is not, or they are not equal (JsonNode equals() accepts 
+        // null parameter, so it is testing both).
         return (schNode == null && dbNode != null) ||
-               (schNode != null && dbNode == null) ||
-               (schNode != null && dbNode != null && !schNode.equals(dbNode));
+               (schNode != null && !schNode.equals(dbNode));
     }
     
     private int byteLength(JsonNode node) {
