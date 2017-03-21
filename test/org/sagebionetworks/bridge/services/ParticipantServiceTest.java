@@ -95,7 +95,7 @@ public class ParticipantServiceTest {
     private static final String FIRST_NAME = "firstName";
     private static final String PASSWORD = "P@ssword1";
     private static final String ACTIVITY_GUID = "activityGuid";
-    private static final Long PAGED_BY = new Long(100);
+    private static final String PAGED_BY = "100";
     private static final int PAGE_SIZE = 50;
     private static final Set<Roles> CALLER_ROLES = Sets.newHashSet(RESEARCHER);
     private static final Set<Roles> USER_ROLES = Sets.newHashSet(DEVELOPER);

@@ -26,19 +26,16 @@ import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
-import com.amazonaws.services.dynamodbv2.document.Item;
-import com.amazonaws.services.dynamodbv2.document.KeyAttribute;
-import com.amazonaws.services.dynamodbv2.document.QueryOutcome;
-import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
-import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.QueryResult;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 @Component
 public class DynamoScheduledActivityDao implements ScheduledActivityDao {
@@ -46,10 +43,6 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     private static final String SCHEDULED_ON_START = "scheduledOnStart";
 
     private static final String SCHEDULED_ON_END = "scheduledOnEnd";
-
-    private static final String SCHEDULED_ON_UTC = "scheduledOnUTC";
-
-    private static final String HEALTH_CODE_ACTIVITY_GUID = "healthCodeActivityGuid";
 
     private static final String HEALTH_CODE = "healthCode";
 
@@ -59,16 +52,9 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     
     private DynamoDBMapper mapper;
     
-    private DynamoIndexHelper indexHelper;
-    
     @Resource(name = "activityDdbMapper")
     final void setDdbMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
-    }
-    
-    @Resource(name = "healthCodeActivityGuidIndex")
-    final void setHealthCodeActivityGuidIndex(DynamoIndexHelper healthCodeActivityGuidIndex) {
-        this.indexHelper = healthCodeActivityGuidIndex;
     }
     
     @Override
@@ -95,7 +81,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     
     @Override
     public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistoryV2(String healthCode,
-            String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, Long offsetBy,
+            String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, String offsetBy,
             int pageSize) {
         checkNotNull(healthCode);
         checkNotNull(scheduledOnStart);
@@ -105,55 +91,46 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        String healthCodeActivityGuid = healthCode + ":" + activityGuid;
         
-        // The range is exclusive, so bump the timestamps back/forward by one millisecond
-        long startTimestamp = scheduledOnStart.minusMillis(1).getMillis();
-        long endTimestamp = scheduledOnEnd.plusMillis(1).getMillis();
-        RangeKeyCondition dateRangeCondition = new RangeKeyCondition(SCHEDULED_ON_UTC).between(startTimestamp,endTimestamp);
+        DynamoScheduledActivity hashKey = new DynamoScheduledActivity();
+        hashKey.setHealthCode(healthCode);
+        
+        String start = activityGuid + ":" + scheduledOnStart.toLocalDateTime().toString();
+        String end = activityGuid + ":" + scheduledOnEnd.toLocalDateTime().toString();
+        
+        // range key is between start date and end date
+        Condition dateCondition = new Condition().withComparisonOperator(ComparisonOperator.BETWEEN)
+                .withAttributeValueList(new AttributeValue().withS(start),
+                        new AttributeValue().withS(end));
 
-        QuerySpec spec = new QuerySpec()
-                .withHashKey(new KeyAttribute(HEALTH_CODE_ACTIVITY_GUID, healthCodeActivityGuid))
-                .withMaxResultSize(pageSize)
-                .withMaxPageSize(pageSize)
-                .withScanIndexForward(false)
-                .withRangeKeyCondition(dateRangeCondition);
-
+        DynamoDBQueryExpression<DynamoScheduledActivity> query = new DynamoDBQueryExpression<DynamoScheduledActivity>()
+            .withHashKeyValues(hashKey)
+            .withLimit(pageSize)
+            .withScanIndexForward(false)
+            .withRangeKeyCondition(GUID, dateCondition);
+        
         if (offsetBy != null) {
-            RangeKeyCondition cursorPosCondition = new RangeKeyCondition(SCHEDULED_ON_UTC).gt(offsetBy);
-            spec.withRangeKeyCondition(cursorPosCondition);
-            /* This use of exclusive key works, but does not exclude the item represented by the key 
-             * itself. To work correctly, you'd need to retrieve pageSize+1, take the last key, and 
-             * then used *that* as the offsetBy key (also removing it from the page you return). This 
-             * did not seem faster to the range key condition, which is simpler, so using that instead. 
-            spec.withExclusiveStartKey(
-                new KeyAttribute(HEALTH_CODE_ACTIVITY_GUID,healthCodeActivityGuid),
-                new KeyAttribute(SCHEDULED_ON_UTC,offsetBy),
-                new KeyAttribute(HEALTH_CODE, healthCode),
-                new KeyAttribute(GUID, activityGuid));
-            */
+            Map<String,AttributeValue> map = Maps.newHashMap();
+            map.put(HEALTH_CODE, new AttributeValue(healthCode));
+            map.put(GUID, new AttributeValue(activityGuid+":"+offsetBy));
+            
+            query.withExclusiveStartKey(map);
         }
         
-        QueryOutcome queryOutcome = indexHelper.query(spec);
-        List<Item> items = queryOutcome.getItems();
-        QueryResult queryResult = queryOutcome.getQueryResult();
-        
-        // Index only includes keys. Load the items.
-        List<ScheduledActivity> results = new ArrayList<>(items.size());
-        for (Item item : items) {
-            ScheduledActivity activity = getActivity(healthCode, item.getString(GUID));
-            activity.setTimeZone(DateTimeZone.UTC);
-            results.add(activity);
+        QueryResultPage<DynamoScheduledActivity> queryResult = mapper.queryPage(DynamoScheduledActivity.class, query);
+
+        List<ScheduledActivity> activities = Lists.newArrayListWithCapacity(queryResult.getResults().size());
+        for (DynamoScheduledActivity act : queryResult.getResults()) {
+            act.setTimeZone(DateTimeZone.UTC);
+            activities.add((ScheduledActivity)act);
         }
         
-        // There's no total count with a DynamoDB record set, but if there's an offset, there is a further
-        // page of records.
-        Long nextPageOffsetBy = null;
+        String nextOffsetBy = null;
         if (queryResult.getLastEvaluatedKey() != null) {
-            nextPageOffsetBy = Long.parseLong(queryResult.getLastEvaluatedKey().get(SCHEDULED_ON_UTC).getN());
+            nextOffsetBy = queryResult.getLastEvaluatedKey().get(GUID).getS().split(":",2)[1];
         }
         
-        return new ForwardCursorPagedResourceList<ScheduledActivity>(results, nextPageOffsetBy, pageSize)
+        return new ForwardCursorPagedResourceList<ScheduledActivity>(activities, nextOffsetBy, pageSize)
                 .withFilter(SCHEDULED_ON_START, scheduledOnStart)
                 .withFilter(SCHEDULED_ON_END, scheduledOnEnd);
     }

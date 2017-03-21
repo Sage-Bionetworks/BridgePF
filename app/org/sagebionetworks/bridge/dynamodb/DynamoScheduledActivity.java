@@ -39,13 +39,11 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
 
     private String healthCode;
     private String guid;
-    private String healthCodeActivityGuid;
     private String schedulePlanGuid;
     private Long startedOn;
     private Long finishedOn;
     private LocalDateTime localScheduledOn;
     private LocalDateTime localExpiresOn;
-    private Long scheduledOnUTC;
     private Activity activity;
     private boolean persistent;
     private DateTimeZone timeZone;
@@ -97,17 +95,6 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getExpiresOn() {
         return getInstant(getLocalExpiresOn());
-    }
-
-    @Override
-    @DynamoDBAttribute
-    @JsonIgnore
-    public Long getScheduledOnUTC() {
-        return scheduledOnUTC;
-    }
-
-    public void setScheduledOnUTC(Long scheduledOnUTC) {
-        this.scheduledOnUTC = scheduledOnUTC;
     }
     
     private DateTime getInstant(LocalDateTime localDateTime) {
@@ -166,19 +153,6 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     @Override
     public void setGuid(String guid) {
         this.guid = guid;
-    }
-
-    @DynamoDBAttribute
-    @JsonIgnore
-    @Override
-    @DynamoDBIndexHashKey(attributeName = "healthCodeActivityGuid", globalSecondaryIndexName = "healthCodeActivityGuid-scheduledOnUTC-index")
-    public String getHealthCodeActivityGuid() {
-        return healthCodeActivityGuid;
-    }
-    
-    @Override
-    public void setHealthCodeActivityGuid(String healthCodeActivityGuid) {
-        this.healthCodeActivityGuid = healthCodeActivityGuid;
     }
     
     @DynamoDBIndexHashKey(attributeName = "schedulePlanGuid", globalSecondaryIndexName = "schedulePlanGuid-index")
@@ -255,8 +229,8 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
 
     @Override
     public int hashCode() {
-        return Objects.hash(activity, guid, localScheduledOn, scheduledOnUTC, localExpiresOn, startedOn, finishedOn,
-                healthCodeActivityGuid, healthCode, persistent, timeZone, schedulePlanGuid);
+        return Objects.hash(activity, guid, localScheduledOn, localExpiresOn, startedOn, finishedOn,
+                healthCode, persistent, timeZone, schedulePlanGuid);
     }
 
     @Override
@@ -269,9 +243,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
         return (Objects.equals(activity, other.activity) 
                 && Objects.equals(localExpiresOn, other.localExpiresOn)
                 && Objects.equals(localScheduledOn, other.localScheduledOn)
-                && Objects.equals(healthCodeActivityGuid, other.healthCodeActivityGuid)
                 && Objects.equals(guid, other.guid)
-                && Objects.equals(scheduledOnUTC, other.scheduledOnUTC) 
                 && Objects.equals(startedOn, other.startedOn) 
                 && Objects.equals(finishedOn, other.finishedOn)
                 && Objects.equals(healthCode, other.healthCode) && Objects.equals(persistent, other.persistent)
@@ -282,8 +254,8 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     @Override
     public String toString() {
         return String.format(
-                "DynamoScheduledActivity [healthCode=%s, guid=%s, healthCodeActivityGuid=%s, healthCodeActivityGuidlocalScheduledOn=%s, scheduledOnUTC=%s, localExpiresOn=%s, startedOn=%s, finishedOn=%s, persistent=%s, timeZone=%s, activity=%s, schedulePlanGuid=%s]",
-                healthCode, guid, healthCodeActivityGuid, localScheduledOn, scheduledOnUTC, localExpiresOn, startedOn, finishedOn, persistent, timeZone,
+                "DynamoScheduledActivity [healthCode=%s, guid=%s, localScheduledOn=%s, localExpiresOn=%s, startedOn=%s, finishedOn=%s, persistent=%s, timeZone=%s, activity=%s, schedulePlanGuid=%s]",
+                healthCode, guid, localScheduledOn, localExpiresOn, startedOn, finishedOn, persistent, timeZone,
                 activity, schedulePlanGuid);
     }
 }

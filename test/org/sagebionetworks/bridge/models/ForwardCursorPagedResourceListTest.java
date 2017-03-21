@@ -30,7 +30,7 @@ public class ForwardCursorPagedResourceListTest {
                 AccountStatus.ENABLED, TestConstants.TEST_STUDY));
         
         ForwardCursorPagedResourceList<AccountSummary> page = new ForwardCursorPagedResourceList<AccountSummary>(
-                accounts, 2L, 100).withFilter("emailFilter", "filterString");
+                accounts, "2", 100).withFilter("emailFilter", "filterString");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(page);
         assertEquals(2, node.get("offsetBy").asInt());
