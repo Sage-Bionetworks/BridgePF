@@ -312,7 +312,7 @@ public class ParticipantService {
     }
 
     public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(Study study, String userId,
-            String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, Long offsetBy, int pageSize) {
+            String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, String offsetBy, int pageSize) {
         checkNotNull(study);
         checkArgument(isNotBlank(activityGuid));
         checkArgument(isNotBlank(userId));

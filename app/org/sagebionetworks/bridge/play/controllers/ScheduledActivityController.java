@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
-import static org.sagebionetworks.bridge.BridgeUtils.getLongOrDefault;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,12 +53,11 @@ public class ScheduledActivityController extends BaseController {
     }
 
     public Result getActivityHistory(String activityGuid, String scheduledOnStartString,
-            String scheduledOnEndString, String offsetByString, String pageSizeString) throws Exception {
+            String scheduledOnEndString, String offsetBy, String pageSizeString) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         
         DateTime scheduledOnStart = getDateTimeOrDefault(scheduledOnStartString, null);
         DateTime scheduledOnEnd = getDateTimeOrDefault(scheduledOnEndString, null);
-        Long offsetBy = getLongOrDefault(offsetByString, null);
         int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
         
         ForwardCursorPagedResourceList<ScheduledActivity> page = scheduledActivityService.getActivityHistory(
