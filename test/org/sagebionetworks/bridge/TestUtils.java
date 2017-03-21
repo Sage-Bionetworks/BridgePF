@@ -448,6 +448,11 @@ public class TestUtils {
         return schedule;
     }
     
+    public static JsonNode getClientData() throws Exception {
+        String json = TestUtils.createJson("{'booleanFlag':true,'stringValue':'testString','intValue':4}");
+        return BridgeObjectMapper.get().readTree(json);
+    }
+    
     public static Set<String> getFieldNamesSet(JsonNode node) {
         HashSet<String> set = new HashSet<>();
         for (Iterator<String> i = node.fieldNames(); i.hasNext(); ) {
