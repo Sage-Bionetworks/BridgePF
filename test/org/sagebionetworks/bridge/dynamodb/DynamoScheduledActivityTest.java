@@ -111,8 +111,6 @@ public class DynamoScheduledActivityTest {
         schActivity.setGuid("AAA-BBB-CCC");
         schActivity.setHealthCode("FFF-GGG-HHH");
         schActivity.setPersistent(true);
-        schActivity.setHealthCodeActivityGuid("FFF-GGG-HHH:AAA-BBB-CCC");
-        schActivity.setScheduledOnUTC(scheduledOn.toDateTime(DateTimeZone.UTC).getMillis());
         schActivity.setClientData(TestUtils.getClientData());
         
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
@@ -144,8 +142,6 @@ public class DynamoScheduledActivityTest {
         newActivity.setTimeZone(DateTimeZone.UTC);
         newActivity.setLocalScheduledOn(scheduledOn);
         newActivity.setLocalExpiresOn(expiresOn);
-        newActivity.setHealthCodeActivityGuid("FFF-GGG-HHH:AAA-BBB-CCC");
-        newActivity.setScheduledOnUTC(scheduledOn.toDateTime(DateTimeZone.UTC).getMillis());
         
         // Also works without having to reset the timezone.
         assertEquals(schActivity, newActivity);

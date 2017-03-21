@@ -112,10 +112,6 @@ public class ActivitySchedulerTest {
         assertNotNull(schActivity.getExpiresOn());
         assertEquals("healthCode", schActivity.getHealthCode());
         assertEquals(PST, schActivity.getTimeZone());
-        assertEquals((Long)1427104800000L, schActivity.getScheduledOnUTC());
-        assertEquals("healthCode:AAA", schActivity.getHealthCodeActivityGuid());
-        // The start time for a one-time task is the enrollment time
-        assertEquals((Long)ENROLLMENT.getMillis(), schActivity.getScheduledOnUTC());
     }
     
     /**

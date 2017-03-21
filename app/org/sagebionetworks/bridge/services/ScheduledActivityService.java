@@ -107,7 +107,7 @@ public class ScheduledActivityService {
     }
     
     public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(String healthCode,
-            String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, Long offsetBy,
+            String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, String offsetBy,
             int pageSize) {
         checkArgument(isNotBlank(healthCode));
         checkArgument(isNotBlank(activityGuid));

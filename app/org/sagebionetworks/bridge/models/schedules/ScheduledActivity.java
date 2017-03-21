@@ -86,10 +86,6 @@ public interface ScheduledActivity extends BridgeEntity {
 
     void setHealthCode(String healthCode);
 
-    String getHealthCodeActivityGuid();
-    
-    void setHealthCodeActivityGuid(String healthCodeActivityGuid);
-    
     Activity getActivity();
 
     void setActivity(Activity activity);
@@ -97,10 +93,6 @@ public interface ScheduledActivity extends BridgeEntity {
     DateTime getScheduledOn();
 
     void setLocalScheduledOn(LocalDateTime localScheduledOn);
-
-    Long getScheduledOnUTC();
-
-    void setScheduledOnUTC(Long scheduledOnUTC);
     
     JsonNode getClientData();
     
