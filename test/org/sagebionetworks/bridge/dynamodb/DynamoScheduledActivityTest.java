@@ -23,16 +23,23 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 
 public class DynamoScheduledActivityTest {
 
     @Test
-    public void equalsHashCode() {
+    public void equalsHashCode() throws Exception {
         EqualsVerifier.forClass(DynamoScheduledActivity.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed()
-                .verify();
+                .withPrefabValues(JsonNode.class, TestUtils.getClientData(), getOtherClientData()).verify();
     }
 
+    private JsonNode getOtherClientData() throws Exception {
+        JsonNode clientData = TestUtils.getClientData();
+        ((ObjectNode)clientData).put("newField", "newValue");
+        return clientData;
+    }
+    
     @Test
     public void testComparator() {
         DynamoScheduledActivity activity1 = new DynamoScheduledActivity();
@@ -104,8 +111,7 @@ public class DynamoScheduledActivityTest {
         schActivity.setGuid("AAA-BBB-CCC");
         schActivity.setHealthCode("FFF-GGG-HHH");
         schActivity.setPersistent(true);
-        schActivity.setHealthCodeActivityGuid("FFF-GGG-HHH:AAA-BBB-CCC");
-        schActivity.setScheduledOnUTC(scheduledOn.toDateTime(DateTimeZone.UTC).getMillis());
+        schActivity.setClientData(TestUtils.getClientData());
         
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
         String output = ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(schActivity);
@@ -118,7 +124,8 @@ public class DynamoScheduledActivityTest {
         assertEquals("ScheduledActivity", node.get("type").asText());
         assertTrue(node.get("persistent").asBoolean());
         assertNull(node.get("schedule"));
-        assertEquals(7, node.size());
+        assertEquals(8, node.size());
+        assertEquals(TestUtils.getClientData(), node.get("clientData"));
         
         JsonNode activityNode = node.get("activity");
         assertEquals("Activity3", activityNode.get("label").asText());
@@ -135,8 +142,6 @@ public class DynamoScheduledActivityTest {
         newActivity.setTimeZone(DateTimeZone.UTC);
         newActivity.setLocalScheduledOn(scheduledOn);
         newActivity.setLocalExpiresOn(expiresOn);
-        newActivity.setHealthCodeActivityGuid("FFF-GGG-HHH:AAA-BBB-CCC");
-        newActivity.setScheduledOnUTC(scheduledOn.toDateTime(DateTimeZone.UTC).getMillis());
         
         // Also works without having to reset the timezone.
         assertEquals(schActivity, newActivity);

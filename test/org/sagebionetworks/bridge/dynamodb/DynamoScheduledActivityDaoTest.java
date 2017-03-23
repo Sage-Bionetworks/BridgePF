@@ -40,6 +40,7 @@ import org.sagebionetworks.bridge.services.SchedulePlanService;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -228,16 +229,24 @@ public class DynamoScheduledActivityDaoTest {
         assertEquals(reducedSet, intersection);
         
         // Finish and delete
+        JsonNode clientData = TestUtils.getClientData();
         
-        // Finish one of the activities.  
+        // Finish one of the activities, and save some data with it too.
         ScheduledActivity activity = savedActivities.get(1);
         activity.setFinishedOn(context.getNow().getMillis());
+        activity.setClientData(clientData);
         assertEquals("activity deleted", ScheduledActivityStatus.DELETED, activity.getStatus());
         activityDao.updateActivities(healthCode, Lists.newArrayList(activity));
         
         // This does not remove it from the database, however.
         List<ScheduledActivity> newActivities = activityDao.getActivities(context.getInitialTimeZone(), savedActivities);
         assertEquals(savedActivities.size(), newActivities.size());
+        
+        ScheduledActivity activityWithClientData = newActivities.stream()
+                .filter(act -> act.getClientData() != null).findFirst().get();
+        assertTrue(activityWithClientData.getClientData().get("booleanFlag").asBoolean());
+        assertEquals("testString", activityWithClientData.getClientData().get("stringValue").asText());
+        assertEquals(4, activityWithClientData.getClientData().get("intValue").asInt());
         
         // This is a physical delete, and the activities will be gone.
         activityDao.deleteActivitiesForUser(healthCode);

@@ -595,7 +595,7 @@ public class ParticipantControllerTest {
     @Test
     public void canGetActivityHistoryV2() throws Exception {
         doReturn(createActivityResultsV2()).when(mockParticipantService).getActivityHistory(eq(study), eq(ID), eq(ACTIVITY_GUID),
-                any(), any(), eq(200L), eq(77));
+                any(), any(), eq("200"), eq(77));
         
         Result result = controller.getActivityHistoryV2(ID, ACTIVITY_GUID, STARTS_ON.toString(), ENDS_ON.toString(),
                 "200", "77");
@@ -611,7 +611,7 @@ public class ParticipantControllerTest {
         assertEquals(1, page.getPageSize());
         
         verify(mockParticipantService).getActivityHistory(eq(study), eq(ID), eq(ACTIVITY_GUID),
-                startsOnCaptor.capture(), endsOnCaptor.capture(), eq(200L), eq(77));
+                startsOnCaptor.capture(), endsOnCaptor.capture(), eq("200"), eq(77));
         assertTrue(STARTS_ON.isEqual(startsOnCaptor.getValue()));
         assertTrue(ENDS_ON.isEqual(endsOnCaptor.getValue()));
     }
