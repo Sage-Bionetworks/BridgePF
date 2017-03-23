@@ -15,6 +15,9 @@ import org.quartz.CronExpression;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
+
+import com.google.common.collect.Sets;
+
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
@@ -64,6 +67,9 @@ public class ScheduleValidator implements Validator {
         }
         if (intervalMissingTimes(schedule)) {
             errors.rejectValue(Schedule.TIMES_PROPERTY, "are required for interval-based schedules");
+        }
+        if (timesAreDuplicated(schedule)) {
+            errors.rejectValue(Schedule.TIMES_PROPERTY, "cannot contain duplicates");
         }
         if (intervalTooShort(schedule.getInterval())) {
             errors.rejectValue(Schedule.INTERVAL_PROPERTY, "must be at least one day");
@@ -157,6 +163,17 @@ public class ScheduleValidator implements Validator {
      */
     private boolean intervalMissingTimes(Schedule schedule) {
         return schedule.getInterval() != null && (schedule.getTimes() == null || schedule.getTimes().isEmpty());
+    }
+    
+    /**
+     * Do not allow times array to contain duplicates. See BRIDGE-1765. 
+     */
+    private boolean timesAreDuplicated(Schedule schedule) {
+        if (schedule.getTimes() == null) {
+            return false;
+        }
+        Set<LocalTime> times = Sets.newHashSet(schedule.getTimes());
+        return times.size() != schedule.getTimes().size();
     }
     
     /**
