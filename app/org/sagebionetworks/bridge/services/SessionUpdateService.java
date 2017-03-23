@@ -20,9 +20,9 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import com.google.common.collect.ImmutableMap;
 
 /**
- * Service that updates the state of a user's session, along with dependencies (the state of the user's push 
- * notification topic subscriptions, and the session as it is cached). Changes that update a user's session 
- * should go through this service to ensure dependencies are handled correctly.
+ * Service that updates the state of a user's session, eventually its dependencies as well (the state of the 
+ * user's push notification topic subscriptions, and the session as it is cached). Changes that update a 
+ * user's session should go through this service to ensure dependencies are handled correctly.
  */
 @Component
 public class SessionUpdateService {

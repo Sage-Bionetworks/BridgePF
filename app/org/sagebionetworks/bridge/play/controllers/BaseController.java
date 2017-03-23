@@ -49,7 +49,6 @@ import play.cache.Cache;
 import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Http;
-import play.mvc.Http.Cookie;
 import play.mvc.Http.Request;
 import play.mvc.Result;
 
@@ -122,7 +121,7 @@ public abstract class BaseController extends Controller {
     }
 
     /**
-     * Retrieve user's session using the Bridge-Session header or cookie, throwing an exception if the session doesn't
+     * Retrieve user's session using the Bridge-Session header, throwing an exception if the session doesn't
      * exist (user not authorized), consent has not been given or the client app version is not supported.
      */
     UserSession getAuthenticatedAndConsentedSession() throws NotAuthenticatedException, ConsentRequiredException, UnsupportedVersionException {
@@ -195,10 +194,6 @@ public abstract class BaseController extends Controller {
     String getSessionToken() {
         String[] session = request().headers().get(SESSION_TOKEN_HEADER);
         if (session == null || session.length == 0 || session[0].isEmpty()) {
-            Cookie sessionCookie = request().cookie(SESSION_TOKEN_HEADER);
-            if (sessionCookie != null && sessionCookie.value() != null && !"".equals(sessionCookie.value())) {
-                return sessionCookie.value();
-            }
             return null;
         }
         return session[0];
