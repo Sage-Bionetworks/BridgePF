@@ -5,13 +5,13 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -60,26 +60,12 @@ public class UploadSchemaValidatorTest {
 
     @Test
     public void validateHappyCase() {
-        // set up schema to validate
-        UploadSchema schema = UploadSchema.create();
-        schema.setName("happy schema");
-        schema.setSchemaId("happy-schema");
-        schema.setStudyId("test-study");
-        schema.setSchemaType(UploadSchemaType.IOS_DATA);
-
-        // test field def list
-        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
-        fieldDefList.add(new UploadFieldDefinition.Builder().withName("test-field")
-                .withType(UploadFieldType.ATTACHMENT_BLOB).build());
-        schema.setFieldDefinitions(fieldDefList);
-
-        // validate
-        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, makeValidSchema());
     }
 
     @Test
     public void validateHappyCase2() {
-        // set up schema to validate
+        // set up a different schema to validate
         UploadSchema schema = UploadSchema.create();
         schema.setName("happy schema 2");
         schema.setRevision(1);
@@ -103,28 +89,15 @@ public class UploadSchemaValidatorTest {
 
     @Test(expected = InvalidEntityException.class)
     public void validateNullFieldDefList() {
-        // set up schema to validate
-        UploadSchema schema = UploadSchema.create();
-        schema.setName("test schema");
-        schema.setSchemaId("test-schema");
-        schema.setStudyId("test-study");
-        schema.setSchemaType(UploadSchemaType.IOS_DATA);
-
-        // validate
+        UploadSchema schema = makeValidSchema();
+        schema.setFieldDefinitions(null);
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
     @Test(expected = InvalidEntityException.class)
     public void validateEmptyFieldDefList() {
-        // set up schema to validate
-        UploadSchema schema = UploadSchema.create();
-        schema.setName("test schema");
-        schema.setSchemaId("test-schema");
-        schema.setStudyId("test-study");
-        schema.setFieldDefinitions(Collections.<UploadFieldDefinition>emptyList());
-        schema.setSchemaType(UploadSchemaType.IOS_DATA);
-
-        // validate
+        UploadSchema schema = makeValidSchema();
+        schema.setFieldDefinitions(ImmutableList.of());
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
@@ -144,14 +117,9 @@ public class UploadSchemaValidatorTest {
             Integer maxAppVersion = oneTestCase[1];
 
             // make valid schema
-            UploadSchema schema = UploadSchema.create();
-            schema.setFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder()
-                    .withName("test-field").withType(UploadFieldType.INT).build()));
+            UploadSchema schema = makeValidSchema();
             schema.setMaxAppVersion("unit-test", maxAppVersion);
             schema.setMinAppVersion("unit-test", minAppVersion);
-            schema.setName("Test Schema");
-            schema.setSchemaId("test-schema");
-            schema.setSchemaType(UploadSchemaType.IOS_DATA);
 
             // validate, should succeed
             Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
@@ -161,14 +129,9 @@ public class UploadSchemaValidatorTest {
     @Test
     public void validateMinMaxAppVersionsInvalid() {
         // make valid schema, except with invalid min/maxAppVersions
-        UploadSchema schema = UploadSchema.create();
-        schema.setFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder()
-                .withName("test-field").withType(UploadFieldType.INT).build()));
+        UploadSchema schema = makeValidSchema();
         schema.setMaxAppVersion("unit-test", 10);
         schema.setMinAppVersion("unit-test", 20);
-        schema.setName("Test Schema");
-        schema.setSchemaId("test-schema");
-        schema.setSchemaType(UploadSchemaType.IOS_DATA);
 
         TestUtils.assertValidatorMessage(UploadSchemaValidator.INSTANCE, schema, "minAppVersions{unit-test}",
                 "can't be greater than maxAppVersion");
@@ -176,113 +139,109 @@ public class UploadSchemaValidatorTest {
 
     @Test(expected = InvalidEntityException.class)
     public void validateNullName() {
-        // set up schema to validate
-        UploadSchema schema = UploadSchema.create();
-        schema.setSchemaId("test-schema");
-        schema.setStudyId("test-study");
-        schema.setSchemaType(UploadSchemaType.IOS_DATA);
-
-        // test field def list
-        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
-        fieldDefList.add(new UploadFieldDefinition.Builder().withName("good-field")
-                .withType(UploadFieldType.ATTACHMENT_BLOB).build());
-        schema.setFieldDefinitions(fieldDefList);
-
-        // validate
+        UploadSchema schema = makeValidSchema();
+        schema.setName(null);
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
     @Test(expected = InvalidEntityException.class)
     public void validateEmptyName() {
-        // set up schema to validate
-        UploadSchema schema = UploadSchema.create();
+        UploadSchema schema = makeValidSchema();
         schema.setName("");
-        schema.setSchemaId("test-schema");
-        schema.setStudyId("test-study");
-        schema.setSchemaType(UploadSchemaType.IOS_DATA);
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+    }
 
-        // test field def list
-        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
-        fieldDefList.add(new UploadFieldDefinition.Builder().withName("good-field")
-                .withType(UploadFieldType.ATTACHMENT_BLOB).build());
-        schema.setFieldDefinitions(fieldDefList);
-
-        // validate
+    @Test(expected = InvalidEntityException.class)
+    public void validateBlankName() {
+        UploadSchema schema = makeValidSchema();
+        schema.setName("   ");
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
     @Test(expected = InvalidEntityException.class)
     public void validateNegativeRev() {
-        // set up schema to validate
-        UploadSchema schema = UploadSchema.create();
-        schema.setName("test schema");
+        UploadSchema schema = makeValidSchema();
         schema.setRevision(-1);
-        schema.setSchemaId("test-schema");
-        schema.setStudyId("test-study");
-        schema.setSchemaType(UploadSchemaType.IOS_DATA);
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+    }
 
-        // test field def list
-        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
-        fieldDefList.add(new UploadFieldDefinition.Builder().withName("good-field")
-                .withType(UploadFieldType.ATTACHMENT_BLOB).build());
-        schema.setFieldDefinitions(fieldDefList);
-
-        // validate
+    @Test(expected = InvalidEntityException.class)
+    public void validateZeroRev() {
+        UploadSchema schema = makeValidSchema();
+        schema.setRevision(0);
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
     @Test(expected = InvalidEntityException.class)
     public void validateNullSchemaId() {
-        // set up schema to validate
-        UploadSchema schema = UploadSchema.create();
-        schema.setName("test schema");
-        schema.setStudyId("test-study");
-        schema.setSchemaType(UploadSchemaType.IOS_DATA);
-
-        // test field def list
-        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
-        fieldDefList.add(new UploadFieldDefinition.Builder().withName("good-field")
-                .withType(UploadFieldType.ATTACHMENT_BLOB).build());
-        schema.setFieldDefinitions(fieldDefList);
-
-        // validate
+        UploadSchema schema = makeValidSchema();
+        schema.setSchemaId(null);
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
     @Test(expected = InvalidEntityException.class)
     public void validateEmptySchemaId() {
-        // set up schema to validate
-        UploadSchema schema = UploadSchema.create();
-        schema.setName("test schema");
+        UploadSchema schema = makeValidSchema();
         schema.setSchemaId("");
-        schema.setStudyId("test-study");
-        schema.setSchemaType(UploadSchemaType.IOS_DATA);
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+    }
 
-        // test field def list
-        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
-        fieldDefList.add(new UploadFieldDefinition.Builder().withName("good-field")
-                .withType(UploadFieldType.ATTACHMENT_BLOB).build());
-        schema.setFieldDefinitions(fieldDefList);
-
-        // validate
+    @Test(expected = InvalidEntityException.class)
+    public void validateBlankSchemaId() {
+        UploadSchema schema = makeValidSchema();
+        schema.setSchemaId("   ");
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
     @Test(expected = InvalidEntityException.class)
     public void validateNullSchemaType() {
-        // set up schema to validate
-        UploadSchema schema = UploadSchema.create();
-        schema.setName("test schema");
-        schema.setSchemaId("test-schema");
-        schema.setStudyId("test-study");
+        UploadSchema schema = makeValidSchema();
+        schema.setSchemaType(null);
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+    }
 
-        // test field def list
-        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
-        fieldDefList.add(new UploadFieldDefinition.Builder().withName("test-field")
-                .withType(UploadFieldType.ATTACHMENT_BLOB).build());
-        schema.setFieldDefinitions(fieldDefList);
+    @Test(expected = InvalidEntityException.class)
+    public void validateNullStudyId() {
+        UploadSchema schema = makeValidSchema();
+        schema.setStudyId(null);
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+    }
 
-        // validate
+    @Test(expected = InvalidEntityException.class)
+    public void validateEmptyStudyId() {
+        UploadSchema schema = makeValidSchema();
+        schema.setStudyId("");
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void validateBlankStudyId() {
+        UploadSchema schema = makeValidSchema();
+        schema.setStudyId("   ");
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void nullFieldName() {
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName(null)
+                .withType(UploadFieldType.BOOLEAN).build();
+        UploadSchema schema = makeSchemaWithField(fieldDef);
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void emptyFieldName() {
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("")
+                .withType(UploadFieldType.BOOLEAN).build();
+        UploadSchema schema = makeSchemaWithField(fieldDef);
+        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void blankFieldName() {
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("   ")
+                .withType(UploadFieldType.BOOLEAN).build();
+        UploadSchema schema = makeSchemaWithField(fieldDef);
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
@@ -290,58 +249,26 @@ public class UploadSchemaValidatorTest {
     public void invalidFieldName() {
         // The specifics of what is an invalid field name is covered in UploadUtilTest. This tests that the validator
         // validates invalid field names.
-        UploadSchema schema = UploadSchema.create();
-        schema.setName("Test Schema");
-        schema.setSchemaId("test-schema");
-        schema.setStudyId("test-study");
-        schema.setSchemaType(UploadSchemaType.IOS_DATA);
-
-        // test field def list
-        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
-        fieldDefList.add(new UploadFieldDefinition.Builder().withName("**invalid$field^name##")
-                .withType(UploadFieldType.BOOLEAN).build());
-        schema.setFieldDefinitions(fieldDefList);
-
-        // validate
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("**invalid$field^name##")
+                .withType(UploadFieldType.BOOLEAN).build();
+        UploadSchema schema = makeSchemaWithField(fieldDef);
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
     @Test
     public void keywordsAreValidChoiceValues() {
-        // Similarly
-        UploadSchema schema = UploadSchema.create();
-        schema.setName("Test Schema");
-        schema.setSchemaId("test-schema");
-        schema.setStudyId("test-study");
-        schema.setSchemaType(UploadSchemaType.IOS_DATA);
-
-        // test field def list
-        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
-        fieldDefList.add(new UploadFieldDefinition.Builder().withName("multi-choice-q")
-                .withType(UploadFieldType.MULTI_CHOICE)
-                .withMultiChoiceAnswerList("true", "false", "select", "where").build());
-        schema.setFieldDefinitions(fieldDefList);
-
-        // validate
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("multi-choice-q")
+                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("true", "false", "select", "where")
+                .build();
+        UploadSchema schema = makeSchemaWithField(fieldDef);
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
     @Test(expected = InvalidEntityException.class)
     public void invalidMultiChoiceAnswer() {
-        // Similarly
-        UploadSchema schema = UploadSchema.create();
-        schema.setName("Test Schema");
-        schema.setSchemaId("test-schema");
-        schema.setStudyId("test-study");
-        schema.setSchemaType(UploadSchemaType.IOS_DATA);
-
-        // test field def list
-        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
-        fieldDefList.add(new UploadFieldDefinition.Builder().withName("multi-choice-q")
-                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("!invalid@choice%").build());
-        schema.setFieldDefinitions(fieldDefList);
-
-        // validate
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("multi-choice-q")
+                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("!invalid@choice%").build();
+        UploadSchema schema = makeSchemaWithField(fieldDef);
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
@@ -357,20 +284,11 @@ public class UploadSchemaValidatorTest {
                 { true, null },
         };
 
-        // Since schemas are mutable, we can share a schema for all test cases.
-        UploadSchema schema = UploadSchema.create();
-        schema.setName("happy schema");
-        schema.setStudyId("test-study");
-        schema.setSchemaId("happy-schema");
-        schema.setRevision(4);
-        schema.setSchemaType(UploadSchemaType.IOS_DATA);
-
         for (Object[] oneTestCase : testCases) {
-            // We need to create a new field def list for every test case though.
             UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("field")
                     .withType(UploadFieldType.STRING).withUnboundedText((Boolean) oneTestCase[0])
                     .withMaxLength((Integer) oneTestCase[1]).build();
-            schema.setFieldDefinitions(ImmutableList.of(fieldDef));
+            UploadSchema schema = makeSchemaWithField(fieldDef);
             Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
         }
 
@@ -378,7 +296,7 @@ public class UploadSchemaValidatorTest {
         {
             UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("field")
                     .withType(UploadFieldType.STRING).withUnboundedText(true).withMaxLength(24).build();
-            schema.setFieldDefinitions(ImmutableList.of(fieldDef));
+            UploadSchema schema = makeSchemaWithField(fieldDef);
 
             try {
                 Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
@@ -392,11 +310,7 @@ public class UploadSchemaValidatorTest {
     @Test
     public void duplicateFieldName() {
         // set up schema to validate
-        UploadSchema schema = UploadSchema.create();
-        schema.setName("Dupe Fields");
-        schema.setSchemaId("dupe-field-schema");
-        schema.setStudyId("test-study");
-        schema.setSchemaType(UploadSchemaType.IOS_SURVEY);
+        UploadSchema schema = makeValidSchema();
 
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
@@ -430,11 +344,7 @@ public class UploadSchemaValidatorTest {
     @Test
     public void multiChoiceWithNoAnswerList() {
         // set up schema to validate
-        UploadSchema schema = UploadSchema.create();
-        schema.setName("Multi-Choice Schema");
-        schema.setSchemaId("multi-choice-schema");
-        schema.setStudyId("test-study");
-        schema.setSchemaType(UploadSchemaType.IOS_SURVEY);
+        UploadSchema schema = makeValidSchema();
 
         // test field def list
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
@@ -454,5 +364,24 @@ public class UploadSchemaValidatorTest {
         }
         assertTrue(thrownEx.getMessage().contains("must be specified for MULTI_CHOICE field multi-choice-null"));
         assertTrue(thrownEx.getMessage().contains("must be specified for MULTI_CHOICE field multi-choice-empty"));
+    }
+
+    // Helper to make a valid schema
+    private static UploadSchema makeValidSchema() {
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("test-field")
+                .withType(UploadFieldType.ATTACHMENT_BLOB).build();
+        return makeSchemaWithField(fieldDef);
+    }
+
+    // Make a schema with the given field that's otherwise valid.
+    private static UploadSchema makeSchemaWithField(UploadFieldDefinition fieldDef) {
+        UploadSchema schema = UploadSchema.create();
+        schema.setFieldDefinitions(ImmutableList.of(fieldDef));
+        schema.setName("valid schema");
+        schema.setRevision(1);
+        schema.setSchemaId("valid-schema");
+        schema.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        schema.setSchemaType(UploadSchemaType.IOS_DATA);
+        return schema;
     }
 }

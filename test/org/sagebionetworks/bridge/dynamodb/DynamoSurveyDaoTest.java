@@ -45,6 +45,7 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
+import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -56,7 +57,7 @@ public class DynamoSurveyDaoTest {
     DynamoSurveyDao surveyDao;
 
     @Resource
-    DynamoUploadSchemaDao uploadSchemaDao;
+    UploadSchemaService uploadSchemaService;
 
     private TestSurvey testSurvey;
     private Set<GuidCreatedOnVersionHolderImpl> surveysToDelete;
@@ -288,7 +289,7 @@ public class DynamoSurveyDaoTest {
         assertTrue("Survey is marked published", survey.isPublished());
 
         // validate the corresponding schema was created
-        UploadSchema uploadSchema = uploadSchemaDao.getUploadSchema(TEST_STUDY_IDENTIFIER, survey.getIdentifier());
+        UploadSchema uploadSchema = uploadSchemaService.getUploadSchema(TEST_STUDY, survey.getIdentifier());
         int schemaRev = uploadSchema.getRevision();
 
         assertEquals(survey.getIdentifier(), uploadSchema.getSchemaId());
@@ -595,6 +596,7 @@ public class DynamoSurveyDaoTest {
             surveyDao.getSurvey(survey);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
+            // expected exception
         }
     }
     

@@ -20,13 +20,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import org.apache.commons.lang3.StringUtils;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -43,7 +42,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 @DynamoDBTable(tableName = "UploadSchema")
 @JsonFilter("filter")
 public class DynamoUploadSchema implements UploadSchema {
-    private List<UploadFieldDefinition> fieldDefList;
+    private List<UploadFieldDefinition> fieldDefList = ImmutableList.of();
     private Map<String, Integer> maxAppVersions = new HashMap<>();
     private Map<String, Integer> minAppVersions = new HashMap<>();
     private String name;
@@ -74,7 +73,7 @@ public class DynamoUploadSchema implements UploadSchema {
     /** @see org.sagebionetworks.bridge.models.upload.UploadSchema#getFieldDefinitions */
     @Override
     public void setFieldDefinitions(List<UploadFieldDefinition> fieldDefList) {
-        this.fieldDefList = ImmutableList.copyOf(fieldDefList);
+        this.fieldDefList = fieldDefList != null? ImmutableList.copyOf(fieldDefList) : ImmutableList.of();
     }
 
     /**
@@ -84,12 +83,15 @@ public class DynamoUploadSchema implements UploadSchema {
      */
     @DynamoDBHashKey
     @JsonIgnore
-    public String getKey() throws InvalidEntityException {
-        if (Strings.isNullOrEmpty(studyId)) {
-            throw new InvalidEntityException(this, String.format(Validate.CANNOT_BE_BLANK, "studyId"));
+    public String getKey() {
+        if (StringUtils.isBlank(studyId)) {
+            // No study ID means we can't generate a key. However, we should still return null, because this case might
+            // still come up (such as querying by secondary index), and we don't want to crash.
+            return null;
         }
-        if (Strings.isNullOrEmpty(schemaId)) {
-            throw new InvalidEntityException(this, String.format(Validate.CANNOT_BE_BLANK, "schemaId"));
+        if (StringUtils.isBlank(schemaId)) {
+            // Similarly here.
+            return null;
         }
         return String.format("%s:%s", studyId, schemaId);
     }
