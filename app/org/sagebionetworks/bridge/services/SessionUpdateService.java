@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,8 +15,6 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-
-import com.google.common.collect.ImmutableMap;
 
 /**
  * Service that updates the state of a user's session, eventually its dependencies as well (the state of the 
@@ -55,11 +52,6 @@ public class SessionUpdateService {
         cacheProvider.setUserSession(session);
     }
     
-    public void updateParticipant(UserSession session, StudyParticipant participant) {
-        session.setParticipant(participant);
-        cacheProvider.setUserSession(session);
-    }
-    
     public void updateParticipant(UserSession session, CriteriaContext context, StudyParticipant participant) {
         session.setParticipant(participant);
         
@@ -84,24 +76,9 @@ public class SessionUpdateService {
         cacheProvider.setUserSession(session);
     }
     
-    public void updateAllConsents(UserSession session, SharingScope sharingScope, boolean consenting) {
-        session.setParticipant(builder(session).withSharingScope(sharingScope).build());
-        
-        Map<SubpopulationGuid, ConsentStatus> statuses = copy(session, consenting);
+    public void updateConsentStatus(UserSession session, CriteriaContext context, SharingScope sharingScope) {
+        Map<SubpopulationGuid, ConsentStatus> statuses = consentService.getConsentStatuses(context);
         session.setConsentStatuses(statuses);
-        
-        cacheProvider.setUserSession(session);
-    }
-    
-    public void updateConsentStatus(UserSession session, SharingScope sharingScope, SubpopulationGuid guid, boolean consenting) {
-        // Update consent status, add to session
-        ConsentStatus oldConsent = session.getConsentStatuses().get(guid);
-        ConsentStatus updatedConsent = new ConsentStatus.Builder()
-                .withConsentStatus(oldConsent)
-                .withConsented(consenting)
-                .withSignedMostRecentConsent(consenting).build();
-        Map<SubpopulationGuid,ConsentStatus> updatedStatuses = updateMap(session.getConsentStatuses(), guid, updatedConsent);
-        session.setConsentStatuses(updatedStatuses);
         
         StudyParticipant.Builder builder = builder(session);
         builder.withSharingScope(sharingScope);
@@ -116,32 +93,4 @@ public class SessionUpdateService {
     private StudyParticipant.Builder builder(UserSession session) {
         return new StudyParticipant.Builder().copyOf(session.getParticipant());
     }
-    
-    private Map<SubpopulationGuid, ConsentStatus> copy(UserSession session, boolean consenting) {
-        ImmutableMap.Builder<SubpopulationGuid,ConsentStatus> statuses = new ImmutableMap.Builder<>();
-        for (Map.Entry<SubpopulationGuid,ConsentStatus> entry : session.getConsentStatuses().entrySet()) {
-            ConsentStatus updatedConsent = new ConsentStatus.Builder()
-                    .withConsentStatus(entry.getValue())
-                    .withConsented(consenting)
-                    .withSignedMostRecentConsent(consenting).build();
-            statuses.put(entry.getKey(), updatedConsent);
-        }
-        return statuses.build();
-    }
-    
-    /** 
-     * Helper method which will add or update an entry in a map by making a copy. This will work 
-     * to update ImmutableMap instances as well as other Map implementations.
-     */
-    private <K,V> Map<K,V> updateMap(Map<K,V> map, K key, V value) {
-        ImmutableMap.Builder<K,V> builder = new ImmutableMap.Builder<K,V>();
-        for (Map.Entry<K,V> entry : map.entrySet()) {
-            if (entry.getKey().equals(key)) {
-                builder.put(entry.getKey(), value);
-            } else {
-                builder.put(entry);
-            }
-        }
-        return builder.build();
-    }    
 }

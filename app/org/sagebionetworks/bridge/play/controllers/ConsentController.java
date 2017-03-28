@@ -7,6 +7,7 @@ import java.util.Map;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SharingOption;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -115,7 +116,9 @@ public class ConsentController extends BaseController {
         consentService.withdrawConsent(study, subpopGuid, session.getParticipant(), withdrawal,
                 withdrewOn);
         
-        sessionUpdateService.updateConsentStatus(session, session.getParticipant().getSharingScope(), subpopGuid, false);
+        CriteriaContext context = getCriteriaContext(session);
+        
+        sessionUpdateService.updateConsentStatus(session, context, session.getParticipant().getSharingScope());
 
         return okResult(UserSessionInfo.toJSON(session));
     }
@@ -128,7 +131,9 @@ public class ConsentController extends BaseController {
         
         consentService.withdrawAllConsents(study, session.getId(), withdrawal, withdrewOn);
         
-        sessionUpdateService.updateAllConsents(session, SharingScope.NO_SHARING, false);
+        CriteriaContext context = getCriteriaContext(session);
+        
+        sessionUpdateService.updateConsentStatus(session, context, SharingScope.NO_SHARING);
         
         return okResult(UserSessionInfo.toJSON(session)); 
     }
@@ -169,7 +174,9 @@ public class ConsentController extends BaseController {
         consentService.consentToResearch(study, subpopGuid, session.getParticipant(), consentSignature,
                 sharing.getSharingScope(), true);
         
-        sessionUpdateService.updateConsentStatus(session, sharing.getSharingScope(), subpopGuid, true);
+        CriteriaContext context = getCriteriaContext(session);
+        
+        sessionUpdateService.updateConsentStatus(session, context, sharing.getSharingScope());
         
         return createdResult(UserSessionInfo.toJSON(session));
     }

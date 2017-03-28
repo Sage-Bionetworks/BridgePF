@@ -283,7 +283,7 @@ public abstract class BaseController extends Controller {
         checkNotNull(session);
         
         return new CriteriaContext.Builder()
-            .withLanguages(getLanguagesFromAcceptLanguageHeader())
+            .withLanguages(session.getParticipant().getLanguages())
             .withClientInfo(getClientInfoFromUserAgentHeader())
             .withHealthCode(session.getHealthCode())
             .withUserId(session.getId())

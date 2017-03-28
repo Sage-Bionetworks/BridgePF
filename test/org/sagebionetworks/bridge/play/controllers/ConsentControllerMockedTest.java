@@ -25,7 +25,9 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.stubbing.Answer;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -50,6 +52,7 @@ import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
 import play.mvc.Result;
@@ -111,6 +114,10 @@ public class ConsentControllerMockedTest {
         when(studyService.getStudy(session.getStudyIdentifier())).thenReturn(study);
         
         SessionUpdateService sessionUpdateService = new SessionUpdateService();
+        // Stubbing the behavior of the consent service to we can validate changes are in the session
+        // that is returned to the user.
+        sessionUpdateService.setConsentService(consentService);
+        
         sessionUpdateService.setCacheProvider(cacheProvider);
         
         controller = spy(new ConsentController());
@@ -130,6 +137,36 @@ public class ConsentControllerMockedTest {
     @After
     public void after() {
         DateTimeUtils.setCurrentMillisSystem();
+    }
+    
+    private Answer<Map<SubpopulationGuid,ConsentStatus>> createAnswer(final boolean consenting, final SubpopulationGuid... guids) {
+        return new Answer<Map<SubpopulationGuid,ConsentStatus>>() {
+            public Map<SubpopulationGuid,ConsentStatus> answer(InvocationOnMock invocation) throws Throwable {
+                Map<SubpopulationGuid,ConsentStatus> updatedStatuses = null;
+                for (SubpopulationGuid guid : guids) {
+                    ConsentStatus oldConsent = session.getConsentStatuses().get(guid);    
+                    ConsentStatus updatedConsent = new ConsentStatus.Builder()
+                            .withConsentStatus(oldConsent)
+                            .withConsented(consenting)
+                            .withSignedMostRecentConsent(consenting).build();
+                    updatedStatuses = updateMap(session.getConsentStatuses(), guid, updatedConsent);
+                }
+                return updatedStatuses;
+            }
+        };
+    }
+    
+    private Map<SubpopulationGuid, ConsentStatus> updateMap(Map<SubpopulationGuid, ConsentStatus> map, SubpopulationGuid guid,
+            ConsentStatus status) {
+        ImmutableMap.Builder<SubpopulationGuid,ConsentStatus> builder = new ImmutableMap.Builder<SubpopulationGuid,ConsentStatus>();
+        for (Map.Entry<SubpopulationGuid,ConsentStatus> entry : map.entrySet()) {
+            if (entry.getKey().equals(guid)) {
+                builder.put(entry.getKey(), status);
+            } else {
+                builder.put(entry);
+            }
+        }
+        return builder.build();
     }
     
     @Test
@@ -174,6 +211,8 @@ public class ConsentControllerMockedTest {
         
         TestUtils.mockPlayContextWithJson(json);
         
+        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(true, DEFAULT_SUBPOP_GUID));
+
         // This signs the default consent
         Result result = controller.giveV2();
         
@@ -192,6 +231,8 @@ public class ConsentControllerMockedTest {
         
         TestUtils.mockPlayContextWithJson(json);
         
+        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(true, DEFAULT_SUBPOP_GUID));
+        
         Result result = controller.giveV2();
         
         assertConsentInSession(result, SharingScope.NO_SHARING, DEFAULT_SUBPOP_GUID);
@@ -208,6 +249,8 @@ public class ConsentControllerMockedTest {
         String json = "{\"reason\":\"Because, reasons.\"}";
         TestUtils.mockPlayContextWithJson(json);
         
+        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(false, SUBPOP_GUID));
+
         Result result = controller.withdrawConsent();
         
         assertWithdrawnInSession(result, SharingScope.NO_SHARING, DEFAULT_SUBPOP_GUID);
@@ -227,6 +270,8 @@ public class ConsentControllerMockedTest {
         String json = "{}";
         TestUtils.mockPlayContextWithJson(json);
         
+        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(false, DEFAULT_SUBPOP_GUID));
+
         Result result = controller.withdrawConsent();
         
         assertWithdrawnInSession(result, SharingScope.NO_SHARING, DEFAULT_SUBPOP_GUID);
@@ -272,6 +317,8 @@ public class ConsentControllerMockedTest {
         String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"no_sharing\"}";
         TestUtils.mockPlayContextWithJson(json);
         
+        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(true, SUBPOP_GUID));
+        
         Result result = controller.giveV3(SUBPOP_GUID.getGuid());
         
         assertConsentInSession(result, SharingScope.NO_SHARING, SUBPOP_GUID);
@@ -288,6 +335,8 @@ public class ConsentControllerMockedTest {
         
         TestUtils.mockPlayContextWithJson(json);
         
+        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(true, SUBPOP_GUID));
+
         Result result = controller.giveV3(SUBPOP_GUID.getGuid());
         
         assertConsentInSession(result, SharingScope.NO_SHARING, SUBPOP_GUID);
@@ -304,6 +353,8 @@ public class ConsentControllerMockedTest {
         
         TestUtils.mockPlayContextWithJson(json);
         
+        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(true, SUBPOP_GUID));
+
         Result result = controller.giveV3(SUBPOP_GUID.getGuid());
         
         assertConsentInSession(result, SharingScope.NO_SHARING, SUBPOP_GUID);
@@ -324,6 +375,8 @@ public class ConsentControllerMockedTest {
         doReturn(participant).when(updatedSession).getParticipant();
         doReturn(updatedSession).when(authenticationService).getSession(eq(study), any(CriteriaContext.class));
         
+        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(false, SUBPOP_GUID));
+
         Result result = controller.withdrawConsentV2(SUBPOP_GUID.getGuid());
         
         // Given the mock session, the user is withdrawn from everything, so sharing is set to NO_SHARING
@@ -342,6 +395,8 @@ public class ConsentControllerMockedTest {
         String json = "{}";
         TestUtils.mockPlayContextWithJson(json);
         
+        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(false, SUBPOP_GUID));
+        
         Result result = controller.withdrawConsentV2(SUBPOP_GUID.getGuid());
         
         assertWithdrawnInSession(result, SharingScope.NO_SHARING, SUBPOP_GUID);
@@ -354,6 +409,8 @@ public class ConsentControllerMockedTest {
         DateTimeUtils.setCurrentMillisFixed(20000);
         String json = "{\"reason\":\"There's a reason for everything.\"}";
         TestUtils.mockPlayContextWithJson(json);
+        
+        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(true, SUBPOP_GUID, DEFAULT_SUBPOP_GUID));
         
         Result result = controller.withdrawFromAllConsents();
         
@@ -378,6 +435,8 @@ public class ConsentControllerMockedTest {
         
         TestUtils.mockPlayContextWithJson(json);
         
+        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(true, SUBPOP_GUID));
+
         Result result = controller.giveV3(SUBPOP_GUID.getGuid());
         
         // Sharing is still off because there's another required consent that hasn't been signed. 
@@ -395,7 +454,9 @@ public class ConsentControllerMockedTest {
         DateTimeUtils.setCurrentMillisFixed(20000);
         String json = "{\"reason\":\"Because, reasons.\"}";
         TestUtils.mockPlayContextWithJson(json);
-        
+
+        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(false, DEFAULT_SUBPOP_GUID));
+
         Result result = controller.withdrawConsentV2(DEFAULT_SUBPOP_GUID.getGuid());
         
         assertWithdrawnInSession(result, SharingScope.NO_SHARING, DEFAULT_SUBPOP_GUID);
@@ -413,6 +474,8 @@ public class ConsentControllerMockedTest {
         DateTimeUtils.setCurrentMillisFixed(20000);
         String json = "{}";
         TestUtils.mockPlayContextWithJson(json);
+        
+        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(false, SUBPOP_GUID));
         
         Result result = controller.withdrawConsentV2(SUBPOP_GUID.getGuid());
         
@@ -433,6 +496,8 @@ public class ConsentControllerMockedTest {
         
         TestUtils.mockPlayContextWithJson(json);
         
+        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(true, SUBPOP_GUID));
+
         Result result = controller.giveV3(SUBPOP_GUID.getGuid());
         
         assertConsentInSession(result, SharingScope.NO_SHARING, SUBPOP_GUID);
@@ -464,6 +529,8 @@ public class ConsentControllerMockedTest {
         String json = "{\"reason\":\"Because, reasons.\"}";
         TestUtils.mockPlayContextWithJson(json);
         
+        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(false, DEFAULT_SUBPOP_GUID));
+        
         // withdrawing one consent will turn off sharing because not all required consents are signed 
         Result result = controller.withdrawConsentV2(DEFAULT_SUBPOP_GUID.getGuid());
         
@@ -485,6 +552,8 @@ public class ConsentControllerMockedTest {
         String json = "{\"reason\":\"Because, reasons.\"}";
         TestUtils.mockPlayContextWithJson(json);
         
+        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(false, SUBPOP_GUID));
+
         // withdrawing the optional consent does not turn off sharing 
         Result result = controller.withdrawConsentV2(SUBPOP_GUID.getGuid());
         
