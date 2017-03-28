@@ -69,8 +69,8 @@ public class SessionUpdateService {
         cacheProvider.setUserSession(session);
     }
     
-    public void updateDataGroups(UserSession session, CriteriaContext context, Set<String> dataGroups) {
-        session.setParticipant(builder(session).withDataGroups(dataGroups).build());
+    public void updateDataGroups(UserSession session, CriteriaContext context) {
+        session.setParticipant(builder(session).withDataGroups(context.getUserDataGroups()).build());
         
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         session.setConsentStatuses(statuses);

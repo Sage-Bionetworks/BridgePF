@@ -169,7 +169,7 @@ public class UserProfileController extends BaseController {
         participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
         
         CriteriaContext context = new CriteriaContext.Builder()
-                .withLanguages(getLanguagesFromAcceptLanguageHeader())
+                .withLanguages(session.getParticipant().getLanguages())
                 .withClientInfo(getClientInfoFromUserAgentHeader())
                 .withHealthCode(session.getHealthCode())
                 .withUserId(session.getId())
@@ -177,7 +177,7 @@ public class UserProfileController extends BaseController {
                 .withStudyIdentifier(session.getStudyIdentifier())
                 .build();
         
-        sessionUpdateService.updateDataGroups(session, context, updated.getDataGroups());
+        sessionUpdateService.updateDataGroups(session, context);
         
         return okResult(UserSessionInfo.toJSON(session));
     }

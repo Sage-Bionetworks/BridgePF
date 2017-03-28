@@ -112,10 +112,12 @@ public class SessionUpdateServiceTest {
     @Test
     public void updateDataGroups() {
         UserSession session = new UserSession();
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(API_STUDY_ID).build();
         Set<String> dataGroups = Sets.newHashSet("data1");
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withUserDataGroups(dataGroups)
+                .withStudyIdentifier(API_STUDY_ID).build();
         
-        service.updateDataGroups(session, context, dataGroups);
+        service.updateDataGroups(session, context);
         
         verify(mockCacheProvider).setUserSession(session);
         assertEquals(dataGroups, session.getParticipant().getDataGroups());

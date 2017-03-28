@@ -38,23 +38,15 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.ParticipantService;
-import org.sagebionetworks.bridge.services.SessionUpdateService;
 
 @Controller
 public class ParticipantController extends BaseController {
     
     private ParticipantService participantService;
     
-    private SessionUpdateService sessionUpdateService;
-    
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
-    }
-    
-    @Autowired
-    final void setUpdateSessionService(SessionUpdateService sessionUpdateService) {
-        this.sessionUpdateService = sessionUpdateService;
     }
     
     public Result getSelfParticipant() throws Exception {

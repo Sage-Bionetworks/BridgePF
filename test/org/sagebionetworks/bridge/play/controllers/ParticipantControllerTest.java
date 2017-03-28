@@ -187,7 +187,7 @@ public class ParticipantControllerTest {
         sessionUpdateService.setCacheProvider(cacheProvider);
         sessionUpdateService.setConsentService(mockConsentService);
         
-        controller.setUpdateSessionService(sessionUpdateService);
+        controller.setSessionUpdateService(sessionUpdateService);
         
         mockPlayContext();
     }
