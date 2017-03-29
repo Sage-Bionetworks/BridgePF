@@ -29,7 +29,6 @@ GET    /v3/participants/:userId                              @org.sagebionetwork
 POST   /v3/participants/:userId                              @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateParticipant(userId: String)
 GET    /v3/participants/:userId/uploads                      @org.sagebionetworks.bridge.play.controllers.ParticipantController.getUploads(userId: String, startTime: String ?= null, endTime: String ?= null)
 GET    /v3/participants/:userId/requestInfo                  @org.sagebionetworks.bridge.play.controllers.ParticipantController.getRequestInfo(userId: String)
-GET    /v3/participants/:userId/activities                   @org.sagebionetworks.bridge.play.controllers.ParticipantController.getActivityHistory(userId: String, offsetKey: String ?= null, pageSize: String ?= null)
 DELETE /v3/participants/:userId/activities                   @org.sagebionetworks.bridge.play.controllers.ParticipantController.deleteActivities(userId: String)
 GET    /v3/participants/:userId/activities/:activityGuid     @org.sagebionetworks.bridge.play.controllers.ParticipantController.getActivityHistoryV2(userId: String, activityGuid: String, scheduledOnStart: String ?= null, scheduledOnEnd: String ?= null, offsetBy: String ?= null, pageSize: String ?= null)
 GET    /v3/participants/:userId/notifications                @org.sagebionetworks.bridge.play.controllers.ParticipantController.getNotificationRegistrations(userId: String)

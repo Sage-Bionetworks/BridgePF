@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -26,6 +27,7 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
@@ -35,6 +37,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.amazonaws.services.dynamodbv2.model.AmazonDynamoDBException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -99,6 +102,19 @@ public class DynamoScheduledActivityDaoMockTest {
         Map<String,List<Object>> results = Maps.newHashMap();
         results.put("some-table-name", new ArrayList<Object>(activities));
         when(mapper.batchLoad(any(List.class))).thenReturn(results);
+    }
+    
+    @Test
+    public void amazonExceptionConverted() { 
+        when(mapper.queryPage(any(), any())).thenThrow(new AmazonDynamoDBException("This was the error that occurred"));
+        
+        try {
+            activityDao.getActivityHistoryV2(HEALTH_CODE, "AAA", DateTime.now(), DateTime.now(), "AAA", 50);
+            fail("Should have thrown exception");
+        } catch(BadRequestException e) {
+            assertEquals("This was the error that occurred", e.getMessage());
+        }
+        
     }
     
     @Test
