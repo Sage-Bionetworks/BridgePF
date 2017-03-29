@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyVararg;
 import static org.mockito.Mockito.doReturn;
@@ -247,7 +246,6 @@ public class UploadSchemaControllerTest {
         // execute and validate
         try {
             controller.createOrUpdateUploadSchema();
-            fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
             assertEquals("schemaId is required", e.getErrors().get("schemaId").get(0));
             assertEquals("name is required", e.getErrors().get("name").get(0));
