@@ -78,9 +78,16 @@ public class ParticipantController extends BaseController {
                 .withId(session.getId()).build();
         participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
         
-        CriteriaContext context = getCriteriaContext(session);
-        session = authenticationService.getSession(study, context);
-        updateSession(session);
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withLanguages(session.getParticipant().getLanguages())
+                .withClientInfo(getClientInfoFromUserAgentHeader())
+                .withHealthCode(session.getHealthCode())
+                .withUserId(session.getId())
+                .withUserDataGroups(updated.getDataGroups())
+                .withStudyIdentifier(session.getStudyIdentifier())
+                .build();
+        
+        sessionUpdateService.updateParticipant(session, context, updated);
         
         return okResult(UserSessionInfo.toJSON(session));
     }

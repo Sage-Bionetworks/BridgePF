@@ -549,13 +549,13 @@ public class UploadSchemaService {
 
     /**
      * Private helper method to get the latest version of an upload schema, but doesn't throw if the schema does not
-     * exist.
+     * exist. Note that it still validates the user inputs (schemaId) and will throw a BadRequestException.
      */
     private UploadSchema getUploadSchemaNoThrow(StudyIdentifier studyId, String schemaId) {
-        if (!StringUtils.isBlank(schemaId)) {
-            return uploadSchemaDao.getUploadSchemaLatestRevisionById(studyId, schemaId);
+        if (StringUtils.isBlank(schemaId)) {
+            throw new BadRequestException("Schema ID must be specified");
         }
-        return null;
+        return uploadSchemaDao.getUploadSchemaLatestRevisionById(studyId, schemaId);
     }
 
     /**

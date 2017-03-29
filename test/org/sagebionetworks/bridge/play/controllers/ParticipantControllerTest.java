@@ -71,7 +71,9 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.services.AuthenticationService;
+import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ParticipantService;
+import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -103,6 +105,9 @@ public class ParticipantControllerTest {
     
     @Spy
     private ParticipantController controller;
+    
+    @Mock
+    private ConsentService mockConsentService;
     
     @Mock
     private ParticipantService mockParticipantService;
@@ -176,6 +181,12 @@ public class ParticipantControllerTest {
         controller.setAuthenticationService(authService);
         controller.setCacheProvider(cacheProvider);
         
+        SessionUpdateService sessionUpdateService = new SessionUpdateService();
+        sessionUpdateService.setCacheProvider(cacheProvider);
+        sessionUpdateService.setConsentService(mockConsentService);
+        
+        controller.setSessionUpdateService(sessionUpdateService);
+        
         mockPlayContext();
     }
     
@@ -222,11 +233,10 @@ public class ParticipantControllerTest {
         
         Result result = controller.getParticipant(ID);
         assertEquals(result.contentType(), "application/json");
-        String json = Helpers.contentAsString(result);
         
         // StudyParticipant will encrypt the healthCode when you ask for it, so validate the
         // JSON itself.
-        JsonNode node = MAPPER.readTree(json);
+        JsonNode node = TestUtils.getJson(result);
         assertTrue(node.has("firstName"));
         assertTrue(node.has("healthCode"));
         assertFalse(node.has("encryptedHealthCode"));
@@ -432,22 +442,14 @@ public class ParticipantControllerTest {
         mockPlayContextWithJson(json);
 
         Result result = controller.updateSelfParticipant();
-        JsonNode node = MAPPER.readTree(Helpers.contentAsString(result));
-        assertEquals(200, result.status());
-        assertEquals("UserSessionInfo", node.get("type").asText());
         
-        // The session here is returned from the authenticationService, and that is mocked out, but 
-        // we verify that we are calling updateSession() with that initialized session (with its 
-        // healthCode)
-        verify(controller).updateSession(sessionCaptor.capture());
-        UserSession session = sessionCaptor.getValue();
-        assertEquals("healthCode", session.getHealthCode());
-        assertEquals("FirstName", session.getParticipant().getFirstName());
-        // etc.
+        assertEquals(200, result.status());
+        JsonNode node = TestUtils.getJson(result);
+        assertEquals("UserSessionInfo", node.get("type").asText());
+        assertNull(node.get("healthCode"));
         
         // verify the object is passed to service, one field is sufficient
         verify(cacheProvider).setUserSession(any());
-        verify(authService).getSession(eq(study), any());
         verify(mockParticipantService).updateParticipant(eq(study), eq(NO_CALLER_ROLES), participantCaptor.capture());
 
         // Just test the different types and verify they are there.
@@ -493,10 +495,9 @@ public class ParticipantControllerTest {
         
         Result result = controller.updateSelfParticipant();
         assertEquals(200, result.status());
-        JsonNode node = MAPPER.readTree(Helpers.contentAsString(result));
+        JsonNode node = TestUtils.getJson(result);
         assertEquals("UserSessionInfo", node.get("type").asText());
 
-        verify(authService).getSession(eq(study), any());
         verify(mockParticipantService).updateParticipant(eq(study), eq(NO_CALLER_ROLES), participantCaptor.capture());
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals(ID, captured.getId());
@@ -545,11 +546,9 @@ public class ParticipantControllerTest {
         TestUtils.mockPlayContextWithJson(json);
 
         Result result = controller.updateSelfParticipant();
-        JsonNode node = MAPPER.readTree(Helpers.contentAsString(result));
+        JsonNode node = TestUtils.getJson(result);
         assertEquals(200, result.status());
         assertEquals("UserSessionInfo", node.get("type").asText());
-        
-        verify(controller).updateSession(session);
         
         // verify the object is passed to service, one field is sufficient
         verify(mockParticipantService).updateParticipant(eq(study), eq(NO_CALLER_ROLES), participantCaptor.capture());
@@ -686,7 +685,7 @@ public class ParticipantControllerTest {
         
         Result result = controller.getNotificationRegistrations(ID);
         assertEquals(200, result.status());
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        JsonNode node = TestUtils.getJson(result);
         assertEquals(0, node.get("total").asInt());
         assertEquals("ResourceList", node.get("type").asText());
         

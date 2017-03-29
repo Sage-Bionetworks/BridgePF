@@ -49,6 +49,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.ScheduledActivityService;
+import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import play.mvc.Result;
@@ -152,6 +153,10 @@ public class ScheduledActivityControllerTest {
         controller.setStudyService(studyService);
         controller.setCacheProvider(cacheProvider);
         controller.setParticipantOptionsService(optionsService);
+        
+        SessionUpdateService sessionUpdateService = new SessionUpdateService();
+        sessionUpdateService.setCacheProvider(cacheProvider);
+        controller.setSessionUpdateService(sessionUpdateService);
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         
         clientInfo = ClientInfo.fromUserAgentCache("App Name/4 SDK/2");

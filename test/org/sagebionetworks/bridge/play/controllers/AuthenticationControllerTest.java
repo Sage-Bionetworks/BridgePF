@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
@@ -16,7 +15,6 @@ import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 
 import javax.annotation.Resource;
 
-import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,6 +23,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.JedisOps;
@@ -34,10 +33,10 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import play.libs.ws.WS;
-import play.libs.ws.WSCookie;
 import play.libs.ws.WSResponse;
 import play.libs.ws.WSRequest;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -82,20 +81,12 @@ public class AuthenticationControllerTest {
             WSRequest request = WS.url(TEST_BASE_URL + SIGN_IN_URL);
             WSResponse response = request.post(node).get(TIMEOUT);
 
-            WSCookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
-
-            // All of a sudden, there's no cookie being set. I have no idea why.
-            assertNotNull("There's a cookie", cookie);
-
-            String sessionToken = cookie.getValue();
-            assertTrue("Cookie is not empty", StringUtils.isNotBlank(sessionToken));
-
+            JsonNode sessNode = BridgeObjectMapper.get().readTree(response.getBody());
+            String sessionToken = sessNode.get("sessionToken").asText();
+            
             ObjectNode emptyNode = JsonNodeFactory.instance.objectNode();
             response = WS.url(TEST_BASE_URL + SIGN_OUT_URL)
-                    .setHeader(BridgeConstants.SESSION_TOKEN_HEADER, cookie.getValue()).post(emptyNode).get(TIMEOUT);
-
-            cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
-            assertEquals("Cookie has been set to empty string", "", cookie.getValue());
+                    .setHeader(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken).post(emptyNode).get(TIMEOUT);
 
             String output = jedisOps.get(sessionToken);
             assertNull("Should no longer be session data", output);
@@ -115,12 +106,14 @@ public class AuthenticationControllerTest {
 
                 WSRequest request = WS.url(TEST_BASE_URL + SIGN_IN_URL);
                 WSResponse response = request.post(node).get(TIMEOUT);
-                WSCookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
+                
+                JsonNode sessNode = BridgeObjectMapper.get().readTree(response.getBody());
+                String sessionToken = sessNode.get("sessionToken").asText();
 
                 // Now, try and access the wrong study, you do not get it.
                 // There's actually no easy way to request another study at this point...
                 request = WS.url(TEST_BASE_URL + STUDIES_URL + secondStudy.getIdentifier());
-                request.setHeader(BridgeConstants.SESSION_TOKEN_HEADER, cookie.getValue());
+                request.setHeader(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken);
                 response = request.get().get(TIMEOUT);
                 assertEquals("{\"statusCode\":403,\"message\":\"Caller does not have permission to access this service.\",\"type\":\"UnauthorizedException\"}",
                         response.getBody());
@@ -146,11 +139,13 @@ public class AuthenticationControllerTest {
 
                 WSRequest request = WS.url(TEST_BASE_URL + SIGN_IN_URL);
                 WSResponse response = request.post(node).get(TIMEOUT);
-                WSCookie cookie = response.getCookie(BridgeConstants.SESSION_TOKEN_HEADER);
+                
+                JsonNode sessNode = BridgeObjectMapper.get().readTree(response.getBody());
+                String sessionToken = sessNode.get("sessionToken").asText();
 
                 // Now, try and access scheduled activities ,this should throw exception.
                 request = WS.url(TEST_BASE_URL + SCHEDULED_ACTIVITIES_API);
-                request.setHeader(BridgeConstants.SESSION_TOKEN_HEADER, cookie.getValue());
+                request.setHeader(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken);
                 response = request.get().get(TIMEOUT);
 
                 String bodyString = response.getBody();

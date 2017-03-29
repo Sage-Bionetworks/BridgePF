@@ -136,6 +136,7 @@ public class AuthenticationService {
         Account account = accountDao.authenticate(study, signIn);
 
         UserSession session = getSessionFromAccount(study, context, account);
+        // Do not call sessionUpdateService as we assume system is in sync with the session on sign in
         cacheProvider.setUserSession(session);
         
         return session;
