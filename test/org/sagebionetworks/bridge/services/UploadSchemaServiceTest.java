@@ -71,13 +71,14 @@ public class UploadSchemaServiceTest {
         svc.createSchemaRevisionV4(TestConstants.TEST_STUDY, svcInputSchema);
     }
 
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void createV4InvalidSchema() {
-        // Simple invalid schema, like one with no fields. (Schema ID must be specified to get the "old" revision.)
-        svcInputSchema = UploadSchema.create();
-        svcInputSchema.setSchemaId(SCHEMA_ID);
-
-        svc.createSchemaRevisionV4(TestConstants.TEST_STUDY, svcInputSchema);
+        try {
+            svc.createSchemaRevisionV4(TestConstants.TEST_STUDY, makeInvalidSchema());
+            fail("expected exception");
+        } catch (InvalidEntityException ex) {
+            assertSchemaValidationException(ex);
+        }
     }
 
     @Test
@@ -140,13 +141,14 @@ public class UploadSchemaServiceTest {
         svc.createOrUpdateUploadSchema(TestConstants.TEST_STUDY, svcInputSchema);
     }
 
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void createOrUpdateInvalidSchema() {
-        // Simple invalid schema, like one with no fields. (Schema ID must be specified to get the "old" revision.)
-        svcInputSchema = UploadSchema.create();
-        svcInputSchema.setSchemaId(SCHEMA_ID);
-
-        svc.createOrUpdateUploadSchema(TestConstants.TEST_STUDY, svcInputSchema);
+        try {
+            svc.createOrUpdateUploadSchema(TestConstants.TEST_STUDY, makeInvalidSchema());
+            fail("expected exception");
+        } catch (InvalidEntityException ex) {
+            assertSchemaValidationException(ex);
+        }
     }
 
     @Test
@@ -582,17 +584,19 @@ public class UploadSchemaServiceTest {
         svc.updateSchemaRevisionV4(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV, svcInputSchema);
     }
 
-    @Test(expected = InvalidEntityException.class)
+    @Test
     public void updateV4InvalidSchema() {
         // mock dao output - Must have a schema to update or we'll throw a 404.
         when(dao.getUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(
                 makeSimpleSchema());
 
-        // Simple invalid schema, like one with no fields. (Schema ID must be specified to get the "old" revision.)
-        svcInputSchema = UploadSchema.create();
-        svcInputSchema.setSchemaId(SCHEMA_ID);
-
-        svc.updateSchemaRevisionV4(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV, svcInputSchema);
+        // execute test
+        try {
+            svc.updateSchemaRevisionV4(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV, makeInvalidSchema());
+            fail("expected exception");
+        } catch (InvalidEntityException ex) {
+            assertSchemaValidationException(ex);
+        }
     }
 
     @Test
@@ -715,5 +719,25 @@ public class UploadSchemaServiceTest {
         schema.setSchemaId(SCHEMA_ID);
         schema.setSchemaType(UploadSchemaType.IOS_DATA);
         return schema;
+    }
+
+    // Make an invalid schema to test validation. This schema will be missing lots of required fields (like name and
+    // schema type) and will contain a single field def with no fields.
+    private static UploadSchema makeInvalidSchema() {
+        // We'll need a schema ID anyway. Otherwise, the request will be rejected with a 400 Bad Request.
+        UploadSchema schema = UploadSchema.create();
+        schema.setSchemaId(SCHEMA_ID);
+        schema.setFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder().build()));
+        return schema;
+    }
+
+    // Validate that the errors throw for a schema made from makeInvalidSchema()
+    private static void assertSchemaValidationException(InvalidEntityException ex) {
+        assertEquals("name is required", ex.getErrors().get("name").get(0));
+        assertEquals("schemaType is required", ex.getErrors().get("schemaType").get(0));
+        assertEquals("fieldDefinitions[0].name is required", ex.getErrors().get("fieldDefinitions[0].name")
+                .get(0));
+        assertEquals("fieldDefinitions[0].type is required", ex.getErrors().get("fieldDefinitions[0].type")
+                .get(0));
     }
 }
