@@ -414,14 +414,6 @@ public class BridgeSpringConfig {
                 .create(DynamoScheduledActivity.class, "schedulePlanGuid-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
     }
 
-    @Bean(name = "uploadSchemaStudyIdIndex")
-    @Autowired
-    public DynamoIndexHelper uploadSchemaStudyIdIndex(AmazonDynamoDBClient dynamoDBClient,
-                                                      DynamoUtils dynamoUtils,
-                                                      DynamoNamingHelper dynamoNamingHelper) {
-        return DynamoIndexHelper.create(DynamoUploadSchema.class, "studyId-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
-    }
-
     @Bean(name = "uploadDdbMapper")
     @Autowired
     public DynamoDBMapper uploadDdbMapper(DynamoUtils dynamoUtils) {

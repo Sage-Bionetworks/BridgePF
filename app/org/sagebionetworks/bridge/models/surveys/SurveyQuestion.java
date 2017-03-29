@@ -8,6 +8,10 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize(as = DynamoSurveyQuestion.class)
 @BridgeTypeName("SurveyQuestion")
 public interface SurveyQuestion extends SurveyElement {
+    /** Convenience method for creating an instance of Survey using a concrete implementation. */
+    static SurveyQuestion create() {
+        return new DynamoSurveyQuestion();
+    }
 
     String getPrompt();
 
