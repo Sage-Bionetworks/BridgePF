@@ -25,6 +25,7 @@ import play.test.Helpers;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.dao.UploadSchemaDao;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -236,12 +237,21 @@ public class UploadSchemaControllerTest {
 
         // mock request JSON; this is pretty bad JSON. We want an error message back 
         // that should practically tell the caller how to construct this object.
-        TestUtils.mockPlayContextWithJson("{\"fieldDefinitions\":[{\"name\":\"foo\"}]}");
+        String json = "{\"schemaId\":\"schemaId\",\"fieldDefinitions\":[{\"name\":\"foo\"}]}";
+        TestUtils.mockPlayContextWithJson(json);
+        
+        UploadSchema schema = BridgeObjectMapper.get().readValue(json, UploadSchema.class);
 
         // spy controller
         UploadSchemaController controller = spy(new UploadSchemaController());
         // We need the real service because it throws the InvalidEntityException we're testing here.
-        controller.setUploadSchemaService(new UploadSchemaService());
+
+        UploadSchemaDao uploadSchemaDao = mock(UploadSchemaDao.class);
+        doReturn(schema).when(uploadSchemaDao).getUploadSchemaLatestRevisionById(studyIdentifier, "schemaId");
+        UploadSchemaService uploadSchemaService = new UploadSchemaService();
+        uploadSchemaService.setUploadSchemaDao(uploadSchemaDao);
+        
+        controller.setUploadSchemaService(uploadSchemaService);
         doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
 
         // execute and validate
@@ -249,7 +259,6 @@ public class UploadSchemaControllerTest {
             controller.createOrUpdateUploadSchema();
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
-            assertEquals("schemaId is required", e.getErrors().get("schemaId").get(0));
             assertEquals("name is required", e.getErrors().get("name").get(0));
             assertEquals("schemaType is required", e.getErrors().get("schemaType").get(0));
             assertEquals("fieldDefinitions[0].type is required", e.getErrors().get("fieldDefinitions[0].type").get(0));
