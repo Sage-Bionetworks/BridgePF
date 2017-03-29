@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -42,7 +41,6 @@ public class AuthenticationController extends BaseController {
         if (session != null) {
             authenticationService.signOut(session);
         }
-        response().discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
         return okResult("Signed out.");
     }
 
@@ -122,9 +120,6 @@ public class AuthenticationController extends BaseController {
             cacheProvider.updateRequestInfo(requestInfo);
         }
 
-        // Set session token. This way, even if we get a ConsentRequiredException, users are still able to sign consent
-        setSessionToken(session.getSessionToken());
-        
         // You can proceed if 1) you're some kind of system administrator (developer, researcher), or 2)
         // you've consented to research.
         if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
