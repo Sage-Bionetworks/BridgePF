@@ -264,7 +264,7 @@ public class UploadSchemaControllerTest {
             assertEquals("fieldDefinitions[0].type is required", e.getErrors().get("fieldDefinitions[0].type").get(0));
         }
     }
-    
+
     private static UploadSchemaController setupControllerWithService(UploadSchemaService svc) throws Exception {
         // mock session
         UserSession mockSession = new UserSession();
