@@ -552,10 +552,10 @@ public class UploadSchemaService {
      * exist.
      */
     private UploadSchema getUploadSchemaNoThrow(StudyIdentifier studyId, String schemaId) {
-        if (StringUtils.isBlank(schemaId)) {
-            throw new BadRequestException("Schema ID must be specified");
+        if (!StringUtils.isBlank(schemaId)) {
+            return uploadSchemaDao.getUploadSchemaLatestRevisionById(studyId, schemaId);
         }
-        return uploadSchemaDao.getUploadSchemaLatestRevisionById(studyId, schemaId);
+        return null;
     }
 
     /**
