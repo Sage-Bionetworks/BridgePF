@@ -21,12 +21,15 @@ import org.jsoup.safety.Whitelist;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
+import org.sagebionetworks.client.exceptions.SynapseServerException;
 import org.sagebionetworks.repo.model.MembershipInvtnSubmission;
 import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.ResourceAccess;
 import org.sagebionetworks.repo.model.Team;
 import org.sagebionetworks.repo.model.auth.NewUser;
 import org.sagebionetworks.repo.model.util.ModelConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,6 +59,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 @Component("studyService")
 public class StudyService {
+    private static Logger LOG = LoggerFactory.getLogger(StudyService.class);
 
     static final String EXPORTER_SYNAPSE_USER_ID = BridgeConfigFactory.getConfig().getExporterSynapseId(); // copy-paste from website
     static final String SYNAPSE_REGISTER_END_POINT = "https://www.synapse.org/#!NewAccount:";
@@ -228,10 +232,14 @@ public class StudyService {
         // send verification email from both Bridge and Synapse as well
         for (StudyParticipant user: users) {
             IdentifierHolder identifierHolder = participantService.createParticipant(study, user.getRoles(), user,true);
+
             NewUser synapseUser = new NewUser();
             synapseUser.setEmail(user.getEmail());
-            synapseClient.newAccountEmailValidation(synapseUser, SYNAPSE_REGISTER_END_POINT);
-
+            try {
+                synapseClient.newAccountEmailValidation(synapseUser, SYNAPSE_REGISTER_END_POINT);
+            } catch (SynapseServerException e) {
+                LOG.error("Email: " + user.getEmail() + " already exists in Synapse", e);
+            }
             // send resetting password email as well
             participantService.requestResetPassword(study, identifierHolder.getIdentifier());
         }
