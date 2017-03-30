@@ -22,7 +22,6 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.springframework.stereotype.Component;
 
-import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
@@ -94,12 +93,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
             query.withExclusiveStartKey(map);
         }
         
-        QueryResultPage<DynamoScheduledActivity> queryResult = null;
-        try {
-            queryResult = mapper.queryPage(DynamoScheduledActivity.class, query);
-        } catch(AmazonServiceException e) {
-            throw new BadRequestException(e.getErrorMessage());
-        }
+        QueryResultPage<DynamoScheduledActivity> queryResult = mapper.queryPage(DynamoScheduledActivity.class, query);
 
         List<ScheduledActivity> activities = Lists.newArrayListWithCapacity(queryResult.getResults().size());
         for (DynamoScheduledActivity act : queryResult.getResults()) {
