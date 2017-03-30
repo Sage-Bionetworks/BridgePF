@@ -222,20 +222,30 @@ public class ConsentService {
     public void withdrawConsent(Study study, SubpopulationGuid subpopGuid, StudyParticipant participant,
             Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(study);
-        checkNotNull(subpopGuid);
         checkNotNull(participant);
+        
+        Account account = accountDao.getAccount(study, participant.getId());
+        
+        withdrawConsent(study, subpopGuid, account, withdrawal, withdrewOn);
+    }
+    
+    public void withdrawConsent(Study study, SubpopulationGuid subpopGuid, Account account, Withdrawal withdrawal,
+            long withdrewOn) {
+        checkNotNull(study);
+        checkNotNull(subpopGuid);
+        checkNotNull(account);
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
         
-        Account account = accountDao.getAccount(study, participant.getId());
+        String externalId = optionsService.getOptions(account.getHealthCode()).getString(EXTERNAL_IDENTIFIER);
         
         if(!withdrawSignatures(account, subpopGuid, withdrewOn)) {
             throw new EntityNotFoundException(ConsentSignature.class);
         }
         accountDao.updateAccount(account);
         
-        MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, participant.getExternalId(),
-                account, withdrawal, withdrewOn);
+        MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account, withdrawal,
+                withdrewOn);
         sendMailService.sendEmail(consentEmail);
     }
     

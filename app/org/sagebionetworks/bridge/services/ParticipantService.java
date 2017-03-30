@@ -352,6 +352,19 @@ public class ParticipantService {
         consentService.withdrawAllConsents(study, account, withdrawal, withdrewOn);
     }
 
+    public void withdrawConsent(Study study, String userId, SubpopulationGuid subpopGuid, Withdrawal withdrawal,
+            long withdrewOn) {
+        checkNotNull(study);
+        checkNotNull(userId);
+        checkNotNull(subpopGuid);
+        checkNotNull(withdrawal);
+        checkArgument(withdrewOn > 0);
+
+        Account account = getAccountThrowingException(study, userId);
+
+        consentService.withdrawConsent(study, subpopGuid, account, withdrawal, withdrewOn);
+    }
+    
     public void resendConsentAgreement(Study study, SubpopulationGuid subpopGuid, String userId) {
         checkNotNull(study);
         checkNotNull(subpopGuid);

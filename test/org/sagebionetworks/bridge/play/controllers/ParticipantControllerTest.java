@@ -79,6 +79,8 @@ import org.sagebionetworks.bridge.services.StudyService;
 @RunWith(MockitoJUnitRunner.class)
 public class ParticipantControllerTest {
 
+    private static final String SUBPOP_GUID = "subpopGuid";
+
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
     
     private static final TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>> FORWARD_CURSOR_PAGED_ACTIVITIES_REF = new TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>>() {
@@ -654,9 +656,9 @@ public class ParticipantControllerTest {
     
     @Test
     public void resendConsentAgreement() throws Exception {
-        controller.resendConsentAgreement(ID, "subpopGuid");
+        controller.resendConsentAgreement(ID, SUBPOP_GUID);
         
-        verify(mockParticipantService).resendConsentAgreement(study, SubpopulationGuid.create("subpopGuid"), ID);
+        verify(mockParticipantService).resendConsentAgreement(study, SubpopulationGuid.create(SUBPOP_GUID), ID);
     }
 
     @Test
@@ -669,6 +671,22 @@ public class ParticipantControllerTest {
             controller.withdrawFromAllConsents(ID);
             
             verify(mockParticipantService).withdrawAllConsents(study, ID, new Withdrawal("Because, reasons."), 20000);
+        } finally {
+            DateTimeUtils.setCurrentMillisSystem();
+        }
+    }
+    
+    @Test
+    public void withdrawConsent() throws Exception {
+        DateTimeUtils.setCurrentMillisFixed(20000);
+        try {
+            String json = "{\"reason\":\"Because, reasons.\"}";
+            TestUtils.mockPlayContextWithJson(json);
+            
+            controller.withdrawConsent(ID, SUBPOP_GUID);
+            
+            verify(mockParticipantService).withdrawConsent(study, ID, SubpopulationGuid.create(SUBPOP_GUID),
+                    new Withdrawal("Because, reasons."), 20000);
         } finally {
             DateTimeUtils.setCurrentMillisSystem();
         }

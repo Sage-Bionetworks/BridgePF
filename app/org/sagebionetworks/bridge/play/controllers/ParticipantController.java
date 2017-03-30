@@ -246,6 +246,19 @@ public class ParticipantController extends BaseController {
         return okResult("User has been withdrawn from the study.");
     }
     
+    public Result withdrawConsent(String userId, String guid) {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        Withdrawal withdrawal = parseJson(request(), Withdrawal.class);
+        long withdrewOn = DateTime.now().getMillis();
+        SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
+        
+        participantService.withdrawConsent(study, userId, subpopGuid, withdrawal, withdrewOn);
+        
+        return okResult("User has been withdrawn from subpopulation '"+guid+"'.");
+    }
+    
     public Result getUploads(String userId, String startTimeString, String endTimeString) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
