@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -50,7 +49,7 @@ public class DynamoScheduledActivityDaoMockTest {
     private static final String BASE_URL = BridgeConfigFactory.getConfig().getWebservicesURL();
     private static final String ACTIVITY_1_REF = BASE_URL + "/v3/surveys/AAA/revisions/published";
     private static final String ACTIVITY_2_REF = BASE_URL + "/v3/surveys/BBB/revisions/published";
-    private static final String ACTIVITY_3_REF = TestConstants.TEST_3_ACTIVITY.getTask().getIdentifier();
+    private static final String ACTIVITY_3_REF = TestUtils.getActivity3().getTask().getIdentifier();
     
     private DynamoDBMapper mapper;
 
@@ -208,13 +207,13 @@ public class DynamoScheduledActivityDaoMockTest {
     public void canUpdateActivities() {
         DynamoScheduledActivity activity1 = new DynamoScheduledActivity();
         activity1.setHealthCode(HEALTH_CODE);
-        activity1.setActivity(TestConstants.TEST_3_ACTIVITY);
+        activity1.setActivity(TestUtils.getActivity3());
         activity1.setLocalScheduledOn(LocalDateTime.parse("2015-04-11T13:00:00"));
         activity1.setGuid(BridgeUtils.generateGuid());
 
         DynamoScheduledActivity activity2 = new DynamoScheduledActivity();
         activity2.setHealthCode(HEALTH_CODE);
-        activity2.setActivity(TestConstants.TEST_3_ACTIVITY);
+        activity2.setActivity(TestUtils.getActivity3());
         activity2.setLocalScheduledOn(LocalDateTime.parse("2015-04-11T13:00:00"));
         activity2.setStartedOn(DateTime.parse("2015-04-13T18:05:23.000-07:00").getMillis());
         activity2.setFinishedOn(DateTime.parse("2015-04-13T18:20:23.000-07:00").getMillis());

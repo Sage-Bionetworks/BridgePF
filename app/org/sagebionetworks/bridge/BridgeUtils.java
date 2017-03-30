@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -215,8 +216,8 @@ public class BridgeUtils {
     }
     
     /**
-     * Parse the string as an integer value, or return the defaultValue if it is null. If the value is 
-     * provided but not a parseable integer, thrown a BadRequestException.
+     * Parse the string as an integer value, or return the defaultValue if it is null. 
+     * If the value is provided but not a parseable integer, thrown a BadRequestException.
      */
     public static int getIntOrDefault(String value, int defaultValue) {
         if (isBlank(value)) {
@@ -229,6 +230,36 @@ public class BridgeUtils {
         }
     }
 
+    /**
+     * Parse the string as a long value, or return the defaultValue if it is null. 
+     * If the value is provided but not a parseable long, thrown a BadRequestException.
+     */
+    public static Long getLongOrDefault(String value, Long defaultValue) {
+        if (isBlank(value)) {
+            return defaultValue;
+        }
+        try {
+            return parseLong(value);
+        } catch(RuntimeException e) {
+            throw new BadRequestException(value + " is not a long");
+        }
+    }
+    
+    /**
+     * Parse the string as a DateTime value, or return the defaultValue if it is null. 
+     * If the value is provided but not a parseable DateTime, thrown a BadRequestException.
+     */
+    public static DateTime getDateTimeOrDefault(String value, DateTime defaultValue) {
+        if (isBlank(value)) {
+            return defaultValue;
+        }
+        try {
+            return DateTime.parse(value);
+        } catch(Exception e) {
+            throw new BadRequestException(value + " is not a DateTime value");
+        }
+    }
+    
     /**
      * Creates a new copy of the map, removing any entries that have a null value (particularly easy to do this in
      * JSON).

@@ -367,6 +367,13 @@ public class BridgeSpringConfig {
         return DynamoIndexHelper.create(DynamoUpload2.class, "healthCode-requestedOn-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
     }
     
+    @Bean(name = "healthCodeActivityGuidIndex")
+    @Autowired
+    public DynamoIndexHelper healthCodeActivityGuidIndex(AmazonDynamoDBClient dynamoDBClient, DynamoUtils dynamoUtils,
+            DynamoNamingHelper dynamoNamingHelper) {
+        return DynamoIndexHelper.create(DynamoScheduledActivity.class, "healthCodeActivityGuid-scheduledOnUTC-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
+    }
+    
     @Bean(name = "uploadStudyIdRequestedOnIndex")
     @Autowired
     public DynamoIndexHelper uploadStudyIdRequestedOnIndex(AmazonDynamoDBClient dynamoDBClient, DynamoUtils dynamoUtils,
@@ -405,14 +412,6 @@ public class BridgeSpringConfig {
                                                            DynamoNamingHelper dynamoNamingHelper) {
         return DynamoIndexHelper
                 .create(DynamoScheduledActivity.class, "schedulePlanGuid-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
-    }
-
-    @Bean(name = "uploadSchemaStudyIdIndex")
-    @Autowired
-    public DynamoIndexHelper uploadSchemaStudyIdIndex(AmazonDynamoDBClient dynamoDBClient,
-                                                      DynamoUtils dynamoUtils,
-                                                      DynamoNamingHelper dynamoNamingHelper) {
-        return DynamoIndexHelper.create(DynamoUploadSchema.class, "studyId-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
     }
 
     @Bean(name = "uploadDdbMapper")

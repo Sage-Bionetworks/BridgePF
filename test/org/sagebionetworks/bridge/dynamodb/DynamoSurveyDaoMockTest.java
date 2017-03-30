@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.same;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -23,7 +24,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dao.UploadSchemaDao;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
+import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 public class DynamoSurveyDaoMockTest {
     private static final DateTime MOCK_NOW = DateTime.parse("2016-08-24T15:23:57.123-0700");
@@ -40,10 +41,11 @@ public class DynamoSurveyDaoMockTest {
 
     private static final String SURVEY_GUID = "test-guid";
     private static final long SURVEY_CREATED_ON = 1337;
+    private static final String SURVEY_ID = "test-survey";
     private static final GuidCreatedOnVersionHolder SURVEY_KEY = new GuidCreatedOnVersionHolderImpl(SURVEY_GUID,
             SURVEY_CREATED_ON);
 
-    private UploadSchemaDao mockSchemaDao;
+    private UploadSchemaService mockSchemaService;
     private DynamoDBMapper mockSurveyMapper;
     private Survey survey;
     private DynamoSurveyDao surveyDao;
@@ -62,6 +64,8 @@ public class DynamoSurveyDaoMockTest {
     public void setup() {
         // set up survey
         survey = new DynamoSurvey(SURVEY_GUID, SURVEY_CREATED_ON);
+        survey.setIdentifier(SURVEY_ID);
+        survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
 
         // mock mapper
         mockSurveyMapper = mock(DynamoDBMapper.class);
@@ -70,13 +74,14 @@ public class DynamoSurveyDaoMockTest {
         UploadSchema schema = UploadSchema.create();
         schema.setRevision(SCHEMA_REV);
 
-        mockSchemaDao = mock(UploadSchemaDao.class);
-        when(mockSchemaDao.createUploadSchemaFromSurvey(TestConstants.TEST_STUDY, survey, true)).thenReturn(schema);
+        mockSchemaService = mock(UploadSchemaService.class);
+        when(mockSchemaService.createUploadSchemaFromSurvey(TestConstants.TEST_STUDY, survey, true)).thenReturn(
+                schema);
 
         // set up survey dao for test
         surveyDao = spy(new DynamoSurveyDao());
         surveyDao.setSurveyMapper(mockSurveyMapper);
-        surveyDao.setUploadSchemaDao(mockSchemaDao);
+        surveyDao.setUploadSchemaService(mockSchemaService);
 
         // spy getSurvey() - There's a lot of complex logic in that query builder that's irrelevant to what we're
         // trying to test. Rather than over-specify our test and make our tests overly complicated, we'll just spy out
@@ -119,6 +124,20 @@ public class DynamoSurveyDaoMockTest {
         assertNull(retval.getSchemaRevision());
 
         verify(mockSurveyMapper).save(same(retval));
-        verify(mockSchemaDao, never()).createUploadSchemaFromSurvey(any(), any(), anyBoolean());
+        verify(mockSchemaService, never()).createUploadSchemaFromSurvey(any(), any(), anyBoolean());
+    }
+
+    @Test
+    public void deleteSurveyAlsoDeletesSchema() {
+        // We also need to spy deleteAllElements(), because there's also a lot of complex logic there.
+        doNothing().when(surveyDao).deleteAllElements(SURVEY_GUID, SURVEY_CREATED_ON);
+
+        // Execute
+        surveyDao.deleteSurveyPermanently(SURVEY_KEY);
+
+        // Validate backends
+        verify(surveyDao).deleteAllElements(SURVEY_GUID, SURVEY_CREATED_ON);
+        verify(mockSurveyMapper).delete(survey);
+        verify(mockSchemaService).deleteUploadSchemaById(TestConstants.TEST_STUDY, SURVEY_ID);
     }
 }

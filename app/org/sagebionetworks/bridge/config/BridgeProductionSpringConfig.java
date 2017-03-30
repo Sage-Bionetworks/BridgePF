@@ -79,7 +79,7 @@ public class BridgeProductionSpringConfig {
         URI redisURI = new URI(url);
         String password = redisURI.getUserInfo().split(":",2)[1];
 
-        if (bridgeConfig.isLocal()) {
+        if (bridgeConfig.isLocal() || password.equals("AWS")) {
             return new JedisPool(poolConfig, redisURI.getHost(), redisURI.getPort(),
                     bridgeConfig.getPropertyAsInt("redis.timeout"));
         } else {

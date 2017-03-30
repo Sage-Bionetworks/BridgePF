@@ -16,7 +16,6 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
-import static org.sagebionetworks.bridge.TestUtils.assertResult;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 
 import org.junit.Before;
@@ -33,7 +32,6 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
@@ -47,6 +45,7 @@ import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.ParticipantService;
+import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -55,7 +54,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import play.mvc.Result;
-import play.test.Helpers;
 
 @RunWith(MockitoJUnitRunner.class)
 public class UserProfileControllerTest {
@@ -122,9 +120,13 @@ public class UserProfileControllerTest {
         controller.setParticipantOptionsService(optionsService);
         controller.setCacheProvider(cacheProvider);
         controller.setExternalIdService(externalIdService);
-        controller.setConsentService(consentService);
         controller.setParticipantService(participantService);
         controller.setViewCache(viewCache);
+        
+        SessionUpdateService sessionUpdateService = new SessionUpdateService();
+        sessionUpdateService.setCacheProvider(cacheProvider);
+        sessionUpdateService.setConsentService(consentService);
+        controller.setSessionUpdateService(sessionUpdateService);
         
         session = new UserSession(new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE)
@@ -136,6 +138,7 @@ public class UserProfileControllerTest {
     }
     
     @Test
+    @SuppressWarnings("deprecation")
     public void getUserProfile() throws Exception {
         Map<String,String> attributes = Maps.newHashMap();
         attributes.put("bar","baz");
@@ -147,7 +150,7 @@ public class UserProfileControllerTest {
         Result result = controller.getUserProfile();
         assertEquals(200, result.status());
         
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        JsonNode node = TestUtils.getJson(result);
         
         verify(participantService).getParticipant(study, ID, false);
         
@@ -161,6 +164,7 @@ public class UserProfileControllerTest {
     
     
     @Test
+    @SuppressWarnings("deprecation")    
     public void getUserProfileWithNoName() throws Exception {
         Map<String,String> attributes = Maps.newHashMap();
         attributes.put("bar","baz");
@@ -172,7 +176,7 @@ public class UserProfileControllerTest {
         Result result = controller.getUserProfile();
         assertEquals(200, result.status());
         
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        JsonNode node = TestUtils.getJson(result);
         verify(participantService).getParticipant(study, ID, false);
         
         assertFalse(node.has("firstName"));
@@ -184,10 +188,13 @@ public class UserProfileControllerTest {
     }
     
     @Test
+    @SuppressWarnings("deprecation")
     public void updateUserProfile() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("existingHealthCode")
                 .withExternalId("originalId")
+                .withFirstName("OldFirstName")
+                .withLastName("OldLastName")
                 .withId(ID).build();
         doReturn(participant).when(participantService).getParticipant(study, ID, false);
         
@@ -197,13 +204,18 @@ public class UserProfileControllerTest {
                 "'username':'email@email.com','foo':'belgium','externalId':'updatedId','type':'UserProfile'}"));
         
         Result result = controller.updateUserProfile();
-        TestUtils.assertResult(result, 200, "Profile updated.");
-
+        
+        assertEquals(200, result.status());
+        JsonNode node = TestUtils.getJson(result);
+        assertEquals("First", node.get("firstName").asText());
+        assertEquals("Last", node.get("lastName").asText());
+        assertEquals("originalId", node.get("externalId").asText());
+                
         // Verify that existing user information (health code) has been retrieved and used when updating session
-        verify(controller).updateSession(sessionCaptor.capture());
-        UserSession session = sessionCaptor.getValue();
-        assertEquals("existingHealthCode", session.getHealthCode());
-        assertEquals("originalId", session.getParticipant().getExternalId());
+        verify(participantService).updateParticipant(eq(study), any(), participantCaptor.capture());
+        StudyParticipant capturedParticipant = participantCaptor.getValue();
+        assertEquals("existingHealthCode", capturedParticipant.getHealthCode());
+        assertEquals("originalId", capturedParticipant.getExternalId());
         
         verify(participantService).updateParticipant(eq(study), eq(Sets.newHashSet()), participantCaptor.capture());
         
@@ -216,27 +228,40 @@ public class UserProfileControllerTest {
     }
     
     @Test
+    @SuppressWarnings("deprecation")
     public void canSubmitExternalIdentifier() throws Exception {
         TestUtils.mockPlayContextWithJson("{\"identifier\":\"ABC-123-XYZ\"}");
                 
         Result result = controller.createExternalIdentifier();
-        assertResult(result, 200, "External identifier added to user profile.");
+        
+        assertEquals(200, result.status());
+        JsonNode node = TestUtils.getJson(result);
+        assertEquals("ABC-123-XYZ", node.get("externalId").asText());
         
         verify(externalIdService).assignExternalId(study, "ABC-123-XYZ", HEALTH_CODE);
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void validDataGroupsCanBeAdded() throws Exception {
         // We had a bug where this call lost the health code in the user's session, so verify in particular 
         // that healthCode (as well as something like firstName) are in the session. 
-        StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").withHealthCode("healthCode").build();
+        StudyParticipant existing = new StudyParticipant.Builder()
+                .withHealthCode(HEALTH_CODE)
+                .withId(ID)
+                .withFirstName("First").build();
         doReturn(existing).when(participantService).getParticipant(study, ID, false);
+        session.setParticipant(existing);
         
         Set<String> dataGroupSet = Sets.newHashSet("group1");
         TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"group1\"]}");
         
         Result result = controller.updateDataGroups();
-        assertResult(result, 200, "Data groups updated.");
+        assertEquals(200, result.status());
+        
+        JsonNode node = TestUtils.getJson(result);
+        assertEquals("First", node.get("firstName").asText());
+        assertEquals("group1", node.get("dataGroups").get(0).asText());
         
         verify(participantService).updateParticipant(eq(study), eq(NO_ROLES), participantCaptor.capture());
         verify(consentService).getConsentStatuses(contextCaptor.capture());
@@ -257,6 +282,7 @@ public class UserProfileControllerTest {
     // Validation is no longer done in the controller, but verify that user is not changed
     // when the service throws an InvalidEntityException.
     @Test
+    @SuppressWarnings("deprecation")
     public void invalidDataGroupsRejected() throws Exception {
         StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").build();
         doReturn(existing).when(participantService).getParticipant(study, ID, false);
@@ -272,6 +298,7 @@ public class UserProfileControllerTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void canGetDataGroups() throws Exception {
         Map<String,String> map = Maps.newHashMap();
         map.put(DATA_GROUPS.name(), "group1,group2");
@@ -281,7 +308,7 @@ public class UserProfileControllerTest {
         
         Result result = controller.getDataGroups();
         
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        JsonNode node = TestUtils.getJson(result);
         
         assertEquals("DataGroups", node.get("type").asText());
         ArrayNode array = (ArrayNode)node.get("dataGroups");
@@ -291,15 +318,22 @@ public class UserProfileControllerTest {
         }
     }
     
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({ "rawtypes", "unchecked", "deprecation" })
     @Test
     public void evenEmptyJsonActsOK() throws Exception {
-        StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").build();
+        StudyParticipant existing = new StudyParticipant.Builder()
+                .withHealthCode(HEALTH_CODE)
+                .withId(ID)
+                .withFirstName("First").build();
         doReturn(existing).when(participantService).getParticipant(study, ID, false);
+        session.setParticipant(existing);
         TestUtils.mockPlayContextWithJson("{}");
         
         Result result = controller.updateDataGroups();
-        assertResult(result, 200, "Data groups updated.");
+        assertEquals(200, result.status());
+        
+        JsonNode node = TestUtils.getJson(result);
+        assertEquals("First", node.get("firstName").asText());
         
         verify(participantService).updateParticipant(eq(study), eq(NO_ROLES), participantCaptor.capture());
         

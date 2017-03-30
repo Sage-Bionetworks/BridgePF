@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -38,6 +37,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.play.interceptors.RequestUtils;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
+import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import org.apache.commons.lang3.StringUtils;
@@ -49,7 +49,6 @@ import play.cache.Cache;
 import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Http;
-import play.mvc.Http.Cookie;
 import play.mvc.Http.Request;
 import play.mvc.Result;
 
@@ -74,6 +73,8 @@ public abstract class BaseController extends Controller {
     StudyService studyService;
 
     AuthenticationService authenticationService;
+    
+    SessionUpdateService sessionUpdateService;
 
     @Autowired
     final void setBridgeConfig(BridgeConfig bridgeConfig) {
@@ -99,6 +100,11 @@ public abstract class BaseController extends Controller {
     final void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
     }
+    
+    @Autowired
+    final void setSessionUpdateService(SessionUpdateService sessionUpdateService) {
+        this.sessionUpdateService = sessionUpdateService;
+    }
 
     /**
      * Returns a session. Will not throw exception if user is not authorized or has not consented to research.
@@ -115,7 +121,7 @@ public abstract class BaseController extends Controller {
     }
 
     /**
-     * Retrieve user's session using the Bridge-Session header or cookie, throwing an exception if the session doesn't
+     * Retrieve user's session using the Bridge-Session header, throwing an exception if the session doesn't
      * exist (user not authorized), consent has not been given or the client app version is not supported.
      */
     UserSession getAuthenticatedAndConsentedSession() throws NotAuthenticatedException, ConsentRequiredException, UnsupportedVersionException {
@@ -183,24 +189,11 @@ public abstract class BaseController extends Controller {
         // user doesn't need to be consented or to possess any specific role.
         return session;
     }
-    
-    void setSessionToken(String sessionToken) {
-        response().setCookie(SESSION_TOKEN_HEADER, sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
-    }
-
-    void updateSession(UserSession session) {
-        cacheProvider.setUserSession(session);
-        setSessionToken(session.getSessionToken());
-    }
 
     /** Package-scoped to make available in unit tests. */
     String getSessionToken() {
         String[] session = request().headers().get(SESSION_TOKEN_HEADER);
         if (session == null || session.length == 0 || session[0].isEmpty()) {
-            Cookie sessionCookie = request().cookie(SESSION_TOKEN_HEADER);
-            if (sessionCookie != null && sessionCookie.value() != null && !"".equals(sessionCookie.value())) {
-                return sessionCookie.value();
-            }
             return null;
         }
         return session[0];
@@ -233,9 +226,7 @@ public abstract class BaseController extends Controller {
             optionsService.setOrderedStringSet(
                     session.getStudyIdentifier(), session.getHealthCode(), LANGUAGES, languages);
             
-            session.setParticipant(new StudyParticipant.Builder()
-                    .copyOf(participant).withLanguages(languages).build());
-            updateSession(session);
+            sessionUpdateService.updateLanguage(session, languages);
         }
         return languages;
     }
@@ -292,7 +283,7 @@ public abstract class BaseController extends Controller {
         checkNotNull(session);
         
         return new CriteriaContext.Builder()
-            .withLanguages(getLanguagesFromAcceptLanguageHeader())
+            .withLanguages(session.getParticipant().getLanguages())
             .withClientInfo(getClientInfoFromUserAgentHeader())
             .withHealthCode(session.getHealthCode())
             .withUserId(session.getId())

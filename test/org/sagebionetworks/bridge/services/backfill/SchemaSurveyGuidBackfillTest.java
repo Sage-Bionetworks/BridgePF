@@ -19,7 +19,6 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
-import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.backfill.BackfillTask;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -118,7 +117,7 @@ public class SchemaSurveyGuidBackfillTest {
         // Mock schema service. Since everything is mocked, we don't need to worry about parameters other than survey
         // guid and createdOn, which are all blank in this case.
         when(uploadSchemaService.getUploadSchemaByIdAndRev(any(), any(), anyInt())).thenAnswer(
-                invocation -> new DynamoUploadSchema());
+                invocation -> UploadSchema.create());
 
         // execute
         backfill.doBackfill(MOCK_TASK, MOCK_CALLBACK);
@@ -171,7 +170,7 @@ public class SchemaSurveyGuidBackfillTest {
 
         // mock schema service
         when(uploadSchemaService.getUploadSchemaByIdAndRev(any(), any(), anyInt())).thenAnswer(
-                invocation -> new DynamoUploadSchema());
+                invocation -> UploadSchema.create());
 
         // execute
         backfill.doBackfill(MOCK_TASK, MOCK_CALLBACK);
@@ -199,14 +198,14 @@ public class SchemaSurveyGuidBackfillTest {
 
         // mock schema service - This is different this time. First schema has survey fields already set. Second schema
         // does not.
-        DynamoUploadSchema schemaWithFields = new DynamoUploadSchema();
+        UploadSchema schemaWithFields = UploadSchema.create();
         schemaWithFields.setSurveyGuid("guid-with-fields");
         schemaWithFields.setSurveyCreatedOn(3333L);
         when(uploadSchemaService.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, "survey-with-fields", 33))
                 .thenReturn(schemaWithFields);
 
         when(uploadSchemaService.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, TEST_SURVEY_ID,
-                TEST_SURVEY_SCHEMA_REV)).thenReturn(new DynamoUploadSchema());
+                TEST_SURVEY_SCHEMA_REV)).thenReturn(UploadSchema.create());
 
         // execute
         backfill.doBackfill(MOCK_TASK, MOCK_CALLBACK);
@@ -235,7 +234,7 @@ public class SchemaSurveyGuidBackfillTest {
 
         // mock schema service
         when(uploadSchemaService.getUploadSchemaByIdAndRev(any(), any(), anyInt())).thenAnswer(
-                invocation -> new DynamoUploadSchema());
+                invocation -> UploadSchema.create());
 
         // execute
         backfill.doBackfill(MOCK_TASK, MOCK_CALLBACK);
@@ -264,7 +263,7 @@ public class SchemaSurveyGuidBackfillTest {
         when(uploadSchemaService.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, "error-survey", 44)).thenThrow(
                 BridgeServiceException.class);
         when(uploadSchemaService.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, TEST_SURVEY_ID,
-                TEST_SURVEY_SCHEMA_REV)).thenReturn(new DynamoUploadSchema());
+                TEST_SURVEY_SCHEMA_REV)).thenReturn(UploadSchema.create());
 
         // execute
         backfill.doBackfill(MOCK_TASK, MOCK_CALLBACK);
@@ -292,7 +291,7 @@ public class SchemaSurveyGuidBackfillTest {
 
         // mock schema service
         when(uploadSchemaService.getUploadSchemaByIdAndRev(any(), any(), anyInt())).thenAnswer(
-                invocation -> new DynamoUploadSchema());
+                invocation -> UploadSchema.create());
 
         // updating "error-survey" throws.
         when(uploadSchemaService.updateSchemaRevisionV4(eq(TestConstants.TEST_STUDY), eq("error-survey"), anyInt(),

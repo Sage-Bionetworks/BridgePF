@@ -56,11 +56,13 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
     @Override
     public List<NotificationTopic> listTopics(StudyIdentifier studyId) {
         checkNotNull(studyId);
-        
+
+        // Consistent reads is set to true, because this is the table's primary key, and having reliable tests is more
+        // important than saving a small amount of DDB capacity.
         DynamoNotificationTopic hashKey = new DynamoNotificationTopic();
         hashKey.setStudyId(studyId.getIdentifier());
         DynamoDBQueryExpression<DynamoNotificationTopic> query = new DynamoDBQueryExpression<DynamoNotificationTopic>()
-                .withConsistentRead(false).withHashKeyValues(hashKey);
+                .withConsistentRead(true).withHashKeyValues(hashKey);
 
         QueryResultPage<DynamoNotificationTopic> resultPage = mapper.queryPage(DynamoNotificationTopic.class, query);
         return ImmutableList.copyOf(resultPage.getResults());
@@ -127,7 +129,7 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
         checkNotNull(studyId);
         checkNotNull(guid);
         
-        NotificationTopic existing = getTopic(studyId, guid);
+        NotificationTopic existing = getTopicInternal(studyId.getIdentifier(), guid);
         
         // Delete the DDB record first. If it fails an exception is thrown. If SNS fails, the SNS topic
         // is not deleted, but the DDB record has successfully deleted, so suppress the exception (just 

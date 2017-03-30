@@ -36,6 +36,7 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
@@ -82,6 +83,8 @@ public class ParticipantService {
 
     private NotificationsService notificationsService;
 
+    private ScheduledActivityService scheduledActivityService;
+
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
@@ -125,6 +128,11 @@ public class ParticipantService {
     @Autowired
     final void setNotificationsService(NotificationsService notificationsService) {
         this.notificationsService = notificationsService;
+    }
+
+    @Autowired
+    final void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
+        this.scheduledActivityService = scheduledActivityService;
     }
 
     public StudyParticipant getParticipant(Study study, String id, boolean includeHistory) {
@@ -257,8 +265,8 @@ public class ParticipantService {
         optionsService.setAllOptions(study.getStudyIdentifier(), account.getHealthCode(), options);
     }
 
-    private void updateAccountOptionsAndRoles(Study study, Set<Roles> callerRoles, Map<ParticipantOption, String> options,
-            Account account, StudyParticipant participant) {
+    private void updateAccountOptionsAndRoles(Study study, Set<Roles> callerRoles,
+            Map<ParticipantOption, String> options, Account account, StudyParticipant participant) {
         for (ParticipantOption option : ParticipantOption.values()) {
             options.put(option, option.fromParticipant(participant));
         }
@@ -301,6 +309,18 @@ public class ParticipantService {
         Account account = getAccountThrowingException(study, userId);
 
         return activityDao.getActivityHistory(account.getHealthCode(), offsetKey, pageSize);
+    }
+
+    public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(Study study, String userId,
+            String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, String offsetBy, int pageSize) {
+        checkNotNull(study);
+        checkArgument(isNotBlank(activityGuid));
+        checkArgument(isNotBlank(userId));
+
+        Account account = getAccountThrowingException(study, userId);
+
+        return scheduledActivityService.getActivityHistory(account.getHealthCode(), activityGuid, scheduledOnStart,
+                scheduledOnEnd, offsetBy, pageSize);
     }
 
     public void deleteActivities(Study study, String userId) {

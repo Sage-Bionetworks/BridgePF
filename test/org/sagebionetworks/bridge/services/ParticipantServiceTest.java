@@ -94,6 +94,9 @@ public class ParticipantServiceTest {
     private static final String LAST_NAME = "lastName";
     private static final String FIRST_NAME = "firstName";
     private static final String PASSWORD = "P@ssword1";
+    private static final String ACTIVITY_GUID = "activityGuid";
+    private static final String PAGED_BY = "100";
+    private static final int PAGE_SIZE = 50;
     private static final Set<Roles> CALLER_ROLES = Sets.newHashSet(RESEARCHER);
     private static final Set<Roles> USER_ROLES = Sets.newHashSet(DEVELOPER);
     private static final LinkedHashSet<String> USER_LANGUAGES = (LinkedHashSet<String>)BridgeUtils.commaListToOrderedSet("de,fr");
@@ -156,6 +159,9 @@ public class ParticipantServiceTest {
     @Mock
     private NotificationsService notificationsService;
     
+    @Mock
+    private ScheduledActivityService scheduledActivityService;
+    
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
     
@@ -194,6 +200,7 @@ public class ParticipantServiceTest {
         participantService.setScheduledActivityDao(activityDao);
         participantService.setUploadService(uploadService);
         participantService.setNotificationsService(notificationsService);
+        participantService.setScheduledActivityService(scheduledActivityService);
     }
     
     private void mockHealthCodeAndAccountRetrieval() {
@@ -726,6 +733,30 @@ public class ParticipantServiceTest {
     @Test(expected = EntityNotFoundException.class)
     public void getActivityHistoryNoUserThrowsCorrectException() {
         participantService.getActivityHistory(STUDY, ID, null, 40);
+    }
+
+    @Test
+    public void canGetActivityHistoryV2WithAllValues() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.getActivityHistory(STUDY, ID, ACTIVITY_GUID, START_DATE, END_DATE, PAGED_BY, PAGE_SIZE);
+
+        verify(scheduledActivityService).getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, START_DATE, END_DATE, PAGED_BY,
+                PAGE_SIZE);
+    }
+    
+    @Test
+    public void canGetActivityHistoryV2WithDefaults() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.getActivityHistory(STUDY, ID, ACTIVITY_GUID, null, null, null, PAGE_SIZE);
+
+        verify(scheduledActivityService).getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, null, null, null, PAGE_SIZE);
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void getActivityHistoryV2NoUserThrowsCorrectException() {
+        participantService.getActivityHistory(STUDY, ID, ACTIVITY_GUID, null, null, null, PAGE_SIZE);
     }
     
     @Test

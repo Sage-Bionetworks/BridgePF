@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.anyVararg;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -17,6 +16,7 @@ import java.util.List;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -30,14 +30,10 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivityDefinition;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.CompoundActivityDefinitionService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 public class CompoundActivityDefinitionControllerTest {
-    // Study is just a pass-through, no need to fill it in.
-    private static final Study STUDY = Study.create();
-
     private static final String TASK_ID = "test-task";
 
     private CompoundActivityDefinitionController controller;
@@ -52,7 +48,6 @@ public class CompoundActivityDefinitionControllerTest {
 
         // mock study service
         studyService = mock(StudyService.class);
-        when(studyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(STUDY);
 
         // mock def service
         defService = mock(CompoundActivityDefinitionService.class);
@@ -62,6 +57,16 @@ public class CompoundActivityDefinitionControllerTest {
         doReturn(mockSession).when(controller).getAuthenticatedSession(anyVararg());
         controller.setCompoundActivityDefService(defService);
         controller.setStudyService(studyService);
+    }
+
+    @After
+    public void verifyDeveloperPermissionsUsed() {
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
+    }
+
+    @After
+    public void verifyStudyServiceUnused() {
+        verifyZeroInteractions(studyService);
     }
 
     @Test
@@ -81,8 +86,8 @@ public class CompoundActivityDefinitionControllerTest {
 
         ArgumentCaptor<CompoundActivityDefinition> serviceInputCaptor = ArgumentCaptor.forClass(
                 CompoundActivityDefinition.class);
-        when(defService.createCompoundActivityDefinition(same(STUDY), serviceInputCaptor.capture())).thenReturn(
-                serviceOutput);
+        when(defService.createCompoundActivityDefinition(eq(TestConstants.TEST_STUDY), serviceInputCaptor.capture()))
+                .thenReturn(serviceOutput);
 
         // execute and validate
         Result result = controller.createCompoundActivityDefinition();
@@ -94,9 +99,6 @@ public class CompoundActivityDefinitionControllerTest {
         // validate service input
         CompoundActivityDefinition serviceInput = serviceInputCaptor.getValue();
         assertEquals(TASK_ID, serviceInput.getTaskId());
-
-        // verify DEVELOPER permissions
-        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
     }
 
     @Test
@@ -110,12 +112,6 @@ public class CompoundActivityDefinitionControllerTest {
 
         // verify call through to the service
         verify(defService).deleteCompoundActivityDefinition(TestConstants.TEST_STUDY, TASK_ID);
-
-        // verify ADMIN permissions
-        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
-
-        // verify no call to StudyService
-        verifyZeroInteractions(studyService);
     }
 
     @Test
@@ -141,12 +137,6 @@ public class CompoundActivityDefinitionControllerTest {
         CompoundActivityDefinition controllerOutput = controllerOutputList.get(0);
         assertEquals(TASK_ID, controllerOutput.getTaskId());
         assertNull(controllerOutput.getStudyId());
-
-        // verify DEVELOPER permissions
-        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
-
-        // verify no call to StudyService
-        verifyZeroInteractions(studyService);
     }
 
     @Test
@@ -164,12 +154,6 @@ public class CompoundActivityDefinitionControllerTest {
         CompoundActivityDefinition controllerOutput = getDefFromResult(result);
         assertEquals(TASK_ID, controllerOutput.getTaskId());
         assertNull(controllerOutput.getStudyId());
-
-        // verify DEVELOPER permissions
-        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
-
-        // verify no call to StudyService
-        verifyZeroInteractions(studyService);
     }
 
     @Test
@@ -188,8 +172,8 @@ public class CompoundActivityDefinitionControllerTest {
 
         ArgumentCaptor<CompoundActivityDefinition> serviceInputCaptor = ArgumentCaptor.forClass(
                 CompoundActivityDefinition.class);
-        when(defService.updateCompoundActivityDefinition(same(STUDY), eq(TASK_ID), serviceInputCaptor.capture()))
-                .thenReturn(serviceOutput);
+        when(defService.updateCompoundActivityDefinition(eq(TestConstants.TEST_STUDY), eq(TASK_ID),
+                serviceInputCaptor.capture())).thenReturn(serviceOutput);
 
         // execute and validate
         Result result = controller.updateCompoundActivityDefinition(TASK_ID);
@@ -201,9 +185,6 @@ public class CompoundActivityDefinitionControllerTest {
         // validate service input
         CompoundActivityDefinition serviceInput = serviceInputCaptor.getValue();
         assertEquals(TASK_ID, serviceInput.getTaskId());
-
-        // verify DEVELOPER permissions
-        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
     }
 
     private static CompoundActivityDefinition getDefFromResult(Result result) throws Exception {

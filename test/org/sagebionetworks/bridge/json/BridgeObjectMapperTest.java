@@ -5,7 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 
@@ -47,7 +47,7 @@ public class BridgeObjectMapperTest {
         assertTrue(json.indexOf("type") == json.lastIndexOf("type") && json.indexOf("type") > -1);
         
         // This object does not have a filter, should still write a type property
-        json = BridgeObjectMapper.get().writeValueAsString(TestConstants.TEST_1_ACTIVITY);
+        json = BridgeObjectMapper.get().writeValueAsString(TestUtils.getActivity1());
         String prop = "\"type\":\"Activity\"";
         assertTrue(json.indexOf(prop) == json.lastIndexOf(prop) && json.indexOf(prop) > -1);
     }

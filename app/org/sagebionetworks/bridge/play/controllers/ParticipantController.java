@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
+import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
@@ -21,6 +22,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
@@ -76,9 +78,16 @@ public class ParticipantController extends BaseController {
                 .withId(session.getId()).build();
         participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
         
-        CriteriaContext context = getCriteriaContext(session);
-        session = authenticationService.getSession(study, context);
-        updateSession(session);
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withLanguages(session.getParticipant().getLanguages())
+                .withClientInfo(getClientInfoFromUserAgentHeader())
+                .withHealthCode(session.getHealthCode())
+                .withUserId(session.getId())
+                .withUserDataGroups(updated.getDataGroups())
+                .withStudyIdentifier(session.getStudyIdentifier())
+                .build();
+        
+        sessionUpdateService.updateParticipant(session, context, updated);
         
         return okResult(UserSessionInfo.toJSON(session));
     }
@@ -180,6 +189,21 @@ public class ParticipantController extends BaseController {
         PagedResourceList<? extends ScheduledActivity> history = participantService.getActivityHistory(study, userId, offsetKey, pageSize);
         
         return ok(ScheduledActivity.RESEARCHER_SCHEDULED_ACTIVITY_WRITER.writeValueAsString(history));
+    }
+
+    public Result getActivityHistoryV2(String userId, String activityGuid, String scheduledOnStartString,
+            String scheduledOnEndString, String offsetBy, String pageSizeString) throws Exception {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        DateTime scheduledOnStart = getDateTimeOrDefault(scheduledOnStartString, null);
+        DateTime scheduledOnEnd = getDateTimeOrDefault(scheduledOnEndString, null);
+        int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> page = participantService.getActivityHistory(
+                study, userId, activityGuid, scheduledOnStart, scheduledOnEnd, offsetBy, pageSize);
+        
+        return ok(ScheduledActivity.RESEARCHER_SCHEDULED_ACTIVITY_WRITER.writeValueAsString(page));
     }
     
     public Result deleteActivities(String userId) throws Exception {

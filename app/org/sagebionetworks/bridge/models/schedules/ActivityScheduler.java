@@ -68,7 +68,8 @@ public abstract class ActivityScheduler {
                     schActivity.setTimeZone(context.getEndsOn().getZone());
                     schActivity.setHealthCode(context.getCriteriaContext().getHealthCode());
                     schActivity.setActivity(activity);
-                    schActivity.setLocalScheduledOn(localDate.toLocalDateTime(localTime));
+                    LocalDateTime localScheduledOn = localDate.toLocalDateTime(localTime);
+                    schActivity.setLocalScheduledOn(localScheduledOn);
                     schActivity.setGuid(activity.getGuid() + ":" + localDate.toLocalDateTime(localTime));
                     schActivity.setPersistent(activity.isPersistentlyRescheduledBy(schedule));
                     if (expiresOn != null) {

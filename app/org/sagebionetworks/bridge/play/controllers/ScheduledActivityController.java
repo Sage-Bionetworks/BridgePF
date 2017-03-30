@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 
 import java.util.ArrayList;
@@ -9,12 +10,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
@@ -49,6 +51,20 @@ public class ScheduledActivityController extends BaseController {
         return okResultAsTasks(scheduledActivities);
     }
 
+    public Result getActivityHistory(String activityGuid, String scheduledOnStartString,
+            String scheduledOnEndString, String offsetBy, String pageSizeString) throws Exception {
+        UserSession session = getAuthenticatedAndConsentedSession();
+        
+        DateTime scheduledOnStart = getDateTimeOrDefault(scheduledOnStartString, null);
+        DateTime scheduledOnEnd = getDateTimeOrDefault(scheduledOnEndString, null);
+        int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> page = scheduledActivityService.getActivityHistory(
+                session.getHealthCode(), activityGuid, scheduledOnStart, scheduledOnEnd, offsetBy, pageSize);
+        
+        return ok(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(page));
+    }
+    
     public Result getScheduledActivities(String untilString, String offset, String daysAhead, String minimumPerScheduleString)
             throws Exception {
         List<ScheduledActivity> scheduledActivities = getScheduledActivitiesInternal(untilString, offset, daysAhead, minimumPerScheduleString);
@@ -128,11 +144,7 @@ public class ScheduledActivityController extends BaseController {
         optionsService.setDateTimeZone(session.getStudyIdentifier(), session.getHealthCode(),
                 ParticipantOption.TIME_ZONE, timeZone);
         
-        StudyParticipant participant = session.getParticipant();
-        session.setParticipant(new StudyParticipant.Builder()
-                .copyOf(participant)
-                .withTimeZone(timeZone).build());
-        updateSession(session);
+        sessionUpdateService.updateTimeZone(session, timeZone);
         
         return timeZone;
     }

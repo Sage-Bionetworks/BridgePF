@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -33,14 +34,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -55,6 +54,10 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -76,6 +79,12 @@ public class ScheduledActivityServiceMockTest {
     private static final DateTime SURVEY_CREATED_ON = DateTime.parse("2015-04-03T10:40:34.000-07:00");
     
     private static final DateTime NOW = DateTime.parse("2017-02-23T14:25:51.195-08:00");
+    
+    private static final String ACTIVITY_GUID = "activityGuid";
+    
+    private static final DateTime STARTS_ON = DateTime.now().minusDays(1);
+    
+    private static final DateTime ENDS_ON = DateTime.now();
     
     private ScheduledActivityService service;
     
@@ -139,6 +148,41 @@ public class ScheduledActivityServiceMockTest {
         DateTimeUtils.setCurrentMillisSystem();
     }
     
+    @Test(expected = BadRequestException.class)
+    public void activityHistoryEnforcesMinPageSize() {
+        service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, STARTS_ON, ENDS_ON, null, 2);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void activityHistoryEnforcesMaxPageSize() {
+        service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, STARTS_ON, ENDS_ON, null, 200);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void activityHistoryEnforcesFullDateRangeWhenNoStart() {
+        service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, null, ENDS_ON, null, 40);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void activityHistoryEnforcesFullDateRangeWhenNoEnd() {
+        service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, STARTS_ON, null, null, 40);
+    }
+    
+    @Test
+    public void activityHistoryDefaultsDateRange() {
+        DateTimeUtils.setCurrentMillisFixed(STARTS_ON.getMillis());
+        
+        service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, null, null, null, 40);
+        verify(activityDao).getActivityHistoryV2(HEALTH_CODE, ACTIVITY_GUID, STARTS_ON.minusDays(9), STARTS_ON.plusDays(5), null, 40);
+        
+        DateTimeUtils.setCurrentMillisSystem();
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void activityHistoryEnforcesDateRangeEndAfterStart() {
+        service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, ENDS_ON, STARTS_ON, null, 200);
+    }
+
     @Test(expected = BadRequestException.class)
     public void rejectsEndsOnBeforeNow() {
         service.getScheduledActivities(new ScheduleContext.Builder()
@@ -210,7 +254,7 @@ public class ScheduledActivityServiceMockTest {
     
     @SuppressWarnings({"unchecked","rawtypes"})
     @Test
-    public void updateActivitiesWorks() {
+    public void updateActivitiesWorks() throws Exception {
         ScheduleContext context = createScheduleContext(endsOn);
         List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
         
@@ -218,6 +262,7 @@ public class ScheduledActivityServiceMockTest {
         scheduledActivities.get(0).setStartedOn(NOW.getMillis());
         scheduledActivities.get(1).setFinishedOn(NOW.getMillis());
         scheduledActivities.get(2).setFinishedOn(NOW.getMillis());
+        scheduledActivities.get(3).setClientData(TestUtils.getClientData());
         
         ArgumentCaptor<List> updateCapture = ArgumentCaptor.forClass(List.class);
         ArgumentCaptor<ScheduledActivity> publishCapture = ArgumentCaptor.forClass(ScheduledActivity.class);
@@ -226,27 +271,42 @@ public class ScheduledActivityServiceMockTest {
         
         verify(activityDao).updateActivities(anyString(), updateCapture.capture());
         // Three activities have timestamp updates and need to be persisted
-        verify(activityDao, times(3)).getActivity(anyString(), anyString());
+        verify(activityDao, times(count)).getActivity(anyString(), anyString());
         // Two activities have been finished and generate activity finished events
         verify(activityEventService, times(2)).publishActivityFinishedEvent(publishCapture.capture());
         
         List<DynamoScheduledActivity> dbActivities = (List<DynamoScheduledActivity>)updateCapture.getValue();
-        assertEquals(count-3, dbActivities.size());
+        assertEquals(4, dbActivities.size());
         
         // Correct saved activities
         assertEquals(scheduledActivities.get(0).getGuid(), dbActivities.get(0).getGuid());
         assertEquals(scheduledActivities.get(1).getGuid(), dbActivities.get(1).getGuid());
         assertEquals(scheduledActivities.get(2).getGuid(), dbActivities.get(2).getGuid());
+        assertEquals(scheduledActivities.get(3).getClientData(), dbActivities.get(3).getClientData());
         
         // Correct published activities
         ScheduledActivity publishedActivity1 = publishCapture.getAllValues().get(0);
         assertEquals(scheduledActivities.get(1).getGuid(), publishedActivity1.getGuid());
         ScheduledActivity publishedActivity2 = publishCapture.getAllValues().get(1);
         assertEquals(scheduledActivities.get(2).getGuid(), publishedActivity2.getGuid());
-        
     }
     
-    @Test(expected = BridgeServiceException.class)
+    @Test(expected = BadRequestException.class)
+    public void activityListsWithTooLargeClientDataRejected() throws Exception {
+        JsonNode node = TestUtils.getClientData();
+        ArrayNode array = JsonNodeFactory.instance.arrayNode();
+        for (int i=0; i < 35; i++) {
+            array.add(node);
+        }
+        
+        ScheduleContext context = createScheduleContext(endsOn);
+        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
+        activities.get(0).setClientData(array);
+        
+        service.updateScheduledActivities("BBB", activities);
+    }
+    
+    @Test(expected = BadRequestException.class)
     public void activityListWithNullsRejected() {
         ScheduleContext context = createScheduleContext(endsOn);
         List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
@@ -255,7 +315,7 @@ public class ScheduledActivityServiceMockTest {
         service.updateScheduledActivities("BBB", activities);
     }
     
-    @Test(expected = BridgeServiceException.class)
+    @Test(expected = BadRequestException.class)
     public void activityListWithNullGuidRejected() {
         ScheduleContext context = createScheduleContext(endsOn);
         List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
@@ -607,7 +667,7 @@ public class ScheduledActivityServiceMockTest {
     @Test
     public void schedulerInterpretsEventToCorrectDate() {
         Schedule schedule = new Schedule();
-        schedule.getActivities().add(TestConstants.TEST_1_ACTIVITY);
+        schedule.getActivities().add(TestUtils.getActivity1());
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setInterval("P1D");
         schedule.addTimes("23:00");
@@ -625,7 +685,7 @@ public class ScheduledActivityServiceMockTest {
     @Test
     public void schedulerInterpetsEventToRightLocalTime() {
         Schedule schedule = new Schedule();
-        schedule.getActivities().add(TestConstants.TEST_1_ACTIVITY);
+        schedule.getActivities().add(TestUtils.getActivity1());
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setDelay(Period.parse("PT1H"));
         
@@ -642,7 +702,7 @@ public class ScheduledActivityServiceMockTest {
     @Test
     public void localTimeZonesCorrectlyApplied() {
         Schedule schedule = new Schedule();
-        schedule.getActivities().add(TestConstants.TEST_1_ACTIVITY);
+        schedule.getActivities().add(TestUtils.getActivity1());
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setDelay(Period.parse("PT1H"));
         
@@ -651,6 +711,59 @@ public class ScheduledActivityServiceMockTest {
         
         timestamp = firstTimeStampFor(9, -8, schedule);
         assertEquals("2017-02-20T11:00:00.000-08:00", timestamp);
+    }
+    
+    @Test
+    public void detectClientDataAdded() throws Exception {
+        ScheduledActivity dbActivity = ScheduledActivity.create();
+        
+        ScheduledActivity activity = ScheduledActivity.create();
+        activity.setClientData(TestUtils.getClientData());
+        
+        assertTrue(service.hasUpdatedClientData(activity, dbActivity));
+    }
+    
+    @Test
+    public void detectClientDataRemoved() throws Exception {
+        ScheduledActivity dbActivity = ScheduledActivity.create();
+        dbActivity.setClientData(TestUtils.getClientData());
+        
+        ScheduledActivity activity = ScheduledActivity.create();
+        
+        assertTrue(service.hasUpdatedClientData(activity, dbActivity));
+    }
+    
+    @Test
+    public void detectClientDataChanged() throws Exception {
+        ScheduledActivity dbActivity = ScheduledActivity.create();
+        dbActivity.setClientData(TestUtils.getClientData());
+        
+        ScheduledActivity activity = ScheduledActivity.create();
+        JsonNode changedClientData = TestUtils.getClientData();
+        ((ObjectNode)changedClientData).put("type", "ChangedNode");
+        activity.setClientData(changedClientData);
+        
+        assertTrue(service.hasUpdatedClientData(activity, dbActivity));
+    }
+    
+    @Test
+    public void detectClientDataRemainsNull() {
+        ScheduledActivity dbActivity = ScheduledActivity.create();
+        
+        ScheduledActivity activity = ScheduledActivity.create();
+        
+        assertFalse(service.hasUpdatedClientData(activity, dbActivity));
+    }
+    
+    @Test
+    public void detectClientDataRemainsSame() throws Exception {
+        ScheduledActivity dbActivity = ScheduledActivity.create();
+        dbActivity.setClientData(TestUtils.getClientData());
+        
+        ScheduledActivity activity = ScheduledActivity.create();
+        activity.setClientData(TestUtils.getClientData());
+        
+        assertFalse(service.hasUpdatedClientData(activity, dbActivity));
     }
     
     private String firstTimeStampFor(int initialTZOffset, int requestTZOffset, Schedule schedule) {

@@ -54,6 +54,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -70,13 +71,18 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.services.AuthenticationService;
+import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ParticipantService;
+import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ParticipantControllerTest {
 
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
+    
+    private static final TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>> FORWARD_CURSOR_PAGED_ACTIVITIES_REF = new TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>>() {
+    };
     
     private static final TypeReference<PagedResourceList<ScheduledActivity>> PAGED_ACTIVITIES_REF = new TypeReference<PagedResourceList<ScheduledActivity>>() {};
 
@@ -89,12 +95,21 @@ public class ParticipantControllerTest {
     private static final String ID = "ASDF";
 
     private static final String EMAIL = "email@email.com";
+    
+    private static final String ACTIVITY_GUID = "activityGuid";
 
+    private static final DateTime ENDS_ON = DateTime.now();
+    
+    private static final DateTime STARTS_ON = ENDS_ON.minusWeeks(1);
+    
     private static final AccountSummary SUMMARY = new AccountSummary("firstName", "lastName", "email", "id",
             DateTime.now(), AccountStatus.ENABLED, TestConstants.TEST_STUDY);
     
     @Spy
     private ParticipantController controller;
+    
+    @Mock
+    private ConsentService mockConsentService;
     
     @Mock
     private ParticipantService mockParticipantService;
@@ -125,6 +140,12 @@ public class ParticipantControllerTest {
     
     @Captor
     private ArgumentCaptor<NotificationMessage> messageCaptor;
+    
+    @Captor
+    private ArgumentCaptor<DateTime> startsOnCaptor;
+    
+    @Captor
+    private ArgumentCaptor<DateTime> endsOnCaptor;
     
     private UserSession session;
     
@@ -161,6 +182,12 @@ public class ParticipantControllerTest {
         controller.setStudyService(mockStudyService);
         controller.setAuthenticationService(authService);
         controller.setCacheProvider(cacheProvider);
+        
+        SessionUpdateService sessionUpdateService = new SessionUpdateService();
+        sessionUpdateService.setCacheProvider(cacheProvider);
+        sessionUpdateService.setConsentService(mockConsentService);
+        
+        controller.setSessionUpdateService(sessionUpdateService);
         
         mockPlayContext();
     }
@@ -208,11 +235,10 @@ public class ParticipantControllerTest {
         
         Result result = controller.getParticipant(ID);
         assertEquals(result.contentType(), "application/json");
-        String json = Helpers.contentAsString(result);
         
         // StudyParticipant will encrypt the healthCode when you ask for it, so validate the
         // JSON itself.
-        JsonNode node = MAPPER.readTree(json);
+        JsonNode node = TestUtils.getJson(result);
         assertTrue(node.has("firstName"));
         assertTrue(node.has("healthCode"));
         assertFalse(node.has("encryptedHealthCode"));
@@ -418,22 +444,14 @@ public class ParticipantControllerTest {
         mockPlayContextWithJson(json);
 
         Result result = controller.updateSelfParticipant();
-        JsonNode node = MAPPER.readTree(Helpers.contentAsString(result));
-        assertEquals(200, result.status());
-        assertEquals("UserSessionInfo", node.get("type").asText());
         
-        // The session here is returned from the authenticationService, and that is mocked out, but 
-        // we verify that we are calling updateSession() with that initialized session (with its 
-        // healthCode)
-        verify(controller).updateSession(sessionCaptor.capture());
-        UserSession session = sessionCaptor.getValue();
-        assertEquals("healthCode", session.getHealthCode());
-        assertEquals("FirstName", session.getParticipant().getFirstName());
-        // etc.
+        assertEquals(200, result.status());
+        JsonNode node = TestUtils.getJson(result);
+        assertEquals("UserSessionInfo", node.get("type").asText());
+        assertNull(node.get("healthCode"));
         
         // verify the object is passed to service, one field is sufficient
         verify(cacheProvider).setUserSession(any());
-        verify(authService).getSession(eq(study), any());
         verify(mockParticipantService).updateParticipant(eq(study), eq(NO_CALLER_ROLES), participantCaptor.capture());
 
         // Just test the different types and verify they are there.
@@ -479,10 +497,9 @@ public class ParticipantControllerTest {
         
         Result result = controller.updateSelfParticipant();
         assertEquals(200, result.status());
-        JsonNode node = MAPPER.readTree(Helpers.contentAsString(result));
+        JsonNode node = TestUtils.getJson(result);
         assertEquals("UserSessionInfo", node.get("type").asText());
 
-        verify(authService).getSession(eq(study), any());
         verify(mockParticipantService).updateParticipant(eq(study), eq(NO_CALLER_ROLES), participantCaptor.capture());
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals(ID, captured.getId());
@@ -531,11 +548,9 @@ public class ParticipantControllerTest {
         TestUtils.mockPlayContextWithJson(json);
 
         Result result = controller.updateSelfParticipant();
-        JsonNode node = MAPPER.readTree(Helpers.contentAsString(result));
+        JsonNode node = TestUtils.getJson(result);
         assertEquals(200, result.status());
         assertEquals("UserSessionInfo", node.get("type").asText());
-        
-        verify(controller).updateSession(session);
         
         // verify the object is passed to service, one field is sufficient
         verify(mockParticipantService).updateParticipant(eq(study), eq(NO_CALLER_ROLES), participantCaptor.capture());
@@ -577,6 +592,51 @@ public class ParticipantControllerTest {
         verify(mockParticipantService).getActivityHistory(study, ID, null, null);
     }
     
+    @Test
+    public void canGetActivityHistoryV2() throws Exception {
+        doReturn(createActivityResultsV2()).when(mockParticipantService).getActivityHistory(eq(study), eq(ID), eq(ACTIVITY_GUID),
+                any(), any(), eq("200"), eq(77));
+        
+        Result result = controller.getActivityHistoryV2(ID, ACTIVITY_GUID, STARTS_ON.toString(), ENDS_ON.toString(),
+                "200", "77");
+        assertEquals(200, result.status());
+        ForwardCursorPagedResourceList<ScheduledActivity> page = MAPPER.readValue(Helpers.contentAsString(result),
+                FORWARD_CURSOR_PAGED_ACTIVITIES_REF);
+        
+        ScheduledActivity activity = page.getItems().iterator().next();
+        assertEquals("schedulePlanGuid", activity.getSchedulePlanGuid());
+        assertNull(activity.getHealthCode());
+        
+        assertEquals(1, page.getItems().size()); // have not mocked out these items, but the list is there.
+        assertEquals(1, page.getPageSize());
+        
+        verify(mockParticipantService).getActivityHistory(eq(study), eq(ID), eq(ACTIVITY_GUID),
+                startsOnCaptor.capture(), endsOnCaptor.capture(), eq("200"), eq(77));
+        assertTrue(STARTS_ON.isEqual(startsOnCaptor.getValue()));
+        assertTrue(ENDS_ON.isEqual(endsOnCaptor.getValue()));
+    }
+
+    @Test
+    public void canGetActivityV2WithNullValues() throws Exception {
+        doReturn(createActivityResultsV2()).when(mockParticipantService).getActivityHistory(eq(study), eq(ID), eq(ACTIVITY_GUID),
+                any(), any(), eq(null), eq(API_DEFAULT_PAGE_SIZE));
+        
+        Result result = controller.getActivityHistoryV2(ID, ACTIVITY_GUID, null, null, null, null);
+        assertEquals(200, result.status());
+        ForwardCursorPagedResourceList<ScheduledActivity> page = MAPPER.readValue(Helpers.contentAsString(result),
+                FORWARD_CURSOR_PAGED_ACTIVITIES_REF);
+        
+        ScheduledActivity activity = page.getItems().iterator().next();
+        assertEquals("schedulePlanGuid", activity.getSchedulePlanGuid());
+        assertNull(activity.getHealthCode());
+        
+        assertEquals(1, page.getItems().size()); // have not mocked out these items, but the list is there.
+        assertEquals(1, page.getPageSize());
+        
+        verify(mockParticipantService).getActivityHistory(eq(study), eq(ID), eq(ACTIVITY_GUID), eq(null), eq(null),
+                eq(null), eq(API_DEFAULT_PAGE_SIZE));
+    }
+
     @Test
     public void deleteActivities() throws Exception {
         Result result = controller.deleteActivities(ID);
@@ -659,7 +719,7 @@ public class ParticipantControllerTest {
         
         Result result = controller.getNotificationRegistrations(ID);
         assertEquals(200, result.status());
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        JsonNode node = TestUtils.getJson(result);
         assertEquals(0, node.get("total").asInt());
         assertEquals("ResourceList", node.get("type").asText());
         
@@ -686,12 +746,24 @@ public class ParticipantControllerTest {
         List<ScheduledActivity> list = Lists.newArrayList();
         
         DynamoScheduledActivity activity = new DynamoScheduledActivity();
-        activity.setActivity(TestConstants.TEST_1_ACTIVITY);
+        activity.setActivity(TestUtils.getActivity1());
         activity.setHealthCode("healthCode");
         activity.setSchedulePlanGuid("schedulePlanGuid");
         list.add(activity);
         
         return new PagedResourceList<>(list, null, 25, 100);
+    }
+    
+    private ForwardCursorPagedResourceList<ScheduledActivity> createActivityResultsV2() {
+        List<ScheduledActivity> list = Lists.newArrayList();
+        
+        DynamoScheduledActivity activity = new DynamoScheduledActivity();
+        activity.setActivity(TestUtils.getActivity1());
+        activity.setHealthCode("healthCode");
+        activity.setSchedulePlanGuid("schedulePlanGuid");
+        list.add(activity);
+        
+        return new ForwardCursorPagedResourceList<>(list, null, list.size());
     }
     
     private PagedResourceList<AccountSummary> resultToPage(Result result) throws Exception {

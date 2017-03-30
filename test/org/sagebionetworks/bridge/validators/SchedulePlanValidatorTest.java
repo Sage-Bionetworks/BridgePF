@@ -10,7 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.validation.Errors;
 
-import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
@@ -113,7 +113,7 @@ public class SchedulePlanValidatorTest {
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setLabel("a label");
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        schedule.addActivity(TestUtils.getActivity3());
         return schedule;
     }
 

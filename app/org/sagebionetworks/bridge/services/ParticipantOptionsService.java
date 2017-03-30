@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.AllParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -111,7 +112,7 @@ public class ParticipantOptionsService {
         checkArgument(isNotBlank(healthCode));
         checkNotNull(option);
 
-        optionsDao.setOption(studyIdentifier, healthCode, option, zone.toString());
+        optionsDao.setOption(studyIdentifier, healthCode, option, DateUtils.timeZoneToOffsetString(zone));
     }
     
     public void setAllOptions(StudyIdentifier studyIdentifier, String healthCode, Map<ParticipantOption,String> options) {

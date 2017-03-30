@@ -19,6 +19,7 @@ import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
@@ -94,11 +95,13 @@ public class SchedulePlanServiceMockTest {
         SchedulePlan plan = createSchedulePlan();
         
         ArgumentCaptor<SchedulePlan> spCaptor = ArgumentCaptor.forClass(SchedulePlan.class);
+        when(mockSchedulePlanDao.getSchedulePlan(study, plan.getGuid())).thenReturn(plan);
         when(mockSchedulePlanDao.updateSchedulePlan(any(), any())).thenReturn(plan);
         
         service.updateSchedulePlan(study, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any());
         verify(mockSurveyService).getSurvey(any());
+        verify(mockSchedulePlanDao).getSchedulePlan(study, plan.getGuid());
         verify(mockSchedulePlanDao).updateSchedulePlan(any(), spCaptor.capture());
         
         List<Activity> activities = spCaptor.getValue().getStrategy().getAllPossibleSchedules().get(0).getActivities();
@@ -109,14 +112,14 @@ public class SchedulePlanServiceMockTest {
 
     @Test
     public void doNotUseIdentifierFromClient() {
-        
-        
         // The survey GUID/createdOn identify a survey, but the identifier from the client can just be 
         // mismatched by the client, so ignore it and look it up from the DB using the primary keys.
-        Activity activity = new Activity.Builder().withLabel("A survey activity")
+        Activity activity = new Activity.Builder().withGuid("guid").withLabel("A survey activity")
                 .withPublishedSurvey("junkIdentifier", surveyGuid1).build();
         SchedulePlan plan = createSchedulePlan();
         plan.getStrategy().getAllPossibleSchedules().get(0).getActivities().set(0, activity);
+        
+        when(mockSchedulePlanDao.getSchedulePlan(study, plan.getGuid())).thenReturn(plan);
         
         // Verify that this was set.
         String identifier = plan.getStrategy().getAllPossibleSchedules().get(0).getActivities().get(0)
@@ -129,6 +132,7 @@ public class SchedulePlanServiceMockTest {
         service.updateSchedulePlan(study, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any());
         verify(mockSurveyService).getSurvey(any());
+        verify(mockSchedulePlanDao).getSchedulePlan(study, plan.getGuid());
         verify(mockSchedulePlanDao).updateSchedulePlan(any(), spCaptor.capture());
         
         // It was not used.
@@ -181,6 +185,7 @@ public class SchedulePlanServiceMockTest {
         DynamoStudy anotherStudy = getAnotherStudy();
         SchedulePlan plan = getSchedulePlan();
         // Just pass it back, the service should set the studyKey
+        when(mockSchedulePlanDao.getSchedulePlan(anotherStudy, plan.getGuid())).thenReturn(plan);
         when(mockSchedulePlanDao.updateSchedulePlan(any(), any())).thenReturn(plan);
         
         plan = service.updateSchedulePlan(anotherStudy, plan);
@@ -195,7 +200,7 @@ public class SchedulePlanServiceMockTest {
             service.createSchedulePlan(study, plan);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
-            assertEquals("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier 'DDD' is not in enumeration: taskGuid, CCC, tapTest.", e.getErrors().get("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier").get(0));
+            assertEquals("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier 'DDD' is not in enumeration: taskGuid, CCC, tapTest", e.getErrors().get("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier").get(0));
             assertEquals("strategy.scheduleCriteria[0].criteria.allOfGroups 'FFF' is not in enumeration: AAA", e.getErrors().get("strategy.scheduleCriteria[0].criteria.allOfGroups").get(0));
         }
     }
@@ -204,11 +209,12 @@ public class SchedulePlanServiceMockTest {
     public void validatesOnUpdate() {
         // Check that 1) validation is called and 2) the study's enumerations are used in the validation
         SchedulePlan plan = createInvalidSchedulePlan();
+        when(mockSchedulePlanDao.getSchedulePlan(study, plan.getGuid())).thenReturn(plan);
         try {
             service.updateSchedulePlan(study, plan);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
-            assertEquals("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier 'DDD' is not in enumeration: taskGuid, CCC, tapTest.", e.getErrors().get("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier").get(0));
+            assertEquals("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier 'DDD' is not in enumeration: taskGuid, CCC, tapTest", e.getErrors().get("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier").get(0));
             assertEquals("strategy.scheduleCriteria[0].criteria.allOfGroups 'FFF' is not in enumeration: AAA", e.getErrors().get("strategy.scheduleCriteria[0].criteria.allOfGroups").get(0));
         }
     }
@@ -249,9 +255,9 @@ public class SchedulePlanServiceMockTest {
         // No identifier, which is the key here. This is valid, but we fill it out during saves as a convenience 
         // for the client. No longer required in the API.
         // Create a schedule plan with 3 activities to verify all activities are processed.
-        schedule.addActivity(new Activity.Builder().withLabel("Activity 1").withPublishedSurvey(null, surveyGuid1).build());
-        schedule.addActivity(new Activity.Builder().withLabel("Activity 2").withTask("taskGuid").build());
-        schedule.addActivity(new Activity.Builder().withLabel("Activity 3").withSurvey(null, surveyGuid2, DateTime.now()).build());
+        schedule.addActivity(new Activity.Builder().withGuid("A").withLabel("Activity 1").withPublishedSurvey(null, surveyGuid1).build());
+        schedule.addActivity(new Activity.Builder().withGuid("B").withLabel("Activity 2").withTask("taskGuid").build());
+        schedule.addActivity(new Activity.Builder().withGuid("C").withLabel("Activity 3").withSurvey(null, surveyGuid2, DateTime.now()).build());
         
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
