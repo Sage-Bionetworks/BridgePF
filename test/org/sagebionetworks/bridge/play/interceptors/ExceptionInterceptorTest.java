@@ -1,5 +1,3 @@
-
-
 package org.sagebionetworks.bridge.play.interceptors;
 
 import static org.junit.Assert.assertEquals;

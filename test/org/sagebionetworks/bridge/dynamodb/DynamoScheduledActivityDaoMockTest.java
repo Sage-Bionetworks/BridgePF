@@ -105,19 +105,6 @@ public class DynamoScheduledActivityDaoMockTest {
     }
     
     @Test
-    public void amazonExceptionConverted() { 
-        when(mapper.queryPage(any(), any())).thenThrow(new AmazonDynamoDBException("This was the error that occurred"));
-        
-        try {
-            activityDao.getActivityHistoryV2(HEALTH_CODE, "AAA", DateTime.now(), DateTime.now(), "AAA", 50);
-            fail("Should have thrown exception");
-        } catch(BadRequestException e) {
-            assertEquals("This was the error that occurred", e.getMessage());
-        }
-        
-    }
-    
-    @Test
     public void getScheduledActivities() throws Exception {
         ScheduledActivity activity = activityDao.getActivity("AAA", "BBB");
         assertEquals(testSchActivity, activity);
