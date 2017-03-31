@@ -56,9 +56,9 @@ public class UserManagementController extends BaseController {
 
         boolean consent = JsonUtils.asBoolean(node, CONSENT_FIELD);
 
-        UserSession userSession = userAdminService.createUser(study, participant, null, false, consent);
+        userAdminService.createUser(study, participant, null, false, consent);
 
-        return createdResult(UserSessionInfo.toJSON(userSession));
+        return createdResult("User created.");
     }
 
     public Result deleteUser(String userId) throws Exception {
