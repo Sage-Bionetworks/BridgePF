@@ -764,6 +764,18 @@ public class ParticipantServiceTest {
     }
     
     @Test
+    public void withdrawConsent() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        Withdrawal withdrawal = new Withdrawal("Reasons");
+        long withdrewOn = DateTime.now().getMillis();
+        
+        participantService.withdrawConsent(STUDY, ID, SUBPOP_GUID, withdrawal, withdrewOn);
+        
+        verify(consentService).withdrawConsent(STUDY, SUBPOP_GUID, account, withdrawal, withdrewOn);
+    }
+    
+    @Test
     public void getUploads() {
         mockHealthCodeAndAccountRetrieval();
         DateTime startTime = DateTime.parse("2015-11-01T00:00:00.000Z");

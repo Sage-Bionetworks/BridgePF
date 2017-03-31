@@ -213,11 +213,11 @@ public class ParticipantController extends BaseController {
         return okResult("Email verification request has been resent to user.");
     }
     
-    public Result resendConsentAgreement(String userId, String guid) {
+    public Result resendConsentAgreement(String userId, String subpopulationGuid) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
+        SubpopulationGuid subpopGuid = SubpopulationGuid.create(subpopulationGuid);
         participantService.resendConsentAgreement(study, subpopGuid, userId);
         
         return okResult("Consent agreement resent to user.");
@@ -233,6 +233,19 @@ public class ParticipantController extends BaseController {
         participantService.withdrawAllConsents(study, userId, withdrawal, withdrewOn);
         
         return okResult("User has been withdrawn from the study.");
+    }
+    
+    public Result withdrawConsent(String userId, String subpopulationGuid) {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        Withdrawal withdrawal = parseJson(request(), Withdrawal.class);
+        long withdrewOn = DateTime.now().getMillis();
+        SubpopulationGuid subpopGuid = SubpopulationGuid.create(subpopulationGuid);
+        
+        participantService.withdrawConsent(study, userId, subpopGuid, withdrawal, withdrewOn);
+        
+        return okResult("User has been withdrawn from subpopulation '"+subpopulationGuid+"'.");
     }
     
     public Result getUploads(String userId, String startTimeString, String endTimeString) {
