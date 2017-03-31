@@ -104,10 +104,6 @@ public class UserManagementControllerTest {
         Result result = controller.createUserWithStudyId(TEST_STUDY_IDENTIFIER);
 
         assertEquals(201, result.status());
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
-
-        assertEquals("UserSessionInfo", node.get("type").asText());
-        assertEquals("email@email.com", node.get("email").asText());
     }
     
     @Test
