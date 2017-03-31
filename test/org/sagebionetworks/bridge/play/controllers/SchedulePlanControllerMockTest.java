@@ -73,7 +73,7 @@ public class SchedulePlanControllerMockTest {
         controller.setSchedulePlanService(mockSchedulePlanService);
         
         when(mockUserSession.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("test-study"));
-        doReturn(mockUserSession).when(controller).getAuthenticatedSession(any(Roles.class));
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER);
     }
 
     @Test
@@ -112,6 +112,8 @@ public class SchedulePlanControllerMockTest {
     
     @Test
     public void getSchedulePlans() throws Exception {
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.RESEARCHER);
+        
         List<SchedulePlan> plans = Lists.newArrayList(TestUtils.getSimpleSchedulePlan(TestConstants.TEST_STUDY));
         
         when(mockSchedulePlanService.getSchedulePlans(any(), eq(study.getStudyIdentifier()))).thenReturn(plans);
