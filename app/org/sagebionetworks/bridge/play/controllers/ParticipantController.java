@@ -180,17 +180,6 @@ public class ParticipantController extends BaseController {
         return okResult("Request to reset password sent to user.");
     }
     
-    public Result getActivityHistory(String userId, String offsetKey, String pageSizeString) throws Exception {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
-        
-        Integer pageSize = (pageSizeString != null) ? Integer.parseInt(pageSizeString,10) : null;
-        
-        PagedResourceList<? extends ScheduledActivity> history = participantService.getActivityHistory(study, userId, offsetKey, pageSize);
-        
-        return ok(ScheduledActivity.RESEARCHER_SCHEDULED_ACTIVITY_WRITER.writeValueAsString(history));
-    }
-
     public Result getActivityHistoryV2(String userId, String activityGuid, String scheduledOnStartString,
             String scheduledOnEndString, String offsetBy, String pageSizeString) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
