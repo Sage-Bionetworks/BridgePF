@@ -172,6 +172,16 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     void setResetPasswordTemplate(EmailTemplate template);
     
     /**
+     * The template for emails that verify a user in order to issue a session and/or reset that 
+     * account's password. This template must at least include the "${token}" template variable, 
+     * which will be used to place a token into a link that normally triggers handling by the 
+     * app. The default template includes a link back to a web page on the Bridge Server that 
+     * completes the transaction and displays a session GUID. 
+     */
+    EmailTemplate getSessionSignInTemplate();
+    void setSessionSignInTemplate(EmailTemplate template);
+    
+    /**
      * Is this study active? Currently not in use, a de-activated study will be hidden from the 
      * study APIs and will no longer be available for use (a logical delete).
      */
@@ -183,6 +193,12 @@ public interface Study extends BridgeEntity, StudyIdentifier {
 
     /** @see #isStrictUploadValidationEnabled */
     void setStrictUploadValidationEnabled(boolean enabled);
+    
+    /** True if we allow users in this study to trigger a "magic link" sign in email. */ 
+    boolean isSessionSignInEnabled();
+    
+    /** @see #isSessionSignInEnabled */
+    void setSessionSignInEnabled(boolean sessionSignInEnable);
     
     /** True if this study will export the healthCode when generating a participant roster. */
     boolean isHealthCodeExportEnabled();

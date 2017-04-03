@@ -90,6 +90,8 @@ public class StudyService {
     private String defaultEmailVerificationTemplateSubject;
     private String defaultResetPasswordTemplate;
     private String defaultResetPasswordTemplateSubject;
+    private String defaultSessionSignInTemplate;
+    private String defaultSessionSignInTemplateSubject;
     
     @Value("classpath:study-defaults/email-verification.txt")
     final void setDefaultEmailVerificationTemplate(org.springframework.core.io.Resource resource) throws IOException {
@@ -106,6 +108,14 @@ public class StudyService {
     @Value("classpath:study-defaults/reset-password-subject.txt")
     final void setDefaultPasswordTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultResetPasswordTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
+    }
+    @Value("classpath:study-defaults/session-sign-in.txt")
+    final void setDefaultSessionSignInTemplate(org.springframework.core.io.Resource resource) throws IOException {
+        this.defaultSessionSignInTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
+    }
+    @Value("classpath:study-defaults/session-sign-in-subject.txt")
+    final void setDefaultSessionSignInTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
+        this.defaultSessionSignInTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
 
     /** Compound activity definition service, used to clean up deleted studies. This is set by Spring. */
@@ -173,6 +183,13 @@ public class StudyService {
 
         if (study != null && !study.isActive() && !includeDeleted) {
             throw new EntityNotFoundException(Study.class, "Study not found.");
+        }
+        
+        // Because this does not currently exist in studies, add the default if it is null.
+        if (study.getSessionSignInTemplate() == null) {
+            EmailTemplate template = new EmailTemplate(defaultSessionSignInTemplateSubject,
+                    defaultSessionSignInTemplate, MimeType.HTML);
+            study.setSessionSignInTemplate(template);
         }
 
         return study;
@@ -268,6 +285,7 @@ public class StudyService {
         study.setActive(true);
         study.setStrictUploadValidationEnabled(true);
         study.setEmailVerificationEnabled(true);
+        study.setSessionSignInEnabled(false);
         study.getDataGroups().add(BridgeConstants.TEST_USER_GROUP);
         setDefaultsIfAbsent(study);
         sanitizeHTML(study);
@@ -392,13 +410,17 @@ public class StudyService {
             study.setEmailVerificationEnabled(originalStudy.isEmailVerificationEnabled());
             study.setExternalIdValidationEnabled(originalStudy.isExternalIdValidationEnabled());
             study.setExternalIdRequiredOnSignup(originalStudy.isExternalIdRequiredOnSignup());
+            study.setSessionSignInEnabled(originalStudy.isSessionSignInEnabled());
         }
 
         // prevent anyone changing active to false -- it should be done by deactivateStudy() method
         if (originalStudy.isActive() && !study.isActive()) {
             throw new BadRequestException("Study cannot be deleted through an update.");
         }
-
+        
+        // With the introduction of the session verification email, studies won't have all the templates
+        // that are normally required. So set it if someone tries to update a study, to a default value.
+        setDefaultsIfAbsent(study);
         sanitizeHTML(study);
 
         study.setStormpathHref(originalStudy.getStormpathHref());
@@ -520,8 +542,8 @@ public class StudyService {
     
     /**
      * Has an aspect of the study changed that must be saved as well in the Stormpath directory? This 
-     * includes the email templates but also all the fields that can be substituted into the email templates
-     * such as names and emal addresses.
+     * includes the email templates for emails sent by Stormpath, but also all the fields that can be 
+     * substituted into the email templates such as names and emal addresses.
      * @param originalStudy
      * @param study
      * @return true if the password policy or email templates have changed
@@ -538,7 +560,7 @@ public class StudyService {
     }
     
     /**
-     * When the password policy or templates are not included, they are set to some sensible default 
+     * When the password policy or templates are not included, they are set to some sensible defaults.  
      * values. 
      * @param study
      */
@@ -546,34 +568,23 @@ public class StudyService {
         if (study.getPasswordPolicy() == null) {
             study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         }
-        study.setVerifyEmailTemplate(fillOutTemplate(study.getVerifyEmailTemplate(),
-            defaultEmailVerificationTemplateSubject, defaultEmailVerificationTemplate));
-        study.setResetPasswordTemplate(fillOutTemplate(study.getResetPasswordTemplate(),
-            defaultResetPasswordTemplateSubject, defaultResetPasswordTemplate));
+        if (study.getVerifyEmailTemplate() == null) {
+            EmailTemplate template = new EmailTemplate(defaultEmailVerificationTemplateSubject,
+                    defaultEmailVerificationTemplate, MimeType.HTML);
+            study.setVerifyEmailTemplate(template);
+        }
+        if (study.getResetPasswordTemplate() == null) {
+            EmailTemplate template = new EmailTemplate(defaultResetPasswordTemplateSubject,
+                    defaultResetPasswordTemplate, MimeType.HTML);
+            study.setResetPasswordTemplate(template);
+        }
+        if (study.getSessionSignInTemplate() == null) {
+            EmailTemplate template = new EmailTemplate(defaultSessionSignInTemplateSubject,
+                    defaultSessionSignInTemplate, MimeType.HTML);
+            study.setSessionSignInTemplate(template);
+        }
     }
 
-    /**
-     * Partially resolve variables in the templates before saving on Stormpath. If templates are not provided, 
-     * then the default templates are used, and we assume these are text only, otherwise this method needs to 
-     * change the mime type it sets.
-     * @param template
-     * @param defaultSubject
-     * @param defaultBody
-     * @return
-     */
-    private EmailTemplate fillOutTemplate(EmailTemplate template, String defaultSubject, String defaultBody) {
-        if (template == null) {
-            template = new EmailTemplate(defaultSubject, defaultBody, MimeType.HTML);
-        }
-        if (StringUtils.isBlank(template.getSubject())) {
-            template = new EmailTemplate(defaultSubject, template.getBody(), template.getMimeType());
-        }
-        if (StringUtils.isBlank(template.getBody())) {
-            template = new EmailTemplate(template.getSubject(), defaultBody, template.getMimeType());
-        }
-        return template;
-    }
-    
     /**
      * Email templates can contain HTML. Ensure the subject text has no markup and the markup in the body 
      * is safe for display in web-based email clients and a researcher UI. We clean this up before 
@@ -586,6 +597,9 @@ public class StudyService {
         
         template = study.getResetPasswordTemplate();
         study.setResetPasswordTemplate(sanitizeEmailTemplate(template));
+        
+        template = study.getSessionSignInTemplate();
+        study.setSessionSignInTemplate(sanitizeEmailTemplate(template));
     }
     
     private EmailTemplate sanitizeEmailTemplate(EmailTemplate template) {

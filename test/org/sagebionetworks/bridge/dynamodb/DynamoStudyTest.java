@@ -61,9 +61,12 @@ public class DynamoStudyTest {
         assertEqualsAndNotNull(study.getMinAgeOfConsent(), node.get("minAgeOfConsent").asInt());
         assertEqualsAndNotNull(study.getStormpathHref(), node.get("stormpathHref").asText());
         assertEqualsAndNotNull(study.getPasswordPolicy(), JsonUtils.asEntity(node, "passwordPolicy", PasswordPolicy.class));
-        assertEqualsAndNotNull(study.getVerifyEmailTemplate(), JsonUtils.asEntity(node, "verifyEmailTemplate",
-                EmailTemplate.class));
-        assertEqualsAndNotNull(study.getResetPasswordTemplate(), JsonUtils.asEntity(node, "resetPasswordTemplate", EmailTemplate.class));
+        assertEqualsAndNotNull(study.getVerifyEmailTemplate(),
+                JsonUtils.asEntity(node, "verifyEmailTemplate", EmailTemplate.class));
+        assertEqualsAndNotNull(study.getResetPasswordTemplate(),
+                JsonUtils.asEntity(node, "resetPasswordTemplate", EmailTemplate.class));
+        assertEqualsAndNotNull(study.getSessionSignInTemplate(),
+                JsonUtils.asEntity(node, "sessionSignInTemplate", EmailTemplate.class));
         assertEqualsAndNotNull(study.getUserProfileAttributes(), JsonUtils.asStringSet(node, "userProfileAttributes"));
         assertEqualsAndNotNull(study.getTaskIdentifiers(), JsonUtils.asStringSet(node, "taskIdentifiers"));
         assertEqualsAndNotNull(study.getDataGroups(), JsonUtils.asStringSet(node, "dataGroups"));
@@ -73,6 +76,7 @@ public class DynamoStudyTest {
         assertTrue(node.get("emailVerificationEnabled").asBoolean());
         assertTrue(node.get("externalIdValidationEnabled").asBoolean());
         assertTrue(node.get("externalIdRequiredOnSignup").asBoolean());
+        assertTrue(node.get("sessionSignInEnabled").asBoolean());
         assertFalse(node.get("disableExport").asBoolean());
         assertEqualsAndNotNull("Study", node.get("type").asText());
         assertEqualsAndNotNull(study.getPushNotificationARNs().get(OperatingSystem.IOS),

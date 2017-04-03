@@ -150,6 +150,9 @@ public class StudyServiceTest {
         assertEquals(0, newStudy.getTaskIdentifiers().size());
         // these should have been changed
         assertNotEquals("http://local-test-junk", newStudy.getStormpathHref());
+        assertEquals("${studyName} link", newStudy.getSessionSignInTemplate().getSubject());
+        assertEquals("Follow link ${token}", newStudy.getSessionSignInTemplate().getBody());
+        
         verify(mockCache).getStudy(newStudy.getIdentifier());
         verify(mockCache).setStudy(newStudy);
         verifyNoMoreInteractions(mockCache);
@@ -229,7 +232,8 @@ public class StudyServiceTest {
         study = TestUtils.getValidStudy(StudyServiceTest.class);
         study.setPasswordPolicy(null);
         study.setVerifyEmailTemplate(null);
-        study.setResetPasswordTemplate(new EmailTemplate("   ", null, MimeType.TEXT));
+        study.setResetPasswordTemplate(null);
+        study.setSessionSignInTemplate(null);
         study = studyService.createStudy(study);
         
         assertEquals(PasswordPolicy.DEFAULT_PASSWORD_POLICY, study.getPasswordPolicy());
@@ -237,6 +241,18 @@ public class StudyServiceTest {
         assertNotNull(study.getResetPasswordTemplate());
         assertNotNull(study.getResetPasswordTemplate().getSubject());
         assertNotNull(study.getResetPasswordTemplate().getBody());
+        assertNotNull(study.getSessionSignInTemplate());
+        
+        // Remove them and update... we are set back to defaults
+        study.setPasswordPolicy(null);
+        study.setVerifyEmailTemplate(null);
+        study.setResetPasswordTemplate(null);
+        study.setSessionSignInTemplate(null);
+        study = studyService.updateStudy(study, false);
+        
+        assertNotNull(study.getVerifyEmailTemplate());
+        assertNotNull(study.getResetPasswordTemplate());
+        assertNotNull(study.getSessionSignInTemplate());
     }
     
     @Test
@@ -290,11 +306,11 @@ public class StudyServiceTest {
     }
     
     @Test(expected=InvalidEntityException.class)
-    public void updateWithNoTemplatesIsInvalid() {
+    public void updateWithInvalidTemplateIsInvalid() {
         study = TestUtils.getValidStudy(StudyServiceTest.class);
         study = studyService.createStudy(study);
         
-        study.setVerifyEmailTemplate(null);
+        study.setVerifyEmailTemplate(new EmailTemplate(null, null, MimeType.HTML));
         studyService.updateStudy(study, false);
     }
 
