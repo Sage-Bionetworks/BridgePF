@@ -172,11 +172,10 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     void setResetPasswordTemplate(EmailTemplate template);
     
     /**
-     * The template for emails that verify a user in order to issue a session and/or reset that 
-     * account's password. This template must at least include the "${token}" template variable, 
-     * which will be used to place a token into a link that normally triggers handling by the 
-     * app. The default template includes a link back to a web page on the Bridge Server that 
-     * completes the transaction and displays a session GUID. 
+     * The template for an email that will give the user a link in order to sign in to the app 
+     * (without having to remember a password). The template must at least include the "${token}" 
+     * template variable, which will be used to place a token into a link that must be sent back 
+     * to the Bridge server to create a session. 
      */
     EmailTemplate getSessionSignInTemplate();
     void setSessionSignInTemplate(EmailTemplate template);
@@ -194,7 +193,7 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     /** @see #isStrictUploadValidationEnabled */
     void setStrictUploadValidationEnabled(boolean enabled);
     
-    /** True if we allow users in this study to trigger a "magic link" sign in email. */ 
+    /** True if we allow users in this study to send an email with a link to sign into the app. */ 
     boolean isSessionSignInEnabled();
     
     /** @see #isSessionSignInEnabled */
