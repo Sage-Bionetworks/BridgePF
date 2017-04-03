@@ -180,16 +180,18 @@ public class StudyService {
             study = studyDao.getStudy(identifier);
             cacheProvider.setStudy(study);
         }
-
-        if (study != null && !study.isActive() && !includeDeleted) {
-            throw new EntityNotFoundException(Study.class, "Study not found.");
-        }
-        
-        // Because this does not currently exist in studies, add the default if it is null.
-        if (study.getEmailSignInTemplate() == null) {
-            EmailTemplate template = new EmailTemplate(defaultEmailSignInTemplateSubject,
-                    defaultEmailSignInTemplate, MimeType.HTML);
-            study.setEmailSignInTemplate(template);
+        if (study != null) {
+            // If it it exists and has been deactivated, and this call is not supposed to retrieve deactivated
+            // studies, treat it as if it doesn't exist.
+            if (!study.isActive() && !includeDeleted) {
+                throw new EntityNotFoundException(Study.class, "Study not found.");
+            }
+            // Because this template does not currently exist in studies, add the default if it is null.
+            if (study.getEmailSignInTemplate() == null) {
+                EmailTemplate template = new EmailTemplate(defaultEmailSignInTemplateSubject,
+                        defaultEmailSignInTemplate, MimeType.HTML);
+                study.setEmailSignInTemplate(template);
+            }
         }
 
         return study;
