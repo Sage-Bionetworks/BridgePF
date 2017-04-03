@@ -254,7 +254,11 @@ public class StudyService {
             try {
                 synapseClient.newAccountEmailValidation(synapseUser, SYNAPSE_REGISTER_END_POINT);
             } catch (SynapseServerException e) {
-                LOG.error("Email: " + user.getEmail() + " already exists in Synapse", e);
+                if (!"The email address provided is already used.".equals(e.getMessage())) {
+                    throw e;
+                } else {
+                    LOG.info("Email: " + user.getEmail() + " already exists in Synapse", e);
+                }
             }
             // send resetting password email as well
             participantService.requestResetPassword(study, identifierHolder.getIdentifier());

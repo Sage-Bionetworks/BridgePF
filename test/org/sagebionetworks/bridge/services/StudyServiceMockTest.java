@@ -630,7 +630,7 @@ public class StudyServiceMockTest {
 
         // stub
         when(participantService.createParticipant(any(), any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
-        doThrow(SynapseServerException.class).when(mockSynapseClient).newAccountEmailValidation(any(), any());
+        doThrow(new SynapseServerException(500, "The email address provided is already used.")).when(mockSynapseClient).newAccountEmailValidation(any(), any());
 
         // execute
         service.createStudyAndUsers(mockStudyAndUsers);
