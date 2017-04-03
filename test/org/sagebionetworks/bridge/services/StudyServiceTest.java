@@ -150,8 +150,8 @@ public class StudyServiceTest {
         assertEquals(0, newStudy.getTaskIdentifiers().size());
         // these should have been changed
         assertNotEquals("http://local-test-junk", newStudy.getStormpathHref());
-        assertEquals("${studyName} link", newStudy.getSessionSignInTemplate().getSubject());
-        assertEquals("Follow link ${token}", newStudy.getSessionSignInTemplate().getBody());
+        assertEquals("${studyName} link", newStudy.getEmailSignInTemplate().getSubject());
+        assertEquals("Follow link ${token}", newStudy.getEmailSignInTemplate().getBody());
         
         verify(mockCache).getStudy(newStudy.getIdentifier());
         verify(mockCache).setStudy(newStudy);
@@ -233,7 +233,7 @@ public class StudyServiceTest {
         study.setPasswordPolicy(null);
         study.setVerifyEmailTemplate(null);
         study.setResetPasswordTemplate(null);
-        study.setSessionSignInTemplate(null);
+        study.setEmailSignInTemplate(null);
         study = studyService.createStudy(study);
         
         assertEquals(PasswordPolicy.DEFAULT_PASSWORD_POLICY, study.getPasswordPolicy());
@@ -241,18 +241,18 @@ public class StudyServiceTest {
         assertNotNull(study.getResetPasswordTemplate());
         assertNotNull(study.getResetPasswordTemplate().getSubject());
         assertNotNull(study.getResetPasswordTemplate().getBody());
-        assertNotNull(study.getSessionSignInTemplate());
+        assertNotNull(study.getEmailSignInTemplate());
         
         // Remove them and update... we are set back to defaults
         study.setPasswordPolicy(null);
         study.setVerifyEmailTemplate(null);
         study.setResetPasswordTemplate(null);
-        study.setSessionSignInTemplate(null);
+        study.setEmailSignInTemplate(null);
         study = studyService.updateStudy(study, false);
         
         assertNotNull(study.getVerifyEmailTemplate());
         assertNotNull(study.getResetPasswordTemplate());
-        assertNotNull(study.getSessionSignInTemplate());
+        assertNotNull(study.getEmailSignInTemplate());
     }
     
     @Test

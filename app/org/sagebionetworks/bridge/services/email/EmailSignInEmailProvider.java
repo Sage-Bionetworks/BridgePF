@@ -12,7 +12,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.Maps;
 
-public class SessionSignInEmailProvider implements MimeTypeEmailProvider {
+public class EmailSignInEmailProvider implements MimeTypeEmailProvider {
 
     private final Study study;
     private final String recipientEmail;
@@ -20,7 +20,7 @@ public class SessionSignInEmailProvider implements MimeTypeEmailProvider {
     private final String body;
     private final String token;
     
-    public SessionSignInEmailProvider(Study study, String recipientEmail, String subject, String body, String token) {
+    public EmailSignInEmailProvider(Study study, String recipientEmail, String subject, String body, String token) {
         this.study = study;
         this.recipientEmail = recipientEmail;
         this.subject = subject;

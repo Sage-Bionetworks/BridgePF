@@ -90,8 +90,8 @@ public class StudyService {
     private String defaultEmailVerificationTemplateSubject;
     private String defaultResetPasswordTemplate;
     private String defaultResetPasswordTemplateSubject;
-    private String defaultSessionSignInTemplate;
-    private String defaultSessionSignInTemplateSubject;
+    private String defaultEmailSignInTemplate;
+    private String defaultEmailSignInTemplateSubject;
     
     @Value("classpath:study-defaults/email-verification.txt")
     final void setDefaultEmailVerificationTemplate(org.springframework.core.io.Resource resource) throws IOException {
@@ -109,13 +109,13 @@ public class StudyService {
     final void setDefaultPasswordTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultResetPasswordTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-    @Value("classpath:study-defaults/session-sign-in.txt")
-    final void setDefaultSessionSignInTemplate(org.springframework.core.io.Resource resource) throws IOException {
-        this.defaultSessionSignInTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
+    @Value("classpath:study-defaults/email-sign-in.txt")
+    final void setDefaultEmailSignInTemplate(org.springframework.core.io.Resource resource) throws IOException {
+        this.defaultEmailSignInTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-    @Value("classpath:study-defaults/session-sign-in-subject.txt")
-    final void setDefaultSessionSignInTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
-        this.defaultSessionSignInTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
+    @Value("classpath:study-defaults/email-sign-in-subject.txt")
+    final void setDefaultEmailSignInTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
+        this.defaultEmailSignInTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
 
     /** Compound activity definition service, used to clean up deleted studies. This is set by Spring. */
@@ -186,10 +186,10 @@ public class StudyService {
         }
         
         // Because this does not currently exist in studies, add the default if it is null.
-        if (study.getSessionSignInTemplate() == null) {
-            EmailTemplate template = new EmailTemplate(defaultSessionSignInTemplateSubject,
-                    defaultSessionSignInTemplate, MimeType.HTML);
-            study.setSessionSignInTemplate(template);
+        if (study.getEmailSignInTemplate() == null) {
+            EmailTemplate template = new EmailTemplate(defaultEmailSignInTemplateSubject,
+                    defaultEmailSignInTemplate, MimeType.HTML);
+            study.setEmailSignInTemplate(template);
         }
 
         return study;
@@ -285,7 +285,7 @@ public class StudyService {
         study.setActive(true);
         study.setStrictUploadValidationEnabled(true);
         study.setEmailVerificationEnabled(true);
-        study.setSessionSignInEnabled(false);
+        study.setEmailSignInEnabled(false);
         study.getDataGroups().add(BridgeConstants.TEST_USER_GROUP);
         setDefaultsIfAbsent(study);
         sanitizeHTML(study);
@@ -410,7 +410,7 @@ public class StudyService {
             study.setEmailVerificationEnabled(originalStudy.isEmailVerificationEnabled());
             study.setExternalIdValidationEnabled(originalStudy.isExternalIdValidationEnabled());
             study.setExternalIdRequiredOnSignup(originalStudy.isExternalIdRequiredOnSignup());
-            study.setSessionSignInEnabled(originalStudy.isSessionSignInEnabled());
+            study.setEmailSignInEnabled(originalStudy.isEmailSignInEnabled());
         }
 
         // prevent anyone changing active to false -- it should be done by deactivateStudy() method
@@ -578,10 +578,10 @@ public class StudyService {
                     defaultResetPasswordTemplate, MimeType.HTML);
             study.setResetPasswordTemplate(template);
         }
-        if (study.getSessionSignInTemplate() == null) {
-            EmailTemplate template = new EmailTemplate(defaultSessionSignInTemplateSubject,
-                    defaultSessionSignInTemplate, MimeType.HTML);
-            study.setSessionSignInTemplate(template);
+        if (study.getEmailSignInTemplate() == null) {
+            EmailTemplate template = new EmailTemplate(defaultEmailSignInTemplateSubject,
+                    defaultEmailSignInTemplate, MimeType.HTML);
+            study.setEmailSignInTemplate(template);
         }
     }
 
@@ -598,8 +598,8 @@ public class StudyService {
         template = study.getResetPasswordTemplate();
         study.setResetPasswordTemplate(sanitizeEmailTemplate(template));
         
-        template = study.getSessionSignInTemplate();
-        study.setSessionSignInTemplate(sanitizeEmailTemplate(template));
+        template = study.getEmailSignInTemplate();
+        study.setEmailSignInTemplate(sanitizeEmailTemplate(template));
     }
     
     private EmailTemplate sanitizeEmailTemplate(EmailTemplate template) {

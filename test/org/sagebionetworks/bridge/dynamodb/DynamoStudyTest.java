@@ -65,8 +65,8 @@ public class DynamoStudyTest {
                 JsonUtils.asEntity(node, "verifyEmailTemplate", EmailTemplate.class));
         assertEqualsAndNotNull(study.getResetPasswordTemplate(),
                 JsonUtils.asEntity(node, "resetPasswordTemplate", EmailTemplate.class));
-        assertEqualsAndNotNull(study.getSessionSignInTemplate(),
-                JsonUtils.asEntity(node, "sessionSignInTemplate", EmailTemplate.class));
+        assertEqualsAndNotNull(study.getEmailSignInTemplate(),
+                JsonUtils.asEntity(node, "emailSignInTemplate", EmailTemplate.class));
         assertEqualsAndNotNull(study.getUserProfileAttributes(), JsonUtils.asStringSet(node, "userProfileAttributes"));
         assertEqualsAndNotNull(study.getTaskIdentifiers(), JsonUtils.asStringSet(node, "taskIdentifiers"));
         assertEqualsAndNotNull(study.getDataGroups(), JsonUtils.asStringSet(node, "dataGroups"));
@@ -76,7 +76,7 @@ public class DynamoStudyTest {
         assertTrue(node.get("emailVerificationEnabled").asBoolean());
         assertTrue(node.get("externalIdValidationEnabled").asBoolean());
         assertTrue(node.get("externalIdRequiredOnSignup").asBoolean());
-        assertTrue(node.get("sessionSignInEnabled").asBoolean());
+        assertTrue(node.get("emailSignInEnabled").asBoolean());
         assertFalse(node.get("disableExport").asBoolean());
         assertEqualsAndNotNull("Study", node.get("type").asText());
         assertEqualsAndNotNull(study.getPushNotificationARNs().get(OperatingSystem.IOS),

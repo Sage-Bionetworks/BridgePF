@@ -8,7 +8,7 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.studies.Study;
 
-public class SessionSignInEmailProviderTest {
+public class EmailSignInEmailProviderTest {
 
     private static final String RECIPIENT_EMAIL = "recipient@recipient.com";
 
@@ -20,7 +20,7 @@ public class SessionSignInEmailProviderTest {
         
         // Verifying in particular that all instances of a template variable are replaced
         // in the template.
-        SessionSignInEmailProvider provider = new SessionSignInEmailProvider(study, RECIPIENT_EMAIL,
+        EmailSignInEmailProvider provider = new EmailSignInEmailProvider(study, RECIPIENT_EMAIL,
                 "${studyName} sign in link",
                 "Click here to sign in: <a href=\"https://${host}/mobile/startSession.html?token=${token}\">https://${host}/mobile/startSession.html?token=${token}</a>", "ABC");
         

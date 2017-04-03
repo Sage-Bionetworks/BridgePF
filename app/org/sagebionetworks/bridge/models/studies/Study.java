@@ -177,8 +177,8 @@ public interface Study extends BridgeEntity, StudyIdentifier {
      * template variable, which will be used to place a token into a link that must be sent back 
      * to the Bridge server to create a session. 
      */
-    EmailTemplate getSessionSignInTemplate();
-    void setSessionSignInTemplate(EmailTemplate template);
+    EmailTemplate getEmailSignInTemplate();
+    void setEmailSignInTemplate(EmailTemplate template);
     
     /**
      * Is this study active? Currently not in use, a de-activated study will be hidden from the 
@@ -194,10 +194,10 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     void setStrictUploadValidationEnabled(boolean enabled);
     
     /** True if we allow users in this study to send an email with a link to sign into the app. */ 
-    boolean isSessionSignInEnabled();
+    boolean isEmailSignInEnabled();
     
-    /** @see #isSessionSignInEnabled */
-    void setSessionSignInEnabled(boolean sessionSignInEnable);
+    /** @see #isEmailSignInEnabled */
+    void setEmailSignInEnabled(boolean emailSignInEnable);
     
     /** True if this study will export the healthCode when generating a participant roster. */
     boolean isHealthCodeExportEnabled();
