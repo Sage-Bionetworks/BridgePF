@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.models.studies;
 
+import org.sagebionetworks.bridge.json.MimeTypeSerializer;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * Our use of mime type serialization appears to have been using values like "text" and 
@@ -8,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
  * of both values needs special handling. This enum is excepted in the LowercaseEnumModule 
  * so Jackson will use the static factory method here.
  */
+@JsonSerialize(using = MimeTypeSerializer.class)
 public enum MimeType {
     
     TEXT("text/plain"),
