@@ -578,7 +578,7 @@ public class StudyService {
      * values. 
      * @param study
      */
-    protected final void setDefaultsIfAbsent(Study study) {
+    private void setDefaultsIfAbsent(Study study) {
         if (study.getPasswordPolicy() == null) {
             study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         }
