@@ -24,6 +24,9 @@ public class MimeTypeTest {
         deser = mapper.readValue("\"HTML\"", MimeType.class);
         assertEquals(MimeType.HTML, deser);
         
+        deser = mapper.readValue("\"text/html\"", MimeType.class);
+        assertEquals(MimeType.HTML, deser);
+        
         deser = mapper.readValue("\"TEXT/PLAIN\"", MimeType.class);
         assertEquals(MimeType.TEXT, deser);
     }
