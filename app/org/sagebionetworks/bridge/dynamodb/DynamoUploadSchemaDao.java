@@ -2,7 +2,9 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import javax.annotation.Resource;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
@@ -15,6 +17,7 @@ import com.google.common.collect.ImmutableList;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.UploadSchemaDao;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -76,14 +79,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
     public List<UploadSchema> getAllUploadSchemasAllRevisions(StudyIdentifier studyId) {
         DynamoUploadSchema hashKey = new DynamoUploadSchema();
         hashKey.setStudyId(studyId.getIdentifier());
-
-        // Note that consistent reads are not allowed for global secondary indices.
-        DynamoDBQueryExpression<DynamoUploadSchema> query = new DynamoDBQueryExpression<DynamoUploadSchema>()
-                .withIndexName(STUDY_ID_INDEX_NAME).withHashKeyValues(hashKey).withConsistentRead(false);
-
-        List<DynamoUploadSchema> schemaList = queryHelper(query);
-
-        return ImmutableList.copyOf(schemaList);
+        return indexHelper(STUDY_ID_INDEX_NAME, hashKey);
     }
 
     /** {@inheritDoc} */
@@ -145,6 +141,35 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
 
         return schema;
     }
+
+    // Global Secondary Indices only contain index keys. We need to re-query DDB so we can get the rest of the
+    // attributes. This can get pretty hairy. Long-term, we need to refactor this code into DynamoIndexHelper.
+    // See https://sagebionetworks.jira.com/browse/BRIDGE-1467
+    // Package-scoped to be available for spying in unit tests.
+    List<UploadSchema> indexHelper(String indexName, DynamoUploadSchema hashKey) {
+        // Note that consistent reads are not allowed for global secondary indices.
+        DynamoDBQueryExpression<DynamoUploadSchema> query = new DynamoDBQueryExpression<DynamoUploadSchema>()
+                .withIndexName(indexName).withHashKeyValues(hashKey).withConsistentRead(false);
+        List<DynamoUploadSchema> schemaIndexList = queryHelper(query);
+
+        // Global secondary indices only have keys. We need to batch load to fill in the other attributes.
+        Map<String, List<Object>> resultMap = mapper.batchLoad(schemaIndexList);
+        List<UploadSchema> schemaList = new ArrayList<>();
+        for (List<Object> resultList : resultMap.values()) {
+            for (Object oneResult : resultList) {
+                if (!(oneResult instanceof UploadSchema)) {
+                    // This should never happen, but just in case.
+                    throw new BridgeServiceException("DynamoDB returned objects of type " +
+                            oneResult.getClass().getName() + " instead of DynamoUploadSchema");
+                }
+
+                schemaList.add((UploadSchema) oneResult);
+            }
+        }
+
+        return schemaList;
+    }
+
 
     // mapper.query() returns a PaginatedQueryList, which is really hard to work with, which makes mapper.query()
     // really hard to mock. So instead, just wrap the whole thing in a helper method that returns a List instead and
