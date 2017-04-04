@@ -31,6 +31,15 @@ public class MimeTypeTest {
         assertEquals(MimeType.TEXT, deser);
     }
     
+    @Test
+    public void serializationUsesMimeTypeValue() throws Exception {
+        ObjectMapper mapper = BridgeObjectMapper.get();
+        
+        assertEquals("\"text/html\"", mapper.writeValueAsString(MimeType.HTML));
+        assertEquals("\"text/plain\"", mapper.writeValueAsString(MimeType.TEXT));
+        assertEquals("\"application/pdf\"", mapper.writeValueAsString(MimeType.PDF));
+    }
+    
     /**
      * Test that serialization works with a normal ObjectMapper, not just BridgeObjectMapper.
      */
