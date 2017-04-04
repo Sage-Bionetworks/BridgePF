@@ -578,7 +578,7 @@ public class StudyService {
      * values. 
      * @param study
      */
-    private void setDefaultsIfAbsent(Study study) {
+    protected final void setDefaultsIfAbsent(Study study) {
         if (study.getPasswordPolicy() == null) {
             study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         }
@@ -605,7 +605,7 @@ public class StudyService {
      * validation in case only unacceptable content was in the template. 
      * @param study
      */
-    private void sanitizeHTML(Study study) {
+    protected void sanitizeHTML(Study study) {
         EmailTemplate template = study.getVerifyEmailTemplate();
         study.setVerifyEmailTemplate(sanitizeEmailTemplate(template));
         
@@ -616,7 +616,7 @@ public class StudyService {
         study.setEmailSignInTemplate(sanitizeEmailTemplate(template));
     }
     
-    private EmailTemplate sanitizeEmailTemplate(EmailTemplate template) {
+    protected EmailTemplate sanitizeEmailTemplate(EmailTemplate template) {
         // Skip sanitization if there's no template. This can happen now as we'd rather see an error if the caller
         // doesn't include a template when updating.
         if (template == null) {
