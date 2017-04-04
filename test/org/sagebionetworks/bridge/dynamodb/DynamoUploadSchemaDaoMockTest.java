@@ -78,24 +78,21 @@ public class DynamoUploadSchemaDaoMockTest {
 
     @Test
     public void allSchemasAllRevisions() {
-        // spy query
+        // spy index helper
         List<DynamoUploadSchema> mapperOutputSchemaList = ImmutableList.of(new DynamoUploadSchema());
-        ArgumentCaptor<DynamoDBQueryExpression> mapperQueryCaptor = ArgumentCaptor.forClass(
-                DynamoDBQueryExpression.class);
-        doReturn(mapperOutputSchemaList).when(dao).queryHelper(mapperQueryCaptor.capture());
+        ArgumentCaptor<DynamoUploadSchema> indexHashKeyCaptor = ArgumentCaptor.forClass(DynamoUploadSchema.class);
+        doReturn(mapperOutputSchemaList).when(dao).indexHelper(eq(DynamoUploadSchemaDao.STUDY_ID_INDEX_NAME),
+                indexHashKeyCaptor.capture());
 
         // execute
         List<UploadSchema> daoOutputSchemaList = dao.getAllUploadSchemasAllRevisions(TestConstants.TEST_STUDY);
 
-        // validate query
-        DynamoDBQueryExpression<DynamoUploadSchema> mapperQuery = mapperQueryCaptor.getValue();
-        assertEquals(DynamoUploadSchemaDao.STUDY_ID_INDEX_NAME, mapperQuery.getIndexName());
-        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, mapperQuery.getHashKeyValues().getStudyId());
-        assertFalse(mapperQuery.isConsistentRead());
+        // validate index hash key
+        DynamoUploadSchema indexHashKey = indexHashKeyCaptor.getValue();
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, indexHashKey.getStudyId());
 
-        // Verify DAO output is same as mapper output. We use equals because they are different instances, but contain
-        // the same objects.
-        assertEquals(mapperOutputSchemaList, daoOutputSchemaList);
+        // Verify DAO output
+        assertSame(mapperOutputSchemaList, daoOutputSchemaList);
     }
 
     @Test

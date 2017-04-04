@@ -10,6 +10,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -36,8 +37,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.client.SynapseClient;
+import org.sagebionetworks.client.exceptions.SynapseClientException;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
+import org.sagebionetworks.client.exceptions.SynapseServerException;
 import org.sagebionetworks.repo.model.AccessControlList;
 import org.sagebionetworks.repo.model.MembershipInvtnSubmission;
 import org.sagebionetworks.repo.model.Project;
@@ -51,6 +54,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -172,6 +176,16 @@ public class StudyServiceMockTest {
         consumer.accept(study);
         service.updateStudy(study, true);
         verify(directoryDao).updateDirectoryForStudy(study);
+    }
+    
+    @Test
+    public void loadingStudyWithoutEmailSignInTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setEmailSignInTemplate(null);
+        when(studyDao.getStudy("foo")).thenReturn(study);
+        
+        Study retStudy = service.getStudy("foo");
+        assertNotNull(retStudy.getEmailSignInTemplate());
     }
 
     @Test
@@ -549,6 +563,99 @@ public class StudyServiceMockTest {
         service.createStudyAndUsers(mockStudyAndUsers);
     }
 
+    @Test(expected = SynapseClientException.class)
+    public void createStudyAndUserThrowExceptionNotLogged() throws SynapseException {
+        // mock
+        Study study = getTestStudy();
+        study.setSynapseProjectId(null);
+        study.setSynapseDataAccessTeamId(null);
+        study.setExternalIdValidationEnabled(false);
+        study.setExternalIdRequiredOnSignup(false);
+        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+
+        StudyParticipant mockUser1 = new StudyParticipant.Builder()
+                .withEmail(TEST_USER_EMAIL)
+                .withFirstName(TEST_USER_FIRST_NAME)
+                .withLastName(TEST_USER_LAST_NAME)
+                .withRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER))
+                .withPassword(TEST_USER_PASSWORD)
+                .build();
+
+        StudyParticipant mockUser2 = new StudyParticipant.Builder()
+                .withEmail(TEST_USER_EMAIL_2)
+                .withFirstName(TEST_USER_FIRST_NAME)
+                .withLastName(TEST_USER_LAST_NAME)
+                .withRoles(ImmutableSet.of(Roles.RESEARCHER))
+                .withPassword(TEST_USER_PASSWORD)
+                .build();
+
+        List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, study, mockUsers);
+        IdentifierHolder mockIdentifierHolder = new IdentifierHolder(TEST_IDENTIFIER);
+
+        // spy
+        doReturn(study).when(service).createStudy(any());
+        doReturn(study).when(service).createSynapseProjectTeam(any(), any());
+
+        // stub
+        when(participantService.createParticipant(any(), any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
+        doThrow(SynapseClientException.class).when(mockSynapseClient).newAccountEmailValidation(any(), any());
+
+        // execute
+        service.createStudyAndUsers(mockStudyAndUsers);
+    }
+
+    @Test
+    public void createStudyAndUserThrowExceptionLogged() throws SynapseException {
+        // mock
+        Study study = getTestStudy();
+        study.setSynapseProjectId(null);
+        study.setSynapseDataAccessTeamId(null);
+        study.setExternalIdValidationEnabled(false);
+        study.setExternalIdRequiredOnSignup(false);
+        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+
+        StudyParticipant mockUser1 = new StudyParticipant.Builder()
+                .withEmail(TEST_USER_EMAIL)
+                .withFirstName(TEST_USER_FIRST_NAME)
+                .withLastName(TEST_USER_LAST_NAME)
+                .withRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER))
+                .withPassword(TEST_USER_PASSWORD)
+                .build();
+
+        StudyParticipant mockUser2 = new StudyParticipant.Builder()
+                .withEmail(TEST_USER_EMAIL_2)
+                .withFirstName(TEST_USER_FIRST_NAME)
+                .withLastName(TEST_USER_LAST_NAME)
+                .withRoles(ImmutableSet.of(Roles.RESEARCHER))
+                .withPassword(TEST_USER_PASSWORD)
+                .build();
+
+        List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, study, mockUsers);
+        IdentifierHolder mockIdentifierHolder = new IdentifierHolder(TEST_IDENTIFIER);
+
+        // spy
+        doReturn(study).when(service).createStudy(any());
+        doReturn(study).when(service).createSynapseProjectTeam(any(), any());
+
+        // stub
+        when(participantService.createParticipant(any(), any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
+        doThrow(new SynapseServerException(500, "The email address provided is already used.")).when(mockSynapseClient).newAccountEmailValidation(any(), any());
+
+        // execute
+        service.createStudyAndUsers(mockStudyAndUsers);
+
+        // verify
+        verify(participantService, times(2)).createParticipant(any(), any(), any(), anyBoolean());
+        verify(participantService).createParticipant(eq(study), eq(mockUser1.getRoles()), eq(mockUser1), eq(true));
+        verify(participantService).createParticipant(eq(study), eq(mockUser2.getRoles()), eq(mockUser2), eq(true));
+        verify(participantService, times(2)).requestResetPassword(eq(study), eq(mockIdentifierHolder.getIdentifier()));
+        verify(mockSynapseClient, times(2)).newAccountEmailValidation(any(), eq(SYNAPSE_REGISTER_END_POINT));
+        verify(service).createStudy(study);
+        verify(service).createSynapseProjectTeam(TEST_ADMIN_IDS, study);
+    }
+
     @Test
     public void createSynapseProjectTeam() throws SynapseException {
         Study study = getTestStudy();
@@ -764,4 +871,51 @@ public class StudyServiceMockTest {
         verify(emailVerificationService, never()).verifyEmailAddress(any());
     }
     
+    @Test
+    public void textTemplateIsSanitized() {
+        EmailTemplate source = new EmailTemplate("<p>Test</p>","<p>This should have no markup</p>", MimeType.TEXT);
+        EmailTemplate result = service.sanitizeEmailTemplate(source);
+        
+        assertEquals("Test", result.getSubject());
+        assertEquals("This should have no markup", result.getBody());
+        assertEquals(MimeType.TEXT, result.getMimeType());
+    }
+    
+    @Test
+    public void htmlTemplateIsSanitized() {
+        EmailTemplate source = new EmailTemplate("<p>${studyName} test</p>", "<p>This should remove: <iframe src=''></iframe></p>", MimeType.HTML); 
+        EmailTemplate result = service.sanitizeEmailTemplate(source);
+        
+        assertHtmlTemplateSanitized(result);
+    }
+    
+    @Test
+    public void emptyTemplateIsSanitized() {
+        EmailTemplate source = new EmailTemplate("", "", MimeType.HTML); 
+        EmailTemplate result = service.sanitizeEmailTemplate(source);
+        
+        assertEquals("", result.getSubject());
+        assertEquals("", result.getBody());
+        assertEquals(MimeType.HTML, result.getMimeType());
+    }
+    
+    @Test
+    public void testAllThreeTemplatesAreSanitized() {
+        EmailTemplate source = new EmailTemplate("<p>${studyName} test</p>", "<p>This should remove: <iframe src=''></iframe></p>", MimeType.HTML);
+        Study study = new DynamoStudy();
+        study.setEmailSignInTemplate(source);
+        study.setResetPasswordTemplate(source);
+        study.setVerifyEmailTemplate(source);
+        
+        service.sanitizeHTML(study);
+        assertHtmlTemplateSanitized( study.getEmailSignInTemplate() );
+        assertHtmlTemplateSanitized( study.getResetPasswordTemplate() );
+        assertHtmlTemplateSanitized( study.getVerifyEmailTemplate() );
+    }
+
+    private void assertHtmlTemplateSanitized(EmailTemplate result) {
+        assertEquals("${studyName} test", result.getSubject());
+        assertEquals("<p>This should remove: </p>", result.getBody());
+        assertEquals(MimeType.HTML, result.getMimeType());
+    }
 }
