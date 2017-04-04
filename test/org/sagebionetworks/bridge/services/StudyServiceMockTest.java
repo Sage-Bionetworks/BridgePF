@@ -54,6 +54,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -175,6 +176,16 @@ public class StudyServiceMockTest {
         consumer.accept(study);
         service.updateStudy(study, true);
         verify(directoryDao).updateDirectoryForStudy(study);
+    }
+    
+    @Test
+    public void loadingStudyWithoutEmailSignInTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setEmailSignInTemplate(null);
+        when(studyDao.getStudy("foo")).thenReturn(study);
+        
+        Study retStudy = service.getStudy("foo");
+        assertNotNull(retStudy.getEmailSignInTemplate());
     }
 
     @Test
@@ -860,4 +871,51 @@ public class StudyServiceMockTest {
         verify(emailVerificationService, never()).verifyEmailAddress(any());
     }
     
+    @Test
+    public void textTemplateIsSanitized() {
+        EmailTemplate source = new EmailTemplate("<p>Test</p>","<p>This should have no markup</p>", MimeType.TEXT);
+        EmailTemplate result = service.sanitizeEmailTemplate(source);
+        
+        assertEquals("Test", result.getSubject());
+        assertEquals("This should have no markup", result.getBody());
+        assertEquals(MimeType.TEXT, result.getMimeType());
+    }
+    
+    @Test
+    public void htmlTemplateIsSanitized() {
+        EmailTemplate source = new EmailTemplate("<p>${studyName} test</p>", "<p>This should remove: <iframe src=''></iframe></p>", MimeType.HTML); 
+        EmailTemplate result = service.sanitizeEmailTemplate(source);
+        
+        assertHtmlTemplateSanitized(result);
+    }
+    
+    @Test
+    public void emptyTemplateIsSanitized() {
+        EmailTemplate source = new EmailTemplate("", "", MimeType.HTML); 
+        EmailTemplate result = service.sanitizeEmailTemplate(source);
+        
+        assertEquals("", result.getSubject());
+        assertEquals("", result.getBody());
+        assertEquals(MimeType.HTML, result.getMimeType());
+    }
+    
+    @Test
+    public void testAllThreeTemplatesAreSanitized() {
+        EmailTemplate source = new EmailTemplate("<p>${studyName} test</p>", "<p>This should remove: <iframe src=''></iframe></p>", MimeType.HTML);
+        Study study = new DynamoStudy();
+        study.setEmailSignInTemplate(source);
+        study.setResetPasswordTemplate(source);
+        study.setVerifyEmailTemplate(source);
+        
+        service.sanitizeHTML(study);
+        assertHtmlTemplateSanitized( study.getEmailSignInTemplate() );
+        assertHtmlTemplateSanitized( study.getResetPasswordTemplate() );
+        assertHtmlTemplateSanitized( study.getVerifyEmailTemplate() );
+    }
+
+    private void assertHtmlTemplateSanitized(EmailTemplate result) {
+        assertEquals("${studyName} test", result.getSubject());
+        assertEquals("<p>This should remove: </p>", result.getBody());
+        assertEquals(MimeType.HTML, result.getMimeType());
+    }
 }

@@ -117,16 +117,19 @@ public class StudyServiceTest {
         study = TestUtils.getValidStudy(StudyServiceTest.class);
         // verify this can be null, that's okay, and the flags are reset correctly on create
         study.setTaskIdentifiers(null);
+        study.setHealthCodeExportEnabled(true);
         study.setActive(false);
         study.setStrictUploadValidationEnabled(false);
-        study.setHealthCodeExportEnabled(true);
         study.setEmailVerificationEnabled(false);
+        study.setEmailSignInEnabled(true);
         study = studyService.createStudy(study);
         
         assertNotNull("Version has been set", study.getVersion());
         assertTrue(study.isActive());
         assertTrue(study.isStrictUploadValidationEnabled()); // by default set to true
         assertTrue(study.isHealthCodeExportEnabled()); // it was set true in the study
+        assertTrue(study.isEmailVerificationEnabled());
+        assertFalse(study.isEmailSignInEnabled());
 
         verify(mockCache).setStudy(study);
         verifyNoMoreInteractions(mockCache);
@@ -142,6 +145,10 @@ public class StudyServiceTest {
         assertTrue(newStudy.isActive());
         assertTrue(newStudy.isStrictUploadValidationEnabled());
         assertTrue(newStudy.isEmailVerificationEnabled());
+        assertTrue(newStudy.isHealthCodeExportEnabled());
+        assertTrue(newStudy.isEmailVerificationEnabled());
+        assertFalse(newStudy.isEmailSignInEnabled());
+        
         assertEquals(study.getIdentifier(), newStudy.getIdentifier());
         assertEquals("Test Study [StudyServiceTest]", newStudy.getName());
         assertEquals(18, newStudy.getMinAgeOfConsent());
@@ -150,6 +157,9 @@ public class StudyServiceTest {
         assertEquals(0, newStudy.getTaskIdentifiers().size());
         // these should have been changed
         assertNotEquals("http://local-test-junk", newStudy.getStormpathHref());
+        assertEquals("${studyName} link", newStudy.getEmailSignInTemplate().getSubject());
+        assertEquals("Follow link ${token}", newStudy.getEmailSignInTemplate().getBody());
+        
         verify(mockCache).getStudy(newStudy.getIdentifier());
         verify(mockCache).setStudy(newStudy);
         verifyNoMoreInteractions(mockCache);
@@ -229,7 +239,8 @@ public class StudyServiceTest {
         study = TestUtils.getValidStudy(StudyServiceTest.class);
         study.setPasswordPolicy(null);
         study.setVerifyEmailTemplate(null);
-        study.setResetPasswordTemplate(new EmailTemplate("   ", null, MimeType.TEXT));
+        study.setResetPasswordTemplate(null);
+        study.setEmailSignInTemplate(null);
         study = studyService.createStudy(study);
         
         assertEquals(PasswordPolicy.DEFAULT_PASSWORD_POLICY, study.getPasswordPolicy());
@@ -237,6 +248,18 @@ public class StudyServiceTest {
         assertNotNull(study.getResetPasswordTemplate());
         assertNotNull(study.getResetPasswordTemplate().getSubject());
         assertNotNull(study.getResetPasswordTemplate().getBody());
+        assertNotNull(study.getEmailSignInTemplate());
+        
+        // Remove them and update... we are set back to defaults
+        study.setPasswordPolicy(null);
+        study.setVerifyEmailTemplate(null);
+        study.setResetPasswordTemplate(null);
+        study.setEmailSignInTemplate(null);
+        study = studyService.updateStudy(study, false);
+        
+        assertNotNull(study.getVerifyEmailTemplate());
+        assertNotNull(study.getResetPasswordTemplate());
+        assertNotNull(study.getEmailSignInTemplate());
     }
     
     @Test
@@ -260,41 +283,59 @@ public class StudyServiceTest {
     @Test
     public void adminsCanChangeSomeValuesResearchersCannot() {
         study = TestUtils.getValidStudy(StudyServiceTest.class);
-        study.setHealthCodeExportEnabled(false);
-        study.setEmailVerificationEnabled(true);
-        study.setExternalIdRequiredOnSignup(true);
-        study.setExternalIdValidationEnabled(true);
-        study = studyService.createStudy(study);
+        // Not the defaults        
+        study.setActive(false);
+        study.setHealthCodeExportEnabled(true);
+        study.setStrictUploadValidationEnabled(false);
+        study.setEmailVerificationEnabled(false);
+        study.setEmailSignInEnabled(true);
         
-        // Okay, now that these are set, researchers cannot change them
-        study.setHealthCodeExportEnabled(true);
-        study.setEmailVerificationEnabled(false);
-        study.setExternalIdRequiredOnSignup(false);
-        study.setExternalIdValidationEnabled(false);
-        study = studyService.updateStudy(study, false); // nope
-        assertFalse("isHealthCodeExportEnabled should be false", study.isHealthCodeExportEnabled());
-        assertTrue("isEmailVerificationEnabled should be true", study.isEmailVerificationEnabled());
-        assertTrue("isExternalIdRequiredOnSignup should be true", study.isExternalIdRequiredOnSignup());
-        assertTrue("isExternalIdValidationEnabled should be true", study.isExternalIdValidationEnabled());
-
-        // But administrators can
-        study.setHealthCodeExportEnabled(true);
-        study.setEmailVerificationEnabled(false);
-        study.setExternalIdRequiredOnSignup(false);
-        study.setExternalIdValidationEnabled(false);
-        study = studyService.updateStudy(study, true); // yep
+        study = studyService.createStudy(study);
+        // These are set to the defaults.
+        study = studyService.getStudy(study.getIdentifier());
+        assertTrue(study.isActive());
         assertTrue(study.isHealthCodeExportEnabled());
+        assertTrue(study.isStrictUploadValidationEnabled());
+        assertTrue(study.isEmailVerificationEnabled());
+        assertFalse(study.isEmailSignInEnabled());
+        
+        // Researchers cannot change theseOkay, now that these are set, researchers cannot change them. Except setting active 
+        // to false, which is a logical delete that throws a BadRequestException
+        study.setHealthCodeExportEnabled(false);
+        study.setEmailVerificationEnabled(false);
+        study.setExternalIdValidationEnabled(false);
+        study.setExternalIdRequiredOnSignup(false);
+        study.setEmailSignInEnabled(true);
+        study = studyService.updateStudy(study, false); // nope
+        
+        // These have not changed:
+        assertTrue(study.isHealthCodeExportEnabled());
+        assertTrue(study.isEmailVerificationEnabled());
+        assertTrue(study.isExternalIdValidationEnabled());
+        assertTrue(study.isExternalIdRequiredOnSignup());
+        assertFalse(study.isEmailSignInEnabled());
+        
+        // But administrators can change these
+        study.setHealthCodeExportEnabled(false);
+        study.setEmailVerificationEnabled(false);
+        study.setExternalIdValidationEnabled(false);
+        study.setExternalIdRequiredOnSignup(false);
+        study.setEmailSignInEnabled(true);
+        study = studyService.updateStudy(study, true); // yep
+        
+        assertFalse(study.isHealthCodeExportEnabled());
         assertFalse(study.isEmailVerificationEnabled());
-        assertFalse(study.isExternalIdRequiredOnSignup());
         assertFalse(study.isExternalIdValidationEnabled());
+        assertFalse(study.isExternalIdRequiredOnSignup());
+        assertTrue(study.isEmailSignInEnabled());
     }
     
     @Test(expected=InvalidEntityException.class)
-    public void updateWithNoTemplatesIsInvalid() {
+    public void updateWithInvalidTemplateIsInvalid() {
         study = TestUtils.getValidStudy(StudyServiceTest.class);
         study = studyService.createStudy(study);
         
-        study.setVerifyEmailTemplate(null);
+        study.setVerifyEmailTemplate(new EmailTemplate(null, null, MimeType.HTML));
         studyService.updateStudy(study, false);
     }
 

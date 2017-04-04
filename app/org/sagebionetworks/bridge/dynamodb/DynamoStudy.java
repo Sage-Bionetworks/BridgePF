@@ -45,10 +45,12 @@ public final class DynamoStudy implements Study {
     private PasswordPolicy passwordPolicy;
     private EmailTemplate verifyEmailTemplate;
     private EmailTemplate resetPasswordTemplate;
+    private EmailTemplate emailSignInTemplate;
     private boolean strictUploadValidationEnabled;
     private boolean healthCodeExportEnabled;
     private boolean emailVerificationEnabled;
     private boolean externalIdValidationEnabled;
+    private boolean emailSignInEnabled;
     private boolean externalIdRequiredOnSignup;
     private Map<String, Integer> minSupportedAppVersions;
     private Map<String, String> pushNotificationARNs;
@@ -277,6 +279,18 @@ public final class DynamoStudy implements Study {
     public void setResetPasswordTemplate(EmailTemplate template) {
         this.resetPasswordTemplate = template;
     }
+    
+    /** {@inheritDoc} */
+    @DynamoDBTypeConvertedJson
+    @Override
+    public EmailTemplate getEmailSignInTemplate() {
+        return emailSignInTemplate;
+    }
+    
+    @Override
+    public void setEmailSignInTemplate(EmailTemplate template) {
+        this.emailSignInTemplate = template;
+    }
 
     /** {@inheritDoc} */
     @Override
@@ -300,6 +314,19 @@ public final class DynamoStudy implements Study {
     public void setStrictUploadValidationEnabled(boolean enabled) {
         this.strictUploadValidationEnabled = enabled;
     }
+    
+    /** {@inheritDoc} */
+    @Override 
+    public boolean isEmailSignInEnabled() {
+        return emailSignInEnabled;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public void setEmailSignInEnabled(boolean enabled){
+        this.emailSignInEnabled = enabled;
+    }
+    
     
     /** {@inheritDoc} */
     @Override
@@ -384,7 +411,8 @@ public final class DynamoStudy implements Study {
                 passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, active, strictUploadValidationEnabled,
                 healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled,
                 externalIdRequiredOnSignup, minSupportedAppVersions, synapseDataAccessTeamId, synapseProjectId,
-                usesCustomExportSchedule, pushNotificationARNs, disableExport);
+                usesCustomExportSchedule, pushNotificationARNs, disableExport, emailSignInTemplate,
+                emailSignInEnabled);
     }
 
     @Override
@@ -418,7 +446,9 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(externalIdRequiredOnSignup, other.externalIdRequiredOnSignup)
                 && Objects.equals(minSupportedAppVersions, other.minSupportedAppVersions)
                 && Objects.equals(pushNotificationARNs, other.pushNotificationARNs)
-                && Objects.equals(disableExport, other.disableExport);
+                && Objects.equals(disableExport, other.disableExport)
+                && Objects.equals(emailSignInTemplate, other.emailSignInTemplate)
+                && Objects.equals(emailSignInEnabled, other.emailSignInEnabled);
     }
 
     @Override
@@ -431,11 +461,13 @@ public final class DynamoStudy implements Study {
                         + "strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, emailVerificationEnabled=%s, "
                         + "externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, minSupportedAppVersions=%s, "
                         + "usesCustomExportSchedule=%s, pushNotificationARNs=%s], "
-                        + "disableExport=%s]",
-                name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, supportEmail, synapseDataAccessTeamId, 
-                synapseProjectId, technicalEmail, consentNotificationEmail, version, profileAttributes, taskIdentifiers, 
-                dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, strictUploadValidationEnabled, 
-                healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled, externalIdRequiredOnSignup, 
-                minSupportedAppVersions, usesCustomExportSchedule, pushNotificationARNs, disableExport);
+                        + "disableExport=%s, emailSignInTemplate=%s, emailSignInEnabled=%s]",
+                name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, supportEmail,
+                synapseDataAccessTeamId, synapseProjectId, technicalEmail, consentNotificationEmail, version,
+                profileAttributes, taskIdentifiers, dataGroups, passwordPolicy, verifyEmailTemplate,
+                resetPasswordTemplate, strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
+                externalIdValidationEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
+                usesCustomExportSchedule, pushNotificationARNs, disableExport, emailSignInTemplate,
+                emailSignInEnabled);
     }
 }
