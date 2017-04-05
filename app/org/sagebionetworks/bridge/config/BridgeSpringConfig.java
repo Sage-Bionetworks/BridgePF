@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.config;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -37,6 +38,11 @@ import org.sagebionetworks.bridge.dynamodb.DynamoNamingHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoNotificationRegistration;
 import org.sagebionetworks.bridge.dynamodb.DynamoNotificationTopic;
 import org.sagebionetworks.bridge.dynamodb.DynamoTopicSubscription;
+
+import org.hibernate.SessionFactory;
+import org.hibernate.boot.MetadataSources;
+import org.hibernate.boot.registry.StandardServiceRegistry;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.sagebionetworks.client.SynapseAdminClientImpl;
 import org.sagebionetworks.client.SynapseClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,6 +77,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadDedupe;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.dynamodb.DynamoUtils;
+import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
@@ -473,6 +480,35 @@ public class BridgeSpringConfig {
     @Autowired
     public DynamoDBMapper activityDdbMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoScheduledActivity.class);
+    }
+
+    @Bean
+    public SessionFactory hibernateSessionFactory() {
+        // Hibernate configs
+        Properties props = new Properties();
+        props.put("hibernate.connection.driver_class", "com.mysql.jdbc.Driver");
+        props.put("hibernate.connection.requireSSL", true);
+        props.put("hibernate.dialect", "org.hibernate.dialect.MySQLDialect");
+
+        // c3p0 connection pool properties
+        props.put("hibernate.c3p0.min_size", 5);
+        props.put("hibernate.c3p0.max_size", 20);
+        props.put("hibernate.c3p0.timeout", 300);
+        props.put("hibernate.c3p0.idle_test_period", 300);
+
+        // Connection properties come from Bridge configs
+        BridgeConfig config = bridgeConfig();
+        props.put("hibernate.connection.password", config.get("hibernate.connection.password"));
+        props.put("hibernate.connection.url", config.get("hibernate.connection.url"));
+        props.put("hibernate.connection.username", config.get("hibernate.connection.username"));
+
+        StandardServiceRegistry reg = new StandardServiceRegistryBuilder().applySettings(props).build();
+
+        // For whatever reason, we need to list each Hibernate-enabled class individually.
+        MetadataSources metadataSources = new MetadataSources(reg);
+        metadataSources.addAnnotatedClass(HibernateSharedModuleMetadata.class);
+
+        return metadataSources.buildMetadata().buildSessionFactory();
     }
 
     // Do NOT reference this bean outside of StormpathAccountDao. Injected for testing purposes.
