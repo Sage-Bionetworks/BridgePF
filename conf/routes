@@ -40,6 +40,16 @@ POST   /v3/participants/:userId/consents/withdraw            @org.sagebionetwork
 POST   /v3/participants/:userId/consents/:guid/resendConsent @org.sagebionetworks.bridge.play.controllers.ParticipantController.resendConsentAgreement(userId: String, guid: String)
 POST   /v3/participants/:userId/consents/:guid/withdraw      @org.sagebionetworks.bridge.play.controllers.ParticipantController.withdrawConsent(userId: String, guid: String)
 
+# Shared Module Metadata
+GET    /v3/sharedmodules/metadata                       @org.sagebionetworks.bridge.play.controllers.SharedModuleMetadataController.queryAllMetadata(mostrecent: String ?= "true", published: String ?= "false", where: String ?= null, tags: String ?= null)
+POST   /v3/sharedmodules/metadata                       @org.sagebionetworks.bridge.play.controllers.SharedModuleMetadataController.createMetadata
+GET    /v3/sharedmodules/metadata/:id                   @org.sagebionetworks.bridge.play.controllers.SharedModuleMetadataController.getMetadataByIdLatestVersion(id: String)
+GET    /v3/sharedmodules/metadata/:id/versions          @org.sagebionetworks.bridge.play.controllers.SharedModuleMetadataController.queryMetadataById(id:String, mostrecent: String ?= "true", published: String ?= "false", where: String ?= null, tags: String ?= null)
+DELETE /v3/sharedmodules/metadata/:id/versions          @org.sagebionetworks.bridge.play.controllers.SharedModuleMetadataController.deleteMetadataByIdAllVersions(id: String)
+GET    /v3/sharedmodules/metadata/:id/versions/:version @org.sagebionetworks.bridge.play.controllers.SharedModuleMetadataController.getMetadataByIdAndVersion(id: String, version: Int)
+POST   /v3/sharedmodules/metadata/:id/versions/:version @org.sagebionetworks.bridge.play.controllers.SharedModuleMetadataController.updateMetadata(id: String, version: Int)
+DELETE /v3/sharedmodules/metadata/:id/versions/:version @org.sagebionetworks.bridge.play.controllers.SharedModuleMetadataController.deleteMetadataByIdAndVersion(id: String, version: Int)
+
 # Study Subpopulations
 GET    /v3/subpopulations        @org.sagebionetworks.bridge.play.controllers.SubpopulationController.getAllSubpopulations
 POST   /v3/subpopulations        @org.sagebionetworks.bridge.play.controllers.SubpopulationController.createSubpopulation

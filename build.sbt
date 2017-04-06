@@ -29,8 +29,16 @@ libraryDependencies ++= Seq(
   
   // New Relic
   "com.newrelic.agent.java" % "newrelic-agent" % "3.32.0",
+  // Dom4j, needed to resolve dependency conflicts for Hibernate
+  "dom4j" % "dom4j" % "1.6.1",
+  // MySQL JDBC connector
+  "mysql" % "mysql-connector-java" % "5.1.41",
+  // Hibernate (SQL ORM)
+  "org.hibernate" % "hibernate-core" % "5.2.9.Final",
+  // C3P0, used for connection pooling for Hibernate
+ "org.hibernate" % "hibernate-c3p0" % "5.2.9.Final",
   // Spring
-  "org.springframework" % "spring-context" % "4.2.4.RELEASE",
+  "org.springframework" % "spring-context" % "4.3.7.RELEASE",
   // Apache Commons
   "org.apache.commons" % "commons-lang3" % "3.4",
   "commons-validator" % "commons-validator" % "1.4.1",
