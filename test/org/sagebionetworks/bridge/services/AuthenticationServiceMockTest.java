@@ -19,13 +19,16 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.LimitExceededException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
@@ -34,14 +37,13 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.email.EmailSignInEmailProvider;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
-import org.sagebionetworks.bridge.validators.EmailValidator;
-import org.sagebionetworks.bridge.validators.EmailVerificationValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
-import org.sagebionetworks.bridge.validators.SignInValidator;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AuthenticationServiceMockTest {
     
+    private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
+            .withStudyIdentifier(TestConstants.TEST_STUDY).build();
     private static final String RECIPIENT_EMAIL = "email@email.com";
     private static final String TOKEN = "ABC-DEF";
     
@@ -60,13 +62,9 @@ public class AuthenticationServiceMockTest {
     @Mock
     private SendMailService sendMailService;
     @Mock
-    private EmailVerificationValidator verificationValidator;
-    @Mock
-    private SignInValidator signInValidator;
+    private StudyService studyService;
     @Mock
     private PasswordResetValidator passwordResetValidator;
-    @Mock
-    private EmailValidator emailValidator;
     @Mock
     private Study study;
     @Mock
@@ -89,13 +87,12 @@ public class AuthenticationServiceMockTest {
         service.setConsentService(consentService);
         service.setOptionsService(optionsService);
         service.setAccountDao(accountDao);
-        service.setEmailVerificationValidator(verificationValidator);
-        service.setSignInValidator(signInValidator);
         service.setPasswordResetValidator(passwordResetValidator);
-        service.setEmailValidator(emailValidator);
         service.setParticipantService(participantService);
         service.setSendMailService(sendMailService);
+        service.setStudyService(studyService);
         
+        doReturn(study).when(studyService).getStudy("test-study");
         doReturn("test-study").when(study).getIdentifier();
         doReturn(new StudyIdentifierImpl("test-study")).when(study).getStudyIdentifier();
         doReturn(new EmailTemplate("subject","body",MimeType.TEXT)).when(study).getEmailSignInTemplate();
@@ -108,7 +105,9 @@ public class AuthenticationServiceMockTest {
         String cacheKey = "email@email.com:test-study:signInRequest";
         doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
         
-        service.requestEmailSignIn(study, RECIPIENT_EMAIL);
+        SignIn signInRequest = new SignIn("test-study", RECIPIENT_EMAIL, null, null);
+        
+        service.requestEmailSignIn(signInRequest);
         
         verify(cacheProvider).getString(stringCaptor.capture());
         assertEquals(cacheKey, stringCaptor.getValue());
@@ -133,7 +132,9 @@ public class AuthenticationServiceMockTest {
         
         doReturn("something").when(cacheProvider).getString(cacheKey);
         
-        service.requestEmailSignIn(study, RECIPIENT_EMAIL);
+        SignIn signInRequest = new SignIn("test-study", RECIPIENT_EMAIL, null, null);
+        
+        service.requestEmailSignIn(signInRequest);
     }
     
     @Test
@@ -141,7 +142,9 @@ public class AuthenticationServiceMockTest {
         String cacheKey = "email@email.com:test-study:signInRequest";
         doReturn(null).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
         
-        service.requestEmailSignIn(study, RECIPIENT_EMAIL);
+        SignIn signInRequest = new SignIn("test-study", RECIPIENT_EMAIL, null, null);
+        
+        service.requestEmailSignIn(signInRequest);
 
         verify(cacheProvider, never()).setString(eq(cacheKey), any(), eq(60));
         verify(sendMailService, never()).sendEmail(any());
@@ -158,7 +161,9 @@ public class AuthenticationServiceMockTest {
         doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
         doReturn(participant).when(participantService).getParticipant(study, account, false);
         
-        UserSession retSession = service.emailSignIn(study, context, RECIPIENT_EMAIL, TOKEN);
+        SignIn signIn = new SignIn(study.getIdentifier(), RECIPIENT_EMAIL, null, TOKEN);
+        
+        UserSession retSession = service.emailSignIn(context, signIn);
         
         assertNotNull(retSession);
         verify(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
@@ -176,7 +181,9 @@ public class AuthenticationServiceMockTest {
         doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
         doReturn(participant).when(participantService).getParticipant(study, account, false);
         
-        service.emailSignIn(study, context, RECIPIENT_EMAIL, "wrongToken");
+        SignIn signIn = new SignIn(study.getIdentifier(), RECIPIENT_EMAIL, null, "wrongToken");
+        
+        service.emailSignIn(context, signIn);
     }
     
     @Test(expected = AuthenticationFailedException.class)
@@ -190,6 +197,43 @@ public class AuthenticationServiceMockTest {
         doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
         doReturn(participant).when(participantService).getParticipant(study, account, false);
         
-        service.emailSignIn(study, context, RECIPIENT_EMAIL, "wrongToken");
+        SignIn signIn = new SignIn(study.getIdentifier(), RECIPIENT_EMAIL, null, "wrongToken");
+        
+        service.emailSignIn(context, signIn);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void emailSignInRequestMissingStudy() {
+        SignIn signInRequest = new SignIn(null, "email@email.com", null, "ABC");
+
+        service.requestEmailSignIn(signInRequest);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void emailSignInRequestMissingEmail() {
+        SignIn signInRequest = new SignIn(TestConstants.TEST_STUDY_IDENTIFIER, "", null, "ABC");
+        
+        service.requestEmailSignIn(signInRequest);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void emailSignInMissingStudy() {
+        SignIn signInRequest = new SignIn(null, "email@email.com", null, "ABC");
+
+        service.emailSignIn(CONTEXT, signInRequest);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void emailSignInMissingEmail() {
+        SignIn signInRequest = new SignIn(TestConstants.TEST_STUDY_IDENTIFIER, null, null, "ABC");
+
+        service.emailSignIn(CONTEXT, signInRequest);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void emailSignInMissingToken() {
+        SignIn signInRequest = new SignIn(TestConstants.TEST_STUDY_IDENTIFIER, "email@email.com", null, null);
+
+        service.emailSignIn(CONTEXT, signInRequest);
     }
 }

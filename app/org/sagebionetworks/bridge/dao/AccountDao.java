@@ -46,6 +46,11 @@ public interface AccountDao {
     void resetPassword(PasswordReset passwordReset);
     
     /**
+     * Call to change a password without a password reset workflow.
+     */
+    void changePassword(Account account, String newPassword);
+    
+    /**
      * Authenticate a user with the supplied credentials, returning that user's account record
      * if successful. 
      */

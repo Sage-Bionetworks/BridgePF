@@ -260,6 +260,20 @@ public class StormpathAccountDao implements AccountDao {
     }
     
     @Override
+    public void changePassword(Account account, String newPassword) {
+        checkNotNull(account);
+        checkArgument(isNotBlank(newPassword));
+        
+        try {
+            com.stormpath.sdk.account.Account acct = ((StormpathAccount)account).getAccount();
+            acct.setPassword(newPassword);
+            acct.save();
+        } catch (ResourceException e) {
+            rethrowResourceException(e, null);
+        }
+    }
+    
+    @Override
     public Account authenticate(Study study, SignIn signIn) {
         checkNotNull(study);
         checkNotNull(signIn);

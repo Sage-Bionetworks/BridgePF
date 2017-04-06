@@ -81,11 +81,17 @@ public class AuthenticationControllerMockTest {
     @Mock
     CacheProvider cacheProvider;
     
+    @Mock
+    UserSession userSession;
+    
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
     
     @Captor
     ArgumentCaptor<RequestInfo> requestInfoCaptor;
+    
+    @Captor
+    ArgumentCaptor<SignIn> signInCaptor;
     
     @Before
     public void before() {
@@ -106,45 +112,37 @@ public class AuthenticationControllerMockTest {
         Result result = controller.requestEmailSignIn();
         assertResult(result, 202, "Email sent.");
      
-        verify(authenticationService).requestEmailSignIn(study, "email@email.com");
+        verify(authenticationService).requestEmailSignIn(signInCaptor.capture());
+        assertEquals("study-key", signInCaptor.getValue().getStudyId());
+        assertEquals("email@email.com", signInCaptor.getValue().getEmail());
     }
     
-    @Test(expected = BadRequestException.class)
-    public void requestEmailSignInMissingStudyId() throws Exception {
-        mockPlayContextWithJson(TestUtils.createJson("{'email':'email@email.com'}"));
-        controller.requestEmailSignIn();
-    }
-    
-    @Test(expected = BadRequestException.class)
-    public void requestEmailSignInMissingEmail() throws Exception {
-        mockPlayContextWithJson(TestUtils.createJson("{'study':'study-key'}"));
-        controller.requestEmailSignIn();
-    }
-    
+    @Test
     public void emailSignIn() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder().build();
         mockPlayContextWithJson(TestUtils.createJson("{'study':'study-key','email':'email@email.com','token':'ABC'}"));
+        doReturn(participant).when(userSession).getParticipant();
+        study.setIdentifier("study-test");
+        doReturn(study).when(studyService).getStudy("study-test");
+        doReturn(true).when(userSession).isAuthenticated();
+        doReturn(userSession).when(authenticationService).emailSignIn(any(CriteriaContext.class), any(SignIn.class));
         
         Result result = controller.emailSignIn();
-        assertResult(result, 202, "Email sent.");
+        assertEquals(200, result.status());
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        assertTrue(node.get("authenticated").asBoolean());
      
-        verify(authenticationService).emailSignIn(eq(study), any(CriteriaContext.class), eq("email@email.com"), eq("ABC"));
+        verify(authenticationService).emailSignIn(any(CriteriaContext.class), signInCaptor.capture());
+        
+        SignIn captured = signInCaptor.getValue();
+        assertEquals("email@email.com", captured.getEmail());
+        assertEquals("study-key", captured.getStudyId());
+        assertEquals("ABC", captured.getToken());
     }
     
     @Test(expected = BadRequestException.class)
     public void emailSignInMissingStudyId() throws Exception { 
         mockPlayContextWithJson(TestUtils.createJson("{'email':'email@email.com','token':'abc'}"));
-        controller.emailSignIn();
-    }
-    
-    @Test(expected = BadRequestException.class)
-    public void emailSignInMissingEmail() throws Exception { 
-        mockPlayContextWithJson(TestUtils.createJson("{'study':'study-key','token':'abc'}"));
-        controller.emailSignIn();
-    }
-    
-    @Test(expected = BadRequestException.class)
-    public void emailSignInMissingToken() throws Exception { 
-        mockPlayContextWithJson(TestUtils.createJson("{'study':'study-key','email':'email@email.com'}"));
         controller.emailSignIn();
     }
     

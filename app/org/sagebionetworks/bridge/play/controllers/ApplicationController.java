@@ -7,9 +7,12 @@ import org.apache.commons.lang3.StringEscapeUtils;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import org.springframework.stereotype.Controller;
 
@@ -44,19 +47,13 @@ public class ApplicationController extends BaseController {
     
     public Result startSession(String studyId, String email, String token) {
         if (isBlank(studyId)) {
-            throw new BadRequestException("studyId parameter is required");
+            throw new BadRequestException("study ID is required");
         }
-        if (isBlank(email)) {
-            throw new BadRequestException("email parameter is required");
-        }
-        if (isBlank(token)) {
-            throw new BadRequestException("token parameter is required");
-        }
-        Study study = studyService.getStudy(studyId);
+        SignIn signIn = new SignIn(studyId, email, null, token);
         
-        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
-        
-        UserSession session = authenticationService.emailSignIn(study, context, email, token);
+        StudyIdentifier studyIdentifier = new StudyIdentifierImpl(studyId);
+        CriteriaContext context = getCriteriaContext(studyIdentifier);
+        UserSession session = authenticationService.emailSignIn(context, signIn);
         
         return okResult(UserSessionInfo.toJSON(session));
     }

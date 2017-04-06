@@ -258,7 +258,7 @@ public class StormpathAccountDaoMockTest {
         when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
         
         // authenticate
-        Account account = dao.authenticate(study, new SignIn("dummy-user", PASSWORD));
+        Account account = dao.authenticate(study, new SignIn("test-study", "dummy-user", PASSWORD, null));
         
         // Just verify a few fields, the full object initialization is tested elsewhere.
         assertEquals("Test", account.getFirstName());
@@ -300,7 +300,7 @@ public class StormpathAccountDaoMockTest {
 
         // execute and validate
         try {
-            dao.authenticate(study, new SignIn("dummy-user", PASSWORD));
+            dao.authenticate(study, new SignIn(study.getIdentifier(), "dummy-user", PASSWORD, null));
             fail("expected exception");
         } catch (BridgeServiceException ex) {
             assertEquals(HttpStatus.SC_LOCKED, ex.getStatusCode());
@@ -394,7 +394,7 @@ public class StormpathAccountDaoMockTest {
     public void authenticatedCreatesHealthCode() {
         mockAccountWithoutHealthCode();
         
-        SignIn signIn = new SignIn("email@email.com", "password");
+        SignIn signIn = new SignIn(study.getIdentifier(), "email@email.com", "password", null);
         
         AuthenticationResult result = mock(AuthenticationResult.class);
         doReturn(stormpathAccount).when(result).getAccount();

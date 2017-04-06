@@ -20,11 +20,12 @@ public class SignInDeserializer extends JsonDeserializer<SignIn> {
         String username = JsonUtils.asText(node, "username");
         String email = JsonUtils.asText(node, "email");
         String password = JsonUtils.asText(node, "password");
+        String studyId = JsonUtils.asText(node, "study");
+        String token = JsonUtils.asText(node, "token");
         
-        if (StringUtils.isNotBlank(username)) {
-            return new SignIn(username, password);
-        }
-        return new SignIn(email, password);
+        String accountIdentifier = (StringUtils.isNotBlank(username)) ? username : email;
+        
+        return new SignIn(studyId, accountIdentifier, password, token);
     }
 
 }

@@ -3,6 +3,9 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
+import static org.sagebionetworks.bridge.validators.SignInValidator.Type.PASSWORD;
+import static org.sagebionetworks.bridge.validators.SignInValidator.Type.EMAIL_REQUEST;
+import static org.sagebionetworks.bridge.validators.SignInValidator.Type.EMAIL;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -42,6 +45,12 @@ public class AuthenticationService {
 
     private final Logger logger = LoggerFactory.getLogger(AuthenticationService.class);
     
+    private static final EmailVerificationValidator EMAIL_VERIFICATION_VALIDATOR = new EmailVerificationValidator();
+    private static final SignInValidator EMAIL_SIGNIN_REQUEST_VALIDATOR = new SignInValidator(EMAIL_REQUEST);
+    private static final SignInValidator PASSWORD_SIGNIN_VALIDATOR = new SignInValidator(PASSWORD);
+    private static final SignInValidator EMAIL_SIGNIN_VALIDATOR = new SignInValidator(EMAIL);
+    private static final EmailValidator EMAIL_VALIDATOR = new EmailValidator();
+    
     private static final String SESSION_SIGNIN_CACHE_KEY = "%s:%s:signInRequest";
     private static final int SESSION_SIGNIN_TIMEOUT = 60;
     
@@ -52,11 +61,8 @@ public class AuthenticationService {
     private AccountDao accountDao;
     private ParticipantService participantService;
     private SendMailService sendMailService;
-    
-    private EmailVerificationValidator verificationValidator;
-    private SignInValidator signInValidator;
+    private StudyService studyService;
     private PasswordResetValidator passwordResetValidator;
-    private EmailValidator emailValidator;
 
     @Autowired
     final void setCacheProvider(CacheProvider cache) {
@@ -79,20 +85,8 @@ public class AuthenticationService {
         this.accountDao = accountDao;
     }
     @Autowired
-    final void setEmailVerificationValidator(EmailVerificationValidator validator) {
-        this.verificationValidator = validator;
-    }
-    @Autowired
-    final void setSignInValidator(SignInValidator validator) {
-        this.signInValidator = validator;
-    }
-    @Autowired
     final void setPasswordResetValidator(PasswordResetValidator validator) {
         this.passwordResetValidator = validator;
-    }
-    @Autowired
-    final void setEmailValidator(EmailValidator validator) {
-        this.emailValidator = validator;
     }
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
@@ -102,9 +96,16 @@ public class AuthenticationService {
     final void setSendMailService(SendMailService sendMailService) {
         this.sendMailService = sendMailService;
     }
+    @Autowired
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
+    }
 
-    public void requestEmailSignIn(Study study, String email) {
-        String cacheKey = getEmailSignInCacheKey(study, email);  
+    public void requestEmailSignIn(SignIn signIn) {
+        Validate.entityThrowingException(EMAIL_SIGNIN_REQUEST_VALIDATOR, signIn);
+        
+        Study study = studyService.getStudy(signIn.getStudyId());
+        String cacheKey = getEmailSignInCacheKey(study, signIn.getEmail());  
         
         // check that email is not already locked
         if (cacheProvider.getString(cacheKey) != null) {
@@ -112,7 +113,7 @@ public class AuthenticationService {
         }
         
         // check that email is in the study, if not, return quietly to prevent session enumeration attacks
-        if (accountDao.getAccountWithEmail(study, email) == null) {
+        if (accountDao.getAccountWithEmail(study, signIn.getEmail()) == null) {
             return;
         }
         
@@ -121,21 +122,29 @@ public class AuthenticationService {
         cacheProvider.setString(cacheKey, token, SESSION_SIGNIN_TIMEOUT);
         
         // email the user the token
-        EmailSignInEmailProvider provider = new EmailSignInEmailProvider(study, email, token);
+        EmailSignInEmailProvider provider = new EmailSignInEmailProvider(study, signIn.getEmail(), token);
         sendMailService.sendEmail(provider);
     }
     
-    public UserSession emailSignIn(Study study, CriteriaContext context, String email, String token) {
-        String cacheKey = getEmailSignInCacheKey(study, email);
+    public UserSession emailSignIn(CriteriaContext context, SignIn signIn) {
+        Validate.entityThrowingException(EMAIL_SIGNIN_VALIDATOR, signIn);
+        
+        Study study = studyService.getStudy(signIn.getStudyId());
+        String cacheKey = getEmailSignInCacheKey(study, signIn.getEmail());
         
         String storedToken = cacheProvider.getString(cacheKey);
-        if (storedToken == null || !storedToken.equals(token)) {
+        if (storedToken == null || !storedToken.equals(signIn.getToken())) {
             throw new AuthenticationFailedException();
         }
         
-        Account account = accountDao.getAccountWithEmail(study, email);
+        Account account = accountDao.getAccountWithEmail(study, signIn.getEmail());
+        UserSession session = getSessionFromAccount(study, context, account);
         
-        UserSession session = getSessionFromAccount(study, context, account);        
+        // At this point the client can also change the password in order to sign in when the 
+        // session expires. This is optional.
+        if (signIn.getPassword() != null) {
+            accountDao.changePassword(account, signIn.getPassword());
+        }
         
         cacheProvider.removeString(cacheKey);
         return session;
@@ -180,7 +189,7 @@ public class AuthenticationService {
         checkNotNull(context);
         checkNotNull(signIn);
 
-        Validate.entityThrowingException(signInValidator, signIn);
+        Validate.entityThrowingException(PASSWORD_SIGNIN_VALIDATOR, signIn);
 
         Account account = accountDao.authenticate(study, signIn);
 
@@ -222,7 +231,7 @@ public class AuthenticationService {
     public void verifyEmail(EmailVerification verification) {
         checkNotNull(verification);
 
-        Validate.entityThrowingException(verificationValidator, verification);
+        Validate.entityThrowingException(EMAIL_VERIFICATION_VALIDATOR, verification);
         accountDao.verifyEmail(verification);
     }
     
@@ -230,7 +239,7 @@ public class AuthenticationService {
         checkNotNull(studyIdentifier);
         checkNotNull(email);
         
-        Validate.entityThrowingException(emailValidator, email);
+        Validate.entityThrowingException(EMAIL_VALIDATOR, email);
         try {
             accountDao.resendEmailVerificationToken(studyIdentifier, email);    
         } catch(EntityNotFoundException e) {
@@ -243,7 +252,7 @@ public class AuthenticationService {
         checkNotNull(study);
         checkNotNull(email);
         
-        Validate.entityThrowingException(emailValidator, email);
+        Validate.entityThrowingException(EMAIL_VALIDATOR, email);
         try {
             accountDao.requestResetPassword(study, email);    
         } catch(EntityNotFoundException e) {

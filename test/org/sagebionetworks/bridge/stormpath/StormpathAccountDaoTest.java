@@ -202,7 +202,7 @@ public class StormpathAccountDaoTest {
             account = accountDao.constructAccount(study, participant.getEmail(), participant.getPassword());
             accountDao.createAccount(study, account, false);
             
-            account = accountDao.authenticate(study, new SignIn(email, PASSWORD));
+            account = accountDao.authenticate(study, new SignIn(study.getIdentifier(), email, PASSWORD, null));
             assertEquals(email, account.getEmail());
         } finally {
             if (account != null) {
@@ -221,7 +221,7 @@ public class StormpathAccountDaoTest {
             account = accountDao.constructAccount(study, participant.getEmail(), participant.getPassword());
             accountDao.createAccount(study, account, false);
             try {
-                accountDao.authenticate(study, new SignIn(email, "BadPassword"));
+                accountDao.authenticate(study, new SignIn(study.getIdentifier(), email, "BadPassword", null));
                 fail("Should have thrown an exception");
             } catch(EntityNotFoundException e) {
                 assertEquals("Account not found.", e.getMessage());
@@ -235,7 +235,7 @@ public class StormpathAccountDaoTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void cannotAuthenticate() {
-        accountDao.authenticate(study, new SignIn("bridge-testing+noone@sagebridge.org", "belgium"));
+        accountDao.authenticate(study, new SignIn(study.getIdentifier(), "bridge-testing+noone@sagebridge.org", "belgium", null));
     }
     
     @Test
