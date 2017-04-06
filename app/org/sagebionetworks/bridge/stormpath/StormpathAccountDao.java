@@ -20,12 +20,14 @@ import java.util.SortedMap;
 import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
+import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -285,7 +287,7 @@ public class StormpathAccountDao implements AccountDao {
         } catch (ResourceException e) {
             rethrowResourceException(e, null);
         }
-        throw new BridgeServiceException("Authentication failed");
+        throw new AuthenticationFailedException(); 
     }
 
     @Override
@@ -492,12 +494,24 @@ public class StormpathAccountDao implements AccountDao {
         return account;
     }
     
-    private Account getAccountWithEmail(Study study, String email) {
+    public String getAccountIdFromEmail(Study study, String email) {
+        Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
+        
+        AccountList accounts = directory.getAccounts(Accounts.where(Accounts.email().eqIgnoreCase(email)));
+        if (accounts.getSize() > 0) {
+            com.stormpath.sdk.account.Account acct = accounts.iterator().next();
+            return BridgeUtils.getIdFromStormpathHref(acct.getHref());
+        }
+        return null;
+    }
+    
+    @Override
+    public Account getAccountWithEmail(Study study, String email) {
         Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
 
         AccountList accounts = directory.getAccounts(Accounts.where(Accounts.email().eqIgnoreCase(email))
                 .withCustomData().withGroups().withGroupMemberships());
-        if (accounts.iterator().hasNext()) {
+        if (accounts.getSize() > 0) {
             com.stormpath.sdk.account.Account acct = accounts.iterator().next();
             return constructAccount(study, acct);
         }

@@ -2,8 +2,10 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -15,6 +17,7 @@ import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
+import org.sagebionetworks.bridge.models.accounts.EmailSignInRequest;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
@@ -30,6 +33,41 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 @Controller
 public class AuthenticationController extends BaseController {
+
+    public Result requestEmailSignIn() { 
+        EmailSignInRequest request = parseJson(request(), EmailSignInRequest.class);
+        
+        if (isBlank(request.getStudyId())) {
+            throw new BadRequestException("studyId is required");
+        }
+        if (isBlank(request.getEmail())) {
+            throw new BadRequestException("email is required");
+        }
+        Study study = studyService.getStudy(request.getStudyId());
+        authenticationService.requestEmailSignIn(study, request.getEmail());
+        
+        return acceptedResult("Email sent.");
+    }
+    
+    public Result emailSignIn() { 
+        EmailSignInRequest request = parseJson(request(), EmailSignInRequest.class);
+
+        if (isBlank(request.getStudyId())) {
+            throw new BadRequestException("studyId is required");
+        }
+        if (isBlank(request.getEmail())) {
+            throw new BadRequestException("email is required");
+        }
+        if (isBlank(request.getToken())) {
+            throw new BadRequestException("token is required");
+        }
+        Study study = studyService.getStudy(request.getStudyId());
+        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+        
+        UserSession session = authenticationService.emailSignIn(study, context, request.getEmail(), request.getToken());
+        
+        return okResult(UserSessionInfo.toJSON(session));
+    }
 
     public Result signIn() throws Exception {
         return signInWithRetry(5);

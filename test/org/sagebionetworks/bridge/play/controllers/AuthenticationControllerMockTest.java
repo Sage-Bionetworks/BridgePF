@@ -5,14 +5,16 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.same;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
+import static org.sagebionetworks.bridge.TestUtils.assertResult;
+import static org.sagebionetworks.bridge.TestUtils.mockPlayContextWithJson;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -32,9 +34,11 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -94,7 +98,56 @@ public class AuthenticationControllerMockTest {
         when(studyService.getStudy(TEST_STUDY_ID_STRING)).thenReturn(study);
         controller.setStudyService(studyService);
     }
-
+    
+    @Test
+    public void requestEmailSignIn() throws Exception {
+        mockPlayContextWithJson(TestUtils.createJson("{'study':'study-key','email':'email@email.com'}"));
+        
+        Result result = controller.requestEmailSignIn();
+        assertResult(result, 202, "Email sent.");
+     
+        verify(authenticationService).requestEmailSignIn(study, "email@email.com");
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void requestEmailSignInMissingStudyId() throws Exception {
+        mockPlayContextWithJson(TestUtils.createJson("{'email':'email@email.com'}"));
+        controller.requestEmailSignIn();
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void requestEmailSignInMissingEmail() throws Exception {
+        mockPlayContextWithJson(TestUtils.createJson("{'study':'study-key'}"));
+        controller.requestEmailSignIn();
+    }
+    
+    public void emailSignIn() throws Exception {
+        mockPlayContextWithJson(TestUtils.createJson("{'study':'study-key','email':'email@email.com','token':'ABC'}"));
+        
+        Result result = controller.emailSignIn();
+        assertResult(result, 202, "Email sent.");
+     
+        verify(authenticationService).emailSignIn(eq(study), any(CriteriaContext.class), eq("email@email.com"), eq("ABC"));
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void emailSignInMissingStudyId() throws Exception { 
+        mockPlayContextWithJson(TestUtils.createJson("{'email':'email@email.com','token':'abc'}"));
+        controller.emailSignIn();
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void emailSignInMissingEmail() throws Exception { 
+        mockPlayContextWithJson(TestUtils.createJson("{'study':'study-key','token':'abc'}"));
+        controller.emailSignIn();
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void emailSignInMissingToken() throws Exception { 
+        mockPlayContextWithJson(TestUtils.createJson("{'study':'study-key','email':'email@email.com'}"));
+        controller.emailSignIn();
+    }
+    
     @Test
     public void getSessionIfItExistsNullToken() {
         doReturn(null).when(controller).getSessionToken();

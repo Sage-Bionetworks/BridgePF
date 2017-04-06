@@ -78,6 +78,12 @@ public interface AccountDao {
     Account getAccount(Study study, String id);
     
     /**
+     * Get an account in the context of a study by the email address used to register the study. Returns 
+     * null if there is no account.
+     */
+    Account getAccountWithEmail(Study study, String email);
+    
+    /**
      * Delete an account along with the authentication credentials.
      */
     void deleteAccount(Study study, String email);

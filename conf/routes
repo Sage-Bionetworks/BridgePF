@@ -3,6 +3,7 @@ GET    /                           @org.sagebionetworks.bridge.play.controllers.
 GET    /index.html                 @org.sagebionetworks.bridge.play.controllers.ApplicationController.loadApp
 GET    /mobile/verifyEmail.html    @org.sagebionetworks.bridge.play.controllers.ApplicationController.verifyEmail(study: String ?= "api")
 GET    /mobile/resetPassword.html  @org.sagebionetworks.bridge.play.controllers.ApplicationController.resetPassword(study: String ?= "api")
+GET    /mobile/startSession.html   @org.sagebionetworks.bridge.play.controllers.ApplicationController.startSession(study: String ?= null, email: String ?= null, token: String ?= null)
 
 # Authentication
 POST   /v3/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signIn
@@ -12,6 +13,8 @@ POST   /v3/auth/resetPassword           @org.sagebionetworks.bridge.play.control
 POST   /v3/auth/signUp                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signUp
 POST   /v3/auth/verifyEmail             @org.sagebionetworks.bridge.play.controllers.AuthenticationController.verifyEmail
 POST   /v3/auth/resendEmailVerification @org.sagebionetworks.bridge.play.controllers.AuthenticationController.resendEmailVerification
+POST   /v3/auth/email                   @org.sagebionetworks.bridge.play.controllers.AuthenticationController.requestEmailSignIn
+POST   /v3/auth/email/signIn            @org.sagebionetworks.bridge.play.controllers.AuthenticationController.emailSignIn
 
 # Compound Activity Definitions
 GET    /v3/compoundactivitydefinitions @org.sagebionetworks.bridge.play.controllers.CompoundActivityDefinitionController.getAllCompoundActivityDefinitionsInStudy

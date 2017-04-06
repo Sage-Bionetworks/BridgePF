@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.stormpath;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyMapOf;
@@ -37,6 +38,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -61,6 +63,8 @@ import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
 import com.google.common.collect.Lists;
+import com.stormpath.sdk.account.AccountCriteria;
+import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.authc.AuthenticationResult;
 import com.stormpath.sdk.client.Client;
@@ -109,6 +113,12 @@ public class StormpathAccountDaoMockTest {
     
     @Mock
     CustomData customData;
+    
+    @Mock
+    AccountList accountList;
+    
+    @Captor
+    private ArgumentCaptor<AccountCriteria> accountCriteriaCaptor;
 
     StormpathAccountDao dao;
     
@@ -260,6 +270,19 @@ public class StormpathAccountDaoMockTest {
         verify(authResult).getAccount();
         verify(stormpathAccount, times(6)).getCustomData();
         verify(stormpathAccount).getGroups();
+    }
+
+    @Test
+    public void getAccountWithEmail() {
+        mockAccountWithoutHealthCode();
+        doReturn(accountList).when(directory).getAccounts(any(AccountCriteria.class));
+        
+        dao.getAccountWithEmail(study, "email@email.com");
+        
+        verify(directory).getAccounts(accountCriteriaCaptor.capture());
+        
+        AccountCriteria criteria = accountCriteriaCaptor.getValue();
+        assertTrue(criteria.toString().contains("email@email.com"));
     }
 
     @Test

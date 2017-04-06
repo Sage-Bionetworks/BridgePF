@@ -8,9 +8,11 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.LimitExceededException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Email;
@@ -22,6 +24,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.services.email.EmailSignInEmailProvider;
 import org.sagebionetworks.bridge.validators.EmailValidator;
 import org.sagebionetworks.bridge.validators.EmailVerificationValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
@@ -36,8 +39,11 @@ import org.springframework.stereotype.Component;
 
 @Component("authenticationService")
 public class AuthenticationService {
-    
+
     private final Logger logger = LoggerFactory.getLogger(AuthenticationService.class);
+    
+    private static final String SESSION_SIGNIN_CACHE_KEY = "%s:%s:signInRequest";
+    private static final int SESSION_SIGNIN_TIMEOUT = 60;
     
     private CacheProvider cacheProvider;
     private BridgeConfig config;
@@ -45,6 +51,7 @@ public class AuthenticationService {
     private ParticipantOptionsService optionsService;
     private AccountDao accountDao;
     private ParticipantService participantService;
+    private SendMailService sendMailService;
     
     private EmailVerificationValidator verificationValidator;
     private SignInValidator signInValidator;
@@ -91,7 +98,49 @@ public class AuthenticationService {
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
     }
+    @Autowired
+    final void setSendMailService(SendMailService sendMailService) {
+        this.sendMailService = sendMailService;
+    }
 
+    public void requestEmailSignIn(Study study, String email) {
+        String cacheKey = getEmailSignInCacheKey(study, email);  
+        
+        // check that email is not already locked
+        if (cacheProvider.getString(cacheKey) != null) {
+            throw new LimitExceededException("Email currently pending confirmation.");
+        }
+        
+        // check that email is in the study, if not, return quietly to prevent session enumeration attacks
+        if (accountDao.getAccountWithEmail(study, email) == null) {
+            return;
+        }
+        
+        // set a time-limited token
+        String token = BridgeUtils.generateGuid().replaceAll("-", "");
+        cacheProvider.setString(cacheKey, token, SESSION_SIGNIN_TIMEOUT);
+        
+        // email the user the token
+        EmailSignInEmailProvider provider = new EmailSignInEmailProvider(study, email, token);
+        sendMailService.sendEmail(provider);
+    }
+    
+    public UserSession emailSignIn(Study study, CriteriaContext context, String email, String token) {
+        String cacheKey = getEmailSignInCacheKey(study, email);
+        
+        String storedToken = cacheProvider.getString(cacheKey);
+        if (storedToken == null || !storedToken.equals(token)) {
+            throw new AuthenticationFailedException();
+        }
+        
+        Account account = accountDao.getAccountWithEmail(study, email);
+        
+        UserSession session = getSessionFromAccount(study, context, account);        
+        
+        cacheProvider.removeString(cacheKey);
+        return session;
+    }
+    
     /**
      * This method returns the cached session for the user. A CriteriaContext object is not provided to the method, 
      * and the user's consent status is not re-calculated based on participation in one more more subpopulations. 
@@ -211,9 +260,9 @@ public class AuthenticationService {
         accountDao.resetPassword(passwordReset);
     }
     
-    private UserSession getSessionFromAccount(Study study, CriteriaContext context, Account account) {
+    protected UserSession getSessionFromAccount(Study study, CriteriaContext context, Account account) {
         StudyParticipant participant = participantService.getParticipant(study, account, false);
-        
+
         // If the user does not have a language persisted yet, now that we have a session, we can retrieve it 
         // from the context, add it to the user/session, and persist it.
         if (participant.getLanguages().isEmpty() && !context.getLanguages().isEmpty()) {
@@ -249,5 +298,9 @@ public class AuthenticationService {
         session.setConsentStatuses(consentService.getConsentStatuses(newContext));
         
         return session;
+    }
+    
+    private String getEmailSignInCacheKey(Study study, String email) {
+        return String.format(SESSION_SIGNIN_CACHE_KEY, email, study.getIdentifier());
     }
 }
