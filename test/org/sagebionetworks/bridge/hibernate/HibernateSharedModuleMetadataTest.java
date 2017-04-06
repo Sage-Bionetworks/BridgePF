@@ -13,6 +13,7 @@ import org.junit.Test;
 
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleType;
 
@@ -25,8 +26,10 @@ public class HibernateSharedModuleMetadataTest {
     private static final int MODULE_VERSION = 3;
     private static final String SCHEMA_ID = "test-schema";
     private static final int SCHEMA_REV = 7;
-    private static final long SURVEY_CREATED_ON = 1337;
     private static final String SURVEY_GUID = "test-survey-guid";
+
+    private static final String SURVEY_CREATED_ON_STRING = "2017-04-05T20:54:53.625Z";
+    private static final long SURVEY_CREATED_ON_MILLIS = DateUtils.convertToMillisFromEpoch(SURVEY_CREATED_ON_STRING);
 
     @Test
     public void getModuleTypeSchema() {
@@ -39,7 +42,7 @@ public class HibernateSharedModuleMetadataTest {
     @Test
     public void getModuleTypeSurvey() {
         SharedModuleMetadata metadata = SharedModuleMetadata.create();
-        metadata.setSurveyCreatedOn(SURVEY_CREATED_ON);
+        metadata.setSurveyCreatedOn(SURVEY_CREATED_ON_MILLIS);
         metadata.setSurveyGuid(SURVEY_GUID);
         assertEquals(SharedModuleType.SURVEY, metadata.getModuleType());
     }
@@ -125,7 +128,7 @@ public class HibernateSharedModuleMetadataTest {
         String jsonText = "{\n" +
                 "   \"id\":\"" + MODULE_ID + "\",\n" +
                 "   \"name\":\"" + MODULE_NAME + "\",\n" +
-                "   \"surveyCreatedOn\":" + SURVEY_CREATED_ON + ",\n" +
+                "   \"surveyCreatedOn\":\"" + SURVEY_CREATED_ON_STRING + "\",\n" +
                 "   \"surveyGuid\":\"" + SURVEY_GUID + "\",\n" +
                 "   \"version\":" + MODULE_VERSION + "\n" +
                 "}";
@@ -134,7 +137,7 @@ public class HibernateSharedModuleMetadataTest {
         SharedModuleMetadata metadata = BridgeObjectMapper.get().readValue(jsonText, SharedModuleMetadata.class);
         assertEquals(MODULE_ID, metadata.getId());
         assertEquals(MODULE_NAME, metadata.getName());
-        assertEquals(SURVEY_CREATED_ON, metadata.getSurveyCreatedOn().longValue());
+        assertEquals(SURVEY_CREATED_ON_MILLIS, metadata.getSurveyCreatedOn().longValue());
         assertEquals(SURVEY_GUID, metadata.getSurveyGuid());
         assertEquals(MODULE_VERSION, metadata.getVersion());
 
@@ -145,12 +148,14 @@ public class HibernateSharedModuleMetadataTest {
         assertFalse(jsonNode.get("licenseRestricted").booleanValue());
         assertEquals(MODULE_NAME, jsonNode.get("name").textValue());
         assertFalse(jsonNode.get("published").booleanValue());
-        assertEquals(SURVEY_CREATED_ON, jsonNode.get("surveyCreatedOn").longValue());
         assertEquals(SURVEY_GUID, jsonNode.get("surveyGuid").textValue());
         assertTrue(jsonNode.get("tags").isArray());
         assertEquals(0, jsonNode.get("tags").size());
         assertEquals(MODULE_VERSION, jsonNode.get("version").intValue());
         assertEquals("survey", jsonNode.get("moduleType").textValue());
         assertEquals("SharedModuleMetadata", jsonNode.get("type").textValue());
+
+        String surveyCreatedOnString = jsonNode.get("surveyCreatedOn").textValue();
+        assertEquals(SURVEY_CREATED_ON_MILLIS, DateUtils.convertToMillisFromEpoch(surveyCreatedOnString));
     }
 }

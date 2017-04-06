@@ -12,8 +12,12 @@ import javax.persistence.IdClass;
 import javax.persistence.JoinColumn;
 import javax.persistence.Table;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableSet;
 
+import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
+import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
 
 /** Implementation of SharedModuleMetadata, using Hibernate backed by a SQL database. */
@@ -132,12 +136,14 @@ public class HibernateSharedModuleMetadata implements SharedModuleMetadata {
     }
 
     /** {@inheritDoc} */
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     @Override
     public Long getSurveyCreatedOn() {
         return surveyCreatedOn;
     }
 
     /** {@inheritDoc} */
+    @JsonDeserialize(using = DateTimeToPrimitiveLongDeserializer.class)
     @Override
     public void setSurveyCreatedOn(Long surveyCreatedOn) {
         this.surveyCreatedOn = surveyCreatedOn;
