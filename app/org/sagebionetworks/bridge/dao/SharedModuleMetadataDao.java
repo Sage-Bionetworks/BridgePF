@@ -15,17 +15,8 @@ public interface SharedModuleMetadataDao {
     /** Deletes metadata for the specified module ID and version. */
     void deleteMetadataByIdAndVersion(String id, int version);
 
-    /** Gets metadata for all versions of all modules. */
-    List<SharedModuleMetadata> getAllMetadataAllVersions();
-
-    /** Gets metadata for all versions of the specified module. */
-    List<SharedModuleMetadata> getMetadataByIdAllVersions(String id);
-
     /** Gets metadata for the specified version of the specified module. */
     SharedModuleMetadata getMetadataByIdAndVersion(String id, int version);
-
-    /** Gets metadata for the latest version of the specified module. */
-    SharedModuleMetadata getMetadataByIdLatestVersion(String id);
 
     /**
      * <p>

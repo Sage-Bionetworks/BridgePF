@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.util.HashMap;
 
@@ -11,7 +10,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Test;
 import org.springframework.validation.MapBindingResult;
 
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
 
@@ -99,7 +98,7 @@ public class SharedModuleMetadataValidatorTest {
     private static void blankId(String id) {
         SharedModuleMetadata metadata = makeValidMetadataWithSchema();
         metadata.setId(id);
-        validateWithErrorMessage("id must be specified", metadata);
+        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "id", "must be specified");
     }
 
     @Test
@@ -107,8 +106,8 @@ public class SharedModuleMetadataValidatorTest {
         String id = RandomStringUtils.randomAlphanumeric(SharedModuleMetadataValidator.ID_MAX_LENGTH + 1);
         SharedModuleMetadata metadata = makeValidMetadataWithSchema();
         metadata.setId(id);
-        validateWithErrorMessage("id can't be more than " + SharedModuleMetadataValidator.ID_MAX_LENGTH +
-                " characters", metadata);
+        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "id",
+                "can't be more than " + SharedModuleMetadataValidator.ID_MAX_LENGTH + " characters");
     }
 
     @Test
@@ -129,7 +128,8 @@ public class SharedModuleMetadataValidatorTest {
     private static void blankName(String name) {
         SharedModuleMetadata metadata = makeValidMetadataWithSchema();
         metadata.setName(name);
-        validateWithErrorMessage("name must be specified", metadata);
+        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "name",
+                "must be specified");
     }
 
     @Test
@@ -137,8 +137,8 @@ public class SharedModuleMetadataValidatorTest {
         String name = RandomStringUtils.randomAlphanumeric(SharedModuleMetadataValidator.NAME_MAX_LENGTH + 1);
         SharedModuleMetadata metadata = makeValidMetadataWithSchema();
         metadata.setName(name);
-        validateWithErrorMessage("name can't be more than " + SharedModuleMetadataValidator.NAME_MAX_LENGTH +
-                " characters", metadata);
+        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "name",
+                "can't be more than " + SharedModuleMetadataValidator.NAME_MAX_LENGTH + " characters");
     }
 
     @Test
@@ -146,8 +146,8 @@ public class SharedModuleMetadataValidatorTest {
         String notes = RandomStringUtils.randomAlphanumeric(SharedModuleMetadataValidator.NOTES_MAX_LENGTH + 1);
         SharedModuleMetadata metadata = makeValidMetadataWithSchema();
         metadata.setNotes(notes);
-        validateWithErrorMessage("notes can't be more than " + SharedModuleMetadataValidator.NOTES_MAX_LENGTH +
-                " characters", metadata);
+        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "notes",
+                "can't be more than " + SharedModuleMetadataValidator.NOTES_MAX_LENGTH + " characters");
     }
 
     @Test
@@ -155,8 +155,8 @@ public class SharedModuleMetadataValidatorTest {
         String os = RandomStringUtils.randomAlphanumeric(SharedModuleMetadataValidator.OS_MAX_LENGTH + 1);
         SharedModuleMetadata metadata = makeValidMetadataWithSchema();
         metadata.setOs(os);
-        validateWithErrorMessage("os can't be more than " + SharedModuleMetadataValidator.OS_MAX_LENGTH +
-                " characters", metadata);
+        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "os",
+                "can't be more than " + SharedModuleMetadataValidator.OS_MAX_LENGTH + " characters");
     }
 
     @Test
@@ -172,7 +172,8 @@ public class SharedModuleMetadataValidatorTest {
     private static void blankSchemaId(String schemaId) {
         SharedModuleMetadata metadata = makeValidMetadataWithSchema();
         metadata.setSchemaId(schemaId);
-        validateWithErrorMessage("schemaId can't be empty or blank", metadata);
+        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "schemaId",
+                "can't be empty or blank");
     }
 
     @Test
@@ -180,15 +181,16 @@ public class SharedModuleMetadataValidatorTest {
         String schemaId = RandomStringUtils.randomAlphanumeric(SharedModuleMetadataValidator.SCHEMA_ID_MAX_LENGTH + 1);
         SharedModuleMetadata metadata = makeValidMetadataWithSchema();
         metadata.setSchemaId(schemaId);
-        validateWithErrorMessage("schemaId can't be more than " + SharedModuleMetadataValidator.SCHEMA_ID_MAX_LENGTH +
-                " characters", metadata);
+        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "schemaId",
+                "can't be more than " + SharedModuleMetadataValidator.SCHEMA_ID_MAX_LENGTH + " characters");
     }
 
     @Test
     public void schemaIdWithoutRev() {
         SharedModuleMetadata metadata = makeValidMetadataWithSchema();
         metadata.setSchemaRevision(null);
-        validateWithErrorMessage("schemaRevision must be specified if schemaId is specified", metadata);
+        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "schemaRevision",
+                "must be specified if schemaId is specified");
     }
 
     @Test
@@ -204,14 +206,16 @@ public class SharedModuleMetadataValidatorTest {
     private static void nonPositiveSchemaRev(int schemaRev) {
         SharedModuleMetadata metadata = makeValidMetadataWithSchema();
         metadata.setSchemaRevision(schemaRev);
-        validateWithErrorMessage("schemaRevision can't be zero or negative", metadata);
+        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "schemaRevision",
+                "can't be zero or negative");
     }
 
     @Test
     public void schemaRevWithoutId() {
         SharedModuleMetadata metadata = makeValidMetadataWithSchema();
         metadata.setSchemaId(null);
-        validateWithErrorMessage("schemaId must be specified if schemaRevision is specified", metadata);
+        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "schemaId",
+                "must be specified if schemaRevision is specified");
     }
 
     @Test
@@ -227,14 +231,16 @@ public class SharedModuleMetadataValidatorTest {
     private static void nonPositiveSurveyCreatedOn(long surveyCreatedOn) {
         SharedModuleMetadata metadata = makeValidMetadataWithSurvey();
         metadata.setSurveyCreatedOn(surveyCreatedOn);
-        validateWithErrorMessage("surveyCreatedOn can't be zero or negative", metadata);
+        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "surveyCreatedOn",
+                "can't be zero or negative");
     }
 
     @Test
     public void surveyCreatedOnWithoutGuid() {
         SharedModuleMetadata metadata = makeValidMetadataWithSurvey();
         metadata.setSurveyGuid(null);
-        validateWithErrorMessage("surveyGuid must be specified if surveyCreatedOn is specified", metadata);
+        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "surveyGuid",
+                "must be specified if surveyCreatedOn is specified");
     }
 
     @Test
@@ -250,7 +256,8 @@ public class SharedModuleMetadataValidatorTest {
     private static void blankSurveyGuid(String surveyGuid) {
         SharedModuleMetadata metadata = makeValidMetadataWithSurvey();
         metadata.setSurveyGuid(surveyGuid);
-        validateWithErrorMessage("surveyGuid can't be empty or blank", metadata);
+        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "surveyGuid",
+                "can't be empty or blank");
     }
 
     @Test
@@ -258,21 +265,23 @@ public class SharedModuleMetadataValidatorTest {
         String surveyGuid = RandomStringUtils.randomAlphanumeric(SharedModuleMetadataValidator.GUID_MAX_LENGTH + 1);
         SharedModuleMetadata metadata = makeValidMetadataWithSurvey();
         metadata.setSurveyGuid(surveyGuid);
-        validateWithErrorMessage("surveyGuid can't be more than " + SharedModuleMetadataValidator.GUID_MAX_LENGTH +
-                " characters", metadata);
+        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "surveyGuid",
+                "can't be more than " + SharedModuleMetadataValidator.GUID_MAX_LENGTH + " characters");
     }
 
     @Test
     public void surveyGuidWithoutCreatedOn() {
         SharedModuleMetadata metadata = makeValidMetadataWithSurvey();
         metadata.setSurveyCreatedOn(null);
-        validateWithErrorMessage("surveyCreatedOn must be specified if surveyGuid is specified", metadata);
+        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "surveyCreatedOn",
+                "must be specified if surveyGuid is specified");
     }
 
     @Test
     public void neitherSchemaNorSurvey() {
         SharedModuleMetadata metadata = makeValidMetadataWithoutSchemaOrSurvey();
-        validateWithErrorMessage("sharedModuleMetadata must contain either schemaId or surveyGuid", metadata);
+        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "sharedModuleMetadata",
+                "must contain either schemaId or surveyGuid");
     }
 
     @Test
@@ -280,7 +289,8 @@ public class SharedModuleMetadataValidatorTest {
         SharedModuleMetadata metadata = makeValidMetadataWithSchema();
         metadata.setSurveyGuid(SURVEY_GUID);
         metadata.setSurveyCreatedOn(SURVEY_CREATED_ON);
-        validateWithErrorMessage("sharedModuleMetadata can't contain both schemaId and surveyGuid", metadata);
+        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "sharedModuleMetadata",
+                "can't contain both schemaId and surveyGuid");
     }
 
     @Test
@@ -296,7 +306,8 @@ public class SharedModuleMetadataValidatorTest {
     private static void nonPositiveVersion(int version) {
         SharedModuleMetadata metadata = makeValidMetadataWithSchema();
         metadata.setVersion(version);
-        validateWithErrorMessage("version can't be zero or negative", metadata);
+        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "version",
+                "can't be zero or negative");
     }
 
     private static SharedModuleMetadata makeValidMetadataWithSchema() {
@@ -320,14 +331,5 @@ public class SharedModuleMetadataValidatorTest {
         metadata.setName(MODULE_NAME);
         metadata.setVersion(MODULE_VERSION);
         return metadata;
-    }
-
-    private static void validateWithErrorMessage(String expectedErrorMessage, SharedModuleMetadata metadata) {
-        try {
-            Validate.entityThrowingException(SharedModuleMetadataValidator.INSTANCE, metadata);
-            fail("expected exception");
-        } catch (InvalidEntityException ex) {
-            assertTrue(ex.getMessage().contains(expectedErrorMessage));
-        }
     }
 }

@@ -52,30 +52,6 @@ public class SharedModuleMetadataController extends BaseController {
         return okResult("Metadata has been deleted.");
     }
 
-    /** Gets metadata for all versions of all modules. */
-    public Result getAllMetadataAllVersions() {
-        getAuthenticatedSession(Roles.DEVELOPER);
-        List<SharedModuleMetadata> metadataList = metadataService.getAllMetadataAllVersions();
-        ResourceList<SharedModuleMetadata> resourceList = new ResourceList<>(metadataList);
-        return okResult(resourceList);
-    }
-
-    /** Gets metadata for the latest versions of all modules. */
-    public Result getAllMetadataLatestVersions() {
-        getAuthenticatedSession(Roles.DEVELOPER);
-        List<SharedModuleMetadata> metadataList = metadataService.getAllMetadataLatestVersions();
-        ResourceList<SharedModuleMetadata> resourceList = new ResourceList<>(metadataList);
-        return okResult(resourceList);
-    }
-
-    /** Gets metadata for all versions of the specified module. */
-    public Result getMetadataByIdAllVersions(String id) {
-        getAuthenticatedSession(Roles.DEVELOPER);
-        List<SharedModuleMetadata> metadataList = metadataService.getMetadataByIdAllVersions(id);
-        ResourceList<SharedModuleMetadata> resourceList = new ResourceList<>(metadataList);
-        return okResult(resourceList);
-    }
-
     /** Gets metadata for the specified version of the specified module. */
     public Result getMetadataByIdAndVersion(String id, int version) {
         getAuthenticatedSession(Roles.DEVELOPER);
@@ -91,32 +67,50 @@ public class SharedModuleMetadataController extends BaseController {
     }
 
     /**
-     * <p>
-     * Queries module metadata using the given SQL-like WHERE clause. Also filters out any modules that don't contain
-     * any of the given tags. If a module has any of these tags (not necessarily all of them), it will be returned in
-     * the result.
-     * </p>
-     * <p>
-     * If whereClause is not specified, this method returns all modules. If tags is null or empty, this method does not
-     * filter using tags.
-     * </p>
-     * <p>
-     * Example where clause: "published = true AND os = 'iOS'"
-     * </p>
+     * Queries module metadata using the set of given parameters. See
+     * {@link SharedModuleMetadataService#queryAllMetadata} for details.
      */
-    public Result queryMetadata(String whereClause, String tags) {
+    public Result queryAllMetadata(String mostRecentString, String publishedString, String where, String tagsString) {
         getAuthenticatedSession(Roles.DEVELOPER);
 
-        // Parse set of tags from a comma-delimited list.
-        Set<String> tagSet = new HashSet<>();
-        if (StringUtils.isNotBlank(tags)) {
-            String[] tagsSplit = tags.split(",");
-            Collections.addAll(tagSet, tagsSplit);
-        }
+        // Parse inputs
+        boolean mostRecent = Boolean.parseBoolean(mostRecentString);
+        boolean published = Boolean.parseBoolean(publishedString);
+        Set<String> tagSet = parseTags(tagsString);
 
-        List<SharedModuleMetadata> metadataList = metadataService.queryMetadata(whereClause, tagSet);
+        // Call service
+        List<SharedModuleMetadata> metadataList = metadataService.queryAllMetadata(mostRecent, published, where,
+                tagSet);
         ResourceList<SharedModuleMetadata> resourceList = new ResourceList<>(metadataList);
         return okResult(resourceList);
+    }
+
+    /** Similar to queryAllMetadata, except this only queries on module versions of the specified ID. */
+    public Result queryMetadataById(String id, String mostRecentString, String publishedString, String where,
+            String tagsString) {
+        getAuthenticatedSession(Roles.DEVELOPER);
+
+        // Parse inputs
+        boolean mostRecent = Boolean.parseBoolean(mostRecentString);
+        boolean published = Boolean.parseBoolean(publishedString);
+        Set<String> tagSet = parseTags(tagsString);
+
+        // Call service
+        List<SharedModuleMetadata> metadataList = metadataService.queryMetadataById(id, mostRecent, published, where,
+                tagSet);
+        ResourceList<SharedModuleMetadata> resourceList = new ResourceList<>(metadataList);
+        return okResult(resourceList);
+    }
+
+    // Helper method to parse tags from URL query params. Package-scoped for unit tests.
+    static Set<String> parseTags(String tagsString) {
+        // Parse set of tags from a comma-delimited list.
+        Set<String> tagSet = new HashSet<>();
+        if (StringUtils.isNotBlank(tagsString)) {
+            String[] tagsSplit = tagsString.split(",");
+            Collections.addAll(tagSet, tagsSplit);
+        }
+        return tagSet;
     }
 
     /** Updates metadata for the specified module version. */

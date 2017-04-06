@@ -3,14 +3,20 @@ package org.sagebionetworks.bridge.hibernate;
 import java.util.List;
 import java.util.function.Function;
 
+import javax.persistence.PersistenceException;
+
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.exception.ConstraintViolationException;
+import org.hibernate.hql.internal.ast.QuerySyntaxException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.SharedModuleMetadataDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
 
 /** Implementation of SharedModuleMetadataDao, using Hibernate backed by a SQL database. */
@@ -27,10 +33,20 @@ public class HibernateSharedModuleMetadataDao implements SharedModuleMetadataDao
     /** {@inheritDoc} */
     @Override
     public SharedModuleMetadata createMetadata(SharedModuleMetadata metadata) {
-        return sessionHelper(session -> {
-            session.save(metadata);
-            return metadata;
-        });
+        try {
+            return sessionHelper(session -> {
+                session.save(metadata);
+                return metadata;
+            });
+        } catch (PersistenceException ex) {
+            // If you try to create a row that already exists, Hibernate will throw a PersistenceException wrapped in a
+            // ConstraintViolationException.
+            if (ex.getCause() instanceof ConstraintViolationException) {
+                throw new ConcurrentModificationException(metadata);
+            } else {
+                throw ex;
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -54,38 +70,9 @@ public class HibernateSharedModuleMetadataDao implements SharedModuleMetadataDao
 
     /** {@inheritDoc} */
     @Override
-    public List<SharedModuleMetadata> getAllMetadataAllVersions() {
-        return sessionHelper(session -> session.createQuery("from HibernateSharedModuleMetadata",
-                SharedModuleMetadata.class).list());
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public List<SharedModuleMetadata> getMetadataByIdAllVersions(String id) {
-        return sessionHelper(session -> session.createQuery("from HibernateSharedModuleMetadata where id='" + id + "'",
-                SharedModuleMetadata.class).list());
-    }
-
-    /** {@inheritDoc} */
-    @Override
     public SharedModuleMetadata getMetadataByIdAndVersion(String id, int version) {
         return sessionHelper(session -> session.get(HibernateSharedModuleMetadata.class,
                 new HibernateSharedModuleMetadataKey(id, version)));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public SharedModuleMetadata getMetadataByIdLatestVersion(String id) {
-        return sessionHelper(session -> {
-            List<SharedModuleMetadata> metadataList = session.createQuery(
-                    "from HibernateSharedModuleMetadata where id='" + id + "' order by version desc",
-                    SharedModuleMetadata.class).setMaxResults(1).list();
-            if (metadataList.isEmpty()) {
-                return null;
-            } else {
-                return metadataList.get(0);
-            }
-        });
     }
 
     /** {@inheritDoc} */
@@ -99,8 +86,18 @@ public class HibernateSharedModuleMetadataDao implements SharedModuleMetadataDao
         }
 
         // execute query
-        return sessionHelper(session -> session.createQuery(queryBuilder.toString(), SharedModuleMetadata.class)
-                .list());
+        try {
+            return sessionHelper(session -> session.createQuery(queryBuilder.toString(), SharedModuleMetadata.class)
+                    .list());
+        } catch (IllegalArgumentException ex) {
+            // Similarly, an invalid query will result in an IllegalArgumentException which wraps a
+            // QuerySyntaxException.
+            if (ex.getCause() instanceof QuerySyntaxException) {
+                throw new BadRequestException(ex);
+            } else {
+                throw ex;
+            }
+        }
     }
 
     /** {@inheritDoc} */

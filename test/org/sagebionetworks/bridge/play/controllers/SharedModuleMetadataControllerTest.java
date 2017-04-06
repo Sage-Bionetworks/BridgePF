@@ -10,7 +10,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
-import java.util.Set;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
@@ -113,48 +112,6 @@ public class SharedModuleMetadataControllerTest {
     }
 
     @Test
-    public void allMetadataAllVersions() throws Exception {
-        // mock service
-        when(mockSvc.getAllMetadataAllVersions()).thenReturn(ImmutableList.of(makeValidMetadata()));
-
-        // setup, execute, and validate
-        Result result = controller.getAllMetadataAllVersions();
-        assertEquals(200, result.status());
-        assertMetadataListInResult(result);
-
-        // validate permissions
-        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
-    }
-
-    @Test
-    public void allMetadataLatestVersions() throws Exception {
-        // mock service
-        when(mockSvc.getAllMetadataLatestVersions()).thenReturn(ImmutableList.of(makeValidMetadata()));
-
-        // setup, execute, and validate
-        Result result = controller.getAllMetadataLatestVersions();
-        assertEquals(200, result.status());
-        assertMetadataListInResult(result);
-
-        // validate permissions
-        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
-    }
-
-    @Test
-    public void byIdAllVersions() throws Exception {
-        // mock service
-        when(mockSvc.getMetadataByIdAllVersions(MODULE_ID)).thenReturn(ImmutableList.of(makeValidMetadata()));
-
-        // setup, execute, and validate
-        Result result = controller.getMetadataByIdAllVersions(MODULE_ID);
-        assertEquals(200, result.status());
-        assertMetadataListInResult(result);
-
-        // validate permissions
-        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
-    }
-
-    @Test
     public void byIdAndVersion() throws Exception {
         // mock service
         when(mockSvc.getMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION)).thenReturn(makeValidMetadata());
@@ -183,56 +140,42 @@ public class SharedModuleMetadataControllerTest {
     }
 
     @Test
-    public void queryNullTags() throws Exception {
-        queryTestHelper(ImmutableSet.of(), "foo='bar'", null);
-    }
-
-    @Test
-    public void queryEmptyTags() throws Exception {
-        queryTestHelper(ImmutableSet.of(), "foo='bar'", "");
-    }
-
-    @Test
-    public void queryBlankTags() throws Exception {
-        queryTestHelper(ImmutableSet.of(), "foo='bar'", "   ");
-    }
-
-    @Test
-    public void queryOneTag() throws Exception {
-        queryTestHelper(ImmutableSet.of("foo"), "foo='bar'", "foo");
-    }
-
-    @Test
-    public void queryMultipleTag() throws Exception {
-        queryTestHelper(ImmutableSet.of("foo", "bar", "baz"), "foo='bar'", "foo,bar,baz");
-    }
-
-    @Test
-    public void queryNullWhereClause() throws Exception {
-        queryTestHelper(ImmutableSet.of("foo"), null, "foo");
-    }
-
-    @Test
-    public void queryEmptyWhereClause() throws Exception {
-        queryTestHelper(ImmutableSet.of("foo"), "", "foo");
-    }
-
-    @Test
-    public void queryBlankWhereClause() throws Exception {
-        queryTestHelper(ImmutableSet.of("foo"), "   ", "foo");
-    }
-
-    private void queryTestHelper(Set<String> expectedTagSet, String whereClause, String tagsString) throws Exception {
+    public void queryAll() throws Exception {
         // mock service
-        when(mockSvc.queryMetadata(whereClause, expectedTagSet)).thenReturn(ImmutableList.of(makeValidMetadata()));
+        when(mockSvc.queryAllMetadata(true, true, "foo='bar'", ImmutableSet.of("foo", "bar", "baz"))).thenReturn(
+                ImmutableList.of(makeValidMetadata()));
 
         // setup, execute, and validate
-        Result result = controller.queryMetadata(whereClause, tagsString);
+        Result result = controller.queryAllMetadata("true", "true", "foo='bar'", "foo,bar,baz");
         assertEquals(200, result.status());
         assertMetadataListInResult(result);
 
         // validate permissions
         verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
+    }
+
+    @Test
+    public void queryById() throws Exception {
+        // mock service
+        when(mockSvc.queryMetadataById(MODULE_ID, true, true, "foo='bar'", ImmutableSet.of("foo", "bar", "baz")))
+                .thenReturn(ImmutableList.of(makeValidMetadata()));
+
+        // setup, execute, and validate
+        Result result = controller.queryMetadataById(MODULE_ID, "true", "true", "foo='bar'", "foo,bar,baz");
+        assertEquals(200, result.status());
+        assertMetadataListInResult(result);
+
+        // validate permissions
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
+    }
+
+    @Test
+    public void parseTags() {
+        assertEquals(ImmutableSet.of(), SharedModuleMetadataController.parseTags(null));
+        assertEquals(ImmutableSet.of(), SharedModuleMetadataController.parseTags(""));
+        assertEquals(ImmutableSet.of(), SharedModuleMetadataController.parseTags("   "));
+        assertEquals(ImmutableSet.of("foo"), SharedModuleMetadataController.parseTags("foo"));
+        assertEquals(ImmutableSet.of("foo", "bar", "baz"), SharedModuleMetadataController.parseTags("foo,bar,baz"));
     }
 
     @Test
