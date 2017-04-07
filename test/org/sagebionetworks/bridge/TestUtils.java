@@ -158,7 +158,7 @@ public class TestUtils {
         when(context.request()).thenReturn(request);
         when(context.response()).thenReturn(response);
 
-        Http.Context.current.set(context);        
+        Http.Context.current.set(context);
     }
     
     /**
