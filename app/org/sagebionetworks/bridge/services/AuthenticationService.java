@@ -16,6 +16,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.LimitExceededException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Email;
@@ -105,6 +106,9 @@ public class AuthenticationService {
         Validate.entityThrowingException(EMAIL_SIGNIN_REQUEST_VALIDATOR, signIn);
         
         Study study = studyService.getStudy(signIn.getStudyId());
+        if (!study.isEmailSignInEnabled()) {
+            throw new UnauthorizedException("Email-based sign in not enabled for study: " + study.getName());
+        }
         String cacheKey = getEmailSignInCacheKey(study, signIn.getEmail());  
         
         // check that email is not already locked
