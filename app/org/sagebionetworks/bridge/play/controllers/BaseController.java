@@ -49,6 +49,7 @@ import play.cache.Cache;
 import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Http;
+import play.mvc.Http.Cookie;
 import play.mvc.Http.Request;
 import play.mvc.Result;
 
@@ -193,10 +194,17 @@ public abstract class BaseController extends Controller {
     /** Package-scoped to make available in unit tests. */
     String getSessionToken() {
         String[] session = request().headers().get(SESSION_TOKEN_HEADER);
-        if (session == null || session.length == 0 || session[0].isEmpty()) {
-            return null;
+        if (session != null && session.length > 0 && !session[0].isEmpty()) {
+            return session[0];
         }
-        return session[0];
+        Cookie sessionCookie = request().cookie(SESSION_TOKEN_HEADER);
+        if (sessionCookie != null && sessionCookie.value() != null && !"".equals(sessionCookie.value())) {
+            String sessionToken = sessionCookie.value();
+            response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken,
+                    BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
+            return sessionToken;
+        }
+        return null;
     }
     
     void verifySupportedVersionOrThrowException(Study study) throws UnsupportedVersionException {
