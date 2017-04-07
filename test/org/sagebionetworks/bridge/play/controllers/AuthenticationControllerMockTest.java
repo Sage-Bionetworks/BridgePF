@@ -29,6 +29,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -52,6 +53,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 
+import play.mvc.Http;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -339,6 +341,7 @@ public class AuthenticationControllerMockTest {
         signInExistingSession(false, Roles.WORKER, false);
     }
 
+    @SuppressWarnings("static-access")
     private void signInNewSession(boolean isConsented, Roles role, boolean shouldThrow) throws Exception {
         // mock getSessionToken and getMetrics
         doReturn(null).when(controller).getSessionToken();
@@ -372,7 +375,12 @@ public class AuthenticationControllerMockTest {
             }
             assertSessionInPlayResult(result);
             
+            Http.Response mockResponse = controller.response();
+
             verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
+            verify(mockResponse).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
+                    BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
+            
             RequestInfo requestInfo = requestInfoCaptor.getValue();
             assertEquals("spId", requestInfo.getUserId());
             assertEquals(TEST_STUDY_ID, requestInfo.getStudyIdentifier());
@@ -429,6 +437,8 @@ public class AuthenticationControllerMockTest {
 
     @Test
     public void signOut() throws Exception {
+        TestUtils.mockPlayContext();
+        
         // mock getSessionToken and getMetrics
         doReturn(TEST_SESSION_TOKEN).when(controller).getSessionToken();
 
@@ -443,8 +453,12 @@ public class AuthenticationControllerMockTest {
         Result result = controller.signOut();
         assertEquals(HttpStatus.SC_OK, result.status());
         assertSessionInfoInMetrics(metrics);
+        
+        @SuppressWarnings("static-access")
+        Http.Response mockResponse = controller.response();
 
         verify(authenticationService).signOut(session);
+        verify(mockResponse).discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
     }
 
     @Test

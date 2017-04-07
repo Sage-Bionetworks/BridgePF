@@ -91,6 +91,10 @@
         <property name="targetName" value="compoundActivityDefinitionController"/>
     </bean>
 
+    <bean id="SharedModuleMetadataControllerProxied" parent="proxiedController">
+        <property name="targetName" value="sharedModuleMetadataController"/>
+    </bean>
+
     <bean id="UserDataDownloadControllerProxied" parent="proxiedController">
         <property name="targetName" value="userDataDownloadController"/>
     </bean>

@@ -4,6 +4,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -65,6 +66,7 @@ public class AuthenticationController extends BaseController {
         if (session != null) {
             authenticationService.signOut(session);
         }
+        response().discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
         return okResult("Signed out.");
     }
 
@@ -131,6 +133,8 @@ public class AuthenticationController extends BaseController {
                 throw e;
             }
             writeSessionInfoToMetrics(session);
+            response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
+                    BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
             
             RequestInfo requestInfo = new RequestInfo.Builder()
                     .withUserId(session.getId())
