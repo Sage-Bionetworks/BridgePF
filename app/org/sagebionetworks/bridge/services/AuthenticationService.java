@@ -109,9 +109,9 @@ public class AuthenticationService {
         if (!study.isEmailSignInEnabled()) {
             throw new UnauthorizedException("Email-based sign in not enabled for study: " + study.getName());
         }
-        String cacheKey = getEmailSignInCacheKey(study, signIn.getEmail());  
         
         // check that email is not already locked
+        String cacheKey = getEmailSignInCacheKey(study, signIn.getEmail());
         if (cacheProvider.getString(cacheKey) != null) {
             throw new LimitExceededException("Email currently pending confirmation.");
         }
