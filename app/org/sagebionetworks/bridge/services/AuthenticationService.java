@@ -8,17 +8,21 @@ import static org.sagebionetworks.bridge.validators.SignInValidator.Type.EMAIL_R
 import static org.sagebionetworks.bridge.validators.SignInValidator.Type.EMAIL;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.LimitExceededException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
@@ -140,17 +144,26 @@ public class AuthenticationService {
         if (storedToken == null || !storedToken.equals(signIn.getToken())) {
             throw new AuthenticationFailedException();
         }
+        // Consume the key regardless of what happens
+        cacheProvider.removeString(cacheKey);
         
         Account account = accountDao.getAccountWithEmail(study, signIn.getEmail());
+        if (account.getStatus() == AccountStatus.UNVERIFIED) {
+            throw new EntityNotFoundException(Account.class);
+        } else if (account.getStatus() == AccountStatus.DISABLED) {
+            throw new AccountDisabledException();
+        }
+
         UserSession session = getSessionFromAccount(study, context, account);
-        
-        // At this point the client can also change the password in order to sign in when the 
-        // session expires. This is optional.
+
+        if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
+            throw new ConsentRequiredException(session);
+        }
+
+        // The client can optionally change the password in order to sign in when the session expires
         if (signIn.getPassword() != null) {
             accountDao.changePassword(account, signIn.getPassword());
         }
-        
-        cacheProvider.removeString(cacheKey);
         return session;
     }
     
