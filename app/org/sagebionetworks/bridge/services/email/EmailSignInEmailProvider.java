@@ -34,9 +34,9 @@ public class EmailSignInEmailProvider implements MimeTypeEmailProvider {
         try {
             encodedRecipientEmail = URLEncoder.encode(recipientEmail, "UTF-8");
         } catch (UnsupportedEncodingException e) {
-            throw new BadRequestException("Email was malformed: " + recipientEmail + ".");
+            // UTF-8 is always supported, so this should never happen. 
+            throw new BadRequestException(e.getMessage());
         }
-        
         Map<String,String> map = Maps.newHashMap();
         map.put("studyName", study.getName());
         map.put("studyId", study.getIdentifier());
