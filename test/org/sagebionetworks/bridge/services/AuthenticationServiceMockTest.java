@@ -47,6 +47,7 @@ public class AuthenticationServiceMockTest {
             .withStudyIdentifier(TestConstants.TEST_STUDY).build();
     private static final String RECIPIENT_EMAIL = "email@email.com";
     private static final String TOKEN = "ABC-DEF";
+    private static final SignIn SIGN_IN_REQUEST = new SignIn("test-study", RECIPIENT_EMAIL, null, null);
     
     @Mock
     private CacheProvider cacheProvider;
@@ -107,9 +108,7 @@ public class AuthenticationServiceMockTest {
         String cacheKey = "email@email.com:test-study:signInRequest";
         doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
         
-        SignIn signInRequest = new SignIn("test-study", RECIPIENT_EMAIL, null, null);
-        
-        service.requestEmailSignIn(signInRequest);
+        service.requestEmailSignIn(SIGN_IN_REQUEST);
         
         verify(cacheProvider).getString(stringCaptor.capture());
         assertEquals(cacheKey, stringCaptor.getValue());
@@ -132,9 +131,7 @@ public class AuthenticationServiceMockTest {
     public void requestEmailSignInDisabled() {
         doReturn(false).when(study).isEmailSignInEnabled();
         
-        SignIn signInRequest = new SignIn("test-study", RECIPIENT_EMAIL, null, null);
-        
-        service.requestEmailSignIn(signInRequest);
+        service.requestEmailSignIn(SIGN_IN_REQUEST);
     }
     
     @Test(expected = LimitExceededException.class)
@@ -143,9 +140,7 @@ public class AuthenticationServiceMockTest {
         
         doReturn("something").when(cacheProvider).getString(cacheKey);
         
-        SignIn signInRequest = new SignIn("test-study", RECIPIENT_EMAIL, null, null);
-        
-        service.requestEmailSignIn(signInRequest);
+        service.requestEmailSignIn(SIGN_IN_REQUEST);
     }
     
     @Test
@@ -153,9 +148,7 @@ public class AuthenticationServiceMockTest {
         String cacheKey = "email@email.com:test-study:signInRequest";
         doReturn(null).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
         
-        SignIn signInRequest = new SignIn("test-study", RECIPIENT_EMAIL, null, null);
-        
-        service.requestEmailSignIn(signInRequest);
+        service.requestEmailSignIn(SIGN_IN_REQUEST);
 
         verify(cacheProvider, never()).setString(eq(cacheKey), any(), eq(60));
         verify(sendMailService, never()).sendEmail(any());
