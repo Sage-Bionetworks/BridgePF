@@ -6,10 +6,8 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 
-import java.util.LinkedHashSet;
 import java.util.Map;
 
 import org.junit.Before;
@@ -48,18 +46,30 @@ import org.sagebionetworks.bridge.services.email.EmailSignInEmailProvider;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 
-import com.google.common.collect.Maps;
+import com.google.common.collect.ImmutableMap;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AuthenticationServiceMockTest {
     
-    private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
-            .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+    private static final String STUDY_ID = "test-study";
+    private static final String CACHE_KEY = "email@email.com:test-study:signInRequest";
     private static final String RECIPIENT_EMAIL = "email@email.com";
     private static final String TOKEN = "ABC-DEF";
-    private static final SignIn SIGN_IN_REQUEST = new SignIn("test-study", RECIPIENT_EMAIL, null, null);
-    private static final SignIn SIGN_IN = new SignIn("test-study", RECIPIENT_EMAIL, null, TOKEN);
-    
+    private static final SignIn SIGN_IN_REQUEST = new SignIn(STUDY_ID, RECIPIENT_EMAIL, null, null);
+    private static final SignIn SIGN_IN = new SignIn(STUDY_ID, RECIPIENT_EMAIL, null, TOKEN);
+    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("ABC");
+    private static final ConsentStatus CONSENTED_STATUS = new ConsentStatus.Builder().withName("Name")
+            .withGuid(SUBPOP_GUID).withRequired(true).withConsented(true).build();
+    private static final ConsentStatus UNCONSENTED_STATUS = new ConsentStatus.Builder().withName("Name")
+            .withGuid(SUBPOP_GUID).withRequired(true).withConsented(false).build();
+    private static final Map<SubpopulationGuid, ConsentStatus> CONSENTED_STATUS_MAP = new ImmutableMap.Builder<SubpopulationGuid, ConsentStatus>()
+            .put(SUBPOP_GUID, CONSENTED_STATUS).build();
+    private static final Map<SubpopulationGuid, ConsentStatus> UNCONSENTED_STATUS_MAP = new ImmutableMap.Builder<SubpopulationGuid, ConsentStatus>()
+            .put(SUBPOP_GUID, UNCONSENTED_STATUS).build();
+    private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
+            .withStudyIdentifier(TestConstants.TEST_STUDY).build();  
+    private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder().build();
+
     @Mock
     private CacheProvider cacheProvider;
     @Mock
@@ -105,10 +115,10 @@ public class AuthenticationServiceMockTest {
         service.setSendMailService(sendMailService);
         service.setStudyService(studyService);
 
-        doReturn(study).when(studyService).getStudy("test-study");
-        doReturn("test-study").when(study).getIdentifier();
+        doReturn(study).when(studyService).getStudy(STUDY_ID);
+        doReturn(STUDY_ID).when(study).getIdentifier();
         doReturn(true).when(study).isEmailSignInEnabled();
-        doReturn(new StudyIdentifierImpl("test-study")).when(study).getStudyIdentifier();
+        doReturn(new StudyIdentifierImpl(STUDY_ID)).when(study).getStudyIdentifier();
         doReturn(new EmailTemplate("subject","body",MimeType.TEXT)).when(study).getEmailSignInTemplate();
         doReturn("sender@sender.com").when(study).getSupportEmail();
         doReturn("Sender").when(study).getName();
@@ -116,17 +126,16 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void requestEmailSignIn() throws Exception {
-        String cacheKey = "email@email.com:test-study:signInRequest";
         doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
         
         service.requestEmailSignIn(SIGN_IN_REQUEST);
         
         verify(cacheProvider).getString(stringCaptor.capture());
-        assertEquals(cacheKey, stringCaptor.getValue());
+        assertEquals(CACHE_KEY, stringCaptor.getValue());
         
         verify(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
         
-        verify(cacheProvider).setString(eq(cacheKey), stringCaptor.capture(), eq(60));
+        verify(cacheProvider).setString(eq(CACHE_KEY), stringCaptor.capture(), eq(60));
         assertNotNull(stringCaptor.getValue());
 
         verify(sendMailService).sendEmail(providerCaptor.capture());
@@ -147,127 +156,99 @@ public class AuthenticationServiceMockTest {
     
     @Test(expected = LimitExceededException.class)
     public void requestEmailSignInLimitExceeded() {
-        String cacheKey = "email@email.com:test-study:signInRequest";
-        
-        doReturn("something").when(cacheProvider).getString(cacheKey);
+        doReturn("something").when(cacheProvider).getString(CACHE_KEY);
         
         service.requestEmailSignIn(SIGN_IN_REQUEST);
     }
     
     @Test
     public void requestEmailSignInEmailNotRegistered() {
-        String cacheKey = "email@email.com:test-study:signInRequest";
         doReturn(null).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
         
         service.requestEmailSignIn(SIGN_IN_REQUEST);
 
-        verify(cacheProvider, never()).setString(eq(cacheKey), any(), eq(60));
+        verify(cacheProvider, never()).setString(eq(CACHE_KEY), any(), eq(60));
         verify(sendMailService, never()).sendEmail(any());
     }
 
     @Test
     public void emailSignIn() {
-        StudyParticipant participant = new StudyParticipant.Builder().build();
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withLanguages(new LinkedHashSet<String>())
-                .withStudyIdentifier(study.getStudyIdentifier()).build();
-        String cacheKey = "email@email.com:test-study:signInRequest";
-        doReturn(TOKEN).when(cacheProvider).getString(cacheKey);
+        doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
         doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
-        doReturn(participant).when(participantService).getParticipant(study, account, false);
+        doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
+        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
         
-        SubpopulationGuid subpopGuid = SubpopulationGuid.create("ABC");
-        ConsentStatus status = new ConsentStatus.Builder().withName("Name").withGuid(subpopGuid).withRequired(true)
-                .withConsented(true).build();
-        Map<SubpopulationGuid,ConsentStatus> map = Maps.newHashMap();
-        map.put(subpopGuid, status);
-        doReturn(map).when(consentService).getConsentStatuses(any());
-        
-        SignIn signIn = new SignIn(study.getIdentifier(), RECIPIENT_EMAIL, null, TOKEN);
-        
-        UserSession retSession = service.emailSignIn(context, signIn);
+        UserSession retSession = service.emailSignIn(CONTEXT, SIGN_IN);
         
         assertNotNull(retSession);
         verify(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
-        verify(cacheProvider).removeString(cacheKey);
+        verify(cacheProvider).removeString(CACHE_KEY);
     }
     
     @Test(expected = AuthenticationFailedException.class)
     public void emailSignInTokenWrong() {
-        StudyParticipant participant = new StudyParticipant.Builder().build();
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withLanguages(new LinkedHashSet<String>())
-                .withStudyIdentifier(study.getStudyIdentifier()).build();
-        String cacheKey = "email@email.com:test-study:signInRequest";
-        doReturn(TOKEN).when(cacheProvider).getString(cacheKey);
+        doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
         doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
-        doReturn(participant).when(participantService).getParticipant(study, account, false);
+        doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
         
         SignIn signIn = new SignIn(study.getIdentifier(), RECIPIENT_EMAIL, null, "wrongToken");
         
-        service.emailSignIn(context, signIn);
+        service.emailSignIn(CONTEXT, signIn);
     }
     
     @Test(expected = AuthenticationFailedException.class)
     public void emailSignInTokenNotSet() {
-        StudyParticipant participant = new StudyParticipant.Builder().build();
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withLanguages(new LinkedHashSet<String>())
-                .withStudyIdentifier(study.getStudyIdentifier()).build();
-        String cacheKey = "email@email.com:test-study:signInRequest";
-        doReturn(null).when(cacheProvider).getString(cacheKey);
+        doReturn(null).when(cacheProvider).getString(CACHE_KEY);
         doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
-        doReturn(participant).when(participantService).getParticipant(study, account, false);
+        doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
         
         SignIn signIn = new SignIn(study.getIdentifier(), RECIPIENT_EMAIL, null, "wrongToken");
         
-        service.emailSignIn(context, signIn);
+        service.emailSignIn(CONTEXT, signIn);
     }
     
     @Test(expected = InvalidEntityException.class)
     public void emailSignInRequestMissingStudy() {
-        SignIn signInRequest = new SignIn(null, "email@email.com", null, "ABC");
+        SignIn signInRequest = new SignIn(null, RECIPIENT_EMAIL, null, TOKEN);
 
         service.requestEmailSignIn(signInRequest);
     }
     
     @Test(expected = InvalidEntityException.class)
     public void emailSignInRequestMissingEmail() {
-        SignIn signInRequest = new SignIn(TestConstants.TEST_STUDY_IDENTIFIER, "", null, "ABC");
+        SignIn signInRequest = new SignIn(STUDY_ID, "", null, TOKEN);
         
         service.requestEmailSignIn(signInRequest);
     }
     
     @Test(expected = InvalidEntityException.class)
     public void emailSignInMissingStudy() {
-        SignIn signInRequest = new SignIn(null, "email@email.com", null, "ABC");
+        SignIn signInRequest = new SignIn(null, RECIPIENT_EMAIL, null, TOKEN);
 
         service.emailSignIn(CONTEXT, signInRequest);
     }
     
     @Test(expected = InvalidEntityException.class)
     public void emailSignInMissingEmail() {
-        SignIn signInRequest = new SignIn(TestConstants.TEST_STUDY_IDENTIFIER, null, null, "ABC");
+        SignIn signInRequest = new SignIn(STUDY_ID, null, null, TOKEN);
 
         service.emailSignIn(CONTEXT, signInRequest);
     }
     
     @Test(expected = InvalidEntityException.class)
     public void emailSignInMissingToken() {
-        SignIn signInRequest = new SignIn(TestConstants.TEST_STUDY_IDENTIFIER, "email@email.com", null, null);
-
-        service.emailSignIn(CONTEXT, signInRequest);
+        service.emailSignIn(CONTEXT, SIGN_IN_REQUEST); // not SIGN_IN which has the token
     }
     
     @Test(expected = EntityNotFoundException.class)
     public void emailSignInThrowsEntityNotFound() {
         StudyParticipant participant = new StudyParticipant.Builder().withStatus(AccountStatus.DISABLED).build();
+        
         doReturn(participant).when(participantService).getParticipant(study, account, false);
-        doReturn("test-study").when(study).getIdentifier();
-        String cacheKey = "email@email.com:test-study:signInRequest";
-        doReturn(TOKEN).when(cacheProvider).getString(cacheKey);
-        doReturn(study).when(studyService).getStudy("test-study");
-        doReturn(account).when(accountDao).getAccountWithEmail(study, "email@email.com");
+        doReturn(STUDY_ID).when(study).getIdentifier();
+        doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
+        doReturn(study).when(studyService).getStudy(STUDY_ID);
+        doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
         doReturn(AccountStatus.UNVERIFIED).when(account).getStatus();
         
         service.emailSignIn(CONTEXT, SIGN_IN);
@@ -276,12 +257,12 @@ public class AuthenticationServiceMockTest {
     @Test(expected = AccountDisabledException.class)
     public void emailSignInThrowsAccountDisabled() {
         StudyParticipant participant = new StudyParticipant.Builder().withStatus(AccountStatus.DISABLED).build();
+        
         doReturn(participant).when(participantService).getParticipant(study, account, false);
-        doReturn("test-study").when(study).getIdentifier();
-        String cacheKey = "email@email.com:test-study:signInRequest";
-        doReturn(TOKEN).when(cacheProvider).getString(cacheKey);
-        doReturn(study).when(studyService).getStudy("test-study");
-        doReturn(account).when(accountDao).getAccountWithEmail(study, "email@email.com");
+        doReturn(STUDY_ID).when(study).getIdentifier();
+        doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
+        doReturn(study).when(studyService).getStudy(STUDY_ID);
+        doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
         doReturn(AccountStatus.DISABLED).when(account).getStatus();
         
         service.emailSignIn(CONTEXT, SIGN_IN);
@@ -289,21 +270,14 @@ public class AuthenticationServiceMockTest {
     
     @Test(expected = ConsentRequiredException.class)
     public void emailSignInThrowsConsentRequired() {
-        reset(consentService);
-        
-        SubpopulationGuid subpopGuid = SubpopulationGuid.create("ABC");
-        ConsentStatus status = new ConsentStatus.Builder().withName("Name").withRequired(true).withGuid(subpopGuid).withConsented(false).build();
-        Map<SubpopulationGuid,ConsentStatus> map = Maps.newHashMap();
-        map.put(subpopGuid, status);
-        doReturn(map).when(consentService).getConsentStatuses(any());
-
         StudyParticipant participant = new StudyParticipant.Builder().withStatus(AccountStatus.DISABLED).build();
+        
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
         doReturn(participant).when(participantService).getParticipant(study, account, false);
-        doReturn("test-study").when(study).getIdentifier();
-        String cacheKey = "email@email.com:test-study:signInRequest";
-        doReturn(TOKEN).when(cacheProvider).getString(cacheKey);
-        doReturn(study).when(studyService).getStudy("test-study");
-        doReturn(account).when(accountDao).getAccountWithEmail(study, "email@email.com");
+        doReturn(STUDY_ID).when(study).getIdentifier();
+        doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
+        doReturn(study).when(studyService).getStudy(STUDY_ID);
+        doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
         
         service.emailSignIn(CONTEXT, SIGN_IN);
     }
