@@ -267,12 +267,17 @@ public class UploadSchemaServiceTest {
         svc.deleteUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, 0);
     }
 
-    @Test(expected = EntityNotFoundException.class)
+    @Test
     public void deleteByIdAndRevNotFound() {
         // mock dao to return null
         when(dao.getUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(null);
 
-        svc.deleteUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV);
+        try {
+            svc.deleteUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV);
+            fail("expected exception");
+        } catch (EntityNotFoundException ex) {
+            assertEquals("Can't find schema " + SCHEMA_ID + "-v" + SCHEMA_REV, ex.getMessage());
+        }
     }
 
     @Test

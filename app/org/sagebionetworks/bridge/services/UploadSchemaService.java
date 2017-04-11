@@ -588,7 +588,7 @@ public class UploadSchemaService {
 
         UploadSchema schema = uploadSchemaDao.getUploadSchemaByIdAndRevision(studyId, schemaId, revision);
         if (schema == null) {
-            throw new EntityNotFoundException(UploadSchema.class);
+            throw new EntityNotFoundException(UploadSchema.class, "Can't find schema " + schemaId + "-v" + revision);
         }
         return schema;
     }
