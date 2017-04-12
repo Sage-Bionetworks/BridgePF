@@ -9,7 +9,6 @@ import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SurveyDao;
-import org.sagebionetworks.bridge.dao.UploadSchemaDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -22,6 +21,8 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
+import org.sagebionetworks.bridge.services.UploadSchemaService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -189,7 +190,7 @@ public class DynamoSurveyDao implements SurveyDao {
 
     private DynamoDBMapper surveyMapper;
     private DynamoDBMapper surveyElementMapper;
-    private UploadSchemaDao uploadSchemaDao;
+    private UploadSchemaService uploadSchemaService;
     
     @Resource(name = "surveyMapper")
     public void setSurveyMapper(DynamoDBMapper surveyMapper) {
@@ -202,8 +203,8 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Autowired
-    public final void setUploadSchemaDao(UploadSchemaDao uploadSchemaDao) {
-        this.uploadSchemaDao = uploadSchemaDao;
+    public final void setUploadSchemaService(UploadSchemaService uploadSchemaService) {
+        this.uploadSchemaService = uploadSchemaService;
     }
 
     @Override
@@ -229,13 +230,16 @@ public class DynamoSurveyDao implements SurveyDao {
             throw new EntityNotFoundException(Survey.class);
         }
         if (!survey.isPublished()) {
-            // make schema from survey
-            UploadSchema schema = uploadSchemaDao.createUploadSchemaFromSurvey(study, survey, newSchemaRev);
-
             // update survey
             survey.setPublished(true);
             survey.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-            survey.setSchemaRevision(schema.getRevision());
+
+            // make schema from survey
+            if (!survey.getUnmodifiableQuestionList().isEmpty()) {
+                UploadSchema schema = uploadSchemaService.createUploadSchemaFromSurvey(study, survey, newSchemaRev);
+                survey.setSchemaRevision(schema.getRevision());
+            }
+
             try {
                 surveyMapper.save(survey);
             } catch(ConditionalCheckFailedException e) {
@@ -291,21 +295,11 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public void deleteSurvey(GuidCreatedOnVersionHolder keys) {
-        Survey existing = getSurvey(keys);
-        if (existing.isDeleted()) {
-            throw new EntityNotFoundException(Survey.class);
-        }
-        // If a survey has been published, you can't delete the last published version of that survey.
-        // This is going to create a lot of test errors.
-        if (existing.isPublished()) {
-            int publishedVersionCount = new QueryBuilder().setSurvey(keys.getGuid()).isPublished().isNotDeleted().getCount();
-            if (publishedVersionCount < 2) {
-                throw new PublishedSurveyException(existing, "You cannot delete the last published version of a published survey.");
-            }
-        }
-        existing.setDeleted(true);
-        saveSurvey(existing);
+    public void deleteSurvey(Survey survey) {
+        checkNotNull(survey);
+        
+        survey.setDeleted(true);
+        saveSurvey(survey);
     }
 
     @Override
@@ -317,7 +311,7 @@ public class DynamoSurveyDao implements SurveyDao {
         // Delete the schemas as well, or they accumulate.
         try {
             StudyIdentifier studyId = new StudyIdentifierImpl(existing.getStudyIdentifier());
-            uploadSchemaDao.deleteUploadSchemaById(studyId, existing.getIdentifier());
+            uploadSchemaService.deleteUploadSchemaById(studyId, existing.getIdentifier());
         } catch(EntityNotFoundException e) {
             // This is OK. Just means this survey wasn't published.
         }
@@ -410,8 +404,9 @@ public class DynamoSurveyDao implements SurveyDao {
         }
         return survey;
     }
-    
-    private void deleteAllElements(String surveyGuid, long createdOn) {
+
+    // Package-scoped for unit tests.
+    void deleteAllElements(String surveyGuid, long createdOn) {
         DynamoSurveyElement template = new DynamoSurveyElement();
         template.setSurveyKeyComponents(surveyGuid, createdOn);
         

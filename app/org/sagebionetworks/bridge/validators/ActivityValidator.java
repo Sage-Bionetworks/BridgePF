@@ -35,6 +35,9 @@ public class ActivityValidator implements Validator {
         if (isBlank(activity.getLabel())) {
             errors.rejectValue("label", CANNOT_BE_BLANK);
         }
+        if (isBlank(activity.getGuid())) {
+            errors.rejectValue("guid", CANNOT_BE_BLANK);   
+        }
 
         // an activity must be exactly one of: compound, task, or survey
         int numSources = 0;
@@ -66,8 +69,6 @@ public class ActivityValidator implements Validator {
         String taskIdentifier = compoundActivity.getTaskIdentifier();
         if (isBlank(taskIdentifier)) {
             errors.rejectValue("taskIdentifier", CANNOT_BE_BLANK);
-        } else if (!taskIdentifiers.contains(taskIdentifier)) {
-            errors.rejectValue("taskIdentifier", getTaskIdentifierMessage(taskIdentifier));
         }
 
         errors.popNestedPath();
@@ -100,7 +101,7 @@ public class ActivityValidator implements Validator {
         if (taskIdentifiers.isEmpty()) {
             message += "<no task identifiers declared>";
         } else {
-            message += COMMA_SPACE_JOINER.join(taskIdentifiers) + ".";
+            message += COMMA_SPACE_JOINER.join(taskIdentifiers);
         }
         return message;
     }

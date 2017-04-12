@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 
 import java.util.ArrayList;
@@ -9,8 +10,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -47,6 +51,20 @@ public class ScheduledActivityController extends BaseController {
         return okResultAsTasks(scheduledActivities);
     }
 
+    public Result getActivityHistory(String activityGuid, String scheduledOnStartString,
+            String scheduledOnEndString, String offsetBy, String pageSizeString) throws Exception {
+        UserSession session = getAuthenticatedAndConsentedSession();
+        
+        DateTime scheduledOnStart = getDateTimeOrDefault(scheduledOnStartString, null);
+        DateTime scheduledOnEnd = getDateTimeOrDefault(scheduledOnEndString, null);
+        int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> page = scheduledActivityService.getActivityHistory(
+                session.getHealthCode(), activityGuid, scheduledOnStart, scheduledOnEnd, offsetBy, pageSize);
+        
+        return ok(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(page));
+    }
+    
     public Result getScheduledActivities(String untilString, String offset, String daysAhead, String minimumPerScheduleString)
             throws Exception {
         List<ScheduledActivity> scheduledActivities = getScheduledActivitiesInternal(untilString, offset, daysAhead, minimumPerScheduleString);
@@ -82,14 +100,26 @@ public class ScheduledActivityController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
 
         ScheduleContext.Builder builder = new ScheduleContext.Builder();
-        addEndsOnWithZone(builder, untilString, offset, daysAhead);
-        
+        // This time zone is the zone of the request, and scheduled activities with local time portions in 
+        // their schedules are returned in this time zone, ensuring a date and time are expressed in what 
+        // is effectively local time.
+        DateTimeZone requestTimeZone = addEndsOnInRequestTimeZone(builder, untilString, offset, daysAhead);
+
+        // This time zone is the time zone of the user upon first contacting the server for activities, and
+        // ensures that events are scheduled in this time zone. This ensures that a user will receive activities 
+        // on the day they contact the server. If it has not yet been captured, this is the first request, 
+        // capture and persist it.
+        DateTimeZone initialTimeZone = session.getParticipant().getTimeZone();
+        if (initialTimeZone == null) {
+            initialTimeZone = persistTimeZone(session, requestTimeZone);
+        }
+
+        builder.withInitialTimeZone(initialTimeZone);
         builder.withUserDataGroups(session.getParticipant().getDataGroups());
         builder.withHealthCode(session.getHealthCode());
         builder.withUserId(session.getId());
         builder.withStudyIdentifier(session.getStudyIdentifier());
         builder.withAccountCreatedOn(session.getParticipant().getCreatedOn());
-        
         builder.withLanguages(getLanguages(session));
         builder.withClientInfo(getClientInfoFromUserAgentHeader());
         builder.withMinimumPerSchedule(getIntOrDefault(minimumPerScheduleString, 0));
@@ -103,30 +133,39 @@ public class ScheduledActivityController extends BaseController {
                 .withLanguages(context.getCriteriaContext().getLanguages())
                 .withUserDataGroups(context.getCriteriaContext().getUserDataGroups())
                 .withActivitiesAccessedOn(context.getNow())
-                .withTimeZone(context.getZone())
+                .withTimeZone(context.getInitialTimeZone())
                 .withStudyIdentifier(context.getCriteriaContext().getStudyIdentifier()).build();
         cacheProvider.updateRequestInfo(requestInfo);
-        
+
         return scheduledActivityService.getScheduledActivities(context);
     }
+
+    private DateTimeZone persistTimeZone(UserSession session, DateTimeZone timeZone) {
+        optionsService.setDateTimeZone(session.getStudyIdentifier(), session.getHealthCode(),
+                ParticipantOption.TIME_ZONE, timeZone);
+        
+        sessionUpdateService.updateTimeZone(session, timeZone);
+        
+        return timeZone;
+    }
     
-    private void addEndsOnWithZone(ScheduleContext.Builder builder, String untilString, String offset, String daysAhead) {
+    private DateTimeZone addEndsOnInRequestTimeZone(ScheduleContext.Builder builder, String untilString, String offset, String daysAhead) {
         DateTime endsOn = null;
-        DateTimeZone zone = null;
+        DateTimeZone requestTimeZone = null;
 
         if (StringUtils.isNotBlank(untilString)) {
             // Old API, infer time zone from the until parameter. This is not ideal.
             endsOn = DateTime.parse(untilString);
-            zone = endsOn.getZone();
+            requestTimeZone = endsOn.getZone();
         } else if (StringUtils.isNotBlank(daysAhead) && StringUtils.isNotBlank(offset)) {
-            zone = DateUtils.parseZoneFromOffsetString(offset);
             int numDays = Integer.parseInt(daysAhead);
+            requestTimeZone = DateUtils.parseZoneFromOffsetString(offset);
             // When querying for days, we ignore the time of day of the request and query to then end of the day.
-            endsOn = DateTime.now(zone).plusDays(numDays).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59);
+            endsOn = DateTime.now(requestTimeZone).plusDays(numDays).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59);
         } else {
-            throw new BadRequestException("Supply either 'until' parameter, or 'daysAhead' and 'offset' parameters.");
+            throw new BadRequestException("Supply either 'until' parameter, or 'daysAhead' parameter.");
         }
         builder.withEndsOn(endsOn);
-        builder.withTimeZone(zone);
+        return requestTimeZone;
     }
 }

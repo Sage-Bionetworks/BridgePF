@@ -123,7 +123,7 @@ public class DynamoNotificationTopicDaoTest {
         
         NotificationTopic updated = dao.getTopic(TEST_STUDY, topic.getGuid());
         assertEquals(TEST_STUDY_IDENTIFIER, updated.getStudyId());
-        assertEquals("ABC-DEF", updated.getGuid());
+        assertEquals("topicGuid", updated.getGuid());
         
         verify(mockMapper).load(topicCaptor.capture());
         DynamoNotificationTopic capturedTopic = topicCaptor.getValue();

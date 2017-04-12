@@ -24,8 +24,20 @@ public class MimeTypeTest {
         deser = mapper.readValue("\"HTML\"", MimeType.class);
         assertEquals(MimeType.HTML, deser);
         
+        deser = mapper.readValue("\"text/html\"", MimeType.class);
+        assertEquals(MimeType.HTML, deser);
+        
         deser = mapper.readValue("\"TEXT/PLAIN\"", MimeType.class);
         assertEquals(MimeType.TEXT, deser);
+    }
+    
+    @Test
+    public void serializationUsesMimeTypeValue() throws Exception {
+        ObjectMapper mapper = BridgeObjectMapper.get();
+        
+        assertEquals("\"text/html\"", mapper.writeValueAsString(MimeType.HTML));
+        assertEquals("\"text/plain\"", mapper.writeValueAsString(MimeType.TEXT));
+        assertEquals("\"application/pdf\"", mapper.writeValueAsString(MimeType.PDF));
     }
     
     /**

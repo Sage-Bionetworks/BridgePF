@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -10,7 +11,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableList;
 import nl.jqno.equalsverifier.EqualsVerifier;
+import org.joda.time.DateTime;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -31,19 +34,16 @@ public class CompoundActivityTest {
         SurveyReference jklSurvey = new SurveyReference("jkl", "jkl-guid", null);
         inputSurveyList.add(jklSurvey);
 
+        // ImmutableList.copyOf() makes immutable copies that *aren't* backed by the original list. Perfect for making
+        // sure the list hasn't changed.
+        List<SchemaReference> expectedSchemaList = ImmutableList.copyOf(inputSchemaList);
+        List<SurveyReference> expectedSurveyList = ImmutableList.copyOf(inputSurveyList);
+
         CompoundActivity compoundActivity = new CompoundActivity.Builder().withSchemaList(inputSchemaList)
                 .withSurveyList(inputSurveyList).withTaskIdentifier("combo-activity").build();
+        assertEquals(expectedSchemaList, compoundActivity.getSchemaList());
+        assertEquals(expectedSurveyList, compoundActivity.getSurveyList());
         assertEquals("combo-activity", compoundActivity.getTaskIdentifier());
-
-        List<SchemaReference> outputSchemaList = compoundActivity.getSchemaList();
-        assertEquals(2, outputSchemaList.size());
-        assertEquals(fooSchema, outputSchemaList.get(0));
-        assertEquals(barSchema, outputSchemaList.get(1));
-
-        List<SurveyReference> outputSurveyList = compoundActivity.getSurveyList();
-        assertEquals(2, outputSurveyList.size());
-        assertEquals(asdfSurvey, outputSurveyList.get(0));
-        assertEquals(jklSurvey, outputSurveyList.get(1));
 
         // toString() gives a lot of stuff and depends on two other classes. To make the tests robust and resilient to
         // changes in encapsulated classes, just test a few keywords
@@ -56,25 +56,29 @@ public class CompoundActivityTest {
 
         // modify original lists to verify we have a defensive copy
         inputSchemaList.add(new SchemaReference("third-schema", 4));
-        assertEquals(2, outputSchemaList.size());
+        assertEquals(expectedSchemaList, compoundActivity.getSchemaList());
 
         inputSurveyList.add(new SurveyReference("third-survey", "third-survey-guid", null));
-        assertEquals(2, outputSurveyList.size());
+        assertEquals(expectedSurveyList, compoundActivity.getSurveyList());
 
         // attempt to modify output list to verify immutability
         try {
-            outputSchemaList.add(new SchemaReference("another", 5));
+            compoundActivity.getSchemaList().add(new SchemaReference("another", 5));
             fail("expected exception modifying outputSchemaList");
         } catch (UnsupportedOperationException ex) {
             // expected exception
         }
 
         try {
-            outputSurveyList.add(new SurveyReference("another", "another-guid", null));
+            compoundActivity.getSurveyList().add(new SurveyReference("another", "another-guid", null));
             fail("expected exception modifying outputSurveyList");
         } catch (UnsupportedOperationException ex) {
             // expected exception
         }
+
+        // test copy constructor
+        CompoundActivity copy = new CompoundActivity.Builder().copyOf(compoundActivity).build();
+        assertEquals(compoundActivity, copy);
     }
 
     @Test
@@ -103,6 +107,42 @@ public class CompoundActivityTest {
             fail("expected exception modifying outputSurveyList");
         } catch (UnsupportedOperationException ex) {
             // expected exception
+        }
+    }
+
+    @Test
+    public void isReference() {
+        // Set up test schema lists and survey lists
+        List<SchemaReference> schemaList = ImmutableList.of(new SchemaReference("my-schema", 2));
+        List<SurveyReference> surveyList = ImmutableList.of(new SurveyReference("my-survey", "my-survey-guid",
+                DateTime.now()));
+
+        // has schemas and surveys, is not reference
+        {
+            CompoundActivity compoundActivity = new CompoundActivity.Builder().withSchemaList(schemaList)
+                    .withSurveyList(surveyList).withTaskIdentifier("my-task").build();
+            assertFalse(compoundActivity.isReference());
+        }
+
+        // has schemas but no surveys, still not a reference
+        {
+            CompoundActivity compoundActivity = new CompoundActivity.Builder().withSchemaList(schemaList)
+                    .withSurveyList(null).withTaskIdentifier("my-task").build();
+            assertFalse(compoundActivity.isReference());
+        }
+
+        // has surveys but no schemas, still not a reference
+        {
+            CompoundActivity compoundActivity = new CompoundActivity.Builder().withSchemaList(null)
+                    .withSurveyList(surveyList).withTaskIdentifier("my-task").build();
+            assertFalse(compoundActivity.isReference());
+        }
+
+        // has no schemas and no surveys, is a reference
+        {
+            CompoundActivity compoundActivity = new CompoundActivity.Builder().withSchemaList(null)
+                    .withSurveyList(null).withTaskIdentifier("my-task").build();
+            assertTrue(compoundActivity.isReference());
         }
     }
 

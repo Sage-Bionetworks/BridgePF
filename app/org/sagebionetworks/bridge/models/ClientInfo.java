@@ -189,7 +189,7 @@ public final class ClientInfo {
                 + osVersion + ", sdkName=" + sdkName + ", sdkVersion=" + sdkVersion + "]";
     }
 
-    static class Builder {
+    public static class Builder {
         private String appName;
         private Integer appVersion;
         private String deviceName;

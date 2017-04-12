@@ -21,8 +21,8 @@ public class EntityNotFoundException extends BridgeServiceException {
         this.entity = checkNotNull(entity);
     }
     
-    public Class<? extends BridgeEntity> getEntityClass() {
-        return entity;
+    public String getEntityClass() {
+        return BridgeUtils.getTypeName(entity);
     }
 
 }

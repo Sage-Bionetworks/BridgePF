@@ -3,19 +3,15 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.models.CriteriaContext;
-import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.FPHSService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -35,16 +31,9 @@ public class FPHSController extends BaseController {
 
     private FPHSService fphsService;
     
-    private ConsentService consentService;
-    
     @Autowired
     public final void setFPHSService(FPHSService service) {
         this.fphsService = service; 
-    }
-    
-    @Autowired
-    public final void setConsentService(ConsentService consentService) {
-        this.consentService = consentService; 
     }
     
     public Result verifyExternalIdentifier(String identifier) throws Exception {
@@ -60,20 +49,16 @@ public class FPHSController extends BaseController {
         fphsService.registerExternalIdentifier(session.getStudyIdentifier(), session.getHealthCode(), externalId);
 
         // The service saves the external identifier and saves this as an option. We also need 
-        // to update the user's session, something that should be generalized for other methods
-        // that change data groups.
+        // to update the user's session.
         Set<String> dataGroups = Sets.newHashSet(session.getParticipant().getDataGroups());
         dataGroups.add("football_player");
         
         StudyParticipant updated = new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withDataGroups(dataGroups).build();
-        
-        session.setParticipant(updated);
+                .withExternalId(externalId.getIdentifier()).withDataGroups(dataGroups).build();
         
         CriteriaContext context = getCriteriaContext(session);
-        Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
-        session.setConsentStatuses(statuses);
-        updateSession(session);
+        
+        sessionUpdateService.updateParticipant(session, context, updated);
         
         return okResult("External identifier added to user profile.");
     }

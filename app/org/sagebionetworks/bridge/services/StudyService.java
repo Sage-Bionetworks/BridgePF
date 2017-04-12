@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.BridgeUtils.checkNewEntity;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -14,29 +13,13 @@ import java.util.Set;
 
 import javax.annotation.Resource;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Whitelist;
-
-import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.dao.DirectoryDao;
-import org.sagebionetworks.bridge.dao.StudyDao;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
-import org.sagebionetworks.bridge.models.SynapseAccount;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate;
-import org.sagebionetworks.bridge.models.studies.MimeType;
-import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.validators.StudyValidator;
-import org.sagebionetworks.bridge.validators.Validate;
-
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
@@ -46,23 +29,55 @@ import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.ResourceAccess;
 import org.sagebionetworks.repo.model.Team;
 import org.sagebionetworks.repo.model.auth.NewUser;
-import org.sagebionetworks.repo.model.principal.AliasType;
-import org.sagebionetworks.repo.model.principal.PrincipalAliasRequest;
-import org.sagebionetworks.repo.model.principal.PrincipalAliasResponse;
 import org.sagebionetworks.repo.model.util.ModelConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.dao.DirectoryDao;
+import org.sagebionetworks.bridge.dao.StudyDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.Criteria;
+import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy;
+import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.schedules.ScheduleCriteria;
+import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.MimeType;
+import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
+import org.sagebionetworks.bridge.validators.StudyValidator;
+import org.sagebionetworks.bridge.validators.Validate;
+
 @Component("studyService")
 public class StudyService {
+    private static Logger LOG = LoggerFactory.getLogger(StudyService.class);
 
     static final String EXPORTER_SYNAPSE_USER_ID = BridgeConfigFactory.getConfig().getExporterSynapseId(); // copy-paste from website
-
+    static final String SYNAPSE_REGISTER_END_POINT = "https://www.synapse.org/#!NewAccount:";
     private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
             BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
 
+    private CompoundActivityDefinitionService compoundActivityDefinitionService;
     private UploadCertificateService uploadCertService;
     private StudyDao studyDao;
     private DirectoryDao directoryDao;
@@ -72,11 +87,15 @@ public class StudyService {
     private NotificationTopicService topicService;
     private EmailVerificationService emailVerificationService;
     private SynapseClient synapseClient;
+    private ParticipantService participantService;
+    private SchedulePlanService schedulePlanService;
 
     private String defaultEmailVerificationTemplate;
     private String defaultEmailVerificationTemplateSubject;
     private String defaultResetPasswordTemplate;
     private String defaultResetPasswordTemplateSubject;
+    private String defaultEmailSignInTemplate;
+    private String defaultEmailSignInTemplateSubject;
     
     @Value("classpath:study-defaults/email-verification.txt")
     final void setDefaultEmailVerificationTemplate(org.springframework.core.io.Resource resource) throws IOException {
@@ -94,6 +113,22 @@ public class StudyService {
     final void setDefaultPasswordTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultResetPasswordTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
+    @Value("classpath:study-defaults/email-sign-in.txt")
+    final void setDefaultEmailSignInTemplate(org.springframework.core.io.Resource resource) throws IOException {
+        this.defaultEmailSignInTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
+    }
+    @Value("classpath:study-defaults/email-sign-in-subject.txt")
+    final void setDefaultEmailSignInTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
+        this.defaultEmailSignInTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
+    }
+
+    /** Compound activity definition service, used to clean up deleted studies. This is set by Spring. */
+    @Autowired
+    final void setCompoundActivityDefinitionService(
+            CompoundActivityDefinitionService compoundActivityDefinitionService) {
+        this.compoundActivityDefinitionService = compoundActivityDefinitionService;
+    }
+
     @Resource(name="uploadCertificateService")
     final void setUploadCertificateService(UploadCertificateService uploadCertService) {
         this.uploadCertService = uploadCertService;
@@ -127,12 +162,21 @@ public class StudyService {
         this.emailVerificationService = emailVerificationService;
     }
     @Autowired
+    final void setParticipantService(ParticipantService participantService) {
+        this.participantService = participantService;
+    }
+    @Autowired
+    final void setSchedulePlanService(SchedulePlanService schedulePlanService) {
+        this.schedulePlanService = schedulePlanService;
+    }
+    
+    @Autowired
     @Qualifier("bridgePFSynapseClient")
     public final void setSynapseClient(SynapseClient synapseClient) {
         this.synapseClient = synapseClient;
     }
 
-    private Study getStudy(String identifier, boolean includeDeleted) {
+    public Study getStudy(String identifier, boolean includeDeleted) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
 
         Study study = cacheProvider.getStudy(identifier);
@@ -140,9 +184,18 @@ public class StudyService {
             study = studyDao.getStudy(identifier);
             cacheProvider.setStudy(study);
         }
-
-        if (study != null && !study.isActive() && !includeDeleted) {
-            throw new EntityNotFoundException(Study.class, "Study not found.");
+        if (study != null) {
+            // If it it exists and has been deactivated, and this call is not supposed to retrieve deactivated
+            // studies, treat it as if it doesn't exist.
+            if (!study.isActive() && !includeDeleted) {
+                throw new EntityNotFoundException(Study.class, "Study not found.");
+            }
+            // Because this template does not currently exist in studies, add the default if it is null.
+            if (study.getEmailSignInTemplate() == null) {
+                EmailTemplate template = new EmailTemplate(defaultEmailSignInTemplateSubject,
+                        defaultEmailSignInTemplate, MimeType.HTML);
+                study.setEmailSignInTemplate(template);
+            }
         }
 
         return study;
@@ -163,20 +216,97 @@ public class StudyService {
         return studyDao.getStudies();
     }
 
+    public Study createStudyAndUsers(StudyAndUsers studyAndUsers) throws SynapseException {
+        checkNotNull(studyAndUsers, Validate.CANNOT_BE_NULL, "study and users");
+
+        List<String> adminIds = studyAndUsers.getAdminIds();
+        if (adminIds == null || adminIds.isEmpty()) {
+            throw new BadRequestException("Admin IDs are required.");
+        }
+        // validate if each admin id is a valid synapse id in synapse
+        for (String adminId : adminIds) {
+            try {
+                synapseClient.getUserProfile(adminId);
+            } catch (SynapseNotFoundException e) {
+                throw new BadRequestException("Admin ID is invalid.");
+            }
+        }
+
+        List<StudyParticipant> users = studyAndUsers.getUsers();
+        if (users == null || users.isEmpty()) {
+            throw new BadRequestException("User list is required.");
+        }
+        if (studyAndUsers.getStudy() == null) {
+            throw new BadRequestException("Study cannot be null.");
+        }
+        Study study = studyAndUsers.getStudy();
+        // prevent NPE in participant validation
+        if (study.getPasswordPolicy() == null) {
+            study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        }
+
+        // validate participants at first
+        for (StudyParticipant user : users) {
+            Validate.entityThrowingException(new StudyParticipantValidator(study, true), user);
+        }
+
+        // validate roles for each user
+        for (StudyParticipant user: users) {
+            if (!Collections.disjoint(user.getRoles(), ImmutableSet.of(Roles.ADMIN, Roles.TEST_USERS, Roles.WORKER))) {
+                throw new BadRequestException("User can only have roles developer and/or researcher.");
+            }
+            if (user.getRoles().isEmpty()) {
+                throw new BadRequestException("User should have at least one role.");
+            }
+        }
+
+        // then create and validate study
+        study = createStudy(study);
+
+        // then create users for that study
+        // send verification email from both Bridge and Synapse as well
+        for (StudyParticipant user: users) {
+            IdentifierHolder identifierHolder = participantService.createParticipant(study, user.getRoles(), user,true);
+
+            NewUser synapseUser = new NewUser();
+            synapseUser.setEmail(user.getEmail());
+            try {
+                synapseClient.newAccountEmailValidation(synapseUser, SYNAPSE_REGISTER_END_POINT);
+            } catch (SynapseServerException e) {
+                if (!"The email address provided is already used.".equals(e.getMessage())) {
+                    throw e;
+                } else {
+                    LOG.info("Email: " + user.getEmail() + " already exists in Synapse", e);
+                }
+            }
+            // send resetting password email as well
+            participantService.requestResetPassword(study, identifierHolder.getIdentifier());
+        }
+
+        // finally create synapse project and team
+        createSynapseProjectTeam(studyAndUsers.getAdminIds(), study);
+
+        return study;
+    }
+
     public Study createStudy(Study study) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        checkNewEntity(study, study.getVersion(), "Study has a version value; it may already exist");
+        if (study.getVersion() != null){
+            throw new EntityAlreadyExistsException(Study.class, "Study has a version value; it may already exist",
+                new ImmutableMap.Builder<String,Object>().put("identifier", study.getIdentifier()).build());
+        }
 
         study.setActive(true);
         study.setStrictUploadValidationEnabled(true);
         study.setEmailVerificationEnabled(true);
+        study.setEmailSignInEnabled(false);
         study.getDataGroups().add(BridgeConstants.TEST_USER_GROUP);
         setDefaultsIfAbsent(study);
         sanitizeHTML(study);
         Validate.entityThrowingException(validator, study);
 
         if (studyDao.doesIdentifierExist(study.getIdentifier())) {
-            throw new EntityAlreadyExistsException(study);
+            throw new EntityAlreadyExistsException(Study.class, "identifier", study.getIdentifier());
         }
         
         subpopService.createDefaultSubpopulation(study);
@@ -198,47 +328,29 @@ public class StudyService {
         return study;
     }
 
-    public String createSynapseAccount(SynapseAccount synapseAccount) throws SynapseException {
-        checkNotNull(synapseAccount, Validate.CANNOT_BE_NULL, "synapse account");
-        if (!synapseAccount.isValid()) {
-            throw new BadRequestException("Account information is not sufficient.");
+    public Study createSynapseProjectTeam(List<String> synapseUserIds, Study study) throws SynapseException {
+        if (synapseUserIds == null || synapseUserIds.isEmpty()) {
+            throw new BadRequestException("Synapse User IDs are required.");
         }
-
-        NewUser newUser = new NewUser();
-        newUser.setEmail(synapseAccount.getEmail());
-        newUser.setFirstName(synapseAccount.getFirstName());
-        newUser.setLastName(synapseAccount.getLastName());
-        newUser.setUserName(synapseAccount.getUsername());
-
-        // if the validation failed, throw bad request exception
-        try {
-            synapseClient.createUser(newUser);
-        } catch (SynapseServerException e) {
-            throw new BadRequestException(e.getMessage());
-        }
-
-        // then fetch user id
-        PrincipalAliasRequest request = new PrincipalAliasRequest();
-        request.setAlias(synapseAccount.getUsername());
-        request.setType(AliasType.USER_NAME);
-        PrincipalAliasResponse response = synapseClient.getPrincipalAlias(request);
-        return response.getPrincipalId().toString();
-    }
-
-    public Study createSynapseProjectTeam(String synapseUserId, Study study) throws SynapseException {
-        if (StringUtils.isBlank(synapseUserId)) {
-            throw new BadRequestException("Synapse User ID is invalid.");
-        }
-
         // first check if study already has project and team ids
-        checkNewEntity(study, study.getSynapseDataAccessTeamId(), "Study already has a team id.");
-        checkNewEntity(study, study.getSynapseProjectId(), "Study already has a project id.");
+        if (study.getSynapseDataAccessTeamId() != null){
+            throw new EntityAlreadyExistsException(Study.class, "Study already has a team ID.",
+                new ImmutableMap.Builder<String,Object>().put("identifier", study.getIdentifier())
+                    .put("synapseDataAccessTeamId", study.getSynapseDataAccessTeamId()).build());
+        }
+        if (study.getSynapseProjectId() != null){
+            throw new EntityAlreadyExistsException(Study.class, "Study already has a project ID.",
+                new ImmutableMap.Builder<String,Object>().put("identifier", study.getIdentifier())
+                .put("synapseProjectId", study.getSynapseProjectId()).build());
+        }
 
         // then check if the user id exists
-        try {
-            synapseClient.getUserProfile(synapseUserId);
-        } catch (SynapseNotFoundException e) {
-            throw new BadRequestException("Synapse user Id is invalid.");
+        for (String userId : synapseUserIds) {
+            try {
+                synapseClient.getUserProfile(userId);
+            } catch (SynapseNotFoundException e) {
+                throw new BadRequestException("Synapse User Id: " + userId + " is invalid.");
+            }
         }
 
         // create synapse project and team
@@ -258,21 +370,29 @@ public class StudyService {
         toSet.setPrincipalId(Long.parseLong(EXPORTER_SYNAPSE_USER_ID));
         toSet.setAccessType(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
         acl.getResourceAccess().add(toSet);
-        // add user as admin
-        ResourceAccess toSetUser = new ResourceAccess();
-        toSetUser.setPrincipalId(Long.parseLong(synapseUserId)); // passed by user as parameter
-        toSetUser.setAccessType(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
-        acl.getResourceAccess().add(toSetUser);
+        // add users as admins
+        for (String synapseUserId : synapseUserIds) {
+            ResourceAccess toSetUser = new ResourceAccess();
+            toSetUser.setPrincipalId(Long.parseLong(synapseUserId)); // passed by user as parameter
+            toSetUser.setAccessType(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
+            acl.getResourceAccess().add(toSetUser);
+        }
+        // add team in project as well
+        ResourceAccess toSetTeam = new ResourceAccess();
+        toSetTeam.setPrincipalId(Long.parseLong(newTeam.getId())); // passed by user as parameter
+        toSetTeam.setAccessType(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
+        acl.getResourceAccess().add(toSetTeam);
 
         synapseClient.updateACL(acl);
 
-        // send invitation to target user for joining new team and grant admin permission to that user
-        MembershipInvtnSubmission teamMemberInvitation = new MembershipInvtnSubmission();
-        teamMemberInvitation.setInviteeId(synapseUserId);
-        teamMemberInvitation.setTeamId(newTeam.getId());
-
-        synapseClient.createMembershipInvitation(teamMemberInvitation, null, null);
-        synapseClient.setTeamMemberPermissions(newTeam.getId(), synapseUserId, true);
+        for (String synapseUserId : synapseUserIds) {
+            // send invitation to target user for joining new team and grant admin permission to that user
+            MembershipInvtnSubmission teamMemberInvitation = new MembershipInvtnSubmission();
+            teamMemberInvitation.setInviteeId(synapseUserId);
+            teamMemberInvitation.setTeamId(newTeam.getId());
+            synapseClient.createMembershipInvitation(teamMemberInvitation, null, null);
+            synapseClient.setTeamMemberPermissions(newTeam.getId(), synapseUserId, true);
+        }
 
         String newTeamId = newTeam.getId();
         String newProjectId = newProject.getId();
@@ -290,7 +410,9 @@ public class StudyService {
 
         // These cannot be set through the API and will be null here, so they are set on update
         Study originalStudy = studyDao.getStudy(study.getIdentifier());
-
+        
+        checkViolationConstraints(study);
+        
         // And this cannot be set unless you're an administrator. Regardless of what the
         // developer set, set these back to the original study.
         if (!isAdminUpdate) {
@@ -298,16 +420,21 @@ public class StudyService {
             if (!originalStudy.isActive()) {
                 throw new EntityNotFoundException(Study.class, "Study '"+ study.getIdentifier() +"' not found.");
             }
-
             study.setHealthCodeExportEnabled(originalStudy.isHealthCodeExportEnabled());
             study.setEmailVerificationEnabled(originalStudy.isEmailVerificationEnabled());
+            study.setExternalIdValidationEnabled(originalStudy.isExternalIdValidationEnabled());
+            study.setExternalIdRequiredOnSignup(originalStudy.isExternalIdRequiredOnSignup());
+            study.setEmailSignInEnabled(originalStudy.isEmailSignInEnabled());
         }
 
         // prevent anyone changing active to false -- it should be done by deactivateStudy() method
         if (originalStudy.isActive() && !study.isActive()) {
             throw new BadRequestException("Study cannot be deleted through an update.");
         }
-
+        
+        // With the introduction of the session verification email, studies won't have all the templates
+        // that are normally required. So set it if someone tries to update a study, to a default value.
+        setDefaultsIfAbsent(study);
         sanitizeHTML(study);
 
         study.setStormpathHref(originalStudy.getStormpathHref());
@@ -346,17 +473,21 @@ public class StudyService {
         if (existing == null) {
             throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' not found");
         }
-
+        
         if (!physical) {
             // deactivate
             if (!existing.isActive()) {
-                throw new BadRequestException("Study '"+identifier+"' is deactivated before.");
+                throw new BadRequestException("Study '"+identifier+"' already deactivated.");
             }
             studyDao.deactivateStudy(existing.getIdentifier());
         } else {
             // actual delete
             studyDao.deleteStudy(existing);
             directoryDao.deleteDirectoryForStudy(existing);
+
+            // delete study data
+            compoundActivityDefinitionService.deleteAllCompoundActivityDefinitionsInStudy(
+                    existing.getStudyIdentifier());
             subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
             topicService.deleteAllTopics(existing.getStudyIdentifier());
         }
@@ -365,9 +496,68 @@ public class StudyService {
     }
     
     /**
+     * The user cannot remove data groups already used by criteria, or task identifiers already used in schedules. If
+     * these entities contain data groups or identifiers that are not in the updated version of the study, this is a
+     * constraint violation.
+     */
+    private void checkViolationConstraints(Study study) {
+        final Set<String> taskIds = study.getTaskIdentifiers();
+        final Set<String> dataGroups = study.getDataGroups();
+        
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, study);
+
+        // If the study is *missing* a task identifier or a data group that is currently in use in a plan, 
+        // that's a constraint error.
+        for (SchedulePlan plan : plans) {
+            for (Schedule schedule : plan.getStrategy().getAllPossibleSchedules()) {
+                for (Activity activity : schedule.getActivities()) {
+                    if (activity.getTask() != null && !taskIds.contains(activity.getTask().getIdentifier())) {
+                        throwConstraintViolation(plan, study);
+                    }
+                }
+            }
+            if (plan.getStrategy() instanceof CriteriaScheduleStrategy) {
+                CriteriaScheduleStrategy strategy = (CriteriaScheduleStrategy)plan.getStrategy();
+                for (ScheduleCriteria scheduleCriteria : strategy.getScheduleCriteria()) {
+                    if (!studyHasCriteriaDataGroups(dataGroups, scheduleCriteria.getCriteria())) {
+                        throwConstraintViolation(plan, study);
+                    }
+                }
+                
+            }
+        }
+
+        // If the study is missing a dataGroup that is used by a subpopulation, that's a constraint error
+        // This does not include logically deleted subpopulations, so these may be corrupted when restored.  
+        List<Subpopulation> subpopulations = subpopService.getSubpopulations(study);
+        for (Subpopulation subpop : subpopulations) {
+            if (!subpop.isDeleted() && !studyHasCriteriaDataGroups(study.getDataGroups(), subpop.getCriteria())) {
+                throwConstraintViolation(subpop, study);
+            }
+        }
+    }
+    
+    private boolean studyHasCriteriaDataGroups(Set<String> studyDataGroups, Criteria criteria) {
+        return studyDataGroups.containsAll(criteria.getAllOfGroups()) &&
+                studyDataGroups.containsAll(criteria.getNoneOfGroups());
+    }
+    
+    private void throwConstraintViolation(SchedulePlan match, Study study) {
+        throw new ConstraintViolationException.Builder().withEntityKey("identifier", study.getIdentifier())
+                .withEntityKey("type", "Study").withReferrerKey("guid", match.getGuid())
+                .withReferrerKey("type", "SchedulePlan").build();
+    }
+    
+    private void throwConstraintViolation(Subpopulation match, Study study) {
+        throw new ConstraintViolationException.Builder().withEntityKey("identifier", study.getIdentifier())
+                .withEntityKey("type", "Study").withReferrerKey("guid", match.getGuidString())
+                .withReferrerKey("type", "Subpopulation").build();
+    }
+    
+    /**
      * Has an aspect of the study changed that must be saved as well in the Stormpath directory? This 
-     * includes the email templates but also all the fields that can be substituted into the email templates
-     * such as names and emal addresses.
+     * includes the email templates for emails sent by Stormpath, but also all the fields that can be 
+     * substituted into the email templates such as names and emal addresses.
      * @param originalStudy
      * @param study
      * @return true if the password policy or email templates have changed
@@ -384,7 +574,7 @@ public class StudyService {
     }
     
     /**
-     * When the password policy or templates are not included, they are set to some sensible default 
+     * When the password policy or templates are not included, they are set to some sensible defaults.  
      * values. 
      * @param study
      */
@@ -392,49 +582,41 @@ public class StudyService {
         if (study.getPasswordPolicy() == null) {
             study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         }
-        study.setVerifyEmailTemplate(fillOutTemplate(study.getVerifyEmailTemplate(),
-            defaultEmailVerificationTemplateSubject, defaultEmailVerificationTemplate));
-        study.setResetPasswordTemplate(fillOutTemplate(study.getResetPasswordTemplate(),
-            defaultResetPasswordTemplateSubject, defaultResetPasswordTemplate));
+        if (study.getVerifyEmailTemplate() == null) {
+            EmailTemplate template = new EmailTemplate(defaultEmailVerificationTemplateSubject,
+                    defaultEmailVerificationTemplate, MimeType.HTML);
+            study.setVerifyEmailTemplate(template);
+        }
+        if (study.getResetPasswordTemplate() == null) {
+            EmailTemplate template = new EmailTemplate(defaultResetPasswordTemplateSubject,
+                    defaultResetPasswordTemplate, MimeType.HTML);
+            study.setResetPasswordTemplate(template);
+        }
+        if (study.getEmailSignInTemplate() == null) {
+            EmailTemplate template = new EmailTemplate(defaultEmailSignInTemplateSubject,
+                    defaultEmailSignInTemplate, MimeType.HTML);
+            study.setEmailSignInTemplate(template);
+        }
     }
 
-    /**
-     * Partially resolve variables in the templates before saving on Stormpath. If templates are not provided, 
-     * then the default templates are used, and we assume these are text only, otherwise this method needs to 
-     * change the mime type it sets.
-     * @param template
-     * @param defaultSubject
-     * @param defaultBody
-     * @return
-     */
-    private EmailTemplate fillOutTemplate(EmailTemplate template, String defaultSubject, String defaultBody) {
-        if (template == null) {
-            template = new EmailTemplate(defaultSubject, defaultBody, MimeType.HTML);
-        }
-        if (StringUtils.isBlank(template.getSubject())) {
-            template = new EmailTemplate(defaultSubject, template.getBody(), template.getMimeType());
-        }
-        if (StringUtils.isBlank(template.getBody())) {
-            template = new EmailTemplate(template.getSubject(), defaultBody, template.getMimeType());
-        }
-        return template;
-    }
-    
     /**
      * Email templates can contain HTML. Ensure the subject text has no markup and the markup in the body 
      * is safe for display in web-based email clients and a researcher UI. We clean this up before 
      * validation in case only unacceptable content was in the template. 
      * @param study
      */
-    private void sanitizeHTML(Study study) {
+    protected void sanitizeHTML(Study study) {
         EmailTemplate template = study.getVerifyEmailTemplate();
         study.setVerifyEmailTemplate(sanitizeEmailTemplate(template));
         
         template = study.getResetPasswordTemplate();
         study.setResetPasswordTemplate(sanitizeEmailTemplate(template));
+        
+        template = study.getEmailSignInTemplate();
+        study.setEmailSignInTemplate(sanitizeEmailTemplate(template));
     }
     
-    private EmailTemplate sanitizeEmailTemplate(EmailTemplate template) {
+    protected EmailTemplate sanitizeEmailTemplate(EmailTemplate template) {
         // Skip sanitization if there's no template. This can happen now as we'd rather see an error if the caller
         // doesn't include a template when updating.
         if (template == null) {

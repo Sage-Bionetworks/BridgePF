@@ -16,7 +16,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
 
-public final class Schedule implements BridgeEntity {
+// This has to be non-final because there's a lot of complex logic in here (such as getScheduler()) that needs to be
+// mocked. Long-term, we should probably migrate those functions to a separate class, so we have a clean separation
+// between data and functionality, and to enable easier testing.
+//
+// Making this class non-final should be okay as long as hashCode() and equals() are both final, and equals() uses
+// instanceof.
+public class Schedule implements BridgeEntity {
     
     public static final String SCHEDULE_TYPE_NAME = "Schedule";
     
@@ -195,16 +201,16 @@ public final class Schedule implements BridgeEntity {
         return false;
     }
     @Override
-    public int hashCode() {
+    public final int hashCode() {
         return Objects.hash(activities, cronTrigger, endsOn, expires, delay, interval, label, 
                 scheduleType, startsOn, eventId, times);
     }
     @Override
-    public boolean equals(Object obj) {
+    public final boolean equals(Object obj) {
         if (this == obj) {
             return true;
         }
-        if (obj == null || getClass() != obj.getClass()) {
+        if (obj == null || !(obj instanceof Schedule)) {
             return false;
         }
         Schedule other = (Schedule) obj;

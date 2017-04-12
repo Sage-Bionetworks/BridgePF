@@ -40,7 +40,7 @@ public class InvalidEntityException extends BridgeServiceException {
     }
     
     public Class<? extends BridgeEntity> getEntityClass() {
-        return entity.getClass();
+        return entity != null ? entity.getClass() : null;
     }
     
     public BridgeEntity getEntity() {

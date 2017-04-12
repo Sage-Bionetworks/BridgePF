@@ -8,7 +8,6 @@ import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.google.common.collect.Sets;
 import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -48,12 +47,14 @@ public class DefaultStudyBootstrapper {
     public void initializeDatabase() {
         List<TableDescription> tables = annotationBasedTableCreator.getTables("org.sagebionetworks.bridge.dynamodb");
         dynamoInitializer.init(tables);
+
+        // Create the "api" study if it doesn't exist. This is used for local testing and integ tests.
         try {
-            studyService.getStudy("api");
+            studyService.getStudy(BridgeConstants.API_STUDY_ID);
         } catch (EntityNotFoundException e) {
-            Study study = new DynamoStudy();
+            Study study = Study.create();
             study.setName("Test Study");
-            study.setIdentifier("api");
+            study.setIdentifier(BridgeConstants.API_STUDY_ID_STRING);
             study.setSponsorName("Sage Bionetworks");
             study.setMinAgeOfConsent(18);
             study.setConsentNotificationEmail("bridge-testing+consent@sagebase.org");
@@ -66,6 +67,21 @@ public class DefaultStudyBootstrapper {
             study.setPasswordPolicy(new PasswordPolicy(2, false, false, false, false));
             studyService.createStudy(study);
         }
-    }
 
+        // Create the "shared" study if it doesn't exist. This is used for the Shared Module Library.
+        try {
+            studyService.getStudy(BridgeConstants.SHARED_STUDY_ID);
+        } catch (EntityNotFoundException e) {
+            Study study = Study.create();
+            study.setName("Shared Module Library");
+            study.setSponsorName("Sage Bionetworks");
+            study.setIdentifier(BridgeConstants.SHARED_STUDY_ID_STRING);
+            study.setSupportEmail("bridgeit@sagebridge.org");
+            study.setTechnicalEmail("bridgeit@sagebridge.org");
+            study.setConsentNotificationEmail("bridgeit@sagebridge.org");
+            study.setStormpathHref("https://enterprise.stormpath.io/v1/directories/4VaJ0y63TCKDmJTIV8YGAs");
+            study.setPasswordPolicy(new PasswordPolicy(2, false, false, false, false));
+            studyService.createStudy(study);
+        }
+    }
 }

@@ -59,11 +59,11 @@ public class DynamoUpload2Test {
         assertEquals("original-upload-id", node.get("duplicateUploadId").textValue());
         assertEquals("succeeded", node.get("status").asText());
         assertEquals("2016-10-10", node.get("uploadDate").asText());
+        assertEquals("ABC", node.get("recordId").asText());
         assertEquals("DEF", node.get("uploadId").asText());
         assertNull(node.get("contentMd5"));
         assertNull(node.get("contentType"));
         assertNull(node.get("filename"));
-        assertNull(node.get("recordId"));
         assertNull(node.get("studyId"));
         assertNull(node.get("version"));
         assertNull(node.get("healthCode"));

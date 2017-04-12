@@ -3,8 +3,6 @@ package org.sagebionetworks.bridge.json;
 import java.io.IOException;
 import java.lang.reflect.Method;
 
-import org.sagebionetworks.bridge.BridgeUtils;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -22,6 +20,8 @@ import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.databind.ser.std.BeanSerializerBase;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
+
+import org.sagebionetworks.bridge.BridgeUtils;
 
 /**
  * <p>Use this version of the ObjectMapper in preference to its parent class. This version

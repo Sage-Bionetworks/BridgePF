@@ -79,7 +79,7 @@ public class DynamoStudyDao implements StudyDao {
         try {
             mapper.save(study);
         } catch(ConditionalCheckFailedException e) { // in the create scenario, this should be a hash key clash.
-            throw new EntityAlreadyExistsException(study);
+            throw new EntityAlreadyExistsException(Study.class, "identifier", study.getIdentifier());
         }
         return study;
     }

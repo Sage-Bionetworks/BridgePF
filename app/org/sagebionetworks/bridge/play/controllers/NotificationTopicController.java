@@ -82,5 +82,4 @@ public class NotificationTopicController extends BaseController {
         
         return acceptedResult("Message has been sent to external notification service.");
     }
-
 }

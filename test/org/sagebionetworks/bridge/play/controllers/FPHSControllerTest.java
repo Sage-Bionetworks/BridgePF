@@ -35,6 +35,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.FPHSService;
+import org.sagebionetworks.bridge.services.SessionUpdateService;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
@@ -49,18 +50,21 @@ public class FPHSControllerTest {
     private AuthenticationService authenticationService;
     private FPHSService fphsService;
     private ConsentService consentService;
+    private SessionUpdateService sessionUpdateService;
     
     @Before
     public void before() {
         fphsService = mock(FPHSService.class);
         authenticationService = mock(AuthenticationService.class);
         consentService = mock(ConsentService.class);
+        sessionUpdateService = new SessionUpdateService();
+        sessionUpdateService.setCacheProvider(mock(CacheProvider.class));
+        sessionUpdateService.setConsentService(consentService);
         
         controller = spy(new FPHSController());
         controller.setFPHSService(fphsService);
         controller.setAuthenticationService(authenticationService);
-        controller.setConsentService(consentService);
-        controller.setCacheProvider(mock(CacheProvider.class));
+        controller.setSessionUpdateService(sessionUpdateService);
     }
     
     private JsonNode resultToJson(Result result) throws Exception {
