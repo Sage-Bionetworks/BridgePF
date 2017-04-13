@@ -43,6 +43,10 @@ POST   /v3/participants/:userId/consents/withdraw            @org.sagebionetwork
 POST   /v3/participants/:userId/consents/:guid/resendConsent @org.sagebionetworks.bridge.play.controllers.ParticipantController.resendConsentAgreement(userId: String, guid: String)
 POST   /v3/participants/:userId/consents/:guid/withdraw      @org.sagebionetworks.bridge.play.controllers.ParticipantController.withdrawConsent(userId: String, guid: String)
 
+# Shared Module
+POST   /v3/sharedmodules/:id/import                   @org.sagebionetworks.bridge.play.controllers.SharedModuleController.importModuleByIdLatestPublishedVersion(id: String)
+POST   /v3/sharedmodules/:id/versions/:version/import @org.sagebionetworks.bridge.play.controllers.SharedModuleController.importModuleByIdAndVersion(id: String, version: Int)
+
 # Shared Module Metadata
 GET    /v3/sharedmodules/metadata                       @org.sagebionetworks.bridge.play.controllers.SharedModuleMetadataController.queryAllMetadata(mostrecent: String ?= "true", published: String ?= "false", where: String ?= null, tags: String ?= null)
 POST   /v3/sharedmodules/metadata                       @org.sagebionetworks.bridge.play.controllers.SharedModuleMetadataController.createMetadata
