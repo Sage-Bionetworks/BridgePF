@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.stormpath;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyMapOf;
@@ -37,6 +38,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -61,6 +63,8 @@ import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
 import com.google.common.collect.Lists;
+import com.stormpath.sdk.account.AccountCriteria;
+import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.authc.AuthenticationResult;
 import com.stormpath.sdk.client.Client;
@@ -109,6 +113,12 @@ public class StormpathAccountDaoMockTest {
     
     @Mock
     CustomData customData;
+    
+    @Mock
+    AccountList accountList;
+    
+    @Captor
+    private ArgumentCaptor<AccountCriteria> accountCriteriaCaptor;
 
     StormpathAccountDao dao;
     
@@ -248,7 +258,7 @@ public class StormpathAccountDaoMockTest {
         when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
         
         // authenticate
-        Account account = dao.authenticate(study, new SignIn("dummy-user", PASSWORD));
+        Account account = dao.authenticate(study, new SignIn("test-study", "dummy-user", PASSWORD, null));
         
         // Just verify a few fields, the full object initialization is tested elsewhere.
         assertEquals("Test", account.getFirstName());
@@ -260,6 +270,27 @@ public class StormpathAccountDaoMockTest {
         verify(authResult).getAccount();
         verify(stormpathAccount, times(6)).getCustomData();
         verify(stormpathAccount).getGroups();
+    }
+
+    @Test
+    public void getAccountWithEmail() {
+        doReturn("Tester").when(stormpathAccount).getGivenName();
+        List<com.stormpath.sdk.account.Account> accounts = Lists.newArrayList();
+        accounts.add(stormpathAccount);
+        
+        mockAccountWithoutHealthCode();
+        doReturn(accountList).when(directory).getAccounts(any(AccountCriteria.class));
+        doReturn(1).when(accountList).getSize();
+        doReturn(accounts.iterator()).when(accountList).iterator();
+        
+        Account account = dao.getAccountWithEmail(study, "email@email.com");
+        
+        verify(client).getResource(study.getStormpathHref(), Directory.class);
+        verify(directory).getAccounts(accountCriteriaCaptor.capture());
+        
+        AccountCriteria criteria = accountCriteriaCaptor.getValue();
+        assertTrue(criteria.toString().contains("email@email.com"));
+        assertEquals("Tester", account.getFirstName());
     }
 
     @Test
@@ -277,7 +308,7 @@ public class StormpathAccountDaoMockTest {
 
         // execute and validate
         try {
-            dao.authenticate(study, new SignIn("dummy-user", PASSWORD));
+            dao.authenticate(study, new SignIn(study.getIdentifier(), "dummy-user", PASSWORD, null));
             fail("expected exception");
         } catch (BridgeServiceException ex) {
             assertEquals(HttpStatus.SC_LOCKED, ex.getStatusCode());
@@ -371,7 +402,7 @@ public class StormpathAccountDaoMockTest {
     public void authenticatedCreatesHealthCode() {
         mockAccountWithoutHealthCode();
         
-        SignIn signIn = new SignIn("email@email.com", "password");
+        SignIn signIn = new SignIn(study.getIdentifier(), "email@email.com", "password", null);
         
         AuthenticationResult result = mock(AuthenticationResult.class);
         doReturn(stormpathAccount).when(result).getAccount();
@@ -396,6 +427,17 @@ public class StormpathAccountDaoMockTest {
         verify(healthCodeService).createMapping(study);
     }
 
+    @Test
+    public void changePassword() {
+        StormpathAccount account = mock(StormpathAccount.class);
+        doReturn(stormpathAccount).when(account).getAccount();
+        
+        dao.changePassword(account, "newPassword");
+        
+        verify(stormpathAccount).setPassword("newPassword");
+        verify(stormpathAccount).save();
+    }
+    
     private void mockAccountWithoutHealthCode() {
         // Necessary to override this method where we do a cast that fails on the mock stormpathAccount
         doReturn(false).when(dao).isAccountDirty(any());

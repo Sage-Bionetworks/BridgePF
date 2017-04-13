@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 public class SignInTest {
@@ -20,12 +21,14 @@ public class SignInTest {
     
     @Test
     public void canDeserialize() throws Exception {
-        String json = "{\"email\":\"aName\",\"password\":\"password\"}";
+        String json = TestUtils.createJson("{'study':'foo','email':'aName','password':'password','token':'ABC'}");
 
         SignIn signIn = BridgeObjectMapper.get().readValue(json, SignIn.class);
 
+        assertEquals("foo", signIn.getStudyId());
         assertEquals("aName", signIn.getEmail());
         assertEquals("password", signIn.getPassword());
+        assertEquals("ABC", signIn.getToken());
     }
     
     @Test

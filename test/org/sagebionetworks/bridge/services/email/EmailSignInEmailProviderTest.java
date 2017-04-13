@@ -2,33 +2,41 @@ package org.sagebionetworks.bridge.services.email;
 
 import static org.junit.Assert.assertEquals;
 
+import java.net.URLEncoder;
+
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 public class EmailSignInEmailProviderTest {
 
     private static final String RECIPIENT_EMAIL = "recipient@recipient.com";
+    private static final String SUBJECT_TEMPLATE = "${studyName} sign in link";
+    private static final String BODY_TEMPLATE = "Click here to sign in: <a href=\"" +
+            "https://${host}/mobile/startSession.html?email=${email}&study=${studyId}&token=${token}\""+
+            ">https://${host}/mobile/startSession.html?email=${email}&study=${studyId}&token=${token}</a>";
 
     @Test
     public void testProvider() throws Exception {
         Study study = new DynamoStudy();
         study.setName("Study name");
+        study.setIdentifier("foo");
         study.setSupportEmail("support@email.com");
+        study.setEmailSignInTemplate(new EmailTemplate(SUBJECT_TEMPLATE, BODY_TEMPLATE, MimeType.HTML));
         
         // Verifying in particular that all instances of a template variable are replaced
         // in the template.
-        EmailSignInEmailProvider provider = new EmailSignInEmailProvider(study, RECIPIENT_EMAIL,
-                "${studyName} sign in link",
-                "Click here to sign in: <a href=\"https://${host}/mobile/startSession.html?token=${token}\">https://${host}/mobile/startSession.html?token=${token}</a>", "ABC");
+        EmailSignInEmailProvider provider = new EmailSignInEmailProvider(study, RECIPIENT_EMAIL, "ABC");
         
-        String url = "https://"
-                + BridgeConfigFactory.getConfig().getHostnameWithPostfix("webservices")
-                + "/mobile/startSession.html?token=ABC";
+        String url = String.format("https://%s/mobile/startSession.html?email=%s&study=foo&token=ABC", 
+                BridgeConfigFactory.getConfig().getHostnameWithPostfix("webservices"),
+                URLEncoder.encode(RECIPIENT_EMAIL, "UTF-8"));
         
-        String finalBody = "Click here to sign in: <a href=\""+url+"\">"+url+"</a>";
+        String finalBody = String.format("Click here to sign in: <a href=\"%s\">%s</a>", url, url);
         
         MimeTypeEmail email = provider.getMimeTypeEmail();
         assertEquals("\"Study name\" <support@email.com>", email.getSenderAddress());

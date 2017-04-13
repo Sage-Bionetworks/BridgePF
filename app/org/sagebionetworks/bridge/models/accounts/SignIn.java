@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.models.accounts;
 
-import org.apache.commons.lang3.StringUtils;
-
 import org.sagebionetworks.bridge.json.SignInDeserializer;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
@@ -12,10 +10,18 @@ public final class SignIn implements BridgeEntity {
 
     private final String email;
     private final String password;
+    private final String studyId;
+    private final String token;
     
-    public SignIn(String email, String password) {
+    public SignIn(String studyId, String email, String password, String token) {
+        this.studyId = studyId;
         this.email = email;
         this.password = password;
+        this.token = token;
+    }
+    
+    public String getStudyId() {
+        return studyId;
     }
     
     public String getEmail() {
@@ -26,7 +32,7 @@ public final class SignIn implements BridgeEntity {
         return password;
     }
     
-    public boolean isBlank() {
-        return StringUtils.isBlank(email) && StringUtils.isBlank(password);
+    public String getToken() {
+        return token;
     }
 }
