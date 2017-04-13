@@ -20,7 +20,6 @@ import java.util.SortedMap;
 import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.config.Environment;
@@ -506,17 +505,6 @@ public class StormpathAccountDao implements AccountDao {
             account.setHealthId(healthId);    
         }
         return account;
-    }
-    
-    public String getAccountIdFromEmail(Study study, String email) {
-        Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
-        
-        AccountList accounts = directory.getAccounts(Accounts.where(Accounts.email().eqIgnoreCase(email)));
-        if (accounts.getSize() > 0) {
-            com.stormpath.sdk.account.Account acct = accounts.iterator().next();
-            return BridgeUtils.getIdFromStormpathHref(acct.getHref());
-        }
-        return null;
     }
     
     @Override

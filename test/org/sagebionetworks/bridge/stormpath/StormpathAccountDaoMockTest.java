@@ -274,15 +274,23 @@ public class StormpathAccountDaoMockTest {
 
     @Test
     public void getAccountWithEmail() {
+        doReturn("Tester").when(stormpathAccount).getGivenName();
+        List<com.stormpath.sdk.account.Account> accounts = Lists.newArrayList();
+        accounts.add(stormpathAccount);
+        
         mockAccountWithoutHealthCode();
         doReturn(accountList).when(directory).getAccounts(any(AccountCriteria.class));
+        doReturn(1).when(accountList).getSize();
+        doReturn(accounts.iterator()).when(accountList).iterator();
         
-        dao.getAccountWithEmail(study, "email@email.com");
+        Account account = dao.getAccountWithEmail(study, "email@email.com");
         
+        verify(client).getResource(study.getStormpathHref(), Directory.class);
         verify(directory).getAccounts(accountCriteriaCaptor.capture());
         
         AccountCriteria criteria = accountCriteriaCaptor.getValue();
         assertTrue(criteria.toString().contains("email@email.com"));
+        assertEquals("Tester", account.getFirstName());
     }
 
     @Test
@@ -419,6 +427,17 @@ public class StormpathAccountDaoMockTest {
         verify(healthCodeService).createMapping(study);
     }
 
+    @Test
+    public void changePassword() {
+        StormpathAccount account = mock(StormpathAccount.class);
+        doReturn(stormpathAccount).when(account).getAccount();
+        
+        dao.changePassword(account, "newPassword");
+        
+        verify(stormpathAccount).setPassword("newPassword");
+        verify(stormpathAccount).save();
+    }
+    
     private void mockAccountWithoutHealthCode() {
         // Necessary to override this method where we do a cast that fails on the mock stormpathAccount
         doReturn(false).when(dao).isAccountDirty(any());

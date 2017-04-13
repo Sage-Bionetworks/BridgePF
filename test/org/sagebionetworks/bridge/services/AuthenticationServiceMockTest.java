@@ -17,7 +17,6 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.TestConstants;
@@ -44,7 +43,6 @@ import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.email.EmailSignInEmailProvider;
-import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 
 import com.google.common.collect.ImmutableMap;
@@ -56,8 +54,10 @@ public class AuthenticationServiceMockTest {
     private static final String CACHE_KEY = "email@email.com:test-study:signInRequest";
     private static final String RECIPIENT_EMAIL = "email@email.com";
     private static final String TOKEN = "ABC-DEF";
+    private static final String NEW_PASSWORD = "newPassword";
     private static final SignIn SIGN_IN_REQUEST = new SignIn(STUDY_ID, RECIPIENT_EMAIL, null, null);
     private static final SignIn SIGN_IN = new SignIn(STUDY_ID, RECIPIENT_EMAIL, null, TOKEN);
+    private static final SignIn SIGN_IN_WITH_PASSWORD = new SignIn(STUDY_ID, RECIPIENT_EMAIL, NEW_PASSWORD, TOKEN);
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("ABC");
     private static final ConsentStatus CONSENTED_STATUS = new ConsentStatus.Builder().withName("Name")
             .withGuid(SUBPOP_GUID).withRequired(true).withConsented(true).build();
@@ -181,6 +181,7 @@ public class AuthenticationServiceMockTest {
         UserSession retSession = service.emailSignIn(CONTEXT, SIGN_IN);
         
         assertNotNull(retSession);
+        verify(accountDao, never()).changePassword(eq(account), any());
         verify(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
         verify(cacheProvider).removeString(CACHE_KEY);
     }
@@ -280,5 +281,20 @@ public class AuthenticationServiceMockTest {
         doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
         
         service.emailSignIn(CONTEXT, SIGN_IN);
+    }
+    
+    @Test
+    public void emailSignInChangesPassword() {
+        doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
+        doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
+        doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
+        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        
+        UserSession retSession = service.emailSignIn(CONTEXT, SIGN_IN_WITH_PASSWORD);
+        
+        assertNotNull(retSession);
+        verify(accountDao).changePassword(account, NEW_PASSWORD);
+        verify(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
+        verify(cacheProvider).removeString(CACHE_KEY);
     }
 }

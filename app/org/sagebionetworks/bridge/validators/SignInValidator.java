@@ -44,7 +44,7 @@ public class SignInValidator implements Validator {
         }            
         if (type == Type.PASSWORD) {
             if (isBlank(signIn.getPassword())) {
-                errors.rejectValue("password", "required");
+                errors.rejectValue("password", "is required");
             }
         } else if (type == Type.EMAIL) {
             if (isBlank(signIn.getToken())) {

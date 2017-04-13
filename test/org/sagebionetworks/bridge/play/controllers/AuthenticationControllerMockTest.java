@@ -88,9 +88,6 @@ public class AuthenticationControllerMockTest {
     @Mock
     CacheProvider cacheProvider;
     
-    @Mock
-    UserSession userSession;
-    
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
     
@@ -100,11 +97,15 @@ public class AuthenticationControllerMockTest {
     @Captor
     ArgumentCaptor<SignIn> signInCaptor;
     
+    UserSession userSession;
+    
     @Before
     public void before() {
         controller = spy(new AuthenticationController());
         controller.setAuthenticationService(authenticationService);
         controller.setCacheProvider(cacheProvider);
+        
+        userSession = new UserSession();
         
         study = new DynamoStudy();
         study.setIdentifier(TEST_STUDY_ID_STRING);
@@ -129,16 +130,16 @@ public class AuthenticationControllerMockTest {
     public void emailSignIn() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().build();
         mockPlayContextWithJson(TestUtils.createJson("{'study':'study-key','email':'email@email.com','token':'ABC'}"));
-        doReturn(participant).when(userSession).getParticipant();
+        userSession.setParticipant(participant);
+        userSession.setAuthenticated(true);
         study.setIdentifier("study-test");
         doReturn(study).when(studyService).getStudy("study-test");
-        doReturn(true).when(userSession).isAuthenticated();
         doReturn(userSession).when(authenticationService).emailSignIn(any(CriteriaContext.class), any(SignIn.class));
         
         Result result = controller.emailSignIn();
         assertEquals(200, result.status());
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
-        assertTrue(node.get("authenticated").asBoolean());
+        assertTrue(node.get("authenticated").booleanValue());
      
         verify(authenticationService).emailSignIn(any(CriteriaContext.class), signInCaptor.capture());
         
