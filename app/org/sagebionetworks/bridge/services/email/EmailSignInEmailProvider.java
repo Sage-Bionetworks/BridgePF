@@ -27,6 +27,18 @@ public class EmailSignInEmailProvider implements MimeTypeEmailProvider {
         this.recipientEmail = recipientEmail;
         this.token = token;
     }
+
+    public Study getStudy() {
+        return study;
+    }
+
+    public String getRecipientEmail() {
+        return recipientEmail;
+    }
+
+    public String getToken() {
+        return token;
+    }
     
     @Override
     public MimeTypeEmail getMimeTypeEmail() throws MessagingException {

@@ -16,8 +16,11 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 import static org.sagebionetworks.bridge.TestUtils.assertResult;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContextWithJson;
 
+import java.util.Map;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
 import org.apache.http.HttpStatus;
@@ -38,9 +41,11 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
+import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Metrics;
+import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
@@ -102,6 +107,7 @@ public class AuthenticationControllerMockTest {
         controller.setCacheProvider(cacheProvider);
         
         study = new DynamoStudy();
+        study.setIdentifier(TEST_STUDY_ID_STRING);
         study.setDataGroups(TestConstants.USER_DATA_GROUPS);
         when(studyService.getStudy(TEST_STUDY_ID_STRING)).thenReturn(study);
         controller.setStudyService(studyService);
@@ -501,6 +507,38 @@ public class AuthenticationControllerMockTest {
         verify(authenticationService).verifyEmail(emailVerifyCaptor.capture());
         EmailVerification emailVerify = emailVerifyCaptor.getValue();
         assertEquals(TEST_VERIFY_EMAIL_TOKEN, emailVerify.getSptoken());
+    }
+    
+    @Test(expected = UnsupportedVersionException.class)
+    public void signInBlockedByVersionKillSwitch() throws Exception {
+        Map<String,String[]> headers = new ImmutableMap.Builder<String,String[]>()
+                .put("User-Agent", new String[]{"App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4"}).build();
+        String json = TestUtils.createJson(
+                "{'study':'" + TEST_STUDY_ID_STRING + 
+                "','email':'email@email.com','password':'bar'}");
+        TestUtils.mockPlayContextWithJson(json, headers);
+        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
+        
+        Metrics metrics = new Metrics(TEST_REQUEST_ID);
+        doReturn(metrics).when(controller).getMetrics();
+
+        controller.signIn();
+    }
+    
+    @Test(expected = UnsupportedVersionException.class)
+    public void emailSignInBlockedByVersionKillSwitch() throws Exception {
+        Map<String,String[]> headers = new ImmutableMap.Builder<String,String[]>()
+                .put("User-Agent", new String[]{"App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4"}).build();
+        String json = TestUtils.createJson(
+                "{'study':'" + TEST_STUDY_ID_STRING + 
+                "','email':'email@email.com','password':'bar'}");
+        TestUtils.mockPlayContextWithJson(json, headers);
+        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
+        
+        Metrics metrics = new Metrics(TEST_REQUEST_ID);
+        doReturn(metrics).when(controller).getMetrics();
+
+        controller.emailSignIn();
     }
 
     private static void assertSessionInPlayResult(Result result) throws Exception {

@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -23,6 +24,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -40,7 +42,6 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.email.EmailSignInEmailProvider;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
@@ -88,23 +89,29 @@ public class AuthenticationServiceMockTest {
     private StudyService studyService;
     @Mock
     private PasswordResetValidator passwordResetValidator;
-    @Mock
-    private Study study;
-    @Mock
-    private Account account;
-    @Mock
-    private UserSession session;
-    
     @Captor
     private ArgumentCaptor<String> stringCaptor;
     @Captor
     private ArgumentCaptor<EmailSignInEmailProvider> providerCaptor;
+
+    private Study study;
+
+    private Account account;
     
-    @Spy
     private AuthenticationService service;
 
     @Before
     public void before() {
+        study = new DynamoStudy();
+        study.setIdentifier(STUDY_ID);
+        study.setEmailSignInEnabled(true);
+        study.setEmailSignInTemplate(new EmailTemplate("subject","body",MimeType.TEXT));
+        study.setSupportEmail("sender@sender.com");
+        study.setName("Sender");
+        
+        account = new SimpleAccount();
+        
+        service = new AuthenticationService();
         service.setCacheProvider(cacheProvider);
         service.setBridgeConfig(config);
         service.setConsentService(consentService);
@@ -116,12 +123,6 @@ public class AuthenticationServiceMockTest {
         service.setStudyService(studyService);
 
         doReturn(study).when(studyService).getStudy(STUDY_ID);
-        doReturn(STUDY_ID).when(study).getIdentifier();
-        doReturn(true).when(study).isEmailSignInEnabled();
-        doReturn(new StudyIdentifierImpl(STUDY_ID)).when(study).getStudyIdentifier();
-        doReturn(new EmailTemplate("subject","body",MimeType.TEXT)).when(study).getEmailSignInTemplate();
-        doReturn("sender@sender.com").when(study).getSupportEmail();
-        doReturn("Sender").when(study).getName();
     }
     
     @Test
@@ -141,15 +142,14 @@ public class AuthenticationServiceMockTest {
         verify(sendMailService).sendEmail(providerCaptor.capture());
         
         EmailSignInEmailProvider provider = providerCaptor.getValue();
-        MimeTypeEmail email = provider.getMimeTypeEmail();
-        assertEquals(RECIPIENT_EMAIL, email.getRecipientAddresses().get(0));
-        assertEquals("\"Sender\" <sender@sender.com>", email.getSenderAddress());
-        assertEquals("body", email.getMessageParts().get(0).getContent());
+        assertTrue(provider.getToken().length() == 32); // length of GUID without "-" symbol
+        assertEquals(study, provider.getStudy());
+        assertEquals(RECIPIENT_EMAIL, provider.getRecipientEmail());
     }
     
     @Test(expected = UnauthorizedException.class)
     public void requestEmailSignInDisabled() {
-        doReturn(false).when(study).isEmailSignInEnabled();
+        study.setEmailSignInEnabled(false);
         
         service.requestEmailSignIn(SIGN_IN_REQUEST);
     }
@@ -245,11 +245,11 @@ public class AuthenticationServiceMockTest {
         StudyParticipant participant = new StudyParticipant.Builder().withStatus(AccountStatus.DISABLED).build();
         
         doReturn(participant).when(participantService).getParticipant(study, account, false);
-        doReturn(STUDY_ID).when(study).getIdentifier();
+        study.setIdentifier(STUDY_ID);
         doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
         doReturn(study).when(studyService).getStudy(STUDY_ID);
         doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
-        doReturn(AccountStatus.UNVERIFIED).when(account).getStatus();
+        account.setStatus(AccountStatus.UNVERIFIED);
         
         service.emailSignIn(CONTEXT, SIGN_IN);
     }
@@ -259,11 +259,11 @@ public class AuthenticationServiceMockTest {
         StudyParticipant participant = new StudyParticipant.Builder().withStatus(AccountStatus.DISABLED).build();
         
         doReturn(participant).when(participantService).getParticipant(study, account, false);
-        doReturn(STUDY_ID).when(study).getIdentifier();
+        study.setIdentifier(STUDY_ID);
         doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
         doReturn(study).when(studyService).getStudy(STUDY_ID);
         doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
-        doReturn(AccountStatus.DISABLED).when(account).getStatus();
+        account.setStatus(AccountStatus.DISABLED);
         
         service.emailSignIn(CONTEXT, SIGN_IN);
     }
@@ -274,7 +274,7 @@ public class AuthenticationServiceMockTest {
         
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
         doReturn(participant).when(participantService).getParticipant(study, account, false);
-        doReturn(STUDY_ID).when(study).getIdentifier();
+        study.setIdentifier(STUDY_ID);
         doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
         doReturn(study).when(studyService).getStudy(STUDY_ID);
         doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);

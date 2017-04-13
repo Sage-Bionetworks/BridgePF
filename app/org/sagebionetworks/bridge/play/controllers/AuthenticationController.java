@@ -48,8 +48,10 @@ public class AuthenticationController extends BaseController {
         if (isBlank(signInRequest.getStudyId())) {
             throw new BadRequestException("Study identifier is required.");
         }
-        StudyIdentifier studyId = new StudyIdentifierImpl(signInRequest.getStudyId());
-        CriteriaContext context = getCriteriaContext(studyId);
+        Study study = studyService.getStudy(signInRequest.getStudyId());
+        verifySupportedVersionOrThrowException(study);
+        
+        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
         
         UserSession session = authenticationService.emailSignIn(context, signInRequest);
         
@@ -119,6 +121,7 @@ public class AuthenticationController extends BaseController {
         if (session == null) {
             SignIn signIn = parseJson(request(), SignIn.class);
             Study study = studyService.getStudy(signIn.getStudyId());
+            verifySupportedVersionOrThrowException(study);
 
             CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
             

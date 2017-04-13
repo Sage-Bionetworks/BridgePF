@@ -3,9 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
-import static org.sagebionetworks.bridge.validators.SignInValidator.Type.PASSWORD;
-import static org.sagebionetworks.bridge.validators.SignInValidator.Type.EMAIL_REQUEST;
-import static org.sagebionetworks.bridge.validators.SignInValidator.Type.EMAIL;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
@@ -49,12 +46,6 @@ import org.springframework.stereotype.Component;
 public class AuthenticationService {
 
     private final Logger logger = LoggerFactory.getLogger(AuthenticationService.class);
-    
-    private static final EmailVerificationValidator EMAIL_VERIFICATION_VALIDATOR = new EmailVerificationValidator();
-    private static final SignInValidator EMAIL_SIGNIN_REQUEST_VALIDATOR = new SignInValidator(EMAIL_REQUEST);
-    private static final SignInValidator PASSWORD_SIGNIN_VALIDATOR = new SignInValidator(PASSWORD);
-    private static final SignInValidator EMAIL_SIGNIN_VALIDATOR = new SignInValidator(EMAIL);
-    private static final EmailValidator EMAIL_VALIDATOR = new EmailValidator();
     
     private static final String SESSION_SIGNIN_CACHE_KEY = "%s:%s:signInRequest";
     private static final int SESSION_SIGNIN_TIMEOUT = 60;
@@ -107,7 +98,7 @@ public class AuthenticationService {
     }
 
     public void requestEmailSignIn(SignIn signIn) {
-        Validate.entityThrowingException(EMAIL_SIGNIN_REQUEST_VALIDATOR, signIn);
+        Validate.entityThrowingException(SignInValidator.EMAIL_SIGNIN_REQUEST, signIn);
         
         Study study = studyService.getStudy(signIn.getStudyId());
         if (!study.isEmailSignInEnabled()) {
@@ -135,7 +126,7 @@ public class AuthenticationService {
     }
     
     public UserSession emailSignIn(CriteriaContext context, SignIn signIn) {
-        Validate.entityThrowingException(EMAIL_SIGNIN_VALIDATOR, signIn);
+        Validate.entityThrowingException(SignInValidator.EMAIL_SIGNIN, signIn);
         
         Study study = studyService.getStudy(signIn.getStudyId());
         String cacheKey = getEmailSignInCacheKey(study, signIn.getEmail());
@@ -206,7 +197,7 @@ public class AuthenticationService {
         checkNotNull(context);
         checkNotNull(signIn);
 
-        Validate.entityThrowingException(PASSWORD_SIGNIN_VALIDATOR, signIn);
+        Validate.entityThrowingException(SignInValidator.PASSWORD_SIGNIN, signIn);
 
         Account account = accountDao.authenticate(study, signIn);
 
@@ -248,7 +239,7 @@ public class AuthenticationService {
     public void verifyEmail(EmailVerification verification) {
         checkNotNull(verification);
 
-        Validate.entityThrowingException(EMAIL_VERIFICATION_VALIDATOR, verification);
+        Validate.entityThrowingException(EmailVerificationValidator.INSTANCE, verification);
         accountDao.verifyEmail(verification);
     }
     
@@ -256,7 +247,7 @@ public class AuthenticationService {
         checkNotNull(studyIdentifier);
         checkNotNull(email);
         
-        Validate.entityThrowingException(EMAIL_VALIDATOR, email);
+        Validate.entityThrowingException(EmailValidator.INSTANCE, email);
         try {
             accountDao.resendEmailVerificationToken(studyIdentifier, email);    
         } catch(EntityNotFoundException e) {
@@ -269,7 +260,7 @@ public class AuthenticationService {
         checkNotNull(study);
         checkNotNull(email);
         
-        Validate.entityThrowingException(EMAIL_VALIDATOR, email);
+        Validate.entityThrowingException(EmailValidator.INSTANCE, email);
         try {
             accountDao.requestResetPassword(study, email);    
         } catch(EntityNotFoundException e) {

@@ -178,6 +178,16 @@ public class StudyServiceMockTest {
         verify(directoryDao).updateDirectoryForStudy(study);
     }
     
+    @Test(expected = BadRequestException.class)
+    public void getStudyWithNullArgumentThrows() {
+        service.getStudy((String)null);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void getStudyWithEmptyStringArgumentThrows() {
+        service.getStudy("");
+    }
+    
     @Test
     public void loadingStudyWithoutEmailSignInTemplateAddsADefault() {
         Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);

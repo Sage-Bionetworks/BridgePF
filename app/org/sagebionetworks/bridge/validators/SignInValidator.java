@@ -10,7 +10,11 @@ import org.springframework.validation.Validator;
 
 public class SignInValidator implements Validator {
     
-    public static enum Type {
+    public static final SignInValidator EMAIL_SIGNIN_REQUEST = new SignInValidator(Type.EMAIL_REQUEST);
+    public static final SignInValidator PASSWORD_SIGNIN = new SignInValidator(Type.PASSWORD);
+    public static final SignInValidator EMAIL_SIGNIN = new SignInValidator(Type.EMAIL);
+    
+    private static enum Type {
         PASSWORD,
         EMAIL_REQUEST,
         EMAIL

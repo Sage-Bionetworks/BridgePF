@@ -8,6 +8,8 @@ import org.springframework.validation.Validator;
 
 @Component
 public class EmailValidator implements Validator {
+    
+    public static final EmailValidator INSTANCE = new EmailValidator();
 
     @Override
     public boolean supports(Class<?> clazz) {
