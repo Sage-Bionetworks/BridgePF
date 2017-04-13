@@ -6,6 +6,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -120,6 +121,8 @@ public class SharedModuleMetadataControllerTest {
         Result result = controller.getMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION);
         assertEquals(200, result.status());
         assertMetadataInResult(result);
+
+        verify(controller, times(0)).getAuthenticatedSession(any());
     }
 
     @Test
@@ -131,6 +134,8 @@ public class SharedModuleMetadataControllerTest {
         Result result = controller.getMetadataByIdLatestVersion(MODULE_ID);
         assertEquals(200, result.status());
         assertMetadataInResult(result);
+
+        verify(controller, times(0)).getAuthenticatedSession(any());
     }
 
     @Test
@@ -143,6 +148,8 @@ public class SharedModuleMetadataControllerTest {
         Result result = controller.queryAllMetadata("true", "true", "foo='bar'", "foo,bar,baz");
         assertEquals(200, result.status());
         assertMetadataListInResult(result);
+
+        verify(controller, times(0)).getAuthenticatedSession(any());
     }
 
     @Test
@@ -155,6 +162,8 @@ public class SharedModuleMetadataControllerTest {
         Result result = controller.queryMetadataById(MODULE_ID, "true", "true", "foo='bar'", "foo,bar,baz");
         assertEquals(200, result.status());
         assertMetadataListInResult(result);
+
+        verify(controller, times(0)).getAuthenticatedSession(any());
     }
 
     @Test
