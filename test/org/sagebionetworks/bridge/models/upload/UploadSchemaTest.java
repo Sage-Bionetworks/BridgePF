@@ -207,6 +207,7 @@ public class UploadSchemaTest {
                 "   \"minAppVersions\":{\"iOS\":13, \"Android\":23},\n" +
                 "   \"name\":\"Test Schema\",\n" +
                 "   \"revision\":3,\n" +
+                "   \"published\":true,\n" +
                 "   \"schemaId\":\"test-schema\",\n" +
                 "   \"schemaType\":\"ios_survey\",\n" +
                 "   \"studyId\":\"test-study\",\n" +
@@ -237,6 +238,7 @@ public class UploadSchemaTest {
         assertEquals("survey-guid", uploadSchema.getSurveyGuid());
         assertEquals(surveyCreatedOnMillis, uploadSchema.getSurveyCreatedOn().longValue());
         assertEquals(6, ((DynamoUploadSchema) uploadSchema).getVersion().longValue());
+        assertEquals(true, uploadSchema.getPublished());
 
         assertEquals(ImmutableSet.of("iOS", "Android"), uploadSchema.getAppVersionOperatingSystems());
         assertEquals(13, uploadSchema.getMinAppVersion("iOS").intValue());
@@ -262,7 +264,7 @@ public class UploadSchemaTest {
 
         // then convert to a map so we can validate the raw JSON
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(12, jsonMap.size());
+        assertEquals(13, jsonMap.size());
         assertEquals("Test Schema", jsonMap.get("name"));
         assertEquals(3, jsonMap.get("revision"));
         assertEquals("test-schema", jsonMap.get("schemaId"));
@@ -271,6 +273,7 @@ public class UploadSchemaTest {
         assertEquals("survey-guid", jsonMap.get("surveyGuid"));
         assertEquals("UploadSchema", jsonMap.get("type"));
         assertEquals(6,  jsonMap.get("version"));
+        assertEquals(true, jsonMap.get("published"));
 
         Map<String, Integer> maxAppVersionMap = (Map<String, Integer>) jsonMap.get("maxAppVersions");
         assertEquals(2, maxAppVersionMap.size());
