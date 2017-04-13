@@ -1,10 +1,18 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
-
 import org.junit.Test;
+
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -13,10 +21,6 @@ import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Main functionality we want to verify in this test is that study can be serialized with all values, 
@@ -43,7 +47,7 @@ public class DynamoStudyTest {
         
         final String json = BridgeObjectMapper.get().writeValueAsString(study);
         final JsonNode node = BridgeObjectMapper.get().readTree(json);
-
+        
         assertEqualsAndNotNull(study.getConsentNotificationEmail(), node.get("consentNotificationEmail").asText());
         assertEqualsAndNotNull(study.getSupportEmail(), node.get("supportEmail").asText());
         assertEqualsAndNotNull(study.getSynapseDataAccessTeamId(), node.get("synapseDataAccessTeamId").longValue());
@@ -57,9 +61,12 @@ public class DynamoStudyTest {
         assertEqualsAndNotNull(study.getMinAgeOfConsent(), node.get("minAgeOfConsent").asInt());
         assertEqualsAndNotNull(study.getStormpathHref(), node.get("stormpathHref").asText());
         assertEqualsAndNotNull(study.getPasswordPolicy(), JsonUtils.asEntity(node, "passwordPolicy", PasswordPolicy.class));
-        assertEqualsAndNotNull(study.getVerifyEmailTemplate(), JsonUtils.asEntity(node, "verifyEmailTemplate",
-                EmailTemplate.class));
-        assertEqualsAndNotNull(study.getResetPasswordTemplate(), JsonUtils.asEntity(node, "resetPasswordTemplate", EmailTemplate.class));
+        assertEqualsAndNotNull(study.getVerifyEmailTemplate(),
+                JsonUtils.asEntity(node, "verifyEmailTemplate", EmailTemplate.class));
+        assertEqualsAndNotNull(study.getResetPasswordTemplate(),
+                JsonUtils.asEntity(node, "resetPasswordTemplate", EmailTemplate.class));
+        assertEqualsAndNotNull(study.getEmailSignInTemplate(),
+                JsonUtils.asEntity(node, "emailSignInTemplate", EmailTemplate.class));
         assertEqualsAndNotNull(study.getUserProfileAttributes(), JsonUtils.asStringSet(node, "userProfileAttributes"));
         assertEqualsAndNotNull(study.getTaskIdentifiers(), JsonUtils.asStringSet(node, "taskIdentifiers"));
         assertEqualsAndNotNull(study.getDataGroups(), JsonUtils.asStringSet(node, "dataGroups"));
@@ -68,6 +75,9 @@ public class DynamoStudyTest {
         assertTrue(node.get("healthCodeExportEnabled").asBoolean());
         assertTrue(node.get("emailVerificationEnabled").asBoolean());
         assertTrue(node.get("externalIdValidationEnabled").asBoolean());
+        assertTrue(node.get("externalIdRequiredOnSignup").asBoolean());
+        assertTrue(node.get("emailSignInEnabled").asBoolean());
+        assertFalse(node.get("disableExport").asBoolean());
         assertEqualsAndNotNull("Study", node.get("type").asText());
         assertEqualsAndNotNull(study.getPushNotificationARNs().get(OperatingSystem.IOS),
                 node.get("pushNotificationARNs").get(OperatingSystem.IOS).asText());

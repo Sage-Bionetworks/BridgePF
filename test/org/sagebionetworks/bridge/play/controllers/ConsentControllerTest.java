@@ -6,7 +6,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_API_STATUS_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_DEPRECATED_STATUS;
-import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.SIGN_IN_URL;
@@ -29,7 +28,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import play.libs.ws.WS;
-import play.libs.ws.WSCookie;
 import play.libs.ws.WSResponse;
 import play.libs.ws.WSRequest;
 
@@ -64,7 +62,7 @@ public class ConsentControllerTest {
             node.put("scope", SharingScope.NO_SHARING.name().toLowerCase());
 
             // First, verify this header isn't on *every* endpoint
-            WSRequest request = WS.url(TEST_BASE_URL + "/v3/users/self");
+            WSRequest request = WS.url(TEST_BASE_URL + "/v3/activities");
             WSResponse response = request.post(node).get(TIMEOUT);
             String headerValue = response.getHeader(BRIDGE_API_STATUS_HEADER);
             assertNull(headerValue);
@@ -102,8 +100,7 @@ public class ConsentControllerTest {
             WSRequest request = WS.url(TEST_BASE_URL + SIGN_IN_URL);
             WSResponse response = request.post(node).get(TIMEOUT);
 
-            WSCookie cookie = response.getCookie(SESSION_TOKEN_HEADER);
-            String sessionToken = cookie.getValue();
+            String sessionToken = response.asJson().get("sessionToken").asText();
 
             node = JsonNodeFactory.instance.objectNode();
             node.put("birthdate", "1970-01-01");

@@ -11,6 +11,7 @@ import java.util.Map;
 
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.AppVersionHelper;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -70,7 +71,12 @@ public class DynamoCriteriaTest {
         assertEquals(SET_B, crit.getNoneOfGroups());
         assertNull(crit.getKey());
     }
-    
+
+    @Test
+    public void getSetMinMaxAppVersions() throws Exception {
+        AppVersionHelper.testAppVersionHelper(DynamoCriteria.class);
+    }
+
     @Test
     public void canRemoveMinMaxAttributes() {
         Criteria criteria = Criteria.create();
@@ -98,7 +104,7 @@ public class DynamoCriteriaTest {
         criteria.setMinAppVersion(IOS, 10);
         assertEquals(new Integer(10), criteria.getMinAppVersion(IOS));
     }
-    
+
     @Test
     public void cannotSetNullValuesInPlatformVersionMap() {
         Map<String, Integer> map = Maps.newHashMap();

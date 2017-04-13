@@ -18,6 +18,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyInfoScreen;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -70,7 +71,7 @@ public class SurveyServiceTest {
         // clean up surveys
         for (GuidCreatedOnVersionHolder oneSurvey : surveysToDelete) {
             try {
-                surveyService.deleteSurveyPermanently(oneSurvey);
+                surveyService.deleteSurveyPermanently(TEST_STUDY, oneSurvey);
             } catch (Exception ex) {
                 logger.error(ex.getMessage(), ex);
             }

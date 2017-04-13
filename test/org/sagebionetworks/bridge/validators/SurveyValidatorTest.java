@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import java.util.List;
 
@@ -16,7 +14,6 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyInfoScreen;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.surveys.DateConstraints;
 import org.sagebionetworks.bridge.models.surveys.DateTimeConstraints;
@@ -54,13 +51,6 @@ public class SurveyValidatorTest {
         validator = new SurveyValidator();
     }
 
-    private String errorFor(InvalidEntityException e, String field) {
-        List<String> errors = e.getErrors().get(field);
-        assertNotNull(errors);
-        assertEquals(1, errors.size());
-        return errors.get(0);
-    }
-
     private SurveyInfoScreen createSurveyInfoScreen() {
         SurveyInfoScreen screen = new DynamoSurveyInfoScreen();
         screen.setTitle("title");
@@ -81,188 +71,120 @@ public class SurveyValidatorTest {
 
     @Test
     public void nameRequired() {
-        try {
-            survey.setName("");
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("name is required", errorFor(e, "name"));
-        }
+        survey.setName("");
+        assertValidatorMessage(validator, survey, "name", "is required");
     }
 
     @Test
     public void identifierRequired() {
-        try {
-            survey.setIdentifier(" ");
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("identifier is required", errorFor(e, "identifier"));
-        }
+        survey.setIdentifier(" ");
+        assertValidatorMessage(validator, survey, "identifier", "is required");
     }
 
     @Test
     public void studyIdentifierRequired() {
-        try {
-            survey.setStudyIdentifier("");
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("studyIdentifier is required", errorFor(e, "studyIdentifier"));
-        }
+        survey.setStudyIdentifier("");
+        assertValidatorMessage(validator, survey, "studyIdentifier", "is required");
     }
 
     @Test
     public void guidRequired() {
-        try {
-            survey.setGuid(null);
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("guid is required", errorFor(e, "guid"));
-        }
+        survey.setGuid(null);
+        assertValidatorMessage(validator, survey, "guid", "is required");
     }
 
     @Test
     public void preventsDuplicateElementIdentfiers() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, true);
-            String identifier = survey.getElements().get(0).getIdentifier();
-            survey.getElements().get(1).setIdentifier(identifier);
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("elements[1].identifier exists in an earlier survey element", errorFor(e, "elements[1].identifier"));
-        }
+        survey = new TestSurvey(SurveyValidatorTest.class, true);
+        String identifier = survey.getElements().get(0).getIdentifier();
+        survey.getElements().get(1).setIdentifier(identifier);
+
+        survey.setGuid(null);
+        assertValidatorMessage(validator, survey, "elements[1].identifier", "exists in an earlier survey element");
     }
 
     @Test
     public void infoScreenIdentifierRequired() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, true);
-            survey.getElements().add(createSurveyInfoScreen());
-            SurveyInfoScreen screen = (SurveyInfoScreen) last(survey);
-            screen.setIdentifier("");
+        survey = new TestSurvey(SurveyValidatorTest.class, true);
+        survey.getElements().add(createSurveyInfoScreen());
+        SurveyInfoScreen screen = (SurveyInfoScreen) last(survey);
+        screen.setIdentifier("");
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("elements[9].identifier is required", errorFor(e, "elements[9].identifier"));
-        }
+        assertValidatorMessage(validator, survey, "elements[9].identifier", "is required");
     }
 
     @Test
     public void infoScreenTitleRequired() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, true);
-            survey.getElements().add(createSurveyInfoScreen());
-            SurveyInfoScreen screen = (SurveyInfoScreen) last(survey);
-            screen.setTitle("");
+        survey = new TestSurvey(SurveyValidatorTest.class, true);
+        survey.getElements().add(createSurveyInfoScreen());
+        SurveyInfoScreen screen = (SurveyInfoScreen) last(survey);
+        screen.setTitle("");
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("elements[9].title is required", errorFor(e, "elements[9].title"));
-        }
+        assertValidatorMessage(validator, survey, "elements[9].title", "is required");
     }
 
     @Test
     public void infoScreenPromptRequired() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, true);
-            survey.getElements().add(createSurveyInfoScreen());
-            SurveyInfoScreen screen = (SurveyInfoScreen) last(survey);
-            screen.setPrompt("");
+        survey = new TestSurvey(SurveyValidatorTest.class, true);
+        survey.getElements().add(createSurveyInfoScreen());
+        SurveyInfoScreen screen = (SurveyInfoScreen) last(survey);
+        screen.setPrompt("");
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("elements[9].prompt is required", errorFor(e, "elements[9].prompt"));
-        }
+        assertValidatorMessage(validator, survey, "elements[9].prompt", "is required");
     }
 
     @Test
     public void ifPresentAllFieldsOfSurveyScreenImageRequired() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            survey.getElements().add(createSurveyInfoScreen());
-            SurveyInfoScreen screen = (SurveyInfoScreen) last(survey);
-            screen.setImage(new Image("", 0, 0));
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey.getElements().add(createSurveyInfoScreen());
+        SurveyInfoScreen screen = (SurveyInfoScreen) last(survey);
+        screen.setImage(new Image("", 0, 0));
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("elements[9].image.width is required", errorFor(e, "elements[9].image.width"));
-            assertEquals("elements[9].image.height is required", errorFor(e, "elements[9].image.height"));
-            assertEquals("elements[9].image.source is required", errorFor(e, "elements[9].image.source"));
-        }
+        assertValidatorMessage(validator, survey, "elements[9].image.width", "is required");
+        assertValidatorMessage(validator, survey, "elements[9].image.height", "is required");
+        assertValidatorMessage(validator, survey, "elements[9].image.source", "is required");
     }
 
     @Test
     public void questionIdentifierRequired() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            survey.getElements().get(0).setIdentifier("");
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey.getElements().get(0).setIdentifier("");
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("elements[0].identifier is required", errorFor(e, "elements[0].identifier"));
-        }
+        assertValidatorMessage(validator, survey, "elements[0].identifier", "is required");
     }
 
     @Test
     public void questionIdentifierInvalid() {
         String fieldName = "**invalid!q##";
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            survey.getElements().get(0).setIdentifier(fieldName);
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey.getElements().get(0).setIdentifier(fieldName);
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("elements[0].identifier " + String.format(UploadUtil.INVALID_FIELD_NAME_ERROR_MESSAGE, fieldName),
-                    errorFor(e, "elements[0].identifier"));
-        }
+        assertValidatorMessage(validator, survey, "elements[0].identifier",
+                String.format(UploadUtil.INVALID_FIELD_NAME_ERROR_MESSAGE, fieldName));
     }
 
     @Test
     public void questionUiHintRequired() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            survey.getUnmodifiableQuestionList().get(0).setUiHint(null);
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey.getUnmodifiableQuestionList().get(0).setUiHint(null);
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("elements[0].uiHint is required", errorFor(e, "elements[0].uiHint"));
-        }
+        assertValidatorMessage(validator, survey, "elements[0].uiHint", "is required");
     }
 
     @Test
     public void questionPromptRequired() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            survey.getUnmodifiableQuestionList().get(0).setPrompt("");
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey.getUnmodifiableQuestionList().get(0).setPrompt("");
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("elements[0].prompt is required", errorFor(e, "elements[0].prompt"));
-        }
+        assertValidatorMessage(validator, survey, "elements[0].prompt", "is required");
     }
 
     @Test
     public void questionConstraintsRequired() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            survey.getUnmodifiableQuestionList().get(0).setConstraints(null);
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey.getUnmodifiableQuestionList().get(0).setConstraints(null);
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("elements[0].constraints is required", errorFor(e, "elements[0].constraints"));
-        }
+        assertValidatorMessage(validator, survey, "elements[0].constraints", "is required");
     }
 
     // Constraints are largely optional, but each constraint must have a data type.
@@ -271,90 +193,61 @@ public class SurveyValidatorTest {
 
     @Test
     public void constraintDataTypeRequired() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            survey.getUnmodifiableQuestionList().get(0).getConstraints().setDataType(null);
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey.getUnmodifiableQuestionList().get(0).getConstraints().setDataType(null);
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("elements[0].constraints.dataType is required", errorFor(e, "elements[0].constraints.dataType"));
-        }
+        assertValidatorMessage(validator, survey, "elements[0].constraints.dataType", "is required");
     }
 
     @Test
     public void uiHintMustBeSupportedByConstraintsType() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            // Boolean constraints do not jive with lists (which are normally for select multiple)
-            survey.getUnmodifiableQuestionList().get(0).setUiHint(UIHint.LIST);
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        // Boolean constraints do not jive with lists (which are normally for select multiple)
+        survey.getUnmodifiableQuestionList().get(0).setUiHint(UIHint.LIST);
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("data type 'boolean' doesn't match the UI hint of 'list'",
-                            errorFor(e, "elements[0].constraints.dataType"));
-        }
+        assertValidatorMessage(validator, survey, "elements[0].constraints.dataType",
+                "'boolean' doesn't match the UI hint of 'list'");
     }
 
     @Test
     public void multiValueWithComboboxLimitsConstraints() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
-            question.setUiHint(UIHint.COMBOBOX);
-            ((MultiValueConstraints) question.getConstraints()).setAllowMultiple(true);
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
+        question.setUiHint(UIHint.COMBOBOX);
+        ((MultiValueConstraints) question.getConstraints()).setAllowMultiple(true);
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("'combobox' is only valid when multiple = false and other = true",
-                            errorFor(e, "elements[7].constraints.uiHint"));
-        }
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
-            question.setUiHint(UIHint.COMBOBOX);
-            ((MultiValueConstraints) question.getConstraints()).setAllowOther(false);
+        assertValidatorMessage(validator, survey, "elements[7].constraints.uiHint",
+                "'combobox' is only valid when multiple = false and other = true");
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("'combobox' is only valid when multiple = false and other = true",
-                            errorFor(e, "elements[7].constraints.uiHint"));
-        }
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        question = ((TestSurvey) survey).getMultiValueQuestion();
+        question.setUiHint(UIHint.COMBOBOX);
+        ((MultiValueConstraints) question.getConstraints()).setAllowOther(false);
+
+        assertValidatorMessage(validator, survey, "elements[7].constraints.uiHint",
+                "'combobox' is only valid when multiple = false and other = true");
     }
 
     @Test
     public void multiValueWithMultipleAnswersLimitsConstraints() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
-            question.setUiHint(UIHint.SLIDER);
-            ((MultiValueConstraints) question.getConstraints()).setAllowMultiple(true);
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
+        question.setUiHint(UIHint.SLIDER);
+        ((MultiValueConstraints) question.getConstraints()).setAllowMultiple(true);
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("allows multiples but the 'slider' UI hint doesn't gather more than one answer",
-                            errorFor(e, "elements[7].constraints.uiHint"));
-        }
+        assertValidatorMessage(validator, survey, "elements[7].constraints.uiHint",
+                "allows multiples but the 'slider' UI hint doesn't gather more than one answer");
     }
 
     @Test
     public void multiValueWithOneAnswerLimitsConstraints() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
-            question.setUiHint(UIHint.CHECKBOX);
-            ((MultiValueConstraints) question.getConstraints()).setAllowMultiple(false);
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
+        question.setUiHint(UIHint.CHECKBOX);
+        ((MultiValueConstraints) question.getConstraints()).setAllowMultiple(false);
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("doesn't allow multiples but the 'checkbox' UI hint gathers more than one answer",
-                            errorFor(e, "elements[7].constraints.uiHint"));
-        }
+        assertValidatorMessage(validator, survey, "elements[7].constraints.uiHint",
+                "doesn't allow multiples but the 'checkbox' UI hint gathers more than one answer");
     }
 
     @Test
@@ -362,16 +255,11 @@ public class SurveyValidatorTest {
         List<SurveyQuestionOption>[] testCases = new List[] { null, ImmutableList.of() };
 
         for (List<SurveyQuestionOption> oneTestCase : testCases) {
-            try {
-                SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
-                ((MultiValueConstraints) question.getConstraints()).setEnumeration(oneTestCase);
+            SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
+            ((MultiValueConstraints) question.getConstraints()).setEnumeration(oneTestCase);
 
-                Validate.entityThrowingException(validator, survey);
-                fail("Should have thrown exception");
-            } catch (InvalidEntityException e) {
-                assertEquals("enumeration must have non-null, non-empty choices list",
-                        errorFor(e, "elements[7].constraints.enumeration"));
-            }
+            assertValidatorMessage(validator, survey, "elements[7].constraints.enumeration",
+                    "must have non-null, non-empty choices list");
         }
     }
 
@@ -380,17 +268,12 @@ public class SurveyValidatorTest {
         String[] testCases = { null, "", "   " };
 
         for (String oneTestCase : testCases) {
-            try {
-                List<SurveyQuestionOption> optionList = ImmutableList.of(new SurveyQuestionOption(oneTestCase));
+            List<SurveyQuestionOption> optionList = ImmutableList.of(new SurveyQuestionOption(oneTestCase));
 
-                SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
-                ((MultiValueConstraints) question.getConstraints()).setEnumeration(optionList);
+            SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
+            ((MultiValueConstraints) question.getConstraints()).setEnumeration(optionList);
 
-                Validate.entityThrowingException(validator, survey);
-                fail("Should have thrown exception");
-            } catch (InvalidEntityException e) {
-                assertEquals("label must be specified", errorFor(e, "elements[7].constraints.enumeration[0].label"));
-            }
+            assertValidatorMessage(validator, survey, "elements[7].constraints.enumeration[0].label", "is required");
         }
     }
 
@@ -409,58 +292,58 @@ public class SurveyValidatorTest {
     @Test
     public void multiValueWithOptionWithInvalidValue() {
         String answerChoice = "@invalid#answer$";
-        try {
-            List<SurveyQuestionOption> optionList = ImmutableList.of(new SurveyQuestionOption("My Question", null,
-                    answerChoice, null));
+        List<SurveyQuestionOption> optionList = ImmutableList
+                .of(new SurveyQuestionOption("My Question", null, answerChoice, null));
 
-            SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
-            ((MultiValueConstraints) question.getConstraints()).setEnumeration(optionList);
+        SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
+        ((MultiValueConstraints) question.getConstraints()).setEnumeration(optionList);
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("elements[7].constraints.enumeration[0].value " +
-                            String.format(UploadUtil.INVALID_ANSWER_CHOICE_ERROR_MESSAGE, answerChoice),
-                    errorFor(e, "elements[7].constraints.enumeration[0].value"));
-        }
+        assertValidatorMessage(validator, survey, "elements[7].constraints.enumeration[0].value",
+                String.format(UploadUtil.INVALID_ANSWER_CHOICE_ERROR_MESSAGE, answerChoice));
     }
 
     @Test
     public void multiValueWithDupeOptions() {
-        try {
-            List<SurveyQuestionOption> optionList = ImmutableList.of(
-                    new SurveyQuestionOption("a", null, "a", null),
-                    new SurveyQuestionOption("b1", null, "b", null),
-                    new SurveyQuestionOption("b2", null, "b", null),
-                    new SurveyQuestionOption("c", null, "c", null),
-                    new SurveyQuestionOption("d1", null, "d", null),
-                    new SurveyQuestionOption("d2", null, "d", null),
-                    new SurveyQuestionOption("e", null, "e", null));
+        List<SurveyQuestionOption> optionList = ImmutableList.of(new SurveyQuestionOption("a", null, "a", null),
+                new SurveyQuestionOption("b1", null, "b", null), new SurveyQuestionOption("b2", null, "b", null),
+                new SurveyQuestionOption("c", null, "c", null), new SurveyQuestionOption("d1", null, "d", null),
+                new SurveyQuestionOption("d2", null, "d", null), new SurveyQuestionOption("e", null, "e", null));
 
-            SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
-            ((MultiValueConstraints) question.getConstraints()).setEnumeration(optionList);
+        SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
+        ((MultiValueConstraints) question.getConstraints()).setEnumeration(optionList);
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("enumeration must have unique values", errorFor(e, "elements[7].constraints.enumeration"));
-        }
+        assertValidatorMessage(validator, survey, "elements[7].constraints.enumeration", "must have unique values");
     }
 
     @Test
     public void stringConstraintsMustHaveValidRegularExpressionPattern() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            SurveyQuestion question = ((TestSurvey) survey).getStringQuestion();
-            ((StringConstraints) question.getConstraints()).setPattern("?");
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getStringQuestion();
+        ((StringConstraints) question.getConstraints()).setPattern("?");
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("pattern is not a valid regular expression: ?", errorFor(e, "elements[8].constraints.pattern"));
-        }
+        assertValidatorMessage(validator, survey, "elements[8].constraints.pattern",
+                "is not a valid regular expression: ?");
     }
     
+    @Test
+    public void stringConstraintsCanHaveValidRegularExpressionPattern() {
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getStringQuestion();
+        ((StringConstraints) question.getConstraints()).setPattern("{1,3}\\d-{1,3}\\d-");
+
+        Validate.entityThrowingException(validator, survey);
+    }
+    
+    @Test
+    public void whenPatternIsSetPatternErrorMessageMustBeSet() {
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getStringQuestion();
+        ((StringConstraints) question.getConstraints()).setPatternErrorMessage(null);
+
+        assertValidatorMessage(validator, survey, "elements[8].constraints.patternErrorMessage",
+                "is required if pattern is defined");
+    }
+
     @Test
     public void willValidateRuleReferencesToNonQuestions() {
         // ie this is valid because it is looking at identifiers in survey info screens.
@@ -469,31 +352,31 @@ public class SurveyValidatorTest {
         survey.setIdentifier("Identifier");
         survey.setStudyIdentifier("study-key");
         survey.setGuid("guid");
-        
+
         StringConstraints constraints = new StringConstraints();
-        
+
         constraints.getRules().add(
                 new SurveyRule.Builder().withOperator(Operator.EQ).withValue("No").withSkipToTarget("theend").build());
-        
+
         SurveyQuestion question = new DynamoSurveyQuestion();
         question.setIdentifier("start-q");
         question.setUiHint(UIHint.TEXTFIELD);
         question.setPrompt("Prompt");
         question.setConstraints(constraints);
-        
+
         SurveyInfoScreen info = new DynamoSurveyInfoScreen();
         info.setTitle("Title");
         info.setPrompt("Prompt");
         info.setIdentifier("theend");
-        
+
         survey.getElements().add(question);
         survey.getElements().add(info);
-        
+
         // Anticlimactic, but this used to throw an exception, and it should not have,
         // because the second element is a SurveyInfoScreen
         Validate.entityThrowingException(validator, survey);
     }
-    
+
     @Test
     public void willVerifyRuleDoesntHaveSkipToAndEndSurvey() throws Exception {
         Survey survey = new DynamoSurvey();
@@ -501,36 +384,31 @@ public class SurveyValidatorTest {
         survey.setIdentifier("Identifier");
         survey.setStudyIdentifier("study-key");
         survey.setGuid("guid");
-        
+
         StringConstraints constraints = new StringConstraints();
-        
+
         // This is actually the only way to create an invalid rule (deserializing JSON).
-        String json = TestUtils.createJson("{'operator':'eq','value':'No',"+
-                "'skipTo':'theend','endSurvey':true}");
+        String json = TestUtils.createJson("{'operator':'eq','value':'No'," + "'skipTo':'theend','endSurvey':true}");
         SurveyRule rule = BridgeObjectMapper.get().readValue(json, SurveyRule.class);
         constraints.getRules().add(rule);
-        
+
         SurveyQuestion question = new DynamoSurveyQuestion();
         question.setIdentifier("start-q");
         question.setUiHint(UIHint.TEXTFIELD);
         question.setPrompt("Prompt");
         question.setConstraints(constraints);
         survey.getElements().add(question);
-        
+
         SurveyInfoScreen info = new DynamoSurveyInfoScreen();
         info.setTitle("Title");
         info.setPrompt("Prompt");
         info.setIdentifier("theend");
         survey.getElements().add(info);
 
-        try {
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("rule cannot have a skipTo target and an endSurvey property", errorFor(e, "elements[0].rule"));
-        }
+        assertValidatorMessage(validator, survey, "elements[0].rule",
+                "cannot have a skipTo target and an endSurvey property");
     }
-    
+
     @Test
     public void willVerifyRuleHasEitherSkipToTargetOrEndSurvey() throws Exception {
         Survey survey = new DynamoSurvey();
@@ -538,14 +416,14 @@ public class SurveyValidatorTest {
         survey.setIdentifier("Identifier");
         survey.setStudyIdentifier("study-key");
         survey.setGuid("guid");
-        
+
         StringConstraints constraints = new StringConstraints();
-        
+
         // This is actually the only way to create an invalid rule (deserializing JSON).
         String json = TestUtils.createJson("{'operator':'eq','value':'No'}");
         SurveyRule rule = BridgeObjectMapper.get().readValue(json, SurveyRule.class);
         constraints.getRules().add(rule);
-        
+
         SurveyQuestion question = new DynamoSurveyQuestion();
         question.setIdentifier("start-q");
         question.setUiHint(UIHint.TEXTFIELD);
@@ -553,207 +431,156 @@ public class SurveyValidatorTest {
         question.setConstraints(constraints);
         survey.getElements().add(question);
 
-        try {
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("rule must have a skipTo target or an endSurvey property", errorFor(e, "elements[0].rule"));
-        }
+        assertValidatorMessage(validator, survey, "elements[0].rule",
+                "must have a skipTo target or an endSurvey property");
     }
-    
+
     @Test
     public void willValidateStringMaxLengthNotLowerThanMinLength() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            SurveyQuestion question = ((TestSurvey) survey).getStringQuestion();
-            StringConstraints constraints = (StringConstraints)question.getConstraints();
-            constraints.setMaxLength(2);
-            constraints.setMinLength(3);
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getStringQuestion();
+        StringConstraints constraints = (StringConstraints) question.getConstraints();
+        constraints.setMaxLength(2);
+        constraints.setMinLength(3);
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("minLength is longer than the maxLength", errorFor(e, "elements[8].constraints.minLength"));
-        }
+        assertValidatorMessage(validator, survey, "elements[8].constraints.minLength", "is longer than the maxLength");
     }
-    
+
     @Test
     public void willValidateMaxValueNotLowerThanMinValueForInteger() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
-            IntegerConstraints constraints = (IntegerConstraints)question.getConstraints();
-            constraints.setMaxValue(2d);
-            constraints.setMinValue(3d);
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
+        IntegerConstraints constraints = (IntegerConstraints) question.getConstraints();
+        constraints.setMaxValue(2d);
+        constraints.setMinValue(3d);
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("minValue is greater than the maxValue", errorFor(e, "elements[4].constraints.minValue"));
-        }
+        assertValidatorMessage(validator, survey, "elements[4].constraints.minValue", "is greater than the maxValue");
     }
-    
+
     @Test
     public void willValidateMaxValueNotLowerThanMinValueForDecimal() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            SurveyQuestion question = ((TestSurvey) survey).getDecimalQuestion();
-            DecimalConstraints constraints = (DecimalConstraints)question.getConstraints();
-            constraints.setMaxValue(2d);
-            constraints.setMinValue(3d);
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getDecimalQuestion();
+        DecimalConstraints constraints = (DecimalConstraints) question.getConstraints();
+        constraints.setMaxValue(2d);
+        constraints.setMinValue(3d);
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("minValue is greater than the maxValue", errorFor(e, "elements[3].constraints.minValue"));
-        }
+        assertValidatorMessage(validator, survey, "elements[3].constraints.minValue", "is greater than the maxValue");
     }
-    
+
     @Test
     public void willValidateMaxValueNotLowerThanMinValueForDuration() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            SurveyQuestion question = ((TestSurvey) survey).getDurationQuestion();
-            DurationConstraints constraints = (DurationConstraints)question.getConstraints();
-            constraints.setMaxValue(2d);
-            constraints.setMinValue(3d);
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getDurationQuestion();
+        DurationConstraints constraints = (DurationConstraints) question.getConstraints();
+        constraints.setMaxValue(2d);
+        constraints.setMinValue(3d);
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("minValue is greater than the maxValue", errorFor(e, "elements[5].constraints.minValue"));
-        }
+        assertValidatorMessage(validator, survey, "elements[5].constraints.minValue", "is greater than the maxValue");
     }
-    
+
     @Test
     public void willValidateStepValueNotHigherThanRangeOfInteger() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
-            IntegerConstraints constraints = (IntegerConstraints)question.getConstraints();
-            constraints.setMinValue(2d);
-            constraints.setMaxValue(4d);
-            constraints.setStep(3d);
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
+        IntegerConstraints constraints = (IntegerConstraints) question.getConstraints();
+        constraints.setMinValue(2d);
+        constraints.setMaxValue(4d);
+        constraints.setStep(3d);
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("step is larger than the range of allowable values", errorFor(e, "elements[4].constraints.step"));
-        }
+        assertValidatorMessage(validator, survey, "elements[4].constraints.step",
+                "is larger than the range of allowable values");
     }
-    
+
     @Test
     public void willValidateStepValueNotHigherThanRangeOfDecimal() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            SurveyQuestion question = ((TestSurvey) survey).getDecimalQuestion();
-            DecimalConstraints constraints = (DecimalConstraints)question.getConstraints();
-            constraints.setMinValue(2d);
-            constraints.setMaxValue(4d);
-            constraints.setStep(3d);
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getDecimalQuestion();
+        DecimalConstraints constraints = (DecimalConstraints) question.getConstraints();
+        constraints.setMinValue(2d);
+        constraints.setMaxValue(4d);
+        constraints.setStep(3d);
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("step is larger than the range of allowable values", errorFor(e, "elements[3].constraints.step"));
-        }
+        assertValidatorMessage(validator, survey, "elements[3].constraints.step",
+                "is larger than the range of allowable values");
     }
-    
+
     @Test
     public void willValidateStepValueNotHigherThanRangeOfDuration() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            SurveyQuestion question = ((TestSurvey) survey).getDurationQuestion();
-            DurationConstraints constraints = (DurationConstraints)question.getConstraints();
-            constraints.setMinValue(2d);
-            constraints.setMaxValue(2d);
-            constraints.setStep(3d);
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getDurationQuestion();
+        DurationConstraints constraints = (DurationConstraints) question.getConstraints();
+        constraints.setMinValue(2d);
+        constraints.setMaxValue(2d);
+        constraints.setStep(3d);
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("step is larger than the range of allowable values", errorFor(e, "elements[5].constraints.step"));
-        }
+        assertValidatorMessage(validator, survey, "elements[5].constraints.step",
+                "is larger than the range of allowable values");
     }
-    
+
     @Test
     public void willValidateEarliestLocalDateIsNotAfterLatestLocalDate() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            SurveyQuestion question = ((TestSurvey) survey).getDateTimeQuestion();
-            DateTimeConstraints constraints = (DateTimeConstraints)question.getConstraints();
-            constraints.setEarliestValue(DateTime.parse("2010-10-10T10:10:00.000Z"));
-            constraints.setLatestValue(DateTime.parse("2010-10-10T10:09:00.000Z"));
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getDateTimeQuestion();
+        DateTimeConstraints constraints = (DateTimeConstraints) question.getConstraints();
+        constraints.setEarliestValue(DateTime.parse("2010-10-10T10:10:00.000Z"));
+        constraints.setLatestValue(DateTime.parse("2010-10-10T10:09:00.000Z"));
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("earliestValue is after the latest value", errorFor(e, "elements[2].constraints.earliestValue"));
-        }
+        assertValidatorMessage(validator, survey, "elements[2].constraints.earliestValue", "is after the latest value");
     }
 
     @Test
     public void willValidateEarliestDateTimeIsNotAfterLatestDateTime() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            SurveyQuestion question = ((TestSurvey) survey).getDateQuestion();
-            DateConstraints constraints = (DateConstraints)question.getConstraints();
-            constraints.setEarliestValue(LocalDate.parse("2010-10-11"));
-            constraints.setLatestValue(LocalDate.parse("2010-10-10"));
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getDateQuestion();
+        DateConstraints constraints = (DateConstraints) question.getConstraints();
+        constraints.setEarliestValue(LocalDate.parse("2010-10-11"));
+        constraints.setLatestValue(LocalDate.parse("2010-10-10"));
 
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("earliestValue is after the latest value", errorFor(e, "elements[1].constraints.earliestValue"));
-        }
+        assertValidatorMessage(validator, survey, "elements[1].constraints.earliestValue", "is after the latest value");
     }
-    
+
     @Test
     public void backreferenceSkipToTargetInvalid() throws Exception {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            
-            // The integer question is after the high_bp question. Create a rule that would backgtrack, verify it doesn't validate.
-            SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
 
-            SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1).withSkipToTarget("high_bp").build();
-            question.getConstraints().setRules(Lists.newArrayList(rule));
-            
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("back references question high_bp", errorFor(e, "elements[4].rule"));
-        }
+        // The integer question is after the high_bp question. Create a rule that would backgtrack, verify it
+        // doesn't validate.
+        SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
+
+        SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
+                .withSkipToTarget("high_bp").build();
+        question.getConstraints().setRules(Lists.newArrayList(rule));
+
+        assertValidatorMessage(validator, survey, "elements[4].rule", "back references question high_bp");
     }
-    
+
     @Test
     public void endSurveyRuleValid() {
         survey = new TestSurvey(SurveyValidatorTest.class, false);
-        
+
         // This rule is a valid "end the survey" rule, and passes validation.
         SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
-        SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1).withEndSurvey(Boolean.TRUE).build();
+        SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
+                .withEndSurvey(Boolean.TRUE).build();
         question.getConstraints().setRules(Lists.newArrayList(rule));
-        
+
         Validate.entityThrowingException(validator, survey);
     }
-    
+
     @Test
     public void noSkipToTargetInvalid() {
-        try {
-            survey = new TestSurvey(SurveyValidatorTest.class, false);
-            
-            // The integer question is after the high_bp question. Create a rule that would backgtrack, verify it doesn't validate.
-            SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
 
-            SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
-                    .withSkipToTarget("this_does_not_exist").build();
-            question.getConstraints().setRules(Lists.newArrayList(rule));
-            
-            Validate.entityThrowingException(validator, survey);
-            fail("Should have thrown exception");
-        } catch (InvalidEntityException e) {
-            assertEquals("has a skipTo identifier that doesn't exist: this_does_not_exist", errorFor(e, "elements[4].rule"));
-        }
+        // The integer question is after the high_bp question. Create a rule that would backgtrack, verify it
+        // doesn't validate.
+        SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
+
+        SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
+                .withSkipToTarget("this_does_not_exist").build();
+        question.getConstraints().setRules(Lists.newArrayList(rule));
+
+        assertValidatorMessage(validator, survey, "elements[4].rule",
+                "has a skipTo identifier that doesn't exist: this_does_not_exist");
     }
 }

@@ -153,7 +153,6 @@ public class DynamoUpload2 implements Upload {
 
     /** {@inheritDoc} */
     @Override
-    @JsonIgnore
     public String getRecordId() {
         return recordId;
     }
@@ -176,6 +175,7 @@ public class DynamoUpload2 implements Upload {
     }
     
     /** {@inheritDoc} */
+    @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "studyId-requestedOn-index")
     @JsonIgnore
     public String getStudyId() {
         return studyId;
@@ -187,7 +187,7 @@ public class DynamoUpload2 implements Upload {
     }
     
     /** {@inheritDoc} */
-    @DynamoDBIndexRangeKey(attributeName = "requestedOn", globalSecondaryIndexName = "healthCode-requestedOn-index")
+    @DynamoDBIndexRangeKey(attributeName = "requestedOn", globalSecondaryIndexNames ={"healthCode-requestedOn-index", "studyId-requestedOn-index"})
     @JsonSerialize(using = DateTimeToLongSerializer.class)
     @JsonInclude(Include.NON_DEFAULT)
     public long getRequestedOn() {

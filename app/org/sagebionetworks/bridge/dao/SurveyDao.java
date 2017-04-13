@@ -45,7 +45,7 @@ public interface SurveyDao {
      * retrieved in any list of surveys, and is no longer considered when finding the most recently 
      * published version of the survey. 
      */
-    void deleteSurvey(GuidCreatedOnVersionHolder keys);
+    void deleteSurvey(Survey survey);
 
     /**
      * Admin API to remove the survey from the backing store. This exists to clean up surveys from tests. This will

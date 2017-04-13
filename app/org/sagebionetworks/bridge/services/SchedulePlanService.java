@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.List;
+import java.util.Set;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
@@ -20,6 +21,9 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.SchedulePlanValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+
+import com.google.common.collect.Sets;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -51,12 +55,25 @@ public class SchedulePlanService {
         checkNotNull(study);
         checkNotNull(plan);
 
-        // Plan must always be in user's study
+        // Plan must always be in user's study, remove version and recreate guid for copies
         plan.setStudyKey(study.getIdentifier());
-
-        // Delete existing GUIDs so this is a new object (or recreate them)
+        plan.setVersion(null);
+        plan.setGuid(BridgeUtils.generateGuid());
+        
+        // This can happen if the submission is invalid, we want to proceed to validation
+        if (plan.getStrategy() != null) {
+            List<Schedule> schedules = plan.getStrategy().getAllPossibleSchedules();
+            for (Schedule schedule : schedules) {
+                for (int i=0; i < schedule.getActivities().size(); i++) {
+                    Activity activity = schedule.getActivities().get(i);
+                    
+                    Activity activityWithGuid = new Activity.Builder().withActivity(activity)
+                            .withGuid(BridgeUtils.generateGuid()).build();
+                    schedule.getActivities().set(i, activityWithGuid);
+                }
+            }
+        }
         Validate.entityThrowingException(new SchedulePlanValidator(study.getDataGroups(), study.getTaskIdentifiers()), plan);
-        updateGuids(plan);
 
         lookupSurveyReferenceIdentifiers(study.getStudyIdentifier(), plan);
         return schedulePlanDao.createSchedulePlan(study.getStudyIdentifier(), plan);
@@ -69,6 +86,26 @@ public class SchedulePlanService {
         // Plan must always be in user's study
         plan.setStudyKey(study.getIdentifier());
         
+        // Verify that all GUIDs that are supplied already exist in the plan. If they don't (or GUID is null),
+        // then add a new GUID.
+        SchedulePlan existing = schedulePlanDao.getSchedulePlan(study, plan.getGuid());
+        Set<String> existingGuids = getAllActivityGuids(existing);
+        
+        // This can happen if the submission is invalid, we want to proceed to validation
+        if (plan.getStrategy() != null) {
+            List<Schedule> schedules = plan.getStrategy().getAllPossibleSchedules();
+            for (Schedule schedule : schedules) {
+                for (int i=0; i < schedule.getActivities().size(); i++) {
+                    Activity activity = schedule.getActivities().get(i);
+                    if (activity.getGuid() == null || !existingGuids.contains(activity.getGuid())) {
+                        
+                        Activity activityWithGuid = new Activity.Builder().withActivity(activity)
+                                .withGuid(BridgeUtils.generateGuid()).build();
+                        schedule.getActivities().set(i, activityWithGuid);
+                    }
+                }
+            }
+        }
         Validate.entityThrowingException(new SchedulePlanValidator(study.getDataGroups(), study.getTaskIdentifiers()), plan);
         
         StudyIdentifier studyId = new StudyIdentifierImpl(plan.getStudyKey());
@@ -84,26 +121,25 @@ public class SchedulePlanService {
     }
     
     /**
-     * Saving a new plan that has GUIDs and is an existing plan? Clear them out so that we create a 
-     * new copy of the plan.
-     * @param plan
+     * Get all the GUIDs for all the activities that already exist. These are the only GUIDs that should be returned
+     * from the client on an update.
      */
-    private void updateGuids(SchedulePlan plan) {
-        plan.setVersion(null);
-        plan.setGuid(BridgeUtils.generateGuid());
+    private Set<String> getAllActivityGuids(SchedulePlan plan) {
+        Set<String> activityGuids = Sets.newHashSet();
         for (Schedule schedule : plan.getStrategy().getAllPossibleSchedules()) {
             for (int i=0; i < schedule.getActivities().size(); i++) {
                 Activity activity = schedule.getActivities().get(i);
-                schedule.getActivities().set(i, new Activity.Builder()
-                    .withActivity(activity).withGuid(BridgeUtils.generateGuid()).build());
+                activityGuids.add(activity.getGuid());
             }
         }
+        return activityGuids;
     }
 
     /**
      * If the activity has a survey reference, look up the survey's identifier. Don't trust the client to 
      * supply the correct one for the survey's primary keys. We're adding this when writing schedules because 
-     * the clients have come to depend on it, and this is more efficient than looking it up on every read.
+     * the clients have come to depend on the presence of the identifier key, and this is more efficient than 
+     * looking it up on every read.
      * 
      * @param studyId
      * @param activity

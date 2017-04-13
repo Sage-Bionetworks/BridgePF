@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.models.backfill.BackfillTask;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -88,12 +87,9 @@ public class SchemaSurveyGuidBackfill extends AsyncBackfillTemplate {
                         }
 
                         // Update the schema to include survey guid and createdOn.
-                        // NOTE: This violates abstraction and leaks the Dynamo implementation. However, given that
-                        // this is a one-time backfill, it's not worth refactoring UploadSchema to make this work.
-                        DynamoUploadSchema ddbSchema = (DynamoUploadSchema) schema;
-                        ddbSchema.setSurveyGuid(surveyGuid);
-                        ddbSchema.setSurveyCreatedOn(surveyCreatedOn);
-                        uploadSchemaService.updateSchemaRevisionV4(studyId, schemaId, schemaRev, ddbSchema);
+                        schema.setSurveyGuid(surveyGuid);
+                        schema.setSurveyCreatedOn(surveyCreatedOn);
+                        uploadSchemaService.updateSchemaRevisionV4(studyId, schemaId, schemaRev, schema);
 
                         recordMessage(task, callback, "Backfilled schema " + schemaId + " rev " + schemaRev);
                     } catch (RuntimeException ex) {

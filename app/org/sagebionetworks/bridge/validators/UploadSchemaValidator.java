@@ -6,8 +6,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import com.google.common.base.Strings;
-
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
@@ -40,10 +39,12 @@ public class UploadSchemaValidator implements Validator {
      *     <li>value is null or not an UploadSchema</li>
      *     <li>fieldDefinitions is null or empty</li>
      *     <li>fieldDefinitions contains null or invalid entries</li>
-     *     <li>name is null or empty</li>
-     *     <li>revision is negative</li>
-     *     <li>schemaId is null or empty</li>
+     *     <li>minAppVersion is greater than maxAppVersion</li>
+     *     <li>name is blank</li>
+     *     <li>revision is zero or negative</li>
+     *     <li>schemaId is blank</li>
      *     <li>schemaType is null</li>
+     *     <li>studyId is blank</li>
      *   </ul>
      * </p>
      *
@@ -58,19 +59,27 @@ public class UploadSchemaValidator implements Validator {
         } else {
             UploadSchema uploadSchema = (UploadSchema) target;
 
+            // min/maxAppVersion
+            for (String osName : uploadSchema.getAppVersionOperatingSystems()) {
+                Integer minAppVersion = uploadSchema.getMinAppVersion(osName);
+                Integer maxAppVersion = uploadSchema.getMaxAppVersion(osName);
+                if (minAppVersion != null && maxAppVersion != null && minAppVersion > maxAppVersion) {
+                    errors.rejectValue("minAppVersions{" + osName + "}", "can't be greater than maxAppVersion");
+                }
+            }
+
             // name
-            if (Strings.isNullOrEmpty(uploadSchema.getName())) {
+            if (StringUtils.isBlank(uploadSchema.getName())) {
                 errors.rejectValue("name", "is required");
             }
 
-            // revision must be non-negative. (0 is allowed if it's a new schema. revisions 1 and above are saved
-            // schemas)
-            if (uploadSchema.getRevision() < 0) {
-                errors.rejectValue("revision", "must be equal to or greater than zero");
+            // revision must be specified and positive
+            if (uploadSchema.getRevision() <= 0) {
+                errors.rejectValue("revision", "must be positive");
             }
 
             // schema ID
-            if (Strings.isNullOrEmpty(uploadSchema.getSchemaId())) {
+            if (StringUtils.isBlank(uploadSchema.getSchemaId())) {
                 errors.rejectValue("schemaId", "is required");
             }
 
@@ -78,7 +87,12 @@ public class UploadSchemaValidator implements Validator {
             if (uploadSchema.getSchemaType() == null) {
                 errors.rejectValue("schemaType", "is required");
             }
-            
+
+            // study ID
+            if (StringUtils.isBlank(uploadSchema.getStudyId())) {
+                errors.rejectValue("studyId", "is required");
+            }
+
             // fieldDefinitions
             List<UploadFieldDefinition> fieldDefList = uploadSchema.getFieldDefinitions();
             if (fieldDefList == null || fieldDefList.isEmpty()) {
@@ -96,7 +110,7 @@ public class UploadSchemaValidator implements Validator {
                         errors.pushNestedPath(fieldDefinitionKey);
 
                         String fieldName = fieldDef.getName();
-                        if (Strings.isNullOrEmpty(fieldName)) {
+                        if (StringUtils.isBlank(fieldName)) {
                             errors.rejectValue("name", "is required");
                         } else {
                             fieldNameList.add(fieldName);

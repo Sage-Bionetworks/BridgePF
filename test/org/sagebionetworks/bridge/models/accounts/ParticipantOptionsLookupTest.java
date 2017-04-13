@@ -8,11 +8,13 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIO
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.TIME_ZONE;
 
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
@@ -42,6 +44,9 @@ public class ParticipantOptionsLookupTest {
         
         String lang = lookup.getString(LANGUAGES);
         assertNull(lang);
+        
+        DateTimeZone zone = lookup.getTimeZone(TIME_ZONE);
+        assertNull(zone);
     }
     
     @Test
@@ -67,6 +72,9 @@ public class ParticipantOptionsLookupTest {
         
         LinkedHashSet<String> set2 = lookup.getOrderedStringSet(EXTERNAL_IDENTIFIER);
         assertTrue(set2.isEmpty());
+        
+        String zone = lookup.getString(TIME_ZONE);
+        assertNull(zone);
     }
     
     @Test
@@ -111,6 +119,13 @@ public class ParticipantOptionsLookupTest {
         ParticipantOptionsLookup lookup = setupLookup(SHARING_SCOPE, "ALL_QUALIFIED_RESEARCHERS");
         
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, lookup.getEnum(SHARING_SCOPE, SharingScope.class));
+    }
+    
+    @Test
+    public void getTimeZoneValue() {
+        ParticipantOptionsLookup lookup = setupLookup(TIME_ZONE, "+00:00");
+
+        assertEquals(DateTimeZone.UTC, lookup.getTimeZone(TIME_ZONE));
     }
 
     @Test(expected = NullPointerException.class)

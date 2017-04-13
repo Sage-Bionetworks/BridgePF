@@ -7,7 +7,6 @@ import static org.sagebionetworks.bridge.models.schedules.ActivityType.TASK;
 import java.util.Objects;
 
 import org.joda.time.DateTime;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
@@ -136,7 +135,7 @@ public final class Activity implements BridgeEntity {
             return this;
         }
         public Builder withTask(String taskId) {
-            this.task = new TaskReference(taskId);
+            this.task = new TaskReference(taskId, null);
             return this;
         }
         public Builder withPublishedSurvey(String identifier, String guid) {
@@ -153,10 +152,6 @@ public final class Activity implements BridgeEntity {
             return this;
         }
         public Activity build() {
-            if (guid == null) {
-                guid = BridgeUtils.generateGuid();
-            }
-
             ActivityType activityType = null;
             if (compoundActivity != null) {
                 activityType = COMPOUND;

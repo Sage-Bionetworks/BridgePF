@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyVararg;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -21,14 +20,10 @@ import org.mockito.ArgumentCaptor;
 import play.mvc.Result;
 import play.test.Helpers;
 
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
@@ -224,34 +219,6 @@ public class UploadSchemaControllerTest {
         assertEquals(200, result.status());
         assertSchemaInResult(result);
         assertSchemaInArgCaptor(updatedSchemaCaptor);
-    }
-
-    @Test
-    public void invalidSchemaThrowsCompleteValidationException() throws Exception {
-        // mock session
-        StudyIdentifier studyIdentifier = new StudyIdentifierImpl("create-schema-study");
-        UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(studyIdentifier);
-
-        // mock request JSON; this is pretty bad JSON. We want an error message back 
-        // that should practically tell the caller how to construct this object.
-        TestUtils.mockPlayContextWithJson("{\"fieldDefinitions\":[{\"name\":\"foo\"}]}");
-
-        // spy controller
-        UploadSchemaController controller = spy(new UploadSchemaController());
-        // We need the real service because it throws the InvalidEntityException we're testing here.
-        controller.setUploadSchemaService(new UploadSchemaService());
-        doReturn(mockSession).when(controller).getAuthenticatedSession(any(Roles.class));
-
-        // execute and validate
-        try {
-            controller.createOrUpdateUploadSchema();
-        } catch(InvalidEntityException e) {
-            assertEquals("schemaId is required", e.getErrors().get("schemaId").get(0));
-            assertEquals("name is required", e.getErrors().get("name").get(0));
-            assertEquals("schemaType is required", e.getErrors().get("schemaType").get(0));
-            assertEquals("fieldDefinitions[0].type is required", e.getErrors().get("fieldDefinitions[0].type").get(0));
-        }
     }
 
     private static UploadSchemaController setupControllerWithService(UploadSchemaService svc) throws Exception {

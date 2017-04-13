@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
@@ -10,24 +11,35 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 
 import java.util.List;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import play.core.j.JavaResultExtractor;
+import play.mvc.Result;
+import play.test.Helpers;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
@@ -40,25 +52,22 @@ import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DefaultObjectMapper;
-import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
+import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.*;
+import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.studies.SynapseProjectIdTeamIdHolder;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
 import org.sagebionetworks.bridge.services.EmailVerificationStatus;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UploadCertificateService;
 import org.sagebionetworks.bridge.services.UploadService;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-
-import play.core.j.JavaResultExtractor;
-import play.mvc.Result;
-import play.test.Helpers;
 
 @RunWith(MockitoJUnitRunner.class)
 public class StudyControllerTest {
@@ -67,20 +76,18 @@ public class StudyControllerTest {
 
     private static final String PEM_TEXT = "-----BEGIN CERTIFICATE-----\nMIIExDCCA6ygAwIBAgIGBhCnnOuXMA0GCSqGSIb3DQEBBQUAMIGeMQswCQYDVQQG\nEwJVUzELMAkGA1UECAwCV0ExEDAOBgNVBAcMB1NlYXR0bGUxGTAXBgNVBAoMEFNh\nVlOwuuAxumMyIq5W4Dqk8SBcH9Y4qlk7\nEND CERTIFICATE-----";
 
-    private static final TypeReference<DateTimeRangeResourceList<? extends Upload>> UPLOADS_REF = new TypeReference<DateTimeRangeResourceList<? extends Upload>>(){};
+    private static final TypeReference<PagedResourceList<? extends Upload>> UPLOADS_REF = new TypeReference<PagedResourceList<? extends Upload>>(){};
 
     private static final String TEST_PROJECT_ID = "synapseProjectId";
     private static final Long TEST_TEAM_ID = Long.parseLong("123");
     private static final String TEST_USER_ID = "1234";
-
-    private static final String TEST_SYNAPSE_USER_ID = "zaclintest";
-    private static final String TEST_SYNAPSE_ACCOUNT_JSON = "{\n" +
-            "   \"email\":\"test+test@test.com\",\n" +
-            "   \"username\":\"test-user-name\",\n" +
-            "   \"firstName\":\"test-first-name\",\n" +
-            "   \"lastName\":\"test-last-name\"\n" +
-            "}";
-
+    private static final String TEST_USER_EMAIL = "test+user@email.com";
+    private static final String TEST_USER_EMAIL_2 = "test+user+2@email.com";
+    private static final String TEST_USER_FIRST_NAME = "test_user_first_name";
+    private static final String TEST_USER_LAST_NAME = "test_user_last_name";
+    private static final String TEST_USER_PASSWORD = "test_user_password";
+    private static final String TEST_ADMIN_ID_1 = "3346407";
+    private static final String TEST_ADMIN_ID_2 = "3348228";
 
     private StudyController controller;
     private StudyIdentifier studyId;
@@ -162,7 +169,7 @@ public class StudyControllerTest {
 
         doReturn(session).when(controller).getSessionIfItExists();
 
-        controller.getUploadsForStudy(studyId.getIdentifier(), startTime.toString(), endTime.toString());
+        controller.getUploadsForStudy(studyId.getIdentifier(), startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
     }
 
     @Test
@@ -208,40 +215,73 @@ public class StudyControllerTest {
     }
 
     @Test
-    public void canCreateSynapseAccount() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
-        TestUtils.mockPlayContextWithJson(TEST_SYNAPSE_ACCOUNT_JSON);
-        when(mockStudyService.createSynapseAccount(any())).thenReturn(TEST_SYNAPSE_USER_ID);
+    public void canCreateStudyAndUser() throws Exception {
+        // mock
+        Study study = TestUtils.getValidStudy(StudyControllerTest.class);
+        study.setSynapseProjectId(null);
+        study.setSynapseDataAccessTeamId(null);
+        study.setVersion(1L);
 
-        controller.createSynapseAccount();
+        StudyParticipant mockUser1 = new StudyParticipant.Builder()
+                .withEmail(TEST_USER_EMAIL)
+                .withFirstName(TEST_USER_FIRST_NAME)
+                .withLastName(TEST_USER_LAST_NAME)
+                .withRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER))
+                .withPassword(TEST_USER_PASSWORD)
+                .build();
 
-        Result result = controller.createSynapseAccount();
+        StudyParticipant mockUser2 = new StudyParticipant.Builder()
+                .withEmail(TEST_USER_EMAIL_2)
+                .withFirstName(TEST_USER_FIRST_NAME)
+                .withLastName(TEST_USER_LAST_NAME)
+                .withRoles(ImmutableSet.of(Roles.RESEARCHER))
+                .withPassword(TEST_USER_PASSWORD)
+                .build();
+
+        List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
+        List<String> adminIds = ImmutableList.of(TEST_ADMIN_ID_1, TEST_ADMIN_ID_2);
+
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(adminIds, study, mockUsers);
+        String json = BridgeObjectMapper.get().writeValueAsString(mockStudyAndUsers);
+        TestUtils.mockPlayContextWithJson(json);
+
+        // stub
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        ArgumentCaptor<StudyAndUsers> argumentCaptor = ArgumentCaptor.forClass(StudyAndUsers.class);
+        when(mockStudyService.createStudyAndUsers(argumentCaptor.capture())).thenReturn(study);
+
+        // execute
+        Result result = controller.createStudyAndUsers();
+        String versionHolderStr = Helpers.contentAsString(result);
+        VersionHolder versionHolder = BridgeObjectMapper.get().readValue(versionHolderStr, VersionHolder.class);
 
         // verify
+        verify(mockStudyService, times(1)).createStudyAndUsers(any());
+        StudyAndUsers capObj = argumentCaptor.getValue();
+        assertEquals(study, capObj.getStudy());
+        assertEquals(mockUsers, capObj.getUsers());
+        assertEquals(adminIds, capObj.getAdminIds());
+        assertEquals(study.getVersion(), versionHolder.getVersion());
         assertEquals(201, result.status());
-        String resultJson = Helpers.contentAsString(result);
-        JsonNode resultNode = BridgeObjectMapper.get().readTree(resultJson);
-        assertEquals(TEST_SYNAPSE_USER_ID, resultNode.get("userId").textValue());
-        assertEquals("SynapseUserIdHolder", resultNode.get("type").textValue());
     }
 
-    @Test(expected = NotAuthenticatedException.class)
-    public void createSynapseAccountWithoutDeveloper() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
-
-        controller.createSynapseAccount();
-    }
 
     @Test
     public void canCreateSynapse() throws Exception {
+        // mock
+        List<String> mockUserIds = ImmutableList.of(TEST_USER_ID);
+        String json = BridgeObjectMapper.get().writeValueAsString(mockUserIds);
+        TestUtils.mockPlayContextWithJson(json);
+
+        // stub
         doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
 
-        Result result = controller.createSynapse(TEST_USER_ID);
+        Result result = controller.createSynapse();
         String synapseIds = Helpers.contentAsString(result);
 
         // verify
         verify(mockStudyService).getStudy(eq(studyId));
-        verify(mockStudyService).createSynapseProjectTeam(eq(TEST_USER_ID), eq(study));
+        verify(mockStudyService).createSynapseProjectTeam(eq(mockUserIds), eq(study));
 
         JsonNode synapse = BridgeObjectMapper.get().readTree(synapseIds);
         assertEquals(TEST_PROJECT_ID, synapse.get("projectId").asText());
@@ -319,21 +359,28 @@ public class StudyControllerTest {
         
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
+
+        List<? extends Upload> list = Lists.newArrayList();
+
+        PagedResourceList<? extends Upload> uploads = new PagedResourceList<>(list, null, API_MAXIMUM_PAGE_SIZE, 0)
+                .withFilter("startTime", startTime)
+                .withFilter("endTime", endTime);
+        doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
         
-        DateTimeRangeResourceList<? extends Upload> uploads = new DateTimeRangeResourceList<>(Lists.newArrayList(),
-                startTime, endTime);
-        doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime);
-        
-        Result result = controller.getUploads(startTime.toString(), endTime.toString());
+        Result result = controller.getUploads(startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
         assertEquals(200, result.status());
         
-        verify(mockUploadService).getStudyUploads(studyId, startTime, endTime);
+        verify(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
         verify(mockStudyService, never()).getStudy(studyId.toString());
         // in other words, it's the object we mocked out from the service, we were returned the value.
-        DateTimeRangeResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
+        PagedResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), UPLOADS_REF);
-        assertEquals(startTime, retrieved.getStartTime());
-        assertEquals(endTime, retrieved.getEndTime());
+        assertNull(retrieved.getOffsetBy());
+        assertNull(retrieved.getOffsetKey());
+        assertEquals(0, retrieved.getTotal());
+        assertEquals(API_MAXIMUM_PAGE_SIZE, retrieved.getPageSize());
+        assertEquals(startTime.toString(), retrieved.getFilters().get("startTime"));
+        assertEquals(endTime.toString(), retrieved.getFilters().get("endTime"));
     }
 
     @Test(expected = BadRequestException.class)
@@ -343,7 +390,7 @@ public class StudyControllerTest {
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
 
-        controller.getUploadsForStudy(null, startTime.toString(), endTime.toString());
+        controller.getUploadsForStudy(null, startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
     }
 
     @Test(expected = BadRequestException.class)
@@ -353,7 +400,7 @@ public class StudyControllerTest {
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
 
-        controller.getUploadsForStudy("", startTime.toString(), endTime.toString());
+        controller.getUploadsForStudy("", startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
     }
 
     @Test(expected = BadRequestException.class)
@@ -363,7 +410,7 @@ public class StudyControllerTest {
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
 
-        controller.getUploadsForStudy(" ", startTime.toString(), endTime.toString());
+        controller.getUploadsForStudy(" ", startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
     }
 
     @Test
@@ -373,20 +420,27 @@ public class StudyControllerTest {
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
 
-        DateTimeRangeResourceList<? extends Upload> uploads = new DateTimeRangeResourceList<>(Lists.newArrayList(),
-                startTime, endTime);
-        doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime);
+        List<? extends Upload> list = Lists.newArrayList();
 
-        Result result = controller.getUploadsForStudy(studyId.getIdentifier(), startTime.toString(), endTime.toString());
+        PagedResourceList<? extends Upload> uploads = new PagedResourceList<>(list, null, API_MAXIMUM_PAGE_SIZE, 0)
+                .withFilter("startTime", startTime)
+                .withFilter("endTime", endTime);
+        doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
+
+        Result result = controller.getUploadsForStudy(studyId.getIdentifier(), startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
         assertEquals(200, result.status());
 
-        verify(mockUploadService).getStudyUploads(studyId, startTime, endTime);
+        verify(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
 
         // in other words, it's the object we mocked out from the service, we were returned the value.
-        DateTimeRangeResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
+        PagedResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), UPLOADS_REF);
-        assertEquals(startTime, retrieved.getStartTime());
-        assertEquals(endTime, retrieved.getEndTime());
+        assertNull(retrieved.getOffsetBy());
+        assertNull(retrieved.getOffsetKey());
+        assertEquals(0, retrieved.getTotal());
+        assertEquals(API_MAXIMUM_PAGE_SIZE, retrieved.getPageSize());
+        assertEquals(startTime.toString(), retrieved.getFilters().get("startTime"));
+        assertEquals(endTime.toString(), retrieved.getFilters().get("endTime"));
     }
     
     @Test

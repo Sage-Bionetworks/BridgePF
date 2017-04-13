@@ -2,22 +2,25 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
 
+import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
-import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 
 public interface ScheduledActivityDao {
     
     /**
-     * Get paged results of the scheduled activities that have been created for this user. 
+     * Get paged results of scheduled activities by an activity GUID.
      */
-    PagedResourceList<? extends ScheduledActivity> getActivityHistory(String healthCode, String offsetKey, int pageSize);
+    ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistoryV2(String healthCode,
+            String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, String offsetBy,
+            int pageSize);
     
     /**
      * Load an individual activity.
      */
-    ScheduledActivity getActivity(DateTimeZone timeZone, String healthCode, String guid);
+    ScheduledActivity getActivity(String healthCode, String guid);
    
     /**
      * Get a list of activities for a user. The list is derived from the scheduler.

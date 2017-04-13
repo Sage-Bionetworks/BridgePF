@@ -25,6 +25,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.amazonaws.services.dynamodbv2.model.ProjectionType;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -47,6 +48,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     private Activity activity;
     private boolean persistent;
     private DateTimeZone timeZone;
+    private JsonNode clientData;
 
     @Override
     @DynamoDBIgnore
@@ -96,7 +98,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     public DateTime getExpiresOn() {
         return getInstant(getLocalExpiresOn());
     }
-
+    
     private DateTime getInstant(LocalDateTime localDateTime) {
         return (localDateTime == null || timeZone == null) ? null : localDateTime.toDateTime(timeZone);
     }
@@ -154,7 +156,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     public void setGuid(String guid) {
         this.guid = guid;
     }
-
+    
     @DynamoDBIndexHashKey(attributeName = "schedulePlanGuid", globalSecondaryIndexName = "schedulePlanGuid-index")
     @DynamoProjection(projectionType = ProjectionType.KEYS_ONLY, globalSecondaryIndexName = "schedulePlanGuid-index")
     @Override
@@ -216,6 +218,17 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
         this.activity = JsonUtils.asEntity(data, ACTIVITY_PROPERTY, Activity.class);
     }
 
+    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
+    @DynamoDBAttribute
+    public JsonNode getClientData() {
+        return clientData;
+    }
+    
+    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
+    public void setClientData(JsonNode clientData) {
+        this.clientData = clientData;
+    }
+    
     @DynamoDBAttribute
     @Override
     public boolean getPersistent() {
@@ -229,8 +242,8 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
 
     @Override
     public int hashCode() {
-        return Objects.hash(activity, guid, localScheduledOn, localExpiresOn, startedOn, finishedOn, healthCode,
-                persistent, timeZone, schedulePlanGuid);
+        return Objects.hash(activity, guid, localScheduledOn, localExpiresOn, startedOn, finishedOn,
+                healthCode, persistent, timeZone, schedulePlanGuid, clientData);
     }
 
     @Override
@@ -240,19 +253,23 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
         if (obj == null || getClass() != obj.getClass())
             return false;
         DynamoScheduledActivity other = (DynamoScheduledActivity) obj;
-        return (Objects.equals(activity, other.activity) && Objects.equals(localExpiresOn, other.localExpiresOn)
-                && Objects.equals(localScheduledOn, other.localScheduledOn) && Objects.equals(guid, other.guid)
-                && Objects.equals(startedOn, other.startedOn) && Objects.equals(finishedOn, other.finishedOn)
+        return (Objects.equals(activity, other.activity) 
+                && Objects.equals(localExpiresOn, other.localExpiresOn)
+                && Objects.equals(localScheduledOn, other.localScheduledOn)
+                && Objects.equals(guid, other.guid)
+                && Objects.equals(startedOn, other.startedOn) 
+                && Objects.equals(finishedOn, other.finishedOn)
                 && Objects.equals(healthCode, other.healthCode) && Objects.equals(persistent, other.persistent)
                 && Objects.equals(timeZone, other.timeZone)
-                && Objects.equals(schedulePlanGuid, other.schedulePlanGuid));
+                && Objects.equals(schedulePlanGuid, other.schedulePlanGuid)
+                && Objects.equals(clientData, other.clientData));
     }
 
     @Override
     public String toString() {
         return String.format(
-                "DynamoScheduledActivity [healthCode=%s, guid=%s, localScheduledOn=%s, localExpiresOn=%s, startedOn=%s, finishedOn=%s, persistent=%s, timeZone=%s, activity=%s, schedulePlanGuid=%s]",
+                "DynamoScheduledActivity [healthCode=%s, guid=%s, localScheduledOn=%s, localExpiresOn=%s, startedOn=%s, finishedOn=%s, persistent=%s, timeZone=%s, activity=%s, schedulePlanGuid=%s, clientData=%s]",
                 healthCode, guid, localScheduledOn, localExpiresOn, startedOn, finishedOn, persistent, timeZone,
-                activity, schedulePlanGuid);
+                activity, schedulePlanGuid, clientData);
     }
 }

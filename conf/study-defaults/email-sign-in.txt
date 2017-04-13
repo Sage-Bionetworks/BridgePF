@@ -1,0 +1,1 @@
+Click here to sign in: <a href="https://${host}/mobile/startSession.html?token=${token}">https://${host}/mobile/startSession.html?token=${token}</a>

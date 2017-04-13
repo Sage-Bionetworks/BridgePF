@@ -12,8 +12,12 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Index;
 import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.Page;
+import com.amazonaws.services.dynamodbv2.document.QueryOutcome;
 import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.amazonaws.services.dynamodbv2.document.Table;
+import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
+
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
@@ -39,7 +43,7 @@ public class DynamoIndexHelper {
     private DynamoDBMapper mapper;
 
     /** DynamoDB index. This is used to query the secondary index. This is configured by Spring. */
-    private void setIndex(Index index) {
+    final void setIndex(Index index) {
         this.index = index;
     }
 
@@ -47,8 +51,13 @@ public class DynamoIndexHelper {
      * DynamoDB mapper. This is used to re-query the DynamoDB table to get full entries from the key objects. This setter is
      * called by tests.
      */
-    public void setMapper(DynamoDBMapper mapper) {
+    final void setMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
+    }
+    
+    public QueryOutcome query(@Nonnull QuerySpec spec) {
+        Page<Item,QueryOutcome> page = index.query(spec).firstPage();
+        return page.getLowLevelResult();
     }
 
     /**
