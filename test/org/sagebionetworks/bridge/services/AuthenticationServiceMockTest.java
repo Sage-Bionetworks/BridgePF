@@ -23,7 +23,6 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -102,7 +101,7 @@ public class AuthenticationServiceMockTest {
 
     @Before
     public void before() {
-        study = new DynamoStudy();
+        study = Study.create();
         study.setIdentifier(STUDY_ID);
         study.setEmailSignInEnabled(true);
         study.setEmailSignInTemplate(new EmailTemplate("subject","body",MimeType.TEXT));
