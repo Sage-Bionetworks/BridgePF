@@ -54,14 +54,12 @@ public class SharedModuleMetadataController extends BaseController {
 
     /** Gets metadata for the specified version of the specified module. */
     public Result getMetadataByIdAndVersion(String id, int version) {
-        getAuthenticatedSession(Roles.DEVELOPER);
         SharedModuleMetadata metadata = metadataService.getMetadataByIdAndVersion(id, version);
         return okResult(metadata);
     }
 
     /** Gets metadata for the latest version of the specified module. */
     public Result getMetadataByIdLatestVersion(String id) {
-        getAuthenticatedSession(Roles.DEVELOPER);
         SharedModuleMetadata metadata = metadataService.getMetadataByIdLatestVersion(id);
         return okResult(metadata);
     }
@@ -71,8 +69,6 @@ public class SharedModuleMetadataController extends BaseController {
      * {@link SharedModuleMetadataService#queryAllMetadata} for details.
      */
     public Result queryAllMetadata(String mostRecentString, String publishedString, String where, String tagsString) {
-        getAuthenticatedSession(Roles.DEVELOPER);
-
         // Parse inputs
         boolean mostRecent = Boolean.parseBoolean(mostRecentString);
         boolean published = Boolean.parseBoolean(publishedString);
@@ -88,8 +84,6 @@ public class SharedModuleMetadataController extends BaseController {
     /** Similar to queryAllMetadata, except this only queries on module versions of the specified ID. */
     public Result queryMetadataById(String id, String mostRecentString, String publishedString, String where,
             String tagsString) {
-        getAuthenticatedSession(Roles.DEVELOPER);
-
         // Parse inputs
         boolean mostRecent = Boolean.parseBoolean(mostRecentString);
         boolean published = Boolean.parseBoolean(publishedString);
