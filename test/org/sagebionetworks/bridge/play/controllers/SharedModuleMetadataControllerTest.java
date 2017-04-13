@@ -120,9 +120,6 @@ public class SharedModuleMetadataControllerTest {
         Result result = controller.getMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION);
         assertEquals(200, result.status());
         assertMetadataInResult(result);
-
-        // validate permissions
-        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
     }
 
     @Test
@@ -134,9 +131,6 @@ public class SharedModuleMetadataControllerTest {
         Result result = controller.getMetadataByIdLatestVersion(MODULE_ID);
         assertEquals(200, result.status());
         assertMetadataInResult(result);
-
-        // validate permissions
-        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
     }
 
     @Test
@@ -149,9 +143,6 @@ public class SharedModuleMetadataControllerTest {
         Result result = controller.queryAllMetadata("true", "true", "foo='bar'", "foo,bar,baz");
         assertEquals(200, result.status());
         assertMetadataListInResult(result);
-
-        // validate permissions
-        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
     }
 
     @Test
@@ -164,9 +155,6 @@ public class SharedModuleMetadataControllerTest {
         Result result = controller.queryMetadataById(MODULE_ID, "true", "true", "foo='bar'", "foo,bar,baz");
         assertEquals(200, result.status());
         assertMetadataListInResult(result);
-
-        // validate permissions
-        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
     }
 
     @Test
