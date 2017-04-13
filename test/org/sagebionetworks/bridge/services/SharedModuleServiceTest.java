@@ -90,6 +90,7 @@ public class SharedModuleServiceTest {
 
         // mock schema service
         UploadSchema sharedSchema = UploadSchema.create();
+        sharedSchema.setPublished(true);
         when(mockSchemaService.getUploadSchemaByIdAndRev(BridgeConstants.SHARED_STUDY_ID, SCHEMA_ID, SCHEMA_REV))
                 .thenReturn(sharedSchema);
 
@@ -168,6 +169,7 @@ public class SharedModuleServiceTest {
 
         // mock schema service
         UploadSchema sharedSchema = UploadSchema.create();
+        sharedSchema.setPublished(true);
         when(mockSchemaService.getUploadSchemaByIdAndRev(BridgeConstants.SHARED_STUDY_ID, SCHEMA_ID, SCHEMA_REV))
                 .thenReturn(sharedSchema);
 
