@@ -653,6 +653,11 @@ public class UploadSchemaService {
         // doesn't exist.
         UploadSchema oldSchema = getUploadSchemaByIdAndRev(studyId, schemaId, revision);
 
+        // published schema cannot be modified
+        if (oldSchema.getPublished()) {
+            throw new BadRequestException("Published upload schema: " + oldSchema.getSchemaId() + " cannot be modified.");
+        }
+
         // Set study ID, schema ID, and revision. This ensures we are updating the correct schema in the correct study.
         schemaToUpdate.setStudyId(studyId.getIdentifier());
         schemaToUpdate.setSchemaId(schemaId);
