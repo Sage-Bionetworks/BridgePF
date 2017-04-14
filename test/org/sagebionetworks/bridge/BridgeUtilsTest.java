@@ -3,9 +3,17 @@ package org.sagebionetworks.bridge;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+import com.google.common.collect.ImmutableMap;
+
+import org.joda.time.DateTime;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -190,6 +198,96 @@ public class BridgeUtilsTest {
     @Test(expected = BadRequestException.class)
     public void parseIntegerOrDefaultThrowsException() {
         BridgeUtils.getIntOrDefault("asdf", 3);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void withoutNullEntriesNullMap() {
+        BridgeUtils.withoutNullEntries(null);
+    }
+
+    @Test
+    public void withoutNullEntriesEmptyMap() {
+        Map<String, String> outputMap = BridgeUtils.withoutNullEntries(ImmutableMap.of());
+        assertTrue(outputMap.isEmpty());
+    }
+
+    @Test
+    public void withoutNullEntries() {
+        Map<String, String> inputMap = new HashMap<>();
+        inputMap.put("AAA", "111");
+        inputMap.put("BBB", null);
+        inputMap.put("CCC", "333");
+
+        Map<String, String> outputMap = BridgeUtils.withoutNullEntries(inputMap);
+        assertEquals(2, outputMap.size());
+        assertEquals("111", outputMap.get("AAA"));
+        assertEquals("333", outputMap.get("CCC"));
+
+        // validate that modifying the input map doesn't affect the output map
+        inputMap.put("new key", "new value");
+        assertEquals(2, outputMap.size());
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void putOrRemoveNullMap() {
+        BridgeUtils.putOrRemove(null, "key", "value");
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void putOrRemoveNullKey() {
+        BridgeUtils.putOrRemove(new HashMap<>(), null, "value");
+    }
+
+    @Test
+    public void putOrRemove() {
+        Map<String, String> map = new HashMap<>();
+
+        // put some values and verify
+        BridgeUtils.putOrRemove(map, "AAA", "111");
+        BridgeUtils.putOrRemove(map, "BBB", "222");
+        BridgeUtils.putOrRemove(map, "CCC", "333");
+        assertEquals(3, map.size());
+        assertEquals("111", map.get("AAA"));
+        assertEquals("222", map.get("BBB"));
+        assertEquals("333", map.get("CCC"));
+
+        // replace a value and verify
+        BridgeUtils.putOrRemove(map, "CCC", "not 333");
+        assertEquals(3, map.size());
+        assertEquals("111", map.get("AAA"));
+        assertEquals("222", map.get("BBB"));
+        assertEquals("not 333", map.get("CCC"));
+
+        // remove a value and verify
+        BridgeUtils.putOrRemove(map, "BBB", null);
+        assertEquals(2, map.size());
+        assertEquals("111", map.get("AAA"));
+        assertEquals("not 333", map.get("CCC"));
+    }
+
+    @Test
+    public void testGetLongOrDefault() {
+        assertNull(BridgeUtils.getLongOrDefault(null, null));
+        assertEquals(new Long(10), BridgeUtils.getLongOrDefault(null, 10L));
+        assertEquals(new Long(20), BridgeUtils.getLongOrDefault("20", null));
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void testGetLongWithNonLongValue() {
+        BridgeUtils.getLongOrDefault("asdf20", 10L);
+    }
+    
+    @Test
+    public void testGetDateTimeOrDefault() {
+        DateTime dateTime = DateTime.now();
+        assertNull(BridgeUtils.getDateTimeOrDefault(null, null));
+        assertEquals(dateTime, BridgeUtils.getDateTimeOrDefault(null, dateTime));
+        assertTrue(dateTime.isEqual(BridgeUtils.getDateTimeOrDefault(dateTime.toString(), null)));
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void testGetDateTimeWithInvalidDateTime() {
+        BridgeUtils.getDateTimeOrDefault("asdf", null);
     }
     
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.

@@ -42,9 +42,11 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
+import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 /** Test class for basic utility functions in BaseController. */
@@ -395,6 +397,10 @@ public class BaseControllerTest {
         CacheProvider cacheProvider = mock(CacheProvider.class);
         controller.setCacheProvider(cacheProvider);
         
+        SessionUpdateService sessionUpdateService = new SessionUpdateService();
+        sessionUpdateService.setCacheProvider(cacheProvider);
+        controller.setSessionUpdateService(sessionUpdateService);
+        
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("AAA")
                 .withLanguages(Sets.newLinkedHashSet()).build();
@@ -411,9 +417,6 @@ public class BaseControllerTest {
         
         verify(optionsService).setOrderedStringSet(TEST_STUDY, "AAA", LANGUAGES, LANGUAGE_SET);
         verify(cacheProvider).setUserSession(session);
-        
-        Http.Response mockResponse = BaseController.response();
-        verify(mockResponse).setCookie(SESSION_TOKEN_HEADER, "aSessionToken", BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
     }
     
     @Test
@@ -625,6 +628,43 @@ public class BaseControllerTest {
         
         UserSession returned = controller.getAuthenticatedSession(true, Roles.DEVELOPER);
         assertEquals(session, returned);
+    }
+    
+    @Test
+    public void ifClientSendsHeaderRetrieveIt() throws Exception {
+        Map<String,String[]> headers = Maps.newHashMap();
+        headers.put("Bridge-Session", new String[] {"ABC"});
+        
+        TestUtils.mockPlayContextWithJson("{}", headers);
+        BaseController controller = new SchedulePlanController();
+        
+        String token = controller.getSessionToken();
+        assertEquals("ABC", token);
+    }
+    
+    @Test
+    public void ifClientSendsCookieRetrieveAndResetIt() {
+        Http.Cookie mockCookie = mock(Http.Cookie.class);
+        doReturn("ABC").when(mockCookie).value();
+        
+        Http.Request mockRequest = mock(Http.Request.class);
+        doReturn(mockCookie).when(mockRequest).cookie(BridgeConstants.SESSION_TOKEN_HEADER);
+        
+        Http.Context context = mock(Http.Context.class);
+        when(context.request()).thenReturn(mockRequest);
+
+        Http.Response mockResponse = mock(Http.Response.class);
+        when(context.response()).thenReturn(mockResponse);
+        
+        Http.Context.current.set(context);
+        
+        BaseController controller = new SchedulePlanController();
+        
+        String token = controller.getSessionToken();
+        assertEquals("ABC", token);
+        
+        verify(mockResponse).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, "ABC",
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
     }
     
     private BaseController setupForSessionTest(UserSession session) {

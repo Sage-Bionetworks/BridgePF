@@ -29,6 +29,11 @@ public interface Study extends BridgeEntity, StudyIdentifier {
         new SimpleFilterProvider().addFilter("filter",
         SimpleBeanPropertyFilter.filterOutAllExcept("name", "identifier")));
 
+    /** Convenience method for creating a Study using a concrete implementation. */
+    static Study create() {
+        return new DynamoStudy();
+    }
+
     /**
      * The display name of the study (will be seen by participants in email). This name makes the 
      * most sense when it starts with "The".
@@ -167,6 +172,15 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     void setResetPasswordTemplate(EmailTemplate template);
     
     /**
+     * The template for an email that will give the user a link in order to sign in to the app 
+     * (without having to remember a password). The template must at least include the "${token}" 
+     * template variable, which will be used to place a token into a link that must be sent back 
+     * to the Bridge server to create a session. 
+     */
+    EmailTemplate getEmailSignInTemplate();
+    void setEmailSignInTemplate(EmailTemplate template);
+    
+    /**
      * Is this study active? Currently not in use, a de-activated study will be hidden from the 
      * study APIs and will no longer be available for use (a logical delete).
      */
@@ -178,6 +192,12 @@ public interface Study extends BridgeEntity, StudyIdentifier {
 
     /** @see #isStrictUploadValidationEnabled */
     void setStrictUploadValidationEnabled(boolean enabled);
+    
+    /** True if we allow users in this study to send an email with a link to sign into the app. */ 
+    boolean isEmailSignInEnabled();
+    
+    /** @see #isEmailSignInEnabled */
+    void setEmailSignInEnabled(boolean emailSignInEnable);
     
     /** True if this study will export the healthCode when generating a participant roster. */
     boolean isHealthCodeExportEnabled();
@@ -204,6 +224,17 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     /** @see #isExternalIdValidationEnabled(); */
     void setExternalIdValidationEnabled(boolean externalIdValidationEnabled);
     
+    /** 
+     * True if the external ID must be provided when the user signs up. If validation is also 
+     * enabled, this study is configured to use lab codes if desired (username and password auto-
+     * generated from the external ID). If this is false, the external ID is not required when 
+     * submitting a sign up. 
+     */
+    boolean isExternalIdRequiredOnSignup();
+    
+    /** @see #isExternalIdRequiredOnSignup(); */
+    void setExternalIdRequiredOnSignup(boolean externalIdRequiredOnSignup);
+    
     /**
      * Minimum supported app version number. If set, user app clients pointing to an older version will 
      * fail with an httpResponse status code of 410.
@@ -221,4 +252,10 @@ public interface Study extends BridgeEntity, StudyIdentifier {
 
     /** @see #getPushNotificationARNs(); */
     void setPushNotificationARNs(Map<String, String> pushNotificationARNs);
+
+    /** The flag to disable exporting or not. */
+    boolean getDisableExport();
+
+    /** @see #getDisableExport */
+    void setDisableExport(boolean disable);
 }

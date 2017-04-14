@@ -46,6 +46,11 @@ public interface AccountDao {
     void resetPassword(PasswordReset passwordReset);
     
     /**
+     * Call to change a password without a password reset workflow.
+     */
+    void changePassword(Account account, String newPassword);
+    
+    /**
      * Authenticate a user with the supplied credentials, returning that user's account record
      * if successful. 
      */
@@ -76,6 +81,12 @@ public interface AccountDao {
      * up to callers to translate this into the appropriate exception, if any. 
      */
     Account getAccount(Study study, String id);
+    
+    /**
+     * Get an account in the context of a study by the email address used to register the study. Returns 
+     * null if there is no account.
+     */
+    Account getAccountWithEmail(Study study, String email);
     
     /**
      * Delete an account along with the authentication credentials.

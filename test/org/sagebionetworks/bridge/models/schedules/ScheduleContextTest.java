@@ -66,7 +66,7 @@ public class ScheduleContextTest {
         ScheduleContext context = new ScheduleContext.Builder()
                 .withClientInfo(clientInfo)
                 .withStudyIdentifier(studyId)
-                .withTimeZone(PST)
+                .withInitialTimeZone(PST)
                 .withEndsOn(endsOn)
                 .withMinimumPerSchedule(3)
                 .withEvents(events)
@@ -75,7 +75,7 @@ public class ScheduleContextTest {
                 .withNow(now).build();
         assertEquals(studyId, context.getCriteriaContext().getStudyIdentifier());
         assertEquals(clientInfo, context.getCriteriaContext().getClientInfo());
-        assertEquals(PST, context.getZone());
+        assertEquals(PST, context.getInitialTimeZone());
         assertEquals(endsOn, context.getEndsOn());
         assertEquals(events.get("enrollment"), context.getEvent("enrollment"));
         assertEquals(3, context.getMinimumPerSchedule());

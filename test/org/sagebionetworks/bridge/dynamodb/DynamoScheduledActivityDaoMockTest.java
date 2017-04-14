@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -50,7 +49,7 @@ public class DynamoScheduledActivityDaoMockTest {
     private static final String BASE_URL = BridgeConfigFactory.getConfig().getWebservicesURL();
     private static final String ACTIVITY_1_REF = BASE_URL + "/v3/surveys/AAA/revisions/published";
     private static final String ACTIVITY_2_REF = BASE_URL + "/v3/surveys/BBB/revisions/published";
-    private static final String ACTIVITY_3_REF = TestConstants.TEST_3_ACTIVITY.getTask().getIdentifier();
+    private static final String ACTIVITY_3_REF = TestUtils.getActivity3().getTask().getIdentifier();
     
     private DynamoDBMapper mapper;
 
@@ -104,7 +103,7 @@ public class DynamoScheduledActivityDaoMockTest {
     
     @Test
     public void getScheduledActivities() throws Exception {
-        ScheduledActivity activity = activityDao.getActivity(PACIFIC_TIME_ZONE, "AAA", "BBB");
+        ScheduledActivity activity = activityDao.getActivity("AAA", "BBB");
         assertEquals(testSchActivity, activity);
         
     }
@@ -113,7 +112,7 @@ public class DynamoScheduledActivityDaoMockTest {
     public void getActivityThrowsException() throws Exception {
         when(mapper.load(any(DynamoScheduledActivity.class))).thenReturn(null);
         
-        activityDao.getActivity(PACIFIC_TIME_ZONE, "AAA", "BBB");
+        activityDao.getActivity("AAA", "BBB");
     }
 
     /**
@@ -131,14 +130,14 @@ public class DynamoScheduledActivityDaoMockTest {
         ScheduleContext context = new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-            .withTimeZone(PACIFIC_TIME_ZONE)
+            .withInitialTimeZone(PACIFIC_TIME_ZONE)
             .withEndsOn(endsOn)
             .withHealthCode(HEALTH_CODE)
             .withEvents(events).build();
 
         List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
         mockMapperResults(activities);
-        List<ScheduledActivity> activities2 = activityDao.getActivities(context.getZone(), activities);
+        List<ScheduledActivity> activities2 = activityDao.getActivities(context.getInitialTimeZone(), activities);
 
         // Activities are sorted first by date, then by label ("Activity1", "Activity2" & "Activity3")
         // Expired activities are not returned, so this starts on the 12th
@@ -160,7 +159,7 @@ public class DynamoScheduledActivityDaoMockTest {
         ScheduleContext context = new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-            .withTimeZone(PACIFIC_TIME_ZONE)
+            .withInitialTimeZone(PACIFIC_TIME_ZONE)
             .withEndsOn(endsOn)
             .withHealthCode(HEALTH_CODE)
             .withEvents(events).build();
@@ -169,7 +168,7 @@ public class DynamoScheduledActivityDaoMockTest {
         // Only mock the return of one of these activities
         mockMapperResults(Lists.newArrayList(activities.get(0)));
         
-        List<ScheduledActivity> activities2 = activityDao.getActivities(context.getZone(), activities);
+        List<ScheduledActivity> activities2 = activityDao.getActivities(context.getInitialTimeZone(), activities);
 
         // Regardless of the requested activities, only the ones in the db are returned (in this case, there's 1).
         assertEquals(1, activities2.size());
@@ -208,13 +207,13 @@ public class DynamoScheduledActivityDaoMockTest {
     public void canUpdateActivities() {
         DynamoScheduledActivity activity1 = new DynamoScheduledActivity();
         activity1.setHealthCode(HEALTH_CODE);
-        activity1.setActivity(TestConstants.TEST_3_ACTIVITY);
+        activity1.setActivity(TestUtils.getActivity3());
         activity1.setLocalScheduledOn(LocalDateTime.parse("2015-04-11T13:00:00"));
         activity1.setGuid(BridgeUtils.generateGuid());
 
         DynamoScheduledActivity activity2 = new DynamoScheduledActivity();
         activity2.setHealthCode(HEALTH_CODE);
-        activity2.setActivity(TestConstants.TEST_3_ACTIVITY);
+        activity2.setActivity(TestUtils.getActivity3());
         activity2.setLocalScheduledOn(LocalDateTime.parse("2015-04-11T13:00:00"));
         activity2.setStartedOn(DateTime.parse("2015-04-13T18:05:23.000-07:00").getMillis());
         activity2.setFinishedOn(DateTime.parse("2015-04-13T18:20:23.000-07:00").getMillis());

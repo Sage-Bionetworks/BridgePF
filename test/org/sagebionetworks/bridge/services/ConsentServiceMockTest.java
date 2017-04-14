@@ -8,12 +8,15 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 
 import java.util.List;
+import java.util.Map;
 
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -25,6 +28,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -43,7 +47,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ConsentServiceMockTest {
@@ -187,10 +191,15 @@ public class ConsentServiceMockTest {
     }
     
     @Test
-    public void withdrawConsent() throws Exception {
+    public void withdrawConsentWithParticipant() throws Exception {
         account.setEmail("bbb@bbb.com");
         
-        doReturn(new ParticipantOptionsLookup(ImmutableMap.of())).when(optionsService).getOptions(participant.getHealthCode());
+        Map<String,String> optionsMap = Maps.newHashMap();
+        optionsMap.put(EXTERNAL_IDENTIFIER.name(), participant.getExternalId());
+        
+        doReturn(participant.getHealthCode()).when(account).getHealthCode();
+        doReturn(account).when(accountDao).getAccount(study, participant.getId());
+        doReturn(new ParticipantOptionsLookup(optionsMap)).when(optionsService).getOptions(participant.getHealthCode());
         
         List<ConsentSignature> history = account.getConsentSignatureHistory(SUBPOP_GUID);
         history.add(consentSignature);
@@ -220,6 +229,27 @@ public class ConsentServiceMockTest {
         assertEquals("Notification of consent withdrawal for Test Study [ConsentServiceMockTest]", email.getSubject());
         assertEquals("<p>User   &lt;bbb@bbb.com&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>", 
                     email.getMessageParts().get(0).getContent());
+    }
+    
+    @Test
+    public void withdrawConsentWithAccount() throws Exception {
+        Map<String,String> optionsMap = Maps.newHashMap();
+        optionsMap.put(ParticipantOption.EXTERNAL_IDENTIFIER.name(), participant.getExternalId());
+        
+        doReturn(participant.getHealthCode()).when(account).getHealthCode();
+        doReturn(account).when(accountDao).getAccount(study, participant.getId());
+        doReturn(new ParticipantOptionsLookup(optionsMap)).when(optionsService).getOptions(participant.getHealthCode());
+        
+        List<ConsentSignature> history = account.getConsentSignatureHistory(SUBPOP_GUID);
+        history.add(consentSignature);
+        consentService.withdrawConsent(study, SUBPOP_GUID, account, new Withdrawal("For reasons."), SIGNED_ON);
+        
+        verify(accountDao, never()).getAccount(study, participant.getId());
+        verify(accountDao).updateAccount(account);
+        verify(sendMailService).sendEmail(any(MimeTypeEmailProvider.class));
+        verifyNoMoreInteractions(accountDao);
+        
+        // Contents of call are tested in prior test where participant is used
     }
     
     @Test

@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import java.util.List;
 
@@ -32,7 +33,7 @@ public class ExternalIdController extends BaseController {
     }
     
     public Result getExternalIds(String offsetKey, String pageSizeString, String idFilter, String assignmentFilterString) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         // Play will not convert these to null if they are not included in the query string, so we must do the conversion.

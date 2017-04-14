@@ -5,8 +5,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.joda.time.DateTimeZone;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -16,6 +19,20 @@ import com.fasterxml.jackson.databind.node.TextNode;
 
 public enum ParticipantOption {
 
+    TIME_ZONE(null, "timeZone") {
+        public String fromParticipant(StudyParticipant participant) {
+            return DateUtils.timeZoneToOffsetString(participant.getTimeZone());
+        }
+        public String deserialize(JsonNode node) {
+            checkNotNull(node);
+            try {
+                DateTimeZone zone = DateUtils.parseZoneFromOffsetString(node.asText());
+                return DateUtils.timeZoneToOffsetString(zone);
+            } catch(IllegalArgumentException e) {
+                throw new BadRequestException("timeZone is an invalid time zone offset");
+            }
+        }        
+    },
     SHARING_SCOPE(SharingScope.NO_SHARING.name(), "sharingScope") {
         public String fromParticipant(StudyParticipant participant) {
             return (participant.getSharingScope() == null) ? null : participant.getSharingScope().name();
@@ -91,7 +108,7 @@ public enum ParticipantOption {
     private final String defaultValue;
     private final String fieldName;
     
-    private ParticipantOption(String defaultValue, String fieldName) {
+    ParticipantOption(String defaultValue, String fieldName) {
         this.defaultValue = defaultValue;
         this.fieldName = fieldName;
     }
@@ -126,7 +143,7 @@ public enum ParticipantOption {
         
         private final String label;
         
-        private SharingScope(String label) {
+        SharingScope(String label) {
             this.label = label;
         }
         public String getLabel() {

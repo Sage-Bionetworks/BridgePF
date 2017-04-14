@@ -1,10 +1,12 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -31,6 +33,30 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 @Controller
 public class AuthenticationController extends BaseController {
+
+    public Result requestEmailSignIn() { 
+        SignIn signInRequest = parseJson(request(), SignIn.class);
+        
+        authenticationService.requestEmailSignIn(signInRequest);
+        
+        return acceptedResult("Email sent.");
+    }
+    
+    public Result emailSignIn() { 
+        SignIn signInRequest = parseJson(request(), SignIn.class);
+
+        if (isBlank(signInRequest.getStudyId())) {
+            throw new BadRequestException("Study identifier is required.");
+        }
+        Study study = studyService.getStudy(signInRequest.getStudyId());
+        verifySupportedVersionOrThrowException(study);
+        
+        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+        
+        UserSession session = authenticationService.emailSignIn(context, signInRequest);
+        
+        return okResult(UserSessionInfo.toJSON(session));
+    }
 
     public Result signIn() throws Exception {
         return signInWithRetry(5);
@@ -93,9 +119,9 @@ public class AuthenticationController extends BaseController {
     private Result signInWithRetry(int retryCounter) throws Exception {
         UserSession session = getSessionIfItExists();
         if (session == null) {
-            JsonNode json = requestToJSON(request());
             SignIn signIn = parseJson(request(), SignIn.class);
-            Study study = getStudyOrThrowException(json);
+            Study study = studyService.getStudy(signIn.getStudyId());
+            verifySupportedVersionOrThrowException(study);
 
             CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
             
@@ -110,6 +136,8 @@ public class AuthenticationController extends BaseController {
                 throw e;
             }
             writeSessionInfoToMetrics(session);
+            response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
+                    BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
             
             RequestInfo requestInfo = new RequestInfo.Builder()
                     .withUserId(session.getId())
@@ -122,9 +150,6 @@ public class AuthenticationController extends BaseController {
             cacheProvider.updateRequestInfo(requestInfo);
         }
 
-        // Set session token. This way, even if we get a ConsentRequiredException, users are still able to sign consent
-        setSessionToken(session.getSessionToken());
-        
         // You can proceed if 1) you're some kind of system administrator (developer, researcher), or 2)
         // you've consented to research.
         if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {

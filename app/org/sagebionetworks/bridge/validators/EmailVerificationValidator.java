@@ -9,6 +9,8 @@ import org.springframework.validation.Validator;
 @Component
 public class EmailVerificationValidator implements Validator {
     
+    public static final EmailVerificationValidator INSTANCE = new EmailVerificationValidator();
+
     @Override
     public boolean supports(Class<?> clazz) {
         return EmailVerification.class.isAssignableFrom(clazz);

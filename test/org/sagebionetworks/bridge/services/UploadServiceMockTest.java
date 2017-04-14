@@ -12,13 +12,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 
 import java.util.List;
 
-import org.joda.time.DateTime;
-
 import com.google.common.collect.ImmutableList;
-
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,7 +31,7 @@ import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
@@ -44,7 +44,8 @@ public class UploadServiceMockTest {
     
     private static final DateTime START_TIME = DateTime.parse("2016-04-02T10:00:00.000Z");
     private static final DateTime END_TIME = DateTime.parse("2016-04-03T10:00:00.000Z");
-    
+    private static final String MOCK_OFFSET_KEY = "mock-offset-key";
+
     @Mock
     private UploadDao mockDao;
     
@@ -196,9 +197,12 @@ public class UploadServiceMockTest {
         when(mockUploadWithNoRecord.getRecordId()).thenReturn("missing-record-id");
 
         // Mock getUploads/getUpload calls
-        List<? extends Upload> results = ImmutableList.of(mockUpload, mockFailedUpload, mockUploadWithNoRecord);
+        List<Upload> results = ImmutableList.of(mockUpload, mockFailedUpload, mockUploadWithNoRecord);
+        PagedResourceList<Upload> pagedList = new PagedResourceList<Upload>(results, null, API_MAXIMUM_PAGE_SIZE, results.size())
+                .withOffsetKey(MOCK_OFFSET_KEY);
         doReturn(results).when(mockDao).getUploads("ABC", START_TIME, END_TIME);
-        doReturn(results).when(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME);
+        doReturn(pagedList).when(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
+        doReturn(pagedList).when(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME, API_DEFAULT_PAGE_SIZE, null);
         doReturn(mockUpload).when(mockDao).getUpload("upload-id");
         doReturn(mockFailedUpload).when(mockDao).getUpload("failed-upload-id");
         
@@ -216,10 +220,11 @@ public class UploadServiceMockTest {
     @Test
     public void canGetUploads() throws Exception {
         setupUploadMocks();
-        DateTimeRangeResourceList<? extends UploadView> returned = svc.getUploads("ABC", START_TIME, END_TIME);
+        PagedResourceList<? extends UploadView> returned = svc.getUploads("ABC", START_TIME, END_TIME);
         
         verify(mockDao).getUploads("ABC", START_TIME, END_TIME);
         validateUploadMocks(returned);
+        assertNull(returned.getOffsetKey());
     }
     
     @Test
@@ -227,20 +232,34 @@ public class UploadServiceMockTest {
         setupUploadMocks();
         
         // Now verify the study uploads works
-        DateTimeRangeResourceList<? extends UploadView> returned = svc.getStudyUploads(TestConstants.TEST_STUDY,
-                START_TIME, END_TIME);
+        PagedResourceList<? extends UploadView> returned = svc.getStudyUploads(TestConstants.TEST_STUDY,
+                START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
         
-        verify(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME);
+        verify(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
         validateUploadMocks(returned);
+        assertEquals(MOCK_OFFSET_KEY, returned.getOffsetKey());
     }
 
-    private void validateUploadMocks(DateTimeRangeResourceList<? extends UploadView> returned) {
+    @Test
+    public void canGetStudyUploadsWithoutPageSize() throws Exception {
+        setupUploadMocks();
+
+        svc.getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME, null, null);
+
+        verify(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME, API_DEFAULT_PAGE_SIZE, null);
+    }
+
+    private void validateUploadMocks(PagedResourceList<? extends UploadView> returned) {
         verify(mockHealthDataService).getRecordById("record-id");
         verify(mockHealthDataService).getRecordById("missing-record-id");
         verifyNoMoreInteractions(mockHealthDataService);
 
         List<? extends UploadView> uploadList = returned.getItems();
         assertEquals(3, uploadList.size());
+
+        assertEquals(API_MAXIMUM_PAGE_SIZE, returned.getPageSize());
+        assertNull(returned.getOffsetBy());
+        assertEquals(uploadList.size(), returned.getTotal());
 
         // The two sources of information are combined in the view.
         UploadView view = uploadList.get(0);

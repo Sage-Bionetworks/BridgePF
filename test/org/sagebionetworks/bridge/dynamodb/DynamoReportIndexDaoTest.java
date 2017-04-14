@@ -6,8 +6,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
-import java.util.Set;
-
 import javax.annotation.Resource;
 
 import org.junit.After;
@@ -27,7 +25,6 @@ import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.google.common.collect.Sets;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -94,64 +91,62 @@ public class DynamoReportIndexDaoTest {
     
     @Test
     public void canCRUDReportIndex() {
-        int count = dao.getIndices(TEST_STUDY, ReportType.STUDY).getItems().size();
+        int studyIndexCount = dao.getIndices(TEST_STUDY, ReportType.STUDY).getTotal();
+        int participantIndexCount = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT).getTotal();
         // adding twice is fine
         dao.addIndex(studyReportKey1);
         dao.addIndex(studyReportKey1);
         dao.addIndex(studyReportKey2);
 
         ReportTypeResourceList<? extends ReportIndex> indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
-        assertEquals(count+2, indices.getItems().size());
+        assertEquals(studyIndexCount+2, indices.getTotal());
         
-        // Update 3rd record
-        ReportIndex index = indices.getItems().get(count+1);
+        // Update studyReportKey2
+        ReportIndex index = dao.getIndex(studyReportKey2);
         index.setPublic(true);
         dao.updateIndex(index);
-        
-        indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
-        assertTrue(indices.getItems().get(count+1).isPublic());
-        
+
+        index = dao.getIndex(studyReportKey2);
+        assertTrue(index.isPublic());
+
         index.setPublic(false);
         dao.updateIndex(index);
-        
-        indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
-        assertFalse(indices.getItems().get(count+1).isPublic());
-        
-        // Wrong type returns zero records
+
+        index = dao.getIndex(studyReportKey2);
+        assertFalse(index.isPublic());
+
+        // Wrong type returns same count as before
         indices = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT);
-        assertEquals(0, indices.getItems().size());
+        assertEquals(participantIndexCount, indices.getItems().size());
         
         dao.removeIndex(studyReportKey1);
         indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
-        assertEquals(count+1, indices.getItems().size());
+        assertEquals(studyIndexCount+1, indices.getItems().size());
         
         dao.removeIndex(studyReportKey2);
         indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
-        assertEquals(count, indices.getItems().size());
+        assertEquals(studyIndexCount, indices.getItems().size());
     }
     
     @Test
     public void addingExistingIndexDoesNotDeleteMetadata() {
-        int count = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT).getItems().size();
-        
         dao.addIndex(studyReportKey1);
-        ReportTypeResourceList<? extends ReportIndex> indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
-        
-        ReportIndex index = indices.getItems().get(count); // count is now == size()-1 which is what we want 
+
+        ReportIndex index = dao.getIndex(studyReportKey1);
         index.setPublic(true);
         dao.updateIndex(index);
         
         // Now, adding this again should not delete the public = true status of index.
         dao.addIndex(studyReportKey1);
-        indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
-        
-        index = indices.getItems().get(count);
+
+        index = dao.getIndex(studyReportKey1);
         assertTrue(index.isPublic());
     }
     
     @Test
     public void canCreateAndReadParticipantIndex() {
-        int count = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT).getItems().size();
+        int studyIndexCount = dao.getIndices(TEST_STUDY, ReportType.STUDY).getTotal();
+        int participantIndexCount = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT).getItems().size();
         
         // adding twice is fine
         dao.addIndex(participantReportKey1);
@@ -159,23 +154,29 @@ public class DynamoReportIndexDaoTest {
         dao.addIndex(participantReportKey2);
         
         ReportTypeResourceList<? extends ReportIndex> indices = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT);
-        assertEquals(count+2, indices.getItems().size());
-        
-        Set<String> identifiers = Sets.newHashSet(indices.getItems().get(0).getIdentifier(),
-                indices.getItems().get(1).getIdentifier());
-        Set<String> originalIdentifiers = Sets.newHashSet(participantReportKey1.getIdentifier(),
-                participantReportKey2.getIdentifier());
-        assertEquals(originalIdentifiers, identifiers);
-        
-        // wrong type returns no records
+        assertEquals(participantIndexCount+2, indices.getItems().size());
+
+        boolean containsKey1 = false;
+        boolean containsKey2 = false;
+        for (ReportIndex oneIndex : indices.getItems()) {
+            if (oneIndex.getIdentifier().equals(participantReportKey1.getIdentifier())) {
+                containsKey1 = true;
+            } else if (oneIndex.getIdentifier().equals(participantReportKey2.getIdentifier())) {
+                containsKey2 = true;
+            }
+        }
+        assertTrue(containsKey1);
+        assertTrue(containsKey2);
+
+        // Wrong type returns same count as before
         indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
-        assertEquals(0, indices.getItems().size());
+        assertEquals(studyIndexCount, indices.getItems().size());
         
         dao.removeIndex(participantReportKey1);
         dao.removeIndex(participantReportKey2);
         
         indices = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT);
-        assertEquals(count, indices.getItems().size());
+        assertEquals(participantIndexCount, indices.getItems().size());
     }
     
     @Test(expected = EntityNotFoundException.class)

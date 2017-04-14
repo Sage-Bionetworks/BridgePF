@@ -8,18 +8,13 @@ import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-
 import javax.annotation.Resource;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Sets;
-
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.junit.After;
@@ -146,66 +141,6 @@ public class DynamoUploadDaoTest {
         // We don't call Upload Complete in this scenario.
     }
 
-    @Test
-    public void canRetrieveUploadRecords() throws Exception {
-        int numUploads = 2;
-        Map<String, String> healthcodeToUploadId = new HashMap<>();
-        for (int i = 0; i < numUploads; i++) {
-            String healthcode = "code" + i;
-            UploadRequest uploadRequest = createRequest();
-            Upload upload = dao.createUpload(uploadRequest, TEST_STUDY, healthcode, null);
-            String uploadId = upload.getUploadId();
-
-            uploadIds.add(uploadId);
-            healthcodeToUploadId.put(healthcode, uploadId);
-        }
-
-        // GSIs are eventually consistent. Try sleeping here.
-        Thread.sleep(2000);
-
-        DateTime now = DateTime.now();
-
-        List<? extends Upload> uploads = dao.getUploads("code0", now.minusMinutes(1), now);
-        assertEquals(1, uploads.size());
-        assertEquals(healthcodeToUploadId.get("code0"), uploads.get(0).getUploadId());
-        
-        // This is a range outside of the just created records... should not return anything.
-        uploads = dao.getUploads("code0", now.minusMinutes(3), now.minusMinutes(2));
-        assertEquals(0, uploads.size());
-        
-        // Now verify you can get this through the study-based call
-        uploads = dao.getStudyUploads(TEST_STUDY, now.minusMinutes(1), now);
-        assertEquals(numUploads, uploads.size());
-
-        // DDB can return uploads in any order. This is true, regardless of mocking DateTime.now().
-        Set<String> foundHealthCodeSet = new HashSet<>();
-        Set<String> foundUploadIdSet = new HashSet<>();
-        for (Upload oneUpload : uploads) {
-            String foundHealthCode = oneUpload.getHealthCode();
-            String foundUploadId = oneUpload.getUploadId();
-            assertEquals(healthcodeToUploadId.get(foundHealthCode), foundUploadId);
-
-            foundHealthCodeSet.add(foundHealthCode);
-            foundUploadIdSet.add(foundUploadId);
-        }
-        assertEquals(healthcodeToUploadId.keySet(), foundHealthCodeSet);
-        assertEquals(numUploads, foundUploadIdSet.size());
-        assertTrue(foundUploadIdSet.containsAll(healthcodeToUploadId.values()));
-
-        uploads = dao.getStudyUploads(TEST_STUDY, now.minusMinutes(3), now.minusMinutes(2));
-        assertTrue(uploads.isEmpty());
-        
-        // Now delete all the uploads, and a query within the correct time range should return no results
-        for (String healthCode : healthcodeToUploadId.keySet()) {
-            dao.deleteUploadsForHealthCode(healthCode);
-        }
-        uploads = dao.getStudyUploads(TEST_STUDY, now.minusMinutes(3), now);
-        assertTrue(uploads.isEmpty());
-        
-        // We do not need to delete these uploads to clean up the test, we just did it.
-        uploadIds.clear();
-    }
-    
     @Test
     public void deleteByHealthCodeSilentlyFails() {
         // It's not an error if there are no records to delete.

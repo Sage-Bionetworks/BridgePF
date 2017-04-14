@@ -50,7 +50,7 @@ public class CriteriaScheduleStrategyTest {
             "Strategy with all requirements");
     
     private static final SchedulePlanValidator VALIDATOR = new SchedulePlanValidator(Sets.newHashSet(),
-            Sets.newHashSet(TestConstants.TEST_3_ACTIVITY.getTask().getIdentifier()));;
+            Sets.newHashSet(TestUtils.getActivity3().getTask().getIdentifier()));;
     private static final SchedulePlan PLAN = new DynamoSchedulePlan();
     static {
         PLAN.setLabel("Schedule plan label");
@@ -302,8 +302,8 @@ public class CriteriaScheduleStrategyTest {
     
     @Test
     public void validScheduleCriteriaPassesValidation() {
-        Activity activity = new Activity.Builder().withLabel("Label").withTask(TestConstants.TEST_3_ACTIVITY.getTask())
-                .build();
+        Activity activity = new Activity.Builder().withGuid("guid").withLabel("Label")
+                .withTask(TestUtils.getActivity3().getTask()).build();
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.addActivity(activity);
@@ -347,7 +347,7 @@ public class CriteriaScheduleStrategyTest {
     
     @Test
     public void validateScheduleCriteriaCriteriaMissing() {
-        Activity activity = new Activity.Builder().withLabel("Label").withTask(TestConstants.TEST_3_ACTIVITY.getTask())
+        Activity activity = new Activity.Builder().withLabel("Label").withTask(TestUtils.getActivity3().getTask())
                 .build();
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.ONCE);
@@ -380,7 +380,7 @@ public class CriteriaScheduleStrategyTest {
         Schedule schedule = new Schedule();
         schedule.setLabel(label);
         schedule.setScheduleType(ScheduleType.ONCE);
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        schedule.addActivity(TestUtils.getActivity3());
         return schedule;
     }
 

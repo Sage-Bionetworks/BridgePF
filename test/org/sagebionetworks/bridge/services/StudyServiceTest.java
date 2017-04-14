@@ -1,29 +1,32 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.sagebionetworks.bridge.services.StudyService.EXPORTER_SYNAPSE_USER_ID;
 
 import javax.annotation.Resource;
 
+import com.google.common.collect.Sets;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.client.exceptions.SynapseException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -31,7 +34,6 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
-import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -40,31 +42,9 @@ import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
-import org.sagebionetworks.client.SynapseClient;
-import org.sagebionetworks.client.exceptions.SynapseException;
-import org.sagebionetworks.reflection.model.PaginatedResults;
-import org.sagebionetworks.repo.model.AccessControlList;
-import org.sagebionetworks.repo.model.Entity;
-import org.sagebionetworks.repo.model.MembershipInvtnSubmission;
-import org.sagebionetworks.repo.model.Project;
-import org.sagebionetworks.repo.model.ResourceAccess;
-import org.sagebionetworks.repo.model.Team;
-import org.sagebionetworks.repo.model.util.ModelConstants;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import com.google.common.collect.Sets;
-
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class StudyServiceTest {
-
-    private static final Long TEST_USER_ID = Long.parseLong(BridgeConfigFactory.getConfig().getTestSynapseUserId()); // test user exists in synapse
 
     @Resource
     StudyService studyService;
@@ -80,9 +60,6 @@ public class StudyServiceTest {
     
     @Resource
     SubpopulationDao subpopDao;
-    
-    @Resource
-    NotificationTopicService topicService;
 
     @Autowired
     CacheProvider cache;
@@ -91,9 +68,6 @@ public class StudyServiceTest {
     
     private Study study;
 
-    private Project project;
-    private Team team;
-    
     @Before
     public void before() throws SynapseException {
         mockCache = mock(CacheProvider.class);
@@ -127,6 +101,7 @@ public class StudyServiceTest {
             study = studyService.createStudy(study);
             fail("Should have thrown an exception");
         } catch(EntityAlreadyExistsException e) {
+            // expected exception
         }
     }
     
@@ -134,7 +109,7 @@ public class StudyServiceTest {
     public void cannotCreateAStudyWithAVersion() {
         Study testStudy = TestUtils.getValidStudy(StudyServiceTest.class);
         testStudy.setVersion(1L);
-        testStudy = studyService.createStudy(testStudy);
+        studyService.createStudy(testStudy);
     }
     
     @Test
@@ -142,16 +117,19 @@ public class StudyServiceTest {
         study = TestUtils.getValidStudy(StudyServiceTest.class);
         // verify this can be null, that's okay, and the flags are reset correctly on create
         study.setTaskIdentifiers(null);
+        study.setHealthCodeExportEnabled(true);
         study.setActive(false);
         study.setStrictUploadValidationEnabled(false);
-        study.setHealthCodeExportEnabled(true);
         study.setEmailVerificationEnabled(false);
+        study.setEmailSignInEnabled(true);
         study = studyService.createStudy(study);
         
         assertNotNull("Version has been set", study.getVersion());
         assertTrue(study.isActive());
         assertTrue(study.isStrictUploadValidationEnabled()); // by default set to true
         assertTrue(study.isHealthCodeExportEnabled()); // it was set true in the study
+        assertTrue(study.isEmailVerificationEnabled());
+        assertFalse(study.isEmailSignInEnabled());
 
         verify(mockCache).setStudy(study);
         verifyNoMoreInteractions(mockCache);
@@ -162,17 +140,15 @@ public class StudyServiceTest {
                 SubpopulationGuid.create(study.getIdentifier()));
         StudyConsentView view = studyConsentService.getActiveConsent(subpop);
         assertTrue(view.getDocumentContent().contains("This is a placeholder for your consent document."));
-        
-        // Create an associated topic
-        NotificationTopic topic = TestUtils.getNotificationTopic();
-        topic.setStudyId(study.getIdentifier());
-        topicService.createTopic(topic);
-        assertEquals(1, topicService.listTopics(study.getStudyIdentifier()).size());
-        
+
         Study newStudy = studyService.getStudy(study.getIdentifier());
         assertTrue(newStudy.isActive());
         assertTrue(newStudy.isStrictUploadValidationEnabled());
         assertTrue(newStudy.isEmailVerificationEnabled());
+        assertTrue(newStudy.isHealthCodeExportEnabled());
+        assertTrue(newStudy.isEmailVerificationEnabled());
+        assertFalse(newStudy.isEmailSignInEnabled());
+        
         assertEquals(study.getIdentifier(), newStudy.getIdentifier());
         assertEquals("Test Study [StudyServiceTest]", newStudy.getName());
         assertEquals(18, newStudy.getMinAgeOfConsent());
@@ -181,6 +157,9 @@ public class StudyServiceTest {
         assertEquals(0, newStudy.getTaskIdentifiers().size());
         // these should have been changed
         assertNotEquals("http://local-test-junk", newStudy.getStormpathHref());
+        assertEquals("${studyName} link", newStudy.getEmailSignInTemplate().getSubject());
+        assertEquals("Follow link ${token}", newStudy.getEmailSignInTemplate().getBody());
+        
         verify(mockCache).getStudy(newStudy.getIdentifier());
         verify(mockCache).setStudy(newStudy);
         verifyNoMoreInteractions(mockCache);
@@ -190,13 +169,12 @@ public class StudyServiceTest {
         verify(mockCache).getStudy(study.getIdentifier());
         verify(mockCache).setStudy(study);
         verify(mockCache).removeStudy(study.getIdentifier());
-        
-        assertEquals(0, topicService.listTopics(study.getStudyIdentifier()).size());
-        
+
         try {
             studyService.getStudy(study.getIdentifier());
             fail("Should have thrown an exception");
         } catch(EntityNotFoundException e) {
+            // expected exception
         }
         // Verify that all the dependent stuff has been deleted as well:
         assertNull(directoryDao.getDirectoryForStudy(study));
@@ -261,7 +239,8 @@ public class StudyServiceTest {
         study = TestUtils.getValidStudy(StudyServiceTest.class);
         study.setPasswordPolicy(null);
         study.setVerifyEmailTemplate(null);
-        study.setResetPasswordTemplate(new EmailTemplate("   ", null, MimeType.TEXT));
+        study.setResetPasswordTemplate(null);
+        study.setEmailSignInTemplate(null);
         study = studyService.createStudy(study);
         
         assertEquals(PasswordPolicy.DEFAULT_PASSWORD_POLICY, study.getPasswordPolicy());
@@ -269,6 +248,18 @@ public class StudyServiceTest {
         assertNotNull(study.getResetPasswordTemplate());
         assertNotNull(study.getResetPasswordTemplate().getSubject());
         assertNotNull(study.getResetPasswordTemplate().getBody());
+        assertNotNull(study.getEmailSignInTemplate());
+        
+        // Remove them and update... we are set back to defaults
+        study.setPasswordPolicy(null);
+        study.setVerifyEmailTemplate(null);
+        study.setResetPasswordTemplate(null);
+        study.setEmailSignInTemplate(null);
+        study = studyService.updateStudy(study, false);
+        
+        assertNotNull(study.getVerifyEmailTemplate());
+        assertNotNull(study.getResetPasswordTemplate());
+        assertNotNull(study.getEmailSignInTemplate());
     }
     
     @Test
@@ -292,31 +283,59 @@ public class StudyServiceTest {
     @Test
     public void adminsCanChangeSomeValuesResearchersCannot() {
         study = TestUtils.getValidStudy(StudyServiceTest.class);
-        study.setHealthCodeExportEnabled(false);
-        study.setEmailVerificationEnabled(true);
+        // Not the defaults        
+        study.setActive(false);
+        study.setHealthCodeExportEnabled(true);
+        study.setStrictUploadValidationEnabled(false);
+        study.setEmailVerificationEnabled(false);
+        study.setEmailSignInEnabled(true);
+        
         study = studyService.createStudy(study);
-        
-        // Okay, now that these are set, researchers cannot change them
-        study.setHealthCodeExportEnabled(true);
-        study.setEmailVerificationEnabled(false);
-        study = studyService.updateStudy(study, false); // nope
-        assertFalse("isHealthCodeExportEnabled should be false", study.isHealthCodeExportEnabled());
-        assertTrue("isEmailVerificationEnabled should be true", study.isEmailVerificationEnabled());
-        
-        // But administrators can
-        study.setHealthCodeExportEnabled(true);
-        study.setEmailVerificationEnabled(false);
-        study = studyService.updateStudy(study, true); // yep
+        // These are set to the defaults.
+        study = studyService.getStudy(study.getIdentifier());
+        assertTrue(study.isActive());
         assertTrue(study.isHealthCodeExportEnabled());
+        assertTrue(study.isStrictUploadValidationEnabled());
+        assertTrue(study.isEmailVerificationEnabled());
+        assertFalse(study.isEmailSignInEnabled());
+        
+        // Researchers cannot change theseOkay, now that these are set, researchers cannot change them. Except setting active 
+        // to false, which is a logical delete that throws a BadRequestException
+        study.setHealthCodeExportEnabled(false);
+        study.setEmailVerificationEnabled(false);
+        study.setExternalIdValidationEnabled(false);
+        study.setExternalIdRequiredOnSignup(false);
+        study.setEmailSignInEnabled(true);
+        study = studyService.updateStudy(study, false); // nope
+        
+        // These have not changed:
+        assertTrue(study.isHealthCodeExportEnabled());
+        assertTrue(study.isEmailVerificationEnabled());
+        assertTrue(study.isExternalIdValidationEnabled());
+        assertTrue(study.isExternalIdRequiredOnSignup());
+        assertFalse(study.isEmailSignInEnabled());
+        
+        // But administrators can change these
+        study.setHealthCodeExportEnabled(false);
+        study.setEmailVerificationEnabled(false);
+        study.setExternalIdValidationEnabled(false);
+        study.setExternalIdRequiredOnSignup(false);
+        study.setEmailSignInEnabled(true);
+        study = studyService.updateStudy(study, true); // yep
+        
+        assertFalse(study.isHealthCodeExportEnabled());
         assertFalse(study.isEmailVerificationEnabled());
+        assertFalse(study.isExternalIdValidationEnabled());
+        assertFalse(study.isExternalIdRequiredOnSignup());
+        assertTrue(study.isEmailSignInEnabled());
     }
     
     @Test(expected=InvalidEntityException.class)
-    public void updateWithNoTemplatesIsInvalid() {
+    public void updateWithInvalidTemplateIsInvalid() {
         study = TestUtils.getValidStudy(StudyServiceTest.class);
         study = studyService.createStudy(study);
         
-        study.setVerifyEmailTemplate(null);
+        study.setVerifyEmailTemplate(new EmailTemplate(null, null, MimeType.HTML));
         studyService.updateStudy(study, false);
     }
 

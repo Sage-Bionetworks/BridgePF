@@ -61,6 +61,9 @@ public class ExternalIdControllerTest {
     @Mock
     StudyService studyService;
     
+    @Mock
+    UserSession session;
+    
     @Captor
     ArgumentCaptor<List<String>> externalIdCaptor;
     
@@ -74,9 +77,9 @@ public class ExternalIdControllerTest {
         controller.setExternalIdService(externalIdService);
         controller.setStudyService(studyService);
         
-        StudyParticipant participant = new StudyParticipant.Builder().withHealthCode("BBB").build();
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withHealthCode("BBB").build();
         
-        UserSession session = mock(UserSession.class);
         when(session.getParticipant()).thenReturn(participant);
         when(session.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         
@@ -90,6 +93,7 @@ public class ExternalIdControllerTest {
 
     @Test
     public void getExternalIds() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.RESEARCHER);
         // Mock out a response from service
         PagedResourceList<ExternalIdentifierInfo> page = new PagedResourceList<>(EXT_IDS, null, 5, 10)
                 .withOffsetKey("CCC")

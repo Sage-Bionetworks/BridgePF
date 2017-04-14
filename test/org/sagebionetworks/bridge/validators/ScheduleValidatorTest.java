@@ -3,13 +3,14 @@ package org.sagebionetworks.bridge.validators;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
+import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.junit.Before;
 import org.junit.Test;
-import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -31,10 +32,28 @@ public class ScheduleValidatorTest {
     }
     
     @Test
+    public void cannotAddDuplicateTimesToSchedule() {
+        Schedule schedule = new Schedule();
+        schedule.addTimes(LocalTime.parse("10:00:00.000"), LocalTime.parse("10:00:00.000"));
+        
+        assertValidatorMessage(validator, schedule, "times", "cannot contain duplicates");
+    }
+    
+    @Test
+    public void recurringScheduleOK() {
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setExpires(Period.parse("P1D"));
+        schedule.setInterval(Period.parse("P1D"));
+        schedule.addTimes(LocalTime.parse("11:30:00.000"));
+        schedule.addActivity(TestUtils.getActivity3());
+        Validate.entityThrowingException(validator, schedule);
+    }
+    
+    @Test
     public void onTimeScheduleWithAdequateExpirationOK() {
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setExpires(Period.parse("PT36H"));
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        schedule.addActivity(TestUtils.getActivity3());
         Validate.entityThrowingException(validator, schedule);
     }
     
@@ -42,87 +61,62 @@ public class ScheduleValidatorTest {
     public void persistentScheduleDoesNotHaveDelay() {
         schedule.setScheduleType(ScheduleType.PERSISTENT);
         schedule.setDelay(Period.parse("P2D"));
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
-        try {
-            Validate.entityThrowingException(validator, schedule);
-            fail("Should have thrown InvalidEntityException");
-        } catch(InvalidEntityException e) {
-            assertEquals("scheduleType should not have delay, interval, cron expression, times, or an expiration",
-                    e.getErrors().get("scheduleType").get(0));
-        }
+        schedule.addActivity(TestUtils.getActivity3());
+        
+        assertValidatorMessage(validator, schedule, "scheduleType",
+                "should not have delay, interval, cron expression, times, or an expiration");
     }
     
     @Test
     public void persistentScheduleDoesNotHaveInterval() {
         schedule.setScheduleType(ScheduleType.PERSISTENT);
         schedule.setInterval(Period.parse("P2D"));
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
-        try {
-            Validate.entityThrowingException(validator, schedule);
-            fail("Should have thrown InvalidEntityException");
-        } catch(InvalidEntityException e) {
-            assertEquals("scheduleType should not have delay, interval, cron expression, times, or an expiration",
-                    e.getErrors().get("scheduleType").get(0));
-        }
+        schedule.addActivity(TestUtils.getActivity3());
+        
+        assertValidatorMessage(validator, schedule, "scheduleType",
+                "should not have delay, interval, cron expression, times, or an expiration");
     }
     
     @Test
     public void persistentScheduleDoesNotHaveCronExpression() {
         schedule.setScheduleType(ScheduleType.PERSISTENT);
         schedule.setCronTrigger("asdf");
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
-        try {
-            Validate.entityThrowingException(validator, schedule);
-            fail("Should have thrown InvalidEntityException");
-        } catch(InvalidEntityException e) {
-            assertEquals("scheduleType should not have delay, interval, cron expression, times, or an expiration",
-                    e.getErrors().get("scheduleType").get(0));
-        }
+        schedule.addActivity(TestUtils.getActivity3());
+        
+        assertValidatorMessage(validator, schedule, "scheduleType",
+                "should not have delay, interval, cron expression, times, or an expiration");
     }
     
     @Test
     public void persistentScheduleDoesNotHaveTimes() {
         schedule.setScheduleType(ScheduleType.PERSISTENT);
         schedule.addTimes(LocalTime.parse("10:00"));
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
-        try {
-            Validate.entityThrowingException(validator, schedule);
-            fail("Should have thrown InvalidEntityException");
-        } catch(InvalidEntityException e) {
-            assertEquals("scheduleType should not have delay, interval, cron expression, times, or an expiration",
-                    e.getErrors().get("scheduleType").get(0));
-        }
+        schedule.addActivity(TestUtils.getActivity3());
+        
+        assertValidatorMessage(validator, schedule, "scheduleType",
+                "should not have delay, interval, cron expression, times, or an expiration");
     }
     
     @Test
     public void persistentScheduleDoesNotHaveExpiration() {
         schedule.setScheduleType(ScheduleType.PERSISTENT);
         schedule.setExpires(Period.parse("P1D"));
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
-        try {
-            Validate.entityThrowingException(validator, schedule);
-            fail("Should have thrown InvalidEntityException");
-        } catch(InvalidEntityException e) {
-            assertEquals("scheduleType should not have delay, interval, cron expression, times, or an expiration",
-                    e.getErrors().get("scheduleType").get(0));
-        }
+        schedule.addActivity(TestUtils.getActivity3());
+        
+        assertValidatorMessage(validator, schedule, "scheduleType",
+                "should not have delay, interval, cron expression, times, or an expiration");
     }    
     
     @Test
     public void mustHaveAtLeastOneActivityAndAScheduleType() {
-        try {
-            Validate.entityThrowingException(validator, schedule);
-            fail("Should have thrown InvalidEntityException");
-        } catch(InvalidEntityException e) {
-            assertEquals("activities are required", e.getErrors().get("activities").get(0));
-            assertEquals("scheduleType is required", e.getErrors().get("scheduleType").get(0));
-        }
+        assertValidatorMessage(validator, schedule, "activities", "are required");
+        assertValidatorMessage(validator, schedule, "scheduleType", "is required");
     }
     
     @Test
     public void datesMustBeChronologicallyOrdered() {
         // make it valid except for the dates....
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        schedule.addActivity(TestUtils.getActivity3());
         schedule.setScheduleType(ScheduleType.ONCE);
 
         DateTime startsOn = DateUtils.getCurrentDateTime();
@@ -131,17 +125,12 @@ public class ScheduleValidatorTest {
         schedule.setStartsOn(startsOn);
         schedule.setEndsOn(endsOn);
         
-        try {
-            Validate.entityThrowingException(validator, schedule);
-            fail("Should have thrown InvalidEntityException");
-        } catch(InvalidEntityException e) {
-            assertEquals("endsOn should be at least an hour after the startsOn time", e.getErrors().get("endsOn").get(0));
-        }
+        assertValidatorMessage(validator, schedule, "endsOn", "should be at least an hour after the startsOn time");
     }
     
     @Test
     public void surveyRelativePathIsTreatedAsTaskId() {
-        Activity activity = TestConstants.TEST_3_ACTIVITY;
+        Activity activity = TestUtils.getActivity3();
         schedule.addActivity(activity);
         schedule.setScheduleType(ScheduleType.ONCE);
         
@@ -159,12 +148,8 @@ public class ScheduleValidatorTest {
         schedule.setInterval("P2D");
         schedule.setCronTrigger("0 0 12 ? * TUE,THU,SAT *");
         
-        try {
-            Validate.entityThrowingException(validator, schedule);
-            fail("Should have thrown InvalidEntityException");
-        } catch(InvalidEntityException e) {
-            assertEquals("interval and cron expression cannot both be set when a schedule repeats (results are ambiguous)", e.getErrors().get("interval").get(0));
-        }
+        assertValidatorMessage(validator, schedule, "interval",
+                "and cron expression cannot both be set when a schedule repeats (results are ambiguous)");
     }
     
     @Test
@@ -172,12 +157,8 @@ public class ScheduleValidatorTest {
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setExpires("P1D");
-        try {
-            Validate.entityThrowingException(validator, schedule);
-            fail("Should have thrown InvalidEntityException");
-        } catch(InvalidEntityException e) {
-            assertEquals("interval or cron expression must be set when a schedule repeats", e.getErrors().get("interval").get(0));
-        }
+        assertValidatorMessage(validator, schedule, "interval",
+                "or cron expression must be set when a schedule repeats");
         
         schedule.setInterval("P1D");
         try {
@@ -194,12 +175,7 @@ public class ScheduleValidatorTest {
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setExpires("PT30M");
         
-        try {
-            Validate.entityThrowingException(validator, schedule);
-            fail("Should have thrown InvalidEntityException");
-        } catch(InvalidEntityException e) {
-            assertEquals("expires must be at least one hour", e.getErrors().get("expires").get(0));
-        }
+        assertValidatorMessage(validator, schedule, "expires", "must be at least one hour");
     }
     
     @Test
@@ -207,15 +183,10 @@ public class ScheduleValidatorTest {
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setCronTrigger("0 0 12 1/1 * ? *");
-        Activity activity = TestConstants.TEST_3_ACTIVITY;
+        Activity activity = TestUtils.getActivity3();
         schedule.addActivity(activity);
         
-        try {
-            Validate.entityThrowingException(validator, schedule);
-            fail("Should have thrown InvalidEntityException");
-        } catch(InvalidEntityException e) {
-            assertEquals("expires must be set if schedule repeats", e.getErrors().get("expires").get(0));
-        }
+        assertValidatorMessage(validator, schedule, "expires", "must be set if schedule repeats");
         
         schedule.setExpires("P1D");
         Validate.entityThrowingException(validator, schedule);
@@ -227,12 +198,7 @@ public class ScheduleValidatorTest {
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setCronTrigger("2 3 a");
         
-        try {
-            Validate.entityThrowingException(validator, schedule);
-            fail("Should have thrown InvalidEntityException");
-        } catch(InvalidEntityException e) {
-            assertEquals("cronTrigger is an invalid cron expression", e.getErrors().get("cronTrigger").get(0));
-        }
+        assertValidatorMessage(validator, schedule, "cronTrigger", "is an invalid cron expression");
     }
     
     @Test
@@ -242,12 +208,8 @@ public class ScheduleValidatorTest {
         schedule.setCronTrigger("0 0 0 ? * MON *");
         schedule.addTimes("10:00");
 
-        try {
-            Validate.entityThrowingException(validator, schedule);
-            fail("Should have thrown InvalidEntityException");
-        } catch(InvalidEntityException e) {
-            assertEquals("cronTrigger cannot have times (they are included in the expression)", e.getErrors().get("cronTrigger").get(0));
-        }
+        assertValidatorMessage(validator, schedule, "cronTrigger",
+                "cannot have times (they are included in the expression)");
     }
     
     /**
@@ -260,12 +222,7 @@ public class ScheduleValidatorTest {
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setInterval("PT30M");
         
-        try {
-            Validate.entityThrowingException(validator, schedule);
-            fail("Should have thrown InvalidEntityException");
-        } catch(InvalidEntityException e) {
-            assertEquals("interval must be at least one day", e.getErrors().get("interval").get(0));
-        }
+        assertValidatorMessage(validator, schedule, "interval", "must be at least one day");
     }
     
     @Test 
@@ -274,12 +231,8 @@ public class ScheduleValidatorTest {
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setInterval("P2D");
         
-        try {
-            Validate.entityThrowingException(validator, schedule);
-            fail("Should have thrown InvalidEntityException");
-        } catch(InvalidEntityException e) {
-            assertEquals("scheduleType set to once, but also has an interval and/or cron expression", e.getErrors().get("scheduleType").get(0));
-        }
+        assertValidatorMessage(validator, schedule, "scheduleType",
+                "set to once, but also has an interval and/or cron expression");
     }
     
     @Test 
@@ -288,12 +241,8 @@ public class ScheduleValidatorTest {
         schedule.setScheduleType(ScheduleType.ONCE);
         schedule.setCronTrigger("0 0 8 ? * TUE,THU *");
         
-        try {
-            Validate.entityThrowingException(validator, schedule);
-            fail("Should have thrown InvalidEntityException");
-        } catch(InvalidEntityException e) {
-            assertEquals("scheduleType set to once, but also has an interval and/or cron expression", e.getErrors().get("scheduleType").get(0));
-        }
+        assertValidatorMessage(validator, schedule, "scheduleType",
+                "set to once, but also has an interval and/or cron expression");
     }
     
     @Test
@@ -302,12 +251,7 @@ public class ScheduleValidatorTest {
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setInterval("P2D");
         
-        try {
-            Validate.entityThrowingException(validator, schedule);
-            fail("Should have thrown InvalidEntityException");
-        } catch(InvalidEntityException e) {
-            assertEquals("times are required for interval-based schedules", e.getErrors().get("times").get(0));
-        }
+        assertValidatorMessage(validator, schedule, "times", "are required for interval-based schedules");
     }
     
     @Test
@@ -316,12 +260,7 @@ public class ScheduleValidatorTest {
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setInterval("PT23H59M");
         
-        try {
-            Validate.entityThrowingException(validator, schedule);
-            fail("Should have thrown InvalidEntityException");
-        } catch(InvalidEntityException e) {
-            assertEquals("interval must be at least one day", e.getErrors().get("interval").get(0));
-        }
+        assertValidatorMessage(validator, schedule, "interval", "must be at least one day");
     }
     
     @Test
@@ -331,12 +270,8 @@ public class ScheduleValidatorTest {
         schedule.addTimes("08:00");
         schedule.setDelay("PT5H");
         
-        try {
-            Validate.entityThrowingException(validator, schedule);
-            fail("Should have thrown InvalidEntityException");
-        } catch(InvalidEntityException e) {
-            assertEquals("delay is less than one day, and times of day are also set for this schedule, which is ambiguous", e.getErrors().get("delay").get(0));
-        }
+        assertValidatorMessage(validator, schedule, "delay",
+                "is less than one day, and times of day are also set for this schedule, which is ambiguous");
     }
     
     @Test
@@ -345,7 +280,7 @@ public class ScheduleValidatorTest {
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setExpires("P1D");
         schedule.setCronTrigger("0 0 8 1/1 * ? *");
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        schedule.addActivity(TestUtils.getActivity3());
         
         Validate.entityThrowingException(validator, schedule);
     }
@@ -357,10 +292,9 @@ public class ScheduleValidatorTest {
         schedule.setInterval("P1D");
         schedule.setExpires("P1D");
         schedule.addTimes("08:00");
-        schedule.addActivity(TestConstants.TEST_3_ACTIVITY);
+        schedule.addActivity(TestUtils.getActivity3());
         
         Validate.entityThrowingException(validator, schedule);
-        
     }
     
 }

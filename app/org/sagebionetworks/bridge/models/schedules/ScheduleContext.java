@@ -17,13 +17,13 @@ import com.google.common.collect.ImmutableMap;
 /**
  * All the information necessary to convert a schedule into a set of activities, on a given request. 
  * Because some of these values derive from the user, there is a validator that is run on this object 
- * that verifies the four required values (studyId, zone, endsOn and healthCode) are present.
+ * that verifies the four required values (studyId, initialTimeZone, endsOn and healthCode) are present.
  * 
  * @see org.sagebionetworks.bridge.validators.ScheduleContextValidator
  */
 public final class ScheduleContext {
     
-    private final DateTimeZone zone;
+    private final DateTimeZone initialTimeZone;
     private final DateTime endsOn;
     private final Map<String,DateTime> events;
     private final DateTime now;
@@ -31,9 +31,9 @@ public final class ScheduleContext {
     private final int minimumPerSchedule;
     private final CriteriaContext criteriaContext;
     
-    private ScheduleContext(DateTimeZone zone, DateTime endsOn, Map<String, DateTime> events, DateTime now,
+    private ScheduleContext(DateTimeZone initialTimeZone, DateTime endsOn, Map<String, DateTime> events, DateTime now,
             int minimumPerSchedule, DateTime accountCreatedOn, CriteriaContext criteriaContext) {
-        this.zone = zone;
+        this.initialTimeZone = initialTimeZone;
         this.endsOn = endsOn;
         this.events = events;
         this.now = now;
@@ -43,12 +43,12 @@ public final class ScheduleContext {
     }
     
     /**
-     * The time zone of the client at the time of this request. This allows the scheduler to accommodate 
-     * moves between time zones.
+     * The initial time zone of the user, the first time that user contacts the server for activities. This allows the 
+     * scheduler to interpret events against the user's initial time zone.
      * @return
      */
-    public DateTimeZone getZone() {
-        return zone;
+    public DateTimeZone getInitialTimeZone() {
+        return initialTimeZone;
     }
     
     /**
@@ -78,9 +78,8 @@ public final class ScheduleContext {
     }
     
     /**
-     * Returns now in the user's time zone. Practically this is not that important but 
-     * it allows you to calculate all time calculations in one time zone, which is easier 
-     * to reason about.
+     * Now in the user's initial time zone. This will be used to calculate the times of recurring 
+     * activities.
      * @return
      */
     public DateTime getNow() {
@@ -101,7 +100,7 @@ public final class ScheduleContext {
     
     @Override
     public int hashCode() {
-        return Objects.hash(zone, endsOn, events, now, accountCreatedOn, minimumPerSchedule, criteriaContext);
+        return Objects.hash(initialTimeZone, endsOn, events, now, accountCreatedOn, minimumPerSchedule, criteriaContext);
     }
 
     @Override
@@ -111,7 +110,7 @@ public final class ScheduleContext {
         if (obj == null || getClass() != obj.getClass())
             return false;
         ScheduleContext other = (ScheduleContext) obj;
-        return (Objects.equals(endsOn, other.endsOn) && Objects.equals(zone, other.zone) &&
+        return (Objects.equals(endsOn, other.endsOn) && Objects.equals(initialTimeZone, other.initialTimeZone) &&
                 Objects.equals(events, other.events) && Objects.equals(now, other.now) &&
                 Objects.equals(minimumPerSchedule, other.minimumPerSchedule) &&
                 Objects.equals(accountCreatedOn, other.accountCreatedOn) && 
@@ -120,14 +119,14 @@ public final class ScheduleContext {
 
     @Override
     public String toString() {
-        return "ScheduleContext [zone=" + zone + ", endsOn=" + endsOn + ", events=" + events + ", now=" + now
+        return "ScheduleContext [initialTimeZone=" + initialTimeZone + ", endsOn=" + endsOn + ", events=" + events + ", now=" + now
                 + ", accountCreatedOn=" + accountCreatedOn + ", minimumPerSchedule=" + minimumPerSchedule 
                 + ", criteriaContext=" + criteriaContext + "]";
     }
 
 
     public static class Builder {
-        private DateTimeZone zone;
+        private DateTimeZone initialTimeZone;
         private DateTime endsOn;
         private Map<String,DateTime> events;
         private int minimumPerSchedule;
@@ -159,8 +158,8 @@ public final class ScheduleContext {
             this.minimumPerSchedule = minimumPerSchedule;
             return this;
         }
-        public Builder withTimeZone(DateTimeZone zone) {
-            this.zone = zone;
+        public Builder withInitialTimeZone(DateTimeZone initialTimeZone) {
+            this.initialTimeZone = initialTimeZone;
             return this;
         }
         public Builder withEndsOn(DateTime endsOn) {
@@ -190,7 +189,7 @@ public final class ScheduleContext {
             return this;
         }
         public Builder withContext(ScheduleContext context) {
-            withTimeZone(context.zone);
+            withInitialTimeZone(context.initialTimeZone);
             withEndsOn(context.endsOn);
             withEvents(context.events);
             withNow(context.now);
@@ -204,9 +203,10 @@ public final class ScheduleContext {
             // pretty much everything else is optional. I would like healthCode to be required, but it's not:
             // we use these selection criteria to select subpopulations on sign up.
             if (now == null) {
-                now = (zone == null) ? DateTime.now() : DateTime.now(zone);
+                now = (initialTimeZone == null) ? DateTime.now() : DateTime.now(initialTimeZone);
             }
-            return new ScheduleContext(zone, endsOn, events, now, minimumPerSchedule, accountCreatedOn, contextBuilder.build());
+            return new ScheduleContext(initialTimeZone, endsOn, events, now, minimumPerSchedule, accountCreatedOn,
+                    contextBuilder.build());
         }
     }
 }

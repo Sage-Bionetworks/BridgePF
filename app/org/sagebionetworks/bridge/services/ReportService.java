@@ -2,9 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-
 import org.joda.time.LocalDate;
 import org.joda.time.Period;
 import org.joda.time.PeriodType;
@@ -14,7 +11,6 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.ReportDataDao;
 import org.sagebionetworks.bridge.dao.ReportIndexDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
@@ -24,18 +20,9 @@ import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-
 @Component
 public class ReportService {
     private static final int MAX_RANGE_DAYS = 45;
-    
-    // A short-lived cache to prevent repeatedly writing an index on batch jobs
-    private static final Cache<String,String> REPORT_INDEX_CACHE = CacheBuilder.newBuilder()
-            .maximumSize(1000)
-            .expireAfterWrite(1, TimeUnit.MINUTES)
-            .build();
     
     private ReportDataDao reportDataDao;
     private ReportIndexDao reportIndexDao;
@@ -128,7 +115,6 @@ public class ReportService {
                 .withStudyIdentifier(studyId).build();
         
         reportDataDao.deleteReportData(key);
-        REPORT_INDEX_CACHE.invalidate(key.getIndexKeyString());
         reportIndexDao.removeIndex(key);
     }
     
@@ -146,7 +132,6 @@ public class ReportService {
         LocalDate endDate = LocalDate.now();
         DateRangeResourceList<? extends ReportData> results = getStudyReport(studyId, identifier, startDate, endDate);
         if (results.getItems().isEmpty()) {
-            REPORT_INDEX_CACHE.invalidate(key.getIndexKeyString());
             reportIndexDao.removeIndex(key);
         }
     }
@@ -200,14 +185,7 @@ public class ReportService {
     }
 
     private void addToIndex(ReportDataKey key) {
-        try {
-            REPORT_INDEX_CACHE.get(key.getIndexKeyString(), () -> {
-                reportIndexDao.addIndex(key);
-                return key.getIndexKeyString();
-            });
-        } catch(ExecutionException e) {
-            throw new BridgeServiceException(e);
-        }
+        reportIndexDao.addIndex(key);
     }
     
     private LocalDate defaultValueToMinusDays(LocalDate submittedValue, int minusDays) {

@@ -162,7 +162,7 @@ public class SurveyController extends BaseController {
         Survey survey = getSurveyWithoutCacheInternal(surveyGuid, createdOnString, session);
         
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
-            surveyService.deleteSurveyPermanently(survey);
+            surveyService.deleteSurveyPermanently(studyId, survey);
         } else if (session.isInRole(DEVELOPER)) {
             surveyService.deleteSurvey(survey);    
         } else {

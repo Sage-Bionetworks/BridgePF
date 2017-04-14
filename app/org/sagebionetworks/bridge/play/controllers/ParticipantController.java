@@ -1,23 +1,28 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
+import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import java.util.List;
 import java.util.Set;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import play.mvc.BodyParser;
+import play.mvc.Result;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
-import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
@@ -33,13 +38,6 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.ParticipantService;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.google.common.collect.Sets;
-
-import play.mvc.BodyParser;
-import play.mvc.Result;
 
 @Controller
 public class ParticipantController extends BaseController {
@@ -80,9 +78,16 @@ public class ParticipantController extends BaseController {
                 .withId(session.getId()).build();
         participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
         
-        CriteriaContext context = getCriteriaContext(session);
-        session = authenticationService.getSession(study, context);
-        updateSession(session);
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withLanguages(session.getParticipant().getLanguages())
+                .withClientInfo(getClientInfoFromUserAgentHeader())
+                .withHealthCode(session.getHealthCode())
+                .withUserId(session.getId())
+                .withUserDataGroups(updated.getDataGroups())
+                .withStudyIdentifier(session.getStudyIdentifier())
+                .build();
+        
+        sessionUpdateService.updateParticipant(session, context, updated);
         
         return okResult(UserSessionInfo.toJSON(session));
     }
@@ -175,15 +180,19 @@ public class ParticipantController extends BaseController {
         return okResult("Request to reset password sent to user.");
     }
     
-    public Result getActivityHistory(String userId, String offsetKey, String pageSizeString) throws Exception {
+    public Result getActivityHistoryV2(String userId, String activityGuid, String scheduledOnStartString,
+            String scheduledOnEndString, String offsetBy, String pageSizeString) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        Integer pageSize = (pageSizeString != null) ? Integer.parseInt(pageSizeString,10) : null;
+        DateTime scheduledOnStart = getDateTimeOrDefault(scheduledOnStartString, null);
+        DateTime scheduledOnEnd = getDateTimeOrDefault(scheduledOnEndString, null);
+        int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
         
-        PagedResourceList<? extends ScheduledActivity> history = participantService.getActivityHistory(study, userId, offsetKey, pageSize);
+        ForwardCursorPagedResourceList<ScheduledActivity> page = participantService.getActivityHistory(
+                study, userId, activityGuid, scheduledOnStart, scheduledOnEnd, offsetBy, pageSize);
         
-        return ok(ScheduledActivity.RESEARCHER_SCHEDULED_ACTIVITY_WRITER.writeValueAsString(history));
+        return ok(ScheduledActivity.RESEARCHER_SCHEDULED_ACTIVITY_WRITER.writeValueAsString(page));
     }
     
     public Result deleteActivities(String userId) throws Exception {
@@ -204,11 +213,11 @@ public class ParticipantController extends BaseController {
         return okResult("Email verification request has been resent to user.");
     }
     
-    public Result resendConsentAgreement(String userId, String guid) {
+    public Result resendConsentAgreement(String userId, String subpopulationGuid) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
+        SubpopulationGuid subpopGuid = SubpopulationGuid.create(subpopulationGuid);
         participantService.resendConsentAgreement(study, subpopGuid, userId);
         
         return okResult("Consent agreement resent to user.");
@@ -226,14 +235,27 @@ public class ParticipantController extends BaseController {
         return okResult("User has been withdrawn from the study.");
     }
     
+    public Result withdrawConsent(String userId, String subpopulationGuid) {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        Withdrawal withdrawal = parseJson(request(), Withdrawal.class);
+        long withdrewOn = DateTime.now().getMillis();
+        SubpopulationGuid subpopGuid = SubpopulationGuid.create(subpopulationGuid);
+        
+        participantService.withdrawConsent(study, userId, subpopGuid, withdrawal, withdrewOn);
+        
+        return okResult("User has been withdrawn from subpopulation '"+subpopulationGuid+"'.");
+    }
+    
     public Result getUploads(String userId, String startTimeString, String endTimeString) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
         DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
         DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
-        
-        DateTimeRangeResourceList<? extends UploadView> uploads = participantService.getUploads(
+
+        PagedResourceList<? extends UploadView> uploads = participantService.getUploads(
                 study, userId, startTime, endTime);
 
         return okResult(uploads);
