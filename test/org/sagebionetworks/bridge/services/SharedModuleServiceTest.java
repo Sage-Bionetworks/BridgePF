@@ -90,6 +90,9 @@ public class SharedModuleServiceTest {
         when(mockMetadataService.getMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION)).thenReturn(
                 makeValidMetadataWithSchema());
 
+        ArgumentCaptor<UploadSchema> schemaArgumentCaptor = ArgumentCaptor.forClass(UploadSchema.class);
+        when(mockSchemaService.createSchemaRevisionV4(any(), schemaArgumentCaptor.capture())).thenReturn(null);
+
         // mock schema service
         UploadSchema sharedSchema = UploadSchema.create();
         assertFalse(sharedSchema.getPublished());
@@ -102,7 +105,9 @@ public class SharedModuleServiceTest {
         assertEquals(SharedModuleType.SCHEMA, status.getModuleType());
         assertEquals(SCHEMA_ID, status.getSchemaId());
         assertEquals(SCHEMA_REV, status.getSchemaRevision().intValue());
-        assertTrue(sharedSchema.getPublished());
+
+        UploadSchema modifiedSchema = schemaArgumentCaptor.getValue();
+        assertTrue(modifiedSchema.getPublished());
 
         // verify calls to create schema
         verify(mockSchemaService).createSchemaRevisionV4(TestConstants.TEST_STUDY, sharedSchema);
@@ -170,6 +175,9 @@ public class SharedModuleServiceTest {
         when(mockMetadataService.queryMetadataById(MODULE_ID, true, true, null, null)).thenReturn(ImmutableList.of(
                 makeValidMetadataWithSchema()));
 
+        ArgumentCaptor<UploadSchema> schemaArgumentCaptor = ArgumentCaptor.forClass(UploadSchema.class);
+        when(mockSchemaService.createSchemaRevisionV4(any(), schemaArgumentCaptor.capture())).thenReturn(null);
+
         // mock schema service
         UploadSchema sharedSchema = UploadSchema.create();
         assertFalse(sharedSchema.getPublished());
@@ -182,7 +190,9 @@ public class SharedModuleServiceTest {
         assertEquals(SharedModuleType.SCHEMA, status.getModuleType());
         assertEquals(SCHEMA_ID, status.getSchemaId());
         assertEquals(SCHEMA_REV, status.getSchemaRevision().intValue());
-        assertTrue(sharedSchema.getPublished());
+
+        UploadSchema modifiedSchema = schemaArgumentCaptor.getValue();
+        assertTrue(modifiedSchema.getPublished());
 
         // verify calls to create schema
         verify(mockSchemaService).createSchemaRevisionV4(TestConstants.TEST_STUDY, sharedSchema);
