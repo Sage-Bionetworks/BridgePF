@@ -4,16 +4,22 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anySetOf;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.services.SharedModuleMetadataServiceTest.makeValidMetadata;
 
 import java.util.List;
 import java.util.function.Function;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,6 +32,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.dao.SurveyDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
@@ -40,8 +47,6 @@ import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 
-import com.google.common.collect.Lists;
-
 @RunWith(MockitoJUnitRunner.class)
 public class SurveyServiceMockTest {
 
@@ -54,6 +59,9 @@ public class SurveyServiceMockTest {
     
     @Mock
     SchedulePlanService mockSchedulePlanService;
+
+    @Mock
+    SharedModuleMetadataService mockSharedModuleMetadataService;
     
     @Captor
     ArgumentCaptor<GuidCreatedOnVersionHolder> keysCaptor;
@@ -68,6 +76,7 @@ public class SurveyServiceMockTest {
         service = new SurveyService();
         service.setSurveyDao(mockSurveyDao);
         service.setSchedulePlanService(mockSchedulePlanService);
+        service.setSharedModuleMetadataService(mockSharedModuleMetadataService);
     }
     
     @Test
@@ -120,7 +129,35 @@ public class SurveyServiceMockTest {
         verify(mockSurveyDao).deleteSurveyPermanently(keysCaptor.capture());
         assertEquals(survey, keysCaptor.getValue());
     }
-    
+
+    @Test(expected = BadRequestException.class)
+    public void logicallyDeleteSurveyNotEmptySharedModules() {
+        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), anySetOf(String.class)))
+                .thenReturn(ImmutableList.of(makeValidMetadata()));
+
+        Survey survey = createSurvey();
+        doReturn(survey).when(mockSurveyDao).getSurvey(any());
+        service.deleteSurvey(survey);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void physicallyDeleteSurveyNotEmptySharedModules() {
+        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), anySetOf(String.class)))
+                .thenReturn(ImmutableList.of(makeValidMetadata()));
+
+        List<SchedulePlan> plans = createSchedulePlanListWithSurveyReference(false);
+
+        Activity oldActivity = getActivityList(plans).get(0);
+        Activity activity = new Activity.Builder().withActivity(oldActivity)
+                .withSurvey("Survey", "otherGuid", SURVEY_CREATED_ON).build();
+        getActivityList(plans).set(0, activity);
+
+        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
+        Survey survey = createSurvey();
+
+        service.deleteSurveyPermanently(TEST_STUDY, survey);
+    }
+
     @Test
     public void deleteSurveyFailsOnPublishedSurvey() {
         Survey survey = createSurvey();

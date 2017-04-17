@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID;
 
 import java.util.HashMap;
 import java.util.List;
@@ -19,7 +20,10 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.SharedModuleMetadataDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
+import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleType;
+import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.SharedModuleMetadataValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -29,11 +33,23 @@ public class SharedModuleMetadataService {
     private static final Logger LOG = LoggerFactory.getLogger(SharedModuleMetadataService.class);
 
     private SharedModuleMetadataDao metadataDao;
+    private UploadSchemaService uploadSchemaService;
+    private SurveyService surveyService;
 
     /** Shared Module Metadata DAO, configured by Spring. */
     @Autowired
     public final void setMetadataDao(SharedModuleMetadataDao metadataDao) {
         this.metadataDao = metadataDao;
+    }
+
+    @Autowired
+    public final void setUploadSchemaService(UploadSchemaService uploadSchemaService) {
+        this.uploadSchemaService = uploadSchemaService;
+    }
+
+    @Autowired
+    public final void setSurveyService(SurveyService surveyService) {
+        this.surveyService = surveyService;
     }
 
     /**
@@ -56,8 +72,33 @@ public class SharedModuleMetadataService {
         // validate metadata
         Validate.entityThrowingException(SharedModuleMetadataValidator.INSTANCE, metadata);
 
+        // verify if the reference schema/survey exists
+        validateSchemaOrSurveyExists(metadata);
+
         // call through to DAO
         return metadataDao.createMetadata(metadata);
+    }
+
+    // helper method to validate existence of schema/survey based on given metadata
+    private void validateSchemaOrSurveyExists(SharedModuleMetadata metadata) {
+        SharedModuleType type = metadata.getModuleType();
+        if (type == SharedModuleType.SCHEMA) {
+            String schemaId = metadata.getSchemaId();
+            int schemaRevision = metadata.getSchemaRevision();
+            try {
+                uploadSchemaService.getUploadSchemaByIdAndRev(SHARED_STUDY_ID, schemaId, schemaRevision);
+            } catch (EntityNotFoundException e) {
+                throw new BadRequestException("Upload schema " + schemaId + " referred does not exist: " + e);
+            }
+        } else if (type == SharedModuleType.SURVEY) {
+            String surveyGuid = metadata.getSurveyGuid();
+            long createdOn = metadata.getSurveyCreatedOn();
+
+            Survey survey = surveyService.getSurvey(new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn));
+            if (survey == null) {
+                throw new BadRequestException("Survey " + surveyGuid + " referred does not exist.");
+            }
+        }
     }
 
     // Helper method to get the latest version of the given module. Returns 0 if there are no modules.
@@ -241,6 +282,9 @@ public class SharedModuleMetadataService {
 
         // validate metadata
         Validate.entityThrowingException(SharedModuleMetadataValidator.INSTANCE, metadata);
+
+        // verify if related schema/survey exists as well
+        validateSchemaOrSurveyExists(metadata);
 
         // call through to DAO
         return metadataDao.updateMetadata(metadata);

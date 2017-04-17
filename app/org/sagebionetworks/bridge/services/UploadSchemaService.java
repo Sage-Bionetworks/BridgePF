@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.DataType;
@@ -80,12 +81,18 @@ public class UploadSchemaService {
         UploadSchemaService.singleChoiceDefaultLength = SINGLE_CHOICE_DEFAULT_LENGTH;
     }
 
+    private SharedModuleMetadataService sharedModuleMetadataService;
     private UploadSchemaDao uploadSchemaDao;
 
     /** DAO for upload schemas. This is configured by Spring. */
     @Autowired
     public final void setUploadSchemaDao(UploadSchemaDao uploadSchemaDao) {
         this.uploadSchemaDao = uploadSchemaDao;
+    }
+
+    @Autowired
+    public final void setSharedModuleMetadataService(SharedModuleMetadataService sharedModuleMetadataService) {
+        this.sharedModuleMetadataService = sharedModuleMetadataService;
     }
 
     /**
@@ -497,6 +504,23 @@ public class UploadSchemaService {
         // Schema ID is validated by getUploadSchemaAllRevisions()
 
         List<UploadSchema> schemaList = getUploadSchemaAllRevisions(studyId, schemaId);
+
+        StringBuilder sb = new StringBuilder("(");
+        for (int i = 0; i < schemaList.size(); i++) {
+            sb.append(schemaList.get(i).getRevision());
+            if (i + 1 != schemaList.size()) {
+                sb.append(", ");
+            }
+        }
+        sb.append(")");
+
+        List<SharedModuleMetadata> sharedModuleMetadataList = sharedModuleMetadataService.queryAllMetadata(false, false,
+                "schemaId=\'" + schemaId + "\'" + " AND schemaRevision IN " + sb, null);
+
+        if (sharedModuleMetadataList.size() != 0) {
+            throw new BadRequestException("Cannot delete specified Upload Schema because a shared module still refers to it.");
+        }
+
         uploadSchemaDao.deleteUploadSchemas(schemaList);
     }
 
@@ -508,6 +532,14 @@ public class UploadSchemaService {
         // Schema ID and rev are validated by getUploadSchemaByIdAndRev()
 
         UploadSchema schema = getUploadSchemaByIdAndRev(studyId, schemaId, rev);
+
+        List<SharedModuleMetadata> sharedModuleMetadataList = sharedModuleMetadataService.queryAllMetadata(false, false,
+                "schemaId=\'" + schemaId + "\'" + " AND schemaRevision=" + rev, null);
+
+        if (sharedModuleMetadataList.size() != 0) {
+            throw new BadRequestException("Cannot delete specified Upload Schema because a shared module still refers to it.");
+        }
+
         uploadSchemaDao.deleteUploadSchemas(ImmutableList.of(schema));
     }
 

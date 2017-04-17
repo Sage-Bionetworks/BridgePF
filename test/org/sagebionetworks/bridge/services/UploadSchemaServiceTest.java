@@ -6,10 +6,14 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anySetOf;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.services.SharedModuleMetadataServiceTest.makeValidMetadata;
 
 import java.util.List;
 import java.util.Map;
@@ -44,13 +48,16 @@ public class UploadSchemaServiceTest {
     private UploadSchema svcInputSchema;
     private UploadSchemaDao dao;
     private UploadSchemaService svc;
+    private SharedModuleMetadataService mockSharedModuleMetadataService;
 
     @Before
     public void setup() {
         svcInputSchema = makeSimpleSchema();
         dao = mock(UploadSchemaDao.class);
+        mockSharedModuleMetadataService = mock(SharedModuleMetadataService.class);
         svc = new UploadSchemaService();
         svc.setUploadSchemaDao(dao);
+        svc.setSharedModuleMetadataService(mockSharedModuleMetadataService);
     }
 
     @Test(expected = BadRequestException.class)
@@ -231,6 +238,15 @@ public class UploadSchemaServiceTest {
         svc.deleteUploadSchemaById(TestConstants.TEST_STUDY, SCHEMA_ID);
     }
 
+    @Test(expected = BadRequestException.class)
+    public void deleteByIdNotEmptySharedModules() {
+        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), anySetOf(String.class)))
+                .thenReturn(ImmutableList.of(makeValidMetadata()));
+        List<UploadSchema> schemaListToDelete = ImmutableList.of(makeSimpleSchema());
+        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID)).thenReturn(schemaListToDelete);
+        svc.deleteUploadSchemaById(TestConstants.TEST_STUDY, SCHEMA_ID);
+    }
+
     @Test
     public void deleteByIdSuccess() {
         // mock dao
@@ -278,6 +294,16 @@ public class UploadSchemaServiceTest {
         } catch (EntityNotFoundException ex) {
             assertEquals("Can't find schema " + SCHEMA_ID + "-v" + SCHEMA_REV, ex.getMessage());
         }
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void deleteByIdAndRevNotEmptySharedModules() {
+        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), anySetOf(String.class)))
+                .thenReturn(ImmutableList.of(makeValidMetadata()));
+        UploadSchema schemaToDelete = makeSimpleSchema();
+        when(dao.getUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(
+                schemaToDelete);
+        svc.deleteUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV);
     }
 
     @Test
