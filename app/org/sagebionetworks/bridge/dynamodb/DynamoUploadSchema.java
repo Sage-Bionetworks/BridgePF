@@ -53,6 +53,7 @@ public class DynamoUploadSchema implements UploadSchema {
     private Long surveyCreatedOn;
     private String studyId;
     private Long version;
+    private boolean published;
 
     /** {@inheritDoc} */
     @DynamoDBIgnore
@@ -288,6 +289,18 @@ public class DynamoUploadSchema implements UploadSchema {
     @Override
     public void setStudyId(String studyId) {
         this.studyId = studyId;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean getPublished() {
+        return this.published;
+    }
+
+    /** @see #getPublished */
+    @Override
+    public void setPublished(boolean published) {
+        this.published = published;
     }
 
     /**

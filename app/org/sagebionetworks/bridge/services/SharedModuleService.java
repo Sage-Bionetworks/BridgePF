@@ -103,6 +103,9 @@ public class SharedModuleService {
             int schemaRev = metadata.getSchemaRevision();
             UploadSchema schema = schemaService.getUploadSchemaByIdAndRev(BridgeConstants.SHARED_STUDY_ID, schemaId,
                     schemaRev);
+
+            // also make the schema published
+            schema.setPublished(true);
             schemaService.createSchemaRevisionV4(studyId, schema);
 
             // Schema ID and rev are the same in the shared study and in the local study.
