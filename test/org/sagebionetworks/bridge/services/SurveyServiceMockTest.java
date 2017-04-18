@@ -111,10 +111,10 @@ public class SurveyServiceMockTest {
 
         // verify query args
         ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
-        verify(mockSharedModuleMetadataService).queryAllMetadata(anyBoolean(), anyBoolean(), queryCaptor.capture(),  anySetOf(String.class));
+        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(),  eq(null));
 
         String queryStr = queryCaptor.getValue();
-        assertEquals(queryStr, "surveyGuid=\'" + survey.getGuid() + "\' AND surveyCreatedOn=" + survey.getCreatedOn());
+        assertEquals("surveyGuid=\'" + survey.getGuid() + "\' AND surveyCreatedOn=" + survey.getCreatedOn(), queryStr);
 
         verify(mockSurveyDao).deleteSurvey(surveyCaptor.capture());
         assertEquals(survey, surveyCaptor.getValue());
@@ -136,10 +136,10 @@ public class SurveyServiceMockTest {
 
         // verify query args
         ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
-        verify(mockSharedModuleMetadataService).queryAllMetadata(anyBoolean(), anyBoolean(), queryCaptor.capture(),  anySetOf(String.class));
+        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(),  eq(null));
 
         String queryStr = queryCaptor.getValue();
-        assertEquals(queryStr, "surveyGuid=\'" + survey.getGuid() + "\' AND surveyCreatedOn=" + survey.getCreatedOn());
+        assertEquals("surveyGuid=\'" + survey.getGuid() + "\' AND surveyCreatedOn=" + survey.getCreatedOn(), queryStr);
 
         verify(mockSurveyDao).deleteSurveyPermanently(keysCaptor.capture());
         assertEquals(survey, keysCaptor.getValue());
@@ -164,13 +164,6 @@ public class SurveyServiceMockTest {
         Survey survey = createSurvey();
 
         service.deleteSurveyPermanently(TEST_STUDY, survey);
-
-        // verify query args
-        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
-        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(), eq(null));
-
-        String queryStr = queryCaptor.getValue();
-        assertEquals(queryStr, "surveyGuid=\'" + survey.getGuid() + "\' AND surveyCreatedOn=" + survey.getCreatedOn());
     }
 
     @Test
