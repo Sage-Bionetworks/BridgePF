@@ -7,6 +7,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anySetOf;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
@@ -107,7 +108,14 @@ public class SurveyServiceMockTest {
         doReturn(survey).when(mockSurveyDao).getSurvey(any());
         
         service.deleteSurvey(survey);
-        
+
+        // verify query args
+        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockSharedModuleMetadataService).queryAllMetadata(anyBoolean(), anyBoolean(), queryCaptor.capture(),  anySetOf(String.class));
+
+        String queryStr = queryCaptor.getValue();
+        assertEquals(queryStr, "surveyGuid=\'" + survey.getGuid() + "\' AND surveyCreatedOn=" + survey.getCreatedOn());
+
         verify(mockSurveyDao).deleteSurvey(surveyCaptor.capture());
         assertEquals(survey, surveyCaptor.getValue());
     }
@@ -125,7 +133,14 @@ public class SurveyServiceMockTest {
         Survey survey = createSurvey();
         
         service.deleteSurveyPermanently(TEST_STUDY, survey);
-        
+
+        // verify query args
+        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockSharedModuleMetadataService).queryAllMetadata(anyBoolean(), anyBoolean(), queryCaptor.capture(),  anySetOf(String.class));
+
+        String queryStr = queryCaptor.getValue();
+        assertEquals(queryStr, "surveyGuid=\'" + survey.getGuid() + "\' AND surveyCreatedOn=" + survey.getCreatedOn());
+
         verify(mockSurveyDao).deleteSurveyPermanently(keysCaptor.capture());
         assertEquals(survey, keysCaptor.getValue());
     }
@@ -145,17 +160,17 @@ public class SurveyServiceMockTest {
         when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), anySetOf(String.class)))
                 .thenReturn(ImmutableList.of(makeValidMetadata()));
 
-        List<SchedulePlan> plans = createSchedulePlanListWithSurveyReference(false);
-
-        Activity oldActivity = getActivityList(plans).get(0);
-        Activity activity = new Activity.Builder().withActivity(oldActivity)
-                .withSurvey("Survey", "otherGuid", SURVEY_CREATED_ON).build();
-        getActivityList(plans).set(0, activity);
-
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
+        doReturn(ImmutableList.of()).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
         Survey survey = createSurvey();
 
         service.deleteSurveyPermanently(TEST_STUDY, survey);
+
+        // verify query args
+        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(), eq(null));
+
+        String queryStr = queryCaptor.getValue();
+        assertEquals(queryStr, "surveyGuid=\'" + survey.getGuid() + "\' AND surveyCreatedOn=" + survey.getCreatedOn());
     }
 
     @Test

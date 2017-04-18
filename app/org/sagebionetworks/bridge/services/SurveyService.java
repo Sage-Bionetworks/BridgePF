@@ -181,10 +181,10 @@ public class SurveyService {
         checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
         checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
 
-        checkConstraintsBeforePhysicalDelete(studyId, keys);
-
         // verify shared module existence as well
         verifySharedModuleExistence(keys);
+
+        checkConstraintsBeforePhysicalDelete(studyId, keys);
 
         surveyDao.deleteSurveyPermanently(keys);
     }

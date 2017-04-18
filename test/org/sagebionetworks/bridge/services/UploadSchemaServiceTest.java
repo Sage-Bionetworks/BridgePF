@@ -9,6 +9,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anySetOf;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -256,6 +257,13 @@ public class UploadSchemaServiceTest {
         // execute and verify delete call
         svc.deleteUploadSchemaById(TestConstants.TEST_STUDY, SCHEMA_ID);
         verify(dao).deleteUploadSchemas(schemaListToDelete);
+
+        // verify query args
+        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(), eq(null));
+
+        String queryStr = queryCaptor.getValue();
+        assertEquals("schemaId=\'" + SCHEMA_ID + "\'" + " AND schemaRevision IN (0)", queryStr);
     }
 
     @Test(expected = BadRequestException.class)
@@ -316,6 +324,13 @@ public class UploadSchemaServiceTest {
         // execute and verify delete call
         svc.deleteUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV);
         verify(dao).deleteUploadSchemas(ImmutableList.of(schemaToDelete));
+
+        // verify query args
+        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(), eq(null));
+
+        String queryStr = queryCaptor.getValue();
+        assertEquals("schemaId=\'" + SCHEMA_ID + "\'" + " AND schemaRevision=" + SCHEMA_REV, queryStr);
     }
 
     @Test

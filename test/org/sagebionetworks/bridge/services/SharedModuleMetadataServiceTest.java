@@ -527,7 +527,6 @@ public class SharedModuleMetadataServiceTest {
     @Test(expected = BadRequestException.class)
     public void updateNotFoundSchema() {
         SharedModuleMetadata svcInputMetadata = makeValidMetadata();
-        //SharedModuleMetadata daoOutputMetadata = makeValidMetadata();
         when(mockDao.getMetadataByIdAndVersion(anyString(), anyInt())).thenReturn(svcInputMetadata);
 
         when(mockUploadSchemaService.getUploadSchemaByIdAndRev(SHARED_STUDY_ID, SCHEMA_ID, SCHEMA_REV)).thenThrow(EntityNotFoundException.class);
