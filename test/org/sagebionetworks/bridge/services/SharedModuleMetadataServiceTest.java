@@ -99,7 +99,7 @@ public class SharedModuleMetadataServiceTest {
         svcInputMetadata.setSurveyCreatedOn(1L);
         svcInputMetadata.setSurveyGuid("test-survey-guid");
         GuidCreatedOnVersionHolder holder = new GuidCreatedOnVersionHolderImpl("test-survey-guid", 1L);
-        when(mockSurveyService.getSurvey(eq(holder))).thenReturn(null);
+        when(mockSurveyService.getSurvey(eq(holder))).thenThrow(EntityNotFoundException.class);
         svc.createMetadata(svcInputMetadata);
     }
 
@@ -536,7 +536,7 @@ public class SharedModuleMetadataServiceTest {
     @Test(expected = BadRequestException.class)
     public void updateNotFoundSurvey() {
         SharedModuleMetadata svcInputMetadata = makeValidMetadata();
-        when(mockSurveyService.getSurvey(any())).thenReturn(null);
+        when(mockSurveyService.getSurvey(any())).thenThrow(EntityNotFoundException.class);
         when(mockDao.getMetadataByIdAndVersion(anyString(), anyInt())).thenReturn(svcInputMetadata);
         svcInputMetadata.setSchemaId(null);
         svcInputMetadata.setSchemaRevision(null);
