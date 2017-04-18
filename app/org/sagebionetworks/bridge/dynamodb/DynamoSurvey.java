@@ -34,6 +34,8 @@ public class DynamoSurvey implements Survey {
     private String guid;
     private long createdOn;
     private long modifiedOn;
+    private String moduleId;
+    private Integer moduleVersion;
     private Long version;
     private String name;
     private String identifier;
@@ -63,6 +65,8 @@ public class DynamoSurvey implements Survey {
         setGuid(survey.getGuid());
         setCreatedOn(survey.getCreatedOn());
         setModifiedOn(survey.getModifiedOn());
+        setModuleId(survey.getModuleId());
+        setModuleVersion(survey.getModuleVersion());
         setVersion(survey.getVersion());
         setName(survey.getName());
         setIdentifier(survey.getIdentifier());
@@ -134,6 +138,30 @@ public class DynamoSurvey implements Survey {
     @JsonDeserialize(using = DateTimeToPrimitiveLongDeserializer.class)
     public void setModifiedOn(long modifiedOn) {
         this.modifiedOn = modifiedOn;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public String getModuleId() {
+        return moduleId;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setModuleId(String moduleId) {
+        this.moduleId = moduleId;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Integer getModuleVersion() {
+        return moduleVersion;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setModuleVersion(Integer moduleVersion) {
+        this.moduleVersion = moduleVersion;
     }
 
     @Override
@@ -221,20 +249,8 @@ public class DynamoSurvey implements Survey {
 
     @Override
     public final int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + Objects.hashCode(studyKey);
-        result = prime * result + Objects.hashCode(guid);
-        result = prime * result + Objects.hashCode(createdOn);
-        result = prime * result + Objects.hashCode(modifiedOn);
-        result = prime * result + Objects.hashCode(version);
-        result = prime * result + Objects.hashCode(name);
-        result = prime * result + Objects.hashCode(identifier);
-        result = prime * result + Objects.hashCode(published);
-        result = prime * result + Objects.hashCode(deleted);
-        result = prime * result + Objects.hashCode(schemaRevision);
-        result = prime * result + Objects.hashCode(elements);
-        return result;
+        return Objects.hash(studyKey, guid, createdOn, modifiedOn, moduleId, moduleVersion, version, name, identifier,
+                published, deleted, schemaRevision, elements);
     }
 
     @Override
@@ -249,6 +265,8 @@ public class DynamoSurvey implements Survey {
                 && Objects.equals(this.guid, that.guid)
                 && Objects.equals(this.createdOn, that.createdOn)
                 && Objects.equals(this.modifiedOn, that.modifiedOn)
+                && Objects.equals(this.moduleId, that.moduleId)
+                && Objects.equals(this.moduleVersion, that.moduleVersion)
                 && Objects.equals(this.version, that.version)
                 && Objects.equals(this.name, that.name)
                 && Objects.equals(this.identifier, that.identifier)
@@ -260,7 +278,9 @@ public class DynamoSurvey implements Survey {
 
     @Override
     public String toString() {
-        return String.format("DynamoSurvey [studyKey=%s, guid=%s, createdOn=%s, modifiedOn=%s, version=%s, name=%s, identifier=%s, published=%s, deleted=%s, schemaRevision=%s, elements=%s]",
-            studyKey, guid, createdOn, modifiedOn, version, name, identifier, published, deleted, schemaRevision, elements);
+        return String.format("DynamoSurvey [studyKey=%s, guid=%s, createdOn=%s, modifiedOn=%s, moduleId=%s, " +
+                "moduleVersion=%d, version=%s, name=%s, identifier=%s, published=%s, deleted=%s, schemaRevision=%s, " +
+                "elements=%s]", studyKey, guid, createdOn, modifiedOn, moduleId, moduleVersion, version, name,
+                identifier, published, deleted, schemaRevision, elements);
     }
 }

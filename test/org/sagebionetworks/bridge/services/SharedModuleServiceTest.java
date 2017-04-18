@@ -108,6 +108,8 @@ public class SharedModuleServiceTest {
 
         UploadSchema modifiedSchema = schemaArgumentCaptor.getValue();
         assertTrue(modifiedSchema.getPublished());
+        assertEquals(MODULE_ID, modifiedSchema.getModuleId());
+        assertEquals(MODULE_VERSION, modifiedSchema.getModuleVersion().intValue());
 
         // verify calls to create schema
         verify(mockSchemaService).createSchemaRevisionV4(TestConstants.TEST_STUDY, sharedSchema);
@@ -140,6 +142,8 @@ public class SharedModuleServiceTest {
         verify(mockSurveyService).createSurvey(surveyToCreateCaptor.capture());
         Survey surveyToCreate = surveyToCreateCaptor.getValue();
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, surveyToCreate.getStudyIdentifier());
+        assertEquals(MODULE_ID, surveyToCreate.getModuleId());
+        assertEquals(MODULE_VERSION, surveyToCreate.getModuleVersion().intValue());
 
         // verify call to publish survey
         verify(mockSurveyService).publishSurvey(TestConstants.TEST_STUDY, LOCAL_SURVEY_KEY, true);
@@ -193,6 +197,8 @@ public class SharedModuleServiceTest {
 
         UploadSchema modifiedSchema = schemaArgumentCaptor.getValue();
         assertTrue(modifiedSchema.getPublished());
+        assertEquals(MODULE_ID, modifiedSchema.getModuleId());
+        assertEquals(MODULE_VERSION, modifiedSchema.getModuleVersion().intValue());
 
         // verify calls to create schema
         verify(mockSchemaService).createSchemaRevisionV4(TestConstants.TEST_STUDY, sharedSchema);

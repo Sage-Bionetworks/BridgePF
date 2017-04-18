@@ -6,9 +6,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
-import java.util.List;
-import java.util.Map;
-
+import com.fasterxml.jackson.databind.JsonNode;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 
@@ -16,7 +14,6 @@ import org.joda.time.DateTime;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.surveys.DataType;
 import org.sagebionetworks.bridge.models.surveys.DateConstraints;
 import org.sagebionetworks.bridge.models.surveys.DateTimeConstraints;
@@ -29,6 +26,8 @@ import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 
 @SuppressWarnings("unchecked")
 public class DynamoSurveyTest {
+    private static final String MODULE_ID = "test-survey-module";
+    private static final int MODULE_VERSION = 3;
     private static final long TEST_CREATED_ON_MILLIS = DateTime.parse("2015-05-22T18:34-0700").getMillis();
     private static final long TEST_MODIFIED_ON_MILLIS = DateTime.parse("2015-05-22T18:57-0700").getMillis();
 
@@ -53,37 +52,40 @@ public class DynamoSurveyTest {
         survey.getElements().add(screen);
 
         // Convert to JSON.
-        String jsonText = BridgeObjectMapper.get().writeValueAsString(survey);
+        JsonNode jsonNode = BridgeObjectMapper.get().convertValue(survey, JsonNode.class);
 
         // Convert JSON to map to validate JSON. Note that study ID is intentionally omitted, but type is added.
-        Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(jsonText, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(11, jsonMap.size());
-        assertEquals("test-survey-guid", jsonMap.get("guid"));
-        assertEquals(2, jsonMap.get("version"));
-        assertEquals(survey.getName(), jsonMap.get("name"));
-        assertEquals(survey.getIdentifier(), jsonMap.get("identifier"));
-        assertTrue((boolean) jsonMap.get("published"));
-        assertTrue((boolean) jsonMap.get("deleted"));
-        assertEquals(42, jsonMap.get("schemaRevision"));
-        assertEquals("Survey", jsonMap.get("type"));
+        assertEquals(13, jsonNode.size());
+        assertEquals("test-survey-guid", jsonNode.get("guid").textValue());
+        assertEquals(2, jsonNode.get("version").intValue());
+        assertEquals(MODULE_ID, jsonNode.get("moduleId").textValue());
+        assertEquals(MODULE_VERSION, jsonNode.get("moduleVersion").intValue());
+        assertEquals(survey.getName(), jsonNode.get("name").textValue());
+        assertEquals(survey.getIdentifier(), jsonNode.get("identifier").textValue());
+        assertTrue(jsonNode.get("published").booleanValue());
+        assertTrue(jsonNode.get("deleted").booleanValue());
+        assertEquals(42, jsonNode.get("schemaRevision").intValue());
+        assertEquals("Survey", jsonNode.get("type").textValue());
         
 
         // Timestamps are stored as long, but serialized as ISO timestamps. Convert them back to long millis so we
         // don't have to deal with timezones and formatting issues.
-        assertEquals(TEST_CREATED_ON_MILLIS, DateTime.parse((String) jsonMap.get("createdOn")).getMillis());
-        assertEquals(TEST_MODIFIED_ON_MILLIS, DateTime.parse((String) jsonMap.get("modifiedOn")).getMillis());
+        assertEquals(TEST_CREATED_ON_MILLIS, DateTime.parse(jsonNode.get("createdOn").textValue()).getMillis());
+        assertEquals(TEST_MODIFIED_ON_MILLIS, DateTime.parse(jsonNode.get("modifiedOn").textValue()).getMillis());
 
         // Just test that we have the right number of elements. In-depth serialization testing is done by
         // SurveyElementTest
-        List<Object> jsonElementList = (List<Object>) jsonMap.get("elements");
+        JsonNode jsonElementList = jsonNode.get("elements");
         assertEquals(10, jsonElementList.size());
 
         // Convert back to POJO and validate. Note that study ID is still missing, since it was removed from the JSON.
-        Survey convertedSurvey = BridgeObjectMapper.get().readValue(jsonText, Survey.class);
+        Survey convertedSurvey = BridgeObjectMapper.get().convertValue(jsonNode, Survey.class);
         assertNull(convertedSurvey.getStudyIdentifier());
         assertEquals("test-survey-guid", convertedSurvey.getGuid());
         assertEquals(TEST_CREATED_ON_MILLIS, convertedSurvey.getCreatedOn());
         assertEquals(TEST_MODIFIED_ON_MILLIS, convertedSurvey.getModifiedOn());
+        assertEquals(MODULE_ID, convertedSurvey.getModuleId());
+        assertEquals(MODULE_VERSION, convertedSurvey.getModuleVersion().intValue());
         assertEquals(2, convertedSurvey.getVersion().longValue());
         assertEquals(survey.getName(), convertedSurvey.getName());
         assertEquals(survey.getIdentifier(), convertedSurvey.getIdentifier());
@@ -130,6 +132,8 @@ public class DynamoSurveyTest {
         assertEquals("test-survey-guid", copy.getGuid());
         assertEquals(TEST_CREATED_ON_MILLIS, copy.getCreatedOn());
         assertEquals(TEST_MODIFIED_ON_MILLIS, copy.getModifiedOn());
+        assertEquals(MODULE_ID, copy.getModuleId());
+        assertEquals(MODULE_VERSION, copy.getModuleVersion().intValue());
         assertEquals(2, copy.getVersion().longValue());
         assertEquals(survey.getName(), copy.getName());
         assertEquals(survey.getIdentifier(), copy.getIdentifier());
@@ -144,6 +148,16 @@ public class DynamoSurveyTest {
     @Test
     public void equalsVerifier() {
         EqualsVerifier.forClass(DynamoSurvey.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();
+    }
+
+    @Test
+    public void testToString() {
+        Survey survey = makeTestSurvey();
+        String surveyString = survey.toString();
+        assertTrue(surveyString.contains("createdOn=" + TEST_CREATED_ON_MILLIS));
+        assertTrue(surveyString.contains("guid=test-survey-guid"));
+        assertTrue(surveyString.contains("moduleId=" + MODULE_ID));
+        assertTrue(surveyString.contains("moduleVersion=" + MODULE_VERSION));
     }
 
     private static void assertEqualsSurveyElement(SurveyElement expected, SurveyElement actual) {
@@ -161,6 +175,8 @@ public class DynamoSurveyTest {
         survey.setGuid("test-survey-guid");
         survey.setCreatedOn(TEST_CREATED_ON_MILLIS);
         survey.setModifiedOn(TEST_MODIFIED_ON_MILLIS);
+        survey.setModuleId(MODULE_ID);
+        survey.setModuleVersion(MODULE_VERSION);
         survey.setPublished(true);
         survey.setDeleted(true);
         return survey;

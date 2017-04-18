@@ -61,6 +61,18 @@ public interface UploadSchema extends BridgeEntity {
     /** @see #getMinAppVersion */
     void setMinAppVersion(String osName, Integer minAppVersion);
 
+    /** Module ID, if this schema was imported from a shared module. */
+    String getModuleId();
+
+    /** @see #getModuleId */
+    void setModuleId(String moduleId);
+
+    /** Module version, if this schema was imported from a shared module. */
+    Integer getModuleVersion();
+
+    /** @see #getModuleVersion */
+    void setModuleVersion(Integer moduleVersion);
+
     /**
      * Human-friendly displayable schema name, such as "Tapping Activity Task". This can be changed across different
      * schema revisions.
@@ -124,7 +136,6 @@ public interface UploadSchema extends BridgeEntity {
 
     /**
      * return if this upload schema is published: if it is, updating it will throw exception
-     * @return
      */
     boolean getPublished();
 
