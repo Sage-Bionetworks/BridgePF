@@ -630,6 +630,15 @@ public class UploadSchemaServiceTest {
         svc.updateSchemaRevisionV4(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV, svcInputSchema);
     }
 
+    @Test(expected = BadRequestException.class)
+    public void updateV4PublishedSchema() {
+        // mock as published schema
+        svcInputSchema.setPublished(true);
+        when(dao.getUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(svcInputSchema);
+
+        svc.updateSchemaRevisionV4(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV, svcInputSchema);
+    }
+
     @Test
     public void updateV4InvalidSchema() {
         // mock dao output - Must have a schema to update or we'll throw a 404.
