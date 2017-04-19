@@ -45,6 +45,8 @@ public class DynamoUploadSchema implements UploadSchema {
     private List<UploadFieldDefinition> fieldDefList = ImmutableList.of();
     private Map<String, Integer> maxAppVersions = new HashMap<>();
     private Map<String, Integer> minAppVersions = new HashMap<>();
+    private String moduleId;
+    private Integer moduleVersion;
     private String name;
     private int rev;
     private String schemaId;
@@ -179,6 +181,30 @@ public class DynamoUploadSchema implements UploadSchema {
     @Override
     public void setMinAppVersion(String osName, Integer minAppVersion) {
         BridgeUtils.putOrRemove(minAppVersions, osName, minAppVersion);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public String getModuleId() {
+        return moduleId;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setModuleId(String moduleId) {
+        this.moduleId = moduleId;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Integer getModuleVersion() {
+        return moduleVersion;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setModuleVersion(Integer moduleVersion) {
+        this.moduleVersion = moduleVersion;
     }
 
     /** {@inheritDoc} */

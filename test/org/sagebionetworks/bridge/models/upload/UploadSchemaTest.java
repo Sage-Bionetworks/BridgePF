@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.junit.Test;
@@ -17,10 +19,12 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.AppVersionHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.json.JsonUtils;
 
 @SuppressWarnings("unchecked")
 public class UploadSchemaTest {
+    private static final String MODULE_ID = "test-schema-module";
+    private static final int MODULE_VERSION = 3;
+
     @Test
     public void fieldDefList() {
         UploadSchema schema = UploadSchema.create();
@@ -205,6 +209,8 @@ public class UploadSchemaTest {
         String jsonText = "{\n" +
                 "   \"maxAppVersions\":{\"iOS\":37, \"Android\":42},\n" +
                 "   \"minAppVersions\":{\"iOS\":13, \"Android\":23},\n" +
+                "   \"moduleId\":\"" + MODULE_ID + "\",\n" +
+                "   \"moduleVersion\":" + MODULE_VERSION + ",\n" +
                 "   \"name\":\"Test Schema\",\n" +
                 "   \"revision\":3,\n" +
                 "   \"published\":true,\n" +
@@ -230,6 +236,8 @@ public class UploadSchemaTest {
 
         // convert to POJO
         UploadSchema uploadSchema = BridgeObjectMapper.get().readValue(jsonText, UploadSchema.class);
+        assertEquals(MODULE_ID, uploadSchema.getModuleId());
+        assertEquals(MODULE_VERSION, uploadSchema.getModuleVersion().intValue());
         assertEquals("Test Schema", uploadSchema.getName());
         assertEquals(3, uploadSchema.getRevision());
         assertEquals("test-schema", uploadSchema.getSchemaId());
@@ -259,58 +267,61 @@ public class UploadSchemaTest {
         // Add study ID and verify that it doesn't get leaked into the JSON
         uploadSchema.setStudyId("test-study");
 
-        // convert back to JSON
+        // convert back to JSON - Note that we do this weird thing converting it to a string then reading it into a
+        // JsonNode. This is because elsewhere, when we test PUBLIC_SCHEMA_WRITER, we have to do the same thing, and
+        // Jackson has a weirdness where depending on how you convert it, you might get an IntNode or a LongNode. So
+        // for consistency in tests, we should do it the same way every time.
         String convertedJson = BridgeObjectMapper.get().writeValueAsString(uploadSchema);
+        JsonNode jsonNode = BridgeObjectMapper.get().readTree(convertedJson);
+        assertEquals(15, jsonNode.size());
+        assertEquals(MODULE_ID, jsonNode.get("moduleId").textValue());
+        assertEquals(MODULE_VERSION, jsonNode.get("moduleVersion").intValue());
+        assertEquals("Test Schema", jsonNode.get("name").textValue());
+        assertEquals(3, jsonNode.get("revision").intValue());
+        assertEquals("test-schema", jsonNode.get("schemaId").textValue());
+        assertEquals("ios_survey", jsonNode.get("schemaType").textValue());
+        assertEquals("test-study", jsonNode.get("studyId").textValue());
+        assertEquals("survey-guid", jsonNode.get("surveyGuid").textValue());
+        assertEquals("UploadSchema", jsonNode.get("type").textValue());
+        assertEquals(6,  jsonNode.get("version").intValue());
+        assertTrue(jsonNode.get("published").booleanValue());
 
-        // then convert to a map so we can validate the raw JSON
-        Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(13, jsonMap.size());
-        assertEquals("Test Schema", jsonMap.get("name"));
-        assertEquals(3, jsonMap.get("revision"));
-        assertEquals("test-schema", jsonMap.get("schemaId"));
-        assertEquals("ios_survey", jsonMap.get("schemaType"));
-        assertEquals("test-study", jsonMap.get("studyId"));
-        assertEquals("survey-guid", jsonMap.get("surveyGuid"));
-        assertEquals("UploadSchema", jsonMap.get("type"));
-        assertEquals(6,  jsonMap.get("version"));
-        assertEquals(true, jsonMap.get("published"));
-
-        Map<String, Integer> maxAppVersionMap = (Map<String, Integer>) jsonMap.get("maxAppVersions");
+        JsonNode maxAppVersionMap = jsonNode.get("maxAppVersions");
         assertEquals(2, maxAppVersionMap.size());
         assertEquals(37, maxAppVersionMap.get("iOS").intValue());
         assertEquals(42, maxAppVersionMap.get("Android").intValue());
 
-        Map<String, Integer> minAppVersionMap = (Map<String, Integer>) jsonMap.get("minAppVersions");
+        JsonNode minAppVersionMap = jsonNode.get("minAppVersions");
         assertEquals(2, minAppVersionMap.size());
         assertEquals(13, minAppVersionMap.get("iOS").intValue());
         assertEquals(23, minAppVersionMap.get("Android").intValue());
 
         // The createdOn time is converted into ISO timestamp, but might be in a different timezone. Ensure that it
         // still refers to the correct instant in time, down to the millisecond.
-        long resultSurveyCreatedOnMillis = DateTime.parse((String) jsonMap.get("surveyCreatedOn")).getMillis();
+        long resultSurveyCreatedOnMillis = DateTime.parse(jsonNode.get("surveyCreatedOn").textValue()).getMillis();
         assertEquals(surveyCreatedOnMillis, resultSurveyCreatedOnMillis);
 
-        List<Map<String, Object>> fieldDefJsonList = (List<Map<String, Object>>) jsonMap.get("fieldDefinitions");
+        JsonNode fieldDefJsonList = jsonNode.get("fieldDefinitions");
         assertEquals(2, fieldDefJsonList.size());
 
-        Map<String, Object> fooJsonMap = fieldDefJsonList.get(0);
-        assertEquals("foo", fooJsonMap.get("name"));
-        assertTrue((boolean) fooJsonMap.get("required"));
-        assertEquals("int", fooJsonMap.get("type"));
+        JsonNode fooJsonMap = fieldDefJsonList.get(0);
+        assertEquals("foo", fooJsonMap.get("name").textValue());
+        assertTrue(fooJsonMap.get("required").booleanValue());
+        assertEquals("int", fooJsonMap.get("type").textValue());
 
-        Map<String, Object> barJsonMap = fieldDefJsonList.get(1);
-        assertEquals("bar", barJsonMap.get("name"));
-        assertFalse((boolean) barJsonMap.get("required"));
-        assertEquals("string", barJsonMap.get("type"));
+        JsonNode barJsonMap = fieldDefJsonList.get(1);
+        assertEquals("bar", barJsonMap.get("name").textValue());
+        assertFalse(barJsonMap.get("required").booleanValue());
+        assertEquals("string", barJsonMap.get("type").textValue());
 
         // Serialize it again using the public writer, which includes all fields except studyId.
         String publicJson = UploadSchema.PUBLIC_SCHEMA_WRITER.writeValueAsString(uploadSchema);
-        Map<String, Object> publicJsonMap = BridgeObjectMapper.get().readValue(publicJson, JsonUtils.TYPE_REF_RAW_MAP);
+        JsonNode publicJsonNode = BridgeObjectMapper.get().readTree(publicJson);
 
         // Public JSON is missing studyId, but is otherwise identical to the non-public (internal worker) JSON.
-        assertFalse(publicJsonMap.containsKey("studyId"));
-        publicJsonMap.put("studyId", "test-study");
-        assertEquals(jsonMap, publicJsonMap);
+        assertFalse(publicJsonNode.has("studyId"));
+        ((ObjectNode) publicJsonNode).put("studyId", "test-study");
+        assertEquals(jsonNode, publicJsonNode);
     }
 
     @Test

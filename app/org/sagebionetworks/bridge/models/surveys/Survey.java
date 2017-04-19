@@ -28,7 +28,19 @@ public interface Survey extends GuidCreatedOnVersionHolder, BridgeEntity  {
     
     long getModifiedOn();
     void setModifiedOn(long modifiedOn);
-    
+
+    /** Module ID, if this survey was imported from a shared module. */
+    String getModuleId();
+
+    /** @see #getModuleId */
+    void setModuleId(String moduleId);
+
+    /** Module version, if this survey was imported from a shared module. */
+    Integer getModuleVersion();
+
+    /** @see #getModuleVersion */
+    void setModuleVersion(Integer moduleVersion);
+
     Long getVersion();
     void setVersion(Long version);
     

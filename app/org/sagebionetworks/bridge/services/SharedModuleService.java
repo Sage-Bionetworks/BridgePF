@@ -95,6 +95,8 @@ public class SharedModuleService {
         // Callers will have passed in a non-null metadata object. This preconditions check is just to check against
         // bad coding.
         checkNotNull(metadata, "metadata must be specified");
+        String moduleId = metadata.getId();
+        int moduleVersion = metadata.getVersion();
 
         SharedModuleType moduleType = metadata.getModuleType();
         if (moduleType == SharedModuleType.SCHEMA) {
@@ -104,8 +106,11 @@ public class SharedModuleService {
             UploadSchema schema = schemaService.getUploadSchemaByIdAndRev(BridgeConstants.SHARED_STUDY_ID, schemaId,
                     schemaRev);
 
-            // also make the schema published
+            // also make the schema published and annotate with module ID and version
             schema.setPublished(true);
+            schema.setModuleId(moduleId);
+            schema.setModuleVersion(moduleVersion);
+
             schemaService.createSchemaRevisionV4(studyId, schema);
 
             // Schema ID and rev are the same in the shared study and in the local study.
@@ -117,6 +122,10 @@ public class SharedModuleService {
             GuidCreatedOnVersionHolder sharedSurveyKey = new GuidCreatedOnVersionHolderImpl(sharedSurveyGuid,
                     sharedSurveyCreatedOn);
             Survey sharedSurvey = surveyService.getSurvey(sharedSurveyKey);
+
+            // annotate survey with module ID and version
+            sharedSurvey.setModuleId(moduleId);
+            sharedSurvey.setModuleVersion(moduleVersion);
 
             // Survey keys don't include study ID. Instead, we need to set the study ID directly in the survey object.
             sharedSurvey.setStudyIdentifier(studyId.getIdentifier());
