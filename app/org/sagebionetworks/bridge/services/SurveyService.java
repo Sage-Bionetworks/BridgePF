@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SurveyDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
@@ -22,6 +23,7 @@ import org.sagebionetworks.bridge.models.schedules.CompoundActivity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
+import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
@@ -37,6 +39,7 @@ public class SurveyService {
     private Validator validator;
     private SurveyDao surveyDao;
     private SchedulePlanService schedulePlanService;
+    private SharedModuleMetadataService sharedModuleMetadataService;
 
     @Autowired
     final void setSurveyDao(SurveyDao surveyDao) {
@@ -53,11 +56,16 @@ public class SurveyService {
         this.schedulePlanService = schedulePlanService;
     }
 
+    @Autowired
+    public final void setSharedModuleMetadataService(SharedModuleMetadataService sharedModuleMetadataService) {
+        this.sharedModuleMetadataService = sharedModuleMetadataService;
+    }
+
     /**
      * Get a list of all published surveys in this study, using the most recently published version of each survey.
      * These surveys will include questions (not other element types, such as info screens). Most properties beyond
      * identifiers will be removed from these surveys as they are returned in the API.
-     * 
+     *
      * @param studyIdentifier
      * @return
      */
@@ -150,6 +158,10 @@ public class SurveyService {
         if (existing.isPublished()) {
             throw new PublishedSurveyException(existing);
         }
+
+        // verify if a shared module refers to it
+        verifySharedModuleExistence(keys);
+
         surveyDao.deleteSurvey(existing);
     }
 
@@ -172,6 +184,16 @@ public class SurveyService {
         checkConstraintsBeforePhysicalDelete(studyId, keys);
 
         surveyDao.deleteSurveyPermanently(keys);
+    }
+
+    // Helper method to verify if there is any shared module related to specified survey
+    private void verifySharedModuleExistence(GuidCreatedOnVersionHolder keys) {
+        List<SharedModuleMetadata> sharedModuleMetadataList = sharedModuleMetadataService.queryAllMetadata(false, false,
+                "surveyGuid=\'" + keys.getGuid() + "\' AND surveyCreatedOn=" + keys.getCreatedOn(), null);
+
+        if (sharedModuleMetadataList.size() != 0) {
+            throw new BadRequestException("Cannot delete specified survey because a shared module still refers to it.");
+        }
     }
 
     /**
@@ -265,6 +287,8 @@ public class SurveyService {
                 throwConstraintViolation(match, keys);
             }
         }
+        // verify shared module existence as well
+        verifySharedModuleExistence(keys);
     }
 
     private void throwConstraintViolation(SchedulePlan match, final GuidCreatedOnVersionHolder keys) {
