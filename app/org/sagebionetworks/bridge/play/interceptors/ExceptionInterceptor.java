@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.play.interceptors;
 
 import java.util.Set;
 
+import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughputExceededException;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.lang3.StringUtils;
@@ -66,12 +67,13 @@ public class ExceptionInterceptor implements MethodInterceptor {
             JsonNode info = UserSessionInfo.toJSON(cre.getUserSession());
             return Results.status(cre.getStatusCode(), info.toString());
         }
-        ObjectNode node = (ObjectNode)BridgeObjectMapper.get().valueToTree(throwable);
+        ObjectNode node = BridgeObjectMapper.get().valueToTree(throwable);
         final int status = getStatusCode(throwable);
         final String message = getMessage(throwable, status);
         final String type = getType(throwable, node);
         
         node.put("message", message);
+        node.put("statusCode", status);
         node.put("type", type);
         node.remove(UNEXPOSED_FIELD_NAMES);
         
@@ -80,7 +82,11 @@ public class ExceptionInterceptor implements MethodInterceptor {
     
     private String getType(final Throwable throwable, final ObjectNode node) {
         String type = node.get("type").asText();
-        if (throwable instanceof AmazonServiceException) {
+        if (throwable instanceof ProvisionedThroughputExceededException) {
+            // DDB Throughput exception is a 400 from Amazon's side. But from our side, we should report this as a 500
+            // for monitoring purposes and to inform our callers properly.
+            type = "BridgeServiceException";
+        } else if (throwable instanceof AmazonServiceException) {
             AmazonServiceException ase = (AmazonServiceException)throwable;
             if (ase.getStatusCode() >= 400 && ase.getStatusCode() < 500) {
                 type = "BadRequestException";
@@ -93,6 +99,9 @@ public class ExceptionInterceptor implements MethodInterceptor {
         int status = 500;
         if (throwable instanceof BridgeServiceException) {
             status = ((BridgeServiceException)throwable).getStatusCode();
+        } else if (throwable instanceof ProvisionedThroughputExceededException) {
+            // Similarly, DDB Throughput exception should be a 500.
+            status = 500;
         } else if (throwable instanceof AmazonServiceException) {
             status = ((AmazonServiceException)throwable).getStatusCode();
         }

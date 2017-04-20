@@ -11,6 +11,7 @@ import static play.test.Helpers.contentAsString;
 
 import java.util.Map;
 
+import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughputExceededException;
 import org.aopalliance.intercept.MethodInvocation;
 import org.junit.Before;
 import org.junit.Test;
@@ -115,6 +116,10 @@ public class ExceptionInterceptorTest {
         assertEquals(0, node.get("consentStatuses").size());
         // And no further properties
         assertEquals(19, node.size());
+
+        // Don't use assertStatusCode(), because this returns a session, not an exception. Still want to verify the
+        // Result status code though.
+        assertEquals(412, result.status());
     }
     
     @Test
@@ -142,11 +147,31 @@ public class ExceptionInterceptorTest {
         JsonNode node = new ObjectMapper().readTree(contentAsString(result));
         
         assertEquals(3, node.size()); 
-        assertEquals(400, node.get("statusCode").asInt());
         assertEquals("This is an error message.", node.get("message").asText());
         assertEquals("BadRequestException", node.get("type").asText());
+
+        assertStatusCode(400, result, node);
     }
-    
+
+    @Test
+    public void ddbThrottlingReportedAs500() throws Throwable {
+        // ProvisionedThroughputExceededException from Amazon reports itself as a 400, but we want to treat it as a 500
+        ProvisionedThroughputExceededException ex = new ProvisionedThroughputExceededException(
+                "dummy exception message");
+        ex.setStatusCode(400);
+
+        // Set up invocation.
+        MethodInvocation invocation = mock(MethodInvocation.class);
+        when(invocation.proceed()).thenThrow(ex);
+
+        // Execute and validate - Just test the status code and type. Everything else is tested elsewhere.
+        Result result = (Result) interceptor.invoke(invocation);
+        JsonNode node = new ObjectMapper().readTree(contentAsString(result));
+        assertEquals("BridgeServiceException", node.get("type").textValue());
+
+        assertStatusCode(500, result, node);
+    }
+
     @Test
     public void bridgeServiceExceptionCorrectlyReported() throws Throwable {
         Study study = new DynamoStudy();
@@ -161,12 +186,18 @@ public class ExceptionInterceptorTest {
             JsonNode node = new ObjectMapper().readTree(contentAsString(result));
             
             assertEquals(6, node.size());
-            assertEquals(400, node.get("statusCode").asInt());
             assertEquals("identifier is required", node.get("errors").get("identifier").get(0).asText());
             assertEquals("InvalidEntityException", node.get("type").asText());
             assertNotNull(node.get("entity"));
             assertNotNull(node.get("errors"));
             assertNotNull(node.get("entityClass"));
+
+            assertStatusCode(400, result, node);
         }
     }
-}    
+
+    private static void assertStatusCode(int expectedStatus, Result result, JsonNode node) {
+        assertEquals(expectedStatus, result.status());
+        assertEquals(expectedStatus, node.get("statusCode").intValue());
+    }
+}
