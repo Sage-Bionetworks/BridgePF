@@ -304,6 +304,13 @@ public class SurveyValidator implements Validator {
             if (con.getStep() != null && con.getStep() > diff) {
                 errors.rejectValue("step", "is larger than the range of allowable values");
             }
+        } else if ( UIHint.SELECT == hint || UIHint.SLIDER == hint) {
+            if (min == null) {
+                errors.rejectValue("minValue", "is required for " + hint.name().toLowerCase());
+            }
+            if (max == null){
+                errors.rejectValue("maxValue", "is required for " + hint.name().toLowerCase());
+            }
         }
     }
 }
