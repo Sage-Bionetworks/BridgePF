@@ -10,7 +10,7 @@ public class NumericalConstraints extends Constraints {
     private Double step;
     
     public NumericalConstraints() {
-        setSupportedHints(EnumSet.of(UIHint.NUMBERFIELD, UIHint.SLIDER));    
+        setSupportedHints(EnumSet.of(UIHint.NUMBERFIELD, UIHint.SLIDER, UIHint.SELECT));
     }
     
     public Unit getUnit() {
