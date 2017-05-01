@@ -458,6 +458,55 @@ public class SurveyValidatorTest {
     }
 
     @Test
+    public void willValidateIntegerSelectHasMinValue() {
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
+        question.setUiHint(UIHint.SELECT);
+
+        IntegerConstraints constraints = (IntegerConstraints) question.getConstraints();
+        constraints.setMinValue(null);
+
+        assertValidatorMessage(validator, survey, "elements[4].constraints.minValue", "is required for select");
+    }
+
+    @Test
+    public void willValidateIntegerSelectHasMaxValue() {
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
+        question.setUiHint(UIHint.SELECT);
+
+        IntegerConstraints constraints = (IntegerConstraints) question.getConstraints();
+        constraints.setMaxValue(null);
+
+        assertValidatorMessage(validator, survey, "elements[4].constraints.maxValue", "is required for select");
+    }
+
+
+    @Test
+    public void willValidateIntegerSliderHasMinValue() {
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
+        question.setUiHint(UIHint.SLIDER);
+
+        IntegerConstraints constraints = (IntegerConstraints) question.getConstraints();
+        constraints.setMinValue(null);
+
+        assertValidatorMessage(validator, survey, "elements[4].constraints.minValue", "is required for slider");
+    }
+
+    @Test
+    public void willValidateIntegerSliderHasMaxValue() {
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
+        question.setUiHint(UIHint.SLIDER);
+
+        IntegerConstraints constraints = (IntegerConstraints) question.getConstraints();
+        constraints.setMaxValue(null);
+
+        assertValidatorMessage(validator, survey, "elements[4].constraints.maxValue", "is required for slider");
+    }
+
+    @Test
     public void willValidateMaxValueNotLowerThanMinValueForDecimal() {
         survey = new TestSurvey(SurveyValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getDecimalQuestion();
@@ -466,6 +515,55 @@ public class SurveyValidatorTest {
         constraints.setMinValue(3d);
 
         assertValidatorMessage(validator, survey, "elements[3].constraints.minValue", "is greater than the maxValue");
+    }
+
+    @Test
+    public void willValidateDecimalSelectHasMinValue() {
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getDecimalQuestion();
+        question.setUiHint(UIHint.SELECT);
+
+        DecimalConstraints constraints = (DecimalConstraints) question.getConstraints();
+        constraints.setMinValue(null);
+
+        assertValidatorMessage(validator, survey, "elements[3].constraints.minValue", "is required for select");
+    }
+
+    @Test
+    public void willValidateDecimalSelectHasMaxValue() {
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getDecimalQuestion();
+        question.setUiHint(UIHint.SELECT);
+
+        DecimalConstraints constraints = (DecimalConstraints) question.getConstraints();
+        constraints.setMaxValue(null);
+
+        assertValidatorMessage(validator, survey, "elements[3].constraints.maxValue", "is required for select");
+    }
+
+
+    @Test
+    public void willValidateDecimalSliderHasMinValue() {
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getDecimalQuestion();
+        question.setUiHint(UIHint.SLIDER);
+
+        DecimalConstraints constraints = (DecimalConstraints) question.getConstraints();
+        constraints.setMinValue(null);
+
+        assertValidatorMessage(validator, survey, "elements[3].constraints.minValue", "is required for slider");
+    }
+
+    @Test
+    public void willValidateDecimalSliderHasMaxValue() {
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getDecimalQuestion();
+        question.setUiHint(UIHint.SLIDER);
+
+        DecimalConstraints constraints = (DecimalConstraints) question.getConstraints();
+        constraints.setMaxValue(null);
+
+        assertValidatorMessage(validator, survey, "elements[3].constraints.maxValue", "is required for slider");
     }
 
     @Test
@@ -516,6 +614,55 @@ public class SurveyValidatorTest {
 
         assertValidatorMessage(validator, survey, "elements[5].constraints.step",
                 "is larger than the range of allowable values");
+    }
+
+    @Test
+    public void willValidateDurationSelectHasMinValue() {
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getDurationQuestion();
+        question.setUiHint(UIHint.SELECT);
+
+        DurationConstraints constraints = (DurationConstraints) question.getConstraints();
+        constraints.setMinValue(null);
+
+        assertValidatorMessage(validator, survey, "elements[5].constraints.minValue", "is required for select");
+    }
+
+    @Test
+    public void willValidateDurationSelectHasMaxValue() {
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getDurationQuestion();
+        question.setUiHint(UIHint.SELECT);
+
+        DurationConstraints constraints = (DurationConstraints) question.getConstraints();
+        constraints.setMaxValue(null);
+
+        assertValidatorMessage(validator, survey, "elements[5].constraints.maxValue", "is required for select");
+    }
+
+
+    @Test
+    public void willValidateDurationSliderHasMinValue() {
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getDurationQuestion();
+        question.setUiHint(UIHint.SLIDER);
+
+        DurationConstraints constraints = (DurationConstraints) question.getConstraints();
+        constraints.setMinValue(null);
+
+        assertValidatorMessage(validator, survey, "elements[5].constraints.minValue", "is required for slider");
+    }
+
+    @Test
+    public void willValidateDurationSliderHasMaxValue() {
+        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey) survey).getDurationQuestion();
+        question.setUiHint(UIHint.SLIDER);
+
+        DurationConstraints constraints = (DurationConstraints) question.getConstraints();
+        constraints.setMaxValue(null);
+
+        assertValidatorMessage(validator, survey, "elements[5].constraints.maxValue", "is required for slider");
     }
 
     @Test
