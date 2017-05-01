@@ -20,9 +20,6 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
@@ -52,7 +49,6 @@ public class SessionUpdateServiceTest {
         service = new SessionUpdateService();
         service.setConsentService(mockConsentService);
         service.setCacheProvider(mockCacheProvider);
-        service.setParticipantOptionsService(mockOptionsService);
     }
     
     @Test
@@ -149,20 +145,10 @@ public class SessionUpdateServiceTest {
         session.setStudyIdentifier(API_STUDY_ID);
         session.setConsentStatuses(consents);
         
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withHealthCode(session.getHealthCode())
-                .withLanguages(session.getParticipant().getLanguages())
-                .withStudyIdentifier(session.getStudyIdentifier())
-                .withUserDataGroups(session.getParticipant().getDataGroups())
-                .withUserId(session.getId())
-                .build();
-        
-        service.updateConsentStatus(session, context, ALL_QUALIFIED_RESEARCHERS, false);
+        service.updateConsentStatus(session, consents, ALL_QUALIFIED_RESEARCHERS, false);
         
         verify(mockCacheProvider).setUserSession(session);
         assertEquals(ALL_QUALIFIED_RESEARCHERS, session.getParticipant().getSharingScope());
-        verify(mockConsentService).getConsentStatuses(context);
     }
     
     @Test
@@ -176,17 +162,12 @@ public class SessionUpdateServiceTest {
         consents.put(consentB, new ConsentStatus.Builder().withName("consentB").withGuid(consentB).withConsented(true)
                 .withSignedMostRecentConsent(true).build());
         
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(API_STUDY_ID).build();
-        
-        when(mockConsentService.getConsentStatuses(context)).thenReturn(consents);
-        
         UserSession session = new UserSession();
         session.setConsentStatuses(consents);
         
-        service.updateConsentStatus(session, context, ALL_QUALIFIED_RESEARCHERS, false);
+        service.updateConsentStatus(session, consents, ALL_QUALIFIED_RESEARCHERS, false);
         
         verify(mockCacheProvider).setUserSession(session);
-        verify(mockConsentService).getConsentStatuses(context);
         
         assertEquals(ALL_QUALIFIED_RESEARCHERS, session.getParticipant().getSharingScope());
     }
@@ -210,7 +191,7 @@ public class SessionUpdateServiceTest {
         UserSession session = new UserSession();
         session.setConsentStatuses(consents);
 
-        service.updateConsentStatus(session, context, ALL_QUALIFIED_RESEARCHERS, true);
+        service.updateConsentStatus(session, consents, ALL_QUALIFIED_RESEARCHERS, true);
         
         assertEquals(ALL_QUALIFIED_RESEARCHERS, session.getParticipant().getSharingScope());
     }
@@ -228,20 +209,14 @@ public class SessionUpdateServiceTest {
         consents.put(consentB, new ConsentStatus.Builder().withName("consentB").withGuid(consentB).withConsented(true)
                 .withSignedMostRecentConsent(true).withRequired(true).build());
         
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(API_STUDY_ID).build();
-        
-        when(mockConsentService.getConsentStatuses(context)).thenReturn(consents);
-        
         UserSession session = new UserSession();
         session.setStudyIdentifier(API_STUDY_ID);
         session.setParticipant(new StudyParticipant.Builder().withHealthCode("healthCode").build());
         session.setConsentStatuses(consents);
 
-        service.updateConsentStatus(session, context, ALL_QUALIFIED_RESEARCHERS, true);
+        service.updateConsentStatus(session, consents, ALL_QUALIFIED_RESEARCHERS, true);
         
         assertEquals(NO_SHARING, session.getParticipant().getSharingScope());
-        verify(mockOptionsService).setEnum(session.getStudyIdentifier(), session.getHealthCode(),
-                ParticipantOption.SHARING_SCOPE, SharingScope.NO_SHARING);
     }
     
     @Test

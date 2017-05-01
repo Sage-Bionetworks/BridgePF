@@ -107,12 +107,12 @@ public class ConsentController extends BaseController {
         final long withdrewOn = DateTime.now().getMillis();
         final SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
-        consentService.withdrawConsent(study, subpopGuid, session.getParticipant(), withdrawal,
-                withdrewOn);
-        
         CriteriaContext context = getCriteriaContext(session);
-        
-        sessionUpdateService.updateConsentStatus(session, context, session.getParticipant().getSharingScope(), true);
+
+        Map<SubpopulationGuid, ConsentStatus> statuses = consentService.withdrawConsent(study, subpopGuid,
+                session.getParticipant(), context, withdrawal, withdrewOn);
+
+        sessionUpdateService.updateConsentStatus(session, statuses, session.getParticipant().getSharingScope(), true);
 
         return okResult(UserSessionInfo.toJSON(session));
     }
@@ -123,11 +123,12 @@ public class ConsentController extends BaseController {
         final Study study = studyService.getStudy(session.getStudyIdentifier());
         final long withdrewOn = DateTime.now().getMillis();
         
-        consentService.withdrawAllConsents(study, session.getId(), withdrawal, withdrewOn);
-        
         CriteriaContext context = getCriteriaContext(session);
         
-        sessionUpdateService.updateConsentStatus(session, context, SharingScope.NO_SHARING, true);
+        Map<SubpopulationGuid, ConsentStatus> statuses = consentService.withdrawAllConsents(study, session.getParticipant(),
+                context, withdrawal, withdrewOn);
+        
+        sessionUpdateService.updateConsentStatus(session, statuses, SharingScope.NO_SHARING, true);
         
         return okResult(UserSessionInfo.toJSON(session)); 
     }
@@ -169,8 +170,9 @@ public class ConsentController extends BaseController {
                 sharing.getSharingScope(), true);
         
         CriteriaContext context = getCriteriaContext(session);
+        Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         
-        sessionUpdateService.updateConsentStatus(session, context, sharing.getSharingScope(), false);
+        sessionUpdateService.updateConsentStatus(session, statuses, sharing.getSharingScope(), false);
         
         return createdResult(UserSessionInfo.toJSON(session));
     }

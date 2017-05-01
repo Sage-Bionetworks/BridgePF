@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -29,8 +28,6 @@ public class SessionUpdateService {
     
     private ConsentService consentService;
     
-    private ParticipantOptionsService optionsService;
-    
     @Autowired
     public final void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
@@ -38,10 +35,6 @@ public class SessionUpdateService {
     @Autowired
     public final void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
-    }
-    @Autowired
-    public void setParticipantOptionsService(ParticipantOptionsService optionsService) {
-        this.optionsService = optionsService;
     }
     
     public void updateTimeZone(UserSession session, DateTimeZone timeZone) {
@@ -83,22 +76,19 @@ public class SessionUpdateService {
         cacheProvider.setUserSession(session);
     }
     
-    public void updateConsentStatus(UserSession session, CriteriaContext context, SharingScope sharingScope, boolean isWithdrawing) {
-        Map<SubpopulationGuid, ConsentStatus> statuses = consentService.getConsentStatuses(context);
+    public void updateConsentStatus(UserSession session, Map<SubpopulationGuid, ConsentStatus> statuses,
+            SharingScope sharingScope, boolean isWithdrawing) {
         session.setConsentStatuses(statuses);
         
         StudyParticipant.Builder builder = builder(session).withSharingScope(sharingScope);
-        
         if (isWithdrawing && !session.doesConsent()) {
             builder.withSharingScope(SharingScope.NO_SHARING);
-            optionsService.setEnum(session.getStudyIdentifier(), session.getHealthCode(),
-                    ParticipantOption.SHARING_SCOPE, SharingScope.NO_SHARING);
         }
         session.setParticipant(builder.build());
         
         cacheProvider.setUserSession(session);
     }
-    
+
     private StudyParticipant.Builder builder(UserSession session) {
         return new StudyParticipant.Builder().copyOf(session.getParticipant());
     }

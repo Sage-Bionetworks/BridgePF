@@ -8,7 +8,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -34,6 +33,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -71,6 +71,8 @@ public class ConsentServiceMockTest {
     @Mock
     private SubpopulationService subpopService;
     @Mock
+    private StudyService studyService;
+    @Mock
     private Subpopulation subpopulation;
 
     private Study study;
@@ -86,6 +88,7 @@ public class ConsentServiceMockTest {
         consentService.setSendMailService(sendMailService);
         consentService.setActivityEventService(activityEventService);
         consentService.setStudyConsentService(studyConsentService);
+        consentService.setStudyService(studyService);
         consentService.setSubpopulationService(subpopService);
         
         study = TestUtils.getValidStudy(ConsentServiceMockTest.class);
@@ -105,6 +108,8 @@ public class ConsentServiceMockTest {
         when(studyConsentView.getCreatedOn()).thenReturn(CONSENT_CREATED_ON);
         when(studyConsentService.getActiveConsent(subpopulation)).thenReturn(studyConsentView);
         when(subpopService.getSubpopulation(study.getStudyIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
+        
+        when(studyService.getStudy(study.getStudyIdentifier())).thenReturn(study);
     }
     
     @Test
@@ -201,9 +206,11 @@ public class ConsentServiceMockTest {
         doReturn(account).when(accountDao).getAccount(study, participant.getId());
         doReturn(new ParticipantOptionsLookup(optionsMap)).when(optionsService).getOptions(participant.getHealthCode());
         
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(study.getStudyIdentifier()).build();
+        
         List<ConsentSignature> history = account.getConsentSignatureHistory(SUBPOP_GUID);
         history.add(consentSignature);
-        consentService.withdrawConsent(study, SUBPOP_GUID, participant, new Withdrawal("For reasons."), SIGNED_ON);
+        consentService.withdrawConsent(study, SUBPOP_GUID, participant, context, new Withdrawal("For reasons."), SIGNED_ON);
         
         ArgumentCaptor<Account> captor = ArgumentCaptor.forClass(Account.class);
         ArgumentCaptor<MimeTypeEmailProvider> emailCaptor = ArgumentCaptor.forClass(MimeTypeEmailProvider.class);
@@ -213,7 +220,6 @@ public class ConsentServiceMockTest {
         // It happens twice because we do it the first time to set up the test properly
         //verify(account, times(2)).getConsentSignatures(setterCaptor.capture());
         verify(sendMailService).sendEmail(emailCaptor.capture());
-        verifyNoMoreInteractions(accountDao);
         
         Account account = captor.getValue();
         // Signature is there but has been marked withdrawn
@@ -240,14 +246,14 @@ public class ConsentServiceMockTest {
         doReturn(account).when(accountDao).getAccount(study, participant.getId());
         doReturn(new ParticipantOptionsLookup(optionsMap)).when(optionsService).getOptions(participant.getHealthCode());
         
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(study.getStudyIdentifier()).build();
+        
         List<ConsentSignature> history = account.getConsentSignatureHistory(SUBPOP_GUID);
         history.add(consentSignature);
-        consentService.withdrawConsent(study, SUBPOP_GUID, account, new Withdrawal("For reasons."), SIGNED_ON);
+        consentService.withdrawConsent(study, SUBPOP_GUID, participant, context, new Withdrawal("For reasons."), SIGNED_ON);
         
-        verify(accountDao, never()).getAccount(study, participant.getId());
         verify(accountDao).updateAccount(account);
         verify(sendMailService).sendEmail(any(MimeTypeEmailProvider.class));
-        verifyNoMoreInteractions(accountDao);
         
         // Contents of call are tested in prior test where participant is used
     }
@@ -256,8 +262,10 @@ public class ConsentServiceMockTest {
     public void stormpathFailureConsistent() {
         when(accountDao.getAccount(any(), any())).thenThrow(new BridgeServiceException("Something bad happend", 500));
         
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(study.getStudyIdentifier()).build();
         try {
-            consentService.withdrawConsent(study, SUBPOP_GUID, participant, new Withdrawal("For reasons."), DateTime.now().getMillis());
+            consentService.withdrawConsent(study, SUBPOP_GUID, participant, context, new Withdrawal("For reasons."),
+                    DateTime.now().getMillis());
             fail("Should have thrown an exception");
         } catch(BridgeServiceException e) {
         }
