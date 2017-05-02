@@ -4,13 +4,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
 
 import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -34,7 +36,7 @@ public class ViewCacheTest {
     @Test
     public void nothingWasCached() throws Exception {
         ViewCache cache = new ViewCache();
-        ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
+        ViewCacheKey cacheKey = new ViewCacheKey(Study.class, TestConstants.TEST_STUDY, "someString");
         CacheProvider provider = mock(CacheProvider.class);
         when(provider.getString(cacheKey.getKey())).thenReturn(null);
         cache.setCacheProvider(provider);
@@ -54,7 +56,7 @@ public class ViewCacheTest {
     @Test
     public void nothingWasCachedAndThereIsAnException() {
         ViewCache cache = new ViewCache();
-        ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
+        ViewCacheKey cacheKey = new ViewCacheKey(Study.class, TestConstants.TEST_STUDY, "foo");
         
         CacheProvider provider = mock(CacheProvider.class);
         when(provider.getString(cacheKey.getKey())).thenReturn(null);
@@ -79,7 +81,7 @@ public class ViewCacheTest {
         String originalStudyJson = mapper.writeValueAsString(study);
         
         ViewCache cache = new ViewCache();
-        ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
+        ViewCacheKey cacheKey = new ViewCacheKey(Study.class, TestConstants.TEST_STUDY, "foo");
         CacheProvider provider = mock(CacheProvider.class);
         when(provider.getString(cacheKey.getKey())).thenReturn(originalStudyJson);
         cache.setCacheProvider(provider);
@@ -97,10 +99,9 @@ public class ViewCacheTest {
     
     @Test
     public void removeFromCacheWorks() throws Exception {
-        
         final String originalStudyJson = mapper.writeValueAsString(study);
         ViewCache cache = new ViewCache();
-        final ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
+        final ViewCacheKey cacheKey = new ViewCacheKey(Study.class, TestConstants.TEST_STUDY, "foo");
         cache.setCacheProvider(getSimpleCacheProvider(cacheKey.getKey(), originalStudyJson));
         
         cache.removeView(cacheKey);
@@ -118,10 +119,8 @@ public class ViewCacheTest {
     
     @Test
     public void getCacheKeyWorks() {
-        ViewCache cache = new ViewCache();
-        
-        ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, "mostRandom", "leastRandom");
-        assertEquals("mostRandom:leastRandom:org.sagebionetworks.bridge.models.studies.Study:view", cacheKey.getKey());
+        ViewCacheKey cacheKey = new ViewCacheKey(Study.class, TestConstants.TEST_STUDY, "mostRandom", "leastRandom");
+        assertEquals("mostRandom:leastRandom:api:Study", cacheKey.getKey());
     }
     
     private CacheProvider getSimpleCacheProvider(final String cacheKey, final String originalStudyJson) {

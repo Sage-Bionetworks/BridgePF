@@ -35,6 +35,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
+import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -809,8 +810,10 @@ public class SurveyControllerTest {
         
         setupContext(API_STUDY_ID, DEVELOPER, false, survey);
         
-        viewCache.getView(viewCache.getCacheKey(
-                Survey.class, SURVEY_GUID, CREATED_ON.toString(), "api"), () -> { return survey; });
+        
+        ViewCacheKey key = new ViewCache.ViewCacheKey(Survey.class, API_STUDY_ID, SURVEY_GUID, CREATED_ON.toString());
+        
+        viewCache.getView(key, () -> { return survey; });
         
         // Verify this call hits the cache not the service
         controller.getSurvey(SURVEY_GUID, CREATED_ON.toString());

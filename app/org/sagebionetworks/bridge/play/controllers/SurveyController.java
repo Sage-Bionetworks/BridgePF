@@ -4,12 +4,12 @@ import static org.sagebionetworks.bridge.BridgeConstants.JSON_MIME_TYPE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
 
 import java.util.List;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.ViewCache;
-import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -131,7 +131,8 @@ public class SurveyController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
-        ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, MOSTRECENT_KEY, studyId.getIdentifier());
+        ViewCacheKey cacheKey = new ViewCacheKey(Survey.class, session.getStudyIdentifier(), surveyGuid,
+                MOSTRECENT_KEY);
         
         String json = getView(cacheKey, session, () -> {
             return surveyService.getSurveyMostRecentVersion(studyId, surveyGuid);
@@ -252,8 +253,8 @@ public class SurveyController extends BaseController {
         long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
 
-        ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString,
-                session.getStudyIdentifier().getIdentifier());
+        ViewCacheKey cacheKey = new ViewCacheKey(Survey.class, session.getStudyIdentifier(), surveyGuid,
+                createdOnString);
         
         String json = getView(cacheKey, session, () -> {
             return surveyService.getSurvey(keys);
@@ -263,8 +264,7 @@ public class SurveyController extends BaseController {
     }
     
     private Result getCachedSurveyMostRecentlyPublishedInternal(String surveyGuid, UserSession session) {
-        ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, PUBLISHED_KEY,
-                session.getStudyIdentifier().getIdentifier());
+        ViewCacheKey cacheKey = new ViewCacheKey(Survey.class, session.getStudyIdentifier(), surveyGuid, PUBLISHED_KEY);
         
         String json = getView(cacheKey, session, () -> {
             return surveyService.getSurveyMostRecentlyPublishedVersion(session.getStudyIdentifier(), surveyGuid);
@@ -273,7 +273,7 @@ public class SurveyController extends BaseController {
         return ok(json).as(JSON_MIME_TYPE);
     }
     
-    private String getView(ViewCacheKey<Survey> cacheKey, UserSession session, Supplier<Survey> supplier) {
+    private String getView(ViewCacheKey cacheKey, UserSession session, Supplier<Survey> supplier) {
         return viewCache.getView(cacheKey, () -> {
             Survey survey = supplier.get();
             verifySurveyIsInStudy(session, survey);
@@ -302,9 +302,9 @@ public class SurveyController extends BaseController {
     private void expireCache(String surveyGuid, String createdOnString, StudyIdentifier studyId) {
         // Don't screw around trying to figure out if *this* survey instance is the same survey
         // as the most recent or published version, expire all versions in the cache
-        viewCache.removeView(viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString, studyId.getIdentifier()));
-        viewCache.removeView(viewCache.getCacheKey(Survey.class, surveyGuid, PUBLISHED_KEY, studyId.getIdentifier()));
-        viewCache.removeView(viewCache.getCacheKey(Survey.class, surveyGuid, MOSTRECENT_KEY, studyId.getIdentifier()));
+        viewCache.removeView(new ViewCacheKey(Survey.class, studyId, surveyGuid, createdOnString));
+        viewCache.removeView(new ViewCacheKey(Survey.class, studyId, surveyGuid, PUBLISHED_KEY));
+        viewCache.removeView(new ViewCacheKey(Survey.class, studyId, surveyGuid, MOSTRECENT_KEY));
     }
     
 }

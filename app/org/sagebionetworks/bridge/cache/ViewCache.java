@@ -3,7 +3,12 @@ package org.sagebionetworks.bridge.cache;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.redis.RedisKey;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,10 +25,18 @@ public class ViewCache {
     
     private static final Joiner COLON_JOINER = Joiner.on(":");
     
-    public final class ViewCacheKey<T> {
+    public final static class ViewCacheKey {
+
         private final String key;
-        public ViewCacheKey(String key) {
-            this.key = key;
+
+        public ViewCacheKey(Class<?> clazz, StudyIdentifier studyId, String... keys) {
+            List<String> list = new ArrayList<>();
+            if (keys != null && keys.length > 0) {
+                list.addAll(Arrays.asList(keys));    
+            }
+            list.add(studyId.getIdentifier());
+            list.add(clazz.getSimpleName());
+            this.key = COLON_JOINER.join(list);
         }
         String getKey() {
             return key;
@@ -44,7 +57,7 @@ public class ViewCache {
      * @param supplier
      * @return
      */
-    public <T> String getView(ViewCacheKey<T> key, Supplier<T> supplier) {
+    public <T> String getView(ViewCacheKey key, Supplier<T> supplier) {
         try {
             String value = cache.getString(key.getKey());
             if (value == null) {
@@ -62,24 +75,12 @@ public class ViewCache {
      * Remove the JSON for the view represented by the viewCacheKey.
      * @param key
      */
-    public <T> void removeView(ViewCacheKey<T> key) {
+    public <T> void removeView(ViewCacheKey key) {
         logger.debug("Deleting JSON for '" +key.getKey() +"'");
         cache.removeString(key.getKey());
     }
     
-    /**
-     * Create a viewCacheKey for a particular type of entity, and the set of identifiers 
-     * that will identify that entity.
-     * @param clazz
-     * @param identifiers
-     * @return
-     */
-    public <T> ViewCacheKey<T> getCacheKey(Class<T> clazz, String... identifiers) {
-        String id = COLON_JOINER.join(identifiers);
-        return new ViewCacheKey<T>(RedisKey.VIEW.getRedisKey(id + ":" + clazz.getName()));
-    }
-    
-    private <T> String cacheView(ViewCacheKey<T> key, Supplier<T> supplier) throws JsonProcessingException {
+    private <T> String cacheView(ViewCacheKey key, Supplier<T> supplier) throws JsonProcessingException {
         logger.debug("Caching JSON for " +key.getKey()+"'");
         T object = supplier.get();
         String value = BridgeObjectMapper.get().writeValueAsString(object);
