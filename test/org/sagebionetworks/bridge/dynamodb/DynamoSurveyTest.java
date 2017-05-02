@@ -30,6 +30,7 @@ public class DynamoSurveyTest {
     private static final int MODULE_VERSION = 3;
     private static final long TEST_CREATED_ON_MILLIS = DateTime.parse("2015-05-22T18:34-0700").getMillis();
     private static final long TEST_MODIFIED_ON_MILLIS = DateTime.parse("2015-05-22T18:57-0700").getMillis();
+    private static final String TEST_COPYRIGHT_NOTICE = "© 2017 Sage";
 
     /**
      * Tests of the serialization and deserialization of all the data
@@ -55,9 +56,10 @@ public class DynamoSurveyTest {
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(survey, JsonNode.class);
 
         // Convert JSON to map to validate JSON. Note that study ID is intentionally omitted, but type is added.
-        assertEquals(13, jsonNode.size());
+        assertEquals(14, jsonNode.size());
         assertEquals("test-survey-guid", jsonNode.get("guid").textValue());
         assertEquals(2, jsonNode.get("version").intValue());
+        assertEquals(TEST_COPYRIGHT_NOTICE, jsonNode.get("copyrightNotice").textValue());
         assertEquals(MODULE_ID, jsonNode.get("moduleId").textValue());
         assertEquals(MODULE_VERSION, jsonNode.get("moduleVersion").intValue());
         assertEquals(survey.getName(), jsonNode.get("name").textValue());
@@ -84,6 +86,7 @@ public class DynamoSurveyTest {
         assertEquals("test-survey-guid", convertedSurvey.getGuid());
         assertEquals(TEST_CREATED_ON_MILLIS, convertedSurvey.getCreatedOn());
         assertEquals(TEST_MODIFIED_ON_MILLIS, convertedSurvey.getModifiedOn());
+        assertEquals(TEST_COPYRIGHT_NOTICE, convertedSurvey.getCopyrightNotice());
         assertEquals(MODULE_ID, convertedSurvey.getModuleId());
         assertEquals(MODULE_VERSION, convertedSurvey.getModuleVersion().intValue());
         assertEquals(2, convertedSurvey.getVersion().longValue());
@@ -132,6 +135,7 @@ public class DynamoSurveyTest {
         assertEquals("test-survey-guid", copy.getGuid());
         assertEquals(TEST_CREATED_ON_MILLIS, copy.getCreatedOn());
         assertEquals(TEST_MODIFIED_ON_MILLIS, copy.getModifiedOn());
+        assertEquals(TEST_COPYRIGHT_NOTICE, copy.getCopyrightNotice());
         assertEquals(MODULE_ID, copy.getModuleId());
         assertEquals(MODULE_VERSION, copy.getModuleVersion().intValue());
         assertEquals(2, copy.getVersion().longValue());
@@ -156,6 +160,7 @@ public class DynamoSurveyTest {
         String surveyString = survey.toString();
         assertTrue(surveyString.contains("createdOn=" + TEST_CREATED_ON_MILLIS));
         assertTrue(surveyString.contains("guid=test-survey-guid"));
+        assertTrue(surveyString.contains(TEST_COPYRIGHT_NOTICE));
         assertTrue(surveyString.contains("moduleId=" + MODULE_ID));
         assertTrue(surveyString.contains("moduleVersion=" + MODULE_VERSION));
     }
@@ -175,6 +180,7 @@ public class DynamoSurveyTest {
         survey.setGuid("test-survey-guid");
         survey.setCreatedOn(TEST_CREATED_ON_MILLIS);
         survey.setModifiedOn(TEST_MODIFIED_ON_MILLIS);
+        survey.setCopyrightNotice(TEST_COPYRIGHT_NOTICE);
         survey.setModuleId(MODULE_ID);
         survey.setModuleVersion(MODULE_VERSION);
         survey.setPublished(true);
