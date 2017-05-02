@@ -84,6 +84,8 @@ routesGenerator := InjectedRoutesGenerator
 
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-a")
 
+fork in test := false
+
 // Compile before generating eclipse files
 EclipseKeys.preTasks := Seq(compile in Compile)
 // Java project files only
