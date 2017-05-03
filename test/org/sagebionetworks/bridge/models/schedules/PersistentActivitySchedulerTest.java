@@ -53,6 +53,13 @@ public class PersistentActivitySchedulerTest {
     }
     
     @Test
+    public void scheduleWithMultipleActivitiesWorks() {
+        schedule.getActivities().add(TestUtils.getActivity1());
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusDays(1)));
+        assertDates(scheduledActivities, "2015-03-23 00:00", "2015-03-23 00:00");
+    }
+    
+    @Test
     public void scheduleWorks() {
         // enrollment "2015-03-23T10:00:00Z"
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusDays(1)));
