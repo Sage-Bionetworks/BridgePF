@@ -42,7 +42,6 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
@@ -329,7 +328,7 @@ public class ParticipantService {
         accountDao.resendEmailVerificationToken(study.getStudyIdentifier(), email);
     }
 
-    public Map<SubpopulationGuid, ConsentStatus> withdrawAllConsents(Study study, String userId, Withdrawal withdrawal, long withdrewOn) {
+    public void withdrawAllConsents(Study study, String userId, Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(study);
         checkNotNull(userId);
         checkNotNull(withdrawal);
@@ -338,10 +337,10 @@ public class ParticipantService {
         StudyParticipant participant = getParticipant(study, userId, false);
         CriteriaContext context = getCriteriaContextForParticipant(study, participant);
 
-        return consentService.withdrawAllConsents(study, participant, context, withdrawal, withdrewOn);
+        consentService.withdrawAllConsents(study, participant, context, withdrawal, withdrewOn);
     }
 
-    public Map<SubpopulationGuid, ConsentStatus> withdrawConsent(Study study, String userId,
+    public void withdrawConsent(Study study, String userId,
             SubpopulationGuid subpopGuid, Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(study);
         checkNotNull(userId);
@@ -352,7 +351,7 @@ public class ParticipantService {
         StudyParticipant participant = getParticipant(study, userId, false);
         CriteriaContext context = getCriteriaContextForParticipant(study, participant);
 
-        return consentService.withdrawConsent(study, subpopGuid, participant, context, withdrawal, withdrewOn);
+        consentService.withdrawConsent(study, subpopGuid, participant, context, withdrawal, withdrewOn);
     }
     
     public void resendConsentAgreement(Study study, SubpopulationGuid subpopGuid, String userId) {
