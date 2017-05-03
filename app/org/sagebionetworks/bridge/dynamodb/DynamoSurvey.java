@@ -3,15 +3,6 @@ package org.sagebionetworks.bridge.dynamodb;
 import java.util.List;
 import java.util.Objects;
 
-import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
-import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
-import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
-import org.sagebionetworks.bridge.models.surveys.Survey;
-import org.sagebionetworks.bridge.models.surveys.SurveyElement;
-import org.sagebionetworks.bridge.models.surveys.SurveyElementConstants;
-import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
-import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
-
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
@@ -27,6 +18,15 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
+import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
+import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.surveys.SurveyElement;
+import org.sagebionetworks.bridge.models.surveys.SurveyElementConstants;
+import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
+import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
+
 @DynamoDBTable(tableName = "Survey")
 @JsonFilter("filter")
 public class DynamoSurvey implements Survey {
@@ -34,6 +34,7 @@ public class DynamoSurvey implements Survey {
     private String guid;
     private long createdOn;
     private long modifiedOn;
+    private String copyrightNotice;
     private String moduleId;
     private Integer moduleVersion;
     private Long version;
@@ -43,11 +44,11 @@ public class DynamoSurvey implements Survey {
     private boolean deleted;
     private Integer schemaRevision;
     private List<SurveyElement> elements;
-    
+
     public DynamoSurvey() {
         this.elements = Lists.newArrayList();
     }
-    
+
     public DynamoSurvey(String guid, long createdOn) {
         this();
         setGuid(guid);
@@ -65,6 +66,7 @@ public class DynamoSurvey implements Survey {
         setGuid(survey.getGuid());
         setCreatedOn(survey.getCreatedOn());
         setModifiedOn(survey.getModifiedOn());
+        setCopyrightNotice(survey.getCopyrightNotice());
         setModuleId(survey.getModuleId());
         setModuleVersion(survey.getModuleVersion());
         setVersion(survey.getVersion());
@@ -77,12 +79,12 @@ public class DynamoSurvey implements Survey {
             elements.add(SurveyElementFactory.fromDynamoEntity(element));
         }
     }
-    
+
     @Override
     @JsonIgnore
     @DynamoDBAttribute(attributeName = "studyKey")
-    @DynamoDBIndexHashKey(attributeName="studyKey", globalSecondaryIndexName = "studyKey-index")
-    @DynamoProjection(projectionType=ProjectionType.ALL, globalSecondaryIndexName = "studyKey-index")
+    @DynamoDBIndexHashKey(attributeName = "studyKey", globalSecondaryIndexName = "studyKey-index")
+    @DynamoProjection(projectionType = ProjectionType.ALL, globalSecondaryIndexName = "studyKey-index")
     public String getStudyIdentifier() {
         return studyKey;
     }
@@ -104,7 +106,7 @@ public class DynamoSurvey implements Survey {
     }
 
     @Override
-    @DynamoDBRangeKey(attributeName="versionedOn")
+    @DynamoDBRangeKey(attributeName = "versionedOn")
     @JsonSerialize(using = DateTimeToLongSerializer.class)
     public long getCreatedOn() {
         return createdOn;
@@ -126,7 +128,7 @@ public class DynamoSurvey implements Survey {
     public void setVersion(Long version) {
         this.version = version;
     }
-    
+
     @Override
     @DynamoDBAttribute
     @JsonSerialize(using = DateTimeToLongSerializer.class)
@@ -138,6 +140,15 @@ public class DynamoSurvey implements Survey {
     @JsonDeserialize(using = DateTimeToPrimitiveLongDeserializer.class)
     public void setModifiedOn(long modifiedOn) {
         this.modifiedOn = modifiedOn;
+    }
+
+    @DynamoDBAttribute
+    @Override public String getCopyrightNotice() {
+        return copyrightNotice;
+    }
+
+    @Override public void setCopyrightNotice(String copyrightNotice) {
+        this.copyrightNotice = copyrightNotice;
     }
 
     /** {@inheritDoc} */
@@ -207,7 +218,7 @@ public class DynamoSurvey implements Survey {
     public void setDeleted(boolean deleted) {
         this.deleted = deleted;
     }
-    
+
     @Override
     public Integer getSchemaRevision() {
         return schemaRevision;
@@ -231,7 +242,7 @@ public class DynamoSurvey implements Survey {
         ImmutableList.Builder<SurveyQuestion> builder = new ImmutableList.Builder<>();
         for (SurveyElement element : elements) {
             if (SurveyElementConstants.SURVEY_QUESTION_TYPE.equals(element.getType())) {
-                builder.add((SurveyQuestion)element);
+                builder.add((SurveyQuestion) element);
             }
         }
         return builder.build();
@@ -241,7 +252,7 @@ public class DynamoSurvey implements Survey {
     public void setElements(List<SurveyElement> elements) {
         this.elements = elements;
     }
-    
+
     @Override
     public boolean keysEqual(GuidCreatedOnVersionHolder keys) {
         return (keys != null && keys.getGuid().equals(guid) && keys.getCreatedOn() == createdOn);
@@ -249,7 +260,8 @@ public class DynamoSurvey implements Survey {
 
     @Override
     public final int hashCode() {
-        return Objects.hash(studyKey, guid, createdOn, modifiedOn, moduleId, moduleVersion, version, name, identifier,
+        return Objects.hash(studyKey, guid, createdOn, modifiedOn, copyrightNotice, moduleId, moduleVersion, version,
+                name, identifier,
                 published, deleted, schemaRevision, elements);
     }
 
@@ -265,6 +277,7 @@ public class DynamoSurvey implements Survey {
                 && Objects.equals(this.guid, that.guid)
                 && Objects.equals(this.createdOn, that.createdOn)
                 && Objects.equals(this.modifiedOn, that.modifiedOn)
+                && Objects.equals(this.copyrightNotice, that.copyrightNotice)
                 && Objects.equals(this.moduleId, that.moduleId)
                 && Objects.equals(this.moduleVersion, that.moduleVersion)
                 && Objects.equals(this.version, that.version)
@@ -278,9 +291,10 @@ public class DynamoSurvey implements Survey {
 
     @Override
     public String toString() {
-        return String.format("DynamoSurvey [studyKey=%s, guid=%s, createdOn=%s, modifiedOn=%s, moduleId=%s, " +
-                "moduleVersion=%d, version=%s, name=%s, identifier=%s, published=%s, deleted=%s, schemaRevision=%s, " +
-                "elements=%s]", studyKey, guid, createdOn, modifiedOn, moduleId, moduleVersion, version, name,
-                identifier, published, deleted, schemaRevision, elements);
+        return String.format(
+                "DynamoSurvey [studyKey=%s, guid=%s, createdOn=%s, modifiedOn=%s, copyrightNotice=%s, moduleId=%s, " +
+                        "moduleVersion=%d, version=%s, name=%s, identifier=%s, published=%s, deleted=%s, " +
+                        "schemaRevision=%s, elements=%s]", studyKey, guid, createdOn, modifiedOn, copyrightNotice,
+                moduleId, moduleVersion, version, name, identifier, published, deleted, schemaRevision, elements);
     }
 }
