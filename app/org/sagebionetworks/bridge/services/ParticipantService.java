@@ -35,8 +35,11 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
@@ -331,22 +334,24 @@ public class ParticipantService {
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
 
-        Account account = getAccountThrowingException(study, userId);
+        StudyParticipant participant = getParticipant(study, userId, false);
+        CriteriaContext context = getCriteriaContextForParticipant(study, participant);
 
-        consentService.withdrawAllConsents(study, account, withdrawal, withdrewOn);
+        consentService.withdrawAllConsents(study, participant, context, withdrawal, withdrewOn);
     }
 
-    public void withdrawConsent(Study study, String userId, SubpopulationGuid subpopGuid, Withdrawal withdrawal,
-            long withdrewOn) {
+    public void withdrawConsent(Study study, String userId,
+            SubpopulationGuid subpopGuid, Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(study);
         checkNotNull(userId);
         checkNotNull(subpopGuid);
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
 
-        Account account = getAccountThrowingException(study, userId);
+        StudyParticipant participant = getParticipant(study, userId, false);
+        CriteriaContext context = getCriteriaContextForParticipant(study, participant);
 
-        consentService.withdrawConsent(study, subpopGuid, account, withdrawal, withdrewOn);
+        consentService.withdrawConsent(study, subpopGuid, participant, context, withdrawal, withdrewOn);
     }
     
     public void resendConsentAgreement(Study study, SubpopulationGuid subpopGuid, String userId) {
@@ -410,6 +415,19 @@ public class ParticipantService {
         Account account = getAccountThrowingException(study, userId);
 
         notificationsService.sendNotificationToUser(study.getStudyIdentifier(), account.getHealthCode(), message);
+    }
+    
+    private CriteriaContext getCriteriaContextForParticipant(Study study, StudyParticipant participant) {
+        RequestInfo info = cacheProvider.getRequestInfo(participant.getId());
+        ClientInfo clientInfo = (info == null) ? null : info.getClientInfo();
+        
+        return new CriteriaContext.Builder()
+            .withStudyIdentifier(study.getStudyIdentifier())
+            .withHealthCode(participant.getHealthCode())
+            .withUserId(participant.getId())
+            .withClientInfo(clientInfo)
+            .withUserDataGroups(participant.getDataGroups())
+            .withLanguages(participant.getLanguages()).build();
     }
 
     private boolean callerIsAdmin(Set<Roles> callerRoles) {

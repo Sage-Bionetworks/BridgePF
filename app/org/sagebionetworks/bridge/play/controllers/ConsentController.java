@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 import java.util.Map;
 
 import org.joda.time.DateTime;
+
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -18,7 +19,6 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ConsentService;
-import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -31,15 +31,9 @@ public class ConsentController extends BaseController {
 
     private ConsentService consentService;
 
-    private ParticipantOptionsService optionsService;
-
     @Autowired
     final void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
-    }
-    @Autowired
-    final void setOptionsService(ParticipantOptionsService optionsService) {
-        this.optionsService = optionsService;
     }
 
     @Deprecated
@@ -113,12 +107,12 @@ public class ConsentController extends BaseController {
         final long withdrewOn = DateTime.now().getMillis();
         final SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
-        consentService.withdrawConsent(study, subpopGuid, session.getParticipant(), withdrawal,
-                withdrewOn);
-        
         CriteriaContext context = getCriteriaContext(session);
-        
-        sessionUpdateService.updateConsentStatus(session, context, session.getParticipant().getSharingScope());
+
+        Map<SubpopulationGuid, ConsentStatus> statuses = consentService.withdrawConsent(study, subpopGuid,
+                session.getParticipant(), context, withdrawal, withdrewOn);
+
+        sessionUpdateService.updateConsentStatus(session, statuses, session.getParticipant().getSharingScope(), true);
 
         return okResult(UserSessionInfo.toJSON(session));
     }
@@ -129,11 +123,12 @@ public class ConsentController extends BaseController {
         final Study study = studyService.getStudy(session.getStudyIdentifier());
         final long withdrewOn = DateTime.now().getMillis();
         
-        consentService.withdrawAllConsents(study, session.getId(), withdrawal, withdrewOn);
-        
         CriteriaContext context = getCriteriaContext(session);
         
-        sessionUpdateService.updateConsentStatus(session, context, SharingScope.NO_SHARING);
+        Map<SubpopulationGuid, ConsentStatus> statuses = consentService.withdrawAllConsents(study, session.getParticipant(),
+                context, withdrawal, withdrewOn);
+        
+        sessionUpdateService.updateConsentStatus(session, statuses, SharingScope.NO_SHARING, true);
         
         return okResult(UserSessionInfo.toJSON(session)); 
     }
@@ -175,8 +170,9 @@ public class ConsentController extends BaseController {
                 sharing.getSharingScope(), true);
         
         CriteriaContext context = getCriteriaContext(session);
+        Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         
-        sessionUpdateService.updateConsentStatus(session, context, sharing.getSharingScope());
+        sessionUpdateService.updateConsentStatus(session, statuses, sharing.getSharingScope(), false);
         
         return createdResult(UserSessionInfo.toJSON(session));
     }

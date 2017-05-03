@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.spy;
@@ -15,6 +16,7 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 import java.util.Map;
 
 import static org.sagebionetworks.bridge.TestUtils.assertResult;
+import static org.sagebionetworks.bridge.TestUtils.createJson;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -61,6 +63,10 @@ import play.test.Helpers;
 @RunWith(MockitoJUnitRunner.class)
 public class ConsentControllerMockedTest {
 
+    private static final String USER_ID = "userId";
+
+    private static final String HEALTH_CODE = "healthCode";
+
     private static final StudyIdentifierImpl STUDY_IDENTIFIER = new StudyIdentifierImpl("study-key");
     
     private static final SubpopulationGuid DEFAULT_SUBPOP_GUID = SubpopulationGuid.create("study-key");
@@ -72,11 +78,10 @@ public class ConsentControllerMockedTest {
     private ConsentController controller;
 
     private UserSession session;
-    
     private StudyParticipant participant;
-    
-    @Mock
     private Study study;
+    private CriteriaContext context;
+    
     @Mock
     private StudyService studyService;
     @Mock
@@ -97,11 +102,12 @@ public class ConsentControllerMockedTest {
         DateTimeUtils.setCurrentMillisFixed(UNIX_TIMESTAMP);
         
         participant = new StudyParticipant.Builder().withSharingScope(SharingScope.SPONSORS_AND_PARTNERS)
-                .withHealthCode("healthCode").withId("userId").build();
+                .withHealthCode(HEALTH_CODE).withId(USER_ID).build();
         session = new UserSession(participant); 
         session.setStudyIdentifier(STUDY_IDENTIFIER);
         
-        // one default consent and one new consent (neither signed, both required)
+        // one default consent and one new consent (neither signed, both required). When you withdraw, this
+        // should force your sharing to NO_SHARING.
         Map<SubpopulationGuid,ConsentStatus> map = Maps.newHashMap();
         map.put(DEFAULT_SUBPOP_GUID, new ConsentStatus.Builder().withConsented(false).withGuid(SUBPOP_GUID)
                 .withName("Default Consent").withRequired(true).build());
@@ -109,28 +115,29 @@ public class ConsentControllerMockedTest {
                 .withName("Another Consent").withRequired(true).build());
         session.setConsentStatuses(map);
 
-        when(study.getIdentifier()).thenReturn(STUDY_IDENTIFIER.getIdentifier());
-        when(study.getStudyIdentifier()).thenReturn(STUDY_IDENTIFIER);
+        study = Study.create();
+        study.setIdentifier(STUDY_IDENTIFIER.getIdentifier());
         when(studyService.getStudy(session.getStudyIdentifier())).thenReturn(study);
+        
+        context = new CriteriaContext.Builder().withUserId(USER_ID).withHealthCode(HEALTH_CODE)
+                .withStudyIdentifier(STUDY_IDENTIFIER).build();
         
         SessionUpdateService sessionUpdateService = new SessionUpdateService();
         // Stubbing the behavior of the consent service to we can validate changes are in the session
         // that is returned to the user.
         sessionUpdateService.setConsentService(consentService);
-        
         sessionUpdateService.setCacheProvider(cacheProvider);
         
         controller = spy(new ConsentController());
+        controller.setParticipantOptionsService(optionsService);
         controller.setSessionUpdateService(sessionUpdateService);
         controller.setStudyService(studyService);
         controller.setConsentService(consentService);
-        controller.setOptionsService(optionsService);
         controller.setCacheProvider(cacheProvider);
         controller.setAuthenticationService(authenticationService);
         
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         doReturn(session).when(controller).getAuthenticatedSession();
-        
         doReturn(session).when(authenticationService).getSession(eq(study), any(CriteriaContext.class));
     }
 
@@ -178,7 +185,7 @@ public class ConsentControllerMockedTest {
         assertEquals("no_sharing", node.get("sharingScope").asText());
         assertFalse(node.get("dataSharing").asBoolean());
 
-        verify(optionsService).setEnum(study.getStudyIdentifier(), "healthCode", SHARING_SCOPE, SharingScope.NO_SHARING);
+        verify(optionsService).setEnum(study.getStudyIdentifier(), HEALTH_CODE, SHARING_SCOPE, SharingScope.NO_SHARING);
     }
 
     @Test
@@ -207,7 +214,8 @@ public class ConsentControllerMockedTest {
     @SuppressWarnings("deprecation")
     public void consentSignatureHasServerSignedOnValueDeprecated() throws Exception {
         // signedOn will be set on the server
-        String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"no_sharing\"}";
+        String json = createJson("{'name':'Jack Aubrey','birthdate':'1970-10-10',"+
+                "'imageData':'data:asdf','imageMimeType':'image/png','scope':'no_sharing'}");
         
         TestUtils.mockPlayContextWithJson(json);
         
@@ -227,7 +235,8 @@ public class ConsentControllerMockedTest {
     @SuppressWarnings("deprecation")
     public void consentSignatureHasServerGeneratedSignedOnValueDeprecated() throws Exception {
         // This signedOn property should be ignored, it is always set on the server
-        String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"signedOn\":0,\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"no_sharing\"}";
+        String json = createJson("{'name':'Jack Aubrey','birthdate':'1970-10-10','signedOn':0,"+
+                "'imageData':'data:asdf','imageMimeType':'image/png','scope':'no_sharing'}");
         
         TestUtils.mockPlayContextWithJson(json);
         
@@ -246,17 +255,18 @@ public class ConsentControllerMockedTest {
     @SuppressWarnings("deprecation")
     public void canWithdrawConsentDeprecated() throws Exception {
         DateTimeUtils.setCurrentMillisFixed(20000);
-        String json = "{\"reason\":\"Because, reasons.\"}";
+        String json = createJson("{'reason':'Because, reasons.'}");
         TestUtils.mockPlayContextWithJson(json);
         
-        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(false, SUBPOP_GUID));
+        when(consentService.withdrawConsent(eq(study), eq(DEFAULT_SUBPOP_GUID), eq(participant), eq(context), any(),
+                anyInt())).thenAnswer(createAnswer(false, SUBPOP_GUID));
 
         Result result = controller.withdrawConsent();
         
         assertWithdrawnInSession(result, SharingScope.NO_SHARING, DEFAULT_SUBPOP_GUID);
         
         // Should call the service and withdraw
-        verify(consentService).withdrawConsent(study, DEFAULT_SUBPOP_GUID, participant,
+        verify(consentService).withdrawConsent(study, DEFAULT_SUBPOP_GUID, participant, context,
                 new Withdrawal("Because, reasons."), 20000);
         
         verify(cacheProvider).setUserSession(session);
@@ -270,13 +280,14 @@ public class ConsentControllerMockedTest {
         String json = "{}";
         TestUtils.mockPlayContextWithJson(json);
         
-        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(false, DEFAULT_SUBPOP_GUID));
+        when(consentService.withdrawConsent(eq(study), eq(DEFAULT_SUBPOP_GUID), eq(participant), eq(context), any(),
+                anyInt())).thenAnswer(createAnswer(false, DEFAULT_SUBPOP_GUID));
 
         Result result = controller.withdrawConsent();
         
         assertWithdrawnInSession(result, SharingScope.NO_SHARING, DEFAULT_SUBPOP_GUID);
         
-        verify(consentService).withdrawConsent(study, DEFAULT_SUBPOP_GUID, participant, new Withdrawal(null), 20000);
+        verify(consentService).withdrawConsent(study, DEFAULT_SUBPOP_GUID, participant, context, new Withdrawal(null), 20000);
         DateTimeUtils.setCurrentMillisSystem();
     }
     
@@ -303,7 +314,8 @@ public class ConsentControllerMockedTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void givingConsentToInvalidSubpopulation() throws Exception {
-        String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"no_sharing\"}";
+        String json = createJson("{'name':'Jack Aubrey','birthdate':'1970-10-10','imageData':'data:asdf',"+
+                "'imageMimeType':'image/png','scope':'no_sharing'}");
         
         TestUtils.mockPlayContextWithJson(json);
         
@@ -311,27 +323,33 @@ public class ConsentControllerMockedTest {
     }
     
     @Test
-    public void consentUpdatesSession() throws Exception {
+    public void consentUpdatesSession() throws Throwable {
+        // Note that even if there are two required consent that should be signed, the sharing scope is 
+        // set for this user and data would theoretically be exported for the user. However that same user 
+        // is still going to get 412s from other API endpoints because they are not consented, so they will
+        // not be able to send data to the server yet.
         doReturn(updatedSession).when(authenticationService).getSession(eq(study), any(CriteriaContext.class));
         
-        String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"no_sharing\"}";
+        String json = createJson("{'name':'Jack Aubrey','birthdate':'1970-10-10','imageData':'data:asdf'"+
+                ",'imageMimeType':'image/png','scope':'sponsors_and_partners'}");
         TestUtils.mockPlayContextWithJson(json);
         
         when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(true, SUBPOP_GUID));
         
         Result result = controller.giveV3(SUBPOP_GUID.getGuid());
         
-        assertConsentInSession(result, SharingScope.NO_SHARING, SUBPOP_GUID);
+        assertConsentInSession(result, SharingScope.SPONSORS_AND_PARTNERS, SUBPOP_GUID);
         
         verify(consentService).consentToResearch(eq(study), eq(SUBPOP_GUID), eq(participant),
-                signatureCaptor.capture(), eq(SharingScope.NO_SHARING), eq(true));
+                signatureCaptor.capture(), eq(SharingScope.SPONSORS_AND_PARTNERS), eq(true));
         verify(cacheProvider).setUserSession(any());
     }
     
     @Test
     public void consentSignatureHasServerSignedOnValue() throws Exception {
         // signedOn will be set on the server
-        String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"sponsors_and_partners\"}";
+        String json = createJson("{'name':'Jack Aubrey','birthdate':'1970-10-10','imageData':'data:asdf'"+
+                ",'imageMimeType':'image/png','scope':'sponsors_and_partners'}");
         
         TestUtils.mockPlayContextWithJson(json);
         
@@ -339,7 +357,7 @@ public class ConsentControllerMockedTest {
 
         Result result = controller.giveV3(SUBPOP_GUID.getGuid());
         
-        assertConsentInSession(result, SharingScope.NO_SHARING, SUBPOP_GUID);
+        assertConsentInSession(result, SharingScope.SPONSORS_AND_PARTNERS, SUBPOP_GUID);
         
         verify(consentService).consentToResearch(eq(study), eq(SUBPOP_GUID), eq(participant),
                 signatureCaptor.capture(), eq(SharingScope.SPONSORS_AND_PARTNERS), eq(true));
@@ -349,7 +367,8 @@ public class ConsentControllerMockedTest {
     @Test
     public void consentSignatureHasServerGeneratedSignedOnValue() throws Exception {
         // This signedOn property should be ignored, it is always set on the server
-        String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"signedOn\":1000,\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"no_sharing\"}";
+        String json = createJson("{'name':'Jack Aubrey','birthdate':'1970-10-10','signedOn':1000,"+
+                "'imageData':'data:asdf','imageMimeType':'image/png','scope':'no_sharing'}");
         
         TestUtils.mockPlayContextWithJson(json);
         
@@ -367,7 +386,7 @@ public class ConsentControllerMockedTest {
     @Test
     public void canWithdrawConsent() throws Exception {
         DateTimeUtils.setCurrentMillisFixed(20000);
-        String json = "{\"reason\":\"Because, reasons.\"}";
+        String json = createJson("{'reason':'Because, reasons.'}");
         TestUtils.mockPlayContextWithJson(json);
         
         // Session that is returned no longer consents
@@ -375,7 +394,8 @@ public class ConsentControllerMockedTest {
         doReturn(participant).when(updatedSession).getParticipant();
         doReturn(updatedSession).when(authenticationService).getSession(eq(study), any(CriteriaContext.class));
         
-        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(false, SUBPOP_GUID));
+        when(consentService.withdrawConsent(eq(study), eq(SUBPOP_GUID), eq(participant), eq(context), any(), anyInt()))
+            .thenAnswer(createAnswer(false, SUBPOP_GUID));
 
         Result result = controller.withdrawConsentV2(SUBPOP_GUID.getGuid());
         
@@ -383,8 +403,8 @@ public class ConsentControllerMockedTest {
         assertWithdrawnInSession(result, SharingScope.NO_SHARING, SUBPOP_GUID);
         
         // Should call the service and withdraw
-        verify(consentService).withdrawConsent(study, SUBPOP_GUID, participant, new Withdrawal("Because, reasons."),
-                20000);
+        verify(consentService).withdrawConsent(study, SUBPOP_GUID, participant, context,
+                new Withdrawal("Because, reasons."), 20000);
         verify(cacheProvider).setUserSession(any());
         DateTimeUtils.setCurrentMillisSystem();
     }
@@ -395,28 +415,30 @@ public class ConsentControllerMockedTest {
         String json = "{}";
         TestUtils.mockPlayContextWithJson(json);
         
-        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(false, SUBPOP_GUID));
+        when(consentService.withdrawConsent(eq(study), eq(SUBPOP_GUID), eq(participant), eq(context), any(),
+                anyInt())).thenAnswer(createAnswer(false, SUBPOP_GUID));
         
         Result result = controller.withdrawConsentV2(SUBPOP_GUID.getGuid());
         
         assertWithdrawnInSession(result, SharingScope.NO_SHARING, SUBPOP_GUID);
         
-        verify(consentService).withdrawConsent(study, SUBPOP_GUID, participant, new Withdrawal(null), 20000);
+        verify(consentService).withdrawConsent(study, SUBPOP_GUID, participant, context, new Withdrawal(null), 20000);
     }
     
     @Test
     public void canWithdrawFromAllConsents() throws Exception {
         DateTimeUtils.setCurrentMillisFixed(20000);
-        String json = "{\"reason\":\"There's a reason for everything.\"}";
+        String json = createJson("{'reason':'There is a reason for everything.'}");
         TestUtils.mockPlayContextWithJson(json);
         
-        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(true, SUBPOP_GUID, DEFAULT_SUBPOP_GUID));
+        when(consentService.withdrawAllConsents(eq(study), eq(participant), eq(context), any(), anyInt()))
+                .thenAnswer(createAnswer(true, SUBPOP_GUID, DEFAULT_SUBPOP_GUID));
         
         Result result = controller.withdrawFromAllConsents();
         
         assertWithdrawnInSession(result, SharingScope.NO_SHARING, SUBPOP_GUID);
         
-        verify(consentService).withdrawAllConsents(study, session.getId(), new Withdrawal("There's a reason for everything."), 20000);
+        verify(consentService).withdrawAllConsents(study, participant, context, new Withdrawal("There is a reason for everything."), 20000);
     }
     
     @Test
@@ -431,7 +453,8 @@ public class ConsentControllerMockedTest {
     @Test
     public void consentSignatureHasServerSignedOnValueV2() throws Exception {
         // signedOn will be set on the server
-        String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"imageData\":\"data:asdf\",\"imageMimeType\":\"image/png\",\"scope\":\"all_qualified_researchers\"}";
+        String json = createJson("{'name':'Jack Aubrey','birthdate':'1970-10-10','imageData':'data:asdf',"+
+                "'imageMimeType':'image/png','scope':'all_qualified_researchers'}");
         
         TestUtils.mockPlayContextWithJson(json);
         
@@ -439,10 +462,7 @@ public class ConsentControllerMockedTest {
 
         Result result = controller.giveV3(SUBPOP_GUID.getGuid());
         
-        // Sharing is still off because there's another required consent that hasn't been signed. 
-        // Practically, only the last sharing option that is set will be used. This did not used to 
-        // be true, and was an inconsistency in the model when applied to multiple consents.
-        assertConsentInSession(result, SharingScope.NO_SHARING, SUBPOP_GUID);
+        assertConsentInSession(result, SharingScope.ALL_QUALIFIED_RESEARCHERS, SUBPOP_GUID);
         
         verify(consentService).consentToResearch(eq(study), eq(SUBPOP_GUID), eq(participant),
                 signatureCaptor.capture(), eq(SharingScope.ALL_QUALIFIED_RESEARCHERS), eq(true));
@@ -452,17 +472,18 @@ public class ConsentControllerMockedTest {
     @Test
     public void canWithdrawConsentV2() throws Exception {
         DateTimeUtils.setCurrentMillisFixed(20000);
-        String json = "{\"reason\":\"Because, reasons.\"}";
+        String json = createJson("{'reason':'Because, reasons.'}");
         TestUtils.mockPlayContextWithJson(json);
 
-        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(false, DEFAULT_SUBPOP_GUID));
+        when(consentService.withdrawConsent(eq(study), eq(DEFAULT_SUBPOP_GUID), eq(participant), eq(context), any(),
+                anyInt())).thenAnswer(createAnswer(false, DEFAULT_SUBPOP_GUID));
 
         Result result = controller.withdrawConsentV2(DEFAULT_SUBPOP_GUID.getGuid());
         
         assertWithdrawnInSession(result, SharingScope.NO_SHARING, DEFAULT_SUBPOP_GUID);
         
         // Should call the service and withdraw
-        verify(consentService).withdrawConsent(study, DEFAULT_SUBPOP_GUID, participant,
+        verify(consentService).withdrawConsent(study, DEFAULT_SUBPOP_GUID, participant, context,
                 new Withdrawal("Because, reasons."), 20000);
         
         verify(cacheProvider).setUserSession(any());
@@ -475,14 +496,14 @@ public class ConsentControllerMockedTest {
         String json = "{}";
         TestUtils.mockPlayContextWithJson(json);
         
-        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(false, SUBPOP_GUID));
+        when(consentService.withdrawConsent(eq(study), eq(SUBPOP_GUID), eq(participant), eq(context), any(), anyInt()))
+                .thenAnswer(createAnswer(false, SUBPOP_GUID));
         
         Result result = controller.withdrawConsentV2(SUBPOP_GUID.getGuid());
         
         assertWithdrawnInSession(result, SharingScope.NO_SHARING, SUBPOP_GUID);
         
-        verify(consentService).withdrawConsent(study, SUBPOP_GUID, participant,
-                new Withdrawal(null), 20000);
+        verify(consentService).withdrawConsent(study, SUBPOP_GUID, participant, context, new Withdrawal(null), 20000);
         DateTimeUtils.setCurrentMillisSystem();
     }
     
@@ -492,7 +513,8 @@ public class ConsentControllerMockedTest {
     // error, and it is still ignored. 
     @Test
     public void submittingDateTimeStringsDoesNotCauseException() throws Exception {
-        String json = "{\"name\":\"Jack Aubrey\",\"birthdate\":\"1970-10-10\",\"signedOn\":\"2016-12-19T17:40:33.812Z\",\"scope\":\"no_sharing\"}";
+        String json = createJson("{'name':'Jack Aubrey','birthdate':'1970-10-10','signedOn':"+
+                "'2016-12-19T17:40:33.812Z','scope':'no_sharing'}");
         
         TestUtils.mockPlayContextWithJson(json);
         
@@ -503,7 +525,7 @@ public class ConsentControllerMockedTest {
         assertConsentInSession(result, SharingScope.NO_SHARING, SUBPOP_GUID);
         
         JsonNode node = TestUtils.getJson(result);
-        assertEquals("userId", node.get("id").asText());
+        assertEquals(USER_ID, node.get("id").asText());
         
         verify(consentService).consentToResearch(eq(study), eq(SUBPOP_GUID), eq(participant),
                 signatureCaptor.capture(), eq(SharingScope.NO_SHARING), eq(true));
@@ -526,10 +548,9 @@ public class ConsentControllerMockedTest {
         
         assertEquals(SharingScope.SPONSORS_AND_PARTNERS, session.getParticipant().getSharingScope());
         
-        String json = "{\"reason\":\"Because, reasons.\"}";
+        String json = createJson("{'reason':'Because, reasons.'}");
         TestUtils.mockPlayContextWithJson(json);
-        
-        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(false, DEFAULT_SUBPOP_GUID));
+        when(consentService.withdrawConsent(eq(study), eq(DEFAULT_SUBPOP_GUID), eq(participant), eq(context), any(), anyInt())).thenAnswer(createAnswer(false, DEFAULT_SUBPOP_GUID));
         
         // withdrawing one consent will turn off sharing because not all required consents are signed 
         Result result = controller.withdrawConsentV2(DEFAULT_SUBPOP_GUID.getGuid());
@@ -549,10 +570,11 @@ public class ConsentControllerMockedTest {
         
         assertEquals(SharingScope.SPONSORS_AND_PARTNERS, session.getParticipant().getSharingScope());
         
-        String json = "{\"reason\":\"Because, reasons.\"}";
+        String json = createJson("{'reason':'Because, reasons.'}");
         TestUtils.mockPlayContextWithJson(json);
         
-        when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(false, SUBPOP_GUID));
+        when(consentService.withdrawConsent(eq(study), eq(SUBPOP_GUID), eq(participant), eq(context), any(),
+                anyInt())).thenAnswer(createAnswer(false, SUBPOP_GUID));
 
         // withdrawing the optional consent does not turn off sharing 
         Result result = controller.withdrawConsentV2(SUBPOP_GUID.getGuid());
@@ -570,7 +592,7 @@ public class ConsentControllerMockedTest {
         assertEquals("no_sharing", node.get("sharingScope").asText());
         assertFalse(node.get("dataSharing").asBoolean());
 
-        verify(optionsService).setEnum(study.getStudyIdentifier(), "healthCode", SHARING_SCOPE, SharingScope.NO_SHARING);
+        verify(optionsService).setEnum(study.getStudyIdentifier(), HEALTH_CODE, SHARING_SCOPE, SharingScope.NO_SHARING);
     }
     
     @Test
@@ -583,13 +605,13 @@ public class ConsentControllerMockedTest {
         assertEquals("sponsors_and_partners", node.get("sharingScope").asText());
         assertTrue(node.get("dataSharing").asBoolean());
 
-        verify(optionsService).setEnum(study.getStudyIdentifier(), "healthCode", SHARING_SCOPE, SharingScope.SPONSORS_AND_PARTNERS);
+        verify(optionsService).setEnum(study.getStudyIdentifier(), HEALTH_CODE, SHARING_SCOPE, SharingScope.SPONSORS_AND_PARTNERS);
     }
     
     private void assertConsentInSession(Result result, SharingScope scope, SubpopulationGuid subpopGuid) throws Exception {
         assertEquals(201, result.status());
         JsonNode node = TestUtils.getJson(result);
-        assertEquals("userId", node.get("id").asText());
+        assertEquals(USER_ID, node.get("id").asText());
         assertEquals(scope.name().toLowerCase(), node.get("sharingScope").asText());
         
         JsonNode consent = node.get("consentStatuses").get(subpopGuid.getGuid());
@@ -601,7 +623,7 @@ public class ConsentControllerMockedTest {
         assertEquals(200, result.status());
         JsonNode node = TestUtils.getJson(result);
 
-        assertEquals("userId", node.get("id").asText());
+        assertEquals(USER_ID, node.get("id").asText());
         assertEquals(sharingScope.name().toLowerCase(), node.get("sharingScope").asText());
         assertEquals(sharingScope != SharingScope.NO_SHARING, node.get("dataSharing").asBoolean());
         

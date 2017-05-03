@@ -52,6 +52,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
@@ -182,6 +183,9 @@ public class ParticipantServiceTest {
     
     @Captor
     ArgumentCaptor<Study> studyCaptor;
+    
+    @Captor
+    ArgumentCaptor<CriteriaContext> contextCaptor;
     
     @Mock
     private ExternalIdService externalIdService;
@@ -760,7 +764,10 @@ public class ParticipantServiceTest {
         
         participantService.withdrawAllConsents(STUDY, ID, withdrawal, withdrewOn);
         
-        verify(consentService).withdrawAllConsents(STUDY, account, withdrawal, withdrewOn);
+        verify(consentService).withdrawAllConsents(eq(STUDY), participantCaptor.capture(),
+            contextCaptor.capture(), eq(withdrawal), eq(withdrewOn));
+        assertEquals(ID, participantCaptor.getValue().getId());
+        assertEquals(ID, contextCaptor.getValue().getUserId());
     }
     
     @Test
@@ -772,7 +779,10 @@ public class ParticipantServiceTest {
         
         participantService.withdrawConsent(STUDY, ID, SUBPOP_GUID, withdrawal, withdrewOn);
         
-        verify(consentService).withdrawConsent(STUDY, SUBPOP_GUID, account, withdrawal, withdrewOn);
+        verify(consentService).withdrawConsent(eq(STUDY), eq(SUBPOP_GUID), participantCaptor.capture(),
+                contextCaptor.capture(), eq(withdrawal), eq(withdrewOn));
+        assertEquals(ID, participantCaptor.getValue().getId());
+        assertEquals(ID, contextCaptor.getValue().getUserId());
     }
     
     @Test

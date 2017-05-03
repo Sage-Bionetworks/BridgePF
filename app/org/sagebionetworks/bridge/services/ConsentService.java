@@ -15,6 +15,7 @@ import javax.annotation.Resource;
 import org.apache.commons.io.IOUtils;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -54,7 +55,6 @@ public class ConsentService {
     private ActivityEventService activityEventService;
     private SubpopulationService subpopService;
     private StudyService studyService;
-    
     private String consentTemplate;
     
     @Value("classpath:study-defaults/consent-page.xhtml")
@@ -84,7 +84,7 @@ public class ConsentService {
     @Autowired
     final void setSubpopulationService(SubpopulationService subpopService) {
         this.subpopService = subpopService;
-    };
+    }
     @Autowired
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
@@ -213,31 +213,19 @@ public class ConsentService {
      * Withdraw consent in this study. The withdrawal date is recorded and the user can no longer 
      * access any APIs that require consent, although the user's account (along with the history of 
      * the user's participation) will not be deleted.
-     * @param study 
-     * @param subpopGuid
-     * @param participant
-     * @param withdrawal
-     * @param withdrewOn
      */
-    public void withdrawConsent(Study study, SubpopulationGuid subpopGuid, StudyParticipant participant,
-            Withdrawal withdrawal, long withdrewOn) {
+    public Map<SubpopulationGuid, ConsentStatus> withdrawConsent(Study study, SubpopulationGuid subpopGuid,
+            StudyParticipant participant, CriteriaContext context, Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(study);
-        checkNotNull(participant);
-        
-        Account account = accountDao.getAccount(study, participant.getId());
-        
-        withdrawConsent(study, subpopGuid, account, withdrawal, withdrewOn);
-    }
-    
-    public void withdrawConsent(Study study, SubpopulationGuid subpopGuid, Account account, Withdrawal withdrawal,
-            long withdrewOn) {
-        checkNotNull(study);
+        checkNotNull(context);
         checkNotNull(subpopGuid);
-        checkNotNull(account);
+        checkNotNull(participant);
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
         
-        String externalId = optionsService.getOptions(account.getHealthCode()).getString(EXTERNAL_IDENTIFIER);
+        Account account = accountDao.getAccount(study, participant.getId());
+        
+        String externalId = participant.getExternalId();
         
         if(!withdrawSignatures(account, subpopGuid, withdrewOn)) {
             throw new EntityNotFoundException(ConsentSignature.class);
@@ -247,23 +235,14 @@ public class ConsentService {
         MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account, withdrawal,
                 withdrewOn);
         sendMailService.sendEmail(consentEmail);
-    }
-    
-    /**
-     * Withdraw user from any and all consents, and turn off sharing. Because a user's criteria for being included in a 
-     * consent can change over time, this is really the best method for ensuring a user is withdrawn from everything. 
-     * But in cases where there are studies with distinct and separate consents, you must selectively withdraw from 
-     * the consent for a specific subpopulation. Note that this method assumes it is known that the the userId will 
-     * return an account.
-     * 
-     * @param study
-     * @param userId
-     * @param withdrawal
-     * @param withdrewOn
-     */
-    public void withdrawAllConsents(Study study, String userId, Withdrawal withdrawal, long withdrewOn) {
-        Account account = accountDao.getAccount(study, userId);
-        withdrawAllConsents(study, account, withdrawal, withdrewOn);
+        
+        Map<SubpopulationGuid,ConsentStatus> statuses = getConsentStatuses(context);
+        
+        if (!ConsentStatus.isUserConsented(statuses)) {
+            optionsService.setEnum(account.getStudyIdentifier(), account.getHealthCode(),
+                    ParticipantOption.SHARING_SCOPE, SharingScope.NO_SHARING);
+        }
+        return statuses;
     }
     
     /**
@@ -271,18 +250,16 @@ public class ConsentService {
      * consent can change over time, this is really the best method for ensuring a user is withdrawn from everything. 
      * But in cases where there are studies with distinct and separate consents, you must selectively withdraw from 
      * the consent for a specific subpopulation.
-     * 
-     * @param study
-     * @param account
-     * @param withdrawal
-     * @param withdrewOn
      */
-    public void withdrawAllConsents(Study study, Account account, Withdrawal withdrawal, long withdrewOn) {
+    public Map<SubpopulationGuid, ConsentStatus> withdrawAllConsents(Study study, StudyParticipant participant,
+            CriteriaContext context, Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(study);
-        checkNotNull(account);
+        checkNotNull(context);
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
 
+        Account account = accountDao.getAccount(study, context.getUserId());
+        
         // Do this first, as it directly impacts the export of data, and if nothing else, we'd like this to succeed.
         optionsService.setEnum(study.getStudyIdentifier(), account.getHealthCode(), SHARING_SCOPE, SharingScope.NO_SHARING);
         
@@ -295,6 +272,9 @@ public class ConsentService {
         MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account, withdrawal,
                 withdrewOn);
         sendMailService.sendEmail(consentEmail);
+        
+        // But we don't need to query, we know these are all withdraw.
+        return getConsentStatuses(context);
     }
     
     /**

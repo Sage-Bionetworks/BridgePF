@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope.ALL_QUALIFIED_RESEARCHERS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope.NO_SHARING;
 
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -19,7 +20,6 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
@@ -38,6 +38,9 @@ public class SessionUpdateServiceTest {
     
     @Mock
     private CacheProvider mockCacheProvider;
+    
+    @Mock
+    private ParticipantOptionsService mockOptionsService;
     
     private SessionUpdateService service;
     
@@ -142,20 +145,10 @@ public class SessionUpdateServiceTest {
         session.setStudyIdentifier(API_STUDY_ID);
         session.setConsentStatuses(consents);
         
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withHealthCode(session.getHealthCode())
-                .withLanguages(session.getParticipant().getLanguages())
-                .withStudyIdentifier(session.getStudyIdentifier())
-                .withUserDataGroups(session.getParticipant().getDataGroups())
-                .withUserId(session.getId())
-                .build();
-        
-        service.updateConsentStatus(session, context, ALL_QUALIFIED_RESEARCHERS);
+        service.updateConsentStatus(session, consents, ALL_QUALIFIED_RESEARCHERS, false);
         
         verify(mockCacheProvider).setUserSession(session);
         assertEquals(ALL_QUALIFIED_RESEARCHERS, session.getParticipant().getSharingScope());
-        verify(mockConsentService).getConsentStatuses(context);
     }
     
     @Test
@@ -169,19 +162,61 @@ public class SessionUpdateServiceTest {
         consents.put(consentB, new ConsentStatus.Builder().withName("consentB").withGuid(consentB).withConsented(true)
                 .withSignedMostRecentConsent(true).build());
         
+        UserSession session = new UserSession();
+        session.setConsentStatuses(consents);
+        
+        service.updateConsentStatus(session, consents, ALL_QUALIFIED_RESEARCHERS, false);
+        
+        verify(mockCacheProvider).setUserSession(session);
+        
+        assertEquals(ALL_QUALIFIED_RESEARCHERS, session.getParticipant().getSharingScope());
+    }
+    
+    @Test
+    public void updateConsentStatusOptionalConsentWithdrawn() {
+        // In this situation, the user's sharing should not be set to NO_SHARING.
+        SubpopulationGuid consentA = SubpopulationGuid.create("consentA");
+        SubpopulationGuid consentB = SubpopulationGuid.create("consentB");
+        
+        Map<SubpopulationGuid,ConsentStatus> consents = Maps.newHashMap();
+        consents.put(consentA, new ConsentStatus.Builder().withName("consentA").withGuid(consentA).withConsented(false)
+                .withSignedMostRecentConsent(false).withRequired(false).build());
+        consents.put(consentB, new ConsentStatus.Builder().withName("consentB").withGuid(consentB).withConsented(true)
+                .withSignedMostRecentConsent(true).withRequired(true).build());
+        
         CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(API_STUDY_ID).build();
         
         when(mockConsentService.getConsentStatuses(context)).thenReturn(consents);
         
         UserSession session = new UserSession();
         session.setConsentStatuses(consents);
-        
-        service.updateConsentStatus(session, context, ALL_QUALIFIED_RESEARCHERS);
-        
-        verify(mockCacheProvider).setUserSession(session);
-        verify(mockConsentService).getConsentStatuses(context);
+
+        service.updateConsentStatus(session, consents, ALL_QUALIFIED_RESEARCHERS, true);
         
         assertEquals(ALL_QUALIFIED_RESEARCHERS, session.getParticipant().getSharingScope());
+    }
+    
+    @Test
+    public void updateConsentStatusRequiredConsentWithdrawn() {
+        // If a withdrawal causes a user to no longer be in study, should set sharing to NO_SHARING
+        // In this situation, the user's sharing should not be set to NO_SHARING.
+        SubpopulationGuid consentA = SubpopulationGuid.create("consentA");
+        SubpopulationGuid consentB = SubpopulationGuid.create("consentB");
+        
+        Map<SubpopulationGuid,ConsentStatus> consents = Maps.newHashMap();
+        consents.put(consentA, new ConsentStatus.Builder().withName("consentA").withGuid(consentA).withConsented(false)
+                .withSignedMostRecentConsent(false).withRequired(true).build());
+        consents.put(consentB, new ConsentStatus.Builder().withName("consentB").withGuid(consentB).withConsented(true)
+                .withSignedMostRecentConsent(true).withRequired(true).build());
+        
+        UserSession session = new UserSession();
+        session.setStudyIdentifier(API_STUDY_ID);
+        session.setParticipant(new StudyParticipant.Builder().withHealthCode("healthCode").build());
+        session.setConsentStatuses(consents);
+
+        service.updateConsentStatus(session, consents, ALL_QUALIFIED_RESEARCHERS, true);
+        
+        assertEquals(NO_SHARING, session.getParticipant().getSharingScope());
     }
     
     @Test

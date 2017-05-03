@@ -76,20 +76,19 @@ public class SessionUpdateService {
         cacheProvider.setUserSession(session);
     }
     
-    public void updateConsentStatus(UserSession session, CriteriaContext context, SharingScope sharingScope) {
-        Map<SubpopulationGuid, ConsentStatus> statuses = consentService.getConsentStatuses(context);
+    public void updateConsentStatus(UserSession session, Map<SubpopulationGuid, ConsentStatus> statuses,
+            SharingScope sharingScope, boolean isWithdrawing) {
         session.setConsentStatuses(statuses);
         
-        StudyParticipant.Builder builder = builder(session);
-        builder.withSharingScope(sharingScope);
-        if (!session.doesConsent()) {
+        StudyParticipant.Builder builder = builder(session).withSharingScope(sharingScope);
+        if (isWithdrawing && !session.doesConsent()) {
             builder.withSharingScope(SharingScope.NO_SHARING);
         }
         session.setParticipant(builder.build());
         
         cacheProvider.setUserSession(session);
     }
-    
+
     private StudyParticipant.Builder builder(UserSession session) {
         return new StudyParticipant.Builder().copyOf(session.getParticipant());
     }

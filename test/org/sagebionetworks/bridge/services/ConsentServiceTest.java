@@ -179,7 +179,8 @@ public class ConsentServiceTest {
         assertEquals(signedOn, returnedSig.getSignedOn());
 
         // Withdraw consent and verify.
-        consentService.withdrawConsent(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getStudyParticipant(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
+        consentService.withdrawConsent(testUser.getStudy(), defaultSubpopulation.getGuid(),
+                testUser.getStudyParticipant(), testUser.getCriteriaContext(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
         
         // No longer consented.
         statuses = consentService.getConsentStatuses(context);
@@ -213,13 +214,15 @@ public class ConsentServiceTest {
                 .withBirthdate(DateUtils.getCalendarDateString(today18YearsAgo)).build();
         consentService.consentToResearch(study, defaultSubpopulation.getGuid(), testUser.getStudyParticipant(), sig, sharingScope, false);
 
-        consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getStudyParticipant(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
+        consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getStudyParticipant(),
+                testUser.getCriteriaContext(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
 
         // Also okay
         sig = new ConsentSignature.Builder().withName("Test User")
                 .withBirthdate(DateUtils.getCalendarDateString(yesterday18YearsAgo)).build();
         consentService.consentToResearch(study, defaultSubpopulation.getGuid(), testUser.getStudyParticipant(), sig, sharingScope, false);
-        consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getStudyParticipant(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
+        consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getStudyParticipant(),
+                testUser.getCriteriaContext(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
 
         // But this is not, one day to go
         try {
@@ -262,7 +265,8 @@ public class ConsentServiceTest {
         assertConsented(false);
 
         // To consent again, first need to withdraw. User is consented and has now signed most recent consent.
-        consentService.withdrawConsent(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getStudyParticipant(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
+        consentService.withdrawConsent(testUser.getStudy(), defaultSubpopulation.getGuid(),
+                testUser.getStudyParticipant(), testUser.getCriteriaContext(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
         
         consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getStudyParticipant(),
             new ConsentSignature.Builder().withConsentSignature(consent).withSignedOn(DateTime.now().getMillis()).build(),
@@ -284,7 +288,8 @@ public class ConsentServiceTest {
         assertNotNull(consentService.getConsentSignature(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getId()));
         
         // Now withdraw consent
-        consentService.withdrawConsent(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getStudyParticipant(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
+        consentService.withdrawConsent(testUser.getStudy(), defaultSubpopulation.getGuid(),
+                testUser.getStudyParticipant(), testUser.getCriteriaContext(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
         
         // Now user is not consented
         assertNotConsented();
@@ -369,8 +374,8 @@ public class ConsentServiceTest {
         
         assertConsented(true);
         
-        consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getStudyParticipant(), WITHDRAWAL,
-                DateTime.now().getMillis());
+        consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getStudyParticipant(),
+                testUser.getCriteriaContext(), WITHDRAWAL, DateTime.now().getMillis());
         
         assertNotConsented();
         statuses = consentService.getConsentStatuses(context);
@@ -380,13 +385,13 @@ public class ConsentServiceTest {
         // Just verify that it now doesn't appear to exist, so this is an exception
         try {
             consentService.withdrawConsent(study, defaultSubpopulation.getGuid(), testUser.getStudyParticipant(),
-                    WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
+                    testUser.getCriteriaContext(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
         }
         
-        consentService.withdrawConsent(study, requiredSubpop.getGuid(), testUser.getStudyParticipant(), WITHDRAWAL,
-                WITHDRAWAL_TIMESTAMP);
+        consentService.withdrawConsent(study, requiredSubpop.getGuid(), testUser.getStudyParticipant(),
+                testUser.getCriteriaContext(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
         
         assertNotConsented();
         statuses = consentService.getConsentStatuses(context);
@@ -423,7 +428,8 @@ public class ConsentServiceTest {
                 .count();
         assertEquals(2, count);
 
-        consentService.withdrawAllConsents(study, testUser.getId(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
+        consentService.withdrawAllConsents(study, testUser.getStudyParticipant(), testUser.getCriteriaContext(),
+                WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
         count = consentService.getConsentStatuses(context).values().stream().filter(ConsentStatus::isConsented).count();
         assertEquals(0, count);
     }
@@ -451,8 +457,8 @@ public class ConsentServiceTest {
         
         // withdraw your consent. This now withdraws all consents that don't have a withdrawnOn timestamp, 
         // so despite the conflict generated above, the rest of these tests will pass.
-        consentService.withdrawConsent(study, subpopGuid, testUser.getStudyParticipant(),
-                new Withdrawal("Test user withdrawn."), DateTime.now().getMillis());        
+        consentService.withdrawConsent(study, subpopGuid, testUser.getStudyParticipant(), testUser.getCriteriaContext(),
+                new Withdrawal("Test user withdrawn."), DateTime.now().getMillis());
         
         // You shouldn't be consented.
         Map<SubpopulationGuid,ConsentStatus> map = consentService.getConsentStatuses(context);
