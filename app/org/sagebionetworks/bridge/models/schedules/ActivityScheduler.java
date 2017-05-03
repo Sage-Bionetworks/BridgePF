@@ -52,36 +52,31 @@ public abstract class ActivityScheduler {
             }
         }
     }
-
+    
     protected void addScheduledActivityAtTime(List<ScheduledActivity> scheduledActivities, SchedulePlan plan,
             ScheduleContext context, LocalDate localDate, LocalTime localTime) {
         
-        for (Activity activity : schedule.getActivities()) {
-            addScheduledActivityAtTimeForOneActivity(scheduledActivities, plan, context, localDate, localTime, activity);
-        }
-    }
-
-    protected void addScheduledActivityAtTimeForOneActivity(List<ScheduledActivity> scheduledActivities, SchedulePlan plan,
-            ScheduleContext context, LocalDate localDate, LocalTime localTime, Activity activity) {
         DateTime localDateTime = localDate.toDateTime(localTime, context.getInitialTimeZone());
         if (isInWindow(localDateTime)) {
             // As long at the activities are not already expired, add them.
             LocalDateTime expiresOn = getExpiresOn(localDate, localTime);
             if (expiresOn == null || expiresOn.isAfter(context.getNow().toLocalDateTime())) {
-                ScheduledActivity schActivity = ScheduledActivity.create();
-                schActivity.setSchedulePlanGuid(plan.getGuid());
-                // Use the time zone of the request, not the initial time zone that is used for event dates
-                schActivity.setTimeZone(context.getEndsOn().getZone());
-                schActivity.setHealthCode(context.getCriteriaContext().getHealthCode());
-                schActivity.setActivity(activity);
-                LocalDateTime localScheduledOn = localDate.toLocalDateTime(localTime);
-                schActivity.setLocalScheduledOn(localScheduledOn);
-                schActivity.setGuid(activity.getGuid() + ":" + localDate.toLocalDateTime(localTime));
-                schActivity.setPersistent(activity.isPersistentlyRescheduledBy(schedule));
-                if (expiresOn != null) {
-                    schActivity.setLocalExpiresOn(expiresOn);
+                for (Activity activity : schedule.getActivities()) {
+                    ScheduledActivity schActivity = ScheduledActivity.create();
+                    schActivity.setSchedulePlanGuid(plan.getGuid());
+                    // Use the time zone of the request, not the initial time zone that is used for event dates
+                    schActivity.setTimeZone(context.getEndsOn().getZone());
+                    schActivity.setHealthCode(context.getCriteriaContext().getHealthCode());
+                    schActivity.setActivity(activity);
+                    LocalDateTime localScheduledOn = localDate.toLocalDateTime(localTime);
+                    schActivity.setLocalScheduledOn(localScheduledOn);
+                    schActivity.setGuid(activity.getGuid() + ":" + localDate.toLocalDateTime(localTime));
+                    schActivity.setPersistent(activity.isPersistentlyRescheduledBy(schedule));
+                    if (expiresOn != null) {
+                        schActivity.setLocalExpiresOn(expiresOn);
+                    }
+                    scheduledActivities.add(schActivity);
                 }
-                scheduledActivities.add(schActivity);
             }
         }
     }
@@ -93,7 +88,7 @@ public abstract class ActivityScheduler {
         return scheduledActivities.subList(0, Math.min(scheduledActivities.size(), count));
     }
     
-    protected boolean isInWindow(DateTime scheduledTime) {
+    private boolean isInWindow(DateTime scheduledTime) {
         DateTime startsOn = schedule.getStartsOn();
         DateTime endsOn = schedule.getEndsOn();
 

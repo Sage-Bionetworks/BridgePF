@@ -131,7 +131,6 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         if (activities.isEmpty()) {
             return ImmutableList.of();
         }
-        
         List<Object> activitiesToLoad = new ArrayList<Object>(activities);
         Map<String,List<Object>> resultMap = mapper.batchLoad(activitiesToLoad);
         

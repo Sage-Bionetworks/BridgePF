@@ -31,8 +31,7 @@ public class PersistentActivityScheduler extends ActivityScheduler {
             DateTime scheduledTime = getFirstEventDateTime(context, finishedId+"," + schedule.getEventId());
             
             if (scheduledTime != null) {
-                addScheduledActivityAtTimeForOneActivity(scheduledActivities, plan, context,
-                        scheduledTime.toLocalDate(), LocalTime.MIDNIGHT, activity);
+                addScheduledActivityAtTime(scheduledActivities, plan, context, scheduledTime.toLocalDate(), LocalTime.MIDNIGHT);            
             }
         }
         return scheduledActivities;
