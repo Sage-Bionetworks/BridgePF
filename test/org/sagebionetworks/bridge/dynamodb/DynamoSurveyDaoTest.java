@@ -139,6 +139,7 @@ public class DynamoSurveyDaoTest {
         // These fields are updateable.
         survey.setIdentifier("newIdentifier");
         survey.setName("New Name");
+        survey.setCopyrightNotice("New notice");
 
         // These fields are not.
         long originalModifiedOn = survey.getModifiedOn();
@@ -157,6 +158,7 @@ public class DynamoSurveyDaoTest {
         // Verify fields updated.
         assertEquals("Identifier has been changed", "newIdentifier", updatedSurvey.getIdentifier());
         assertEquals("New Name", updatedSurvey.getName());
+        assertEquals("New notice", updatedSurvey.getCopyrightNotice());
 
         // Verify fields not updated.
         assertEquals(TEST_STUDY_IDENTIFIER, updatedSurvey.getStudyIdentifier());
