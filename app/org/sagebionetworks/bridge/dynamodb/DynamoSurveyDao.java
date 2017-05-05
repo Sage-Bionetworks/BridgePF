@@ -263,6 +263,7 @@ public class DynamoSurveyDao implements SurveyDao {
         existing.setIdentifier(survey.getIdentifier());
         existing.setName(survey.getName());
         existing.setElements(survey.getElements());
+        existing.setCopyrightNotice(survey.getCopyrightNotice());
 
         // copy over DDB version so we can handle concurrent modification exceptions
         existing.setVersion(survey.getVersion());
