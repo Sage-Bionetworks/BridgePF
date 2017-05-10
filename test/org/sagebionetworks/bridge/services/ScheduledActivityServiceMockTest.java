@@ -478,7 +478,7 @@ public class ScheduledActivityServiceMockTest {
     }
     
     private void executeComplexTestInTimeZone(int hourOfDay, DateTimeZone timeZone) throws Exception {
-        DateTime now = NOW.withZone(timeZone).withHourOfDay(hourOfDay);
+        DateTime startsOn = NOW.withZone(timeZone).withHourOfDay(hourOfDay);
         String json = TestUtils.createJson("{"+  
                 "'guid':'5fe9029e-beb6-4163-ac35-23d048deeefe',"+
                 "'label':'Voice Activity',"+
@@ -580,7 +580,7 @@ public class ScheduledActivityServiceMockTest {
             "}");
             
         Map<String,DateTime> events = Maps.newHashMap();
-        events.put("enrollment", now.withZone(DateTimeZone.UTC).minusDays(3));
+        events.put("enrollment", startsOn.withZone(DateTimeZone.UTC).minusDays(3));
         when(activityEventService.getActivityEventMap("AAA")).thenReturn(events);
         
         ClientInfo info = ClientInfo.fromUserAgentCache("Parkinson-QA/36 (iPhone 5S; iPhone OS/9.2.1) BridgeSDK/7");
@@ -593,12 +593,12 @@ public class ScheduledActivityServiceMockTest {
             .withClientInfo(info)
             .withStudyIdentifier("test-study")
             .withUserDataGroups(Sets.newHashSet("parkinson","test_user"))
-                .withEndsOn(now.plusDays(1).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59))
+                .withEndsOn(startsOn.plusDays(1).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59))
                 .withInitialTimeZone(timeZone)
             .withHealthCode("AAA")
             .withUserId(USER_ID)
-            .withNow(now)
-            .withAccountCreatedOn(now.minusDays(4))
+            .withStartsOn(startsOn)
+            .withAccountCreatedOn(startsOn.minusDays(4))
             .build();
         
         // Is a parkinson patient, gets 3 tasks (or 6 tasks late in the day, see BRIDGE-1603
@@ -774,7 +774,7 @@ public class ScheduledActivityServiceMockTest {
         DateTime enrollment = DateTime.parse("2017-02-20T01:00:00.000Z");
         DateTimeZone initialTimeZone = DateTimeZone.forOffsetHours(initialTZOffset);
         DateTimeZone requestTimeZone = DateTimeZone.forOffsetHours(requestTZOffset);
-        DateTime now = DateTime.parse("2017-04-06T17:10:10.000Z").withZone(requestTimeZone);
+        DateTime startsOn = DateTime.parse("2017-04-06T17:10:10.000Z").withZone(requestTimeZone);
         
         Map<String,DateTime> eventMap = Maps.newHashMap();
         eventMap.put("enrollment", enrollment);
@@ -790,10 +790,10 @@ public class ScheduledActivityServiceMockTest {
         ScheduleContext context = new ScheduleContext.Builder()
                 .withStudyIdentifier(TEST_STUDY)
                 .withUserId("userId")
-                .withNow(now)
+                .withStartsOn(startsOn)
                 .withAccountCreatedOn(enrollment)
                 .withInitialTimeZone(initialTimeZone)
-                .withEndsOn(now.plusDays(4).withZone(requestTimeZone))
+                .withEndsOn(startsOn.plusDays(4).withZone(requestTimeZone))
                 .withHealthCode("healthCode").build();
         
         List<ScheduledActivity> activities = service.getScheduledActivities(context);
@@ -849,7 +849,7 @@ public class ScheduledActivityServiceMockTest {
         events.put("enrollment", ENROLLMENT);
         
         return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY).withInitialTimeZone(DateTimeZone.UTC)
-                .withNow(NOW)
+                .withStartsOn(NOW)
                 .withAccountCreatedOn(ENROLLMENT.minusHours(2)).withEndsOn(endsOn).withHealthCode(HEALTH_CODE)
                 .withUserId(USER_ID).withEvents(events).build();
     }

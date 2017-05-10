@@ -187,7 +187,7 @@ public class DynamoScheduledActivityDaoTest {
         
         // Finish one of the activities, and save some data with it too.
         ScheduledActivity activity = savedActivities.get(1);
-        activity.setFinishedOn(context.getNow().getMillis());
+        activity.setFinishedOn(context.getStartsOn().getMillis());
         activity.setClientData(clientData);
         assertEquals("activity deleted", ScheduledActivityStatus.DELETED, activity.getStatus());
         activityDao.updateActivities(healthCode, Lists.newArrayList(activity));

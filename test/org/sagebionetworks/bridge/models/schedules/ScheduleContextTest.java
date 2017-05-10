@@ -47,7 +47,7 @@ public class ScheduleContextTest {
         ScheduleContext context = new ScheduleContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).build();
         
         assertEquals(ClientInfo.UNKNOWN_CLIENT, context.getCriteriaContext().getClientInfo());
-        assertNotNull(context.getNow());
+        assertNotNull(context.getStartsOn());
         assertEquals(0, context.getMinimumPerSchedule());
     }
     
@@ -72,7 +72,7 @@ public class ScheduleContextTest {
                 .withEvents(events)
                 .withHealthCode("healthCode")
                 .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
-                .withNow(now).build();
+                .withStartsOn(now).build();
         assertEquals(studyId, context.getCriteriaContext().getStudyIdentifier());
         assertEquals(clientInfo, context.getCriteriaContext().getClientInfo());
         assertEquals(PST, context.getInitialTimeZone());
@@ -81,7 +81,7 @@ public class ScheduleContextTest {
         assertEquals(3, context.getMinimumPerSchedule());
         assertEquals("healthCode", context.getCriteriaContext().getHealthCode());
         assertEquals(TestConstants.USER_DATA_GROUPS, context.getCriteriaContext().getUserDataGroups());
-        assertEquals(now, context.getNow());
+        assertEquals(now, context.getStartsOn());
 
         // and the other studyId setter
         context = new ScheduleContext.Builder().withStudyIdentifier("study-key").build();

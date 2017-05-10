@@ -132,7 +132,7 @@ public class ScheduledActivityController extends BaseController {
                 .withUserAgent(request().getHeader(USER_AGENT))
                 .withLanguages(context.getCriteriaContext().getLanguages())
                 .withUserDataGroups(context.getCriteriaContext().getUserDataGroups())
-                .withActivitiesAccessedOn(context.getNow())
+                .withActivitiesAccessedOn(DateUtils.getCurrentDateTime())
                 .withTimeZone(context.getInitialTimeZone())
                 .withStudyIdentifier(context.getCriteriaContext().getStudyIdentifier()).build();
         cacheProvider.updateRequestInfo(requestInfo);

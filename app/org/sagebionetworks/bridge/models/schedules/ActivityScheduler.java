@@ -69,7 +69,7 @@ public abstract class ActivityScheduler {
         if (isInWindow(localDateTime)) {
             // As long at the activities are not already expired, add them.
             LocalDateTime expiresOn = getExpiresOn(localDate, localTime);
-            if (expiresOn == null || expiresOn.isAfter(context.getNow().toLocalDateTime())) {
+            if (expiresOn == null || expiresOn.isAfter(context.getStartsOn().toLocalDateTime())) {
                 ScheduledActivity schActivity = ScheduledActivity.create();
                 schActivity.setSchedulePlanGuid(plan.getGuid());
                 // Use the time zone of the request, not the initial time zone that is used for event dates

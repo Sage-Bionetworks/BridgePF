@@ -24,19 +24,19 @@ import com.google.common.collect.ImmutableMap;
 public final class ScheduleContext {
     
     private final DateTimeZone initialTimeZone;
+    private final DateTime startsOn;
     private final DateTime endsOn;
     private final Map<String,DateTime> events;
-    private final DateTime now;
     private final DateTime accountCreatedOn;
     private final int minimumPerSchedule;
     private final CriteriaContext criteriaContext;
     
-    private ScheduleContext(DateTimeZone initialTimeZone, DateTime endsOn, Map<String, DateTime> events, DateTime now,
+    private ScheduleContext(DateTimeZone initialTimeZone, DateTime startsOn, DateTime endsOn, Map<String, DateTime> events,
             int minimumPerSchedule, DateTime accountCreatedOn, CriteriaContext criteriaContext) {
         this.initialTimeZone = initialTimeZone;
         this.endsOn = endsOn;
         this.events = events;
-        this.now = now;
+        this.startsOn = startsOn;
         this.minimumPerSchedule = minimumPerSchedule;
         this.accountCreatedOn = accountCreatedOn;
         this.criteriaContext = criteriaContext;
@@ -78,12 +78,11 @@ public final class ScheduleContext {
     }
     
     /**
-     * Now in the user's initial time zone. This will be used to calculate the times of recurring 
-     * activities.
-     * @return
+     * Start time of scheduling, in the user's initial time zone. This will be used to calculate 
+     * the times of recurring activities.
      */
-    public DateTime getNow() {
-        return now;
+    public DateTime getStartsOn() {
+        return startsOn;
     }
     
     public int getMinimumPerSchedule() {
@@ -100,7 +99,7 @@ public final class ScheduleContext {
     
     @Override
     public int hashCode() {
-        return Objects.hash(initialTimeZone, endsOn, events, now, accountCreatedOn, minimumPerSchedule, criteriaContext);
+        return Objects.hash(initialTimeZone, endsOn, events, startsOn, accountCreatedOn, minimumPerSchedule, criteriaContext);
     }
 
     @Override
@@ -111,7 +110,7 @@ public final class ScheduleContext {
             return false;
         ScheduleContext other = (ScheduleContext) obj;
         return (Objects.equals(endsOn, other.endsOn) && Objects.equals(initialTimeZone, other.initialTimeZone) &&
-                Objects.equals(events, other.events) && Objects.equals(now, other.now) &&
+                Objects.equals(events, other.events) && Objects.equals(startsOn, other.startsOn) &&
                 Objects.equals(minimumPerSchedule, other.minimumPerSchedule) &&
                 Objects.equals(accountCreatedOn, other.accountCreatedOn) && 
                 Objects.equals(criteriaContext, other.criteriaContext));
@@ -119,7 +118,7 @@ public final class ScheduleContext {
 
     @Override
     public String toString() {
-        return "ScheduleContext [initialTimeZone=" + initialTimeZone + ", endsOn=" + endsOn + ", events=" + events + ", now=" + now
+        return "ScheduleContext [initialTimeZone=" + initialTimeZone + ", endsOn=" + endsOn + ", events=" + events + ", startsOn=" + startsOn
                 + ", accountCreatedOn=" + accountCreatedOn + ", minimumPerSchedule=" + minimumPerSchedule 
                 + ", criteriaContext=" + criteriaContext + "]";
     }
@@ -127,10 +126,10 @@ public final class ScheduleContext {
 
     public static class Builder {
         private DateTimeZone initialTimeZone;
+        private DateTime startsOn;
         private DateTime endsOn;
         private Map<String,DateTime> events;
         private int minimumPerSchedule;
-        private DateTime now;
         private DateTime accountCreatedOn;
         private CriteriaContext.Builder contextBuilder = new CriteriaContext.Builder();
         
@@ -176,8 +175,8 @@ public final class ScheduleContext {
             contextBuilder.withUserDataGroups(userDataGroups);
             return this;
         }
-        public Builder withNow(DateTime now) {
-            this.now = now;
+        public Builder withStartsOn(DateTime startsOn) {
+            this.startsOn = startsOn;
             return this;
         }
         public Builder withAccountCreatedOn(DateTime accountCreatedOn) {
@@ -192,7 +191,7 @@ public final class ScheduleContext {
             withInitialTimeZone(context.initialTimeZone);
             withEndsOn(context.endsOn);
             withEvents(context.events);
-            withNow(context.now);
+            withStartsOn(context.startsOn);
             withMinimumPerSchedule(context.minimumPerSchedule);
             withAccountCreatedOn(context.accountCreatedOn);
             contextBuilder.withContext(context.criteriaContext);
@@ -202,10 +201,10 @@ public final class ScheduleContext {
         public ScheduleContext build() {
             // pretty much everything else is optional. I would like healthCode to be required, but it's not:
             // we use these selection criteria to select subpopulations on sign up.
-            if (now == null) {
-                now = (initialTimeZone == null) ? DateTime.now() : DateTime.now(initialTimeZone);
+            if (startsOn == null) {
+                startsOn = (initialTimeZone == null) ? DateTime.now() : DateTime.now(initialTimeZone);
             }
-            return new ScheduleContext(initialTimeZone, endsOn, events, now, minimumPerSchedule, accountCreatedOn,
+            return new ScheduleContext(initialTimeZone, startsOn, endsOn, events, minimumPerSchedule, accountCreatedOn,
                     contextBuilder.build());
         }
     }
