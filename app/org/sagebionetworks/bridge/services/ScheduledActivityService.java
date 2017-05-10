@@ -205,26 +205,6 @@ public class ScheduledActivityService {
         return getScheduledActivities(context, V4_FILTER, V4_MERGE);
     }
     
-    public List<ScheduledActivity> getScheduledActivities(ScheduleContext context,
-            Predicate<ScheduledActivity> filter, UpdateActivitiesAndCollectSaves saver) {
-        checkNotNull(context);
-        
-        Validate.nonEntityThrowingException(VALIDATOR, context);
-        
-        // Add events for scheduling
-        Map<String, DateTime> events = createEventsMap(context);
-        ScheduleContext newContext = new ScheduleContext.Builder().withContext(context).withEvents(events).build();
-        
-        // Get scheduled activities, persisted activities, and compare them
-        List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(newContext);
-        List<ScheduledActivity> dbActivities = activityDao.getActivities(newContext.getEndsOn().getZone(), scheduledActivities);
-        
-        List<ScheduledActivity> saves = saver.updateActivitiesAndCollectSaves(scheduledActivities, dbActivities);
-        activityDao.saveActivities(saves);
-        
-        return orderActivities(scheduledActivities, filter);
-    }
-    
     public void updateScheduledActivities(String healthCode, List<ScheduledActivity> scheduledActivities) {
         checkArgument(isNotBlank(healthCode));
         checkNotNull(scheduledActivities);
@@ -273,12 +253,32 @@ public class ScheduledActivityService {
         return orderActivities(activities, V3_FILTER);
     }
     
-    protected List<ScheduledActivity> orderActivities(List<ScheduledActivity> activities,
+    private List<ScheduledActivity> orderActivities(List<ScheduledActivity> activities,
             Predicate<ScheduledActivity> filter) {
         return activities.stream()
             .filter(filter)
             .sorted(comparing(ScheduledActivity::getScheduledOn))
             .collect(toImmutableList());
+    }
+    
+    private List<ScheduledActivity> getScheduledActivities(ScheduleContext context, Predicate<ScheduledActivity> filter,
+            UpdateActivitiesAndCollectSaves saver) {
+        checkNotNull(context);
+        
+        Validate.nonEntityThrowingException(VALIDATOR, context);
+        
+        // Add events for scheduling
+        Map<String, DateTime> events = createEventsMap(context);
+        ScheduleContext newContext = new ScheduleContext.Builder().withContext(context).withEvents(events).build();
+        
+        // Get scheduled activities, persisted activities, and compare them
+        List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(newContext);
+        List<ScheduledActivity> dbActivities = activityDao.getActivities(newContext.getEndsOn().getZone(), scheduledActivities);
+        
+        List<ScheduledActivity> saves = saver.updateActivitiesAndCollectSaves(scheduledActivities, dbActivities);
+        activityDao.saveActivities(saves);
+        
+        return orderActivities(scheduledActivities, filter);
     }
     
     /**
