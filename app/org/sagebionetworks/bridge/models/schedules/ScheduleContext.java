@@ -180,7 +180,9 @@ public final class ScheduleContext {
             return this;
         }
         public Builder withAccountCreatedOn(DateTime accountCreatedOn) {
-            this.accountCreatedOn = new DateTime(accountCreatedOn, DateTimeZone.UTC);
+            if (accountCreatedOn != null) {
+                this.accountCreatedOn = new DateTime(accountCreatedOn, DateTimeZone.UTC);    
+            }
             return this;
         }
         public Builder withLanguages(LinkedHashSet<String> languages) {

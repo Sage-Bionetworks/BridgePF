@@ -56,8 +56,8 @@ public class ScheduleContextTest {
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("app/5");
         StudyIdentifier studyId = new StudyIdentifierImpl("study-key");
         DateTimeZone PST = DateTimeZone.forOffsetHours(-7);
+        DateTime startsOn = DateTime.now().minusHours(2);
         DateTime endsOn = DateTime.now();
-        DateTime now = DateTime.now();
         
         Map<String,DateTime> events = new HashMap<>();
         events.put("enrollment", DateTime.now());
@@ -67,12 +67,13 @@ public class ScheduleContextTest {
                 .withClientInfo(clientInfo)
                 .withStudyIdentifier(studyId)
                 .withInitialTimeZone(PST)
+                .withStartsOn(startsOn)
                 .withEndsOn(endsOn)
                 .withMinimumPerSchedule(3)
                 .withEvents(events)
                 .withHealthCode("healthCode")
-                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
-                .withStartsOn(now).build();
+                .withUserDataGroups(TestConstants.USER_DATA_GROUPS).build();
+        
         assertEquals(studyId, context.getCriteriaContext().getStudyIdentifier());
         assertEquals(clientInfo, context.getCriteriaContext().getClientInfo());
         assertEquals(PST, context.getInitialTimeZone());
@@ -81,11 +82,15 @@ public class ScheduleContextTest {
         assertEquals(3, context.getMinimumPerSchedule());
         assertEquals("healthCode", context.getCriteriaContext().getHealthCode());
         assertEquals(TestConstants.USER_DATA_GROUPS, context.getCriteriaContext().getUserDataGroups());
-        assertEquals(now, context.getStartsOn());
+        assertEquals(startsOn, context.getStartsOn());
 
         // and the other studyId setter
-        context = new ScheduleContext.Builder().withStudyIdentifier("study-key").build();
-        assertEquals(studyId, context.getCriteriaContext().getStudyIdentifier());
+        ScheduleContext context2 = new ScheduleContext.Builder().withStudyIdentifier("study-key").build();
+        assertEquals(studyId, context2.getCriteriaContext().getStudyIdentifier());
+        
+        // Test the withContext() method.
+        ScheduleContext context3 = new ScheduleContext.Builder().withContext(context).build();
+        assertEquals(context, context3);
     }
     
     @Test
