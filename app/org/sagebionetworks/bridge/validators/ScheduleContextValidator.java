@@ -13,7 +13,7 @@ public class ScheduleContextValidator implements Validator {
      * one day for now... the exact amount is not that critical, we're just trying to prevent
      * something like daysAhead=10000.
      */
-    public static final int MAX_EXPIRES_ON_DAYS = 5;
+    public static final int MAX_DATE_RANGE_IN_DAYS = 15;
     
     /**
      * The maximum number of tasks you can force when scheduling. For our use case it's hard to argue 
@@ -48,9 +48,9 @@ public class ScheduleContextValidator implements Validator {
         if (context.getEndsOn() == null) {
             errors.rejectValue("endsOn", "is required");
         } else if (context.getEndsOn().isBefore(now)) {
-            errors.rejectValue("endsOn", "must be after the time of the request");
-        } else if (context.getEndsOn().minusDays(MAX_EXPIRES_ON_DAYS).isAfter(now)) {
-            errors.rejectValue("endsOn", "must be "+MAX_EXPIRES_ON_DAYS+" days or less");
+            errors.rejectValue("endsOn", "must be after startsOn value");
+        } else if (context.getEndsOn().minusDays(MAX_DATE_RANGE_IN_DAYS).isAfter(now)) {
+            errors.rejectValue("endsOn", "must be "+MAX_DATE_RANGE_IN_DAYS+" days or less after startsOn value");
         }
         if (context.getMinimumPerSchedule() < 0) {
             errors.rejectValue("minimumPerSchedule", "cannot be negative");

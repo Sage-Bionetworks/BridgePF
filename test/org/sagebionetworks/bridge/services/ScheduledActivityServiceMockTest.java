@@ -173,7 +173,9 @@ public class ScheduledActivityServiceMockTest {
         DateTimeUtils.setCurrentMillisFixed(STARTS_ON.getMillis());
         
         service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, null, null, null, 40);
-        verify(activityDao).getActivityHistoryV2(HEALTH_CODE, ACTIVITY_GUID, STARTS_ON.minusDays(9), STARTS_ON.plusDays(5), null, 40);
+        verify(activityDao).getActivityHistoryV2(HEALTH_CODE, ACTIVITY_GUID,
+                STARTS_ON.minusDays(ScheduleContextValidator.MAX_DATE_RANGE_IN_DAYS / 2),
+                STARTS_ON.plusDays(ScheduleContextValidator.MAX_DATE_RANGE_IN_DAYS / 2), null, 40);
         
         DateTimeUtils.setCurrentMillisSystem();
     }
@@ -197,7 +199,7 @@ public class ScheduledActivityServiceMockTest {
             .withStudyIdentifier(TEST_STUDY)
             .withAccountCreatedOn(ENROLLMENT.minusHours(2))
             .withInitialTimeZone(DateTimeZone.UTC)
-            .withEndsOn(NOW.plusDays(ScheduleContextValidator.MAX_EXPIRES_ON_DAYS).plusSeconds(1)).build());
+            .withEndsOn(NOW.plusDays(ScheduleContextValidator.MAX_DATE_RANGE_IN_DAYS).plusSeconds(1)).build());
     }
 
     @Test(expected = BadRequestException.class)
@@ -353,7 +355,7 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> scheduled = createNewActivities("AAA", "BBB");
         List<ScheduledActivity> db = createStartedActivities("BBB");
         
-        List<ScheduledActivity> saves = service.updateActivitiesAndCollectSaves(scheduled, db);
+        List<ScheduledActivity> saves = ScheduledActivityService.V3_MERGE.updateActivitiesAndCollectSaves(scheduled, db);
         scheduled = service.orderActivities(scheduled);
         
         assertEquals(Sets.newHashSet("AAA","BBB"), toGuids(scheduled));
@@ -365,7 +367,7 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> scheduled = createNewActivities("CCC");
         List<ScheduledActivity> db = createStartedActivities("CCC");
 
-        List<ScheduledActivity> saves = service.updateActivitiesAndCollectSaves(scheduled, db);
+        List<ScheduledActivity> saves = ScheduledActivityService.V3_MERGE.updateActivitiesAndCollectSaves(scheduled, db);
         scheduled = service.orderActivities(scheduled);
         
         // Verifying that it exists in scheduled and was replaced with persisted version
@@ -379,7 +381,7 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> scheduled = createExpiredActivities("AAA","BBB");
         List<ScheduledActivity> db = createExpiredActivities("AAA","CCC");
         
-        List<ScheduledActivity> saves = service.updateActivitiesAndCollectSaves(scheduled, db);
+        List<ScheduledActivity> saves = ScheduledActivityService.V3_MERGE.updateActivitiesAndCollectSaves(scheduled, db);
         scheduled = service.orderActivities(scheduled);
         
         assertTrue(scheduled.isEmpty());
@@ -392,7 +394,7 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> db = createStartedActivities("AAA", "BBB");
         db.get(0).setFinishedOn(NOW.getMillis()); // AAA will not be in results
         
-        List<ScheduledActivity> saves = service.updateActivitiesAndCollectSaves(scheduled, db);
+        List<ScheduledActivity> saves = ScheduledActivityService.V3_MERGE.updateActivitiesAndCollectSaves(scheduled, db);
         scheduled = service.orderActivities(scheduled);
         
         assertEquals(Sets.newHashSet("BBB","CCC"), toGuids(scheduled));
@@ -404,7 +406,7 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> scheduled = createNewActivities("AAA", "BBB", "CCC");
         List<ScheduledActivity> db = createStartedActivities("AAA","CCC");
 
-        List<ScheduledActivity> saves = service.updateActivitiesAndCollectSaves(scheduled, db);
+        List<ScheduledActivity> saves = ScheduledActivityService.V3_MERGE.updateActivitiesAndCollectSaves(scheduled, db);
         scheduled = service.orderActivities(scheduled);
         
         assertEquals(Sets.newHashSet("AAA","BBB","CCC"), toGuids(scheduled));
@@ -434,7 +436,7 @@ public class ScheduledActivityServiceMockTest {
         scheduled.get(0).setActivity(newActivity);
 
         // execute and validate
-        List<ScheduledActivity> saves = service.updateActivitiesAndCollectSaves(scheduled, db);
+        List<ScheduledActivity> saves = ScheduledActivityService.V3_MERGE.updateActivitiesAndCollectSaves(scheduled, db);
         scheduled = service.orderActivities(scheduled);
 
         // We save the task, because we want to update it.

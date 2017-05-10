@@ -55,14 +55,14 @@ public class ScheduleContextValidatorTest {
             Validate.nonEntityThrowingException(validator, context);
             fail("Should have thrown exception");
         } catch(BadRequestException e) {
-            assertTrue(e.getMessage().contains("endsOn must be after the time of the request"));
+            assertTrue(e.getMessage().contains("endsOn must be after startsOn value"));
         }
     }
     
     @Test
     public void endsOnBeforeMaxNumDays() {
         // Setting this two days past the maximum. Will always fail.
-        DateTime endsOn = DateTime.now().plusDays(ScheduleContextValidator.MAX_EXPIRES_ON_DAYS+2);
+        DateTime endsOn = DateTime.now().plusDays(ScheduleContextValidator.MAX_DATE_RANGE_IN_DAYS+2);
         ScheduleContext context = new ScheduleContext.Builder()
             .withStudyIdentifier("study-id").withInitialTimeZone(DateTimeZone.UTC)
             .withEndsOn(endsOn).withHealthCode("healthCode").build();
@@ -70,7 +70,7 @@ public class ScheduleContextValidatorTest {
             Validate.nonEntityThrowingException(validator, context);
             fail("Should have thrown exception");
         } catch(BadRequestException e) {
-            assertTrue(e.getMessage().contains("endsOn must be 5 days or less"));
+            assertTrue(e.getMessage().contains("endsOn must be 15 days or less"));
         }
     }
     
