@@ -164,7 +164,7 @@ public class ScheduledActivityServiceDuplicateTest {
         
         contextBuilder = new ScheduleContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("Lilly/25 (iPhone Simulator; iPhone OS/9.3) BridgeSDK/12"))
-                .withNow(ACTIVITIES_LAST_RETRIEVED_ON)
+                .withStartsOn(ACTIVITIES_LAST_RETRIEVED_ON)
                 .withStudyIdentifier("test-study")
                 .withEndsOn(DateTime.now(MSK).plusDays(4))
                 .withHealthCode("d8bc3e0e-51b6-4ead-9b82-33a8fde88c6f")
@@ -357,7 +357,7 @@ public class ScheduledActivityServiceDuplicateTest {
     
     private void allWithinQueryWindow(List<ScheduledActivity> activities, ScheduleContext context) {
         for (ScheduledActivity act : activities) {
-            DateTime windowStart = context.getNow();
+            DateTime windowStart = context.getStartsOn();
             DateTime windowEnd = context.getEndsOn();
             
             assertTrue(act.getExpiresOn() == null || act.getExpiresOn().isAfter(windowStart));

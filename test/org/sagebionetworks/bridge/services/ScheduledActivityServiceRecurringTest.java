@@ -195,13 +195,13 @@ public class ScheduledActivityServiceRecurringTest {
         return getContext(now, EST, now.withZone(requestZone).plusDays(2));
     }
     
-    private ScheduleContext getContext(DateTime now, DateTimeZone persistedZone, DateTime endsOn) {
+    private ScheduleContext getContext(DateTime startsOn, DateTimeZone persistedZone, DateTime endsOn) {
         return new ScheduleContext.Builder()
             .withStudyIdentifier(study.getStudyIdentifier())
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withInitialTimeZone(persistedZone)
-            .withNow(now)
-            .withAccountCreatedOn(now)
+            .withAccountCreatedOn(startsOn)
+            .withStartsOn(startsOn)
             // Setting the endsOn value to the end of the day, as we do in the controller.
             .withEndsOn(endsOn.withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59))
             .withHealthCode(testUser.getHealthCode())

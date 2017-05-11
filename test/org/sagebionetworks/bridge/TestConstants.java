@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge;
 
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.joda.time.DateTime;
@@ -69,4 +70,6 @@ public class TestConstants {
             .withSignedMostRecentConsent(false).build();
     
     public static final Set<String> USER_DATA_GROUPS = Sets.newHashSet("group1","group2");
+    
+    public static final LinkedHashSet<String> LANGUAGES = TestUtils.newLinkedHashSet("en","fr");
 }

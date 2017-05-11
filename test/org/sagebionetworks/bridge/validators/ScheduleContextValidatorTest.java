@@ -55,7 +55,7 @@ public class ScheduleContextValidatorTest {
             Validate.nonEntityThrowingException(validator, context);
             fail("Should have thrown exception");
         } catch(BadRequestException e) {
-            assertTrue(e.getMessage().contains("endsOn must be after the time of the request"));
+            assertTrue(e.getMessage().contains("endsOn must be after startsOn"));
         }
     }
     
