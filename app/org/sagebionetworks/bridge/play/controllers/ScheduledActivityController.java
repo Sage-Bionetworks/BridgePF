@@ -36,6 +36,8 @@ import play.mvc.Result;
 public class ScheduledActivityController extends BaseController {
     
     private static final TypeReference<ArrayList<ScheduledActivity>> scheduledActivityTypeRef = new TypeReference<ArrayList<ScheduledActivity>>() {};
+    private static final String MISSING_TIMESTAMP_ERROR = "startsOn and endsOn are both required and must be ISO 8601 timestamps.";
+    private static final String AMBIGUOUS_TIMEZONE_ERROR = "startsOn and endsOn must be in the same time zone.";
 
     private ScheduledActivityService scheduledActivityService;
 
@@ -81,13 +83,13 @@ public class ScheduledActivityController extends BaseController {
         DateTime startsOn = BridgeUtils.getDateTimeOrDefault(startsOnString, null);
         DateTime endsOn = BridgeUtils.getDateTimeOrDefault(endsOnString, null);
         if (startsOn == null || endsOn == null) {
-            throw new BadRequestException("Both startsOn and endsOn are required and must be ISO 8601 timestamps.");
+            throw new BadRequestException(MISSING_TIMESTAMP_ERROR);
         }
         if (!startsOn.getZone().equals(endsOn.getZone())) {
-            throw new BadRequestException("Both startsOn and endsOn timezone offsets must be the same.");
+            throw new BadRequestException(AMBIGUOUS_TIMEZONE_ERROR);
         }
+
         DateTimeZone requestTimeZone = startsOn.getZone();
-        
         ScheduleContext context = getScheduledActivitiesInternal(session, requestTimeZone, startsOn, endsOn, 0);
 
         List<ScheduledActivity> scheduledActivities = scheduledActivityService.getScheduledActivitiesV4(context);

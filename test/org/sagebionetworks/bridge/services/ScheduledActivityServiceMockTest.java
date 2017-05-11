@@ -18,6 +18,7 @@ import static org.sagebionetworks.bridge.services.ScheduledActivityService.V3_FI
 import static org.sagebionetworks.bridge.services.ScheduledActivityService.V4_FILTER;
 import static org.sagebionetworks.bridge.services.ScheduledActivityService.V3_MERGE;
 import static org.sagebionetworks.bridge.services.ScheduledActivityService.V4_MERGE;
+import static org.sagebionetworks.bridge.validators.ScheduleContextValidator.MAX_DATE_RANGE_IN_DAYS;
 
 import java.util.List;
 import java.util.Map;
@@ -89,6 +90,8 @@ public class ScheduledActivityServiceMockTest {
     private static final DateTime STARTS_ON = DateTime.now().minusDays(1);
     
     private static final DateTime ENDS_ON = DateTime.now();
+
+    private static final DateTimeZone TIME_ZONE = STARTS_ON.getChronology().getZone();
     
     private ScheduledActivityService service;
     
@@ -183,8 +186,8 @@ public class ScheduledActivityServiceMockTest {
         
         service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, null, null, null, 40);
         verify(activityDao).getActivityHistoryV2(HEALTH_CODE, ACTIVITY_GUID,
-                STARTS_ON.minusDays(ScheduleContextValidator.MAX_DATE_RANGE_IN_DAYS / 2),
-                STARTS_ON.plusDays(ScheduleContextValidator.MAX_DATE_RANGE_IN_DAYS / 2), null, 40);
+                STARTS_ON.minusDays(MAX_DATE_RANGE_IN_DAYS / 2), STARTS_ON.plusDays(MAX_DATE_RANGE_IN_DAYS / 2),
+                TIME_ZONE, null, 40);
         
         DateTimeUtils.setCurrentMillisSystem();
     }
@@ -192,6 +195,14 @@ public class ScheduledActivityServiceMockTest {
     @Test(expected = BadRequestException.class)
     public void activityHistoryEnforcesDateRangeEndAfterStart() {
         service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, ENDS_ON, STARTS_ON, null, 200);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void activityHistoryEnforcesSameEndAndStartTimeZone() {
+        // won't be same as default time zone, since this is not a real timezone
+        DateTimeZone otherTimeZone = DateTimeZone.forOffsetHoursMinutes(4, 17);
+        service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID,STARTS_ON,
+                ENDS_ON.withZone(otherTimeZone), null, 200);
     }
 
     @Test(expected = BadRequestException.class)

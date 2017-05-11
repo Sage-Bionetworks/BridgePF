@@ -57,11 +57,12 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     
     @Override
     public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistoryV2(String healthCode,
-            String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, String offsetBy,
-            int pageSize) {
+            String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, DateTimeZone timezone,
+            String offsetBy, int pageSize) {
         checkNotNull(healthCode);
         checkNotNull(scheduledOnStart);
         checkNotNull(scheduledOnEnd);
+        checkNotNull(timezone);
         checkNotNull(activityGuid);
         
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
@@ -97,7 +98,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
 
         List<ScheduledActivity> activities = Lists.newArrayListWithCapacity(queryResult.getResults().size());
         for (DynamoScheduledActivity act : queryResult.getResults()) {
-            act.setTimeZone(DateTimeZone.UTC);
+            act.setTimeZone(timezone);
             activities.add((ScheduledActivity)act);
         }
         
