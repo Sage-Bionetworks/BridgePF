@@ -19,7 +19,6 @@ import static org.sagebionetworks.bridge.services.ScheduledActivityService.V4_FI
 import static org.sagebionetworks.bridge.services.ScheduledActivityService.V3_MERGE;
 import static org.sagebionetworks.bridge.services.ScheduledActivityService.V4_MERGE;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -72,8 +71,6 @@ import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ScheduledActivityServiceMockTest {
-    
-    private static final HashSet<Object> EMPTY_SET = Sets.newHashSet();
 
     private static final DateTime ENROLLMENT = DateTime.parse("2015-04-10T10:40:34.000-07:00");
     
@@ -367,11 +364,11 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> scheduled = createNewActivities("AAA", "BBB");
         List<ScheduledActivity> db = createStartedActivities("BBB");
         
-        List<ScheduledActivity> saves = merge(V3_MERGE, scheduled, db);
-        scheduled = service.orderActivities(scheduled);
+        List<ScheduledActivity> saves = merge(scheduled, db, V3_MERGE);
+        assertActivities(saves, "AAA");
         
-        assertEquals(Sets.newHashSet("AAA","BBB"), toGuids(scheduled));
-        assertEquals(Sets.newHashSet("AAA"), toGuids(saves));
+        scheduled = service.orderActivities(scheduled, V3_FILTER);
+        assertActivities(scheduled, "AAA", "BBB");
     }
     
     @Test
@@ -379,11 +376,16 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> scheduled = createNewActivities("AAA", "BBB");
         List<ScheduledActivity> db = createStartedActivities("BBB");
         
-        List<ScheduledActivity> saves = merge(V4_MERGE,scheduled, db);
-        scheduled = service.orderActivities(scheduled);
+        List<ScheduledActivity> saves = merge(scheduled,db, V4_MERGE);
+        assertActivities(saves, "AAA");
         
-        assertEquals(Sets.newHashSet("AAA","BBB"), toGuids(scheduled));
-        assertEquals(Sets.newHashSet("AAA"), toGuids(saves));
+        scheduled = service.orderActivities(scheduled, V4_FILTER);
+        assertActivities(scheduled, "AAA", "BBB");
+    }
+    
+    private void assertActivities(List<ScheduledActivity> activities, String... guids) {
+        Set<String> results = Sets.newHashSet(guids);
+        assertEquals(results, toGuids(activities));
     }
     
     @Test
@@ -391,12 +393,11 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> scheduled = createNewActivities("CCC");
         List<ScheduledActivity> db = createStartedActivities("CCC");
 
-        List<ScheduledActivity> saves = merge(V3_MERGE, scheduled, db);
-        scheduled = service.orderActivities(scheduled);
+        List<ScheduledActivity> saves = merge(scheduled, db, V3_MERGE);
+        assertActivities(saves);
         
-        // Verifying that it exists in scheduled and was replaced with persisted version
+        scheduled = service.orderActivities(scheduled, V3_FILTER);
         assertNotNull(scheduled.get(0).getStartedOn());
-        assertEquals(EMPTY_SET, toGuids(saves));
     }
 
     @Test
@@ -405,39 +406,37 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> scheduled = createExpiredActivities("AAA","BBB");
         List<ScheduledActivity> db = createExpiredActivities("AAA","CCC");
         
-        List<ScheduledActivity> saves = merge(V3_MERGE, scheduled, db);
-        scheduled = service.orderActivities(scheduled);
+        List<ScheduledActivity> saves = merge(scheduled, db, V3_MERGE);
+        assertActivities(saves);
         
+        scheduled = service.orderActivities(scheduled, V3_FILTER);
         assertTrue(scheduled.isEmpty());
-        assertEquals(EMPTY_SET, toGuids(saves));
     }
     
     @Test
     public void finishedTasksExcludedFromResultsV3() {
         List<ScheduledActivity> scheduled = createNewActivities("AAA", "BBB", "CCC");
-        List<ScheduledActivity> db = createStartedActivities("AAA", "BBB");
-        db.get(0).setFinishedOn(NOW.getMillis()); // AAA will not be in results
+        List<ScheduledActivity> db = Lists.newArrayList(createFinishedActivities("AAA").get(0),
+                createStartedActivities("BBB").get(0));
         
-        List<ScheduledActivity> saves = merge(V3_MERGE, scheduled, db);
-        scheduled = service.orderActivities(scheduled);
+        List<ScheduledActivity> saves = merge(scheduled, db, V3_MERGE);
+        assertActivities(saves, "CCC");
         
-        assertEquals(Sets.newHashSet("BBB","CCC"), toGuids(scheduled));
-        assertEquals(Sets.newHashSet("CCC"), toGuids(saves));
+        scheduled = service.orderActivities(scheduled, V3_FILTER);
+        assertActivities(scheduled, "BBB", "CCC");
     }
     
     @Test
     public void expiredFinishedTasksIncludedInResultsV4() {
         List<ScheduledActivity> scheduled = createNewActivities("AAA","BBB","CCC");
-        List<ScheduledActivity> db = createExpiredActivities("AAA","BBB");
-        db.get(0).setStartedOn(NOW.getMillis());
-        db.get(0).setFinishedOn(NOW.getMillis()+1);
-
-        List<ScheduledActivity> saves = merge(V4_MERGE, scheduled, db);
-        scheduled = service.orderActivities(scheduled, ScheduledActivityService.V4_FILTER);
+        List<ScheduledActivity> db = Lists.newArrayList(createExpiredActivities("AAA").get(0),
+                createFinishedActivities("BBB").get(0));
         
-        // Verifying that it exists in scheduled and was replaced with persisted version
-        assertEquals(Sets.newHashSet("AAA","BBB","CCC"), toGuids(scheduled));
-        assertEquals(Sets.newHashSet("CCC"), toGuids(saves));
+        List<ScheduledActivity> saves = merge(scheduled, db, V4_MERGE);
+        assertActivities(saves,  "CCC");
+        
+        scheduled = service.orderActivities(scheduled, ScheduledActivityService.V4_FILTER);
+        assertActivities(scheduled,  "AAA", "BBB", "CCC");
     }
 
     
@@ -446,16 +445,15 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> scheduled = createNewActivities("AAA", "BBB", "CCC");
         List<ScheduledActivity> db = createStartedActivities("AAA","CCC");
 
-        List<ScheduledActivity> saves = merge(V3_MERGE, scheduled, db);
-        scheduled = service.orderActivities(scheduled);
+        List<ScheduledActivity> saves = merge(scheduled, db, V3_MERGE);
+        assertActivities(saves, "BBB");
         
-        assertEquals(Sets.newHashSet("AAA","BBB","CCC"), toGuids(scheduled));
-        assertEquals(Sets.newHashSet("BBB"), toGuids(saves));
+        scheduled = service.orderActivities(scheduled, V3_FILTER);
+        assertActivities(scheduled, "AAA", "BBB", "CCC");
         
         ScheduledActivity activity = scheduled.stream()
                 .filter(act -> act.getGuid().equals("AAA")).findFirst().get();
         assertTrue(activity.getStartedOn() > 0L);
-        
     }
     
     @Test
@@ -463,11 +461,11 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> scheduled = createNewActivities("AAA", "BBB", "CCC");
         List<ScheduledActivity> db = createStartedActivities("AAA","CCC");
 
-        List<ScheduledActivity> saves = merge(V4_MERGE, scheduled, db);
-        scheduled = service.orderActivities(scheduled);
+        List<ScheduledActivity> saves = merge(scheduled, db, V4_MERGE);
+        assertActivities(saves, "BBB");
         
-        assertEquals(Sets.newHashSet("AAA","BBB","CCC"), toGuids(scheduled));
-        assertEquals(Sets.newHashSet("BBB"), toGuids(saves));
+        scheduled = service.orderActivities(scheduled, V4_FILTER);
+        assertActivities(scheduled, "AAA","BBB","CCC");
     }
 
     @Test
@@ -488,8 +486,8 @@ public class ScheduledActivityServiceMockTest {
         scheduled.get(0).setActivity(newActivity);
 
         // execute and validate
-        List<ScheduledActivity> saves = merge(V3_MERGE, scheduled, db);
-        scheduled = service.orderActivities(scheduled);
+        List<ScheduledActivity> saves = merge(scheduled, db, V3_MERGE);
+        scheduled = service.orderActivities(scheduled, V3_FILTER);
 
         // We save the task, because we want to update it.
         assertEquals(ImmutableSet.of("CCC"), toGuids(saves));
@@ -513,7 +511,7 @@ public class ScheduledActivityServiceMockTest {
         list.get(3).setLocalScheduledOn(time3.toLocalDateTime());
         list.get(3).setLocalExpiresOn(NOW.toLocalDateTime().minusDays(1));
         
-        List<ScheduledActivity> result = service.orderActivities(list);
+        List<ScheduledActivity> result = service.orderActivities(list, V3_FILTER);
         assertEquals(3, result.size());
         assertEquals(time1, result.get(0).getScheduledOn());
         assertEquals(time2, result.get(1).getScheduledOn());
@@ -903,31 +901,35 @@ public class ScheduledActivityServiceMockTest {
         return activities.get(0).getScheduledOn().toString();
     }
     
-    private List<ScheduledActivity> merge(NewAndPersistedActivitiesMerger merger, List<ScheduledActivity> scheduled, List<ScheduledActivity> db) {
+    private List<ScheduledActivity> merge(List<ScheduledActivity> scheduled, List<ScheduledActivity> db, NewAndPersistedActivitiesMerger merger) {
         Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(db, ScheduledActivity::getGuid);
+        
         List<ScheduledActivity> saves = Lists.newArrayList();
         for (int i=0; i < scheduled.size(); i++) {
             ScheduledActivity activity = scheduled.get(i);
-            merger.mergeActivityLists(saves, scheduled, db, activity, dbMap.get(activity.getGuid()), i);
+            ScheduledActivity dbActivity = dbMap.get(activity.getGuid());
+            merger.mergeActivityLists(saves, scheduled, db, activity, dbActivity, i);
         }
         return saves;
     }
 
     private List<ScheduledActivity> createNewActivities(String... guids) {
-        return createActivities(false, false, guids);
+        return createActivities(false, false, false, guids);
     }
 
     private List<ScheduledActivity> createStartedActivities(String... guids) {
-        return createActivities(true, false, guids);
+        return createActivities(true, false, false, guids);
+    }
+
+    private List<ScheduledActivity> createFinishedActivities(String... guids) {
+        return createActivities(true, false, true, guids);
     }
 
     private List<ScheduledActivity> createExpiredActivities(String... guids) {
-        // Note, if a task is both "started" and "expired", the Activity.getStatus() logic makes the activity
-        // "started".
-        return createActivities(false, true, guids);
+        return createActivities(false, true, false, guids);
     }
-
-    private List<ScheduledActivity> createActivities(boolean isStarted, boolean isExpired, String... guids) {
+    
+    private List<ScheduledActivity> createActivities(boolean isStarted, boolean isExpired, boolean isFinished, String... guids) {
         DateTime startedOn = NOW.minusMonths(6);
         DateTime expiresOn = NOW.minusMonths(5);
         List<ScheduledActivity> list = Lists.newArrayListWithCapacity(guids.length);
@@ -943,7 +945,9 @@ public class ScheduledActivityServiceMockTest {
             if (isExpired) {
                 activity.setLocalExpiresOn(expiresOn.toLocalDateTime());
             }
-
+            if (isFinished) {
+                activity.setFinishedOn(startedOn.getMillis());
+            }
             list.add(activity);
         }
         return list;

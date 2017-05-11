@@ -48,30 +48,6 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     private boolean persistent;
     private DateTimeZone timeZone;
     private JsonNode clientData;
-/*
-    @Override
-    @DynamoDBIgnore
-    public ScheduledActivityStatus getStatus() {
-        if (finishedOn != null && startedOn == null) {
-            return ScheduledActivityStatus.DELETED;
-        } else if (finishedOn != null && startedOn != null) {
-            return ScheduledActivityStatus.FINISHED;
-        } else if (startedOn != null) {
-            return ScheduledActivityStatus.STARTED;
-        }
-        if (timeZone != null) {
-            DateTime now = DateTime.now(timeZone);
-            DateTime expiresOn = getExpiresOn();
-            DateTime scheduledOn = getScheduledOn();
-            if (expiresOn != null && now.isAfter(expiresOn)) {
-                return ScheduledActivityStatus.EXPIRED;
-            } else if (scheduledOn != null && now.isBefore(scheduledOn)) {
-                return ScheduledActivityStatus.SCHEDULED;
-            }
-        }
-        return ScheduledActivityStatus.AVAILABLE;
-    }
-    */
 
     @DynamoDBIgnore
     @JsonIgnore

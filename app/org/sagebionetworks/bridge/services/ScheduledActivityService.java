@@ -67,8 +67,8 @@ public class ScheduledActivityService {
         return activity.getStatus() != ScheduledActivityStatus.DELETED;
     };
     
-    static final NewAndPersistedActivitiesMerger V3_MERGE = (saves, scheduledActivities, dbActivities, activity,
-            dbActivity, i) -> {
+    static final NewAndPersistedActivitiesMerger V3_MERGE = (saves, scheduledActivities, dbActivities, 
+            activity, dbActivity, i) -> {
         if (dbActivity != null && !ScheduledActivityStatus.UPDATABLE_STATUSES.contains(dbActivity.getStatus())) {
             // Once the activity is in the database and is in a non-updatable state, we should use the one from the
             // database. Otherwise, either (a) it doesn't exist yet and needs to be persisted or (b) the user
@@ -84,8 +84,8 @@ public class ScheduledActivityService {
         }
     };
     
-    static final NewAndPersistedActivitiesMerger V4_MERGE = (saves, scheduledActivities, dbActivities, activity,
-            dbActivity, i) -> {
+    static final NewAndPersistedActivitiesMerger V4_MERGE = (saves, scheduledActivities, dbActivities, 
+            activity, dbActivity, i) -> {
         if (dbActivity != null) {
             scheduledActivities.set(i, dbActivity);
         } else {
@@ -225,11 +225,7 @@ public class ScheduledActivityService {
         
         activityDao.deleteActivitiesForUser(healthCode);
     }
-    
-    protected List<ScheduledActivity> orderActivities(List<ScheduledActivity> activities) {
-        return orderActivities(activities, V3_FILTER);
-    }
-    
+
     protected List<ScheduledActivity> orderActivities(List<ScheduledActivity> activities,
             Predicate<ScheduledActivity> filter) {
         return activities.stream()
