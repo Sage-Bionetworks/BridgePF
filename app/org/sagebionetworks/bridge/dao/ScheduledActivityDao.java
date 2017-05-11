@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
 
-import org.joda.time.Chronology;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 

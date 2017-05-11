@@ -1,13 +1,13 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static org.sagebionetworks.bridge.BridgeConstants.CLIENT_DATA_MAX_BYTES;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.CLIENT_DATA_MAX_BYTES;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableList;
 import static org.sagebionetworks.bridge.validators.ScheduleContextValidator.MAX_EXPIRES_ON_DAYS;
 
@@ -18,7 +18,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.joda.time.Chronology;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,17 +48,12 @@ import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
 @Component
 public class ScheduledActivityService {
 
     private static final String PAGE_SIZE_ERROR = "pageSize must be from " + API_MINIMUM_PAGE_SIZE + "-"
             + API_MAXIMUM_PAGE_SIZE + " records";
-    
+
     private static final String EITHER_BOTH_DATES_OR_NEITHER = "Only one date of a date range provided (both scheduledOnStart and scheduledOnEnd required)";
 
     private static final String AMBIGUOUS_TIMEZONE_ERROR = "scheduledOnStart and scheduledOnEnd must have be in the same time zone";
@@ -63,9 +61,9 @@ public class ScheduledActivityService {
     private static final String ENROLLMENT = "enrollment";
 
     private static final ScheduleContextValidator VALIDATOR = new ScheduleContextValidator();
-    
+
     private ScheduledActivityDao activityDao;
-    
+
     private ActivityEventService activityEventService;
 
     private CompoundActivityDefinitionService compoundActivityDefinitionService;
@@ -75,7 +73,7 @@ public class ScheduledActivityService {
     private UploadSchemaService schemaService;
 
     private SurveyService surveyService;
-    
+
     @Autowired
     final void setScheduledActivityDao(ScheduledActivityDao activityDao) {
         this.activityDao = activityDao;
@@ -109,13 +107,13 @@ public class ScheduledActivityService {
     final void setSurveyService(SurveyService surveyService) {
         this.surveyService = surveyService;
     }
-    
+
     public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(String healthCode,
             String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, String offsetBy,
             int pageSize) {
         checkArgument(isNotBlank(healthCode));
         checkArgument(isNotBlank(activityGuid));
-        
+
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
@@ -129,38 +127,38 @@ public class ScheduledActivityService {
             throw new BadRequestException(EITHER_BOTH_DATES_OR_NEITHER);
         }
 
-        DateTimeZone timezone = scheduledOnStart.getChronology().getZone();
-        if (!timezone.equals(scheduledOnEnd.getChronology().getZone())) {
+        DateTimeZone timezone = scheduledOnStart.getZone();
+        if (!timezone.equals(scheduledOnEnd.getZone())) {
             throw new BadRequestException(AMBIGUOUS_TIMEZONE_ERROR);
         }
 
         return activityDao.getActivityHistoryV2(
                 healthCode, activityGuid, scheduledOnStart, scheduledOnEnd, timezone, offsetBy, pageSize);
     }
-    
+
     public List<ScheduledActivity> getScheduledActivities(ScheduleContext context) {
         checkNotNull(context);
-        
+
         Validate.nonEntityThrowingException(VALIDATOR, context);
-        
+
         // Add events for scheduling
         Map<String, DateTime> events = createEventsMap(context);
         ScheduleContext newContext = new ScheduleContext.Builder().withContext(context).withEvents(events).build();
-        
+
         // Get scheduled activities, persisted activities, and compare them
         List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(newContext);
         List<ScheduledActivity> dbActivities = activityDao.getActivities(newContext.getEndsOn().getZone(), scheduledActivities);
-        
+
         List<ScheduledActivity> saves = updateActivitiesAndCollectSaves(scheduledActivities, dbActivities);
         activityDao.saveActivities(saves);
-        
+
         return orderActivities(scheduledActivities);
     }
-    
+
     public void updateScheduledActivities(String healthCode, List<ScheduledActivity> scheduledActivities) {
         checkArgument(isNotBlank(healthCode));
         checkNotNull(scheduledActivities);
-        
+
         List<ScheduledActivity> activitiesToSave = Lists.newArrayListWithCapacity(scheduledActivities.size());
         for (int i=0; i < scheduledActivities.size(); i++) {
             ScheduledActivity schActivity = scheduledActivities.get(i);
@@ -194,16 +192,16 @@ public class ScheduledActivityService {
         }
         activityDao.updateActivities(healthCode, activitiesToSave);
     }
-    
+
     public void deleteActivitiesForUser(String healthCode) {
         checkArgument(isNotBlank(healthCode));
-        
+
         activityDao.deleteActivitiesForUser(healthCode);
     }
-    
+
     protected List<ScheduledActivity> updateActivitiesAndCollectSaves(List<ScheduledActivity> scheduledActivities, List<ScheduledActivity> dbActivities) {
         Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(dbActivities, ScheduledActivity::getGuid);
-        
+
         // Find activities that have been scheduled, but not saved. If they have been scheduled and saved,
         // replace the scheduled activity with the database activity so the existing state is returned to 
         // user (startedOn/finishedOn). Don't save expired tasks though.
@@ -228,16 +226,16 @@ public class ScheduledActivityService {
         }
         return saves;
     }
-    
+
     protected List<ScheduledActivity> orderActivities(List<ScheduledActivity> activities) {
         return activities.stream()
             .filter(activity -> ScheduledActivityStatus.VISIBLE_STATUSES.contains(activity.getStatus()))
             .sorted(comparing(ScheduledActivity::getScheduledOn))
             .collect(toImmutableList());
     }
-    
+
     /**
-     * If the client data is being added or removed, or if it is different, then the activity is being 
+     * If the client data is being added or removed, or if it is different, then the activity is being
      * updated.
      */
     protected boolean hasUpdatedClientData(ScheduledActivity schActivity, ScheduledActivity dbActivity) {
@@ -245,15 +243,15 @@ public class ScheduledActivityService {
         JsonNode dbNode = (dbActivity == null) ? null : dbActivity.getClientData();
         return !Objects.equals(schNode, dbNode);
     }
-    
+
     private int byteLength(JsonNode node) {
         try {
-            return (node == null) ? 0 : node.toString().getBytes("UTF-8").length;    
+            return (node == null) ? 0 : node.toString().getBytes("UTF-8").length;
         } catch(UnsupportedEncodingException e) {
             return Integer.MAX_VALUE; // UTF-8 is always supported, this should *never* happen
         }
     }
-    
+
     private Map<String, DateTime> createEventsMap(ScheduleContext context) {
         Map<String,DateTime> events = activityEventService.getActivityEventMap(context.getCriteriaContext().getHealthCode());
 
@@ -266,29 +264,29 @@ public class ScheduledActivityService {
         }
         return builder.build();
     }
-    
+
     protected List<ScheduledActivity> scheduleActivitiesForPlans(ScheduleContext context) {
         // Cache compound activity defs, schemas, and surveys to reduce calls from duplicate requests.
         Map<String, CompoundActivity> compoundActivityCache = new HashMap<>();
         Map<String, SchemaReference> schemaCache = new HashMap<>();
         Map<String, SurveyReference> surveyCache = new HashMap<>();
         List<ScheduledActivity> scheduledActivities = new ArrayList<>();
-        
+
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(context.getCriteriaContext().getClientInfo(),
                 context.getCriteriaContext().getStudyIdentifier());
-        
+
         for (SchedulePlan plan : plans) {
             Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
             if (schedule != null) {
                 List<ScheduledActivity> activities = schedule.getScheduler().getScheduledActivities(plan, context);
                 List<ScheduledActivity> resolvedActivities = resolveLinks(context.getCriteriaContext(),
                         compoundActivityCache, schemaCache, surveyCache, activities);
-                scheduledActivities.addAll(resolvedActivities);    
+                scheduledActivities.addAll(resolvedActivities);
             }
         }
         return scheduledActivities;
     }
-    
+
     private List<ScheduledActivity> resolveLinks(CriteriaContext context,
             Map<String, CompoundActivity> compoundActivityCache, Map<String, SchemaReference> schemaCache,
             Map<String, SurveyReference> surveyCache, List<ScheduledActivity> activities) {
