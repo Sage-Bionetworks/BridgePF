@@ -13,7 +13,6 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
-import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
@@ -49,7 +48,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     private boolean persistent;
     private DateTimeZone timeZone;
     private JsonNode clientData;
-
+/*
     @Override
     @DynamoDBIgnore
     public ScheduledActivityStatus getStatus() {
@@ -72,6 +71,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
         }
         return ScheduledActivityStatus.AVAILABLE;
     }
+    */
 
     @DynamoDBIgnore
     @JsonIgnore

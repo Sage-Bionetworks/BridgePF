@@ -138,7 +138,8 @@ public class ScheduledActivityController extends BaseController {
         } else {
             throw new BadRequestException("Supply either 'until' parameter, or 'daysAhead' parameter.");
         }
-        ScheduleContext context = getScheduledActivitiesInternal(session, requestTimeZone, DateTime.now(), endsOn, minimumPerSchedule);
+        DateTime now = DateTime.now(requestTimeZone);
+        ScheduleContext context = getScheduledActivitiesInternal(session, requestTimeZone, now, endsOn, minimumPerSchedule);
         return scheduledActivityService.getScheduledActivities(context);
     }
     

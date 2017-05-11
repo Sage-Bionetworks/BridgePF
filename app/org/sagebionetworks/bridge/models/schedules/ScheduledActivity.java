@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -61,8 +62,28 @@ public interface ScheduledActivity extends BridgeEntity {
             return result;
         }
     };
-
-    ScheduledActivityStatus getStatus();
+    
+    @DynamoDBIgnore
+    default ScheduledActivityStatus getStatus() {
+        if (getFinishedOn() != null && getStartedOn() == null) {
+            return ScheduledActivityStatus.DELETED;
+        } else if (getFinishedOn() != null && getStartedOn() != null) {
+            return ScheduledActivityStatus.FINISHED;
+        } else if (getStartedOn() != null) {
+            return ScheduledActivityStatus.STARTED;
+        }
+        if (getTimeZone() != null) {
+            DateTime now = DateTime.now(getTimeZone());
+            DateTime expiresOn = getExpiresOn();
+            DateTime scheduledOn = getScheduledOn();
+            if (expiresOn != null && now.isAfter(expiresOn)) {
+                return ScheduledActivityStatus.EXPIRED;
+            } else if (scheduledOn != null && now.isBefore(scheduledOn)) {
+                return ScheduledActivityStatus.SCHEDULED;
+            }
+        }
+        return ScheduledActivityStatus.AVAILABLE;
+    }
 
     /**
      * Get the time zone for this request. Currently this is a field on the activity and must be set to get DateTime values
