@@ -59,8 +59,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     @Override
     public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistoryV2(String healthCode,
             String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, DateTimeZone timezone,
-            String offsetBy,
-            int pageSize) {
+            String offsetBy, int pageSize) {
         checkNotNull(healthCode);
         checkNotNull(scheduledOnStart);
         checkNotNull(scheduledOnEnd);
