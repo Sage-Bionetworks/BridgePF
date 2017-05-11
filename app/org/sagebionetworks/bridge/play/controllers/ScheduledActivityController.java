@@ -155,7 +155,7 @@ public class ScheduledActivityController extends BaseController {
             initialTimeZone = persistTimeZone(session, requestTimeZone);
         }
         
-        builder.withNow(startsOn);
+        builder.withStartsOn(startsOn);
         builder.withEndsOn(endsOn);
         builder.withInitialTimeZone(initialTimeZone);
         builder.withUserDataGroups(session.getParticipant().getDataGroups());
@@ -175,7 +175,7 @@ public class ScheduledActivityController extends BaseController {
                 .withUserAgent(request().getHeader(USER_AGENT))
                 .withLanguages(context.getCriteriaContext().getLanguages())
                 .withUserDataGroups(context.getCriteriaContext().getUserDataGroups())
-                .withActivitiesAccessedOn(context.getNow())
+                .withActivitiesAccessedOn(DateUtils.getCurrentDateTime().withZone(requestTimeZone))
                 .withTimeZone(context.getInitialTimeZone())
                 .withStudyIdentifier(context.getCriteriaContext().getStudyIdentifier()).build();
         cacheProvider.updateRequestInfo(requestInfo);

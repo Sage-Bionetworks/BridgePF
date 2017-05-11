@@ -393,7 +393,7 @@ public class ActivitySchedulerTest {
         // Going out 1 week into the future, with a day day expiration winow, the old task will be 
         // expired and the new task will not be generated. Without a minimum, nothing will be returned
         ScheduleContext noMinContext = getContext(PST, NOW.withZone(PST).plusDays(10));
-        noMinContext = new ScheduleContext.Builder().withContext(noMinContext).withNow(NOW.plusDays(10)).build();
+        noMinContext = new ScheduleContext.Builder().withContext(noMinContext).withStartsOn(NOW.plusDays(10)).build();
         
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, noMinContext);
 

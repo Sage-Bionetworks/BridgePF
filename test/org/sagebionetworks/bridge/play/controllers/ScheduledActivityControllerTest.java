@@ -14,6 +14,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 
 import java.util.List;
@@ -32,7 +34,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
@@ -155,12 +156,12 @@ public class ScheduledActivityControllerTest {
                 .withCreatedOn(ACCOUNT_CREATED_ON)
                 .withId(ID).build();
         session = new UserSession(participant);
-        session.setStudyIdentifier(TestConstants.TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY);
         
         when(scheduledActivityService.getScheduledActivities(any(ScheduleContext.class))).thenReturn(list);
 
         doReturn(ACCOUNT_CREATED_ON).when(account).getCreatedOn();
-        doReturn(study).when(studyService).getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
+        doReturn(study).when(studyService).getStudy(TEST_STUDY_IDENTIFIER);
 
         controller = spy(new ScheduledActivityController());
         controller.setScheduledActivityService(scheduledActivityService);
@@ -181,7 +182,7 @@ public class ScheduledActivityControllerTest {
         DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
         controller.getScheduledActivities(null, "+03:00", "3", "5");
         
-        verify(optionsService).setDateTimeZone(TestConstants.TEST_STUDY, session.getHealthCode(),
+        verify(optionsService).setDateTimeZone(TEST_STUDY, session.getHealthCode(),
                 ParticipantOption.TIME_ZONE, MSK);
         assertEquals(MSK, session.getParticipant().getTimeZone());
         
@@ -212,11 +213,11 @@ public class ScheduledActivityControllerTest {
         verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
         ScheduleContext context = contextCaptor.getValue();
         assertEquals("+00:00", DateUtils.timeZoneToOffsetString(context.getInitialTimeZone()));
-        
     }
     
     @Test
     public void getScheduledActivtiesAssemblesCorrectContext() throws Exception {
+        DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
         List<ScheduledActivity> list = Lists.newArrayList();
         scheduledActivityService = mock(ScheduledActivityService.class);
         when(scheduledActivityService.getScheduledActivities(any(ScheduleContext.class))).thenReturn(list);
@@ -227,14 +228,14 @@ public class ScheduledActivityControllerTest {
         verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
         
         ScheduleContext context = contextCaptor.getValue();
-        assertEquals(DateTimeZone.forOffsetHours(3), context.getInitialTimeZone());
+        assertEquals(MSK, context.getInitialTimeZone());
         assertEquals(USER_DATA_GROUPS, context.getCriteriaContext().getUserDataGroups());
         assertEquals(5, context.getMinimumPerSchedule());
         
         CriteriaContext critContext = context.getCriteriaContext();
         assertEquals(HEALTH_CODE, critContext.getHealthCode());
         assertEquals(LANGUAGES, critContext.getLanguages());
-        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, critContext.getStudyIdentifier().getIdentifier());
+        assertEquals(TEST_STUDY_IDENTIFIER, critContext.getStudyIdentifier().getIdentifier());
         assertEquals(CLIENT_INFO, critContext.getClientInfo());
         
         verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
@@ -243,8 +244,9 @@ public class ScheduledActivityControllerTest {
         assertEquals(LANGUAGES, requestInfo.getLanguages());
         assertEquals(USER_DATA_GROUPS, requestInfo.getUserDataGroups());
         assertNotNull(requestInfo.getActivitiesAccessedOn());
-        assertEquals(DateTimeZone.forOffsetHours(3), requestInfo.getTimeZone());
-        assertEquals(TestConstants.TEST_STUDY, requestInfo.getStudyIdentifier());
+        assertEquals(MSK, requestInfo.getActivitiesAccessedOn().getZone());
+        assertEquals(MSK, requestInfo.getTimeZone());
+        assertEquals(TEST_STUDY, requestInfo.getStudyIdentifier());
     }
     
     @Test
@@ -419,17 +421,17 @@ public class ScheduledActivityControllerTest {
         assertEquals(startsOn, requestInfo.getActivitiesAccessedOn());
         assertNull(requestInfo.getSignedInOn());
         assertEquals(zone, requestInfo.getTimeZone());
-        assertEquals(TestConstants.TEST_STUDY, requestInfo.getStudyIdentifier());
+        assertEquals(TEST_STUDY, requestInfo.getStudyIdentifier());
         
         ScheduleContext context = contextCaptor.getValue();
         assertEquals(startsOn.getZone(), context.getInitialTimeZone());
-        assertEquals(startsOn, context.getNow());
+        assertEquals(startsOn, context.getStartsOn());
         assertEquals(endsOn, context.getEndsOn());
         assertEquals(0, context.getMinimumPerSchedule());
         assertEquals(ACCOUNT_CREATED_ON.withZone(DateTimeZone.UTC), context.getAccountCreatedOn());
         
         CriteriaContext critContext = context.getCriteriaContext();
-        assertEquals(TestConstants.TEST_STUDY, critContext.getStudyIdentifier());
+        assertEquals(TEST_STUDY, critContext.getStudyIdentifier());
         assertEquals(HEALTH_CODE, critContext.getHealthCode());
         assertEquals(ID, critContext.getUserId());
         assertEquals(CLIENT_INFO, critContext.getClientInfo());

@@ -44,13 +44,13 @@ public class ScheduleContextValidator implements Validator {
             errors.rejectValue("accountCreatedOn", "is required");
         }
         // Very the ending timestamp is not invalid.
-        DateTime now = context.getNow();
+        DateTime startsOn = context.getStartsOn();
         if (context.getEndsOn() == null) {
             errors.rejectValue("endsOn", "is required");
-        } else if (context.getEndsOn().isBefore(now)) {
-            errors.rejectValue("endsOn", "must be after startsOn value");
-        } else if (context.getEndsOn().minusDays(MAX_DATE_RANGE_IN_DAYS).isAfter(now)) {
-            errors.rejectValue("endsOn", "must be "+MAX_DATE_RANGE_IN_DAYS+" days or less after startsOn value");
+        } else if (context.getEndsOn().isBefore(startsOn)) {
+            errors.rejectValue("endsOn", "must be after startsOn");
+        } else if (context.getEndsOn().minusDays(MAX_DATE_RANGE_IN_DAYS).isAfter(startsOn)) {
+            errors.rejectValue("endsOn", "must be "+MAX_DATE_RANGE_IN_DAYS+" days or less");
         }
         if (context.getMinimumPerSchedule() < 0) {
             errors.rejectValue("minimumPerSchedule", "cannot be negative");
