@@ -1,8 +1,10 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 
 import java.util.HashMap;
@@ -16,10 +18,13 @@ import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.ClientInfo;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 public class ScheduleContextTest {
+
+    private static final ScheduleContext EMPTY_CONTEXT = new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY)
+            .build();
+    private static final String ENROLLMENT = "enrollment";
+    private static final String HEALTH_CODE = "healthCode";
 
     @Test
     public void equalsHashCode() {
@@ -28,12 +33,12 @@ public class ScheduleContextTest {
     
     @Test
     public void quietlyReturnsFalseForEvents() {
-        ScheduleContext context = new ScheduleContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).build();
-        assertNull(context.getEvent("enrollment"));
-        assertFalse(context.hasEvents());
+        assertNull(EMPTY_CONTEXT.getEvent(ENROLLMENT));
+        assertFalse(EMPTY_CONTEXT.hasEvents());
         
-        context = new ScheduleContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).withEvents(new HashMap<String, DateTime>()).build();
-        assertNull(context.getEvent("enrollment"));
+        ScheduleContext context = new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY)
+                .withEvents(new HashMap<String, DateTime>()).build();
+        assertNull(context.getEvent(ENROLLMENT));
         assertFalse(context.hasEvents());
     }
     
@@ -44,53 +49,86 @@ public class ScheduleContextTest {
     
     @Test
     public void defaultsTimeZoneMinimumAndClientInfo() {
-        ScheduleContext context = new ScheduleContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).build();
-        
-        assertEquals(ClientInfo.UNKNOWN_CLIENT, context.getCriteriaContext().getClientInfo());
-        assertNotNull(context.getStartsOn());
-        assertEquals(0, context.getMinimumPerSchedule());
+        assertEquals(ClientInfo.UNKNOWN_CLIENT, EMPTY_CONTEXT.getCriteriaContext().getClientInfo());
+        assertNotNull(EMPTY_CONTEXT.getStartsOn());
+        assertEquals(0, EMPTY_CONTEXT.getMinimumPerSchedule());
     }
     
     @Test
-    public void builderWorks() {
+    public void verifyBuilder() {
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("app/5");
-        StudyIdentifier studyId = new StudyIdentifierImpl("study-key");
         DateTimeZone PST = DateTimeZone.forOffsetHours(-7);
         DateTime startsOn = DateTime.now().minusHours(2);
         DateTime endsOn = DateTime.now();
+        DateTime accountCreatedOn = DateTime.now(DateTimeZone.UTC).minusDays(2);
         
         Map<String,DateTime> events = new HashMap<>();
-        events.put("enrollment", DateTime.now());
+        events.put(ENROLLMENT, DateTime.now());
         
         // All the individual fields work
         ScheduleContext context = new ScheduleContext.Builder()
                 .withClientInfo(clientInfo)
-                .withStudyIdentifier(studyId)
+                .withStudyIdentifier(TEST_STUDY)
                 .withInitialTimeZone(PST)
                 .withStartsOn(startsOn)
                 .withEndsOn(endsOn)
                 .withMinimumPerSchedule(3)
                 .withEvents(events)
-                .withHealthCode("healthCode")
+                .withHealthCode(HEALTH_CODE)
+                .withAccountCreatedOn(accountCreatedOn)
                 .withUserDataGroups(TestConstants.USER_DATA_GROUPS).build();
         
-        assertEquals(studyId, context.getCriteriaContext().getStudyIdentifier());
+        assertEquals(TEST_STUDY, context.getCriteriaContext().getStudyIdentifier());
         assertEquals(clientInfo, context.getCriteriaContext().getClientInfo());
         assertEquals(PST, context.getInitialTimeZone());
         assertEquals(endsOn, context.getEndsOn());
-        assertEquals(events.get("enrollment"), context.getEvent("enrollment"));
+        assertEquals(events.get(ENROLLMENT), context.getEvent(ENROLLMENT));
         assertEquals(3, context.getMinimumPerSchedule());
-        assertEquals("healthCode", context.getCriteriaContext().getHealthCode());
+        assertEquals(HEALTH_CODE, context.getCriteriaContext().getHealthCode());
         assertEquals(TestConstants.USER_DATA_GROUPS, context.getCriteriaContext().getUserDataGroups());
         assertEquals(startsOn, context.getStartsOn());
+        assertEquals(accountCreatedOn, context.getAccountCreatedOn());
 
-        // and the other studyId setter
-        ScheduleContext context2 = new ScheduleContext.Builder().withStudyIdentifier("study-key").build();
-        assertEquals(studyId, context2.getCriteriaContext().getStudyIdentifier());
+        // Test the withContext() method.
+        ScheduleContext copy = new ScheduleContext.Builder().withContext(context).build();
+        assertEquals(context, copy);
+    }
+    
+    @Test
+    public void verifyNulls() {
+        assertNull(EMPTY_CONTEXT.getInitialTimeZone());
+        assertNull(EMPTY_CONTEXT.getEndsOn());
+        assertFalse(EMPTY_CONTEXT.hasEvents());
+        assertNull(EMPTY_CONTEXT.getEvent(ENROLLMENT));
+        assertNull(EMPTY_CONTEXT.getEndsOn());
+        assertEquals(0, EMPTY_CONTEXT.getMinimumPerSchedule());
+        assertNull(EMPTY_CONTEXT.getAccountCreatedOn());
+        assertTrue(EMPTY_CONTEXT.getCriteriaContext().getUserDataGroups().isEmpty());
+        assertTrue(EMPTY_CONTEXT.getCriteriaContext().getLanguages().isEmpty());
+        assertNull(EMPTY_CONTEXT.getCriteriaContext().getHealthCode());
+        assertNull(EMPTY_CONTEXT.getCriteriaContext().getUserId());
+        assertEquals(TEST_STUDY,EMPTY_CONTEXT.getCriteriaContext().getStudyIdentifier());
+        assertEquals(ClientInfo.UNKNOWN_CLIENT, EMPTY_CONTEXT.getCriteriaContext().getClientInfo());
+        // And then there's this, which is not null
+        assertNotNull(EMPTY_CONTEXT.getStartsOn());
         
         // Test the withContext() method.
-        ScheduleContext context3 = new ScheduleContext.Builder().withContext(context).build();
-        assertEquals(context, context3);
+        ScheduleContext copy = new ScheduleContext.Builder().withContext(EMPTY_CONTEXT).build();
+        assertEquals(EMPTY_CONTEXT, copy);
+    }
+    
+    @Test
+    public void verifyAccountCreatedCopy() {
+        // Null is safe and works
+        ScheduleContext context = new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY).build();
+        ScheduleContext copy = new ScheduleContext.Builder().withContext(context).build();
+        assertNull(copy.getAccountCreatedOn());
+        
+        // Non-null is properly copied
+        DateTime now = DateTime.now(DateTimeZone.UTC);
+        context = new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY).withAccountCreatedOn(now).build();
+        copy = new ScheduleContext.Builder().withContext(context).build();
+        assertEquals(now, copy.getAccountCreatedOn());
     }
     
     @Test
