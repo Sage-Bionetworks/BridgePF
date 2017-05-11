@@ -142,7 +142,7 @@ POST   /v3/tasks                    @org.sagebionetworks.bridge.play.controllers
 GET    /v3/activities               @org.sagebionetworks.bridge.play.controllers.ScheduledActivityController.getScheduledActivities(until: String ?= null, offset: String ?= null, daysAhead: String ?= null, minimumPerSchedule: String ?= null)
 POST   /v3/activities               @org.sagebionetworks.bridge.play.controllers.ScheduledActivityController.updateScheduledActivities()
 GET    /v3/activities/:activityGuid @org.sagebionetworks.bridge.play.controllers.ScheduledActivityController.getActivityHistory(activityGuid: String, scheduledOnStart: String ?= null, scheduledOnEnd: String ?= null, offsetBy: String ?= null, pageSize: String ?= null)
-GET    /v4/activities               @org.sagebionetworks.bridge.play.controllers.ScheduledActivityController.getScheduledActivitiesByDateRange(startsOn: String ?= null, endsOn: String ?= null)
+GET    /v4/activities               @org.sagebionetworks.bridge.play.controllers.ScheduledActivityController.getScheduledActivitiesByDateRange(startTime: String ?= null, endTime: String ?= null)
 POST   /v4/activities               @org.sagebionetworks.bridge.play.controllers.ScheduledActivityController.updateScheduledActivities()
 
 # Uploads

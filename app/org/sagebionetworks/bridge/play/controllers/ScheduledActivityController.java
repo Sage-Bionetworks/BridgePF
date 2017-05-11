@@ -77,11 +77,11 @@ public class ScheduledActivityController extends BaseController {
                 .writeValueAsString(new ResourceList<ScheduledActivity>(scheduledActivities)));
     }
     
-    public Result getScheduledActivitiesByDateRange(String startsOnString, String endsOnString) throws Exception {
+    public Result getScheduledActivitiesByDateRange(String startTimeString, String endTimeString) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         
-        DateTime startsOn = BridgeUtils.getDateTimeOrDefault(startsOnString, null);
-        DateTime endsOn = BridgeUtils.getDateTimeOrDefault(endsOnString, null);
+        DateTime startsOn = BridgeUtils.getDateTimeOrDefault(startTimeString, null);
+        DateTime endsOn = BridgeUtils.getDateTimeOrDefault(endTimeString, null);
         if (startsOn == null || endsOn == null) {
             throw new BadRequestException(MISSING_TIMESTAMP_ERROR);
         }
