@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
 
+import org.joda.time.Chronology;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
@@ -14,7 +15,8 @@ public interface ScheduledActivityDao {
      * Get paged results of scheduled activities by an activity GUID.
      */
     ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistoryV2(String healthCode,
-            String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, String offsetBy,
+            String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, DateTimeZone timezone,
+            String offsetBy,
             int pageSize);
     
     /**

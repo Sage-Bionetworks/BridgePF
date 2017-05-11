@@ -18,7 +18,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.joda.time.Chronology;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -55,7 +57,9 @@ public class ScheduledActivityService {
             + API_MAXIMUM_PAGE_SIZE + " records";
     
     private static final String EITHER_BOTH_DATES_OR_NEITHER = "Only one date of a date range provided (both scheduledOnStart and scheduledOnEnd required)";
-    
+
+    private static final String AMBIGUOUS_TIMEZONE_ERROR = "scheduledOnStart and scheduledOnEnd must have be in the same time zone";
+
     private static final String ENROLLMENT = "enrollment";
 
     private static final ScheduleContextValidator VALIDATOR = new ScheduleContextValidator();
@@ -125,8 +129,13 @@ public class ScheduledActivityService {
             throw new BadRequestException(EITHER_BOTH_DATES_OR_NEITHER);
         }
 
+        DateTimeZone timezone = scheduledOnStart.getChronology().getZone();
+        if (!timezone.equals(scheduledOnEnd.getChronology().getZone())) {
+            throw new BadRequestException(AMBIGUOUS_TIMEZONE_ERROR);
+        }
+
         return activityDao.getActivityHistoryV2(
-                healthCode, activityGuid, scheduledOnStart, scheduledOnEnd, offsetBy, pageSize);
+                healthCode, activityGuid, scheduledOnStart, scheduledOnEnd, timezone, offsetBy, pageSize);
     }
     
     public List<ScheduledActivity> getScheduledActivities(ScheduleContext context) {

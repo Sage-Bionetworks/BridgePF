@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -85,6 +86,8 @@ public class ScheduledActivityServiceMockTest {
     private static final DateTime STARTS_ON = DateTime.now().minusDays(1);
     
     private static final DateTime ENDS_ON = DateTime.now();
+
+    private static final DateTimeZone TIME_ZONE = STARTS_ON.getChronology().getZone();
     
     private ScheduledActivityService service;
     
@@ -173,7 +176,8 @@ public class ScheduledActivityServiceMockTest {
         DateTimeUtils.setCurrentMillisFixed(STARTS_ON.getMillis());
         
         service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, null, null, null, 40);
-        verify(activityDao).getActivityHistoryV2(HEALTH_CODE, ACTIVITY_GUID, STARTS_ON.minusDays(9), STARTS_ON.plusDays(5), null, 40);
+        verify(activityDao).getActivityHistoryV2(HEALTH_CODE, ACTIVITY_GUID, STARTS_ON.minusDays(9), STARTS_ON.plusDays(5),
+                TIME_ZONE, null, 40);
         
         DateTimeUtils.setCurrentMillisSystem();
     }
@@ -181,6 +185,14 @@ public class ScheduledActivityServiceMockTest {
     @Test(expected = BadRequestException.class)
     public void activityHistoryEnforcesDateRangeEndAfterStart() {
         service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, ENDS_ON, STARTS_ON, null, 200);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void activityHistoryEnforcesSameEndAndStartTimeZone() {
+        // won't be same as default time zone, since this is not a real timezone
+        DateTimeZone otherTimeZone = DateTimeZone.forOffsetHoursMinutes(4, 17);
+        service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID,STARTS_ON,
+                ENDS_ON.withZone(otherTimeZone), null, 200);
     }
 
     @Test(expected = BadRequestException.class)
