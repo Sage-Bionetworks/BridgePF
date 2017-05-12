@@ -46,12 +46,21 @@ public class ScheduledActivityController extends BaseController {
         this.scheduledActivityService = scheduledActivityService;
     }
     
-    // This annotation adds a deprecation header to the REST API method.
     @Deprecated
     public Result getTasks(String untilString, String offset, String daysAhead) throws Exception {
         List<ScheduledActivity> scheduledActivities = getScheduledActivitiesInternalV3(untilString, offset, daysAhead, null);
         
         return okResultAsTasks(scheduledActivities);
+    }
+    
+    @Deprecated
+    public Result getScheduledActivities(String untilString, String offset, String daysAhead, String minimumPerScheduleString)
+            throws Exception {
+        List<ScheduledActivity> scheduledActivities = getScheduledActivitiesInternalV3(untilString, offset, daysAhead,
+                minimumPerScheduleString);
+        
+        return ok(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER
+                .writeValueAsString(new ResourceList<ScheduledActivity>(scheduledActivities)));
     }
 
     public Result getActivityHistory(String activityGuid, String scheduledOnStartString,
@@ -66,15 +75,6 @@ public class ScheduledActivityController extends BaseController {
                 session.getHealthCode(), activityGuid, scheduledOnStart, scheduledOnEnd, offsetBy, pageSize);
         
         return ok(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(page));
-    }
-    
-    public Result getScheduledActivities(String untilString, String offset, String daysAhead, String minimumPerScheduleString)
-            throws Exception {
-        List<ScheduledActivity> scheduledActivities = getScheduledActivitiesInternalV3(untilString, offset, daysAhead,
-                minimumPerScheduleString);
-        
-        return ok(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER
-                .writeValueAsString(new ResourceList<ScheduledActivity>(scheduledActivities)));
     }
     
     public Result getScheduledActivitiesByDateRange(String startTimeString, String endTimeString) throws Exception {
