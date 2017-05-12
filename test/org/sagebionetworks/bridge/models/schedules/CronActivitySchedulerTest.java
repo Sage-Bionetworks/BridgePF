@@ -191,9 +191,9 @@ public class CronActivitySchedulerTest {
         DateTimeZone initialTimeZone = DateTimeZone.forOffsetHours(4);
         
         events.clear();
-        events.put("enrollment", DateTime.parse("2016-03-15T00:04:37.000+04:00"));
+        events.put("enrollment", DateTime.parse("2016-05-12T00:04:37.000+04:00"));
         
-        DateTime now = DateTime.parse("2016-05-12T17:13:13.044-07:00");
+        DateTime now = DateTime.parse("2016-05-12T17:13:13.044-07:00"); // later in a different timezone
 
         ScheduleContext context = new ScheduleContext.Builder()
             .withStudyIdentifier(TEST_STUDY)
