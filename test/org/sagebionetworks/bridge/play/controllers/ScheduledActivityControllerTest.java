@@ -177,6 +177,7 @@ public class ScheduledActivityControllerTest {
         doReturn(CLIENT_INFO).when(controller).getClientInfoFromUserAgentHeader();
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void timeZoneCapturedFirstTime() throws Exception {
         DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
@@ -191,6 +192,7 @@ public class ScheduledActivityControllerTest {
         assertEquals(MSK, context.getInitialTimeZone());
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void testZoneUsedFromPersistenceWhenAvailable() throws Exception {
         DateTimeZone UNK = DateTimeZone.forOffsetHours(4);
@@ -206,6 +208,7 @@ public class ScheduledActivityControllerTest {
         assertEquals(UNK, context.getInitialTimeZone());
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void utcTimeZoneParsedCorrectly() throws Exception {
         controller.getScheduledActivities(null, "+0:00", "3", "5");
@@ -215,6 +218,7 @@ public class ScheduledActivityControllerTest {
         assertEquals("+00:00", DateUtils.timeZoneToOffsetString(context.getInitialTimeZone()));
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void getScheduledActivtiesAssemblesCorrectContext() throws Exception {
         DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
@@ -249,6 +253,7 @@ public class ScheduledActivityControllerTest {
         assertEquals(TEST_STUDY, requestInfo.getStudyIdentifier());
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void getScheduledActivitiesAsScheduledActivitiesReturnsCorrectType() throws Exception {
         DateTime now = DateTime.parse("2011-05-13T12:37:31.985+03:00");
@@ -284,6 +289,7 @@ public class ScheduledActivityControllerTest {
         }
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void getScheduledActivitiesWithUntil() throws Exception {
         // Until value is simply passed along as is to the scheduler.
@@ -296,6 +302,7 @@ public class ScheduledActivityControllerTest {
         assertEquals(now.getZone(), contextCaptor.getValue().getInitialTimeZone());
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void getScheduledActivitiesWithDaysAheadTimeZoneAndMinimum() throws Exception {
         // We expect the endsOn value to be three days from now at the end of the day 
@@ -321,12 +328,14 @@ public class ScheduledActivityControllerTest {
         verifyNoMoreInteractions(scheduledActivityService);
     }
     
+    @SuppressWarnings("deprecation")
     @Test(expected = NotAuthenticatedException.class)
     public void mustBeAuthenticated() throws Exception {
         controller = new ScheduledActivityController();
         controller.getScheduledActivities(DateTime.now().toString(), null, null, null);
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void fullyInitializedSessionProvidesAccountCreatedOnInScheduleContext() throws Exception {
         controller.getScheduledActivities(null, "-07:00", "3", null);
@@ -400,7 +409,7 @@ public class ScheduledActivityControllerTest {
     @Test
     public void getScheduledActivitiesV4() throws Exception {
         DateTimeZone zone = DateTimeZone.forOffsetHours(4);
-        DateTime startsOn = DateTime.now(zone);
+        DateTime startsOn = DateTime.now(zone).minusMinutes(1);
         DateTime endsOn = DateTime.now(zone).plusDays(7);
         
         Result result = controller.getScheduledActivitiesByDateRange(startsOn.toString(), endsOn.toString());
@@ -418,7 +427,7 @@ public class ScheduledActivityControllerTest {
         assertEquals(USER_AGENT, requestInfo.getUserAgent());
         assertEquals(LANGUAGES, requestInfo.getLanguages());
         assertEquals(USER_DATA_GROUPS, requestInfo.getUserDataGroups());
-        assertEquals(startsOn, requestInfo.getActivitiesAccessedOn());
+        assertTrue(requestInfo.getActivitiesAccessedOn().isAfter(startsOn));
         assertNull(requestInfo.getSignedInOn());
         assertEquals(zone, requestInfo.getTimeZone());
         assertEquals(TEST_STUDY, requestInfo.getStudyIdentifier());
