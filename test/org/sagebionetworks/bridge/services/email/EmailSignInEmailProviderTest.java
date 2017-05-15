@@ -30,7 +30,10 @@ public class EmailSignInEmailProviderTest {
         
         // Verifying in particular that all instances of a template variable are replaced
         // in the template.
-        EmailSignInEmailProvider provider = new EmailSignInEmailProvider(study, RECIPIENT_EMAIL, "ABC");
+        BasicEmailProvider provider = new BasicEmailProvider.Builder()
+                .withStudy(study)
+                .withRecipientEmail(RECIPIENT_EMAIL)
+                .withToken("token", "ABC").build();
         
         String url = String.format("https://%s/mobile/startSession.html?email=%s&study=foo&token=ABC", 
                 BridgeConfigFactory.getConfig().getHostnameWithPostfix("webservices"),
