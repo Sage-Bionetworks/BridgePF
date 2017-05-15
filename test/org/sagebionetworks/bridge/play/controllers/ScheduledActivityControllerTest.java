@@ -415,6 +415,10 @@ public class ScheduledActivityControllerTest {
         Result result = controller.getScheduledActivitiesByDateRange(startsOn.toString(), endsOn.toString());
         assertEquals(200, result.status());
         
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        assertEquals(startsOn.toString(), node.get("startTime").asText());
+        assertEquals(endsOn.toString(), node.get("endTime").asText());
+        
         verify(sessionUpdateService).updateTimeZone(any(UserSession.class), timeZoneCaptor.capture());
         verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
         verify(scheduledActivityService).getScheduledActivitiesV4(contextCaptor.capture());
@@ -434,7 +438,9 @@ public class ScheduledActivityControllerTest {
         
         ScheduleContext context = contextCaptor.getValue();
         assertEquals(startsOn.getZone(), context.getInitialTimeZone());
-        assertEquals(startsOn, context.getStartsOn());
+        // To make the range inclusive, we need to adjust timestamp to right before the start instant
+        // This value is not mirrored back in the response (see test above of the response).
+        assertEquals(startsOn.minusMillis(1), context.getStartsOn());
         assertEquals(endsOn, context.getEndsOn());
         assertEquals(0, context.getMinimumPerSchedule());
         assertEquals(ACCOUNT_CREATED_ON.withZone(DateTimeZone.UTC), context.getAccountCreatedOn());

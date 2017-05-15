@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -88,14 +89,15 @@ public class ScheduledActivityController extends BaseController {
         if (!startsOn.getZone().equals(endsOn.getZone())) {
             throw new BadRequestException(AMBIGUOUS_TIMEZONE_ERROR);
         }
+        DateTime startsOnInclusive = startsOn.minusMillis(1);
 
         DateTimeZone requestTimeZone = startsOn.getZone();
-        ScheduleContext context = getScheduledActivitiesInternal(session, requestTimeZone, startsOn, endsOn, 0);
+        ScheduleContext context = getScheduledActivitiesInternal(session, requestTimeZone, startsOnInclusive, endsOn, 0);
 
         List<ScheduledActivity> scheduledActivities = scheduledActivityService.getScheduledActivitiesV4(context);
         
-        return ok(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER
-                .writeValueAsString(new ResourceList<ScheduledActivity>(scheduledActivities)));
+        return ok(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(
+                new DateTimeRangeResourceList<ScheduledActivity>(scheduledActivities, startsOn, endsOn)));
     }
 
     public Result updateScheduledActivities() throws Exception {
