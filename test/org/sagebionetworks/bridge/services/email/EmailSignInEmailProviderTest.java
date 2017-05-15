@@ -6,6 +6,7 @@ import java.net.URLEncoder;
 
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
@@ -32,7 +33,9 @@ public class EmailSignInEmailProviderTest {
         // in the template.
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
+                .withEmailTemplate(study.getEmailSignInTemplate())
                 .withRecipientEmail(RECIPIENT_EMAIL)
+                .withToken("email", BridgeUtils.encodeURIComponent(RECIPIENT_EMAIL))
                 .withToken("token", "ABC").build();
         
         String url = String.format("https://%s/mobile/startSession.html?email=%s&study=foo&token=ABC", 

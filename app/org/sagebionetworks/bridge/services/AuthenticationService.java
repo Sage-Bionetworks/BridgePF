@@ -125,6 +125,7 @@ public class AuthenticationService {
             .withEmailTemplate(study.getEmailSignInTemplate())
             .withStudy(study)
             .withRecipientEmail(signIn.getEmail())
+            .withToken("email", BridgeUtils.encodeURIComponent(signIn.getEmail()))
             .withToken("token", token).build();
         sendMailService.sendEmail(provider);
     }
