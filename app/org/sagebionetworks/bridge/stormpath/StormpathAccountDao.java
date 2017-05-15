@@ -44,6 +44,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
@@ -65,10 +66,7 @@ import com.stormpath.sdk.account.AccountCriteria;
 import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.account.AccountOptions;
 import com.stormpath.sdk.account.Accounts;
-import com.stormpath.sdk.account.VerificationEmailRequest;
-import com.stormpath.sdk.account.VerificationEmailRequestBuilder;
 import com.stormpath.sdk.application.Application;
-import com.stormpath.sdk.application.Applications;
 import com.stormpath.sdk.authc.AuthenticationRequest;
 import com.stormpath.sdk.authc.AuthenticationResult;
 import com.stormpath.sdk.authc.UsernamePasswordRequests;
@@ -93,6 +91,7 @@ public class StormpathAccountDao implements AccountDao {
     private SubpopulationService subpopService;
     private HealthCodeService healthCodeService;
     private SortedMap<Integer, BridgeEncryptor> encryptors = Maps.newTreeMap();
+    private AccountWorkflowService accountWorkflowService;
 
     /** Grab some config attributes from our config object. */
     @Autowired
@@ -125,6 +124,10 @@ public class StormpathAccountDao implements AccountDao {
         for (BridgeEncryptor encryptor : list) {
             encryptors.put(encryptor.getVersion(), encryptor);
         }
+    }
+    @Autowired
+    final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService){
+        this.accountWorkflowService = accountWorkflowService;
     }
 
     @Override
@@ -200,62 +203,22 @@ public class StormpathAccountDao implements AccountDao {
     
     @Override
     public void verifyEmail(EmailVerification verification) {
-        checkNotNull(verification);
-        
-        try {
-            client.verifyAccountEmail(verification.getSptoken());
-        } catch(ResourceException e) {
-            rethrowResourceException(e, null);
-        }
+        accountWorkflowService.verifyEmail(verification);
     }
     
     @Override
     public void resendEmailVerificationToken(StudyIdentifier studyIdentifier, Email email) {
-        checkNotNull(studyIdentifier);
-        checkNotNull(email);
-        
-        final Study study = studyService.getStudy(studyIdentifier);
-        final Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
-        VerificationEmailRequestBuilder requestBuilder = Applications.verificationEmailBuilder();
-        VerificationEmailRequest request = requestBuilder
-                .setAccountStore(directory)
-                .setLogin(email.getEmail())
-                .build();
-
-        try {
-            application.sendVerificationEmail(request);
-        } catch (ResourceException e) {
-            rethrowResourceException(e, null);
-        }
+        accountWorkflowService.resendEmailVerificationToken(studyIdentifier, email);
     }
 
     @Override
     public void requestResetPassword(Study study, Email email) {
-        checkNotNull(study);
-        checkNotNull(email);
-
-        try {
-            Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
-            application.sendPasswordResetEmail(email.getEmail(), directory);
-        } catch (ResourceException e) {
-            rethrowResourceException(e, null);
-        }
+        accountWorkflowService.requestResetPassword(study, email);
     }
 
     @Override
     public void resetPassword(PasswordReset passwordReset) {
-        checkNotNull(passwordReset);
-        
-        try {
-            application.verifyPasswordResetToken(passwordReset.getSptoken());
-        } catch(ResourceException e) {
-            throw new BadRequestException("Password reset token has expired (or already been used).");
-        }
-        try {
-            application.resetPassword(passwordReset.getSptoken(), passwordReset.getPassword());
-        } catch (ResourceException e) {
-            rethrowResourceException(e, null);
-        }
+        accountWorkflowService.resetPassword(passwordReset);
     }
     
     @Override

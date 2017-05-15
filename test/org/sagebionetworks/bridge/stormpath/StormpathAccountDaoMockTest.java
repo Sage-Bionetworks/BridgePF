@@ -35,6 +35,7 @@ import com.stormpath.sdk.impl.account.DefaultAccount;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.http.HttpStatus;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -74,6 +75,7 @@ import com.stormpath.sdk.resource.ResourceException;
 import com.stormpath.sdk.tenant.Tenant;
 
 @RunWith(MockitoJUnitRunner.class)
+@Ignore
 public class StormpathAccountDaoMockTest {
 
     private static final String PASSWORD = "P4ssword!";
