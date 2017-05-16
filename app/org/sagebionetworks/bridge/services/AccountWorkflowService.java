@@ -31,8 +31,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Component
 public class AccountWorkflowService {
-
+    
+    private static final String PASSWORD_RESET_TOKEN_EXPIRED = "Password reset token has expired (or already been used).";
+    private static final String RESET_PASSWORD_URL = "%s/mobile/resetPassword.html?study=%s&sptoken=%s";
+    private static final String VERIFY_EMAIL_URL = "%s/mobile/verifyEmail.html?study=%s&sptoken=%s";
     private static final String BASE_URL = BridgeConfigFactory.getConfig().get("webservices.url");
+    private static final String EXP_WINDOW_TOKEN = "expirationWindow";
+    private static final String URL_TOKEN = "url";
+    private static final int EXPIRE_IN_SECONDS = 60*60*2;
     
     private static class VerificationData {
         private final String studyId;
@@ -97,14 +103,13 @@ public class AccountWorkflowService {
         saveVerification(sptoken, new VerificationData(study.getIdentifier(), userId));
         
         String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
-        String url = String.format("%s/mobile/verifyEmail.html?study=%s&sptoken=%s",
-                BASE_URL, studyId, sptoken);
+        String url = String.format(VERIFY_EMAIL_URL, BASE_URL, studyId, sptoken);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
             .withStudy(study)
             .withEmailTemplate(study.getVerifyEmailTemplate())
             .withRecipientEmail(email)
-            .withToken("url", url).build();
+            .withToken(URL_TOKEN, url).build();
         sendMailService.sendEmail(provider);         
     }
     
@@ -145,17 +150,17 @@ public class AccountWorkflowService {
             String sptoken = createTimeLimitedToken();
             
             String cacheKey = sptoken + ":" + study.getIdentifier();
-            cacheProvider.setString(cacheKey, email.getEmail(), 60*5);
+            cacheProvider.setString(cacheKey, email.getEmail(), EXPIRE_IN_SECONDS);
             
             String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
-            String url = String.format("%s/mobile/resetPassword.html?study=%s&sptoken=%s",
-                    BASE_URL, studyId, sptoken);
+            String url = String.format(RESET_PASSWORD_URL, BASE_URL, studyId, sptoken);
             
             BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
                 .withEmailTemplate(study.getResetPasswordTemplate())
                 .withRecipientEmail(email.getEmail())
-                .withToken("url", url).build();
+                .withToken(URL_TOKEN, url)
+                .withToken(EXP_WINDOW_TOKEN, Integer.toString(EXPIRE_IN_SECONDS/60/60)).build();
             sendMailService.sendEmail(provider);
         }
     }
@@ -167,7 +172,7 @@ public class AccountWorkflowService {
         String email = cacheProvider.getString(cacheKey);
         
         if (email == null) {
-            throw new BadRequestException("Password reset token has expired (or already been used).");
+            throw new BadRequestException(PASSWORD_RESET_TOKEN_EXPIRED);
         }
         cacheProvider.removeString(cacheKey);
         
@@ -183,7 +188,7 @@ public class AccountWorkflowService {
         checkNotNull(data);
                  
         try {
-            cacheProvider.setString(sptoken, BridgeObjectMapper.get().writeValueAsString(data), 60*5);
+            cacheProvider.setString(sptoken, BridgeObjectMapper.get().writeValueAsString(data), EXPIRE_IN_SECONDS);
         } catch (IOException e) {
             throw new BridgeServiceException(e);
         }

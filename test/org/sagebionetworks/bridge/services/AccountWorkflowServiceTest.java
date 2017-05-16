@@ -193,7 +193,7 @@ public class AccountWorkflowServiceTest {
         
         service.requestResetPassword(study, emailObj);
         
-        verify(mockCacheProvider).setString("ABC:api", EMAIL, 60*5);
+        verify(mockCacheProvider).setString("ABC:api", EMAIL, 60*60*2);
         verify(mockSendMailService).sendEmail(emailProviderCaptor.capture());
         MimeTypeEmailProvider provider = emailProviderCaptor.getValue();
         MimeTypeEmail email = provider.getMimeTypeEmail();

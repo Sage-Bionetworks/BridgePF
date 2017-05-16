@@ -65,6 +65,7 @@ import com.google.common.collect.Sets;
 import com.stormpath.sdk.account.AccountCriteria;
 import com.stormpath.sdk.account.AccountList;
 import com.stormpath.sdk.account.AccountOptions;
+import com.stormpath.sdk.account.AccountStatus;
 import com.stormpath.sdk.account.Accounts;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.authc.AuthenticationRequest;
@@ -333,12 +334,16 @@ public class StormpathAccountDao implements AccountDao {
         
         com.stormpath.sdk.account.Account acct =((StormpathAccount)account).getAccount();
         try {
+            acct.setStatus( sendVerifyEmail ? AccountStatus.UNVERIFIED : AccountStatus.ENABLED );
             // Appears to be unavoidable to make multiple calls here. You have to create the account 
             // before you can manipulate the groups, you cannot submit them all in one request.
             Directory directory = client.getResource(study.getStormpathHref(), Directory.class);
-            acct = directory.createAccount(acct, sendVerifyEmail);
+            acct = directory.createAccount(acct, false);
             updateGroups(account);
             ((StormpathAccount)account).setAccount(acct);
+            if (sendVerifyEmail) {
+                accountWorkflowService.sendEmailVerificationToken(study, account.getId(), account.getEmail());    
+            }
         } catch(ResourceException e) {
             if (e.getCode() == 2001) { // account exists, but we don't have the userId, load the account
                 account = getAccountWithEmail(study, account.getEmail());
