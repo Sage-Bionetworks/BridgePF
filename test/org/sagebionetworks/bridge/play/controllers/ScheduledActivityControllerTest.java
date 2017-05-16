@@ -19,6 +19,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 
 import java.util.List;
+import java.util.Map;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -37,6 +38,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
@@ -62,6 +64,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ScheduledActivityControllerTest {
@@ -82,12 +85,14 @@ public class ScheduledActivityControllerTest {
     
     private static final String ID = "id";
     
+    private static final String USER_AGENT = "App Name/4 SDK/2";
+    
+    private static final ClientInfo CLIENT_INFO = ClientInfo.fromUserAgentCache(USER_AGENT);
+    
     private static final TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>> FORWARD_CURSOR_PAGED_ACTIVITIES_REF = new TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>>() {
     };
     
     private ScheduledActivityController controller;
-    
-    private ClientInfo clientInfo;
 
     @Mock
     ScheduledActivityService scheduledActivityService;
@@ -120,7 +125,12 @@ public class ScheduledActivityControllerTest {
     private ArgumentCaptor<DateTime> endsOnCaptor;
     
     @Captor
+    private ArgumentCaptor<DateTimeZone> timeZoneCaptor;
+    
+    @Captor
     private ArgumentCaptor<List<ScheduledActivity>> activitiesCaptor;
+    
+    private SessionUpdateService sessionUpdateService;
     
     UserSession session;
     
@@ -133,8 +143,11 @@ public class ScheduledActivityControllerTest {
         schActivity.setActivity(TestUtils.getActivity3());
         List<ScheduledActivity> list = Lists.newArrayList(schActivity);
         
+        Map<String,String[]> headers = Maps.newHashMap();
+        headers.put("User-Agent", new String[]{USER_AGENT});
+        
         String json = BridgeObjectMapper.get().writeValueAsString(list);
-        TestUtils.mockPlayContextWithJson(json);
+        TestUtils.mockPlayContextWithJson(json, headers);
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE)
@@ -156,15 +169,15 @@ public class ScheduledActivityControllerTest {
         controller.setCacheProvider(cacheProvider);
         controller.setParticipantOptionsService(optionsService);
         
-        SessionUpdateService sessionUpdateService = new SessionUpdateService();
+        sessionUpdateService = spy(new SessionUpdateService());
         sessionUpdateService.setCacheProvider(cacheProvider);
         controller.setSessionUpdateService(sessionUpdateService);
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         
-        clientInfo = ClientInfo.fromUserAgentCache("App Name/4 SDK/2");
-        doReturn(clientInfo).when(controller).getClientInfoFromUserAgentHeader();
+        doReturn(CLIENT_INFO).when(controller).getClientInfoFromUserAgentHeader();
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void timeZoneCapturedFirstTime() throws Exception {
         DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
@@ -179,6 +192,7 @@ public class ScheduledActivityControllerTest {
         assertEquals(MSK, context.getInitialTimeZone());
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void testZoneUsedFromPersistenceWhenAvailable() throws Exception {
         DateTimeZone UNK = DateTimeZone.forOffsetHours(4);
@@ -194,6 +208,7 @@ public class ScheduledActivityControllerTest {
         assertEquals(UNK, context.getInitialTimeZone());
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void utcTimeZoneParsedCorrectly() throws Exception {
         controller.getScheduledActivities(null, "+0:00", "3", "5");
@@ -203,6 +218,7 @@ public class ScheduledActivityControllerTest {
         assertEquals("+00:00", DateUtils.timeZoneToOffsetString(context.getInitialTimeZone()));
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void getScheduledActivtiesAssemblesCorrectContext() throws Exception {
         DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
@@ -223,8 +239,8 @@ public class ScheduledActivityControllerTest {
         CriteriaContext critContext = context.getCriteriaContext();
         assertEquals(HEALTH_CODE, critContext.getHealthCode());
         assertEquals(LANGUAGES, critContext.getLanguages());
-        assertEquals("api", critContext.getStudyIdentifier().getIdentifier());
-        assertEquals(clientInfo, critContext.getClientInfo());
+        assertEquals(TEST_STUDY_IDENTIFIER, critContext.getStudyIdentifier().getIdentifier());
+        assertEquals(CLIENT_INFO, critContext.getClientInfo());
         
         verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
         RequestInfo requestInfo = requestInfoCaptor.getValue();
@@ -237,6 +253,7 @@ public class ScheduledActivityControllerTest {
         assertEquals(TEST_STUDY, requestInfo.getStudyIdentifier());
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void getScheduledActivitiesAsScheduledActivitiesReturnsCorrectType() throws Exception {
         DateTime now = DateTime.parse("2011-05-13T12:37:31.985+03:00");
@@ -272,6 +289,7 @@ public class ScheduledActivityControllerTest {
         }
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void getScheduledActivitiesWithUntil() throws Exception {
         // Until value is simply passed along as is to the scheduler.
@@ -284,6 +302,7 @@ public class ScheduledActivityControllerTest {
         assertEquals(now.getZone(), contextCaptor.getValue().getInitialTimeZone());
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void getScheduledActivitiesWithDaysAheadTimeZoneAndMinimum() throws Exception {
         // We expect the endsOn value to be three days from now at the end of the day 
@@ -298,7 +317,7 @@ public class ScheduledActivityControllerTest {
         assertEquals(expectedEndsOn, contextCaptor.getValue().getEndsOn().withMillisOfSecond(0));
         assertEquals(expectedEndsOn.getZone(), contextCaptor.getValue().getInitialTimeZone());
         assertEquals(0, contextCaptor.getValue().getMinimumPerSchedule());
-        assertEquals(clientInfo, contextCaptor.getValue().getCriteriaContext().getClientInfo());
+        assertEquals(CLIENT_INFO, contextCaptor.getValue().getCriteriaContext().getClientInfo());
     }
     
     @SuppressWarnings("unchecked")
@@ -309,12 +328,14 @@ public class ScheduledActivityControllerTest {
         verifyNoMoreInteractions(scheduledActivityService);
     }
     
+    @SuppressWarnings("deprecation")
     @Test(expected = NotAuthenticatedException.class)
     public void mustBeAuthenticated() throws Exception {
         controller = new ScheduledActivityController();
         controller.getScheduledActivities(DateTime.now().toString(), null, null, null);
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void fullyInitializedSessionProvidesAccountCreatedOnInScheduleContext() throws Exception {
         controller.getScheduledActivities(null, "-07:00", "3", null);
@@ -383,6 +404,78 @@ public class ScheduledActivityControllerTest {
         
         List<ScheduledActivity> capturedActivities = activitiesCaptor.getValue();
         assertEquals(clientData, capturedActivities.get(0).getClientData());
+    }
+    
+    @Test
+    public void getScheduledActivitiesV4() throws Exception {
+        DateTimeZone zone = DateTimeZone.forOffsetHours(4);
+        DateTime startsOn = DateTime.now(zone).minusMinutes(1);
+        DateTime endsOn = DateTime.now(zone).plusDays(7);
+        
+        Result result = controller.getScheduledActivitiesByDateRange(startsOn.toString(), endsOn.toString());
+        assertEquals(200, result.status());
+        
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        assertEquals(startsOn.toString(), node.get("startTime").asText());
+        assertEquals(endsOn.toString(), node.get("endTime").asText());
+        
+        verify(sessionUpdateService).updateTimeZone(any(UserSession.class), timeZoneCaptor.capture());
+        verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
+        verify(scheduledActivityService).getScheduledActivitiesV4(contextCaptor.capture());
+        
+        assertEquals(startsOn.getZone(), timeZoneCaptor.getValue());
+        
+        RequestInfo requestInfo = requestInfoCaptor.getValue();
+        assertEquals("id", requestInfo.getUserId());
+        assertEquals(CLIENT_INFO, requestInfo.getClientInfo());
+        assertEquals(USER_AGENT, requestInfo.getUserAgent());
+        assertEquals(LANGUAGES, requestInfo.getLanguages());
+        assertEquals(USER_DATA_GROUPS, requestInfo.getUserDataGroups());
+        assertTrue(requestInfo.getActivitiesAccessedOn().isAfter(startsOn));
+        assertNull(requestInfo.getSignedInOn());
+        assertEquals(zone, requestInfo.getTimeZone());
+        assertEquals(TEST_STUDY, requestInfo.getStudyIdentifier());
+        
+        ScheduleContext context = contextCaptor.getValue();
+        assertEquals(startsOn.getZone(), context.getInitialTimeZone());
+        // To make the range inclusive, we need to adjust timestamp to right before the start instant
+        // This value is not mirrored back in the response (see test above of the response).
+        assertEquals(startsOn.minusMillis(1), context.getStartsOn());
+        assertEquals(endsOn, context.getEndsOn());
+        assertEquals(0, context.getMinimumPerSchedule());
+        assertEquals(ACCOUNT_CREATED_ON.withZone(DateTimeZone.UTC), context.getAccountCreatedOn());
+        
+        CriteriaContext critContext = context.getCriteriaContext();
+        assertEquals(TEST_STUDY, critContext.getStudyIdentifier());
+        assertEquals(HEALTH_CODE, critContext.getHealthCode());
+        assertEquals(ID, critContext.getUserId());
+        assertEquals(CLIENT_INFO, critContext.getClientInfo());
+        assertEquals(USER_DATA_GROUPS, critContext.getUserDataGroups());
+        assertEquals(LANGUAGES, critContext.getLanguages());
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void getScheduledActivitiesMissingStartsOn() throws Exception {
+        DateTime endsOn = DateTime.now().plusDays(7);
+        controller.getScheduledActivitiesByDateRange(null, endsOn.toString());
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void getScheduledActivitiesMissingEndsOn() throws Exception {
+        DateTime startsOn = DateTime.now().plusDays(7);
+        controller.getScheduledActivitiesByDateRange(startsOn.toString(), null);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void getScheduledActivitiesMalformattedDateTimeStampOn() throws Exception {
+        controller.getScheduledActivitiesByDateRange("2010-01-01", null);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void getScheduledActivitiesMismatchedTimeZone() throws Exception {
+        DateTime startsOn = DateTime.now(DateTimeZone.forOffsetHours(4));
+        DateTime endsOn = DateTime.now(DateTimeZone.forOffsetHours(-7)).plusDays(7);
+        controller.getScheduledActivitiesByDateRange(startsOn.toString(), endsOn.toString());
     }
     
     private ForwardCursorPagedResourceList<ScheduledActivity> createActivityResultsV2(int pageSize) {
