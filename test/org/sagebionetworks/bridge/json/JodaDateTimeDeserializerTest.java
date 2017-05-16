@@ -23,5 +23,6 @@ public class JodaDateTimeDeserializerTest {
         // execute and validate
         DateTime result = new JodaDateTimeDeserializer().deserialize(mockJP, null);
         assertEquals(expectedMillis, result.getMillis());
+        assertEquals("2014-02-12T16:07:00.000-08:00", result.toString());
     }
 }

@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -183,6 +184,35 @@ public class CronActivitySchedulerTest {
         assertDates(scheduledActivities, "2016-05-09 00:00");
         
         DateTimeUtils.setCurrentMillisSystem();
+    }
+    
+    @Test
+    public void verifyTimesAreConvertedCorrectly() {
+        DateTimeZone initialTimeZone = DateTimeZone.forOffsetHours(4);
+        
+        events.clear();
+        events.put("enrollment", DateTime.parse("2016-05-12T00:04:37.000+04:00"));
+        
+        DateTime now = DateTime.parse("2016-05-12T17:13:13.044-07:00"); // later in a different timezone
+
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withInitialTimeZone(initialTimeZone)
+            .withStartsOn(now)
+            .withEndsOn(now.plusDays(1))
+            .withEvents(events).build();
+        
+        Schedule schedule = createScheduleWith(RECURRING);
+        schedule.setCronTrigger("0 0 10,22 1/1 * ? *");
+        schedule.setExpires("PT1H");
+        
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
+        List<DateTime> scheduleDates = scheduledActivities.stream()
+                .map(ScheduledActivity::getScheduledOn)
+                .collect(Collectors.toList());
+        assertEquals("2016-05-12T22:00:00.000-07:00", scheduleDates.get(0).toString());
+        assertEquals("2016-05-13T10:00:00.000-07:00", scheduleDates.get(1).toString());
+        assertEquals("2016-05-13T22:00:00.000-07:00", scheduleDates.get(2).toString());
     }
     
     private ScheduleContext getContext(DateTime endsOn) {
