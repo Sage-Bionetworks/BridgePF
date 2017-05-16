@@ -43,7 +43,7 @@ class CronActivityScheduler extends ActivityScheduler {
     private MutableTrigger parseTrigger(DateTime scheduledTime) {
         MutableTrigger mutable = CronScheduleBuilder
             .cronSchedule(schedule.getCronTrigger())
-            .inTimeZone(scheduledTime.getZone().toTimeZone()).build();
+            .inTimeZone(DateTimeZone.UTC.toTimeZone()).build();
         mutable.setStartTime(scheduledTime.toDate());
         return mutable;
     }
