@@ -1,0 +1,446 @@
+package org.sagebionetworks.bridge.okta;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+
+import java.io.IOException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
+import org.joda.time.DateTime;
+import org.junit.Before;
+import org.junit.Test;
+
+import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
+import org.sagebionetworks.bridge.crypto.Encryptor;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.AccountStatus;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.okta.sdk.models.users.User;
+import com.okta.sdk.models.users.UserProfile;
+
+public class OktaAccountTest {
+    
+    private static final TypeReference<List<ConsentSignature>> CONSENT_SIGNATURES_TYPE = new TypeReference<List<ConsentSignature>>() {};
+    
+    private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
+    private static final long UNIX_TIMESTAMP = DateTime.now().getMillis();
+    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("foo");
+    private static final SubpopulationGuid SUBPOP_GUID_2 = SubpopulationGuid.create("foo2");
+    private static final SubpopulationGuid SUBPOP_GUID_3 = SubpopulationGuid.create("foo3");
+    private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("foo");
+    private static final List<? extends SubpopulationGuid> SUBPOP_GUIDS = Lists.newArrayList(SUBPOP_GUID, SUBPOP_GUID_2,
+            SUBPOP_GUID_3);
+
+    private UserProfile userProfile;
+    
+    private User user;
+    
+    private OktaAccount acct;
+    
+    private ConsentSignature sig;
+    
+    private SortedMap<Integer, BridgeEncryptor> encryptors;
+    
+    private Map<String,Object> userProfileUnmapped;
+    
+    @Before
+    public void setUp() throws Exception {
+        userProfile = mock(UserProfile.class);
+        user = mock(User.class);
+        
+        userProfileUnmapped = new HashMap<String,Object>();
+        when(userProfile.getUnmapped()).thenReturn(userProfileUnmapped);
+
+        BridgeEncryptor encryptor1 = mock(BridgeEncryptor.class);
+        when(encryptor1.getVersion()).thenReturn(1);
+        encryptDecryptValues(encryptor1, "1");
+
+        BridgeEncryptor encryptor2 = mock(BridgeEncryptor.class);
+        when(encryptor2.getVersion()).thenReturn(2);
+        encryptDecryptValues(encryptor2, "2");
+          
+        encryptors = new TreeMap<>();
+        encryptors.put(1, encryptor1);
+        encryptors.put(2, encryptor2);
+        
+        // In some tests this is stored under older keys, such as the key that was used before supporting
+        // multipl encryptor versions.
+        sig = new ConsentSignature.Builder().withName("Test").withBirthdate("1970-01-01").withImageData("test")
+                .withImageMimeType("image/png").withSignedOn(UNIX_TIMESTAMP).build();
+        
+        acct = new OktaAccount(STUDY_ID, SUBPOP_GUIDS, user, userProfile, encryptors);
+    }
+    
+    private void encryptDecryptValues(final Encryptor encryptor, final String version) {
+        when(encryptor.encrypt(any())).thenAnswer(invocation -> {
+            return "encrypted-" + version + "-" + invocation.getArgumentAt(0, String.class);
+        });
+        when(encryptor.decrypt(any())).thenAnswer(invocation -> {
+            String encValue = invocation.getArgumentAt(0, String.class);
+            return (encValue == null) ? encValue : encValue.replace("encrypted-"+version+"-", "");
+        });
+    }
+    
+    @Test
+    public void consentSignaturesEncrypted() throws Exception {
+        List<ConsentSignature> signatures = acct.getConsentSignatureHistory(SUBPOP_GUID);
+        signatures.add(new ConsentSignature.Builder().withName("Another Name").withBirthdate("1983-05-10").build());
+        
+        String json = BridgeObjectMapper.get().writeValueAsString(acct.getConsentSignatureHistory(SUBPOP_GUID));
+        acct.getUserProfile(); // necessary to trigger update of customData
+        
+        assertEquals("encrypted-2-"+json, userProfileUnmapped.get("foo_consent_signatures"));
+        assertEquals(signatures, acct.getConsentSignatureHistory(SUBPOP_GUID));
+    }
+    
+    @Test
+    public void basicFieldWorks() {
+        when(userProfile.getEmail()).thenReturn("test@test.com");
+        
+        acct.setEmail("test@test.com");
+        assertEquals("test@test.com", acct.getEmail());
+        
+        verify(userProfile).setEmail("test@test.com");
+    }
+    
+    @Test
+    public void basicFieldValueCanBeCleared() {
+        when(userProfile.getEmail()).thenReturn(null);
+        
+        acct.setEmail(null);
+        assertNull(acct.getEmail());
+        
+        verify(userProfile).setEmail(null);
+    }
+    
+    @Test
+    public void newSensitiveValueIsEncryptedWithLastEncryptor() {
+        acct.setAttribute("phone", "111-222-3333");
+        
+        assertEquals("encrypted-2-111-222-3333", userProfileUnmapped.get("phone"));
+        assertEquals("111-222-3333", acct.getAttribute("phone"));
+    }
+    
+    @Test
+    public void sensitiveValueWhenClearedRemovesVersionKey() {
+        acct.setAttribute("phone", "111-222-3333");
+        assertEquals(2, userProfileUnmapped.get("phone_version"));
+        
+        acct.setAttribute("phone", null);
+        assertNull(userProfileUnmapped.get("phone"));
+        assertNull(userProfileUnmapped.get("phone_version"));
+    }
+    
+    @Test
+    public void noValueSupported() {
+        assertNull(acct.getAttribute("phone"));
+    }
+    
+    @Test
+    public void oldValuesDecryptedWithOldDecryptorAndEncryptedWithNewDecryptor() {
+        userProfileUnmapped.put("phone", "encrypted-1-111-222-3333");
+        userProfileUnmapped.put("phone_version", 1);
+
+        assertEquals("111-222-3333", acct.getAttribute("phone"));
+        
+        acct.setAttribute("phone", acct.getAttribute("phone"));
+        
+        assertEquals("encrypted-2-111-222-3333", userProfileUnmapped.get("phone"));
+        assertEquals("111-222-3333", acct.getAttribute("phone"));
+    }
+    
+    @Test
+    public void consentSignatureRAndEncrypted() {
+        acct.getConsentSignatureHistory(SUBPOP_GUID).add(sig);
+        
+        ConsentSignature restoredSig = acct.getActiveConsentSignature(SUBPOP_GUID);
+        assertEquals("Test", restoredSig.getName());
+        assertEquals("1970-01-01", restoredSig.getBirthdate());
+        assertEquals("test", restoredSig.getImageData());
+        assertEquals("image/png", restoredSig.getImageMimeType());
+        assertEquals(UNIX_TIMESTAMP, restoredSig.getSignedOn());
+    }
+    
+    @Test
+    public void canClearKeyValue() {
+        acct.setAttribute("phone", "111-222-3333");
+        acct.setAttribute("phone", null);
+        
+        assertNull(acct.getAttribute("phone"));
+    }
+    
+    @Test
+    public void healthIdRetrievedWithNewVersion() {
+        userProfileUnmapped.put("foo_code", "encrypted-1-aHealthId");
+        userProfileUnmapped.put("foo_code_version", 1);
+        
+        String healthId = acct.getHealthId();
+        assertEquals("aHealthId", healthId);
+    }
+    
+    @Test
+    public void healthIdRetrievedWithOldVersion() {
+        userProfileUnmapped.put("foo_code", "encrypted-1-HealthId");
+        userProfileUnmapped.put("fooversion", 1);
+        
+        String healthId = acct.getHealthId();
+        assertEquals("HealthId", healthId);
+    }
+    
+    @Test
+    public void consentSignatureRetrievedWithNoVersion() throws Exception {
+        // This is a key that predates the encryptors. SHould still be found when we 
+        // retrieve the value through the new consent signature list.
+        userProfileUnmapped.put("foo_consent_signature", MAPPER.writeValueAsString(sig));
+        
+        acct = new OktaAccount(STUDY_ID, SUBPOP_GUIDS, user, userProfile, encryptors);
+        
+        ConsentSignature restoredSig = acct.getActiveConsentSignature(SUBPOP_GUID);
+        assertEquals("Test", restoredSig.getName());
+        assertEquals("1970-01-01", restoredSig.getBirthdate());
+        assertEquals("test", restoredSig.getImageData());
+        assertEquals("image/png", restoredSig.getImageMimeType());
+    }
+    
+    @Test
+    public void consentSignatureRetrievedFromEncryptedSingleObjectSlot() throws Exception {
+        userProfileUnmapped.put("foo_consent_signature", MAPPER.writeValueAsString(sig));
+        userProfileUnmapped.put("foo_consent_signature_version", 2);
+        
+        acct = new OktaAccount(STUDY_ID, SUBPOP_GUIDS, user, userProfile, encryptors);
+        
+        ConsentSignature restoredSig = acct.getActiveConsentSignature(SUBPOP_GUID);
+        assertEquals("Test", restoredSig.getName());
+        assertEquals("1970-01-01", restoredSig.getBirthdate());
+        assertEquals("test", restoredSig.getImageData());
+        assertEquals("image/png", restoredSig.getImageMimeType());
+        
+        // Also should be in "history"
+        List<ConsentSignature> history = acct.getConsentSignatureHistory(SUBPOP_GUID);
+        assertEquals(1, history.size());
+        assertEquals(sig, history.get(0));
+        assertNull(history.get(0).getWithdrewOn());
+    }
+    
+    @Test
+    public void consentSignatureRetrievedWithOnlySignatureList() throws Exception {
+        List<ConsentSignature> history = Lists.newArrayList();
+        // Adding a historical signature. Order matters, the active one must be last.
+        history.add(new ConsentSignature.Builder().withName("Stephen Maturin").withBirthdate("1790-04-12")
+                .withWithdrewOn(DateTime.now().getMillis()).build());
+        history.add(sig);
+        userProfileUnmapped.put("foo_consent_signatures", MAPPER.writeValueAsString(history));
+        userProfileUnmapped.put("foo_consent_signatures_version", 2);
+        
+        acct = new OktaAccount(STUDY_ID, SUBPOP_GUIDS, user, userProfile, encryptors);
+        
+        ConsentSignature restoredSig = acct.getActiveConsentSignature(SUBPOP_GUID);
+        assertEquals("Test", restoredSig.getName());
+        assertEquals("1970-01-01", restoredSig.getBirthdate());
+        assertEquals("test", restoredSig.getImageData());
+        assertEquals("image/png", restoredSig.getImageMimeType());
+    }
+    
+    @Test
+    public void activeConsentIsNullWhenAllConsentsWithdrawn() throws Exception {
+        sig = new ConsentSignature.Builder().withConsentSignature(sig).withWithdrewOn(DateTime.now().getMillis()).build();
+        
+        List<ConsentSignature> history = Lists.newArrayList();
+        history.add(sig);
+        history.add(new ConsentSignature.Builder().withName("Stephen Maturin").withBirthdate("1790-04-12")
+                .withWithdrewOn(DateTime.now().getMillis()).build());
+        
+        userProfileUnmapped.put("foo_consent_signatures", MAPPER.writeValueAsString(history));
+        userProfileUnmapped.put("foo_consent_signatures_version", 2);
+        
+        acct = new OktaAccount(STUDY_ID, SUBPOP_GUIDS, user, userProfile, encryptors);
+        
+        ConsentSignature restoredSig = acct.getActiveConsentSignature(SUBPOP_GUID);
+        assertNull(restoredSig);
+    }
+    
+    @Test
+    public void failsIfNoEncryptorForVersion() {
+        try {
+            userProfileUnmapped.put("foo_code", "111");
+            userProfileUnmapped.put("fooversion", 3);
+            
+            acct.getHealthId();
+        } catch(BridgeServiceException e) {
+            assertEquals("No encryptor can be found for version 3", e.getMessage());
+        }
+    }
+    
+    @Test
+    public void phoneRetrievedWithNoVersion() {
+        userProfileUnmapped.put("phone", "encrypted-2-555-555-5555");
+        
+        // This must use version 2, there's no version listed.
+        String phone = acct.getAttribute("phone");
+        assertEquals("555-555-5555", phone);
+    }
+    
+    @Test
+    public void phoneRetrievedWithCorrect() {
+        userProfileUnmapped.put("phone", "encrypted-2-555-555-5555");
+        userProfileUnmapped.put("phone_version", 2);
+        
+        // This must use version 2, there's no version listed.
+        String phone = acct.getAttribute("phone");
+        assertEquals("555-555-5555", phone);
+    }
+    
+    @Test(expected = BridgeServiceException.class)
+    public void phoneNotRetrievedWithIncorrectVersion() {
+        userProfileUnmapped.put("phone", "encryptedphonenumber");
+        userProfileUnmapped.put("phone_version", 3);
+        
+        acct.getAttribute("phone");
+    }
+    
+    @Test
+    public void retrievingNullEncryptedFieldReturnsNull() {
+        String phone = acct.getAttribute("phone");
+        assertNull(phone);
+    }
+    
+    @Test
+    public void canSetAndGetRoles() {
+        acct.setRoles(Sets.newHashSet(DEVELOPER));
+        
+        assertEquals(1, acct.getRoles().size());
+        assertEquals(DEVELOPER, acct.getRoles().iterator().next());
+    }
+    
+    // see the StormpathAccountDaoTest.canSetAndRetrieveConsentsForMultipleSubpopulations test where we 
+    // test encryption into and out of Stormpath.
+    @Test
+    public void multipleConsentsAreMaintainedSeparately() throws Exception {
+        ConsentSignature sig1 = new ConsentSignature.Builder()
+                .withName("Name 1")
+                .withBirthdate("2000-10-10")
+                .withSignedOn(DateTime.now().getMillis())
+                .build();
+        
+        ConsentSignature sig2 = new ConsentSignature.Builder()
+                .withName("Name 2")
+                .withBirthdate("2000-02-02")
+                .withSignedOn(DateTime.now().getMillis())
+                .build();
+        acct.getConsentSignatureHistory(SUBPOP_GUID).add(sig1);
+        acct.getConsentSignatureHistory(SUBPOP_GUID_2).add(sig2);
+        
+        ConsentSignature sig1Retrieved = acct.getActiveConsentSignature(SUBPOP_GUID);
+        assertEquals(sig1, sig1Retrieved);
+        
+        ConsentSignature sig2Retrieved = acct.getActiveConsentSignature(SUBPOP_GUID_2);
+        assertEquals(sig2, sig2Retrieved);
+        
+        Map<SubpopulationGuid,List<ConsentSignature>> signatures = acct.getAllConsentSignatureHistories();
+        sig1Retrieved = signatures.get(SUBPOP_GUID).get(0);
+        assertEquals(sig1, sig1Retrieved);
+        
+        sig2Retrieved = signatures.get(SUBPOP_GUID_2).get(0);
+        assertEquals(sig2, sig2Retrieved);
+        
+        // Retrieve the Stormpath implementation to update customData. Verify that the data is passed as is
+        // to customData stub.
+        acct.getUserProfile();
+        
+        // These are being stored in customData correctly... it's still a stub implementation without 
+        // encryption though... see StormpathAccountDaoTest.canSetAndRetrieveConsentsForMultipleSubpopulations()
+        // where this is really tested against Stormpath, including encryption.
+        verifyOneConsentStream(SUBPOP_GUID, sig1);
+        verifyOneConsentStream(SUBPOP_GUID_2, sig2);
+    }
+
+    @Test
+    public void ifEncryptorVersionMissingDefaultToLastEncryptor() {
+        // no _version for this attribute, throws NPE without setting the version
+        userProfileUnmapped.put("foo", "111"); 
+
+        // Does not throw NPE, it uses last version in sorted map
+        assertEquals("111", acct.getAttribute("foo"));
+    }
+
+    @Test
+    public void convertsStormpathToBridgeAccount() {
+        DateTime createdOn = new DateTime(new Date());
+        
+        when(user.getStatus()).thenReturn("ACTIVE");
+        when(user.getCreated()).thenReturn(createdOn);
+        when(user.getId()).thenReturn("123");
+        when(userProfile.getEmail()).thenReturn("email@email.com");
+        when(userProfile.getFirstName()).thenReturn("firstName");
+        when(userProfile.getLastName()).thenReturn("lastName");
+        
+        userProfileUnmapped.put(OktaAccount.STATUS, "ENABLED");
+        userProfileUnmapped.put(OktaAccount.ROLES, "DEVELOPER, ADMIN");
+
+        // Signatures and encrypted values (including attributes) are tested in more depth in other tests
+        // These are basic values from the Stormpath userProfile
+        OktaAccount account = new OktaAccount(STUDY_ID, SUBPOP_GUIDS, user, userProfile, encryptors);
+        assertEquals(userProfile, account.getUserProfile());
+        assertEquals(user, account.getUser());
+        assertEquals(STUDY_ID, account.getStudyIdentifier());
+        assertEquals("email@email.com", account.getEmail());
+        assertEquals("firstName", account.getFirstName());
+        assertEquals("lastName", account.getLastName());
+        assertEquals(Sets.newHashSet(Roles.DEVELOPER,Roles.ADMIN), account.getRoles());
+        assertEquals("123", account.getId());
+        assertEquals(createdOn.getMillis(), account.getCreatedOn().getMillis());
+        assertEquals(AccountStatus.ENABLED, account.getStatus());
+        
+        account.setFirstName("New First Name");
+        account.setLastName("New Last Name");
+        account.setEmail("email2@email.com");
+        account.setStatus(AccountStatus.DISABLED);
+        account.setRoles(Sets.newHashSet(Roles.ADMIN));
+        
+        UserProfile updatedAcct = account.getUserProfile();
+        verify(updatedAcct).setFirstName("New First Name");
+        verify(updatedAcct).setLastName("New Last Name");
+        verify(updatedAcct).setEmail("email2@email.com");
+        
+        assertEquals("DISABLED", userProfileUnmapped.get(OktaAccount.STATUS));
+        assertEquals("ADMIN", userProfileUnmapped.get(OktaAccount.ROLES));
+    }
+    
+    private void verifyOneConsentStream(SubpopulationGuid guid, ConsentSignature sig1)
+            throws IOException, JsonParseException, JsonMappingException {
+        Integer version = (Integer)userProfileUnmapped.get(guid.getGuid()+"_consent_signatures_version");
+        assertEquals(new Integer(2), version);
+        
+        // The mock implementation of customData prefixes stuff... we'll unprefix it and parse it into JSON 
+        String contentJson = (String)userProfileUnmapped.get(guid.getGuid()+"_consent_signatures");
+        assertTrue(contentJson.startsWith("encrypted-2-"));
+        
+        String json = contentJson.substring("encrypted-2-".length(), contentJson.length());
+        
+        List<ConsentSignature> returnedSignatures = BridgeObjectMapper.get().readValue(json, CONSENT_SIGNATURES_TYPE);
+        assertEquals(sig1, returnedSignatures.get(0));
+    }
+
+}

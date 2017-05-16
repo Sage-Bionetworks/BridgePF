@@ -61,7 +61,7 @@ public class ConsentService {
     final void setConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.consentTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-    @Resource(name="stormpathAccountDao")
+    @Resource(name="oktaAccountDao")
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }

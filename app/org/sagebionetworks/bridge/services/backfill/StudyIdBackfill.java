@@ -4,6 +4,8 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.util.Iterator;
 
+import javax.annotation.Resource;
+
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -34,7 +36,7 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
         this.studyService = studyService;
     }
     
-    @Autowired
+    @Resource(name = "oktaAccountDao")
     public void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao; 
     }

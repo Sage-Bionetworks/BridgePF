@@ -24,6 +24,9 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.okta.sdk.clients.AuthApiClient;
+import com.okta.sdk.clients.UserApiClient;
+import com.okta.sdk.framework.ApiClientConfiguration;
 import com.stormpath.sdk.api.ApiKey;
 import com.stormpath.sdk.api.ApiKeys;
 import com.stormpath.sdk.application.Application;
@@ -102,6 +105,22 @@ public class BridgeSpringConfig {
     @Bean(name = "redisProviders")
     public List<String> redisProviders() {
         return Lists.newArrayList("REDISCLOUD_URL", "REDISTOGO_URL");
+    }
+    
+    @Bean(name = "oktaAuthApiClient")
+    @Resource(name = "bridgeConfig")
+    public AuthApiClient oktaAuthApiClient(BridgeConfig bridgeConfig) {
+        ApiClientConfiguration config = new ApiClientConfiguration(bridgeConfig.get("okta.host.url"),
+                bridgeConfig.get("okta.dev.key"));
+        return new AuthApiClient(config);
+    }
+    
+    @Bean(name = "oktaUserApiClient")
+    @Resource(name = "bridgeConfig")
+    public UserApiClient oktaUserApiClient(BridgeConfig bridgeConfig) {
+        ApiClientConfiguration config = new ApiClientConfiguration(bridgeConfig.get("okta.host.url"),
+                bridgeConfig.get("okta.dev.key"));
+        return new UserApiClient(config);
     }
     
     @Bean(name = "bridgeObjectMapper")

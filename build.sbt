@@ -63,6 +63,8 @@ libraryDependencies ++= Seq(
   "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.RC9.2",
   "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.RC9.2",
   "org.apache.httpcomponents" % "httpclient" % "4.5",
+  // Okta
+  "com.okta" % "okta-sdk" % "0.0.4",
   // Redis
   "redis.clients" % "jedis" % "2.7.2",
   // PDF, HTML

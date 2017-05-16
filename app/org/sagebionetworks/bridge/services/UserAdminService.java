@@ -7,6 +7,8 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope.NO_S
 
 import java.util.Set;
 
+import javax.annotation.Resource;
+
 import org.apache.commons.lang3.StringUtils;
 
 import org.sagebionetworks.bridge.Roles;
@@ -55,7 +57,7 @@ public class UserAdminService {
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
     }
-    @Autowired
+    @Resource(name = "oktaAccountDao")
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }

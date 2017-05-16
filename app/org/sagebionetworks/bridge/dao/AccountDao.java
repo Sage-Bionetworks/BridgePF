@@ -67,7 +67,7 @@ public interface AccountDao {
      * Create an account. The account object should initially be retrieved from the 
      * constructAccount() factory method.
      */
-    void createAccount(Study study, Account account, boolean suppressEmail);
+    void createAccount(Study study, Account account, boolean sendVerifyEmail);
     
     /**
      * Save account changes. Account should have been retrieved from the getAccount() method 
@@ -91,7 +91,7 @@ public interface AccountDao {
     /**
      * Delete an account along with the authentication credentials.
      */
-    void deleteAccount(Study study, String email);
+    void deleteAccount(Study study, String userId);
     
     /**
      * Get all account summaries in all studies in a given environment.
@@ -109,7 +109,7 @@ public interface AccountDao {
      * @param study
      *      retrieve participants in this study
      * @param offsetBy
-     *      index to start the next page of records
+     *      a key to start the next page of records
      * @param pageSize
      *      number of records to return (or the number of remaining records if less than the pageSize).
      * @param emailFilter
@@ -122,11 +122,12 @@ public interface AccountDao {
      *      a paged resource list that includes the page of account summaries, as well as other information 
      *      about the request and the total number of records.
      */
-    PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize,
+    PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, String offsetBy, int pageSize,
             String emailFilter, DateTime startDate, DateTime endDate);
     
     /**
-     * For MailChimp, and other external systems, we need a way to get a healthCode for a given email.
+     * For MailChimp, and other external systems, we need a way to get a healthCode for a given email. Should return
+     * null if the email is not an account in the study.
      */
     String getHealthCodeForEmail(Study study, String email);
 }

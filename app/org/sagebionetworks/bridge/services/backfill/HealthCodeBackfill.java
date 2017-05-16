@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.services.backfill;
 
 import java.util.Iterator;
 
+import javax.annotation.Resource;
+
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.backfill.BackfillTask;
@@ -19,7 +21,7 @@ public class HealthCodeBackfill extends AsyncBackfillTemplate {
     private AccountDao accountDao;
     private StudyService studyService;
 
-    @Autowired
+    @Resource(name = "oktaAccountDao")
     public void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }

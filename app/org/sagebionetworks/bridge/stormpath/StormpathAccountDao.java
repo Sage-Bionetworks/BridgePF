@@ -154,10 +154,15 @@ public class StormpathAccountDao implements AccountDao {
     }
 
     @Override
-    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize,
+    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, String offsetBy, int pageSize,
             String emailFilter, DateTime startDate, DateTime endDate) {
         checkNotNull(study);
-        checkArgument(offsetBy >= 0);
+        
+        int offset = 0;
+        if (offsetBy != null) {
+            offset = Integer.parseInt(offsetBy);
+        }
+        checkArgument(offset >= 0);
         checkArgument(pageSize >= API_MINIMUM_PAGE_SIZE && pageSize <= API_MAXIMUM_PAGE_SIZE);
 
         DateTime startDateParam = (startDate == null) ? DISTANT_PAST : startDate;
@@ -175,7 +180,7 @@ public class StormpathAccountDao implements AccountDao {
         
         AccountCriteria criteria = Accounts.criteria()
                 .add(Accounts.createdAt().in(startDateParam.toDate(), inclusiveEndDate.toDate()))
-                .limitTo(pageSize).offsetBy(offsetBy).orderByEmail();
+                .limitTo(pageSize).offsetBy(offset).orderByEmail();
         if (isNotBlank(emailFilter)) {
             criteria = criteria.add(Accounts.email().containsIgnoreCase(emailFilter));
         }
@@ -192,10 +197,12 @@ public class StormpathAccountDao implements AccountDao {
                 results.add(AccountSummary.create(study.getStudyIdentifier(), acct));
             }
         }
-        return new PagedResourceList<AccountSummary>(results, offsetBy, pageSize, accts.getSize())
+        // TODO: offsetBy is never int now, change the constructor and clean up withFilter() calls.
+        return new PagedResourceList<AccountSummary>(results, null, pageSize, accts.getSize())
                 .withFilter("emailFilter", emailFilter)
                 .withFilter("startDate", startDate)
-                .withFilter("endDate", endDate);
+                .withFilter("endDate", endDate)
+                .withFilter("offsetBy", offsetBy);
     }
     
     @Override

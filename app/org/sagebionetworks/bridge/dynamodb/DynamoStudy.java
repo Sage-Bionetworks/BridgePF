@@ -407,12 +407,12 @@ public final class DynamoStudy implements Study {
     @Override
     public int hashCode() {
         return Objects.hash(identifier, minAgeOfConsent, name, sponsorName, supportEmail, technicalEmail,
-                consentNotificationEmail, stormpathHref, version, profileAttributes, taskIdentifiers, dataGroups,
-                passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, active, strictUploadValidationEnabled,
-                healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled,
-                externalIdRequiredOnSignup, minSupportedAppVersions, synapseDataAccessTeamId, synapseProjectId,
-                usesCustomExportSchedule, pushNotificationARNs, disableExport, emailSignInTemplate,
-                emailSignInEnabled);
+                consentNotificationEmail, stormpathHref, version, profileAttributes, taskIdentifiers,
+                dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, active,
+                strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
+                externalIdValidationEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
+                synapseDataAccessTeamId, synapseProjectId, usesCustomExportSchedule, pushNotificationARNs,
+                disableExport, emailSignInTemplate, emailSignInEnabled);
     }
 
     @Override
@@ -425,16 +425,14 @@ public final class DynamoStudy implements Study {
 
         return (Objects.equals(identifier, other.identifier) && Objects.equals(supportEmail, other.supportEmail)
                 && Objects.equals(minAgeOfConsent, other.minAgeOfConsent) && Objects.equals(name, other.name)
-                && Objects.equals(stormpathHref, other.stormpathHref)
+                && Objects.equals(stormpathHref, other.stormpathHref)  
                 && Objects.equals(passwordPolicy, other.passwordPolicy) && Objects.equals(active, other.active))
                 && Objects.equals(verifyEmailTemplate, other.verifyEmailTemplate)
                 && Objects.equals(consentNotificationEmail, other.consentNotificationEmail)
                 && Objects.equals(resetPasswordTemplate, other.resetPasswordTemplate)
-                && Objects.equals(version, other.version)
-                && Objects.equals(profileAttributes, other.profileAttributes)
+                && Objects.equals(version, other.version) && Objects.equals(profileAttributes, other.profileAttributes)
                 && Objects.equals(taskIdentifiers, other.taskIdentifiers)
-                && Objects.equals(dataGroups, other.dataGroups)
-                && Objects.equals(sponsorName, other.sponsorName)
+                && Objects.equals(dataGroups, other.dataGroups) && Objects.equals(sponsorName, other.sponsorName)
                 && Objects.equals(synapseDataAccessTeamId, other.synapseDataAccessTeamId)
                 && Objects.equals(synapseProjectId, other.synapseProjectId)
                 && Objects.equals(technicalEmail, other.technicalEmail)

@@ -24,6 +24,11 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.okta.sdk.framework.PagedResults;
+import com.okta.sdk.models.users.User;
+import com.okta.sdk.models.users.UserProfile;
+import com.stormpath.sdk.account.AccountStatus;
+
 import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
@@ -66,6 +71,7 @@ import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.okta.OktaAccount;
 import org.sagebionetworks.bridge.play.modules.BridgeProductionSpringContextModule;
 import org.sagebionetworks.bridge.play.modules.BridgeTestSpringContextModule;
 import org.sagebionetworks.bridge.runnable.FailableRunnable;
@@ -515,5 +521,27 @@ public class TestUtils {
         String devPart = BridgeConfigFactory.getConfig().getUser();
         String rndPart = TestUtils.randomName(cls);
         return String.format("bridge-testing+%s-%s@sagebase.org", devPart, rndPart);
+    }
+    
+    @SuppressWarnings("unchecked")
+    public static PagedResults<User> makeOktaPagedResults(int startingCount, boolean isLast) {
+        PagedResults<User> results = mock(PagedResults.class);
+        when(results.getResult()).thenReturn(makeOktaUserList(startingCount));
+        when(results.isLastPage()).thenReturn(isLast);
+        return results;
+    }
+    
+    public static List<User> makeOktaUserList(int startingCount) {
+        List<User> list = Lists.newArrayListWithCapacity(3);
+        for (int i=0; i < 3; i++) {
+            UserProfile userProfile = new UserProfile();
+            
+            userProfile.setFirstName("User #" + (startingCount+i));
+            userProfile.getUnmapped().put(OktaAccount.STATUS, AccountStatus.ENABLED.name());
+            User user = new User();
+            user.setProfile(userProfile);
+            list.add(user);
+        }
+        return list;
     }
  }

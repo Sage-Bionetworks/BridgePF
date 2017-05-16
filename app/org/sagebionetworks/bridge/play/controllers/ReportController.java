@@ -4,6 +4,9 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+
+import javax.annotation.Resource;
+
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import org.joda.time.LocalDate;
@@ -50,16 +53,16 @@ import play.mvc.Result;
 @Controller
 public class ReportController extends BaseController {
     
-    @Autowired
     ReportService reportService;
     
-    @Autowired
     AccountDao accountDao;
     
+    @Autowired
     final void setReportService(ReportService reportService) {
         this.reportService = reportService;
     }
     
+    @Resource(name = "oktaAccountDao")
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }

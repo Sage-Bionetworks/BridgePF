@@ -92,7 +92,14 @@ public class BridgeConstants {
     
     public static final String STORMPATH_ACCOUNT_BASE_HREF = "https://enterprise.stormpath.io/v1/accounts/";
     
+    /** Stormpath does not allow given/family name to be empty, this is the placeholder value we use instead. */
     public static final String STORMPATH_NAME_PLACEHOLDER_STRING = "<EMPTY>";
+    
+    /**
+     * Okta does not allow first/last name to be empty (or an HTML tag-like string), this is the placeholder value we
+     * use instead.
+     */
+    public static final String OKTA_NAME_PLACEHOLDER_STRING = "__EMPTY__";
     
     public static final String TEST_USER_GROUP = "test_user";
     

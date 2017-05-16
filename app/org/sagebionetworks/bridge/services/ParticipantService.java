@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Resource;
+
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
@@ -87,7 +89,7 @@ public class ParticipantService {
 
     private ScheduledActivityService scheduledActivityService;
 
-    @Autowired
+    @Resource(name = "oktaAccountDao")
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
@@ -195,12 +197,9 @@ public class ParticipantService {
         return builder.build();
     }
 
-    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize,
+    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, String offsetBy, int pageSize,
             String emailFilter, DateTime startDate, DateTime endDate) {
         checkNotNull(study);
-        if (offsetBy < 0) {
-            throw new BadRequestException("offsetBy cannot be less than 0");
-        }
         // Just set a sane upper limit on this.
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);

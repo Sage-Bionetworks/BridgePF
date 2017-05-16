@@ -7,6 +7,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
@@ -176,7 +177,7 @@ public class ParticipantControllerTest {
         
         when(authService.getSession(eq(study), any())).thenReturn(session);
         
-        when(mockParticipantService.getPagedAccountSummaries(eq(study), anyInt(), anyInt(), any(), any(), any())).thenReturn(page);
+        when(mockParticipantService.getPagedAccountSummaries(eq(study), anyString(), anyInt(), any(), any(), any())).thenReturn(page);
         
         controller.setParticipantService(mockParticipantService);
         controller.setStudyService(mockStudyService);
@@ -211,7 +212,7 @@ public class ParticipantControllerTest {
         
         // DateTime instances don't seem to be equal unless you use the library's equality methods, which
         // verification does not do. So capture and compare that way.
-        verify(mockParticipantService).getPagedAccountSummaries(eq(study), eq(10), eq(20), eq("foo"),
+        verify(mockParticipantService).getPagedAccountSummaries(eq(study), eq("10"), eq(20), eq("foo"),
                 startTimeCaptor.capture(), endTimeCaptor.capture());
         assertEquals(start.toString(), startTimeCaptor.getValue().toString());
         assertEquals(end.toString(), endTimeCaptor.getValue().toString());
@@ -222,7 +223,7 @@ public class ParticipantControllerTest {
         controller.getParticipants("asdf", "qwer", null, null, null);
         
         // paging with defaults
-        verify(mockParticipantService).getPagedAccountSummaries(study, 0, API_DEFAULT_PAGE_SIZE, null, null, null);
+        verify(mockParticipantService).getPagedAccountSummaries(study, "0", API_DEFAULT_PAGE_SIZE, null, null, null);
     }
 
     @Test
@@ -303,7 +304,7 @@ public class ParticipantControllerTest {
         controller.getParticipants(null, null, null, null, null);
 
         // paging with defaults
-        verify(mockParticipantService).getPagedAccountSummaries(study, 0, API_DEFAULT_PAGE_SIZE, null, null, null);
+        verify(mockParticipantService).getPagedAccountSummaries(study, null, API_DEFAULT_PAGE_SIZE, null, null, null);
     }
     
     @Test

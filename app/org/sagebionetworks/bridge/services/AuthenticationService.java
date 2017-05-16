@@ -4,6 +4,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 
+import javax.annotation.Resource;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -29,7 +31,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.services.email.EmailSignInEmailProvider;
+import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.validators.EmailValidator;
 import org.sagebionetworks.bridge.validators.EmailVerificationValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
@@ -76,7 +78,7 @@ public class AuthenticationService {
     final void setOptionsService(ParticipantOptionsService optionsService) {
         this.optionsService = optionsService;
     }
-    @Autowired
+    @Resource(name = "oktaAccountDao")
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
@@ -121,7 +123,11 @@ public class AuthenticationService {
         cacheProvider.setString(cacheKey, token, SESSION_SIGNIN_TIMEOUT);
         
         // email the user the token
-        EmailSignInEmailProvider provider = new EmailSignInEmailProvider(study, signIn.getEmail(), token);
+        BasicEmailProvider provider = new BasicEmailProvider.Builder()
+                .withStudy(study)
+                .withRecipientEmail(signIn.getEmail())
+                .withToken("token", token)
+                .build();
         sendMailService.sendEmail(provider);
     }
     
