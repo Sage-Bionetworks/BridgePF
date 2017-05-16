@@ -249,4 +249,22 @@ public class AccountWorkflowServiceTest {
         verify(mockCacheProvider, never()).removeString("sptoken:api");
         verify(mockAccountDao, never()).changePassword(mockAccount, "newPassword");
     }
+    
+    @Test
+    public void resetPasswordInvalidAccount() {
+        when(mockCacheProvider.getString("sptoken:api")).thenReturn(EMAIL);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        when(mockAccountDao.getAccountWithEmail(study, EMAIL)).thenReturn(null);
+
+        PasswordReset passwordReset = new PasswordReset("newPassword", "sptoken", TEST_STUDY_IDENTIFIER);
+        
+        try {
+            service.resetPassword(passwordReset);
+            fail("Should have thrown an exception");
+        } catch(EntityNotFoundException e) {
+        }
+        verify(mockCacheProvider).getString("sptoken:api");
+        verify(mockCacheProvider).removeString("sptoken:api");
+        verify(mockAccountDao, never()).changePassword(mockAccount, "newPassword");
+    }
 }

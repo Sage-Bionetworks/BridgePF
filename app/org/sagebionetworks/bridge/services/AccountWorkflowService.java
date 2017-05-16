@@ -88,10 +88,8 @@ public class AccountWorkflowService {
     
     /**
      * Send email verification token as part of creating an account that requires an email address be
-     * verified. We assume that an account has been created (that is not verified in this method).
-     * @param study
-     * @param userId
-     * @param email
+     * verified. We assume that an account has been created and that email verification should be sent
+     * (neither is verified in this method).
      */
     public void sendEmailVerificationToken(Study study, String userId, String email) {
         checkNotNull(study);
@@ -113,7 +111,10 @@ public class AccountWorkflowService {
         sendMailService.sendEmail(provider);         
     }
     
-    
+    /**
+     * Send another email verification token. This creates and sends a new verification token 
+     * starting with the user's email address.
+     */
     public void resendEmailVerificationToken(StudyIdentifier studyIdentifier, Email email) {
         checkNotNull(studyIdentifier);
         checkNotNull(email);
@@ -125,6 +126,11 @@ public class AccountWorkflowService {
         }
     }
     
+    /**
+     * Using the verification token that was sent to the user, verify the email address. 
+     * If the token is invalid, it fails quietly. If the token exists but the account 
+     * does not, it throws an exception (this would be unexpected).
+     */
     public void verifyEmail(EmailVerification verification) {
         checkNotNull(verification);
 
@@ -141,6 +147,12 @@ public class AccountWorkflowService {
         }
     }
     
+    /**
+     * Request that a token be sent to the user's email address that can be used to 
+     * submit a password change to the server. This method will fail silently if 
+     * the email does not map to an account, in order to prevent account enumeration 
+     * attacks.
+     */
     public void requestResetPassword(Study study, Email email) {
         checkNotNull(study);
         checkNotNull(email);
@@ -165,6 +177,11 @@ public class AccountWorkflowService {
         }
     }
 
+    /**
+     * Use a supplied password reset token to change the password on an account. If the supplied 
+     * token is not valid, this method throws an exception. If the token is valid but the account 
+     * does not exist, an exception is also thrown (this would be unusual).
+     */
     public void resetPassword(PasswordReset passwordReset) {
         checkNotNull(passwordReset);
         
@@ -178,9 +195,10 @@ public class AccountWorkflowService {
         
         Study study = studyService.getStudy(passwordReset.getStudyIdentifier());
         Account account = accountDao.getAccountWithEmail(study, email);
-        if (account != null) {
-            accountDao.changePassword(account, passwordReset.getPassword());
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
         }
+        accountDao.changePassword(account, passwordReset.getPassword());
     }
 
     private void saveVerification(String sptoken, VerificationData data) {
