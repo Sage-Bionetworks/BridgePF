@@ -417,8 +417,8 @@ public class StudyService {
         
         checkViolationConstraints(study);
         
-        // And this cannot be set unless you're an administrator. Regardless of what the
-        // developer set, set these back to the original study.
+        // A number of fields can only be set by an administrator. We set these to their existing values if the 
+        // caller is not an admin.
         if (!isAdminUpdate) {
             // prevent non-admins update a deactivated study
             if (!originalStudy.isActive()) {
@@ -429,6 +429,7 @@ public class StudyService {
             study.setExternalIdValidationEnabled(originalStudy.isExternalIdValidationEnabled());
             study.setExternalIdRequiredOnSignup(originalStudy.isExternalIdRequiredOnSignup());
             study.setEmailSignInEnabled(originalStudy.isEmailSignInEnabled());
+            study.setEvaluationStudy(originalStudy.isEvaluationStudy());
         }
 
         // prevent anyone changing active to false -- it should be done by deactivateStudy() method

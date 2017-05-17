@@ -95,6 +95,13 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     void setSynapseProjectId(String projectId);
 
     /**
+     * This study is for evaluation purposes. We limit the total number of accounts that can be 
+     * created in an evaluation study. 
+     */
+    boolean isEvaluationStudy();
+    void setEvaluationStudy(boolean isEvaluationStudy);
+    
+    /**
      * The email address for a technical contact who can coordinate with the Bridge Server team on 
      * issues related either to client development or hand-offs of the study data through the 
      * Bridge server. This can be a comma-separated list of email addresses.

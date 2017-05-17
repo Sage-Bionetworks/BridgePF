@@ -38,6 +38,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
@@ -52,9 +53,12 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.exceptions.LimitExceededException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
+import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
@@ -163,6 +167,9 @@ public class ParticipantServiceTest {
     @Mock
     private ScheduledActivityService scheduledActivityService;
     
+    @Mock
+    private PagedResourceList<AccountSummary> accountSummaries;
+    
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
     
@@ -194,6 +201,7 @@ public class ParticipantServiceTest {
     public void before() {
         STUDY.setExternalIdValidationEnabled(false);
         STUDY.setExternalIdRequiredOnSignup(false);
+        STUDY.setEvaluationStudy(false);
         participantService = new ParticipantService();
         participantService.setAccountDao(accountDao);
         participantService.setParticipantOptionsService(optionsService);
@@ -849,6 +857,37 @@ public class ParticipantServiceTest {
         // Submitting same value again with validation does nothing
         verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
         verifyNotSetAsOption();
+    }
+
+    @Test
+    public void limitNotExceededException() {
+        mockHealthCodeAndAccountRetrieval();
+        STUDY.setEvaluationStudy(true);
+        when(accountSummaries.getTotal()).thenReturn(BridgeConstants.MAX_USERS_IN_EVAL_STUDY-1);
+        when(accountDao.getPagedAccountSummaries(STUDY, 0, BridgeConstants.MAX_USERS_IN_EVAL_STUDY, null, null, null))
+                .thenReturn(accountSummaries);
+        
+        participantService.createParticipant(STUDY,  CALLER_ROLES, PARTICIPANT, false);
+    }
+    
+    @Test(expected = LimitExceededException.class)
+    public void throwLimitExceededExactlyException() {
+        STUDY.setEvaluationStudy(true);
+        when(accountSummaries.getTotal()).thenReturn(BridgeConstants.MAX_USERS_IN_EVAL_STUDY);
+        when(accountDao.getPagedAccountSummaries(STUDY, 0, BridgeConstants.MAX_USERS_IN_EVAL_STUDY, null, null, null))
+                .thenReturn(accountSummaries);
+        
+        participantService.createParticipant(STUDY,  CALLER_ROLES, PARTICIPANT, false);
+    }
+    
+    @Test(expected = LimitExceededException.class)
+    public void throwLimitExceededException() {
+        STUDY.setEvaluationStudy(true);
+        when(accountSummaries.getTotal()).thenReturn(BridgeConstants.MAX_USERS_IN_EVAL_STUDY+3);
+        when(accountDao.getPagedAccountSummaries(STUDY, 0, BridgeConstants.MAX_USERS_IN_EVAL_STUDY, null, null, null))
+                .thenReturn(accountSummaries);
+        
+        participantService.createParticipant(STUDY,  CALLER_ROLES, PARTICIPANT, false);
     }
     
     private void verifyStatusCreate(Set<Roles> callerRoles) {

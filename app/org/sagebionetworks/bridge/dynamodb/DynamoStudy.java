@@ -52,6 +52,7 @@ public final class DynamoStudy implements Study {
     private boolean externalIdValidationEnabled;
     private boolean emailSignInEnabled;
     private boolean externalIdRequiredOnSignup;
+    private boolean evaluationStudy;
     private Map<String, Integer> minSupportedAppVersions;
     private Map<String, String> pushNotificationARNs;
     private boolean disableExport;
@@ -403,6 +404,16 @@ public final class DynamoStudy implements Study {
     public void setExternalIdRequiredOnSignup(boolean externalIdRequiredOnSignup) {
         this.externalIdRequiredOnSignup = externalIdRequiredOnSignup;
     }
+    
+    @Override
+    public boolean isEvaluationStudy() {
+        return evaluationStudy;
+    };
+    
+    @Override
+    public void setEvaluationStudy(boolean evaluationStudy) {
+        this.evaluationStudy = evaluationStudy;
+    }
 
     @Override
     public int hashCode() {
@@ -412,7 +423,7 @@ public final class DynamoStudy implements Study {
                 healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled,
                 externalIdRequiredOnSignup, minSupportedAppVersions, synapseDataAccessTeamId, synapseProjectId,
                 usesCustomExportSchedule, pushNotificationARNs, disableExport, emailSignInTemplate,
-                emailSignInEnabled);
+                emailSignInEnabled, evaluationStudy);
     }
 
     @Override
@@ -448,7 +459,8 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(pushNotificationARNs, other.pushNotificationARNs)
                 && Objects.equals(disableExport, other.disableExport)
                 && Objects.equals(emailSignInTemplate, other.emailSignInTemplate)
-                && Objects.equals(emailSignInEnabled, other.emailSignInEnabled);
+                && Objects.equals(emailSignInEnabled, other.emailSignInEnabled)
+                && Objects.equals(evaluationStudy, other.evaluationStudy);
     }
 
     @Override
@@ -461,13 +473,13 @@ public final class DynamoStudy implements Study {
                         + "strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, emailVerificationEnabled=%s, "
                         + "externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, minSupportedAppVersions=%s, "
                         + "usesCustomExportSchedule=%s, pushNotificationARNs=%s], "
-                        + "disableExport=%s, emailSignInTemplate=%s, emailSignInEnabled=%s]",
+                        + "disableExport=%s, emailSignInTemplate=%s, emailSignInEnabled=%s, evaluationStudy=%s]",
                 name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, supportEmail,
                 synapseDataAccessTeamId, synapseProjectId, technicalEmail, consentNotificationEmail, version,
                 profileAttributes, taskIdentifiers, dataGroups, passwordPolicy, verifyEmailTemplate,
                 resetPasswordTemplate, strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
                 externalIdValidationEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
                 usesCustomExportSchedule, pushNotificationARNs, disableExport, emailSignInTemplate,
-                emailSignInEnabled);
+                emailSignInEnabled, evaluationStudy);
     }
 }
