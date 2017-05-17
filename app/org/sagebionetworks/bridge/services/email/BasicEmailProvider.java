@@ -46,11 +46,7 @@ public class BasicEmailProvider implements MimeTypeEmailProvider {
     
     @Override
     public MimeTypeEmail getMimeTypeEmail() throws MessagingException {
-        tokenMap.put("studyName", study.getName());
-        tokenMap.put("studyId", study.getIdentifier());
-        tokenMap.put("supportEmail", study.getSupportEmail());
-        tokenMap.put("technicalEmail", study.getTechnicalEmail());
-        tokenMap.put("sponsorName", study.getSponsorName());
+        tokenMap.putAll(BridgeUtils.studyTemplateVariables(study));
         tokenMap.put("host", BridgeConfigFactory.getConfig().getHostnameWithPostfix("webservices"));
         
         final MimeTypeEmailBuilder builder = new MimeTypeEmailBuilder();
@@ -100,6 +96,7 @@ public class BasicEmailProvider implements MimeTypeEmailProvider {
         public BasicEmailProvider build() {
             checkNotNull(study);
             checkNotNull(template);
+            
             return new BasicEmailProvider(study, tokenMap, recipientEmails, template);
         }
     }

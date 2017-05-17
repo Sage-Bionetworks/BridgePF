@@ -53,7 +53,6 @@ import org.xhtmlrenderer.pdf.ITextRenderer;
 import org.xhtmlrenderer.util.XRRuntimeException;
 
 import com.fasterxml.jackson.core.util.ByteArrayBuilder;
-import com.google.common.collect.Maps;
 import com.lowagie.text.DocumentException;
 
 @Component
@@ -250,17 +249,9 @@ public class StudyConsentService {
     }
     
     private void publishFormatsToS3(Study study, SubpopulationGuid subpopGuid, String bodyTemplate) throws DocumentException, IOException {
-        Map<String,String> map = Maps.newHashMap();
-        String escapedStudyName = XML_ESCAPER.translate(study.getName());
-        
-        map.put("studyName", escapedStudyName);
-        map.put("supportEmail", XML_ESCAPER.translate(study.getSupportEmail()));
-        map.put("technicalEmail", XML_ESCAPER.translate(study.getTechnicalEmail()));
-        map.put("sponsorName", XML_ESCAPER.translate(study.getSponsorName()));
+        Map<String,String> map = BridgeUtils.studyTemplateVariables(study, (value) -> XML_ESCAPER.translate(value));
         String resolvedHTML = BridgeUtils.resolveTemplate(bodyTemplate, map);
 
-        map = Maps.newHashMap();
-        map.put("studyName", escapedStudyName);
         map.put("consent.body", resolvedHTML);
         resolvedHTML = BridgeUtils.resolveTemplate(fullPageTemplate, map);
         
