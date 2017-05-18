@@ -289,7 +289,7 @@ public class StudyServiceTest {
         study.setStrictUploadValidationEnabled(false);
         study.setEmailVerificationEnabled(false);
         study.setEmailSignInEnabled(true);
-        study.setEvaluationStudy(true);
+        study.setAccountLimit(15);
         
         study = studyService.createStudy(study);
         // These are set to the defaults.
@@ -299,7 +299,7 @@ public class StudyServiceTest {
         assertTrue(study.isStrictUploadValidationEnabled());
         assertTrue(study.isEmailVerificationEnabled());
         assertFalse(study.isEmailSignInEnabled());
-        assertTrue(study.isEvaluationStudy());
+        assertEquals(15, study.getAccountLimit());
         
         // Researchers cannot change theseOkay, now that these are set, researchers cannot change them. Except setting active 
         // to false, which is a logical delete that throws a BadRequestException
@@ -308,7 +308,7 @@ public class StudyServiceTest {
         study.setExternalIdValidationEnabled(false);
         study.setExternalIdRequiredOnSignup(false);
         study.setEmailSignInEnabled(true);
-        study.setEvaluationStudy(false);
+        study.setAccountLimit(0);
         study = studyService.updateStudy(study, false); // nope
         
         // These have not changed:
@@ -317,7 +317,7 @@ public class StudyServiceTest {
         assertTrue(study.isExternalIdValidationEnabled());
         assertTrue(study.isExternalIdRequiredOnSignup());
         assertFalse(study.isEmailSignInEnabled());
-        assertTrue(study.isEvaluationStudy());
+        assertEquals(15, study.getAccountLimit());
         
         // But administrators can change these
         study.setHealthCodeExportEnabled(false);
@@ -325,7 +325,7 @@ public class StudyServiceTest {
         study.setExternalIdValidationEnabled(false);
         study.setExternalIdRequiredOnSignup(false);
         study.setEmailSignInEnabled(true);
-        study.setEvaluationStudy(false);
+        study.setAccountLimit(0);
         study = studyService.updateStudy(study, true); // yep
         
         assertFalse(study.isHealthCodeExportEnabled());
@@ -333,7 +333,7 @@ public class StudyServiceTest {
         assertFalse(study.isExternalIdValidationEnabled());
         assertFalse(study.isExternalIdRequiredOnSignup());
         assertTrue(study.isEmailSignInEnabled());
-        assertFalse(study.isEvaluationStudy());
+        assertEquals(0, study.getAccountLimit());
     }
     
     @Test(expected=InvalidEntityException.class)

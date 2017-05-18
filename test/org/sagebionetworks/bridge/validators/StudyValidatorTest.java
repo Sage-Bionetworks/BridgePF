@@ -233,6 +233,12 @@ public class StudyValidatorTest {
     }
     
     @Test
+    public void cannotSetAccountLimitLessThanZero() {
+        study.setAccountLimit(-100);
+        assertCorrectMessage(study, "accountLimit", "accountLimit must be zero (no limit set) or higher");
+    }
+    
+    @Test
     public void shortListOfDataGroupsOK() {
         study.setDataGroups(Sets.newHashSet("beta_users", "production_users", "testers", "internal"));
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);

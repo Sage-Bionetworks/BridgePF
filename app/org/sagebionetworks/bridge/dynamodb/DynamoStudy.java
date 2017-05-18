@@ -37,6 +37,7 @@ public final class DynamoStudy implements Study {
     private boolean usesCustomExportSchedule;
     private String consentNotificationEmail;
     private int minAgeOfConsent;
+    private int accountLimit;
     private Long version;
     private boolean active;
     private Set<String> profileAttributes;
@@ -52,7 +53,6 @@ public final class DynamoStudy implements Study {
     private boolean externalIdValidationEnabled;
     private boolean emailSignInEnabled;
     private boolean externalIdRequiredOnSignup;
-    private boolean evaluationStudy;
     private Map<String, Integer> minSupportedAppVersions;
     private Map<String, String> pushNotificationARNs;
     private boolean disableExport;
@@ -406,13 +406,13 @@ public final class DynamoStudy implements Study {
     }
     
     @Override
-    public boolean isEvaluationStudy() {
-        return evaluationStudy;
+    public int getAccountLimit() {
+        return accountLimit;
     };
     
     @Override
-    public void setEvaluationStudy(boolean evaluationStudy) {
-        this.evaluationStudy = evaluationStudy;
+    public void setAccountLimit(int accountLimit) {
+        this.accountLimit = accountLimit;
     }
 
     @Override
@@ -423,7 +423,7 @@ public final class DynamoStudy implements Study {
                 healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled,
                 externalIdRequiredOnSignup, minSupportedAppVersions, synapseDataAccessTeamId, synapseProjectId,
                 usesCustomExportSchedule, pushNotificationARNs, disableExport, emailSignInTemplate,
-                emailSignInEnabled, evaluationStudy);
+                emailSignInEnabled, accountLimit);
     }
 
     @Override
@@ -460,7 +460,7 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(disableExport, other.disableExport)
                 && Objects.equals(emailSignInTemplate, other.emailSignInTemplate)
                 && Objects.equals(emailSignInEnabled, other.emailSignInEnabled)
-                && Objects.equals(evaluationStudy, other.evaluationStudy);
+                && Objects.equals(accountLimit, other.accountLimit);
     }
 
     @Override
@@ -472,14 +472,14 @@ public final class DynamoStudy implements Study {
                         + "dataGroups=%s, passwordPolicy=%s, verifyEmailTemplate=%s, resetPasswordTemplate=%s, "
                         + "strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, emailVerificationEnabled=%s, "
                         + "externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, minSupportedAppVersions=%s, "
-                        + "usesCustomExportSchedule=%s, pushNotificationARNs=%s], "
-                        + "disableExport=%s, emailSignInTemplate=%s, emailSignInEnabled=%s, evaluationStudy=%s]",
+                        + "usesCustomExportSchedule=%s, pushNotificationARNs=%s, disableExport=%s, "
+                        + "emailSignInTemplate=%s, emailSignInEnabled=%s, accountLimit=%s]",
                 name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, supportEmail,
                 synapseDataAccessTeamId, synapseProjectId, technicalEmail, consentNotificationEmail, version,
                 profileAttributes, taskIdentifiers, dataGroups, passwordPolicy, verifyEmailTemplate,
                 resetPasswordTemplate, strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
                 externalIdValidationEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
                 usesCustomExportSchedule, pushNotificationARNs, disableExport, emailSignInTemplate,
-                emailSignInEnabled, evaluationStudy);
+                emailSignInEnabled, accountLimit);
     }
 }

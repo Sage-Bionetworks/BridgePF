@@ -201,7 +201,7 @@ public class ParticipantServiceTest {
     public void before() {
         STUDY.setExternalIdValidationEnabled(false);
         STUDY.setExternalIdRequiredOnSignup(false);
-        STUDY.setEvaluationStudy(false);
+        STUDY.setAccountLimit(0);
         participantService = new ParticipantService();
         participantService.setAccountDao(accountDao);
         participantService.setParticipantOptionsService(optionsService);
@@ -862,29 +862,34 @@ public class ParticipantServiceTest {
     @Test
     public void limitNotExceededException() {
         mockHealthCodeAndAccountRetrieval();
-        STUDY.setEvaluationStudy(true);
-        when(accountSummaries.getTotal()).thenReturn(BridgeConstants.MAX_USERS_IN_EVAL_STUDY-1);
-        when(accountDao.getPagedAccountSummaries(STUDY, 0, BridgeConstants.MAX_USERS_IN_EVAL_STUDY, null, null, null))
+        STUDY.setAccountLimit(10);
+        when(accountSummaries.getTotal()).thenReturn(9);
+        when(accountDao.getPagedAccountSummaries(STUDY, 0, BridgeConstants.API_MINIMUM_PAGE_SIZE, null, null, null))
                 .thenReturn(accountSummaries);
         
         participantService.createParticipant(STUDY,  CALLER_ROLES, PARTICIPANT, false);
     }
     
-    @Test(expected = LimitExceededException.class)
+    @Test
     public void throwLimitExceededExactlyException() {
-        STUDY.setEvaluationStudy(true);
-        when(accountSummaries.getTotal()).thenReturn(BridgeConstants.MAX_USERS_IN_EVAL_STUDY);
-        when(accountDao.getPagedAccountSummaries(STUDY, 0, BridgeConstants.MAX_USERS_IN_EVAL_STUDY, null, null, null))
+        STUDY.setAccountLimit(10);
+        when(accountSummaries.getTotal()).thenReturn(10);
+        when(accountDao.getPagedAccountSummaries(STUDY, 0, BridgeConstants.API_MINIMUM_PAGE_SIZE, null, null, null))
                 .thenReturn(accountSummaries);
         
-        participantService.createParticipant(STUDY,  CALLER_ROLES, PARTICIPANT, false);
+        try {
+            participantService.createParticipant(STUDY,  CALLER_ROLES, PARTICIPANT, false);
+            fail("Should have thrown exception");
+        } catch(LimitExceededException e) {
+            assertEquals("While study is in evaluation mode, it may not exceed 10 accounts.", e.getMessage());
+        }
     }
     
     @Test(expected = LimitExceededException.class)
     public void throwLimitExceededException() {
-        STUDY.setEvaluationStudy(true);
-        when(accountSummaries.getTotal()).thenReturn(BridgeConstants.MAX_USERS_IN_EVAL_STUDY+3);
-        when(accountDao.getPagedAccountSummaries(STUDY, 0, BridgeConstants.MAX_USERS_IN_EVAL_STUDY, null, null, null))
+        STUDY.setAccountLimit(10);
+        when(accountSummaries.getTotal()).thenReturn(13);
+        when(accountDao.getPagedAccountSummaries(STUDY, 0, BridgeConstants.API_MINIMUM_PAGE_SIZE, null, null, null))
                 .thenReturn(accountSummaries);
         
         participantService.createParticipant(STUDY,  CALLER_ROLES, PARTICIPANT, false);

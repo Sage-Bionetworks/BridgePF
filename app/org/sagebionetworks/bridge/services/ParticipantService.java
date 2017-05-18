@@ -231,7 +231,7 @@ public class ParticipantService {
         checkNotNull(callerRoles);
         checkNotNull(participant);
         
-        if (study.isEvaluationStudy()) {
+        if (study.getAccountLimit() > 0) {
             throwExceptionIfLimitMetOrExceeded(study);
         }
 
@@ -274,10 +274,12 @@ public class ParticipantService {
     }
 
     private void throwExceptionIfLimitMetOrExceeded(Study study) {
+        // It's sufficient to get one record because the total for this query is all the records that 
+        // match in the database. 
         PagedResourceList<AccountSummary> summaries = getPagedAccountSummaries(study, 0,
-                BridgeConstants.MAX_USERS_IN_EVAL_STUDY, null, null, null);
-        if (summaries.getTotal() >= BridgeConstants.MAX_USERS_IN_EVAL_STUDY) {
-            throw new LimitExceededException(BridgeConstants.MAX_USERS_ERROR);
+                BridgeConstants.API_MINIMUM_PAGE_SIZE, null, null, null);
+        if (summaries.getTotal() >= study.getAccountLimit()) {
+            throw new LimitExceededException(String.format(BridgeConstants.MAX_USERS_ERROR, study.getAccountLimit()));
         }
     }
 

@@ -95,11 +95,13 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     void setSynapseProjectId(String projectId);
 
     /**
-     * This study is for evaluation purposes. We limit the total number of accounts that can be 
-     * created in an evaluation study. 
+     * Set a limit on the number of accounts that can be created for this study. This is intended 
+     * to establish evaluation studies with limited accounts or enrollment. The value should be 
+     * set to 0 for production studies (there is a runtime cost to enforcing this limit). If 
+     * value is zero, no limit is enforced.
      */
-    boolean isEvaluationStudy();
-    void setEvaluationStudy(boolean isEvaluationStudy);
+    int getAccountLimit();
+    void setAccountLimit(int accountLimit);
     
     /**
      * The email address for a technical contact who can coordinate with the Bridge Server team on 

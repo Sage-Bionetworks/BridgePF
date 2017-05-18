@@ -11,10 +11,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 public class BridgeConstants {
-    public static final int MAX_USERS_IN_EVAL_STUDY = 15;
-    
-    public static final String MAX_USERS_ERROR = "While study is in evaluation mode, it may not exceed "
-            + MAX_USERS_IN_EVAL_STUDY + " accounts.";
+    public static final String MAX_USERS_ERROR = "While study is in evaluation mode, it may not exceed %s accounts.";
     
     // Study ID for the test study, used in local tests and most integ tests.
     public static final String API_STUDY_ID_STRING = "api";

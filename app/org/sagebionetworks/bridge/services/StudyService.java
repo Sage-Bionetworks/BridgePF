@@ -429,7 +429,7 @@ public class StudyService {
             study.setExternalIdValidationEnabled(originalStudy.isExternalIdValidationEnabled());
             study.setExternalIdRequiredOnSignup(originalStudy.isExternalIdRequiredOnSignup());
             study.setEmailSignInEnabled(originalStudy.isEmailSignInEnabled());
-            study.setEvaluationStudy(originalStudy.isEvaluationStudy());
+            study.setAccountLimit(originalStudy.getAccountLimit());
         }
 
         // prevent anyone changing active to false -- it should be done by deactivateStudy() method
