@@ -290,7 +290,7 @@ public class BridgeUtils {
                 encoded = URLEncoder.encode(component, "UTF-8");
             } catch (UnsupportedEncodingException e) {
                 // UTF-8 is always supported, so this should never happen. 
-                throw new BadRequestException(e.getMessage());
+                throw new BridgeServiceException(e.getMessage());
             }
         }
         return encoded;

@@ -33,6 +33,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class AccountWorkflowService {
     
     private static final String PASSWORD_RESET_TOKEN_EXPIRED = "Password reset token has expired (or already been used).";
+    private static final String VERIFY_EMAIL_TOKEN_EXPIRED = "Email verification token has expired (or already been used).";
     private static final String RESET_PASSWORD_URL = "%s/mobile/resetPassword.html?study=%s&sptoken=%s";
     private static final String VERIFY_EMAIL_URL = "%s/mobile/verifyEmail.html?study=%s&sptoken=%s";
     private static final String BASE_URL = BridgeConfigFactory.getConfig().get("webservices.url");
@@ -135,16 +136,17 @@ public class AccountWorkflowService {
         checkNotNull(verification);
 
         VerificationData data = restoreVerification(verification.getSptoken());
-        if (data != null) {
-            Study study = studyService.getStudy(data.getStudyId());
-
-            Account account = accountDao.getAccount(study, data.getUserId());
-            if (account == null) {
-                throw new EntityNotFoundException(Account.class);
-            }
-            account.setStatus(AccountStatus.ENABLED);;
-            accountDao.updateAccount(account);
+        if (data == null) {
+            throw new BadRequestException(VERIFY_EMAIL_TOKEN_EXPIRED);
         }
+        Study study = studyService.getStudy(data.getStudyId());
+
+        Account account = accountDao.getAccount(study, data.getUserId());
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
+        account.setStatus(AccountStatus.ENABLED);;
+        accountDao.updateAccount(account);
     }
     
     /**

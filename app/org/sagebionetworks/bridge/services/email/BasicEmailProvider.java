@@ -53,26 +53,26 @@ public class BasicEmailProvider implements MimeTypeEmailProvider {
         tokenMap.put("sponsorName", study.getSponsorName());
         tokenMap.put("host", BridgeConfigFactory.getConfig().getHostnameWithPostfix("webservices"));
         
-        final MimeTypeEmailBuilder builder = new MimeTypeEmailBuilder();
+        final MimeTypeEmailBuilder emailBuilder = new MimeTypeEmailBuilder();
 
         final String formattedSubject = BridgeUtils.resolveTemplate(template.getSubject(), tokenMap);
-        builder.withSubject(formattedSubject);
+        emailBuilder.withSubject(formattedSubject);
 
         Set<String> senderEmails = BridgeUtils.commaListToOrderedSet(study.getSupportEmail());
         String senderEmail = Iterables.getFirst(senderEmails, null);
         final String sendFromEmail = String.format("%s <%s>", study.getName(), senderEmail);
-        builder.withSender(sendFromEmail);
+        emailBuilder.withSender(sendFromEmail);
 
         for (String recipientEmail : recipientEmails) {
-            builder.withRecipient(recipientEmail);    
+            emailBuilder.withRecipient(recipientEmail);    
         }
         final String formattedBody = BridgeUtils.resolveTemplate(template.getBody(), tokenMap);
         
         final MimeBodyPart bodyPart = new MimeBodyPart();
         bodyPart.setContent(formattedBody, template.getMimeType().toString());
-        builder.withMessageParts(bodyPart);
+        emailBuilder.withMessageParts(bodyPart);
         
-        return builder.build();
+        return emailBuilder.build();
     }
 
     public static class Builder {
