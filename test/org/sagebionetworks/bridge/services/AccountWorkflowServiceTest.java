@@ -169,19 +169,13 @@ public class AccountWorkflowServiceTest {
         verify(account).setStatus(AccountStatus.ENABLED);
     }
     
-    @Test
-    public void verifyEmailBadSptokenFailsQuietly() {
+    @Test(expected = BadRequestException.class)
+    public void verifyEmailBadSptokenThrowsException() {
         when(mockCacheProvider.getString(SPTOKEN)).thenReturn(null);
-        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
-        when(mockAccountDao.getAccount(study, "userId")).thenReturn(mockAccount);
         
         EmailVerification verification = new EmailVerification(SPTOKEN);
         
         service.verifyEmail(verification);
-        
-        verify(mockStudyService, never()).getStudy(anyString());
-        verify(mockAccountDao, never()).getAccount(any(), any());
-        verify(mockAccountDao, never()).updateAccount(any());
     }
     
     @Test
