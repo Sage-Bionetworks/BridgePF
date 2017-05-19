@@ -37,18 +37,18 @@ import org.sagebionetworks.bridge.upload.UploadUtil;
 import com.google.common.collect.Lists;
 
 @SuppressWarnings({ "rawtypes", "unchecked" })
-public class SurveyValidatorTest {
+public class SurveySaveValidatorTest {
 
     private Survey survey;
 
-    private SurveyValidator validator;
+    private SurveySaveValidator validator;
 
     @Before
     public void before() {
-        survey = new TestSurvey(SurveyValidatorTest.class, true);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, true);
         // because this is set by the service before validation
         survey.setGuid("AAA");
-        validator = new SurveyValidator();
+        validator = new SurveySaveValidator();
     }
 
     private SurveyInfoScreen createSurveyInfoScreen() {
@@ -95,7 +95,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void preventsDuplicateElementIdentfiers() {
-        survey = new TestSurvey(SurveyValidatorTest.class, true);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, true);
         String identifier = survey.getElements().get(0).getIdentifier();
         survey.getElements().get(1).setIdentifier(identifier);
 
@@ -105,7 +105,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void infoScreenIdentifierRequired() {
-        survey = new TestSurvey(SurveyValidatorTest.class, true);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, true);
         survey.getElements().add(createSurveyInfoScreen());
         SurveyInfoScreen screen = (SurveyInfoScreen) last(survey);
         screen.setIdentifier("");
@@ -115,7 +115,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void infoScreenTitleRequired() {
-        survey = new TestSurvey(SurveyValidatorTest.class, true);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, true);
         survey.getElements().add(createSurveyInfoScreen());
         SurveyInfoScreen screen = (SurveyInfoScreen) last(survey);
         screen.setTitle("");
@@ -125,7 +125,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void infoScreenPromptRequired() {
-        survey = new TestSurvey(SurveyValidatorTest.class, true);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, true);
         survey.getElements().add(createSurveyInfoScreen());
         SurveyInfoScreen screen = (SurveyInfoScreen) last(survey);
         screen.setPrompt("");
@@ -135,7 +135,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void ifPresentAllFieldsOfSurveyScreenImageRequired() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         survey.getElements().add(createSurveyInfoScreen());
         SurveyInfoScreen screen = (SurveyInfoScreen) last(survey);
         screen.setImage(new Image("", 0, 0));
@@ -147,7 +147,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void questionIdentifierRequired() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         survey.getElements().get(0).setIdentifier("");
 
         assertValidatorMessage(validator, survey, "elements[0].identifier", "is required");
@@ -156,7 +156,7 @@ public class SurveyValidatorTest {
     @Test
     public void questionIdentifierInvalid() {
         String fieldName = "**invalid!q##";
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         survey.getElements().get(0).setIdentifier(fieldName);
 
         assertValidatorMessage(validator, survey, "elements[0].identifier",
@@ -165,7 +165,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void questionUiHintRequired() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         survey.getUnmodifiableQuestionList().get(0).setUiHint(null);
 
         assertValidatorMessage(validator, survey, "elements[0].uiHint", "is required");
@@ -173,7 +173,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void questionPromptRequired() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         survey.getUnmodifiableQuestionList().get(0).setPrompt("");
 
         assertValidatorMessage(validator, survey, "elements[0].prompt", "is required");
@@ -181,7 +181,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void questionConstraintsRequired() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         survey.getUnmodifiableQuestionList().get(0).setConstraints(null);
 
         assertValidatorMessage(validator, survey, "elements[0].constraints", "is required");
@@ -193,7 +193,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void constraintDataTypeRequired() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         survey.getUnmodifiableQuestionList().get(0).getConstraints().setDataType(null);
 
         assertValidatorMessage(validator, survey, "elements[0].constraints.dataType", "is required");
@@ -201,7 +201,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void uiHintMustBeSupportedByConstraintsType() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         // Boolean constraints do not jive with lists (which are normally for select multiple)
         survey.getUnmodifiableQuestionList().get(0).setUiHint(UIHint.LIST);
 
@@ -211,7 +211,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void multiValueWithComboboxLimitsConstraints() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
         question.setUiHint(UIHint.COMBOBOX);
         ((MultiValueConstraints) question.getConstraints()).setAllowMultiple(true);
@@ -219,7 +219,7 @@ public class SurveyValidatorTest {
         assertValidatorMessage(validator, survey, "elements[7].constraints.uiHint",
                 "'combobox' is only valid when multiple = false and other = true");
 
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         question = ((TestSurvey) survey).getMultiValueQuestion();
         question.setUiHint(UIHint.COMBOBOX);
         ((MultiValueConstraints) question.getConstraints()).setAllowOther(false);
@@ -230,7 +230,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void multiValueWithMultipleAnswersLimitsConstraints() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
         question.setUiHint(UIHint.SLIDER);
         ((MultiValueConstraints) question.getConstraints()).setAllowMultiple(true);
@@ -241,7 +241,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void multiValueWithOneAnswerLimitsConstraints() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
         question.setUiHint(UIHint.CHECKBOX);
         ((MultiValueConstraints) question.getConstraints()).setAllowMultiple(false);
@@ -258,8 +258,7 @@ public class SurveyValidatorTest {
             SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
             ((MultiValueConstraints) question.getConstraints()).setEnumeration(oneTestCase);
 
-            assertValidatorMessage(validator, survey, "elements[7].constraints.enumeration",
-                    "must have non-null, non-empty choices list");
+            Validate.entityThrowingException(validator, survey);
         }
     }
 
@@ -317,7 +316,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void stringConstraintsMustHaveValidRegularExpressionPattern() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getStringQuestion();
         ((StringConstraints) question.getConstraints()).setPattern("?");
 
@@ -327,7 +326,7 @@ public class SurveyValidatorTest {
     
     @Test
     public void stringConstraintsCanHaveValidRegularExpressionPattern() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getStringQuestion();
         ((StringConstraints) question.getConstraints()).setPattern("{1,3}\\d-{1,3}\\d-");
 
@@ -336,7 +335,7 @@ public class SurveyValidatorTest {
     
     @Test
     public void whenPatternIsSetPatternErrorMessageMustBeSet() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getStringQuestion();
         ((StringConstraints) question.getConstraints()).setPatternErrorMessage(null);
 
@@ -437,7 +436,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void willValidateStringMaxLengthNotLowerThanMinLength() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getStringQuestion();
         StringConstraints constraints = (StringConstraints) question.getConstraints();
         constraints.setMaxLength(2);
@@ -448,7 +447,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void willValidateMaxValueNotLowerThanMinValueForInteger() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
         IntegerConstraints constraints = (IntegerConstraints) question.getConstraints();
         constraints.setMaxValue(2d);
@@ -459,7 +458,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void willValidateIntegerSelectHasMinValue() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
         question.setUiHint(UIHint.SELECT);
 
@@ -471,7 +470,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void willValidateIntegerSelectHasMaxValue() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
         question.setUiHint(UIHint.SELECT);
 
@@ -484,7 +483,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void willValidateIntegerSliderHasMinValue() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
         question.setUiHint(UIHint.SLIDER);
 
@@ -496,7 +495,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void willValidateIntegerSliderHasMaxValue() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
         question.setUiHint(UIHint.SLIDER);
 
@@ -508,7 +507,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void willValidateMaxValueNotLowerThanMinValueForDecimal() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getDecimalQuestion();
         DecimalConstraints constraints = (DecimalConstraints) question.getConstraints();
         constraints.setMaxValue(2d);
@@ -519,7 +518,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void willValidateDecimalSelectHasMinValue() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getDecimalQuestion();
         question.setUiHint(UIHint.SELECT);
 
@@ -531,7 +530,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void willValidateDecimalSelectHasMaxValue() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getDecimalQuestion();
         question.setUiHint(UIHint.SELECT);
 
@@ -544,7 +543,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void willValidateDecimalSliderHasMinValue() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getDecimalQuestion();
         question.setUiHint(UIHint.SLIDER);
 
@@ -556,7 +555,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void willValidateDecimalSliderHasMaxValue() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getDecimalQuestion();
         question.setUiHint(UIHint.SLIDER);
 
@@ -568,7 +567,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void willValidateMaxValueNotLowerThanMinValueForDuration() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getDurationQuestion();
         DurationConstraints constraints = (DurationConstraints) question.getConstraints();
         constraints.setMaxValue(2d);
@@ -579,7 +578,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void willValidateStepValueNotHigherThanRangeOfInteger() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
         IntegerConstraints constraints = (IntegerConstraints) question.getConstraints();
         constraints.setMinValue(2d);
@@ -592,7 +591,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void willValidateStepValueNotHigherThanRangeOfDecimal() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getDecimalQuestion();
         DecimalConstraints constraints = (DecimalConstraints) question.getConstraints();
         constraints.setMinValue(2d);
@@ -605,7 +604,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void willValidateStepValueNotHigherThanRangeOfDuration() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getDurationQuestion();
         DurationConstraints constraints = (DurationConstraints) question.getConstraints();
         constraints.setMinValue(2d);
@@ -618,7 +617,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void willValidateDurationSelectHasMinValue() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getDurationQuestion();
         question.setUiHint(UIHint.SELECT);
 
@@ -630,7 +629,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void willValidateDurationSelectHasMaxValue() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getDurationQuestion();
         question.setUiHint(UIHint.SELECT);
 
@@ -643,7 +642,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void willValidateDurationSliderHasMinValue() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getDurationQuestion();
         question.setUiHint(UIHint.SLIDER);
 
@@ -655,7 +654,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void willValidateDurationSliderHasMaxValue() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getDurationQuestion();
         question.setUiHint(UIHint.SLIDER);
 
@@ -667,7 +666,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void willValidateEarliestLocalDateIsNotAfterLatestLocalDate() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getDateTimeQuestion();
         DateTimeConstraints constraints = (DateTimeConstraints) question.getConstraints();
         constraints.setEarliestValue(DateTime.parse("2010-10-10T10:10:00.000Z"));
@@ -678,7 +677,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void willValidateEarliestDateTimeIsNotAfterLatestDateTime() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         SurveyQuestion question = ((TestSurvey) survey).getDateQuestion();
         DateConstraints constraints = (DateConstraints) question.getConstraints();
         constraints.setEarliestValue(LocalDate.parse("2010-10-11"));
@@ -689,7 +688,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void backreferenceSkipToTargetInvalid() throws Exception {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
 
         // The integer question is after the high_bp question. Create a rule that would backgtrack, verify it
         // doesn't validate.
@@ -704,7 +703,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void endSurveyRuleValid() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
 
         // This rule is a valid "end the survey" rule, and passes validation.
         SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
@@ -717,7 +716,7 @@ public class SurveyValidatorTest {
 
     @Test
     public void noSkipToTargetInvalid() {
-        survey = new TestSurvey(SurveyValidatorTest.class, false);
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
 
         // The integer question is after the high_bp question. Create a rule that would backgtrack, verify it
         // doesn't validate.
