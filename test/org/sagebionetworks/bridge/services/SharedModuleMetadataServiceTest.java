@@ -91,6 +91,7 @@ public class SharedModuleMetadataServiceTest {
         svc.createMetadata(svcInputMetadata);
     }
 
+    @SuppressWarnings("unchecked")
     @Test(expected = BadRequestException.class)
     public void createNotFoundSurvey() {
         SharedModuleMetadata svcInputMetadata = makeValidMetadata();
@@ -524,6 +525,7 @@ public class SharedModuleMetadataServiceTest {
         svc.updateMetadata(MODULE_ID, MODULE_VERSION, makeValidMetadata());
     }
 
+    @SuppressWarnings("unchecked")
     @Test(expected = BadRequestException.class)
     public void updateNotFoundSchema() {
         SharedModuleMetadata svcInputMetadata = makeValidMetadata();
@@ -533,6 +535,7 @@ public class SharedModuleMetadataServiceTest {
         svc.updateMetadata(MODULE_ID, MODULE_VERSION, svcInputMetadata);
     }
 
+    @SuppressWarnings("unchecked")
     @Test(expected = BadRequestException.class)
     public void updateNotFoundSurvey() {
         SharedModuleMetadata svcInputMetadata = makeValidMetadata();
