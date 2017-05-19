@@ -290,6 +290,26 @@ public class BridgeUtilsTest {
         BridgeUtils.getDateTimeOrDefault("asdf", null);
     }
     
+    @Test
+    public void encodeURIComponent() {
+        assertEquals("tester%2B4%40tester.com", BridgeUtils.encodeURIComponent("tester+4@tester.com"));
+    }
+    
+    @Test
+    public void encodeURIComponentEmpty() {
+        assertEquals("", BridgeUtils.encodeURIComponent(""));
+    }
+    
+    @Test
+    public void encodeURIComponentNull() {
+        assertEquals(null, BridgeUtils.encodeURIComponent(null));
+    }
+    
+    @Test
+    public void encodeURIComponentNoEscaping() {
+        assertEquals("foo-bar", BridgeUtils.encodeURIComponent("foo-bar"));
+    }
+    
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.
     private <T> void orderedSetsEqual(Set<T> first, Set<T> second) {
         assertEquals(first.size(), second.size());

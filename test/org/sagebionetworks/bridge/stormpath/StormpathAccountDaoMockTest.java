@@ -18,7 +18,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -59,12 +58,14 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
 import com.google.common.collect.Lists;
 import com.stormpath.sdk.account.AccountCriteria;
 import com.stormpath.sdk.account.AccountList;
+import com.stormpath.sdk.account.AccountStatus;
 import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.authc.AuthenticationResult;
 import com.stormpath.sdk.client.Client;
@@ -117,6 +118,9 @@ public class StormpathAccountDaoMockTest {
     @Mock
     AccountList accountList;
     
+    @Mock
+    AccountWorkflowService accountWorkflowService;
+    
     @Captor
     private ArgumentCaptor<AccountCriteria> accountCriteriaCaptor;
 
@@ -149,9 +153,45 @@ public class StormpathAccountDaoMockTest {
         dao.setStormpathApplication(application);
         dao.setHealthCodeService(healthCodeService);
         dao.setEncryptors(encryptors);
+        dao.setAccountWorkflowService(accountWorkflowService);
 
         // mock validateSavedCustomData(), otherwise it'll get triggered in lots of places and be cumbersome.
         doNothing().when(dao).validateSavedCustomData(anyMapOf(String.class, Object.class), any(Account.class));
+    }
+    
+    @Mock
+    private StormpathAccount account;
+    
+    @Test
+    public void createAccountWithEmailVerification() {
+        when(account.getAccount()).thenReturn(stormpathAccount);
+        when(account.getEmail()).thenReturn("email@email.com");
+        when(account.getId()).thenReturn("userId");
+        when(client.getResource(any(), eq(Directory.class))).thenReturn(directory);
+        when(directory.createAccount(stormpathAccount, false)).thenReturn(stormpathAccount);
+        
+        dao.createAccount(study, account, true);
+        
+        verify(stormpathAccount).setStatus(AccountStatus.UNVERIFIED);
+        verify(directory).createAccount(any(), eq(false));
+        verify(account).setAccount(stormpathAccount);
+        verify(accountWorkflowService).sendEmailVerificationToken(study, "userId", "email@email.com");
+    }
+    
+    @Test
+    public void createAccountWithoutEmailVerification() {
+        when(account.getAccount()).thenReturn(stormpathAccount);
+        when(account.getEmail()).thenReturn("email@email.com");
+        when(account.getId()).thenReturn("userId");
+        when(client.getResource(any(), eq(Directory.class))).thenReturn(directory);
+        when(directory.createAccount(stormpathAccount, false)).thenReturn(stormpathAccount);
+        
+        dao.createAccount(study, account, false);
+        
+        verify(stormpathAccount).setStatus(AccountStatus.ENABLED);
+        verify(directory).createAccount(any(), eq(false));
+        verify(account).setAccount(stormpathAccount);
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(study, "userId", "email@email.com");
     }
 
     @Test
@@ -167,32 +207,17 @@ public class StormpathAccountDaoMockTest {
         when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
 
         dao.verifyEmail(verification);
-        verify(client).verifyAccountEmail("tokenAAA");
+        verify(accountWorkflowService).verifyEmail(verification);
     }
 
     @Test
     public void requestResetPassword() {
         String emailString = "bridge-tester+43@sagebridge.org";
+        Email email = new Email(study.getStudyIdentifier(), emailString);
         
-        when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
+        dao.requestResetPassword(study, email);
         
-        dao.requestResetPassword(study, new Email(study.getStudyIdentifier(), emailString));
-        
-        verify(client).getResource(study.getStormpathHref(), Directory.class);
-        verify(application).sendPasswordResetEmail(emailString, directory);
-    }
-    
-    @Test(expected = BridgeServiceException.class)
-    public void requestPasswordRequestThrowsException() {
-        String emailString = "bridge-tester+43@sagebridge.org";
-        
-        when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
-        
-        com.stormpath.sdk.error.Error error = mock(com.stormpath.sdk.error.Error.class);
-        ResourceException e = new ResourceException(error);
-        when(application.sendPasswordResetEmail(emailString, directory)).thenThrow(e);
-        
-        dao.requestResetPassword(study, new Email(study.getStudyIdentifier(), emailString));
+        verify(accountWorkflowService).requestResetPassword(study, email);
     }
 
     @Test
@@ -201,9 +226,7 @@ public class StormpathAccountDaoMockTest {
         
         dao.resetPassword(passwordReset);
         
-        verify(application).verifyPasswordResetToken(passwordReset.getSptoken());
-        verify(application).resetPassword(passwordReset.getSptoken(), passwordReset.getPassword());
-        verifyNoMoreInteractions(application);
+        verify(accountWorkflowService).resetPassword(passwordReset);
     }
     
     @Test

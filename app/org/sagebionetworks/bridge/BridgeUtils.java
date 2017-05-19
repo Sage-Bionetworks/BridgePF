@@ -5,6 +5,8 @@ import static java.lang.Integer.parseInt;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -280,4 +282,18 @@ public class BridgeUtils {
             map.remove(key);
         }
     }
+    
+    public static String encodeURIComponent(String component) {
+        String encoded = null;
+        if (component != null) {
+            try {
+                encoded = URLEncoder.encode(component, "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                // UTF-8 is always supported, so this should never happen. 
+                throw new BridgeServiceException(e.getMessage());
+            }
+        }
+        return encoded;
+    }
+
 }

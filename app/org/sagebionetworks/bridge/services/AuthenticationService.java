@@ -29,7 +29,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.services.email.EmailSignInEmailProvider;
+import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.validators.EmailValidator;
 import org.sagebionetworks.bridge.validators.EmailVerificationValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
@@ -121,7 +121,12 @@ public class AuthenticationService {
         cacheProvider.setString(cacheKey, token, SESSION_SIGNIN_TIMEOUT);
         
         // email the user the token
-        EmailSignInEmailProvider provider = new EmailSignInEmailProvider(study, signIn.getEmail(), token);
+        BasicEmailProvider provider = new BasicEmailProvider.Builder()
+            .withEmailTemplate(study.getEmailSignInTemplate())
+            .withStudy(study)
+            .withRecipientEmail(signIn.getEmail())
+            .withToken("email", BridgeUtils.encodeURIComponent(signIn.getEmail()))
+            .withToken("token", token).build();
         sendMailService.sendEmail(provider);
     }
     
