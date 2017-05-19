@@ -126,10 +126,6 @@ public class StudyServiceTest {
         
         assertNotNull("Version has been set", study.getVersion());
         assertTrue(study.isActive());
-        assertTrue(study.isStrictUploadValidationEnabled()); // by default set to true
-        assertTrue(study.isHealthCodeExportEnabled()); // it was set true in the study
-        assertTrue(study.isEmailVerificationEnabled());
-        assertFalse(study.isEmailSignInEnabled());
 
         verify(mockCache).setStudy(study);
         verifyNoMoreInteractions(mockCache);
@@ -143,11 +139,6 @@ public class StudyServiceTest {
 
         Study newStudy = studyService.getStudy(study.getIdentifier());
         assertTrue(newStudy.isActive());
-        assertTrue(newStudy.isStrictUploadValidationEnabled());
-        assertTrue(newStudy.isEmailVerificationEnabled());
-        assertTrue(newStudy.isHealthCodeExportEnabled());
-        assertTrue(newStudy.isEmailVerificationEnabled());
-        assertFalse(newStudy.isEmailSignInEnabled());
         
         assertEquals(study.getIdentifier(), newStudy.getIdentifier());
         assertEquals("Test Study [StudyServiceTest]", newStudy.getName());
@@ -283,51 +274,57 @@ public class StudyServiceTest {
     @Test
     public void adminsCanChangeSomeValuesResearchersCannot() {
         study = TestUtils.getValidStudy(StudyServiceTest.class);
-        // Not the defaults        
-        study.setActive(false);
-        study.setHealthCodeExportEnabled(true);
-        study.setStrictUploadValidationEnabled(false);
-        study.setEmailVerificationEnabled(false);
-        study.setEmailSignInEnabled(true);
+        setStudyDefaults(study);
         
         study = studyService.createStudy(study);
-        // These are set to the defaults.
         study = studyService.getStudy(study.getIdentifier());
-        assertTrue(study.isActive());
-        assertTrue(study.isHealthCodeExportEnabled());
-        assertTrue(study.isStrictUploadValidationEnabled());
-        assertTrue(study.isEmailVerificationEnabled());
-        assertFalse(study.isEmailSignInEnabled());
+        assertStudyDefaults(study); // still set to defaults
         
-        // Researchers cannot change theseOkay, now that these are set, researchers cannot change them. Except setting active 
-        // to false, which is a logical delete that throws a BadRequestException
-        study.setHealthCodeExportEnabled(false);
-        study.setEmailVerificationEnabled(false);
-        study.setExternalIdValidationEnabled(false);
-        study.setExternalIdRequiredOnSignup(false);
-        study.setEmailSignInEnabled(true);
-        study = studyService.updateStudy(study, false); // nope
-        
-        // These have not changed:
-        assertTrue(study.isHealthCodeExportEnabled());
-        assertTrue(study.isEmailVerificationEnabled());
-        assertTrue(study.isExternalIdValidationEnabled());
-        assertTrue(study.isExternalIdRequiredOnSignup());
-        assertFalse(study.isEmailSignInEnabled());
+        // Researchers cannot change these
+        changeStudyDefaults(study);
+        study = studyService.updateStudy(study, false);
+        assertStudyDefaults(study); // nope
         
         // But administrators can change these
-        study.setHealthCodeExportEnabled(false);
-        study.setEmailVerificationEnabled(false);
-        study.setExternalIdValidationEnabled(false);
-        study.setExternalIdRequiredOnSignup(false);
-        study.setEmailSignInEnabled(true);
-        study = studyService.updateStudy(study, true); // yep
-        
-        assertFalse(study.isHealthCodeExportEnabled());
-        assertFalse(study.isEmailVerificationEnabled());
+        changeStudyDefaults(study);
+        study = studyService.updateStudy(study, true);
+        assertStudyChanged(study); // yep
+    }
+
+    private void assertStudyDefaults(Study study) {
+        assertTrue(study.isStrictUploadValidationEnabled());
+        assertTrue(study.isEmailVerificationEnabled());
         assertFalse(study.isExternalIdValidationEnabled());
         assertFalse(study.isExternalIdRequiredOnSignup());
+        assertFalse(study.isEmailSignInEnabled());
+        assertEquals(0, study.getAccountLimit());
+    }
+    
+    private void assertStudyChanged(Study study) {
+        assertFalse(study.isStrictUploadValidationEnabled());
+        assertFalse(study.isEmailVerificationEnabled());
+        assertTrue(study.isExternalIdValidationEnabled());
+        assertTrue(study.isExternalIdRequiredOnSignup());
         assertTrue(study.isEmailSignInEnabled());
+        assertEquals(10, study.getAccountLimit());
+    }
+    
+    private void setStudyDefaults(Study study) {
+        study.setStrictUploadValidationEnabled(true);
+        study.setEmailVerificationEnabled(true);
+        study.setExternalIdValidationEnabled(false);
+        study.setExternalIdRequiredOnSignup(false);
+        study.setEmailSignInEnabled(false);
+        study.setAccountLimit(0);
+    }
+    
+    private void changeStudyDefaults(Study study) {
+        study.setStrictUploadValidationEnabled(false);
+        study.setEmailVerificationEnabled(false);
+        study.setExternalIdValidationEnabled(true);
+        study.setExternalIdRequiredOnSignup(true);
+        study.setEmailSignInEnabled(true);
+        study.setAccountLimit(10);
     }
     
     @Test(expected=InvalidEntityException.class)

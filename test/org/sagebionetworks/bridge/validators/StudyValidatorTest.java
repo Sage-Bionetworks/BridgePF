@@ -233,6 +233,12 @@ public class StudyValidatorTest {
     }
     
     @Test
+    public void cannotSetAccountLimitLessThanZero() {
+        study.setAccountLimit(-100);
+        assertCorrectMessage(study, "accountLimit", "accountLimit must be zero (no limit set) or higher");
+    }
+    
+    @Test
     public void shortListOfDataGroupsOK() {
         study.setDataGroups(Sets.newHashSet("beta_users", "production_users", "testers", "internal"));
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
@@ -249,4 +255,30 @@ public class StudyValidatorTest {
         study.setDataGroups(Sets.newHashSet("Liège"));
         assertCorrectMessage(study, "dataGroups", "dataGroups contains invalid tag 'Liège' (only letters, numbers, underscore and dash allowed)");
     }
+
+    @Test
+    public void publicStudyWithoutExternalIdValidationIsValid() {
+        study.setExternalIdValidationEnabled(false);
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    }
+    
+    @Test
+    public void publicStudyWithoutExternalIdOnSignUpIsValid() {
+        study.setExternalIdRequiredOnSignup(false);
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    }
+    
+    @Test
+    public void nonPublicStudiesMustEnableExternalIdValdation() {
+        study.setEmailVerificationEnabled(false);
+        study.setExternalIdValidationEnabled(false);
+        assertCorrectMessage(study, "externalIdValidationEnabled", "externalIdValidationEnabled cannot be disabled if email verification has been disabled");
+    }
+    
+    @Test
+    public void nonPublicStudiesMustRequireExternalIdOnSignUp() {
+        study.setEmailVerificationEnabled(false);
+        study.setExternalIdRequiredOnSignup(false);
+        assertCorrectMessage(study, "externalIdRequiredOnSignup", "externalIdRequiredOnSignup cannot be disabled if email verification has been disabled");
+    }    
 }
