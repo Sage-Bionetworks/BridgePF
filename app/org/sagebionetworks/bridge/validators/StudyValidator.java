@@ -88,6 +88,9 @@ public class StudyValidator implements Validator {
         if (study.getMinAgeOfConsent() < 0) {
             errors.rejectValue("minAgeOfConsent", "must be zero (no minimum age of consent) or higher");
         }
+        if (study.getAccountLimit() < 0) {
+            errors.rejectValue("accountLimit", "must be zero (no limit set) or higher");
+        }
         validateTemplate(errors, study.getVerifyEmailTemplate(), "verifyEmailTemplate");
         validateTemplate(errors, study.getResetPasswordTemplate(), "resetPasswordTemplate");
         

@@ -394,6 +394,7 @@ public class TestUtils {
         study.setExternalIdRequiredOnSignup(true);
         study.setActive(true);
         study.setDisableExport(false);
+        study.setAccountLimit(0);
         study.setPushNotificationARNs(pushNotificationARNs);
         return study;
     }

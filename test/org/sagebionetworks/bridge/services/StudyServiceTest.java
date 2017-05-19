@@ -297,6 +297,7 @@ public class StudyServiceTest {
         assertFalse(study.isExternalIdValidationEnabled());
         assertFalse(study.isExternalIdRequiredOnSignup());
         assertFalse(study.isEmailSignInEnabled());
+        assertEquals(0, study.getAccountLimit());
     }
     
     private void assertStudyChanged(Study study) {
@@ -305,6 +306,7 @@ public class StudyServiceTest {
         assertTrue(study.isExternalIdValidationEnabled());
         assertTrue(study.isExternalIdRequiredOnSignup());
         assertTrue(study.isEmailSignInEnabled());
+        assertEquals(10, study.getAccountLimit());
     }
     
     private void setStudyDefaults(Study study) {
@@ -313,6 +315,7 @@ public class StudyServiceTest {
         study.setExternalIdValidationEnabled(false);
         study.setExternalIdRequiredOnSignup(false);
         study.setEmailSignInEnabled(false);
+        study.setAccountLimit(0);
     }
     
     private void changeStudyDefaults(Study study) {
@@ -321,6 +324,7 @@ public class StudyServiceTest {
         study.setExternalIdValidationEnabled(true);
         study.setExternalIdRequiredOnSignup(true);
         study.setEmailSignInEnabled(true);
+        study.setAccountLimit(10);
     }
     
     @Test(expected=InvalidEntityException.class)
