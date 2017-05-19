@@ -301,9 +301,6 @@ public class StudyService {
         }
 
         study.setActive(true);
-        study.setStrictUploadValidationEnabled(true);
-        study.setEmailVerificationEnabled(true);
-        study.setEmailSignInEnabled(false);
         study.getDataGroups().add(BridgeConstants.TEST_USER_GROUP);
         setDefaultsIfAbsent(study);
         sanitizeHTML(study);
@@ -430,6 +427,7 @@ public class StudyService {
             study.setExternalIdRequiredOnSignup(originalStudy.isExternalIdRequiredOnSignup());
             study.setEmailSignInEnabled(originalStudy.isEmailSignInEnabled());
             study.setAccountLimit(originalStudy.getAccountLimit());
+            study.setStrictUploadValidationEnabled(originalStudy.isStrictUploadValidationEnabled());
         }
 
         // prevent anyone changing active to false -- it should be done by deactivateStudy() method

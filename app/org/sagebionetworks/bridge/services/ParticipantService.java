@@ -274,8 +274,7 @@ public class ParticipantService {
     }
 
     private void throwExceptionIfLimitMetOrExceeded(Study study) {
-        // It's sufficient to get one record because the total for this query is all the records that 
-        // match in the database. 
+        // It's sufficient to get minimum number of records the total if for all records
         PagedResourceList<AccountSummary> summaries = getPagedAccountSummaries(study, 0,
                 BridgeConstants.API_MINIMUM_PAGE_SIZE, null, null, null);
         if (summaries.getTotal() >= study.getAccountLimit()) {
