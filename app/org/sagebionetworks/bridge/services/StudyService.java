@@ -301,6 +301,7 @@ public class StudyService {
         }
 
         study.setActive(true);
+        study.setStrictUploadValidationEnabled(true);
         study.getDataGroups().add(BridgeConstants.TEST_USER_GROUP);
         setDefaultsIfAbsent(study);
         sanitizeHTML(study);
