@@ -134,7 +134,7 @@ public class SurveyService {
         Survey survey = surveyDao.getSurvey(keys);
         Validate.entityThrowingException(publishValidator, survey);
 
-        return surveyDao.publishSurvey(study, keys, newSchemaRev);
+        return surveyDao.publishSurvey(study, survey, keys, newSchemaRev);
     }
 
     /**
