@@ -42,4 +42,9 @@ public class EmailTemplateTest {
         assertEquals(template, template2);
     }
 
+    @Test
+    public void mimeTypeHasDefault() {
+        EmailTemplate template = new EmailTemplate("Subject", "Body", null);
+        assertEquals(MimeType.HTML, template.getMimeType());
+    }
 }

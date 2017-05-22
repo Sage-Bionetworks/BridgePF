@@ -21,7 +21,7 @@ public final class EmailTemplate {
     public EmailTemplate(@JsonProperty("subject") String subject, @JsonProperty("body") String body,
                     @JsonProperty("mimeType") MimeType mimeType) {
         this.subject = subject;
-        this.mimeType = mimeType;
+        this.mimeType = (mimeType == null) ? MimeType.HTML : mimeType;
         this.body = body;
     }
     
