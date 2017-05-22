@@ -59,6 +59,11 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
     }
 
     @Override
+    public String getPlainSenderEmail() {
+        return study.getSupportEmail();
+    }
+    
+    @Override
     public MimeTypeEmail getMimeTypeEmail() throws MessagingException {
         MimeTypeEmailBuilder builder = new MimeTypeEmailBuilder();
 

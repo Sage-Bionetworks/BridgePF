@@ -41,13 +41,14 @@ import com.google.common.base.Charsets;
  */
 @SuppressWarnings("unchecked")
 public class SendMailViaAmazonServiceConsentTest {
-    private static final String FROM_STUDY_AS_FORMATTED = "\"Test Study (Sage)\" <study-support-email@study.com>";
-    private static final String FROM_DEFAULT_UNFORMATTED = "Sage Bionetworks <test-sender@sagebase.org>";
+    private static final String SUPPORT_EMAIL = "study-support-email@study.com";
+    private static final String FROM_STUDY_AS_FORMATTED = "\"Test Study (Sage)\" <"+SUPPORT_EMAIL+">";
 
     private SendMailViaAmazonService service;
     private AmazonSimpleEmailServiceClient emailClient;
     private StudyService studyService;
     private StudyConsentService studyConsentService;
+    private EmailVerificationService emailVerificationService;
     private ArgumentCaptor<SendRawEmailRequest> argument;
     private Study study;
     private String consentBodyTemplate;
@@ -60,7 +61,7 @@ public class SendMailViaAmazonServiceConsentTest {
         study = new DynamoStudy(); // TestUtils.getValidStudy();
         study.setName("Test Study (Sage)");
         study.setIdentifier("api");
-        study.setSupportEmail("study-support-email@study.com");
+        study.setSupportEmail(SUPPORT_EMAIL);
 
         studyService = mock(StudyService.class);
         when(studyService.getStudy(study.getIdentifier())).thenReturn(study);
@@ -69,8 +70,10 @@ public class SendMailViaAmazonServiceConsentTest {
         argument = ArgumentCaptor.forClass(SendRawEmailRequest.class);
 
         service = new SendMailViaAmazonService();
-        service.setSupportEmail(FROM_DEFAULT_UNFORMATTED);
         service.setEmailClient(emailClient);
+        
+        emailVerificationService = mock(EmailVerificationService.class);
+        service.setEmailVerificationService(emailVerificationService);
         
         subpopulation = Subpopulation.create();
         subpopulation.setGuidString("api");
@@ -87,7 +90,8 @@ public class SendMailViaAmazonServiceConsentTest {
         // mock email client with success
         when(emailClient.sendRawEmail(notNull(SendRawEmailRequest.class))).thenReturn(
                 new SendRawEmailResult().withMessageId("test message id"));
-
+        when(emailVerificationService.isVerified(SUPPORT_EMAIL)).thenReturn(true);
+        
         // set up inputs
         ConsentSignature consent = new ConsentSignature.Builder().withName("Test 2").withBirthdate("1950-05-05")
                 .withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
@@ -124,7 +128,8 @@ public class SendMailViaAmazonServiceConsentTest {
         // mock email client with success
         when(emailClient.sendRawEmail(notNull(SendRawEmailRequest.class))).thenReturn(
                 new SendRawEmailResult().withMessageId("test message id"));
-
+        when(emailVerificationService.isVerified(SUPPORT_EMAIL)).thenReturn(true);
+        
         // set up inputs
         ConsentSignature consent = new ConsentSignature.Builder().withName("Eggplant McTester")
                 .withBirthdate("1970-05-01").withImageData(TestConstants.DUMMY_IMAGE_DATA)
@@ -165,7 +170,8 @@ public class SendMailViaAmazonServiceConsentTest {
     public void messageRejectedNotPropagated() {
         // mock email client with exception
         when(emailClient.sendRawEmail(notNull(SendRawEmailRequest.class))).thenThrow(MessageRejectedException.class);
-
+        when(emailVerificationService.isVerified(SUPPORT_EMAIL)).thenReturn(true);
+        
         // set up inputs
         ConsentSignature consent = new ConsentSignature.Builder().withName("Test 2").withBirthdate("1950-05-05")
                 .withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();

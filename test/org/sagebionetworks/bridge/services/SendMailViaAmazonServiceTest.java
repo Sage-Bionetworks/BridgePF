@@ -23,7 +23,8 @@ import com.amazonaws.services.simpleemail.model.SendRawEmailResult;
 @RunWith(MockitoJUnitRunner.class)
 public class SendMailViaAmazonServiceTest {
 
-    private static final String EMAIL = "email@email.com";
+    private static final String SUPPORT_EMAIL = "email@email.com";
+    private static final String RECIPIENT_EMAIL = "recipient@recipient.com";
     
     private SendMailViaAmazonService service;
     
@@ -39,19 +40,17 @@ public class SendMailViaAmazonServiceTest {
     @Before
     public void before() {
         service = new SendMailViaAmazonService();
-        service.setSupportEmail(EMAIL);
         service.setEmailClient(emailClient);
         service.setEmailVerificationService(emailVerificationService);
     }
     
     @Test
     public void unverifiedEmailThrowsException() {
-        //when(emailClient.sendRawEmail(any())).thenReturn(result);
-        when(emailVerificationService.isVerified(EMAIL)).thenReturn(false);
+        when(emailVerificationService.isVerified(SUPPORT_EMAIL)).thenReturn(false);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(Study.create())
-                .withRecipientEmail(EMAIL)
+                .withRecipientEmail(SUPPORT_EMAIL)
                 .withEmailTemplate(new EmailTemplate("subject", "body", MimeType.HTML))
                 .build();
         try {
@@ -65,11 +64,15 @@ public class SendMailViaAmazonServiceTest {
     @Test
     public void verifiedEmailWorks() {
         when(emailClient.sendRawEmail(any())).thenReturn(result);
-        when(emailVerificationService.isVerified(EMAIL)).thenReturn(true);
+        when(emailVerificationService.isVerified(SUPPORT_EMAIL)).thenReturn(true);
+        
+        Study study = Study.create();
+        study.setName("Name");
+        study.setSupportEmail(SUPPORT_EMAIL);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(Study.create())
-                .withRecipientEmail(EMAIL)
+                .withStudy(study)
+                .withRecipientEmail(RECIPIENT_EMAIL)
                 .withEmailTemplate(new EmailTemplate("subject", "body", MimeType.HTML))
                 .build();
         service.sendEmail(provider);

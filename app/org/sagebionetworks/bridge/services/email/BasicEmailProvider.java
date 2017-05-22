@@ -31,6 +31,9 @@ public class BasicEmailProvider implements MimeTypeEmailProvider {
         this.tokenMap = tokenMap;
         this.template = template;
     }
+    public String getPlainSenderEmail() {
+        return study.getSupportEmail();
+    }
     public Study getStudy() {
         return study;
     }

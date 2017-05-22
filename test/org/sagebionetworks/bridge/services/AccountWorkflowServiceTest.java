@@ -40,6 +40,8 @@ import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 @RunWith(MockitoJUnitRunner.class)
 public class AccountWorkflowServiceTest {
     
+    private static final String SUPPORT_EMAIL = "support@support.com";
+
     private static final String SPTOKEN = "sptoken";
 
     @Mock
@@ -77,7 +79,7 @@ public class AccountWorkflowServiceTest {
         study = Study.create();
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
         study.setName("This study name");
-        study.setSupportEmail("support@support.com");
+        study.setSupportEmail(SUPPORT_EMAIL);
         study.setVerifyEmailTemplate(verifyEmailTemplate);
         study.setResetPasswordTemplate(resetPasswordTemplate);
         

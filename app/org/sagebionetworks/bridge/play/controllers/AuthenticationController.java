@@ -98,9 +98,8 @@ public class AuthenticationController extends BaseController {
     }
 
     public Result requestResetPassword() throws Exception {
-        JsonNode json = requestToJSON(request());
         Email email = parseJson(request(), Email.class);
-        Study study = getStudyOrThrowException(json);
+        Study study = studyService.getStudy(email.getStudyIdentifier());
         authenticationService.requestResetPassword(study, email);
         return okResult("If registered with the study, we'll email you instructions on how to change your password.");
     }

@@ -49,6 +49,7 @@ import com.google.common.collect.Iterables;
 @RunWith(MockitoJUnitRunner.class)
 public class AuthenticationServiceMockTest {
     
+    private static final String SUPPORT_EMAIL = "support@support.com";
     private static final String STUDY_ID = "test-study";
     private static final String CACHE_KEY = "email@email.com:test-study:signInRequest";
     private static final String RECIPIENT_EMAIL = "email@email.com";
@@ -105,7 +106,7 @@ public class AuthenticationServiceMockTest {
         study.setIdentifier(STUDY_ID);
         study.setEmailSignInEnabled(true);
         study.setEmailSignInTemplate(new EmailTemplate("subject","body",MimeType.TEXT));
-        study.setSupportEmail("sender@sender.com");
+        study.setSupportEmail(SUPPORT_EMAIL);
         study.setName("Sender");
         
         account = new SimpleAccount();

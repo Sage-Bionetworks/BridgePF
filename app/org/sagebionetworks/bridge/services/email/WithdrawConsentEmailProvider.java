@@ -36,6 +36,11 @@ public class WithdrawConsentEmailProvider implements MimeTypeEmailProvider {
         this.withdrawal = withdrawal;
         this.withdrewOn = withdrewOn;
     }
+
+    @Override
+    public String getPlainSenderEmail() {
+        return study.getSupportEmail();
+    }
     
     @Override
     public MimeTypeEmail getMimeTypeEmail() throws MessagingException {
