@@ -9,7 +9,10 @@ import javax.annotation.Resource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import org.sagebionetworks.bridge.cache.CacheProvider;
 
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.amazonaws.services.simpleemail.model.GetIdentityVerificationAttributesRequest;
@@ -25,13 +28,41 @@ import com.amazonaws.services.simpleemail.model.VerifyEmailIdentityRequest;
  */
 @Component
 public class EmailVerificationService {
+
     private static final Logger LOG = LoggerFactory.getLogger(EmailVerificationService.class);
     
+    private static final String KEY_POSTFIX = ":emailVerificationStatus";
+    
     private AmazonSimpleEmailServiceClient sesClient;
+    private CacheProvider cacheProvider;
 
     @Resource(name="sesClient")
     final void setAmazonSimpleEmailServiceClient(AmazonSimpleEmailServiceClient sesClient) {
         this.sesClient = sesClient;
+    }
+    @Autowired
+    final void setCacheProvider(CacheProvider cacheProvider) {
+        this.cacheProvider = cacheProvider;
+    }
+    
+    private String getVerifiedAddressKey(String emailAddress) {
+        return emailAddress + KEY_POSTFIX;
+    }
+    
+    private EmailVerificationStatus cacheAndReturn(String emailAddress, EmailVerificationStatus status) {
+        String key = getVerifiedAddressKey(emailAddress);
+        cacheProvider.setString(key, status.name(), 60*60*24);
+        return status;
+    }
+    
+    public boolean isVerified(String emailAddress) {
+        String key = getVerifiedAddressKey(emailAddress);
+        String value = cacheProvider.getString(key);
+        if (value == null) {
+            EmailVerificationStatus status = getEmailStatus(emailAddress);
+            value = cacheAndReturn(emailAddress, status).name();
+        }
+        return "VERIFIED".equals(value);
     }
     
     public EmailVerificationStatus getEmailStatus(String emailAddress) {
@@ -45,15 +76,15 @@ public class EmailVerificationService {
         // didn't happen in testing against SES, but just to be paranoid.
         Map<String,IdentityVerificationAttributes> attributeMap = result.getVerificationAttributes();
         if (attributeMap == null) {
-            return EmailVerificationStatus.UNVERIFIED;
+            return cacheAndReturn(emailAddress, EmailVerificationStatus.UNVERIFIED);
         }
         IdentityVerificationAttributes attributes = attributeMap.get(emailAddress);
         if (attributes == null || attributes.getVerificationStatus() == null) {
-            return EmailVerificationStatus.UNVERIFIED;
+            return cacheAndReturn(emailAddress, EmailVerificationStatus.UNVERIFIED);
         }
         String statusString = attributes.getVerificationStatus();
 
-        return EmailVerificationStatus.fromSesVerificationStatus(statusString);
+        return cacheAndReturn(emailAddress, EmailVerificationStatus.fromSesVerificationStatus(statusString));
     }
     
     /**
@@ -73,7 +104,6 @@ public class EmailVerificationService {
             LOG.info("status is unverified for "+emailAddress);
             return sendVerifyEmailRequest(emailAddress);
         }
-        
         return status;
     }
 
@@ -90,6 +120,6 @@ public class EmailVerificationService {
         LOG.info("sending email verification email for "+emailAddress);
         VerifyEmailIdentityRequest request = new VerifyEmailIdentityRequest().withEmailAddress(emailAddress);
         sesClient.verifyEmailIdentity(request);
-        return EmailVerificationStatus.PENDING;
+        return cacheAndReturn(emailAddress, EmailVerificationStatus.PENDING);
     }
 }

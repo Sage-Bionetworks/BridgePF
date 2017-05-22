@@ -39,23 +39,31 @@ import com.google.common.base.Charsets;
 public class SendMailViaAmazonService implements SendMailService {
 
     private static final Logger logger = LoggerFactory.getLogger(SendMailViaAmazonService.class);
-
     private static final Region REGION = Region.getRegion(Regions.US_EAST_1);
+    public static final String UNVERIFIED_EMAIL_ERROR = "Bridge cannot send email until you verify Amazon SES can send using your study's support email address";
 
     private String supportEmail;
     private AmazonSimpleEmailServiceClient emailClient;
+    private EmailVerificationService emailVerificationService;
 
     @Resource(name="supportEmail")
-    public void setSupportEmail(String supportEmail) {
+    final void setSupportEmail(String supportEmail) {
         this.supportEmail = supportEmail;
     }
     @Autowired
-    public void setEmailClient(AmazonSimpleEmailServiceClient emailClient) {
+    final void setEmailClient(AmazonSimpleEmailServiceClient emailClient) {
         this.emailClient = emailClient;
+    }
+    @Autowired
+    final void setEmailVerificationService(EmailVerificationService emailVerificationService) {
+        this.emailVerificationService = emailVerificationService;
     }
     
     @Override
     public void sendEmail(MimeTypeEmailProvider provider) {
+        if (!emailVerificationService.isVerified(supportEmail)) {
+            throw new BridgeServiceException(UNVERIFIED_EMAIL_ERROR);
+        }
         try {
             MimeTypeEmail email = provider.getMimeTypeEmail();
             for (String recipient: email.getRecipientAddresses()) {
