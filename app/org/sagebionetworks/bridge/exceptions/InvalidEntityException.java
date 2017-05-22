@@ -16,10 +16,6 @@ public class InvalidEntityException extends BridgeServiceException {
     private BridgeEntity entity;
     private Map<String,List<String>> errors;
     
-    public InvalidEntityException(BridgeEntity entity) {
-        this(entity, BridgeUtils.getTypeName(entity.getClass()) + " is not valid.");
-    }
-    
     public InvalidEntityException(BridgeEntity entity, String message) {
         super(message, HttpStatus.SC_BAD_REQUEST);
         this.entity = checkNotNull(entity);
@@ -38,11 +34,7 @@ public class InvalidEntityException extends BridgeServiceException {
     public Map<String,List<String>> getErrors() {
         return errors;
     }
-    
-    public Class<? extends BridgeEntity> getEntityClass() {
-        return entity != null ? entity.getClass() : null;
-    }
-    
+
     public BridgeEntity getEntity() {
         return entity;
     }
