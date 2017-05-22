@@ -37,7 +37,7 @@ public class FPHSService {
         checkNotNull(externalId);
         
         if (isBlank(externalId.getIdentifier())) {
-            throw new InvalidEntityException(externalId);
+            throw new InvalidEntityException(externalId, "ExternalIdentifier is not valid");
         }
         // Throws exception if not verified
         fphsDao.verifyExternalId(externalId);
@@ -48,7 +48,7 @@ public class FPHSService {
         checkNotNull(externalId);
         
         if (isBlank(externalId.getIdentifier())) {
-            throw new InvalidEntityException(externalId);
+            throw new InvalidEntityException(externalId, "ExternalIdentifier is not valid");
         }
         verifyExternalIdentifier(externalId);
         

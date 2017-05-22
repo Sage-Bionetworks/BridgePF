@@ -27,7 +27,8 @@ import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
-import org.sagebionetworks.bridge.validators.SurveyValidator;
+import org.sagebionetworks.bridge.validators.SurveyPublishValidator;
+import org.sagebionetworks.bridge.validators.SurveySaveValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -36,7 +37,8 @@ import org.springframework.validation.Validator;
 @Component
 public class SurveyService {
 
-    private Validator validator;
+    private Validator saveValidator;
+    private Validator publishValidator;
     private SurveyDao surveyDao;
     private SchedulePlanService schedulePlanService;
     private SharedModuleMetadataService sharedModuleMetadataService;
@@ -47,8 +49,13 @@ public class SurveyService {
     }
 
     @Autowired
-    final void setValidator(SurveyValidator validator) {
-        this.validator = validator;
+    final void setSaveValidator(SurveySaveValidator validator) {
+        this.saveValidator = validator;
+    }
+
+    @Autowired
+    final void setPublishValidator(SurveyPublishValidator validator) {
+        this.publishValidator = validator;
     }
 
     @Autowired
@@ -90,7 +97,7 @@ public class SurveyService {
             element.setGuid(BridgeUtils.generateGuid());
         }
 
-        Validate.entityThrowingException(validator, survey);
+        Validate.entityThrowingException(saveValidator, survey);
         return surveyDao.createSurvey(survey);
     }
 
@@ -103,7 +110,7 @@ public class SurveyService {
     public Survey updateSurvey(Survey survey) {
         checkNotNull(survey, "Survey cannot be null");
 
-        Validate.entityThrowingException(validator, survey);
+        Validate.entityThrowingException(saveValidator, survey);
         return surveyDao.updateSurvey(survey);
     }
 
@@ -124,7 +131,10 @@ public class SurveyService {
         checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
         checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
 
-        return surveyDao.publishSurvey(study, keys, newSchemaRev);
+        Survey survey = surveyDao.getSurvey(keys);
+        Validate.entityThrowingException(publishValidator, survey);
+
+        return surveyDao.publishSurvey(study, survey, keys, newSchemaRev);
     }
 
     /**
