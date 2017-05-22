@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models.surveys;
 
+import org.xhtmlrenderer.css.parser.property.PrimitivePropertyBuilders;
+
 public enum UIHint {
     
     CHECKBOX,
@@ -14,6 +16,9 @@ public enum UIHint {
     SLIDER,
     TEXTFIELD,
     TIMEPICKER,
-    TOGGLE;
+    TOGGLE,
+    WEIGHT,
+    HEIGHT,
+    BLOODPRESSURE
     
 }
