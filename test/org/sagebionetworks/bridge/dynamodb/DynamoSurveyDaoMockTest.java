@@ -99,7 +99,7 @@ public class DynamoSurveyDaoMockTest {
         survey.setElements(ImmutableList.of(surveyQuestion));
 
         // execute and validate
-        Survey retval = surveyDao.publishSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, true);
+        Survey retval = surveyDao.publishSurvey(TestConstants.TEST_STUDY, survey, SURVEY_KEY, true);
         assertTrue(retval.isPublished());
         assertEquals(MOCK_NOW_MILLIS, retval.getModifiedOn());
         assertEquals(SCHEMA_REV, retval.getSchemaRevision().intValue());
@@ -118,7 +118,7 @@ public class DynamoSurveyDaoMockTest {
         survey.setElements(ImmutableList.of(infoScreen));
 
         // same test as above, except we *don't* call through to the upload schema DAO
-        Survey retval = surveyDao.publishSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, true);
+        Survey retval = surveyDao.publishSurvey(TestConstants.TEST_STUDY, survey, SURVEY_KEY, true);
         assertTrue(retval.isPublished());
         assertEquals(MOCK_NOW_MILLIS, retval.getModifiedOn());
         assertNull(retval.getSchemaRevision());
