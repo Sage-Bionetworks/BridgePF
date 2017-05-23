@@ -17,6 +17,7 @@ import org.joda.time.DateTime;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -24,6 +25,31 @@ import com.google.common.collect.Sets;
 
 public class BridgeUtilsTest {
 
+    @Test
+    public void studyTemplateVariblesWorks() {
+        Study study = Study.create();
+        study.setName("name1");
+        study.setIdentifier("identifier1");
+        study.setSponsorName("sponsorName1");
+        study.setSupportEmail("supportEmail1");
+        study.setTechnicalEmail("technicalEmail1");
+        study.setConsentNotificationEmail("consentNotificationEmail1");
+
+        Map<String,String> map = BridgeUtils.studyTemplateVariables(study, (value) -> {
+            return value.replaceAll("1", "2");
+        });
+        map.put("thisMap", "isMutable");
+        
+        assertEquals("name2", map.get("studyName"));
+        assertEquals("identifier2", map.get("studyId"));
+        assertEquals("sponsorName2", map.get("sponsorName"));
+        assertEquals("supportEmail2", map.get("supportEmail"));
+        assertEquals("technicalEmail2", map.get("technicalEmail"));
+        assertEquals("consentNotificationEmail2", map.get("consentEmail"));
+        assertEquals("isMutable", map.get("thisMap"));
+    }
+    
+    
     @Test
     public void templateResolverWorks() {
         Map<String,String> map = Maps.newHashMap();
@@ -288,6 +314,26 @@ public class BridgeUtilsTest {
     @Test(expected = BadRequestException.class)
     public void testGetDateTimeWithInvalidDateTime() {
         BridgeUtils.getDateTimeOrDefault("asdf", null);
+    }
+    
+    @Test
+    public void encodeURIComponent() {
+        assertEquals("tester%2B4%40tester.com", BridgeUtils.encodeURIComponent("tester+4@tester.com"));
+    }
+    
+    @Test
+    public void encodeURIComponentEmpty() {
+        assertEquals("", BridgeUtils.encodeURIComponent(""));
+    }
+    
+    @Test
+    public void encodeURIComponentNull() {
+        assertEquals(null, BridgeUtils.encodeURIComponent(null));
+    }
+    
+    @Test
+    public void encodeURIComponentNoEscaping() {
+        assertEquals("foo-bar", BridgeUtils.encodeURIComponent("foo-bar"));
     }
     
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.

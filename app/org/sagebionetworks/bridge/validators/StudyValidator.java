@@ -88,6 +88,9 @@ public class StudyValidator implements Validator {
         if (study.getMinAgeOfConsent() < 0) {
             errors.rejectValue("minAgeOfConsent", "must be zero (no minimum age of consent) or higher");
         }
+        if (study.getAccountLimit() < 0) {
+            errors.rejectValue("accountLimit", "must be zero (no limit set) or higher");
+        }
         validateTemplate(errors, study.getVerifyEmailTemplate(), "verifyEmailTemplate");
         validateTemplate(errors, study.getResetPasswordTemplate(), "resetPasswordTemplate");
         
@@ -108,6 +111,19 @@ public class StudyValidator implements Validator {
         validateEmails(errors, study.getTechnicalEmail(), "technicalEmail");
         validateEmails(errors, study.getConsentNotificationEmail(), "consentNotificationEmail");
         validateDataGroupNamesAndFitForSynapseExport(errors, study.getDataGroups());
+        
+        // emailVerificationEnabled=true (public study):
+        //     externalIdValidationEnabled and externalIdRequiredOnSignup can vary independently
+        // emailVerificationEnabled=false:
+        //     externalIdValidationEnabled and externalIdRequiredOnSignup must both be true
+        if (!study.isEmailVerificationEnabled()) {
+            if (!study.isExternalIdRequiredOnSignup()) {
+                errors.rejectValue("externalIdRequiredOnSignup", "cannot be disabled if email verification has been disabled");
+            }
+            if (!study.isExternalIdValidationEnabled()) {
+                errors.rejectValue("externalIdValidationEnabled", "cannot be disabled if email verification has been disabled");
+            }
+        }
     }
     
     private boolean isInRange(int value, int min) {

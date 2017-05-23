@@ -185,12 +185,11 @@ public class ExceptionInterceptorTest {
             Result result = (Result)interceptor.invoke(invocation);
             JsonNode node = new ObjectMapper().readTree(contentAsString(result));
             
-            assertEquals(6, node.size());
+            assertEquals(5, node.size());
             assertEquals("identifier is required", node.get("errors").get("identifier").get(0).asText());
             assertEquals("InvalidEntityException", node.get("type").asText());
             assertNotNull(node.get("entity"));
             assertNotNull(node.get("errors"));
-            assertNotNull(node.get("entityClass"));
 
             assertStatusCode(400, result, node);
         }

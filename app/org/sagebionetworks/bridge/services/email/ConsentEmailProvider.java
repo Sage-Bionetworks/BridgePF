@@ -28,7 +28,6 @@ import org.jsoup.safety.Whitelist;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import com.fasterxml.jackson.core.util.ByteArrayBuilder;
-import com.google.common.collect.Maps;
 import com.lowagie.text.DocumentException;
 
 public class ConsentEmailProvider implements MimeTypeEmailProvider {
@@ -141,21 +140,14 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
             return html;
         } else {
             // This is now a fragment, assemble accordingly
-            Map<String,String> map = Maps.newHashMap();
-            map.put("studyName", study.getName());
-            map.put("supportEmail", study.getSupportEmail());
-            map.put("technicalEmail", study.getTechnicalEmail());
-            map.put("sponsorName", study.getSponsorName());
+            Map<String,String> map = BridgeUtils.studyTemplateVariables(study);
             String resolvedConsentAgreementHTML = BridgeUtils.resolveTemplate(consentAgreementHTML, map);
 
-            map = Maps.newHashMap();
-            map.put("studyName", study.getName());
             map.put("consent.body", resolvedConsentAgreementHTML);
             map.put("participant.name", username);
             map.put("participant.signing.date", signingDate);
             map.put("participant.email", userEmail);
             map.put("participant.sharing", sharingLabel);
-            
             return BridgeUtils.resolveTemplate(consentTemplate, map);
         }
     }

@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -35,6 +36,7 @@ import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.LimitExceededException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -228,6 +230,10 @@ public class ParticipantService {
         checkNotNull(study);
         checkNotNull(callerRoles);
         checkNotNull(participant);
+        
+        if (study.getAccountLimit() > 0) {
+            throwExceptionIfLimitMetOrExceeded(study);
+        }
 
         Validate.entityThrowingException(new StudyParticipantValidator(study, true), participant);
         
@@ -266,6 +272,15 @@ public class ParticipantService {
         }
         accountDao.updateAccount(account);
         optionsService.setAllOptions(study.getStudyIdentifier(), account.getHealthCode(), options);
+    }
+
+    private void throwExceptionIfLimitMetOrExceeded(Study study) {
+        // It's sufficient to get minimum number of records the total if for all records
+        PagedResourceList<AccountSummary> summaries = getPagedAccountSummaries(study, 0,
+                BridgeConstants.API_MINIMUM_PAGE_SIZE, null, null, null);
+        if (summaries.getTotal() >= study.getAccountLimit()) {
+            throw new LimitExceededException(String.format(BridgeConstants.MAX_USERS_ERROR, study.getAccountLimit()));
+        }
     }
 
     private void updateAccountOptionsAndRoles(Study study, Set<Roles> callerRoles,

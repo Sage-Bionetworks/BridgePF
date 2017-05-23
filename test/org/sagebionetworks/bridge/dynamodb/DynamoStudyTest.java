@@ -25,7 +25,6 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 /**
  * Main functionality we want to verify in this test is that study can be serialized with all values, 
  * but filtered in the API to exclude read-only studies when exposed to researchers.
- *
  */
 public class DynamoStudyTest {
     
@@ -77,6 +76,7 @@ public class DynamoStudyTest {
         assertTrue(node.get("externalIdValidationEnabled").asBoolean());
         assertTrue(node.get("externalIdRequiredOnSignup").asBoolean());
         assertTrue(node.get("emailSignInEnabled").asBoolean());
+        assertEquals(0, node.get("accountLimit").asInt());
         assertFalse(node.get("disableExport").asBoolean());
         assertEqualsAndNotNull("Study", node.get("type").asText());
         assertEqualsAndNotNull(study.getPushNotificationARNs().get(OperatingSystem.IOS),

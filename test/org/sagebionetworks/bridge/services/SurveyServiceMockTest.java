@@ -47,6 +47,7 @@ import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.validators.SurveyPublishValidator;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SurveyServiceMockTest {
@@ -54,7 +55,10 @@ public class SurveyServiceMockTest {
     private static final String SCHEDULE_PLAN_GUID = "schedulePlanGuid";
     private static final String SURVEY_GUID = "surveyGuid";
     private static final DateTime SURVEY_CREATED_ON = DateTime.parse("2017-02-08T20:07:57.179Z");
-    
+
+    @Mock
+    SurveyPublishValidator mockSurveyPublishValidator;
+
     @Mock
     SurveyDao mockSurveyDao;
     
@@ -78,6 +82,7 @@ public class SurveyServiceMockTest {
         service.setSurveyDao(mockSurveyDao);
         service.setSchedulePlanService(mockSchedulePlanService);
         service.setSharedModuleMetadataService(mockSharedModuleMetadataService);
+        service.setPublishValidator(mockSurveyPublishValidator);
     }
     
     @Test
@@ -87,7 +92,11 @@ public class SurveyServiceMockTest {
         Survey survey = new DynamoSurvey();
 
         // mock DAO
-        when(mockSurveyDao.publishSurvey(TEST_STUDY, keys, true)).thenReturn(survey);
+        when(mockSurveyDao.getSurvey(keys)).thenReturn(survey);
+        when(mockSurveyDao.publishSurvey(TEST_STUDY, survey, keys, true)).thenReturn(survey);
+
+        // mock publish validator
+        when(mockSurveyPublishValidator.supports(any())).thenReturn(true);
 
         // execute and validate
         Survey retval = service.publishSurvey(TEST_STUDY, keys, true);

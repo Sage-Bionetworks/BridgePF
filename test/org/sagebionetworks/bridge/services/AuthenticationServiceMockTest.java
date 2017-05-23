@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -41,10 +40,11 @@ import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.services.email.EmailSignInEmailProvider;
+import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AuthenticationServiceMockTest {
@@ -91,7 +91,7 @@ public class AuthenticationServiceMockTest {
     @Captor
     private ArgumentCaptor<String> stringCaptor;
     @Captor
-    private ArgumentCaptor<EmailSignInEmailProvider> providerCaptor;
+    private ArgumentCaptor<BasicEmailProvider> providerCaptor;
 
     private Study study;
 
@@ -140,10 +140,10 @@ public class AuthenticationServiceMockTest {
 
         verify(sendMailService).sendEmail(providerCaptor.capture());
         
-        EmailSignInEmailProvider provider = providerCaptor.getValue();
-        assertTrue(provider.getToken().length() == 32); // length of GUID without "-" symbol
+        BasicEmailProvider provider = providerCaptor.getValue();
+        assertEquals(32, provider.getTokenMap().get("token").length()); // length of GUID without "-" symbol
         assertEquals(study, provider.getStudy());
-        assertEquals(RECIPIENT_EMAIL, provider.getRecipientEmail());
+        assertEquals(RECIPIENT_EMAIL, Iterables.getFirst(provider.getRecipientEmails(), null));
     }
     
     @Test(expected = UnauthorizedException.class)

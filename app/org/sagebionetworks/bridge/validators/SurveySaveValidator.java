@@ -38,7 +38,7 @@ import org.springframework.validation.Validator;
 import com.google.common.collect.Sets;
 
 @Component
-public class SurveyValidator implements Validator {
+public class SurveySaveValidator implements Validator {
 
     @Override
     public boolean supports(Class<?> clazz) {
@@ -60,14 +60,14 @@ public class SurveyValidator implements Validator {
         if (StringUtils.isBlank(survey.getGuid())) {
             errors.rejectValue("guid", "is required");
         }
-        
+
         // Validate that no identifier has been duplicated.
         Set<String> foundIdentifiers = Sets.newHashSet();
         for (int i=0; i < survey.getElements().size(); i++) {
             SurveyElement element = survey.getElements().get(i);
             errors.pushNestedPath("elements["+i+"]");
             if (SURVEY_QUESTION_TYPE.equals(element.getType())) {
-                doValidateQuestion((SurveyQuestion)element, errors);    
+                doValidateQuestion((SurveyQuestion)element, errors);
             } else if (SURVEY_INFO_SCREEN_TYPE.equals(element.getType())) {
                 doValidateInfoScreen((SurveyInfoScreen)element, errors);
             }
@@ -80,7 +80,7 @@ public class SurveyValidator implements Validator {
         // You can get all sorts of NPEs if survey is not valid and you look at the rules.
         // So don't.
         if (!errors.hasErrors()) {
-            validateRules(errors, survey.getElements());    
+            validateRules(errors, survey.getElements());
         }
     }
     private void doValidateQuestion(SurveyQuestion question, Errors errors) {
@@ -143,7 +143,7 @@ public class SurveyValidator implements Validator {
                     // Validate the rule either has a skipTo target, or an endSurvey = TRUE, but not both.
                     if (rule.getSkipToTarget() != null && rule.getEndSurvey() != null) {
                         errors.rejectValue("rule", "cannot have a skipTo target and an endSurvey property");
-                    } 
+                    }
                     // But must have either a skipTo target or an endSurvey property
                     else if (rule.getSkipToTarget() == null && rule.getEndSurvey() == null) {
                         errors.rejectValue("rule", "must have a skipTo target or an endSurvey property");
@@ -173,7 +173,7 @@ public class SurveyValidator implements Validator {
                 }
             }
         }
-        
+
     }
     private void doValidateConstraints(SurveyQuestion question, Constraints con, Errors errors) {
         if (con.getDataType() == null) {
@@ -199,10 +199,10 @@ public class SurveyValidator implements Validator {
             doValidateConstraintsType(errors, hint, (NumericalConstraints)con);
         }
     }
-    
+
     private void doValidateConstraintsType(Errors errors, UIHint hint, MultiValueConstraints mcon) {
         String hintName = hint.name().toLowerCase();
-        
+
         if ((mcon.getAllowMultiple() || !mcon.getAllowOther()) && MultiValueConstraints.OTHER_ALWAYS_ALLOWED.contains(hint)) {
             errors.rejectValue("uiHint", "'"+hintName+"' is only valid when multiple = false and other = true");
         } else if (mcon.getAllowMultiple() && MultiValueConstraints.ONE_ONLY.contains(hint)) {
@@ -213,9 +213,7 @@ public class SurveyValidator implements Validator {
 
         // must have an enumeration (list of question options)
         List<SurveyQuestionOption> optionList = mcon.getEnumeration();
-        if (optionList == null || optionList.isEmpty()) {
-            errors.rejectValue("enumeration", "must have non-null, non-empty choices list");
-        } else {
+        if (optionList != null && !optionList.isEmpty()) {
             // validate each option
             int numOptions = optionList.size();
             Set<String> valueSet = new HashSet<>();
@@ -251,7 +249,7 @@ public class SurveyValidator implements Validator {
             }
         }
     }
-    
+
     private void doValidateConstraintsType(Errors errors, UIHint hint, StringConstraints con) {
         if (StringUtils.isNotBlank(con.getPattern())) {
             try {
@@ -272,7 +270,7 @@ public class SurveyValidator implements Validator {
             }
         }
     }
-    
+
     private void doValidateConstraintsType(Errors errors, UIHint hint, DateConstraints con) {
         LocalDate earliestDate = con.getEarliestValue();
         LocalDate latestDate = con.getLatestValue();
@@ -282,7 +280,7 @@ public class SurveyValidator implements Validator {
             }
         }
     }
-    
+
     private void doValidateConstraintsType(Errors errors, UIHint hint, DateTimeConstraints con) {
         DateTime earliestDate = con.getEarliestValue();
         DateTime latestDate = con.getLatestValue();
@@ -292,7 +290,7 @@ public class SurveyValidator implements Validator {
             }
         }
     }
-    
+
     private void doValidateConstraintsType(Errors errors, UIHint hint, NumericalConstraints con) {
         Double min = con.getMinValue();
         Double max = con.getMaxValue();

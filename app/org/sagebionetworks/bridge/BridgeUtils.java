@@ -5,6 +5,8 @@ import static java.lang.Integer.parseInt;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.HashSet;
@@ -23,6 +25,7 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.studies.Study;
 
 import org.springframework.core.annotation.AnnotationUtils;
 
@@ -46,6 +49,38 @@ public class BridgeUtils {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
+    /**
+     * Create a variable map for the <code>resolveTemplate</code> method that includes common values from 
+     * a study that used in most of our templates. The map is mutable. Variables include:
+     * <ul>
+     *  <li>studyName = study.getName()</li>
+     *  <li>studyId = study.getIdentifier()</li>
+     *  <li>sponsorName = study.getSponsorName()</li>
+     *  <li>supportEmail = study.getSupportEmail()</li>
+     *  <li>technicalEmail = study.getTechnicalEmail()</li>
+     *  <li>consentEmail = study.getConsentNotificationEmail()</li>
+     * </ul>
+     */
+    public static Map<String,String> studyTemplateVariables(Study study, Function<String,String> escaper) {
+        Map<String,String> map = Maps.newHashMap();
+        map.put("studyName", study.getName());
+        map.put("studyId", study.getIdentifier());
+        map.put("sponsorName", study.getSponsorName());
+        map.put("supportEmail", study.getSupportEmail());
+        map.put("technicalEmail", study.getTechnicalEmail());
+        map.put("consentEmail", study.getConsentNotificationEmail());
+        if (escaper != null) {
+            for (Map.Entry<String,String> entry : map.entrySet()) {
+                map.put(entry.getKey(), escaper.apply(entry.getValue()));
+            }
+        }
+        return map;
+    }
+    
+    public static Map<String,String> studyTemplateVariables(Study study) {
+        return studyTemplateVariables(study, null);
+    }
+    
     /**
      * A simple means of providing template variables in template strings, in the format <code>${variableName}</code>.
      * This value will be replaced with the value of the variable name. The variable name/value pairs are passed to the
@@ -290,4 +325,18 @@ public class BridgeUtils {
             map.remove(key);
         }
     }
+    
+    public static String encodeURIComponent(String component) {
+        String encoded = null;
+        if (component != null) {
+            try {
+                encoded = URLEncoder.encode(component, "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                // UTF-8 is always supported, so this should never happen. 
+                throw new BridgeServiceException(e.getMessage());
+            }
+        }
+        return encoded;
+    }
+
 }

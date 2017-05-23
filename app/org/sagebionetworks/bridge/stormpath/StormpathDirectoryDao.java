@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.google.common.collect.Maps;
 import com.stormpath.sdk.application.ApplicationAccountStoreMapping;
 import com.stormpath.sdk.application.ApplicationAccountStoreMappingCriteria;
 import com.stormpath.sdk.application.ApplicationAccountStoreMappings;
@@ -220,13 +219,15 @@ public class StormpathDirectoryDao implements DirectoryDao {
         }
         stormpathTemplate.setFromEmailAddress(study.getSupportEmail());
 
-        String subject = partiallyResolveTemplate(template.getSubject(), study);
+        Map<String,String> map = BridgeUtils.studyTemplateVariables(study);
+        String subject = BridgeUtils.resolveTemplate(template.getSubject(), map);
         stormpathTemplate.setSubject(subject);
         
         com.stormpath.sdk.mail.MimeType stormpathMimeType = getStormpathMimeType(template);
         stormpathTemplate.setMimeType(stormpathMimeType);
         
-        String body = partiallyResolveTemplate(template.getBody(), study);
+        map = BridgeUtils.studyTemplateVariables(study);
+        String body = BridgeUtils.resolveTemplate(template.getBody(), map);
         stormpathTemplate.setTextBody(body);
         stormpathTemplate.setHtmlBody(body);
 
@@ -252,14 +253,5 @@ public class StormpathDirectoryDao implements DirectoryDao {
     public static com.stormpath.sdk.mail.MimeType getStormpathMimeType(EmailTemplate template) {
         return (template.getMimeType() == MimeType.TEXT) ? 
             com.stormpath.sdk.mail.MimeType.PLAIN_TEXT : com.stormpath.sdk.mail.MimeType.HTML;
-    }
-    
-    private static String partiallyResolveTemplate(String template, Study study) {
-        Map<String,String> map = Maps.newHashMap();
-        map.put("studyName", study.getName());
-        map.put("supportEmail", study.getSupportEmail());
-        map.put("technicalEmail", study.getTechnicalEmail());
-        map.put("sponsorName", study.getSponsorName());
-        return BridgeUtils.resolveTemplate(template, map);
     }
 }

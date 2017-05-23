@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
@@ -224,8 +225,7 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public Survey publishSurvey(StudyIdentifier study, GuidCreatedOnVersionHolder keys, boolean newSchemaRev) {
-        Survey survey = getSurvey(keys);
+    public Survey publishSurvey(StudyIdentifier study, Survey survey, GuidCreatedOnVersionHolder keys, boolean newSchemaRev) {
         if (survey.isDeleted()) {
             throw new EntityNotFoundException(Survey.class);
         }

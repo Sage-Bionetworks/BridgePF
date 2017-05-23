@@ -97,7 +97,8 @@ public class DynamoSurveyDaoTest {
     }
     
     private Survey publishSurvey(StudyIdentifier studyIdentifier, Survey survey) {
-        Survey publishedSurvey = surveyDao.publishSurvey(studyIdentifier, survey, false);
+        Survey publishedSurvey = surveyDao.publishSurvey(studyIdentifier, survey,
+                new GuidCreatedOnVersionHolderImpl(survey), false);
         return publishedSurvey;
     }
 
