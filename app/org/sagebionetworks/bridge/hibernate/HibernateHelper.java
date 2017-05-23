@@ -63,10 +63,12 @@ public class HibernateHelper {
      * Executes the query and returns the count. Note that this prepends "select count(*) " to the query automatically.
      */
     public int queryCount(String queryString) {
-        Integer count = execute(session -> session.createQuery("select count(*) " + queryString, Integer.class)
+        // Hibernate returns a long for a count. However, we never expect more than 2 billion rows, for obvious
+        // reasons.
+        Long count = execute(session -> session.createQuery("select count(*) " + queryString, Long.class)
                 .uniqueResult());
         if (count != null) {
-            return count;
+            return count.intValue();
         } else {
             // This is unusual, but to protect from NPEs, return 0.
             return 0;
