@@ -238,10 +238,11 @@ public class ParticipantService {
 
         updateAccountOptionsAndRoles(study, callerRoles, options, account, participant);
         
-        accountDao.createAccount(study, account, sendVerifyEmail && study.isEmailVerificationEnabled());
+        String accountId = accountDao.createAccount(study, account, sendVerifyEmail && study
+                .isEmailVerificationEnabled());
         externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());
         optionsService.setAllOptions(study.getStudyIdentifier(), account.getHealthCode(), options);
-        return new IdentifierHolder(account.getId());
+        return new IdentifierHolder(accountId);
     }
 
     public void updateParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant) {

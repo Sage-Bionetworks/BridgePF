@@ -55,7 +55,6 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
@@ -78,7 +77,6 @@ import com.stormpath.sdk.group.Group;
 import com.stormpath.sdk.impl.resource.AbstractResource;
 import com.stormpath.sdk.resource.ResourceException;
 
-@Component("stormpathAccountDao")
 public class StormpathAccountDao implements AccountDao {
 
     private static DateTime DISTANT_PAST = DateTime.parse("2000-01-01T00:00:00.000Z");
@@ -96,32 +94,37 @@ public class StormpathAccountDao implements AccountDao {
 
     /** Grab some config attributes from our config object. */
     @Autowired
-    final void setConfig(Config config) {
+    public final void setConfig(Config config) {
         isProd = config.getEnvironment() == Environment.PROD;
     }
 
     @Resource(name = "stormpathApplication")
-    final void setStormpathApplication(Application application) {
+    public final void setStormpathApplication(Application application) {
         this.application = application;
     }
+
     @Resource(name = "stormpathClient")
-    final void setStormpathClient(Client client) {
+    public final void setStormpathClient(Client client) {
         this.client = client;
     }
+
     @Autowired
-    final void setStudyService(StudyService studyService) {
+    public final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
+
     @Autowired
-    final void setSubpopulationService(SubpopulationService subpopService) {
+    public final void setSubpopulationService(SubpopulationService subpopService) {
         this.subpopService = subpopService;
     }
+
     @Autowired
-    final void setHealthCodeService(HealthCodeService healthCodeService) {
+    public final void setHealthCodeService(HealthCodeService healthCodeService) {
         this.healthCodeService = healthCodeService;
     }
+
     @Resource(name="encryptorList")
-    final void setEncryptors(List<BridgeEncryptor> list) {
+    public final void setEncryptors(List<BridgeEncryptor> list) {
         for (BridgeEncryptor encryptor : list) {
             encryptors.put(encryptor.getVersion(), encryptor);
         }
@@ -192,7 +195,7 @@ public class StormpathAccountDao implements AccountDao {
                 results.add(AccountSummary.create(study.getStudyIdentifier(), acct));
             }
         }
-        return new PagedResourceList<AccountSummary>(results, offsetBy, pageSize, accts.getSize())
+        return new PagedResourceList<>(results, offsetBy, pageSize, accts.getSize())
                 .withFilter("emailFilter", emailFilter)
                 .withFilter("startDate", startDate)
                 .withFilter("endDate", endDate);
@@ -364,7 +367,7 @@ public class StormpathAccountDao implements AccountDao {
     }
     
     @Override
-    public void createAccount(Study study, Account account, boolean sendVerifyEmail) {
+    public String createAccount(Study study, Account account, boolean sendVerifyEmail) {
         checkNotNull(study);
         checkNotNull(account);
         
@@ -382,6 +385,9 @@ public class StormpathAccountDao implements AccountDao {
             }
             rethrowResourceException(e, account.getId());
         }
+
+        // Saving the account writes the account ID to the StormpathAccount object.
+        return account.getId();
     }
     
     @Override
