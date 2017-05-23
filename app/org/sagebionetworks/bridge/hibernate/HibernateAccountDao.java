@@ -65,6 +65,7 @@ public class HibernateAccountDao implements AccountDao {
     public void verifyEmail(EmailVerification verification) {
         // Not yet implemented. See https://sagebionetworks.jira.com/browse/BRIDGE-1838
         // Until then, the only way to verify an account in MySQL is to edit the database directly.
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /** {@inheritDoc} */
@@ -72,6 +73,7 @@ public class HibernateAccountDao implements AccountDao {
     public void resendEmailVerificationToken(StudyIdentifier studyIdentifier, Email email) {
         // Not yet implemented. See https://sagebionetworks.jira.com/browse/BRIDGE-1838
         // Until then, the only way to verify an account in MySQL is to edit the database directly.
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /** {@inheritDoc} */
@@ -80,6 +82,7 @@ public class HibernateAccountDao implements AccountDao {
         // Not yet implemented. See https://sagebionetworks.jira.com/browse/BRIDGE-1838
         // Until then, the only way to reset a password in MySQL is to call changePassword() or edit the database
         // directly.
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /** {@inheritDoc} */
@@ -88,6 +91,7 @@ public class HibernateAccountDao implements AccountDao {
         // Not yet implemented. See https://sagebionetworks.jira.com/browse/BRIDGE-1838
         // Until then, the only way to reset a password in MySQL is to call changePassword() or edit the database
         // directly.
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /** {@inheritDoc} */

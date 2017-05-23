@@ -110,7 +110,7 @@ public class BridgeSpringConfig {
     @Autowired
     public AccountDao accountDao(HealthCodeService healthCodeService, HibernateHelper hibernateHelper,
             StudyService studyService, SubpopulationService subpopService) {
-        // To avoid ambiguity and refactoring in nearly a dozen, we only want one bean with type AccountDao. This means
+        // To avoid ambiguity and refactoring in nearly a dozen places, we only want one bean with type AccountDao. This means
         // that, during the transition period, we'll need to manually wire up the AccountDao. Once the transition is
         // over and we only have one AccountDao, we can revert back to @Component and autowiring.
 
