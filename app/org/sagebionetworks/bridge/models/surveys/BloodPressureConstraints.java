@@ -6,7 +6,7 @@ import java.util.EnumSet;
 
 public class BloodPressureConstraints extends Constraints {
     public BloodPressureConstraints() {
-        setDataType(DataType.DECIMAL);
+        setDataType(DataType.STRING);
         setSupportedHints(EnumSet.of(BLOODPRESSURE));
     }
 }
