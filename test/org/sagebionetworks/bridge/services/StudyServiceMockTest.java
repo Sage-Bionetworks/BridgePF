@@ -53,6 +53,7 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
+import org.sagebionetworks.bridge.dao.ExportTimeDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -112,6 +113,8 @@ public class StudyServiceMockTest {
     @Mock
     private DirectoryDao directoryDao;
     @Mock
+    private ExportTimeDao exportTimeDao;
+    @Mock
     private CacheProvider cacheProvider;
     @Mock
     private SubpopulationService subpopService;
@@ -146,6 +149,7 @@ public class StudyServiceMockTest {
         service.setSynapseClient(mockSynapseClient);
         service.setParticipantService(participantService);
         service.setSchedulePlanService(schedulePlanService);
+        service.setExportTimeDao(exportTimeDao);
 
         study = getTestStudy();
         when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
@@ -206,6 +210,7 @@ public class StudyServiceMockTest {
         // verify we called the correct dependent services
         verify(studyDao).deleteStudy(study);
         verify(directoryDao).deleteDirectoryForStudy(study);
+        verify(exportTimeDao).deleteStudyInfo(study.getStudyIdentifier().getIdentifier());
         verify(compoundActivityDefinitionService).deleteAllCompoundActivityDefinitionsInStudy(
                 study.getStudyIdentifier());
         verify(subpopService).deleteAllSubpopulations(study.getStudyIdentifier());
@@ -318,7 +323,6 @@ public class StudyServiceMockTest {
 
         verify(studyDao, never()).deactivateStudy(anyString());
         verify(studyDao, never()).deleteStudy(any());
-
     }
 
     @Test(expected = EntityNotFoundException.class)

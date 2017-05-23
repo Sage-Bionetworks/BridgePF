@@ -11,12 +11,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import javax.annotation.Resource;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
@@ -43,6 +41,7 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
+import org.sagebionetworks.bridge.dao.ExportTimeDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
@@ -82,6 +81,7 @@ public class StudyService {
     private UploadCertificateService uploadCertService;
     private StudyDao studyDao;
     private DirectoryDao directoryDao;
+    private ExportTimeDao exportTimeDao;
     private StudyValidator validator;
     private CacheProvider cacheProvider;
     private SubpopulationService subpopService;
@@ -145,6 +145,10 @@ public class StudyService {
     @Autowired
     final void setDirectoryDao(DirectoryDao directoryDao) {
         this.directoryDao = directoryDao;
+    }
+    @Autowired
+    final void setExportTimeDao(ExportTimeDao exportTimeDao) {
+        this.exportTimeDao = exportTimeDao;
     }
     @Autowired
     final void setCacheProvider(CacheProvider cacheProvider) {
@@ -494,6 +498,8 @@ public class StudyService {
                     existing.getStudyIdentifier());
             subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
             topicService.deleteAllTopics(existing.getStudyIdentifier());
+            // also delete field in export time table
+            exportTimeDao.deleteStudyInfo(existing.getStudyIdentifier().getIdentifier());
         }
 
         cacheProvider.removeStudy(identifier);

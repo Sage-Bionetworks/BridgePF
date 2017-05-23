@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.DirectoryDao;
+import org.sagebionetworks.bridge.dao.ExportTimeDao;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -57,6 +58,9 @@ public class StudyServiceTest {
     
     @Resource
     DirectoryDao directoryDao;
+
+    @Resource
+    ExportTimeDao exportTimeDao;
     
     @Resource
     SubpopulationDao subpopDao;

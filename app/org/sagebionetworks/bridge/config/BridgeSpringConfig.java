@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import javax.annotation.Resource;
 
 import com.amazonaws.ClientConfiguration;
@@ -31,14 +30,6 @@ import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.client.ClientBuilder;
 import com.stormpath.sdk.client.Clients;
 import com.stormpath.sdk.impl.client.DefaultClientBuilder;
-
-import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
-import org.sagebionetworks.bridge.dynamodb.DynamoCompoundActivityDefinition;
-import org.sagebionetworks.bridge.dynamodb.DynamoNamingHelper;
-import org.sagebionetworks.bridge.dynamodb.DynamoNotificationRegistration;
-import org.sagebionetworks.bridge.dynamodb.DynamoNotificationTopic;
-import org.sagebionetworks.bridge.dynamodb.DynamoTopicSubscription;
-
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
@@ -49,7 +40,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-
 import org.springframework.context.annotation.FilterType;
 
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -57,22 +47,29 @@ import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptorCacheLoader;
+import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
+import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
+import org.sagebionetworks.bridge.dynamodb.DynamoCompoundActivityDefinition;
+import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
+import org.sagebionetworks.bridge.dynamodb.DynamoExportTime;
+import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
+import org.sagebionetworks.bridge.dynamodb.DynamoFPHSExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataAttachment;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoIndexHelper;
+import org.sagebionetworks.bridge.dynamodb.DynamoNamingHelper;
+import org.sagebionetworks.bridge.dynamodb.DynamoNotificationRegistration;
+import org.sagebionetworks.bridge.dynamodb.DynamoNotificationTopic;
 import org.sagebionetworks.bridge.dynamodb.DynamoParticipantOptions;
 import org.sagebionetworks.bridge.dynamodb.DynamoReportData;
 import org.sagebionetworks.bridge.dynamodb.DynamoReportIndex;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
+import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
+import org.sagebionetworks.bridge.dynamodb.DynamoSubpopulation;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyElement;
-import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
-import org.sagebionetworks.bridge.dynamodb.DynamoSubpopulation;
-import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
-import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
-import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
-import org.sagebionetworks.bridge.dynamodb.DynamoFPHSExternalIdentifier;
+import org.sagebionetworks.bridge.dynamodb.DynamoTopicSubscription;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadDedupe;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
@@ -472,6 +469,12 @@ public class BridgeSpringConfig {
     @Autowired
     public DynamoDBMapper activityDdbMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoScheduledActivity.class);
+    }
+
+    @Bean(name = "exportTimeDdbMapper")
+    @Autowired
+    public DynamoDBMapper exportTimeDdbMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoExportTime.class);
     }
 
     @Bean

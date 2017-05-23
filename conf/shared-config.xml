@@ -190,4 +190,8 @@
     <bean id="NotificationTopicControllerProxied" parent="proxiedController">
         <property name="targetName" value="notificationTopicController"/>
     </bean>
+
+    <bean id="InstantExportControllerProxied" parent="proxiedController">
+        <property name="targetName" value="instantExportController"/>
+    </bean>
 </beans>
