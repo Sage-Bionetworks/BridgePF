@@ -22,8 +22,6 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.stereotype.Controller;
 
 import play.mvc.BodyParser;
@@ -92,20 +90,24 @@ public class AuthenticationController extends BaseController {
     public Result resendEmailVerification() throws Exception {
         JsonNode json = requestToJSON(request());
         Email email = parseJson(request(), Email.class);
-        StudyIdentifier studyIdentifier = getStudyIdentifierOrThrowException(json);
-        authenticationService.resendEmailVerification(studyIdentifier, email);
+        Study study = getStudyOrThrowException(json);
+        authenticationService.resendEmailVerification(study.getStudyIdentifier(), email);
         return okResult("If registered with the study, we'll email you instructions on how to verify your account.");
     }
 
     public Result requestResetPassword() throws Exception {
         Email email = parseJson(request(), Email.class);
         Study study = studyService.getStudy(email.getStudyIdentifier());
+        verifySupportedVersionOrThrowException(study);
         authenticationService.requestResetPassword(study, email);
+
         return okResult("If registered with the study, we'll email you instructions on how to change your password.");
     }
 
     public Result resetPassword() throws Exception {
         PasswordReset passwordReset = parseJson(request(), PasswordReset.class);
+        Study study = studyService.getStudy(passwordReset.getStudyIdentifier());
+        verifySupportedVersionOrThrowException(study);
         authenticationService.resetPassword(passwordReset);
         return okResult("Password has been changed.");
     }
@@ -173,11 +175,6 @@ public class AuthenticationController extends BaseController {
         Study study = studyService.getStudy(studyId);
         verifySupportedVersionOrThrowException(study);
         return study;
-    }
-
-    private StudyIdentifier getStudyIdentifierOrThrowException(JsonNode node) {
-        String studyId = getStudyStringOrThrowException(node);
-        return new StudyIdentifierImpl(studyId);
     }
 
     private String getStudyStringOrThrowException(JsonNode node) {

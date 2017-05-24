@@ -31,6 +31,8 @@ public class EmailVerificationService {
 
     private static final Logger LOG = LoggerFactory.getLogger(EmailVerificationService.class);
     
+    private static final int VERIFIED_EMAIL_CACHE_IN_SECONDS = 60*5;
+    
     private static final String KEY_POSTFIX = ":emailVerificationStatus";
     
     private AmazonSimpleEmailServiceClient sesClient;
@@ -45,13 +47,13 @@ public class EmailVerificationService {
         this.cacheProvider = cacheProvider;
     }
     
-    private String getVerifiedAddressKey(String emailAddress) {
+    protected String getVerifiedAddressKey(String emailAddress) {
         return emailAddress + KEY_POSTFIX;
     }
     
     private EmailVerificationStatus cacheAndReturn(String emailAddress, EmailVerificationStatus status) {
         String key = getVerifiedAddressKey(emailAddress);
-        cacheProvider.setString(key, status.name(), 60*60*24);
+        cacheProvider.setString(key, status.name(), VERIFIED_EMAIL_CACHE_IN_SECONDS);
         return status;
     }
     

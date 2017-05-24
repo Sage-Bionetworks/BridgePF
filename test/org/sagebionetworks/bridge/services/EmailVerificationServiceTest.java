@@ -47,25 +47,25 @@ public class EmailVerificationServiceTest {
     private CacheProvider cacheProvider;
     @Spy
     private EmailVerificationService service;
-
+    
     private ArgumentCaptor<GetIdentityVerificationAttributesRequest> getCaptor;
-
+    
     @Before
     public void before() {
         service.setAmazonSimpleEmailServiceClient(sesClient);
         service.setCacheProvider(cacheProvider);
     }
-
+    
     private void mockSession(String status) {
         getCaptor = ArgumentCaptor.forClass(GetIdentityVerificationAttributesRequest.class);
-
-        Map<String, IdentityVerificationAttributes> map = Maps.newHashMap();
+        
+        Map<String,IdentityVerificationAttributes> map = Maps.newHashMap();
         map.put(EMAIL_ADDRESS, attributes);
         when(result.getVerificationAttributes()).thenReturn(map);
         when(attributes.getVerificationStatus()).thenReturn(status); // aka unverified
         when(sesClient.getIdentityVerificationAttributes(any())).thenReturn(result);
     }
-
+    
     @Test
     public void verifiedEmailTakesNoAction() {
         mockSession("Success");
@@ -79,7 +79,7 @@ public class EmailVerificationServiceTest {
 
         verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY), eq("VERIFIED"), anyInt());
     }
-
+    
     @Test
     public void ifUnverifiedAttemptsToResendVerification() {
         mockSession("Failure");
@@ -93,7 +93,7 @@ public class EmailVerificationServiceTest {
 
         verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY), eq("UNVERIFIED"), anyInt());
     }
-
+    
     @Test
     public void emailDoesntExistRequestVerification() {
         ArgumentCaptor<VerifyEmailIdentityRequest> verifyCaptor = ArgumentCaptor
@@ -110,7 +110,7 @@ public class EmailVerificationServiceTest {
         
         verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY), eq("PENDING"), anyInt());
     }
-
+    
     @Test
     public void canResendRegardlessOfStatus() {
         ArgumentCaptor<VerifyEmailIdentityRequest> verifyCaptor = ArgumentCaptor
@@ -125,7 +125,7 @@ public class EmailVerificationServiceTest {
         
         verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY), eq("PENDING"), anyInt());
     }
-
+    
     @Test
     public void getEmailStatus() {
         mockSession("Success");
@@ -136,7 +136,7 @@ public class EmailVerificationServiceTest {
         assertEquals(EmailVerificationStatus.VERIFIED, status);
         verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY), eq("VERIFIED"), anyInt());
     }
-
+    
     @Test
     public void getEmailStatusAttributesNull() {
         getCaptor = ArgumentCaptor.forClass(GetIdentityVerificationAttributesRequest.class);
@@ -153,7 +153,7 @@ public class EmailVerificationServiceTest {
         
         verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY), eq("UNVERIFIED"), anyInt());        
     }
-
+    
     @Test
     public void getEmailStatusVerificationStatusNull() {
         getCaptor = ArgumentCaptor.forClass(GetIdentityVerificationAttributesRequest.class);
@@ -171,7 +171,7 @@ public class EmailVerificationServiceTest {
         
         verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY), eq("UNVERIFIED"), anyInt());        
     }
-
+    
     @Test
     public void sendVerifyEmailRequest() {
         mockSession("Success");
@@ -179,7 +179,7 @@ public class EmailVerificationServiceTest {
 
         verify(sesClient).verifyEmailIdentity(any());
         
-        verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY), eq("PENDING"), anyInt());        
+        verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY), eq("PENDING"), anyInt()); 
     }
     
     @Test
@@ -187,7 +187,7 @@ public class EmailVerificationServiceTest {
         when(cacheProvider.getString(EMAIL_ADDRESS_KEY)).thenReturn("VERIFIED");
         assertTrue(service.isVerified(EMAIL_ADDRESS));
     }
-
+    
     @Test
     public void isPendingAndCached() throws Exception {
         when(cacheProvider.getString(EMAIL_ADDRESS_KEY)).thenReturn("PENDING");
@@ -203,19 +203,31 @@ public class EmailVerificationServiceTest {
     @Test
     public void isVerifiedUncached() {
         doReturn(EmailVerificationStatus.VERIFIED).when(service).getEmailStatus(EMAIL_ADDRESS);
+        
         assertTrue(service.isVerified(EMAIL_ADDRESS));
+        
+        verify(cacheProvider).setString(eq(service.getVerifiedAddressKey(EMAIL_ADDRESS)),
+                eq("VERIFIED"), anyInt());
     }
     
     @Test
     public void isPendingUncached() {
         doReturn(EmailVerificationStatus.PENDING).when(service).getEmailStatus(EMAIL_ADDRESS);
+        
         assertFalse(service.isVerified(EMAIL_ADDRESS));
+        
+        verify(cacheProvider).setString(eq(service.getVerifiedAddressKey(EMAIL_ADDRESS)),
+                eq("PENDING"), anyInt());
     }
-
+    
     @Test
     public void isUnverifiedUncached() {
         doReturn(EmailVerificationStatus.UNVERIFIED).when(service).getEmailStatus(EMAIL_ADDRESS);
+        
         assertFalse(service.isVerified(EMAIL_ADDRESS));
+        
+        verify(cacheProvider).setString(eq(service.getVerifiedAddressKey(EMAIL_ADDRESS)),
+                eq("UNVERIFIED"), anyInt());
     }
 
 }

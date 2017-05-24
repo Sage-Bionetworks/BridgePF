@@ -28,6 +28,8 @@ public class SendMailViaAmazonServiceTest {
     
     private SendMailViaAmazonService service;
     
+    private Study study;
+    
     @Mock
     private AmazonSimpleEmailServiceClient emailClient;
     
@@ -39,6 +41,10 @@ public class SendMailViaAmazonServiceTest {
     
     @Before
     public void before() {
+        study = Study.create();
+        study.setName("Name");
+        study.setSupportEmail(SUPPORT_EMAIL);
+        
         service = new SendMailViaAmazonService();
         service.setEmailClient(emailClient);
         service.setEmailVerificationService(emailVerificationService);
@@ -49,8 +55,8 @@ public class SendMailViaAmazonServiceTest {
         when(emailVerificationService.isVerified(SUPPORT_EMAIL)).thenReturn(false);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(Study.create())
-                .withRecipientEmail(SUPPORT_EMAIL)
+                .withStudy(study)
+                .withRecipientEmail(RECIPIENT_EMAIL)
                 .withEmailTemplate(new EmailTemplate("subject", "body", MimeType.HTML))
                 .build();
         try {
@@ -65,10 +71,6 @@ public class SendMailViaAmazonServiceTest {
     public void verifiedEmailWorks() {
         when(emailClient.sendRawEmail(any())).thenReturn(result);
         when(emailVerificationService.isVerified(SUPPORT_EMAIL)).thenReturn(true);
-        
-        Study study = Study.create();
-        study.setName("Name");
-        study.setSupportEmail(SUPPORT_EMAIL);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)

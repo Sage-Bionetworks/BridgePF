@@ -30,7 +30,7 @@ import org.xhtmlrenderer.pdf.ITextRenderer;
 import com.fasterxml.jackson.core.util.ByteArrayBuilder;
 import com.lowagie.text.DocumentException;
 
-public class ConsentEmailProvider implements MimeTypeEmailProvider {
+public class ConsentEmailProvider extends MimeTypeEmailProvider {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormat.forPattern("MMMM d, yyyy");
     private static final String CONSENT_EMAIL_SUBJECT = "Consent Agreement for %s";
@@ -41,7 +41,6 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
     private static final String SUB_TYPE_HTML = "html";
     private static final String MIME_TYPE_PDF = "application/pdf";
 
-    private Study study;
     private String userEmail;
     private ConsentSignature consentSignature;
     private SharingScope sharingScope;
@@ -50,7 +49,7 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
 
     public ConsentEmailProvider(Study study, String userEmail, ConsentSignature consentSignature,
             SharingScope sharingScope, String consentAgreementHTML, String consentTemplate) {
-        this.study = study;
+        super(study);
         this.userEmail = userEmail;
         this.consentSignature = consentSignature;
         this.sharingScope = sharingScope;
@@ -59,22 +58,17 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
     }
 
     @Override
-    public String getPlainSenderEmail() {
-        return study.getSupportEmail();
-    }
-    
-    @Override
     public MimeTypeEmail getMimeTypeEmail() throws MessagingException {
         MimeTypeEmailBuilder builder = new MimeTypeEmailBuilder();
 
-        String subject = String.format(CONSENT_EMAIL_SUBJECT, study.getName());
+        String subject = String.format(CONSENT_EMAIL_SUBJECT, getStudy().getName());
         builder.withSubject(subject);
 
-        final String sendFromEmail = String.format("%s <%s>", study.getName(), study.getSupportEmail());
+        final String sendFromEmail = getFormattedSenderEmail();
         builder.withSender(sendFromEmail);
 
         // Must wrap in new list because set from BridgeUtils.commaListToSet() is immutable
-        Set<String> recipients = BridgeUtils.commaListToOrderedSet(study.getConsentNotificationEmail());
+        Set<String> recipients = BridgeUtils.commaListToOrderedSet(getStudy().getConsentNotificationEmail());
         builder.withRecipients(recipients);
         builder.withRecipient(userEmail);
 
@@ -145,7 +139,7 @@ public class ConsentEmailProvider implements MimeTypeEmailProvider {
             return html;
         } else {
             // This is now a fragment, assemble accordingly
-            Map<String,String> map = BridgeUtils.studyTemplateVariables(study);
+            Map<String,String> map = BridgeUtils.studyTemplateVariables(getStudy());
             String resolvedConsentAgreementHTML = BridgeUtils.resolveTemplate(consentAgreementHTML, map);
 
             map.put("consent.body", resolvedConsentAgreementHTML);
