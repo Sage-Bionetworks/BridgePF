@@ -234,6 +234,7 @@ public class StormpathAccountDaoMockTest {
         doReturn(false).when(dao).isAccountDirty(any());
         
         when(stormpathAccount.getCustomData()).thenReturn(customData);
+        when(stormpathAccount.getHref()).thenReturn(BridgeConstants.STORMPATH_ACCOUNT_BASE_HREF + "dummy-id");
         
         when(client.instantiate(com.stormpath.sdk.account.Account.class)).thenReturn(stormpathAccount);
         when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
@@ -247,7 +248,8 @@ public class StormpathAccountDaoMockTest {
         
         Account account = dao.constructAccount(study, participant.getEmail(), participant.getPassword());
         assertNotNull(account);
-        dao.createAccount(study, account, false);
+        String accountId = dao.createAccount(study, account, false);
+        assertEquals("dummy-id", accountId);
 
         ArgumentCaptor<com.stormpath.sdk.account.Account> argument = ArgumentCaptor.forClass(com.stormpath.sdk.account.Account.class);
         verify(directory).createAccount(argument.capture(), anyBoolean());

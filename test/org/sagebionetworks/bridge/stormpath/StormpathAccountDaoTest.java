@@ -45,6 +45,7 @@ import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -58,7 +59,7 @@ public class StormpathAccountDaoTest {
     private static final String PASSWORD = "P4ssword!";
     private static final int DATE_RECORDS_LIMIT = 9;
 
-    @Resource(name="stormpathAccountDao")
+    @Autowired
     private StormpathAccountDao accountDao;
     
     @Resource
@@ -262,7 +263,8 @@ public class StormpathAccountDaoTest {
                     .withRoles(Sets.newHashSet(DEVELOPER, TEST_USERS)).build();
             account = accountDao.constructAccount(study, participant.getEmail(), participant.getPassword());
             account.setRoles(participant.getRoles());
-            accountDao.createAccount(study, account, false);
+            String accountId = accountDao.createAccount(study, account, false);
+            assertNotNull(accountId);
 
             assertNull(account.getFirstName()); // defaults are not visible
             assertNull(account.getLastName());
