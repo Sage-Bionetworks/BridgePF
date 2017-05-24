@@ -4,13 +4,11 @@ import static org.sagebionetworks.bridge.models.surveys.UIHint.WEIGHT;
 
 import java.util.EnumSet;
 
-public class WeightConstraints extends Constraints {
+public class WeightConstraints extends DecimalConstraints {
     private boolean isForInfant;
-    private Unit unit;
 
     public WeightConstraints() {
-        setDataType(DataType.DECIMAL);
-        setSupportedHints(EnumSet.of(WEIGHT));
+        super();
     }
 
     public void setIsForInfant(boolean isForInfant) {
@@ -19,13 +17,5 @@ public class WeightConstraints extends Constraints {
 
     public boolean isForInfant() {
         return isForInfant;
-    }
-
-    public Unit getUnit() {
-        return unit;
-    }
-
-    public void setUnit(Unit unit) {
-        this.unit = unit;
     }
 }

@@ -15,6 +15,7 @@ import java.util.TreeSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
@@ -30,6 +31,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.surveys.BloodPressureConstraints;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.DataType;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
@@ -206,7 +208,7 @@ public class UploadSchemaService {
         // create upload field definitions from survey questions
         List<UploadFieldDefinition> newFieldDefList = new ArrayList<>();
         for (SurveyQuestion oneQuestion : surveyQuestionList) {
-            addFieldDefsForSurveyQuestion(newFieldDefList, oneQuestion);
+            newFieldDefList.addAll(createUploadFieldDefinitions(oneQuestion));
         }
 
         // If we want to use the existing schema rev, and one exists. Note that we've already validated that it is for
@@ -242,11 +244,10 @@ public class UploadSchemaService {
         return createSchemaRevisionV4(studyId, schemaToCreate);
     }
 
-    // Helper method to convert a survey question into one or more schema field defs. As some survey questions can
-    // generate more than one field (such as unit fields), callers should pass in a field def list, and this method
-    // will append created field defs to that list.
-    private static void addFieldDefsForSurveyQuestion(List<UploadFieldDefinition> fieldDefList,
-            SurveyQuestion question) {
+    // Helper method to convert a survey question into one or more schema field defs based on the question's constraints
+    static List<UploadFieldDefinition> createUploadFieldDefinitions(SurveyQuestion question) {
+        List<UploadFieldDefinition> uploadFieldDefinitions = Lists.newArrayList();
+
         // These preconditions should never happen, but we have a Preconditions check here just in case.
         checkNotNull(question);
 
@@ -259,11 +260,12 @@ public class UploadSchemaService {
         // Init field def builder with basic fields. Note that all survey questions are skippable, so mark the field as
         // optional (not required).
         String fieldName = question.getIdentifier();
-        UploadFieldDefinition.Builder fieldDefBuilder = new UploadFieldDefinition.Builder().withName(fieldName)
-                .withRequired(false);
 
         UploadFieldType uploadFieldType;
         if (constraints instanceof MultiValueConstraints) {
+            UploadFieldDefinition.Builder fieldDefBuilder = new UploadFieldDefinition.Builder().withName(fieldName)
+                    .withRequired(false);
+
             MultiValueConstraints multiValueConstraints = (MultiValueConstraints) constraints;
             if (multiValueConstraints.getAllowMultiple()) {
                 uploadFieldType = UploadFieldType.MULTI_CHOICE;
@@ -298,12 +300,38 @@ public class UploadSchemaService {
                     fieldDefBuilder.withUnboundedText(true);
                 }
             }
+            fieldDefBuilder.withType(uploadFieldType);
+
+            uploadFieldDefinitions.add(fieldDefBuilder.build());
+        } else if (constraints instanceof BloodPressureConstraints) {
+            uploadFieldDefinitions.add(
+                    new UploadFieldDefinition.Builder()
+                            .withName(fieldName + UploadUtil.SYSTOLIC_FIELD_SUFFIX)
+                            .withRequired(false)
+                            .withType(UploadFieldType.INT)
+                            .build());
+            uploadFieldDefinitions.add(
+                    new UploadFieldDefinition.Builder()
+                            .withName(fieldName + UploadUtil.DIASTOLIC_FIELD_SUFFIX)
+                            .withRequired(false)
+                            .withType(UploadFieldType.INT)
+                            .build());
+            uploadFieldDefinitions.add(
+                    new UploadFieldDefinition.Builder()
+                            .withName(fieldName + UploadUtil.UNIT_FIELD_SUFFIX)
+                            .withRequired(false)
+                            .withType(UploadFieldType.STRING)
+                            .withMaxLength(Unit.MAX_STRING_LENGTH)
+                            .build());
         } else {
             // Get upload field type from the map.
             uploadFieldType = SURVEY_TO_SCHEMA_TYPE.get(surveyQuestionType);
             if (uploadFieldType == null) {
                 throw new BridgeServiceException("Unexpected survey question type: " + surveyQuestionType);
             }
+
+            UploadFieldDefinition.Builder fieldDefBuilder = new UploadFieldDefinition.Builder().withName(fieldName)
+                    .withRequired(false);
 
             // Type-specific parameters.
             if (constraints instanceof StringConstraints) {
@@ -315,19 +343,21 @@ public class UploadSchemaService {
                     fieldDefBuilder.withUnboundedText(true);
                 }
             }
+            fieldDefBuilder.withType(uploadFieldType);
+
+            uploadFieldDefinitions.add(fieldDefBuilder.build());
+
+            // NumericalConstraints (integer, decimal, duration) have units. We want to write the unit into Synapse in case
+            // (a) the survey question changes the units or (b) we add support for app-specified units.
+            if (constraints instanceof NumericalConstraints) {
+                UploadFieldDefinition unitFieldDef = new UploadFieldDefinition.Builder()
+                        .withName(fieldName + UploadUtil.UNIT_FIELD_SUFFIX).withType(UploadFieldType.STRING)
+                        .withRequired(false).withMaxLength(Unit.MAX_STRING_LENGTH).build();
+                uploadFieldDefinitions.add(unitFieldDef);
+            }
         }
 
-        fieldDefBuilder.withType(uploadFieldType);
-        fieldDefList.add(fieldDefBuilder.build());
-
-        // NumericalConstraints (integer, decimal, duration) have units. We want to write the unit into Synapse in case
-        // (a) the survey question changes the units or (b) we add support for app-specified units.
-        if (constraints instanceof NumericalConstraints) {
-            UploadFieldDefinition unitFieldDef = new UploadFieldDefinition.Builder()
-                    .withName(fieldName + UploadUtil.UNIT_FIELD_SUFFIX).withType(UploadFieldType.STRING)
-                    .withRequired(false).withMaxLength(Unit.MAX_STRING_LENGTH).build();
-            fieldDefList.add(unitFieldDef);
-        }
+        return uploadFieldDefinitions;
     }
 
     // Helper method for merging the field def lists for survey schemas. The return value is a struct that contains the

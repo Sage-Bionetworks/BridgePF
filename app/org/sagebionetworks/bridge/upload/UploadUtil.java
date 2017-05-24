@@ -61,6 +61,8 @@ public class UploadUtil {
      * called "jogtime_unit".
      */
     public static final String UNIT_FIELD_SUFFIX = "_unit";
+    public static final String DIASTOLIC_FIELD_SUFFIX = "_diastolic";
+    public static final String SYSTOLIC_FIELD_SUFFIX = "_systolic";
 
     /** Utility method for canonicalizing an upload JSON value given the schema's field type. */
     public static CanonicalizationResult canonicalize(final JsonNode valueNode, UploadFieldType type) {
