@@ -18,14 +18,19 @@ public abstract class MimeTypeEmailProvider {
     }
     
     /**
-     * Get the sender email address without any further formatting. So for example, if the provider formats the sender
-     * email as <code>"Study Name" &lt;email@email.com&gtl</code>, This method should return only
-     * <code>email@email.com</code>.
+     * Get the sender email address without any further formatting. For example, if the provider formats the sender
+     * email as <code>"Study Name" &lt;email@email.com&gtl</code>, This method returns only <code>email@email.com</code>.
      */
     public String getPlainSenderEmail() {
         Set<String> senderEmails = BridgeUtils.commaListToOrderedSet(getStudy().getSupportEmail());
         return Iterables.getFirst(senderEmails, null);
     }
+    
+    /**
+     * Get the sender email address as formatted for an email. For example, if the provider's email address is
+     * <code>email@email.com</code>, this method would return something like
+     * <code>"Study Name" &lt;email@email.com&gtl</code>.
+     */
     public String getFormattedSenderEmail() {
         String senderEmail = getPlainSenderEmail();
         return String.format("%s <%s>", getStudy().getName(), senderEmail);
