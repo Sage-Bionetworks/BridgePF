@@ -25,7 +25,10 @@ import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+@Component
 public class AccountWorkflowService {
     
     private static final String PASSWORD_RESET_TOKEN_EXPIRED = "Password reset token has expired (or already been used).";
@@ -62,19 +65,23 @@ public class AccountWorkflowService {
     private AccountDao accountDao;
     
     private CacheProvider cacheProvider;
-    
+
+    @Autowired
     public final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
-    
+
+    @Autowired
     public final void setSendMailService(SendMailService sendMailService) {
         this.sendMailService = sendMailService;
     }
-    
+
+    @Autowired
     public final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
-    
+
+    @Autowired
     public final void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
     }

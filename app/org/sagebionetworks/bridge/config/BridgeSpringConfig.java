@@ -31,7 +31,6 @@ import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.client.ClientBuilder;
 import com.stormpath.sdk.client.Clients;
 
-import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
 import org.sagebionetworks.bridge.dynamodb.DynamoCompoundActivityDefinition;
@@ -52,6 +51,8 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.Primary;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
@@ -80,15 +81,9 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.dynamodb.DynamoUtils;
 import org.sagebionetworks.bridge.hibernate.HibernateAccount;
 import org.sagebionetworks.bridge.hibernate.HibernateAccountDao;
-import org.sagebionetworks.bridge.hibernate.HibernateHelper;
 import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.s3.S3Helper;
-import org.sagebionetworks.bridge.services.AccountWorkflowService;
-import org.sagebionetworks.bridge.services.HealthCodeService;
-import org.sagebionetworks.bridge.services.SendMailService;
-import org.sagebionetworks.bridge.services.StudyService;
-import org.sagebionetworks.bridge.services.SubpopulationService;
 import org.sagebionetworks.bridge.stormpath.StormpathAccountDao;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
 import org.sagebionetworks.bridge.upload.IosSchemaValidationHandler2;
@@ -109,48 +104,26 @@ import org.sagebionetworks.bridge.upload.UploadValidationHandler;
         type = FilterType.ANNOTATION, value = Configuration.class))
 @Configuration
 public class BridgeSpringConfig {
-    @Bean
+    // This bean exists so we can use configuration to control whether to use MySQL/Hibernate or Stormpath. In the
+    // future, this bean may be moved to its own class to do multiplexing/fallback between the Hibernate and Stormpath.
+    //
+    // Note that Spring first tries to autowire by type, then falls back to autowiring by name (which includes implicit
+    // names for both beans and setters). To guarantee that this is the bean Spring picks up, we tag it with @Primary.
+    //
+    // In order to address circular dependency wonkiness, we use the @Lazy annotation. This also has the nice side
+    // effect that, whichever DAO we use, the other one will never be instantiated.
     @Autowired
-    public AccountDao accountDao(CacheProvider cacheProvider, HealthCodeService healthCodeService,
-            HibernateHelper hibernateHelper, SendMailService sendMailService, StudyService studyService,
-            SubpopulationService subpopService) {
-        // To avoid ambiguity and refactoring in nearly a dozen places, we only want one bean with type AccountDao. This means
-        // that, during the transition period, we'll need to manually wire up the AccountDao. Once the transition is
-        // over and we only have one AccountDao, we can revert back to @Component and autowiring.
-
-        // Similarly, in order to avoid an unresolvable circular dependency, we manually create the
-        // AccountWorkflowService here as well.
-        AccountWorkflowService accountWorkflowService = new AccountWorkflowService();
-        accountWorkflowService.setCacheProvider(cacheProvider);
-        accountWorkflowService.setSendMailService(sendMailService);
-        accountWorkflowService.setStudyService(studyService);
-
+    @Bean
+    @Primary
+    public AccountDao migrationAccountDao(@Lazy HibernateAccountDao hibernateAccountDao,
+            @Lazy StormpathAccountDao stormpathAccountDao) {
         BridgeConfig config = bridgeConfig();
         String authProvider = config.get("auth.provider");
-        AccountDao accountDao;
         if ("mysql".equalsIgnoreCase(authProvider)) {
-            HibernateAccountDao hibernateAccountDao = new HibernateAccountDao();
-            hibernateAccountDao.setAccountWorkflowService(accountWorkflowService);
-            hibernateAccountDao.setHealthCodeService(healthCodeService);
-            hibernateAccountDao.setHibernateHelper(hibernateHelper);
-            accountDao = hibernateAccountDao;
+            return hibernateAccountDao;
         } else {
-            StormpathAccountDao stormpathAccountDao = new StormpathAccountDao();
-            stormpathAccountDao.setAccountWorkflowService(accountWorkflowService);
-            stormpathAccountDao.setConfig(config);
-            stormpathAccountDao.setStormpathApplication(stormpathApplication());
-            stormpathAccountDao.setStormpathClient(stormpathClient());
-            stormpathAccountDao.setStudyService(studyService);
-            stormpathAccountDao.setSubpopulationService(subpopService);
-            stormpathAccountDao.setHealthCodeService(healthCodeService);
-            stormpathAccountDao.setEncryptors(ImmutableList.of(healthCodeEncryptor()));
-            accountDao = stormpathAccountDao;
+            return stormpathAccountDao;
         }
-
-        // Don't forget to set the accountDao back into the AccountWorkflowService.
-        accountWorkflowService.setAccountDao(accountDao);
-
-        return accountDao;
     }
 
     @Bean(name = "redisProviders")
