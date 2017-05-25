@@ -14,25 +14,20 @@ import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-public class BasicEmailProvider implements MimeTypeEmailProvider {
+public class BasicEmailProvider extends MimeTypeEmailProvider {
 
-    private final Study study;
     private final Set<String> recipientEmails;
     private final Map<String,String> tokenMap;
     private final EmailTemplate template;
     
     private BasicEmailProvider(Study study, Map<String,String> tokenMap, Set<String> recipientEmails, EmailTemplate template) {
-        this.study = study;
+        super(study);
         this.recipientEmails = recipientEmails;
         this.tokenMap = tokenMap;
         this.template = template;
-    }
-    public Study getStudy() {
-        return study;
     }
     public Set<String> getRecipientEmails() {
         return recipientEmails;
@@ -46,7 +41,7 @@ public class BasicEmailProvider implements MimeTypeEmailProvider {
     
     @Override
     public MimeTypeEmail getMimeTypeEmail() throws MessagingException {
-        tokenMap.putAll(BridgeUtils.studyTemplateVariables(study));
+        tokenMap.putAll(BridgeUtils.studyTemplateVariables(getStudy()));
         tokenMap.put("host", BridgeConfigFactory.getConfig().getHostnameWithPostfix("webservices"));
         
         final MimeTypeEmailBuilder emailBuilder = new MimeTypeEmailBuilder();
@@ -54,9 +49,7 @@ public class BasicEmailProvider implements MimeTypeEmailProvider {
         final String formattedSubject = BridgeUtils.resolveTemplate(template.getSubject(), tokenMap);
         emailBuilder.withSubject(formattedSubject);
 
-        Set<String> senderEmails = BridgeUtils.commaListToOrderedSet(study.getSupportEmail());
-        String senderEmail = Iterables.getFirst(senderEmails, null);
-        final String sendFromEmail = String.format("%s <%s>", study.getName(), senderEmail);
+        final String sendFromEmail = getFormattedSenderEmail();
         emailBuilder.withSender(sendFromEmail);
 
         for (String recipientEmail : recipientEmails) {

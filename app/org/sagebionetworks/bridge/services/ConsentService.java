@@ -10,8 +10,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Resource;
-
 import org.apache.commons.io.IOUtils;
 
 import org.sagebionetworks.bridge.dao.AccountDao;

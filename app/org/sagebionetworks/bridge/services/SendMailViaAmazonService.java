@@ -6,7 +6,6 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Properties;
 
-import javax.annotation.Resource;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -39,27 +38,33 @@ import com.google.common.base.Charsets;
 public class SendMailViaAmazonService implements SendMailService {
 
     private static final Logger logger = LoggerFactory.getLogger(SendMailViaAmazonService.class);
-
     private static final Region REGION = Region.getRegion(Regions.US_EAST_1);
+    public static final String UNVERIFIED_EMAIL_ERROR = "Bridge cannot send email until you verify Amazon SES can send using your study's support email address";
 
-    private String supportEmail;
     private AmazonSimpleEmailServiceClient emailClient;
+    private EmailVerificationService emailVerificationService;
 
-    @Resource(name="supportEmail")
-    public void setSupportEmail(String supportEmail) {
-        this.supportEmail = supportEmail;
+    @Autowired
+    final void setEmailClient(AmazonSimpleEmailServiceClient emailClient) {
+        this.emailClient = emailClient;
     }
     @Autowired
-    public void setEmailClient(AmazonSimpleEmailServiceClient emailClient) {
-        this.emailClient = emailClient;
+    final void setEmailVerificationService(EmailVerificationService emailVerificationService) {
+        this.emailVerificationService = emailVerificationService;
     }
     
     @Override
     public void sendEmail(MimeTypeEmailProvider provider) {
+        String senderEmail = provider.getPlainSenderEmail();
+        if (!emailVerificationService.isVerified(senderEmail)) {
+            throw new BridgeServiceException(UNVERIFIED_EMAIL_ERROR);
+        }
+
         try {
+            String fullSenderEmail = provider.getMimeTypeEmail().getSenderAddress();
             MimeTypeEmail email = provider.getMimeTypeEmail();
             for (String recipient: email.getRecipientAddresses()) {
-                sendEmail(recipient, email);    
+                sendEmail(fullSenderEmail, recipient, email);
             }
         } catch (MessageRejectedException ex) {
             // This happens if the sender email is not verified in SES. In general, it's not useful to app users to
@@ -72,12 +77,12 @@ public class SendMailViaAmazonService implements SendMailService {
         }
     }
 
-    private void sendEmail(String recipient, MimeTypeEmail email) throws AmazonClientException, MessagingException, IOException {
-        String sendFrom = (email.getSenderAddress() == null) ? supportEmail :  email.getSenderAddress();
+    private void sendEmail(String senderEmail, String recipient, MimeTypeEmail email)
+            throws AmazonClientException, MessagingException, IOException {
         
         Session mailSession = Session.getInstance(new Properties(), null);
         MimeMessage mimeMessage = new MimeMessage(mailSession);
-        mimeMessage.setFrom(new InternetAddress(sendFrom));
+        mimeMessage.setFrom(new InternetAddress(senderEmail));
         mimeMessage.setSubject(email.getSubject(), Charsets.UTF_8.name());
         mimeMessage.addRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
 
@@ -95,7 +100,7 @@ public class SendMailViaAmazonService implements SendMailService {
         RawMessage sesRawMessage = new RawMessage(ByteBuffer.wrap(byteOutputStream.toByteArray()));
 
         SendRawEmailRequest req = new SendRawEmailRequest(sesRawMessage);
-        req.setSource(sendFrom);
+        req.setSource(senderEmail);
         req.setDestinations(Collections.singleton(recipient));
         emailClient.setRegion(REGION);
         SendRawEmailResult result = emailClient.sendRawEmail(req);

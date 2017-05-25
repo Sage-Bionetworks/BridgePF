@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.http.HttpStatus;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 @NoStackTraceException

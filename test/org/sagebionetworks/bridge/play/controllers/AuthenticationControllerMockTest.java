@@ -48,7 +48,9 @@ import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
+import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -97,6 +99,12 @@ public class AuthenticationControllerMockTest {
     @Captor
     ArgumentCaptor<SignIn> signInCaptor;
     
+    @Captor
+    ArgumentCaptor<Email> emailCaptor;
+    
+    @Captor
+    ArgumentCaptor<PasswordReset> passwordResetCaptor;
+    
     UserSession userSession;
     
     @Before
@@ -111,6 +119,7 @@ public class AuthenticationControllerMockTest {
         study.setIdentifier(TEST_STUDY_ID_STRING);
         study.setDataGroups(TestConstants.USER_DATA_GROUPS);
         when(studyService.getStudy(TEST_STUDY_ID_STRING)).thenReturn(study);
+        when(studyService.getStudy(TEST_STUDY_ID)).thenReturn(study);
         controller.setStudyService(studyService);
     }
     
@@ -123,7 +132,7 @@ public class AuthenticationControllerMockTest {
      
         verify(authenticationService).requestEmailSignIn(signInCaptor.capture());
         assertEquals("study-key", signInCaptor.getValue().getStudyId());
-        assertEquals("email@email.com", signInCaptor.getValue().getEmail());
+        assertEquals(TEST_EMAIL, signInCaptor.getValue().getEmail());
     }
     
     @Test
@@ -144,7 +153,7 @@ public class AuthenticationControllerMockTest {
         verify(authenticationService).emailSignIn(any(CriteriaContext.class), signInCaptor.capture());
         
         SignIn captured = signInCaptor.getValue();
-        assertEquals("email@email.com", captured.getEmail());
+        assertEquals(TEST_EMAIL, captured.getEmail());
         assertEquals("study-key", captured.getStudyId());
         assertEquals("ABC", captured.getToken());
     }
@@ -540,6 +549,87 @@ public class AuthenticationControllerMockTest {
         doReturn(metrics).when(controller).getMetrics();
 
         controller.emailSignIn();
+    }
+    
+    @Test
+    public void resendEmailVerificationWorks() throws Exception {
+        mockEmailRequestPayload();
+        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
+        
+        controller.resendEmailVerification();
+        
+        verify(authenticationService).resendEmailVerification(eq(TEST_STUDY_ID), emailCaptor.capture());
+        Email deser = emailCaptor.getValue();
+        assertEquals(TEST_STUDY_ID, deser.getStudyIdentifier());
+        assertEquals(TEST_EMAIL, deser.getEmail());
+    }
+    
+    @Test(expected = UnsupportedVersionException.class)
+    public void resendEmailVerificationAppVersionDisabled() throws Exception {
+        mockEmailRequestPayload();
+        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
+        
+        controller.resendEmailVerification();
+    }
+    
+    @Test
+    public void resetPassword() throws Exception {
+        mockResetPasswordRequest();
+        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
+        
+        controller.resetPassword();
+        
+        verify(authenticationService).resetPassword(passwordResetCaptor.capture());
+        
+        PasswordReset passwordReset = passwordResetCaptor.getValue();
+        assertEquals("aSpToken", passwordReset.getSptoken());
+        assertEquals("aPassword", passwordReset.getPassword());
+        assertEquals(TEST_STUDY_ID_STRING, passwordReset.getStudyIdentifier());
+    }
+    
+    @Test(expected = UnsupportedVersionException.class)
+    public void resetPasswordAppVersionDisabled() throws Exception {
+        mockResetPasswordRequest();
+        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
+        
+        controller.resetPassword();
+    }
+
+    private void mockResetPasswordRequest() throws Exception {
+        Map<String,String[]> headers = new ImmutableMap.Builder<String,String[]>()
+                .put("User-Agent", new String[]{"App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4"}).build();
+        String json = TestUtils.createJson("{'study':'" + TEST_STUDY_ID_STRING + 
+            "','sptoken':'aSpToken','password':'aPassword'}");
+        TestUtils.mockPlayContextWithJson(json, headers);
+    }
+    
+    @Test
+    public void requestResetPassword() throws Exception {
+        mockEmailRequestPayload();
+        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
+        
+        controller.requestResetPassword();
+        
+        verify(authenticationService).requestResetPassword(eq(study), emailCaptor.capture());
+        Email deser = emailCaptor.getValue();
+        assertEquals(TEST_STUDY_ID, deser.getStudyIdentifier());
+        assertEquals(TEST_EMAIL, deser.getEmail());
+    }
+    
+    @Test(expected = UnsupportedVersionException.class)
+    public void requestResetPasswordAppVersionDisabled() throws Exception {
+        mockEmailRequestPayload();
+        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20); // blocked
+        
+        controller.requestResetPassword();
+    }
+
+    private void mockEmailRequestPayload() throws Exception {
+        Map<String,String[]> headers = new ImmutableMap.Builder<String,String[]>()
+                .put("User-Agent", new String[]{"App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4"}).build();
+        String json = TestUtils.createJson(
+                "{'study':'" + TEST_STUDY_ID_STRING +"','email':'"+TEST_EMAIL+"'}");
+        TestUtils.mockPlayContextWithJson(json, headers);
     }
 
     private static void assertSessionInPlayResult(Result result) throws Exception {
