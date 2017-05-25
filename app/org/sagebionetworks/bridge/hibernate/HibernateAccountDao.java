@@ -13,7 +13,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -39,23 +38,28 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 
 /** Hibernate implementation of Account Dao. */
 public class HibernateAccountDao implements AccountDao {
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
 
+    private AccountWorkflowService accountWorkflowService;
     private HealthCodeService healthCodeService;
     private HibernateHelper hibernateHelper;
 
+    /** Service that handles email verification, password reset, etc. */
+    public final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService){
+        this.accountWorkflowService = accountWorkflowService;
+    }
+
     /** Health code service, because this DAO is expected to generate health codes for new accounts. */
-    @Autowired
     public final void setHealthCodeService(HealthCodeService healthCodeService) {
         this.healthCodeService = healthCodeService;
     }
 
     /** This makes interfacing with Hibernate easier. */
-    @Autowired
     public final void setHibernateHelper(HibernateHelper hibernateHelper) {
         this.hibernateHelper = hibernateHelper;
     }
@@ -63,35 +67,25 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public void verifyEmail(EmailVerification verification) {
-        // Not yet implemented. See https://sagebionetworks.jira.com/browse/BRIDGE-1838
-        // Until then, the only way to verify an account in MySQL is to edit the database directly.
-        throw new UnsupportedOperationException("Not yet implemented");
+        accountWorkflowService.verifyEmail(verification);
     }
 
     /** {@inheritDoc} */
     @Override
     public void resendEmailVerificationToken(StudyIdentifier studyIdentifier, Email email) {
-        // Not yet implemented. See https://sagebionetworks.jira.com/browse/BRIDGE-1838
-        // Until then, the only way to verify an account in MySQL is to edit the database directly.
-        throw new UnsupportedOperationException("Not yet implemented");
+        accountWorkflowService.resendEmailVerificationToken(studyIdentifier, email);
     }
 
     /** {@inheritDoc} */
     @Override
     public void requestResetPassword(Study study, Email email) {
-        // Not yet implemented. See https://sagebionetworks.jira.com/browse/BRIDGE-1838
-        // Until then, the only way to reset a password in MySQL is to call changePassword() or edit the database
-        // directly.
-        throw new UnsupportedOperationException("Not yet implemented");
+        accountWorkflowService.requestResetPassword(study, email);
     }
 
     /** {@inheritDoc} */
     @Override
     public void resetPassword(PasswordReset passwordReset) {
-        // Not yet implemented. See https://sagebionetworks.jira.com/browse/BRIDGE-1838
-        // Until then, the only way to reset a password in MySQL is to call changePassword() or edit the database
-        // directly.
-        throw new UnsupportedOperationException("Not yet implemented");
+        accountWorkflowService.resetPassword(passwordReset);
     }
 
     /** {@inheritDoc} */
@@ -201,7 +195,10 @@ public class HibernateAccountDao implements AccountDao {
             }
         }
 
-        // TODO send verify email
+        // send verify email
+        if (sendVerifyEmail) {
+            accountWorkflowService.sendEmailVerificationToken(study, accountId, account.getEmail());
+        }
 
         return accountId;
     }

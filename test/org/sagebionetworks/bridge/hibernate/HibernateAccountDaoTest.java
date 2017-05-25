@@ -9,6 +9,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -40,14 +41,18 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
+import org.sagebionetworks.bridge.models.accounts.Email;
+import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.HealthIdImpl;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
+import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 
 public class HibernateAccountDaoTest {
@@ -55,6 +60,7 @@ public class HibernateAccountDaoTest {
     private static final DateTime CREATED_ON = DateTime.parse("2017-05-19T11:03:50.224-0700");
     private static final String DUMMY_PASSWORD = "Aa!Aa!Aa!Aa!1";
     private static final String DUMMY_PASSWORD_HASH = "dummy-password-hash";
+    private static final String DUMMY_TOKEN = "dummy-token";
     private static final String EMAIL = "eggplant@example.com";
     private static final String HEALTH_CODE = "health-code";
     private static final String HEALTH_ID = "health-id";
@@ -70,6 +76,7 @@ public class HibernateAccountDaoTest {
         STUDY.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
     }
 
+    private AccountWorkflowService mockAccountWorkflowService;
     private HealthCodeService mockHealthCodeService;
     private HibernateAccountDao dao;
     private HibernateHelper mockHibernateHelper;
@@ -86,11 +93,42 @@ public class HibernateAccountDaoTest {
 
     @Before
     public void before() {
+        mockAccountWorkflowService = mock(AccountWorkflowService.class);
         mockHealthCodeService = mock(HealthCodeService.class);
         mockHibernateHelper = mock(HibernateHelper.class);
         dao = new HibernateAccountDao();
+        dao.setAccountWorkflowService(mockAccountWorkflowService);
         dao.setHealthCodeService(mockHealthCodeService);
         dao.setHibernateHelper(mockHibernateHelper);
+    }
+
+    @Test
+    public void verifyEmail() {
+        EmailVerification verification = new EmailVerification(DUMMY_TOKEN);
+        dao.verifyEmail(verification);
+        verify(mockAccountWorkflowService).verifyEmail(verification);
+    }
+
+    @Test
+    public void resendEmailVerificationToken() {
+        Email email = new Email(TestConstants.TEST_STUDY, EMAIL);
+        dao.resendEmailVerificationToken(TestConstants.TEST_STUDY, email);
+        verify(mockAccountWorkflowService).resendEmailVerificationToken(TestConstants.TEST_STUDY, email);
+    }
+
+    @Test
+    public void requestResetPassword() {
+        Email email = new Email(TestConstants.TEST_STUDY, EMAIL);
+        dao.requestResetPassword(STUDY, email);
+        verify(mockAccountWorkflowService).requestResetPassword(STUDY, email);
+    }
+
+    @Test
+    public void resetPassword() {
+        PasswordReset passwordReset = new PasswordReset(DUMMY_PASSWORD, DUMMY_TOKEN,
+                TestConstants.TEST_STUDY_IDENTIFIER);
+        dao.resetPassword(passwordReset);
+        verify(mockAccountWorkflowService).resetPassword(passwordReset);
     }
 
     @Test
@@ -258,6 +296,16 @@ public class HibernateAccountDaoTest {
         assertEquals(MOCK_NOW_MILLIS, createdHibernateAccount.getModifiedOn().longValue());
         assertEquals(MOCK_NOW_MILLIS, createdHibernateAccount.getPasswordModifiedOn().longValue());
         assertEquals(AccountStatus.ENABLED, createdHibernateAccount.getStatus());
+
+        // don't call sendEmailVerificationToken
+        verify(mockAccountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+    }
+
+    @Test
+    public void createAccountVerifyEmail() {
+        // Most of this is tested in createAccountSuccess(). Just test email workflow.
+        String accountId = dao.createAccount(STUDY, makeValidGenericAccount(), true);
+        verify(mockAccountWorkflowService).sendEmailVerificationToken(STUDY, accountId, EMAIL);
     }
 
     @Test
