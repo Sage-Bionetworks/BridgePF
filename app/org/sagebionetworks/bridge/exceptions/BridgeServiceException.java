@@ -15,7 +15,12 @@ public class BridgeServiceException extends RuntimeException {
     public BridgeServiceException(Throwable throwable) {
         this(throwable, HttpStatus.SC_INTERNAL_SERVER_ERROR);
     }
-    
+
+    public BridgeServiceException(String message, Throwable cause) {
+        super(message, cause);
+        this.statusCode = HttpStatus.SC_INTERNAL_SERVER_ERROR;
+    }
+
     public BridgeServiceException(String message, int statusCode) {
         super(message);
         this.statusCode = statusCode;

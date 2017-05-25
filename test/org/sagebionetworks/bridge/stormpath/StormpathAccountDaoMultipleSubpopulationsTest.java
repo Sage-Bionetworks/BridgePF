@@ -1,10 +1,9 @@
 package org.sagebionetworks.bridge.stormpath;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.util.List;
-
-import javax.annotation.Resource;
 
 import org.joda.time.DateTime;
 import org.junit.After;
@@ -29,7 +28,7 @@ import org.sagebionetworks.bridge.services.SubpopulationService;
 public class StormpathAccountDaoMultipleSubpopulationsTest {
     private static final String PASSWORD = "P4ssword!";
 
-    @Resource(name="stormpathAccountDao")
+    @Autowired
     private StormpathAccountDao accountDao;
 
     @Autowired
@@ -83,7 +82,8 @@ public class StormpathAccountDaoMultipleSubpopulationsTest {
         Account account = null;
         try {
             account = accountDao.constructAccount(study, participant.getEmail(), participant.getPassword());
-            accountDao.createAccount(study, account, false);
+            String accountId = accountDao.createAccount(study, account, false);
+            assertNotNull(accountId);
 
             account.getConsentSignatureHistory(subpop1.getGuid()).add(sig1);
             account.getConsentSignatureHistory(subpop2.getGuid()).add(sig2);

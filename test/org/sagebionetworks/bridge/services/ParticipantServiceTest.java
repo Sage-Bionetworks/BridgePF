@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -218,6 +220,7 @@ public class ParticipantServiceTest {
     private void mockHealthCodeAndAccountRetrieval() {
         when(account.getId()).thenReturn(ID);
         when(accountDao.constructAccount(STUDY, EMAIL, PASSWORD)).thenReturn(account);
+        when(accountDao.createAccount(same(STUDY), same(account), anyBoolean())).thenReturn(ID);
         when(accountDao.getAccount(STUDY, ID)).thenReturn(account);
         when(account.getHealthCode()).thenReturn(HEALTH_CODE);
         when(account.getEmail()).thenReturn(EMAIL);
