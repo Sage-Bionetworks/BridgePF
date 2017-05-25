@@ -17,8 +17,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 
-import javax.annotation.Resource;
-
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.config.Config;
@@ -55,7 +53,6 @@ import com.stormpath.sdk.directory.CustomData;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
@@ -93,44 +90,36 @@ public class StormpathAccountDao implements AccountDao {
     private AccountWorkflowService accountWorkflowService;
 
     /** Grab some config attributes from our config object. */
-    @Autowired
     public final void setConfig(Config config) {
         isProd = config.getEnvironment() == Environment.PROD;
     }
 
-    @Resource(name = "stormpathApplication")
     public final void setStormpathApplication(Application application) {
         this.application = application;
     }
 
-    @Resource(name = "stormpathClient")
     public final void setStormpathClient(Client client) {
         this.client = client;
     }
 
-    @Autowired
     public final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
 
-    @Autowired
     public final void setSubpopulationService(SubpopulationService subpopService) {
         this.subpopService = subpopService;
     }
 
-    @Autowired
     public final void setHealthCodeService(HealthCodeService healthCodeService) {
         this.healthCodeService = healthCodeService;
     }
 
-    @Resource(name="encryptorList")
     public final void setEncryptors(List<BridgeEncryptor> list) {
         for (BridgeEncryptor encryptor : list) {
             encryptors.put(encryptor.getVersion(), encryptor);
         }
     }
-    @Autowired
-    final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService){
+    public final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService){
         this.accountWorkflowService = accountWorkflowService;
     }
 

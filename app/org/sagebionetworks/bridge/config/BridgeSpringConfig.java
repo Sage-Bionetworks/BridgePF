@@ -31,6 +31,7 @@ import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.client.ClientBuilder;
 import com.stormpath.sdk.client.Clients;
 
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
 import org.sagebionetworks.bridge.dynamodb.DynamoCompoundActivityDefinition;
@@ -83,7 +84,9 @@ import org.sagebionetworks.bridge.hibernate.HibernateHelper;
 import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.s3.S3Helper;
+import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.HealthCodeService;
+import org.sagebionetworks.bridge.services.SendMailService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 import org.sagebionetworks.bridge.stormpath.StormpathAccountDao;
@@ -108,21 +111,32 @@ import org.sagebionetworks.bridge.upload.UploadValidationHandler;
 public class BridgeSpringConfig {
     @Bean
     @Autowired
-    public AccountDao accountDao(HealthCodeService healthCodeService, HibernateHelper hibernateHelper,
-            StudyService studyService, SubpopulationService subpopService) {
+    public AccountDao accountDao(CacheProvider cacheProvider, HealthCodeService healthCodeService,
+            HibernateHelper hibernateHelper, SendMailService sendMailService, StudyService studyService,
+            SubpopulationService subpopService) {
         // To avoid ambiguity and refactoring in nearly a dozen places, we only want one bean with type AccountDao. This means
         // that, during the transition period, we'll need to manually wire up the AccountDao. Once the transition is
         // over and we only have one AccountDao, we can revert back to @Component and autowiring.
 
+        // Similarly, in order to avoid an unresolvable circular dependency, we manually create the
+        // AccountWorkflowService here as well.
+        AccountWorkflowService accountWorkflowService = new AccountWorkflowService();
+        accountWorkflowService.setCacheProvider(cacheProvider);
+        accountWorkflowService.setSendMailService(sendMailService);
+        accountWorkflowService.setStudyService(studyService);
+
         BridgeConfig config = bridgeConfig();
         String authProvider = config.get("auth.provider");
+        AccountDao accountDao;
         if ("mysql".equalsIgnoreCase(authProvider)) {
             HibernateAccountDao hibernateAccountDao = new HibernateAccountDao();
+            hibernateAccountDao.setAccountWorkflowService(accountWorkflowService);
             hibernateAccountDao.setHealthCodeService(healthCodeService);
             hibernateAccountDao.setHibernateHelper(hibernateHelper);
-            return hibernateAccountDao;
+            accountDao = hibernateAccountDao;
         } else {
             StormpathAccountDao stormpathAccountDao = new StormpathAccountDao();
+            stormpathAccountDao.setAccountWorkflowService(accountWorkflowService);
             stormpathAccountDao.setConfig(config);
             stormpathAccountDao.setStormpathApplication(stormpathApplication());
             stormpathAccountDao.setStormpathClient(stormpathClient());
@@ -130,8 +144,13 @@ public class BridgeSpringConfig {
             stormpathAccountDao.setSubpopulationService(subpopService);
             stormpathAccountDao.setHealthCodeService(healthCodeService);
             stormpathAccountDao.setEncryptors(ImmutableList.of(healthCodeEncryptor()));
-            return stormpathAccountDao;
+            accountDao = stormpathAccountDao;
         }
+
+        // Don't forget to set the accountDao back into the AccountWorkflowService.
+        accountWorkflowService.setAccountDao(accountDao);
+
+        return accountDao;
     }
 
     @Bean(name = "redisProviders")
