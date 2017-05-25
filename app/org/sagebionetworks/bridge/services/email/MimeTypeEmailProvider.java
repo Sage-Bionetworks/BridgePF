@@ -13,7 +13,7 @@ public abstract class MimeTypeEmailProvider {
 
     private Study study;
     
-    MimeTypeEmailProvider(Study study) {
+    protected MimeTypeEmailProvider(Study study) {
         this.study = study;
     }
     
