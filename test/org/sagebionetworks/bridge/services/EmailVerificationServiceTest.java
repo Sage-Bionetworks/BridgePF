@@ -206,7 +206,7 @@ public class EmailVerificationServiceTest {
         
         assertTrue(service.isVerified(EMAIL_ADDRESS));
         
-        verify(cacheProvider).setString(eq(service.getVerifiedAddressKey(EMAIL_ADDRESS)),
+        verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY),
                 eq("VERIFIED"), anyInt());
     }
     
@@ -216,7 +216,7 @@ public class EmailVerificationServiceTest {
         
         assertFalse(service.isVerified(EMAIL_ADDRESS));
         
-        verify(cacheProvider).setString(eq(service.getVerifiedAddressKey(EMAIL_ADDRESS)),
+        verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY),
                 eq("PENDING"), anyInt());
     }
     
@@ -226,7 +226,7 @@ public class EmailVerificationServiceTest {
         
         assertFalse(service.isVerified(EMAIL_ADDRESS));
         
-        verify(cacheProvider).setString(eq(service.getVerifiedAddressKey(EMAIL_ADDRESS)),
+        verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY),
                 eq("UNVERIFIED"), anyInt());
     }
 

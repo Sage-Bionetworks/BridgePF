@@ -47,7 +47,7 @@ public class EmailVerificationService {
         this.cacheProvider = cacheProvider;
     }
     
-    protected String getVerifiedAddressKey(String emailAddress) {
+    private String getVerifiedAddressKey(String emailAddress) {
         return emailAddress + KEY_POSTFIX;
     }
     
