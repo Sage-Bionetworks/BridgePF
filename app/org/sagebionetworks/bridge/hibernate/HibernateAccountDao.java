@@ -13,6 +13,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -42,6 +44,7 @@ import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 
 /** Hibernate implementation of Account Dao. */
+@Component
 public class HibernateAccountDao implements AccountDao {
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
 
@@ -50,16 +53,19 @@ public class HibernateAccountDao implements AccountDao {
     private HibernateHelper hibernateHelper;
 
     /** Service that handles email verification, password reset, etc. */
+    @Autowired
     public final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService){
         this.accountWorkflowService = accountWorkflowService;
     }
 
     /** Health code service, because this DAO is expected to generate health codes for new accounts. */
+    @Autowired
     public final void setHealthCodeService(HealthCodeService healthCodeService) {
         this.healthCodeService = healthCodeService;
     }
 
     /** This makes interfacing with Hibernate easier. */
+    @Autowired
     public final void setHibernateHelper(HibernateHelper hibernateHelper) {
         this.hibernateHelper = hibernateHelper;
     }

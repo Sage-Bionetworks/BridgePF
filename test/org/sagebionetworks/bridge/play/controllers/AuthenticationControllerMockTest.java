@@ -40,6 +40,7 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -273,7 +274,7 @@ public class AuthenticationControllerMockTest {
         // Other fields will be passed along to the PartcipantService, but it will not be utilized
         // These are the fields that *can* be changed. They are all passed along.
         StudyParticipant originalParticipant = TestUtils.getStudyParticipant(AuthenticationControllerMockTest.class);
-        ObjectNode node = (ObjectNode)BridgeObjectMapper.get().valueToTree(originalParticipant);
+        ObjectNode node = BridgeObjectMapper.get().valueToTree(originalParticipant);
         node.put("study", TEST_STUDY_ID_STRING);
         
         TestUtils.mockPlayContextWithJson(node.toString());
@@ -295,7 +296,37 @@ public class AuthenticationControllerMockTest {
         assertEquals(originalParticipant.getAttributes(), persistedParticipant.getAttributes());
         assertEquals(originalParticipant.getLanguages(), persistedParticipant.getLanguages());
     }
-    
+
+    @Test(expected = UnsupportedVersionException.class)
+    public void signUpAppVersionDisabled() throws Exception {
+        // Headers
+        Map<String,String[]> headers = new ImmutableMap.Builder<String,String[]>()
+                .put("User-Agent", new String[]{"App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4"}).build();
+
+        // Participant
+        StudyParticipant originalParticipant = TestUtils.getStudyParticipant(AuthenticationControllerMockTest.class);
+        ObjectNode node = BridgeObjectMapper.get().valueToTree(originalParticipant);
+        node.put("study", TEST_STUDY_ID_STRING);
+
+        // min app version is 20 (which is higher than 14)
+        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
+
+        // Setup and execute. This will throw.
+        TestUtils.mockPlayContextWithJson(node.toString(), headers);
+        controller.signUp();
+    }
+
+    @Test(expected = EntityNotFoundException.class)
+    public void signUpNoStudy() throws Exception {
+        // Participant - don't add study
+        StudyParticipant originalParticipant = TestUtils.getStudyParticipant(AuthenticationControllerMockTest.class);
+        ObjectNode node = BridgeObjectMapper.get().valueToTree(originalParticipant);
+
+        // Setup and execute. This will throw.
+        TestUtils.mockPlayContextWithJson(node.toString());
+        controller.signUp();
+    }
+
     private void signInExistingSession(boolean isConsented, Roles role, boolean shouldThrow) throws Exception {
         // mock getSessionToken and getMetrics
         doReturn(TEST_SESSION_TOKEN).when(controller).getSessionToken();
@@ -571,7 +602,13 @@ public class AuthenticationControllerMockTest {
         
         controller.resendEmailVerification();
     }
-    
+
+    @Test(expected = EntityNotFoundException.class)
+    public void resendEmailVerificationNoStudy() throws Exception {
+        TestUtils.mockPlayContextWithJson(new Email((StudyIdentifier) null, TEST_EMAIL));
+        controller.resendEmailVerification();
+    }
+
     @Test
     public void resetPassword() throws Exception {
         mockResetPasswordRequest();
@@ -592,6 +629,12 @@ public class AuthenticationControllerMockTest {
         mockResetPasswordRequest();
         study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
         
+        controller.resetPassword();
+    }
+
+    @Test(expected = EntityNotFoundException.class)
+    public void resetPasswordNoStudy() throws Exception {
+        TestUtils.mockPlayContextWithJson(new PasswordReset("aPassword", "aSpToken", null));
         controller.resetPassword();
     }
 
@@ -621,6 +664,12 @@ public class AuthenticationControllerMockTest {
         mockEmailRequestPayload();
         study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20); // blocked
         
+        controller.requestResetPassword();
+    }
+
+    @Test(expected = EntityNotFoundException.class)
+    public void requestResetPasswordNoStudy() throws Exception {
+        TestUtils.mockPlayContextWithJson(new Email((StudyIdentifier) null, TEST_EMAIL));
         controller.requestResetPassword();
     }
 

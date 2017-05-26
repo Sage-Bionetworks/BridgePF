@@ -96,18 +96,18 @@ public class AuthenticationController extends BaseController {
     }
 
     public Result requestResetPassword() throws Exception {
+        JsonNode json = requestToJSON(request());
         Email email = parseJson(request(), Email.class);
-        Study study = studyService.getStudy(email.getStudyIdentifier());
-        verifySupportedVersionOrThrowException(study);
+        Study study = getStudyOrThrowException(json);
         authenticationService.requestResetPassword(study, email);
 
         return okResult("If registered with the study, we'll email you instructions on how to change your password.");
     }
 
     public Result resetPassword() throws Exception {
+        JsonNode json = requestToJSON(request());
         PasswordReset passwordReset = parseJson(request(), PasswordReset.class);
-        Study study = studyService.getStudy(passwordReset.getStudyIdentifier());
-        verifySupportedVersionOrThrowException(study);
+        getStudyOrThrowException(json);
         authenticationService.resetPassword(passwordReset);
         return okResult("Password has been changed.");
     }
@@ -166,9 +166,6 @@ public class AuthenticationController extends BaseController {
      * study. As a fallback for existing clients, it also looks for the study information in the query string or
      * headers. If the study cannot be found in any of these places, it throws an exception, because the API will not
      * work correctly without it.
-     * 
-     * @param node
-     * @return
      */
     private Study getStudyOrThrowException(JsonNode node) {
         String studyId = getStudyStringOrThrowException(node);
