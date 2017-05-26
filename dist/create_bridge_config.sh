@@ -1,4 +1,4 @@
-#!/bin/env bash -x
+#!/bin/bash
 # Script to dynamically build bridge server config from env variables
 # Brian Holt <beholt@gmail.com> 02.09.2017
 mkdir -p ${HOME}/.bridge
@@ -62,9 +62,9 @@ sns.secret.key = ${SNS_SECRET_KEY:-dummy-value}
 
 support.email = ${SUPPORT_EMAIL:-Bridge (Sage Bionetworks) <support@sagebridge.org>}
 
-synapse.api.key = ${NAPSE_API_KEY:-your-api-key-here}
-synapse.user = ${SYNAPSE_USR:-your-username-here}
-sysops.email = ${SYSOP_EMAIL:-Bridge IT <bridge-testing+sysops@sagebase.org>}
+synapse.api.key = ${SYNAPSE_API_KEY:-your-api-key-here}
+synapse.user = ${SYNAPSE_USER:-your-username-here}
+sysops.email = ${SYSOPS_EMAIL:-Bridge IT <bridge-testing+sysops@sagebase.org>}
 
 test.synapse.user.id = ${TEST_SYNAPSE_USER_ID:-3348228}
 

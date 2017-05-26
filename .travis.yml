@@ -1,13 +1,23 @@
 sudo: false
 language: scala
+services:
+- redis-server
 scala:
 - 2.11
 jdk:
 - oraclejdk8
 env:
   global:
-  - BRIDGE_USER=travis
+  - BRIDGE_USER=heroku
   - BRIDGE_ENV=dev
+  - WEBSERVICES_URL="https://webservices-develop.sagebridge.org"
+  - HOST_POSTFIX="-develop.sagebridge.org"
+  - UDD_SQS_QUEUE_URL="https://sqs.us-east-1.amazonaws.com/649232250620/Bridge-WorkerPlatform-Request-dev"
+  - UPLOAD_CMS_CERT_BUCKET="org-sagebridge-upload-cms-cert-develop"
+  - CONSENTS_BUCKET="org-sagebridge-consents-develop"
+  - UPLOAD_BUCKET="org-sagebridge-upload-develop"
+  - UPLOAD_CMS_PRIV_BUCKET="org-sagebridge-upload-cms-priv-develop"
+  - ATTACHMENT_BUCKET="org-sagebridge-attachment-develop"
   - secure: SsM07kjCSWjGTFDhkCtTuZdM5WrChFXgRmeMMRJr4JlbtJoaaVUXcXDofZ+4NrESiOvW7CiRXK6Oz3I9eL7vn8RCwlN5jf2OlmD4vKIiiINlvuuEe6hEu738RO7nUGN8SFh2k4ryzJ6XldghjBiBvBEqzVhwXteLhF3AVCsRB1s=
   - secure: kByWq5ygVVnXuBcHKhe6BdcGhUugS1Ux4nbrR/MY23KI7FC1vJ3LCx6N5TIVbOhjwCPwnWNfkydPlfO48hco6gpz8mJ6Sz7OdjyAWb1Ofx/XO5mI+8AIW0P1gXN9jbThSLEaTGUZlrDNfkcfkFUaLJHmmWOQ5CWCPzo5sw2cEDg=
   - secure: VSoOGViuAi98dBrveHw61gHz0zersdtn8raolu/uzpNQEI1csMdVr09SokygjtiSEt5uIVNma1zkuABRAEgfncT3rYqPq0mdeM+hxPEz2igxEMUXYHx3H9Osbo5oOrTZXnRg18kmzyupUQ98L5Y6/8lg67sgJkPBJEx9dwNKhMY=
@@ -23,18 +33,32 @@ env:
 before_script:
 - mkdir -p $HOME/.sbt/launchers/0.13.8/
 - curl -L -o $HOME/.sbt/launchers/0.13.8/sbt-launch.jar http://dl.bintray.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/0.13.8/sbt-launch.jar
+- ./dist/create_bridge_config.sh
 script:
-- sbt clean test
+- sbt clean test dist
 branches:
   only:
   - develop
   - uat
   - prod
 deploy:
-  provider: heroku
-  api_key:
-    secure: dsrD0lN7luCXQCI+AK4wBZEWpxv/ji2xbbSMWWo3snBYb8CbuzqmH3KHSWStd9kSTKojWzatGFfIoIGGj6qoyG7gAk4E/PR1tb2Gelz+t6yWQUcRQclLHNd/WkozHLb5Z9Bg7N4HLcyupl7OMICixAaQ92+o2M+xhHq3/r2aOFs=
-  app:
-    develop: bridge-develop
-    uat: bridge-uat
-    prod: bridge-prod
+  matrix:
+  - provider: heroku
+    api_key:
+      secure: dsrD0lN7luCXQCI+AK4wBZEWpxv/ji2xbbSMWWo3snBYb8CbuzqmH3KHSWStd9kSTKojWzatGFfIoIGGj6qoyG7gAk4E/PR1tb2Gelz+t6yWQUcRQclLHNd/WkozHLb5Z9Bg7N4HLcyupl7OMICixAaQ92+o2M+xhHq3/r2aOFs=
+    app:
+      develop: bridge-develop
+      uat: bridge-uat
+      prod: bridge-prod
+  - provider: elasticbeanstalk
+    skip_cleanup: true
+    bucket_name: org-sagebridge-deployment-dev
+    zip_file: target/universal/bridgepf-0.1-SNAPSHOT.zip
+    access_key_id: AKIAIG6T67NMROEIMC7A
+    secret_access_key:
+      secure: L3Z9f5KvDbMr6HvDXz9PfEQBdRTF8PUkoqGe2JsCOFADSvwPUWlnLOjrEtCVpSyf88b0F3TUQp5AKd8qS7waHwiYBRpXWV5ABM8bF7SOSCurt41C1iuyJ+oiN6czqmRkW3ijMTtfFPxf+n86XIArp/26l8LxIDaaNwiZbU+X190=
+    region: us-east-1
+    app: BridgePF-heroku-dev
+    env: brid-Brid-106ZUS69MYEIL
+    on:
+      branch: develop
