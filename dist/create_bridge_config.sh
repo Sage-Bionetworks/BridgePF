@@ -1,4 +1,4 @@
-#!/bin/env bash -x
+#!/bin/bash -x
 # Script to dynamically build bridge server config from env variables
 # Brian Holt <beholt@gmail.com> 02.09.2017
 mkdir -p ${HOME}/.bridge
