@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
@@ -12,7 +12,8 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
  * or re-assigned to another user if assigned.
  */
 public interface ExternalIdDao {
-    
+
+    String CONFIG_KEY_GET_LIMIT = "external.id.get.limit";
     String CONFIG_KEY_ADD_LIMIT = "external.id.add.limit";
     String CONFIG_KEY_LOCK_DURATION = "external.id.lock.duration";
 
@@ -36,7 +37,8 @@ public interface ExternalIdDao {
      *      an optional boolean (can be null). If TRUE, all records returned will be assigned. More usefully, if FALSE,
      *      will return unassigned external identifiers. 
      */
-    PagedResourceList<ExternalIdentifierInfo> getExternalIds(StudyIdentifier studyId, String offsetKey, int pageSize, String idFilter, Boolean assignmentFilter);
+    ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIds(StudyIdentifier studyId, String offsetKey,
+            int pageSize, String idFilter, Boolean assignmentFilter);
     
     /**
      * Add one or more external IDs. Existing IDs are left alone without changing the assignment status of the ID.
