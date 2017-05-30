@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import java.util.List;
 import java.util.Set;
@@ -95,8 +96,24 @@ public class ParticipantController extends BaseController {
     public Result getParticipants(String offsetByString, String pageSizeString, String emailFilter,
             String startDateString, String endDateString) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        
         Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        return getParticipantsInternal(study, offsetByString, pageSizeString, emailFilter, startDateString,
+                endDateString);
+    }
+
+    public Result getParticipantsForWorker(String studyId, String offsetByString, String pageSizeString, String emailFilter,
+            String startDateString, String endDateString) {
+        getAuthenticatedSession(WORKER);
+        
+        Study study = studyService.getStudy(studyId);
+        return getParticipantsInternal(study, offsetByString, pageSizeString, emailFilter, startDateString,
+                endDateString);
+    }
+    
+    private Result getParticipantsInternal(Study study, String offsetByString, String pageSizeString,
+            String emailFilter, String startDateString, String endDateString) {
+        
         int offsetBy = getIntOrDefault(offsetByString, 0);
         int pageSize = getIntOrDefault(pageSizeString, API_DEFAULT_PAGE_SIZE);
         DateTime startDate = DateUtils.getDateTimeOrDefault(startDateString, null);
@@ -128,6 +145,19 @@ public class ParticipantController extends BaseController {
         ObjectWriter writer = (study.isHealthCodeExportEnabled()) ?
                 StudyParticipant.API_WITH_HEALTH_CODE_WRITER :
                 StudyParticipant.API_NO_HEALTH_CODE_WRITER;
+        String ser = writer.writeValueAsString(participant);
+
+        return ok(ser).as(BridgeConstants.JSON_MIME_TYPE);
+    }
+    
+    public Result getParticipantForWorker(String studyId, String userId) throws Exception {
+        getAuthenticatedSession(WORKER);
+        Study study = studyService.getStudy(studyId);
+
+        StudyParticipant participant = participantService.getParticipant(study, userId, true);
+        
+        // Workers can never retrieve a health code. There's just no reason to leak it here.
+        ObjectWriter writer = StudyParticipant.API_NO_HEALTH_CODE_WRITER;
         String ser = writer.writeValueAsString(participant);
 
         return ok(ser).as(BridgeConstants.JSON_MIME_TYPE);

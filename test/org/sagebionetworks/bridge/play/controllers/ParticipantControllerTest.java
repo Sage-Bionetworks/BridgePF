@@ -725,6 +725,69 @@ public class ParticipantControllerTest {
         assertEquals("a subject", captured.getSubject());
         assertEquals("a message", captured.getMessage());
     }
+
+    @Test(expected = UnauthorizedException.class)
+    public void getParticipantsForWorkerOnly() throws Exception {
+        DateTime start = DateTime.now();
+        DateTime end = DateTime.now();
+        
+        controller.getParticipantsForWorker(study.getIdentifier(), "10", "20", "foo", start.toString(), end.toString());
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void getParticipantForWorkerOnly() throws Exception {
+        controller.getParticipantForWorker(study.getIdentifier(), ID);
+    }
+    
+    @Test
+    public void getParticipantsForWorker() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
+                .withRoles(Sets.newHashSet(Roles.WORKER)).build());
+        DateTime start = DateTime.now();
+        DateTime end = DateTime.now();
+        
+        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
+        
+        Result result = controller.getParticipantsForWorker(study.getIdentifier(), "10", "20", "foo", start.toString(), end.toString());
+        PagedResourceList<AccountSummary> page = resultToPage(result);
+        
+        // verify the result contains items
+        assertEquals(3, page.getItems().size());
+        assertEquals(30, page.getTotal());
+        assertEquals(SUMMARY, page.getItems().get(0));
+        
+        //verify paging/filtering
+        assertEquals(new Integer(10), page.getOffsetBy());
+        assertEquals(20, page.getPageSize());
+        assertEquals("foo", page.getFilters().get("emailFilter"));
+        
+        // DateTime instances don't seem to be equal unless you use the library's equality methods, which
+        // verification does not do. So capture and compare that way.
+        verify(mockParticipantService).getPagedAccountSummaries(eq(study), eq(10), eq(20), eq("foo"),
+                startTimeCaptor.capture(), endTimeCaptor.capture());
+        assertEquals(start.toString(), startTimeCaptor.getValue().toString());
+        assertEquals(end.toString(), endTimeCaptor.getValue().toString());
+    }
+    
+    @Test
+    public void getParticipantForWorker() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
+                .withRoles(Sets.newHashSet(Roles.WORKER)).build());
+        
+        StudyParticipant foundParticipant = new StudyParticipant.Builder().withId(ID).withHealthCode("healthCode")
+                .build();
+        
+        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
+        when(mockParticipantService.getParticipant(study, ID, true)).thenReturn(foundParticipant);
+        
+        Result result = controller.getParticipantForWorker(study.getIdentifier(), ID);
+        assertEquals(200, result.status());
+        
+        StudyParticipant participant = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
+                StudyParticipant.class);
+        assertNull(participant.getHealthCode());
+        assertEquals(ID, participant.getId());
+    }
     
     private ForwardCursorPagedResourceList<ScheduledActivity> createActivityResultsV2() {
         List<ScheduledActivity> list = Lists.newArrayList();
