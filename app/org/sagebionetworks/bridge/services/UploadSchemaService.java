@@ -260,12 +260,11 @@ public class UploadSchemaService {
         // Init field def builder with basic fields. Note that all survey questions are skippable, so mark the field as
         // optional (not required).
         String fieldName = question.getIdentifier();
+        UploadFieldDefinition.Builder fieldDefBuilder = new UploadFieldDefinition.Builder().withName(fieldName)
+                .withRequired(false);
 
         UploadFieldType uploadFieldType;
         if (constraints instanceof MultiValueConstraints) {
-            UploadFieldDefinition.Builder fieldDefBuilder = new UploadFieldDefinition.Builder().withName(fieldName)
-                    .withRequired(false);
-
             MultiValueConstraints multiValueConstraints = (MultiValueConstraints) constraints;
             if (multiValueConstraints.getAllowMultiple()) {
                 uploadFieldType = UploadFieldType.MULTI_CHOICE;
@@ -329,9 +328,6 @@ public class UploadSchemaService {
             if (uploadFieldType == null) {
                 throw new BridgeServiceException("Unexpected survey question type: " + surveyQuestionType);
             }
-
-            UploadFieldDefinition.Builder fieldDefBuilder = new UploadFieldDefinition.Builder().withName(fieldName)
-                    .withRequired(false);
 
             // Type-specific parameters.
             if (constraints instanceof StringConstraints) {
