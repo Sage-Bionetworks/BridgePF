@@ -20,8 +20,11 @@ import java.util.stream.Collectors;
 import javax.annotation.Resource;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
+import com.amazonaws.services.dynamodbv2.model.ReturnConsumedCapacity;
 import com.google.common.util.concurrent.RateLimiter;
 import org.joda.time.DateTimeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -54,7 +57,9 @@ import com.google.common.collect.Maps;
 public class DynamoExternalIdDao implements ExternalIdDao {
     
     static final String PAGE_SIZE_ERROR = "pageSize must be from 1-"+API_MAXIMUM_PAGE_SIZE+" records";
-    
+
+    private static final Logger LOG = LoggerFactory.getLogger(DynamoExternalIdDao.class);
+
     private static final String RESERVATION = "reservation";
     private static final String HEALTH_CODE = "healthCode";
     static final String IDENTIFIER = "identifier";
@@ -97,6 +102,9 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         if (pageSize < 1 || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
+
+        LOG.debug("Page Size: " + pageSize);
+
         // The offset key is applied after the idFilter. If the offsetKey doesn't match the beginning
         // of the idFilter, the AWS SDK throws a validation exception. So when providing an idFilter and 
         // a paging offset, clear the offset (go back to the first page) if they don't match.
@@ -123,8 +131,10 @@ public class DynamoExternalIdDao implements ExternalIdDao {
                 identifiers.add(createInfo(id, lockDuration));
             }
 
-            // update our estimate for how much capacity the next request will consume
+            // use capacity consumed by last request to as our estimate for the next request
             readCapacity = list.getConsumedCapacity().getCapacityUnits().intValue();
+
+            LOG.debug("Consumed Capacity: " + readCapacity);
 
             // This is the last key, not the next key of the next page of records. It only exists if there's a record
             // beyond the records we've converted to a page. Then get the last key in the list.
@@ -273,6 +283,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             query.withExclusiveStartKey(map);
         }
 
+        query.withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
         query.withLimit(pageSize);
         return query;
     }
