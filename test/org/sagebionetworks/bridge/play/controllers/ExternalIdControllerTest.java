@@ -27,6 +27,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -52,8 +53,8 @@ public class ExternalIdControllerTest {
             new ExternalIdentifierInfo("AAA", false), new ExternalIdentifierInfo("BBB", false),
             new ExternalIdentifierInfo("CCC", false));
     
-    private static final TypeReference<PagedResourceList<ExternalIdentifierInfo>> PAGE_REF = 
-            new TypeReference<PagedResourceList<ExternalIdentifierInfo>>() {};
+    private static final TypeReference<ForwardCursorPagedResourceList<ExternalIdentifierInfo>> PAGE_REF =
+            new TypeReference<ForwardCursorPagedResourceList<ExternalIdentifierInfo>>() {};
     
     @Mock
     ExternalIdService externalIdService;
@@ -95,20 +96,18 @@ public class ExternalIdControllerTest {
     public void getExternalIds() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.RESEARCHER);
         // Mock out a response from service
-        PagedResourceList<ExternalIdentifierInfo> page = new PagedResourceList<>(EXT_IDS, null, 5, 10)
-                .withOffsetKey("CCC")
+        ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = new ForwardCursorPagedResourceList<>(EXT_IDS, "CCC", 5)
                 .withFilter("idFilter", "A");
         when(externalIdService.getExternalIds(any(), any(), any(), any(), any())).thenReturn(page);
         
         // execute the controller
         Result result = controller.getExternalIds(null, null, null, null);
         String content = Helpers.contentAsString(result);
-        
-        PagedResourceList<ExternalIdentifierInfo> deserPage =  MAPPER.readValue(content, PAGE_REF);
+
+        ForwardCursorPagedResourceList<ExternalIdentifierInfo> deserPage =  MAPPER.readValue(content, PAGE_REF);
         assertEquals(EXT_IDS, deserPage.getItems());
-        assertEquals("CCC", deserPage.getOffsetKey());
+        assertEquals("CCC", deserPage.getOffsetBy());
         assertEquals(5, deserPage.getPageSize());
-        assertEquals(10, deserPage.getTotal());
         assertEquals("A", deserPage.getFilters().get("idFilter"));
     }
     
