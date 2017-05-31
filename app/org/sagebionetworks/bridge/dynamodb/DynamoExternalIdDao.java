@@ -72,7 +72,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     public final void setConfig(Config config) {
         addLimit = config.getInt(CONFIG_KEY_ADD_LIMIT);
         lockDuration = config.getInt(CONFIG_KEY_LOCK_DURATION);
-        setGetExternalIdRateLimiter(RateLimiter.create(config.getInt(CONFIG_KEY_GET_LIMIT)));
+        setGetExternalIdRateLimiter(RateLimiter.create(config.getInt(EXTERNAL_ID_GET_RATE)));
     }
 
     // allow unit test to mock this
@@ -106,8 +106,12 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         QueryResultPage<DynamoExternalIdentifier> list;
         List<ExternalIdentifierInfo> identifiers = Lists.newArrayListWithCapacity(pageSize);
 
+        // initial estimate: read capacity consumed will equal the page size
+        int readCapacity = pageSize;
+
         do {
-            getExternalIdRateLimiter.acquire(pageSize);
+            getExternalIdRateLimiter.acquire(readCapacity);
+
             list = mapper.queryPage(DynamoExternalIdentifier.class,
                     createGetQuery(studyId, offsetKey, pageSize, idFilter, assignmentFilter));
 
@@ -118,6 +122,9 @@ public class DynamoExternalIdDao implements ExternalIdDao {
                 }
                 identifiers.add(createInfo(id, lockDuration));
             }
+
+            // update our estimate for how much capacity the next request will consume
+            readCapacity = list.getConsumedCapacity().getCapacityUnits().intValue();
 
             // This is the last key, not the next key of the next page of records. It only exists if there's a record
             // beyond the records we've converted to a page. Then get the last key in the list.

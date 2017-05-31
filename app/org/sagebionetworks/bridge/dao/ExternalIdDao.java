@@ -13,7 +13,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
  */
 public interface ExternalIdDao {
 
-    String CONFIG_KEY_GET_LIMIT = "external.id.get.limit";
+    String EXTERNAL_ID_GET_RATE = "external.id.get.rate";
     String CONFIG_KEY_ADD_LIMIT = "external.id.add.limit";
     String CONFIG_KEY_LOCK_DURATION = "external.id.lock.duration";
 
