@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.config;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -502,12 +505,32 @@ public class BridgeSpringConfig {
 
     @Bean
     public SessionFactory hibernateSessionFactory() {
+        ClassLoader classLoader = getClass().getClassLoader();
+
+        // Need to set env vars to find the truststore so we can validate Amazon's RDS SSL certificate. Note that
+        // because this truststore only contains public certs (CA certs and Amazon's RDS certs), we can include the
+        // truststore in our source repo and set the password to something public.
+        //
+        // For more information, see
+        // https://stackoverflow.com/questions/32156046/using-java-to-establish-a-secure-connection-to-mysql-amazon-rds-ssl-tls
+        // https://stackoverflow.com/questions/27536380/how-to-connect-to-a-remote-mysql-database-via-ssl-using-play-framework/27536391
+        Path trustStorePath;
+        try {
+            // URL -> URI -> Path is safer, and Windows doesn't work without it
+            // see http://stackoverflow.com/questions/6164448/convert-url-to-normal-windows-filename-java
+            //noinspection ConstantConditions
+            trustStorePath = Paths.get(classLoader.getResource("truststore.jks").toURI());
+        } catch (URISyntaxException ex) {
+            throw new RuntimeException("Error loading truststore from classpath: " + ex.getMessage(), ex);
+        }
+        System.setProperty("javax.net.ssl.trustStore", trustStorePath.toString());
+        System.setProperty("javax.net.ssl.trustStorePassword", "public");
+
         // Hibernate configs
         Properties props = new Properties();
         props.put("hibernate.connection.characterEncoding", "UTF-8");
         props.put("hibernate.connection.CharSet", "UTF-8");
         props.put("hibernate.connection.driver_class", "com.mysql.jdbc.Driver");
-        props.put("hibernate.connection.requireSSL", true);
         props.put("hibernate.connection.useUnicode", true);
         props.put("hibernate.dialect", "org.hibernate.dialect.MySQLDialect");
 
@@ -520,8 +543,15 @@ public class BridgeSpringConfig {
         // Connection properties come from Bridge configs
         BridgeConfig config = bridgeConfig();
         props.put("hibernate.connection.password", config.get("hibernate.connection.password"));
-        props.put("hibernate.connection.url", config.get("hibernate.connection.url"));
         props.put("hibernate.connection.username", config.get("hibernate.connection.username"));
+
+        // Append SSL props to URL if needed
+        boolean useSsl = Boolean.valueOf(config.get("hibernate.connection.useSSL"));
+        String url = config.get("hibernate.connection.url");
+        if (useSsl) {
+            url = url + "?requireSSL=true&useSSL=true&verifyServerCertificate=true";
+        }
+        props.put("hibernate.connection.url", url);
 
         StandardServiceRegistry reg = new StandardServiceRegistryBuilder().applySettings(props).build();
 
