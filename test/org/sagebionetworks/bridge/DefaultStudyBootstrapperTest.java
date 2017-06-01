@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -16,10 +17,13 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.validators.StudyValidator;
+import org.sagebionetworks.bridge.validators.Validate;
 
 @SuppressWarnings("unchecked")
 public class DefaultStudyBootstrapperTest {
@@ -60,6 +64,7 @@ public class DefaultStudyBootstrapperTest {
         assertEquals("https://enterprise.stormpath.io/v1/directories/3OBNJsxNxvaaK5nSFwv8RD", study.getStormpathHref());
         assertEquals(Sets.newHashSet("phone", "can_be_recontacted"), study.getUserProfileAttributes());
         assertEquals(new PasswordPolicy(2, false, false, false, false), study.getPasswordPolicy());
+        assertTrue(study.isEmailVerificationEnabled());
 
         // Validate shared study. No need to test every attribute. Just validate the important attributes.
         Study sharedStudy = createdStudyList.get(1);
@@ -67,5 +72,16 @@ public class DefaultStudyBootstrapperTest {
         assertEquals(BridgeConstants.SHARED_STUDY_ID_STRING, sharedStudy.getIdentifier());
         assertEquals("https://enterprise.stormpath.io/v1/directories/4VaJ0y63TCKDmJTIV8YGAs",
                 sharedStudy.getStormpathHref());
+        
+        // So it doesn't get out of sync, validate the study. However, default templates are set 
+        // by the service. so those two errors are expected.
+        try {
+            Validate.entityThrowingException(new StudyValidator(), study);    
+        } catch(InvalidEntityException e) {
+            assertEquals(2, e.getErrors().keySet().size());
+            assertEquals(1, e.getErrors().get("verifyEmailTemplate").size());
+            assertEquals(1, e.getErrors().get("resetPasswordTemplate").size());
+        }
+        
     }
 }
