@@ -40,7 +40,7 @@ deploy:
       prod: bridge-prod
   - provider: elasticbeanstalk
     skip_cleanup: true
-    bucket_name: elasticbeanstalk-us-east-1-649232250620
+    bucket_name: org.sagebridge.bridgepf.deploy
     zip_file: target/universal/bridgepf-0.1-SNAPSHOT.zip
     region: us-east-1
     app: BridgePF
