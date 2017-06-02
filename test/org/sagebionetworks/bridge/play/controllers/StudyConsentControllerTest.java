@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestUtils.assertResult;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContextWithJson;
@@ -68,6 +69,8 @@ public class StudyConsentControllerTest {
     private Subpopulation subpopulation;
     
     private StudyConsentController controller;
+    
+    private UserSession session;
 
     @Before
     public void before() throws Exception {
@@ -78,16 +81,17 @@ public class StudyConsentControllerTest {
         controller.setSubpopulationService(subpopService);
         controller.setStudyService(studyService);
         
-        UserSession session = new UserSession();
+        session = new UserSession();
         session.setStudyIdentifier(STUDY_ID);
         session.setAuthenticated(true);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         when(subpopService.getSubpopulation(STUDY_ID, SubpopulationGuid.create(GUID))).thenReturn(subpopulation);
     }
     
     @Test
     public void getAllConsentsV2() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        
         List<StudyConsent> consents = Lists.newArrayList(new DynamoStudyConsent1(), new DynamoStudyConsent1());
         when(studyConsentService.getAllConsents(SUBPOP_GUID)).thenReturn(consents);
         
@@ -100,6 +104,8 @@ public class StudyConsentControllerTest {
 
     @Test
     public void getActiveConsentV2() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        
         StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), "<document/>");
         when(studyConsentService.getActiveConsent(any())).thenReturn(view);
         
@@ -111,6 +117,8 @@ public class StudyConsentControllerTest {
     
     @Test
     public void getMostRecentConsentV2() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        
         StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), "<document/>");
         when(studyConsentService.getMostRecentConsent(SUBPOP_GUID)).thenReturn(view);
         
@@ -122,6 +130,8 @@ public class StudyConsentControllerTest {
 
     @Test
     public void getConsentV2() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        
         StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), "<document/>");
         when(studyConsentService.getConsent(SUBPOP_GUID, DateTime.parse(DATETIME_STRING).getMillis())).thenReturn(view);
         
@@ -133,6 +143,8 @@ public class StudyConsentControllerTest {
     
     @Test
     public void addConsentV2() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        
         StudyConsentForm form = new StudyConsentForm("<document/>");
         mockPlayContextWithJson(BridgeObjectMapper.get().writeValueAsString(form));
         
@@ -147,6 +159,8 @@ public class StudyConsentControllerTest {
 
     @Test
     public void publishConsentV2() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        
         when(studyService.getStudy(STUDY_ID)).thenReturn(STUDY);
         
         Result result = controller.publishConsentV2(GUID, DATETIME_STRING);
