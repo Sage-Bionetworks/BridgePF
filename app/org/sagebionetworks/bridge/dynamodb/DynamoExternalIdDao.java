@@ -114,11 +114,13 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         QueryResultPage<DynamoExternalIdentifier> list;
         List<ExternalIdentifierInfo> identifiers = Lists.newArrayListWithCapacity(pageSize);
 
-        // initial estimate: read capacity consumed will equal the page size
-        int readCapacity = pageSize;
+        // initial estimate: read capacity consumed will equal 1
+        // see https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
+        int capacityAcquired = 1;
+        int capacityConsumed = 0;
 
         do {
-            getExternalIdRateLimiter.acquire(readCapacity);
+            getExternalIdRateLimiter.acquire(capacityAcquired);
 
             list = mapper.queryPage(DynamoExternalIdentifier.class,
                     createGetQuery(studyId, offsetKey, pageSize, idFilter, assignmentFilter));
@@ -131,10 +133,11 @@ public class DynamoExternalIdDao implements ExternalIdDao {
                 identifiers.add(createInfo(id, lockDuration));
             }
 
-            // use capacity consumed by last request to as our estimate for the next request
-            readCapacity = list.getConsumedCapacity().getCapacityUnits().intValue();
+            capacityConsumed = list.getConsumedCapacity().getCapacityUnits().intValue();
+            LOG.debug("Capacity acquired: +" + capacityAcquired + ", Consumed Capacity: " + capacityConsumed);
 
-            LOG.debug("Consumed Capacity: " + readCapacity);
+            // use capacity consumed by last request to as our estimate for the next request
+            capacityAcquired = capacityConsumed;
 
             // This is the last key, not the next key of the next page of records. It only exists if there's a record
             // beyond the records we've converted to a page. Then get the last key in the list.
