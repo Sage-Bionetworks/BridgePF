@@ -65,6 +65,7 @@ public class DefaultStudyBootstrapper {
             study.setTaskIdentifiers(TEST_TASK_IDENTIFIERS);
             study.setUserProfileAttributes(Sets.newHashSet("phone", "can_be_recontacted"));
             study.setPasswordPolicy(new PasswordPolicy(2, false, false, false, false));
+            study.setEmailVerificationEnabled(true);
             studyService.createStudy(study);
         }
 

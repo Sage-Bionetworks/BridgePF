@@ -6,9 +6,6 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.io.IOException;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
@@ -28,6 +25,8 @@ import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Component
 public class AccountWorkflowService {
@@ -66,24 +65,24 @@ public class AccountWorkflowService {
     private AccountDao accountDao;
     
     private CacheProvider cacheProvider;
-    
+
     @Autowired
-    final void setStudyService(StudyService studyService) {
+    public final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
-    
+
     @Autowired
-    final void setSendMailService(SendMailService sendMailService) {
+    public final void setSendMailService(SendMailService sendMailService) {
         this.sendMailService = sendMailService;
     }
-    
+
     @Autowired
-    final void setAccountDao(AccountDao accountDao) {
+    public final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
-    
+
     @Autowired
-    final void setCacheProvider(CacheProvider cacheProvider) {
+    public final void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
     }
     
@@ -145,7 +144,7 @@ public class AccountWorkflowService {
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        account.setStatus(AccountStatus.ENABLED);;
+        account.setStatus(AccountStatus.ENABLED);
         accountDao.updateAccount(account);
     }
     

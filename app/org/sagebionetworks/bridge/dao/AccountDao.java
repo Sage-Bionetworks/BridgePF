@@ -65,9 +65,9 @@ public interface AccountDao {
     
     /**
      * Create an account. The account object should initially be retrieved from the 
-     * constructAccount() factory method.
+     * constructAccount() factory method. Returns the created account's ID.
      */
-    void createAccount(Study study, Account account, boolean suppressEmail);
+    String createAccount(Study study, Account account, boolean sendVerifyEmail);
     
     /**
      * Save account changes. Account should have been retrieved from the getAccount() method 
@@ -91,7 +91,7 @@ public interface AccountDao {
     /**
      * Delete an account along with the authentication credentials.
      */
-    void deleteAccount(Study study, String email);
+    void deleteAccount(Study study, String id);
     
     /**
      * Get all account summaries in all studies in a given environment.

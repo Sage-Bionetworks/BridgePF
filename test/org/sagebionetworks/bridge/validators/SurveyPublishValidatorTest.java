@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.junit.Assert.*;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import java.util.List;
@@ -42,6 +41,7 @@ public class SurveyPublishValidatorTest {
 
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void multiValueWithNoEnumeration() {
         List<SurveyQuestionOption>[] testCases = new List[] { null, ImmutableList.of() };

@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.config;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -30,8 +33,8 @@ import com.stormpath.sdk.application.Application;
 import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.client.ClientBuilder;
 import com.stormpath.sdk.client.Clients;
-import com.stormpath.sdk.impl.client.DefaultClientBuilder;
 
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
 import org.sagebionetworks.bridge.dynamodb.DynamoCompoundActivityDefinition;
 import org.sagebionetworks.bridge.dynamodb.DynamoNamingHelper;
@@ -51,6 +54,8 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.Primary;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
@@ -77,9 +82,12 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadDedupe;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.dynamodb.DynamoUtils;
+import org.sagebionetworks.bridge.hibernate.HibernateAccount;
+import org.sagebionetworks.bridge.hibernate.HibernateAccountDao;
 import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.s3.S3Helper;
+import org.sagebionetworks.bridge.stormpath.StormpathAccountDao;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
 import org.sagebionetworks.bridge.upload.IosSchemaValidationHandler2;
 import org.sagebionetworks.bridge.upload.ParseJsonHandler;
@@ -99,6 +107,28 @@ import org.sagebionetworks.bridge.upload.UploadValidationHandler;
         type = FilterType.ANNOTATION, value = Configuration.class))
 @Configuration
 public class BridgeSpringConfig {
+    // This bean exists so we can use configuration to control whether to use MySQL/Hibernate or Stormpath. In the
+    // future, this bean may be moved to its own class to do multiplexing/fallback between the Hibernate and Stormpath.
+    //
+    // Note that Spring first tries to autowire by type, then falls back to autowiring by name (which includes implicit
+    // names for both beans and setters). To guarantee that this is the bean Spring picks up, we tag it with @Primary.
+    //
+    // In order to address circular dependency wonkiness, we use the @Lazy annotation. This also has the nice side
+    // effect that, whichever DAO we use, the other one will never be instantiated.
+    @Autowired
+    @Bean
+    @Primary
+    public AccountDao migrationAccountDao(@Lazy HibernateAccountDao hibernateAccountDao,
+            @Lazy StormpathAccountDao stormpathAccountDao) {
+        BridgeConfig config = bridgeConfig();
+        String authProvider = config.get("auth.provider");
+        if ("mysql".equalsIgnoreCase(authProvider)) {
+            return hibernateAccountDao;
+        } else {
+            return stormpathAccountDao;
+        }
+    }
+
     @Bean(name = "redisProviders")
     public List<String> redisProviders() {
         return Lists.newArrayList("REDISCLOUD_URL", "REDISTOGO_URL");
@@ -120,9 +150,8 @@ public class BridgeSpringConfig {
     }
 
     @Bean(name = "healthCodeEncryptor")
-    @Resource(name = "bridgeConfig")
-    public BridgeEncryptor healthCodeEncryptor(BridgeConfig bridgeConfig) {
-        return new BridgeEncryptor(new AesGcmEncryptor(bridgeConfig.getHealthCodeKey()));
+    public BridgeEncryptor healthCodeEncryptor() {
+        return new BridgeEncryptor(new AesGcmEncryptor(bridgeConfig().getHealthCodeKey()));
     }
 
     @Bean(name = "awsCredentials")
@@ -476,10 +505,33 @@ public class BridgeSpringConfig {
 
     @Bean
     public SessionFactory hibernateSessionFactory() {
+        ClassLoader classLoader = getClass().getClassLoader();
+
+        // Need to set env vars to find the truststore so we can validate Amazon's RDS SSL certificate. Note that
+        // because this truststore only contains public certs (CA certs and Amazon's RDS certs), we can include the
+        // truststore in our source repo and set the password to something public.
+        //
+        // For more information, see
+        // https://stackoverflow.com/questions/32156046/using-java-to-establish-a-secure-connection-to-mysql-amazon-rds-ssl-tls
+        // https://stackoverflow.com/questions/27536380/how-to-connect-to-a-remote-mysql-database-via-ssl-using-play-framework/27536391
+        Path trustStorePath;
+        try {
+            // URL -> URI -> Path is safer, and Windows doesn't work without it
+            // see http://stackoverflow.com/questions/6164448/convert-url-to-normal-windows-filename-java
+            //noinspection ConstantConditions
+            trustStorePath = Paths.get(classLoader.getResource("truststore.jks").toURI());
+        } catch (URISyntaxException ex) {
+            throw new RuntimeException("Error loading truststore from classpath: " + ex.getMessage(), ex);
+        }
+        System.setProperty("javax.net.ssl.trustStore", trustStorePath.toString());
+        System.setProperty("javax.net.ssl.trustStorePassword", "public");
+
         // Hibernate configs
         Properties props = new Properties();
+        props.put("hibernate.connection.characterEncoding", "UTF-8");
+        props.put("hibernate.connection.CharSet", "UTF-8");
         props.put("hibernate.connection.driver_class", "com.mysql.jdbc.Driver");
-        props.put("hibernate.connection.requireSSL", true);
+        props.put("hibernate.connection.useUnicode", true);
         props.put("hibernate.dialect", "org.hibernate.dialect.MySQLDialect");
 
         // c3p0 connection pool properties
@@ -491,13 +543,21 @@ public class BridgeSpringConfig {
         // Connection properties come from Bridge configs
         BridgeConfig config = bridgeConfig();
         props.put("hibernate.connection.password", config.get("hibernate.connection.password"));
-        props.put("hibernate.connection.url", config.get("hibernate.connection.url"));
         props.put("hibernate.connection.username", config.get("hibernate.connection.username"));
+
+        // Append SSL props to URL if needed
+        boolean useSsl = Boolean.valueOf(config.get("hibernate.connection.useSSL"));
+        String url = config.get("hibernate.connection.url");
+        if (useSsl) {
+            url = url + "?requireSSL=true&useSSL=true&verifyServerCertificate=true";
+        }
+        props.put("hibernate.connection.url", url);
 
         StandardServiceRegistry reg = new StandardServiceRegistryBuilder().applySettings(props).build();
 
         // For whatever reason, we need to list each Hibernate-enabled class individually.
         MetadataSources metadataSources = new MetadataSources(reg);
+        metadataSources.addAnnotatedClass(HibernateAccount.class);
         metadataSources.addAnnotatedClass(HibernateSharedModuleMetadata.class);
 
         return metadataSources.buildMetadata().buildSessionFactory();
@@ -505,21 +565,22 @@ public class BridgeSpringConfig {
 
     // Do NOT reference this bean outside of StormpathAccountDao. Injected for testing purposes.
     @Bean(name = "stormpathClient")
-    @Autowired
-    public Client getStormpathClient(BridgeConfig bridgeConfig) {
+    public Client stormpathClient() {
+        BridgeConfig bridgeConfig = bridgeConfig();
+
         ApiKey apiKey = ApiKeys.builder()
             .setId(bridgeConfig.getStormpathId())
             .setSecret(bridgeConfig.getStormpathSecret()).build();
+
         ClientBuilder clientBuilder = Clients.builder().setApiKey(apiKey);
-        ((DefaultClientBuilder)clientBuilder).setBaseUrl("https://enterprise.stormpath.io/v1");
+        clientBuilder.setBaseUrl("https://enterprise.stormpath.io/v1");
         return clientBuilder.build();        
     }
 
     // Do NOT reference this bean outside of StormpathAccountDao. Injected for testing purposes.
     @Bean(name = "stormpathApplication")
-    @Autowired
-    public Application getStormpathApplication(BridgeConfig bridgeConfig, Client stormpathClient) {
-        return stormpathClient.getResource(bridgeConfig.getStormpathApplicationHref(), Application.class);
+    public Application stormpathApplication() {
+        return stormpathClient().getResource(bridgeConfig().getStormpathApplicationHref(), Application.class);
     }
     
     @Bean(name = "sessionExpireInSeconds")

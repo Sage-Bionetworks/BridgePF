@@ -10,8 +10,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Resource;
-
 import org.apache.commons.io.IOUtils;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -61,10 +59,12 @@ public class ConsentService {
     final void setConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.consentTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-    @Resource(name="stormpathAccountDao")
+
+    @Autowired
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
+
     @Autowired
     final void setOptionsService(ParticipantOptionsService optionsService) {
         this.optionsService = optionsService;

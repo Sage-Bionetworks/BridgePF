@@ -7,6 +7,7 @@ import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -45,6 +46,8 @@ public class BridgeUtils {
     public static final Joiner COMMA_JOINER = Joiner.on(",");
     public static final Joiner SEMICOLON_SPACE_JOINER = Joiner.on("; ");
     public static final Joiner SPACE_JOINER = Joiner.on(" ");
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     /**
      * Create a variable map for the <code>resolveTemplate</code> method that includes common values from 
@@ -106,7 +109,14 @@ public class BridgeUtils {
     public static String generateGuid() {
         return UUID.randomUUID().toString();
     }
-    
+
+    /** Generate a random 16-byte salt, using a {@link SecureRandom}. */
+    public static byte[] generateSalt() {
+        byte[] salt = new byte[16];
+        SECURE_RANDOM.nextBytes(salt);
+        return salt;
+    }
+
     /**
      * Searches for a @BridgeTypeName annotation on this or any parent class in the class hierarchy, returning 
      * that value as the type name. If none exists, defaults to the simple class name. 
