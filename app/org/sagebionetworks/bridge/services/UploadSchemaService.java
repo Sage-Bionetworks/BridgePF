@@ -66,6 +66,8 @@ public class UploadSchemaService {
                     .put(DataType.DATE, UploadFieldType.CALENDAR_DATE)
                     .put(DataType.TIME, UploadFieldType.TIME_V2)
                     .put(DataType.DATETIME, UploadFieldType.TIMESTAMP)
+                    .put(DataType.HEIGHT, UploadFieldType.FLOAT)
+                    .put(DataType.WEIGHT, UploadFieldType.FLOAT)
                     .build();
 
     // Default string length for single_choice field. This is needed to prevent single_choice questions from changing
