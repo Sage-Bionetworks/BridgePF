@@ -8,5 +8,8 @@ public enum DataType {
     BOOLEAN,
     DATE,
     TIME,
-    DATETIME;
+    DATETIME,
+    BLOODPRESSURE,
+    HEIGHT,
+    WEIGHT
 }
