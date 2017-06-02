@@ -67,7 +67,7 @@ public class DynamoExternalIdDaoMockTest {
 
         when(resultPage.getLastEvaluatedKey()).thenReturn(null);
 
-        when(rateLimiter.acquire(pageSize)).thenReturn(0.0);
+        when(rateLimiter.acquire(anyInt())).thenReturn(0.0);
 
         when(mapper.queryPage(eq(DynamoExternalIdentifier.class), any())).thenReturn(resultPage);
 
@@ -84,7 +84,7 @@ public class DynamoExternalIdDaoMockTest {
         List<ExternalIdentifierInfo> externalIds = result.getItems();
         assertEquals(3, externalIds.size());
 
-        verify(rateLimiter).acquire(pageSize);
+        verify(rateLimiter).acquire(anyInt());
         verify(mapper).queryPage(eq(DynamoExternalIdentifier.class), any());
     }
 
@@ -94,7 +94,7 @@ public class DynamoExternalIdDaoMockTest {
         int pageSize = 3;
         setupTwoPages();
 
-        when(rateLimiter.acquire(pageSize)).thenReturn(0.0);
+        when(rateLimiter.acquire(anyInt())).thenReturn(0.0);
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> result =
                 dao.getExternalIds(
@@ -109,7 +109,7 @@ public class DynamoExternalIdDaoMockTest {
         List<ExternalIdentifierInfo> externalIds = result.getItems();
         assertEquals(3, externalIds.size());
 
-        verify(rateLimiter).acquire(pageSize);
+        verify(rateLimiter).acquire(anyInt());
         verify(mapper).queryPage(eq(DynamoExternalIdentifier.class), any());
     }
 
@@ -119,7 +119,7 @@ public class DynamoExternalIdDaoMockTest {
         int pageSize = 10;
         setupTwoPages();
 
-        when(rateLimiter.acquire(pageSize)).thenReturn(0.0);
+        when(rateLimiter.acquire(anyInt())).thenReturn(0.0);
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> result =
                 dao.getExternalIds(
