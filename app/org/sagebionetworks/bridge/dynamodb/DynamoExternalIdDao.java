@@ -13,14 +13,18 @@ import static com.amazonaws.services.dynamodbv2.model.ConditionalOperator.AND;
 import static com.amazonaws.services.dynamodbv2.model.ConditionalOperator.OR;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
+import com.amazonaws.services.dynamodbv2.model.ReturnConsumedCapacity;
+import com.google.common.util.concurrent.RateLimiter;
 import org.joda.time.DateTimeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -31,7 +35,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -40,7 +44,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
@@ -54,16 +57,19 @@ import com.google.common.collect.Maps;
 public class DynamoExternalIdDao implements ExternalIdDao {
     
     static final String PAGE_SIZE_ERROR = "pageSize must be from 1-"+API_MAXIMUM_PAGE_SIZE+" records";
-    
+
+    private static final Logger LOG = LoggerFactory.getLogger(DynamoExternalIdDao.class);
+
     private static final String RESERVATION = "reservation";
     private static final String HEALTH_CODE = "healthCode";
-    private static final String IDENTIFIER = "identifier";
+    static final String IDENTIFIER = "identifier";
     private static final String STUDY_ID = "studyId";
     private static final String ASSIGNMENT_FILTER = "assignmentFilter";
     private static final String ID_FILTER = "idFilter";
 
     private int addLimit;
     private int lockDuration;
+    private RateLimiter getExternalIdRateLimiter;
     private DynamoDBMapper mapper;
 
     /** Gets the add limit and lock duration from Config. */
@@ -71,46 +77,76 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     public final void setConfig(Config config) {
         addLimit = config.getInt(CONFIG_KEY_ADD_LIMIT);
         lockDuration = config.getInt(CONFIG_KEY_LOCK_DURATION);
+        setGetExternalIdRateLimiter(RateLimiter.create(config.getInt(EXTERNAL_ID_GET_RATE)));
     }
-    
+
+    // allow unit test to mock this
+    void setGetExternalIdRateLimiter(RateLimiter getExternalIdRateLimiter) {
+        this.getExternalIdRateLimiter = getExternalIdRateLimiter;
+    }
+
     @Resource(name = "externalIdDdbMapper")
     public final void setMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
     }
 
     @Override
-    public PagedResourceList<ExternalIdentifierInfo> getExternalIds(StudyIdentifier studyId, String offsetKey, 
+    public ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIds(StudyIdentifier studyId,
+            String offsetKey,
             int pageSize, String idFilter, Boolean assignmentFilter) {
         checkNotNull(studyId);
-        
+
         // Just set a sane upper limit on this.
+        // pageSize is used here to determine limit the number of results to be returned, as well as amount of records
+        // to scan per call to dynamo
         if (pageSize < 1 || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
+
+        LOG.debug("Page Size: " + pageSize);
+
         // The offset key is applied after the idFilter. If the offsetKey doesn't match the beginning
         // of the idFilter, the AWS SDK throws a validation exception. So when providing an idFilter and 
         // a paging offset, clear the offset (go back to the first page) if they don't match.
         if (offsetKey != null && idFilter != null && !offsetKey.startsWith(idFilter)) {
             offsetKey = null;
         }
-        PaginatedQueryList<DynamoExternalIdentifier> list = mapper.query(DynamoExternalIdentifier.class,
-                createGetQuery(studyId, offsetKey, pageSize, idFilter, assignmentFilter));
-        
-        int total = mapper.count(DynamoExternalIdentifier.class, createCountQuery(studyId, idFilter, assignmentFilter));
-        
+        QueryResultPage<DynamoExternalIdentifier> list;
         List<ExternalIdentifierInfo> identifiers = Lists.newArrayListWithCapacity(pageSize);
-        
-        Iterator<? extends ExternalIdentifier> iterator = list.iterator();
-        while(iterator.hasNext() && identifiers.size() < pageSize) {
-            ExternalIdentifier id = iterator.next();
-            identifiers.add( createInfo(id, lockDuration) );
-        }
-        // This is the last key, not the next key of the next page of records. It only exists if there's a record
-        // beyond the records we've converted to a page. Then get the last key in the list.
-        String nextPageOffsetKey = (iterator.hasNext()) ? last(identifiers).getIdentifier() : null;
-        
-        PagedResourceList<ExternalIdentifierInfo> resourceList = new PagedResourceList<ExternalIdentifierInfo>(identifiers, null, pageSize, total)
-                .withOffsetKey(nextPageOffsetKey)
+
+        // initial estimate: read capacity consumed will equal 1
+        // see https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
+        int capacityAcquired = 1;
+        int capacityConsumed = 0;
+
+        do {
+            getExternalIdRateLimiter.acquire(capacityAcquired);
+
+            list = mapper.queryPage(DynamoExternalIdentifier.class,
+                    createGetQuery(studyId, offsetKey, pageSize, idFilter, assignmentFilter));
+
+            for (ExternalIdentifier id : list.getResults()) {
+                if (identifiers.size() == pageSize) {
+                    // return no more than pageSize externalIdentifiers
+                    break;
+                }
+                identifiers.add(createInfo(id, lockDuration));
+            }
+
+            capacityConsumed = list.getConsumedCapacity().getCapacityUnits().intValue();
+            LOG.debug("Capacity acquired: +" + capacityAcquired + ", Consumed Capacity: " + capacityConsumed);
+
+            // use capacity consumed by last request to as our estimate for the next request
+            capacityAcquired = capacityConsumed;
+
+            // This is the last key, not the next key of the next page of records. It only exists if there's a record
+            // beyond the records we've converted to a page. Then get the last key in the list.
+            Map<String, AttributeValue> lastEvaluated = list.getLastEvaluatedKey();
+            offsetKey = lastEvaluated != null ? lastEvaluated.get(IDENTIFIER).getS() : null;
+        } while ((identifiers.size() < pageSize) && (offsetKey != null));
+
+        ForwardCursorPagedResourceList<ExternalIdentifierInfo> resourceList = new ForwardCursorPagedResourceList<>(
+                identifiers, offsetKey, pageSize)
                 .withFilter(ID_FILTER, idFilter);
         if (assignmentFilter != null) {
             resourceList = resourceList.withFilter(ASSIGNMENT_FILTER, assignmentFilter.toString());
@@ -231,24 +267,8 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     private DynamoDBQueryExpression<DynamoExternalIdentifier> createGetQuery(StudyIdentifier studyId,
             String offsetKey, int pageSize, String idFilter, Boolean assignmentFilter) {
 
-        DynamoDBQueryExpression<DynamoExternalIdentifier> query = createCountQuery(studyId, idFilter, assignmentFilter);
-        if (offsetKey != null) {
-            Map<String,AttributeValue> map = new HashMap<>();
-            map.put(STUDY_ID, new AttributeValue().withS(studyId.getIdentifier()));
-            map.put(IDENTIFIER, new AttributeValue().withS(offsetKey));
-            query.withExclusiveStartKey(map);
-        }
-        query.withLimit(pageSize+1);
-        return query;
-    }
-
-    /**
-     * Create a query for records applying the filter values if they exist.
-     */
-    private DynamoDBQueryExpression<DynamoExternalIdentifier> createCountQuery(StudyIdentifier studyId,
-            String idFilter, Boolean assignmentFilter) {
-
-        DynamoDBQueryExpression<DynamoExternalIdentifier> query = new DynamoDBQueryExpression<DynamoExternalIdentifier>();
+        DynamoDBQueryExpression<DynamoExternalIdentifier> query =
+                new DynamoDBQueryExpression<DynamoExternalIdentifier>();
         if (idFilter != null) {
             query.withRangeKeyCondition(IDENTIFIER, new Condition()
                     .withAttributeValueList(new AttributeValue().withS(idFilter))
@@ -258,6 +278,16 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             addAssignmentFilter(query, assignmentFilter.booleanValue());
         }
         query.withHashKeyValues(new DynamoExternalIdentifier(studyId, null)); // no healthCode.
+
+        if (offsetKey != null) {
+            Map<String, AttributeValue> map = new HashMap<>();
+            map.put(STUDY_ID, new AttributeValue().withS(studyId.getIdentifier()));
+            map.put(IDENTIFIER, new AttributeValue().withS(offsetKey));
+            query.withExclusiveStartKey(map);
+        }
+
+        query.withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
+        query.withLimit(pageSize);
         return query;
     }
 
