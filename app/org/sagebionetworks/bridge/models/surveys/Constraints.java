@@ -19,7 +19,10 @@ import com.google.common.collect.Lists;
     @Type(name="datetime", value=DateTimeConstraints.class),
     @Type(name="date", value=DateConstraints.class),
     @Type(name="time", value=TimeConstraints.class),
-    @Type(name="duration", value=DurationConstraints.class)
+    @Type(name="duration", value=DurationConstraints.class),
+    @Type(name="bloodpressure", value=BloodPressureConstraints.class),
+    @Type(name="height", value=HeightConstraints.class),
+    @Type(name="weight",value=WeightConstraints.class)
 })
 public class Constraints {
 
