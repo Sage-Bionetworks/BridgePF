@@ -13,7 +13,7 @@ public class WeightConstraints extends NumericalConstraints {
         setSupportedHints(EnumSet.of(WEIGHT));
     }
 
-    public void setIsForInfant(boolean isForInfant) {
+    public void setForInfant(boolean isForInfant) {
         this.isForInfant = isForInfant;
     }
 
