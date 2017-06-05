@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.surveys;
 
+import static org.sagebionetworks.bridge.models.surveys.UIHint.HEIGHT;
 import static org.sagebionetworks.bridge.models.surveys.UIHint.WEIGHT;
 
 import java.util.EnumSet;
@@ -10,6 +11,7 @@ public class WeightConstraints extends NumericalConstraints {
     public WeightConstraints() {
         super();
         setDataType(DataType.WEIGHT);
+        setSupportedHints(EnumSet.of(WEIGHT));
     }
 
     public void setIsForInfant(boolean isForInfant) {

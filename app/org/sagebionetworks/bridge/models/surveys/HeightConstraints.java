@@ -11,6 +11,7 @@ public class HeightConstraints extends NumericalConstraints {
     public HeightConstraints() {
         super();
         setDataType(DataType.HEIGHT);
+        setSupportedHints(EnumSet.of(HEIGHT));
     }
 
     public void setIsForInfant(boolean isForInfant) {
