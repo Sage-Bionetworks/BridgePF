@@ -10,6 +10,7 @@ public class WeightConstraints extends NumericalConstraints {
     public WeightConstraints() {
         super();
         setDataType(DataType.WEIGHT);
+        setSupportedHints(EnumSet.of(WEIGHT));
     }
 
     public void setIsForInfant(boolean isForInfant) {
