@@ -66,6 +66,8 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     private static final String STUDY_ID = "studyId";
     private static final String ASSIGNMENT_FILTER = "assignmentFilter";
     private static final String ID_FILTER = "idFilter";
+    private static final String TOTAL_FILTER = "total";
+
 
     private int addLimit;
     private int lockDuration;
@@ -147,7 +149,8 @@ public class DynamoExternalIdDao implements ExternalIdDao {
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> resourceList = new ForwardCursorPagedResourceList<>(
                 identifiers, offsetKey, pageSize)
-                .withFilter(ID_FILTER, idFilter);
+                .withFilter(ID_FILTER, idFilter)
+                .withFilter(TOTAL_FILTER,Integer.toString(identifiers.size()));
         if (assignmentFilter != null) {
             resourceList = resourceList.withFilter(ASSIGNMENT_FILTER, assignmentFilter.toString());
         }
@@ -346,12 +349,5 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         long reservationStartTime = DateTimeUtils.currentTimeMillis() - lockDuration;
         boolean isAssigned = (id.getHealthCode() != null || id.getReservation() >= reservationStartTime);
         return new ExternalIdentifierInfo(id.getIdentifier(), isAssigned);
-    }
-    
-    private <T> T last(List<T> items) {
-        if (items != null && !items.isEmpty()) {
-            return items.get(items.size()-1);
-        }
-        return null;
     }
 }

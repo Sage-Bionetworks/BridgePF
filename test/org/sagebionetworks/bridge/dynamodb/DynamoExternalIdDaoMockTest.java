@@ -23,28 +23,32 @@ import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.RateLimiter;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
-/**
- * Created by jyliu on 5/26/2017.
- */
+@RunWith(MockitoJUnitRunner.class)
 public class DynamoExternalIdDaoMockTest {
 
     @Mock
     private RateLimiter rateLimiter;
     @Mock
     private DynamoDBMapper mapper;
-
+    @Mock
+    private QueryResultPage<DynamoExternalIdentifier> resultPage;
+    @Mock
+    private QueryResultPage<DynamoExternalIdentifier> resultPage1;
+    @Mock
+    private QueryResultPage<DynamoExternalIdentifier> resultPage2;
+    
     private DynamoExternalIdDao dao;
-
+    
     @Before
     public void setupTest() {
-        MockitoAnnotations.initMocks(this);
         dao = new DynamoExternalIdDao();
         dao.setMapper(mapper);
         dao.setGetExternalIdRateLimiter(rateLimiter);
@@ -53,8 +57,6 @@ public class DynamoExternalIdDaoMockTest {
     @Test
     public void getExternalIds() throws Exception {
         int pageSize = 10;
-
-        QueryResultPage<DynamoExternalIdentifier> resultPage = mock(QueryResultPage.class);
 
         List<DynamoExternalIdentifier> identifiers = createIds(
                 "AAA",
@@ -164,7 +166,6 @@ public class DynamoExternalIdDaoMockTest {
     }
 
     private void setupTwoPages() {
-        QueryResultPage<DynamoExternalIdentifier> resultPage1 = mock(QueryResultPage.class);
         List<DynamoExternalIdentifier> ids1 = createIds(
                 "AAA",
                 "BBB",
@@ -177,7 +178,6 @@ public class DynamoExternalIdDaoMockTest {
         lastEvaluatedKey1.put(IDENTIFIER, new AttributeValue().withS("CCC"));
         when(resultPage1.getLastEvaluatedKey()).thenReturn(lastEvaluatedKey1);
 
-        QueryResultPage<DynamoExternalIdentifier> resultPage2 = mock(QueryResultPage.class);
         List<DynamoExternalIdentifier> ids2 = createIds(
                 "DDD",
                 "EEE"
