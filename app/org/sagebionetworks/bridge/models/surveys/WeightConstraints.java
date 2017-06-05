@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.models.surveys;
 
-import static org.sagebionetworks.bridge.models.surveys.UIHint.HEIGHT;
 import static org.sagebionetworks.bridge.models.surveys.UIHint.WEIGHT;
 
 import java.util.EnumSet;
