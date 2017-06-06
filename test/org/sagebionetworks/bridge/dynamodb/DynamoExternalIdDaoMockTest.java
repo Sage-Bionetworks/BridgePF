@@ -39,6 +39,12 @@ public class DynamoExternalIdDaoMockTest {
     private RateLimiter rateLimiter;
     @Mock
     private DynamoDBMapper mapper;
+    @Mock
+    private QueryResultPage<DynamoExternalIdentifier> resultPage;
+    @Mock
+    private QueryResultPage<DynamoExternalIdentifier> resultPage1;
+    @Mock
+    private QueryResultPage<DynamoExternalIdentifier> resultPage2;
 
     private DynamoExternalIdDao dao;
 
@@ -49,12 +55,10 @@ public class DynamoExternalIdDaoMockTest {
         dao.setMapper(mapper);
         dao.setGetExternalIdRateLimiter(rateLimiter);
     }
-
+    
     @Test
     public void getExternalIds() throws Exception {
         int pageSize = 10;
-
-        QueryResultPage<DynamoExternalIdentifier> resultPage = mock(QueryResultPage.class);
 
         List<DynamoExternalIdentifier> identifiers = createIds(
                 "AAA",
@@ -164,7 +168,6 @@ public class DynamoExternalIdDaoMockTest {
     }
 
     private void setupTwoPages() {
-        QueryResultPage<DynamoExternalIdentifier> resultPage1 = mock(QueryResultPage.class);
         List<DynamoExternalIdentifier> ids1 = createIds(
                 "AAA",
                 "BBB",
@@ -177,7 +180,6 @@ public class DynamoExternalIdDaoMockTest {
         lastEvaluatedKey1.put(IDENTIFIER, new AttributeValue().withS("CCC"));
         when(resultPage1.getLastEvaluatedKey()).thenReturn(lastEvaluatedKey1);
 
-        QueryResultPage<DynamoExternalIdentifier> resultPage2 = mock(QueryResultPage.class);
         List<DynamoExternalIdentifier> ids2 = createIds(
                 "DDD",
                 "EEE"

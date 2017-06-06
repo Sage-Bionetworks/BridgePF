@@ -6,7 +6,6 @@ import java.util.EnumSet;
 
 public class HeightConstraints extends NumericalConstraints {
     private boolean isForInfant;
-    private Unit unit;
 
     public HeightConstraints() {
         super();
