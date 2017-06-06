@@ -288,6 +288,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         }
 
         query.withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
+        query.withConsistentRead(true);
         query.withLimit(pageSize);
         return query;
     }
