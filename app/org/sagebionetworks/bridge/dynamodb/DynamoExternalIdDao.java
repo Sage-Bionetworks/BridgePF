@@ -347,11 +347,4 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         boolean isAssigned = (id.getHealthCode() != null || id.getReservation() >= reservationStartTime);
         return new ExternalIdentifierInfo(id.getIdentifier(), isAssigned);
     }
-    
-    private <T> T last(List<T> items) {
-        if (items != null && !items.isEmpty()) {
-            return items.get(items.size()-1);
-        }
-        return null;
-    }
 }
