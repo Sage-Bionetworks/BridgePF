@@ -57,6 +57,7 @@ import com.google.common.collect.Maps;
 public class DynamoExternalIdDao implements ExternalIdDao {
     
     static final String PAGE_SIZE_ERROR = "pageSize must be from 1-"+API_MAXIMUM_PAGE_SIZE+" records";
+    static final int QUERY_PAGE_SIZE = 200;
 
     private static final Logger LOG = LoggerFactory.getLogger(DynamoExternalIdDao.class);
 
@@ -92,8 +93,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
 
     @Override
     public ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIds(StudyIdentifier studyId,
-            String offsetKey,
-            int pageSize, String idFilter, Boolean assignmentFilter) {
+            String offsetKey, int pageSize, String idFilter, Boolean assignmentFilter) {
         checkNotNull(studyId);
 
         // Just set a sane upper limit on this.
@@ -123,7 +123,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             getExternalIdRateLimiter.acquire(capacityAcquired);
 
             list = mapper.queryPage(DynamoExternalIdentifier.class,
-                    createGetQuery(studyId, offsetKey, pageSize, idFilter, assignmentFilter));
+                    createGetQuery(studyId, offsetKey, QUERY_PAGE_SIZE, idFilter, assignmentFilter));
 
             for (ExternalIdentifier id : list.getResults()) {
                 if (identifiers.size() == pageSize) {
@@ -143,6 +143,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             // beyond the records we've converted to a page. Then get the last key in the list.
             Map<String, AttributeValue> lastEvaluated = list.getLastEvaluatedKey();
             offsetKey = lastEvaluated != null ? lastEvaluated.get(IDENTIFIER).getS() : null;
+            
         } while ((identifiers.size() < pageSize) && (offsetKey != null));
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> resourceList = new ForwardCursorPagedResourceList<>(
