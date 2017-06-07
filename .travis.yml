@@ -47,6 +47,7 @@ deploy:
     env:
       develop: BridgePF-dev
       uat: BridgePF-uat
+      prod: BridgePF-prod
     on:
       all_branches: true
     access_key_id: AKIAIG6T67NMROEIMC7A
