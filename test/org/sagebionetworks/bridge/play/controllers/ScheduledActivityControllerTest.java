@@ -51,6 +51,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.schedules.ScheduledActivityList;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.ScheduledActivityService;
@@ -369,7 +370,7 @@ public class ScheduledActivityControllerTest {
                 ENDS_ON.toString(), OFFSET_BY, PAGE_SIZE);
         assertEquals(200, result.status());
         
-        ForwardCursorPagedResourceList<ScheduledActivity> page = BridgeObjectMapper.get()
+        ScheduledActivityList page = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), FORWARD_CURSOR_PAGED_ACTIVITIES_REF);
         
         assertEquals(1, page.getItems().size());

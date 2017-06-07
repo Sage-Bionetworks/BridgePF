@@ -30,6 +30,7 @@ import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
+import org.sagebionetworks.bridge.models.schedules.ScheduledActivityList;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
@@ -115,7 +116,7 @@ public class DynamoScheduledActivityDaoTest {
         String activityGuid = extractActivityGuid();
         
         // Get the first page of 10 records
-        ForwardCursorPagedResourceList<ScheduledActivity> history = activityDao.getActivityHistoryV2(
+        ScheduledActivityList history = activityDao.getActivityHistoryV2(
                 healthCode, activityGuid, startDateTime, endDateTime, MSK, null, 10);
         assertEquals(10, history.getItems().size());
         history.getItems().stream().forEach(scheduledActivity -> assertEquals(MSK, scheduledActivity.getTimeZone()));

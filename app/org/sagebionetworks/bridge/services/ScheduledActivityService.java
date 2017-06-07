@@ -40,6 +40,7 @@ import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.schedules.ScheduledActivityList;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
@@ -150,7 +151,7 @@ public class ScheduledActivityService {
         this.surveyService = surveyService;
     }
 
-    public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(String healthCode,
+    public ScheduledActivityList getActivityHistory(String healthCode,
             String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, String offsetBy,
             int pageSize) {
         checkArgument(isNotBlank(healthCode));
