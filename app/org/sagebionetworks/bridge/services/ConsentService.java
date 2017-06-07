@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -163,7 +164,9 @@ public class ConsentService {
                 .withConsentCreatedOn(studyConsent.getCreatedOn()).build();
         
         // Add consent signature to the list of signatures, save account.
-        account.getConsentSignatureHistory(subpopGuid).add(withConsentCreatedOnSignature);
+        List<ConsentSignature> consentListCopy = new ArrayList<>(account.getConsentSignatureHistory(subpopGuid));
+        consentListCopy.add(withConsentCreatedOnSignature);
+        account.setConsentSignatureHistory(subpopGuid, consentListCopy);
         accountDao.updateAccount(account);
         
         // Publish an enrollment event, set sharing scope 
@@ -303,6 +306,7 @@ public class ConsentService {
         boolean withdrewConsent = false;
         
         List<ConsentSignature> signatures = account.getConsentSignatureHistory(subpopGuid);
+        List<ConsentSignature> withdrawnSignatureList = new ArrayList<>();
         // Withdraw every signature to this subpopulation that has not been withdrawn.
         for (ConsentSignature signature : signatures) {
             if (signature.getWithdrewOn() == null) {
@@ -310,10 +314,14 @@ public class ConsentService {
                 ConsentSignature withdrawn = new ConsentSignature.Builder()
                         .withConsentSignature(signature)
                         .withWithdrewOn(withdrewOn).build();
-                int index = signatures.indexOf(signature);
-                signatures.set(index, withdrawn);
+                withdrawnSignatureList.add(withdrawn);
+            } else {
+                withdrawnSignatureList.add(signature);
             }
         }
+
+        account.setConsentSignatureHistory(subpopGuid, withdrawnSignatureList);
+
         return withdrewConsent;
     }
 }

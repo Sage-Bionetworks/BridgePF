@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -109,7 +110,7 @@ public class AuthenticationServiceMockTest {
         study.setSupportEmail(SUPPORT_EMAIL);
         study.setName("Sender");
         
-        account = new SimpleAccount();
+        account = new GenericAccount();
         
         service = new AuthenticationService();
         service.setCacheProvider(cacheProvider);
