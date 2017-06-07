@@ -91,8 +91,12 @@ public class StudyValidator implements Validator {
         if (study.getAccountLimit() < 0) {
             errors.rejectValue("accountLimit", "must be zero (no limit set) or higher");
         }
-        validateTemplate(errors, study.getVerifyEmailTemplate(), "verifyEmailTemplate");
-        validateTemplate(errors, study.getResetPasswordTemplate(), "resetPasswordTemplate");
+        validateTemplate(errors, study.getVerifyEmailTemplate(), "verifyEmailTemplate", "${url}");
+        validateTemplate(errors, study.getResetPasswordTemplate(), "resetPasswordTemplate", "${url}");
+        // Existing studies don't have the template, we use a default template. Okay to be missing.
+        if (study.getEmailSignInTemplate() != null) {
+            validateTemplate(errors, study.getEmailSignInTemplate(), "emailSignInTemplate", "${token}");
+        }
         
         for (String userProfileAttribute : study.getUserProfileAttributes()) {
             if (RESERVED_ATTR_NAMES.contains(userProfileAttribute)) {
@@ -139,7 +143,7 @@ public class StudyValidator implements Validator {
         }
     }
     
-    private void validateTemplate(Errors errors, EmailTemplate template, String fieldName) {
+    private void validateTemplate(Errors errors, EmailTemplate template, String fieldName, String requiredVariable) {
         if (template == null) {
             errors.rejectValue(fieldName, "is required");
         } else {
@@ -150,8 +154,8 @@ public class StudyValidator implements Validator {
             if (StringUtils.isBlank(template.getBody())) {
                 errors.rejectValue("body", "is required");
             } else {
-                if (!template.getBody().contains("${url}")) {
-                    errors.rejectValue("body", "must contain the ${url} template variable");
+                if (!template.getBody().contains(requiredVariable)) {
+                    errors.rejectValue("body", "must contain the "+requiredVariable+" template variable");
                 }
             }
             errors.popNestedPath();

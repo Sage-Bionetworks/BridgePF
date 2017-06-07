@@ -227,6 +227,30 @@ public class StudyValidatorTest {
     }
     
     @Test
+    public void emailSignInTemplateNotRequired() {
+        study.setEmailSignInTemplate(null);
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    }
+
+    @Test
+    public void requiresEmailSignInTemplateWithSubject() {
+        study.setEmailSignInTemplate(new EmailTemplate(null, "body", MimeType.HTML));
+        assertCorrectMessage(study, "emailSignInTemplate.subject", "emailSignInTemplate.subject is required");
+    }
+
+    @Test
+    public void requiresEmailSignInTemplateWithBody() {
+        study.setEmailSignInTemplate(new EmailTemplate("subject", null, MimeType.HTML));
+        assertCorrectMessage(study, "emailSignInTemplate.body", "emailSignInTemplate.body is required");
+    }
+    
+    @Test
+    public void requiresEmailSignInTemplateRequiresToken() {
+        study.setEmailSignInTemplate(new EmailTemplate("subject", "body with no token", MimeType.HTML));
+        assertCorrectMessage(study, "emailSignInTemplate.body", "emailSignInTemplate.body must contain the ${token} template variable");
+    }
+    
+    @Test
     public void cannotSetMinAgeOfConsentLessThanZero() {
         study.setMinAgeOfConsent(-100);
         assertCorrectMessage(study, "minAgeOfConsent", "minAgeOfConsent must be zero (no minimum age of consent) or higher");

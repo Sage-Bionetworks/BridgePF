@@ -5,20 +5,18 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import java.util.List;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import play.mvc.Result;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ExternalIdService;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.collect.Lists;
-
-import play.mvc.Result;
 
 @Controller("externalIdController")
 public class ExternalIdController extends BaseController {
@@ -39,8 +37,8 @@ public class ExternalIdController extends BaseController {
         // Play will not convert these to null if they are not included in the query string, so we must do the conversion.
         Integer pageSize = (pageSizeString != null) ? Integer.parseInt(pageSizeString,10) : null;
         Boolean assignmentFilter = (assignmentFilterString != null) ? Boolean.valueOf(assignmentFilterString) : null;
-        
-        PagedResourceList<ExternalIdentifierInfo> page = externalIdService.getExternalIds(
+
+        ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = externalIdService.getExternalIds(
                 study, offsetKey, pageSize, idFilter, assignmentFilter);
         return okResult(page);
     }

@@ -14,6 +14,9 @@ public enum UIHint {
     SLIDER,
     TEXTFIELD,
     TIMEPICKER,
-    TOGGLE;
+    TOGGLE,
+    WEIGHT,
+    HEIGHT,
+    BLOODPRESSURE
     
 }

@@ -23,12 +23,14 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.UploadSchemaDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.surveys.BloodPressureConstraints;
 import org.sagebionetworks.bridge.models.surveys.BooleanConstraints;
 import org.sagebionetworks.bridge.models.surveys.DataType;
 import org.sagebionetworks.bridge.models.surveys.DateConstraints;
 import org.sagebionetworks.bridge.models.surveys.DateTimeConstraints;
 import org.sagebionetworks.bridge.models.surveys.DecimalConstraints;
 import org.sagebionetworks.bridge.models.surveys.DurationConstraints;
+import org.sagebionetworks.bridge.models.surveys.HeightConstraints;
 import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
 import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.StringConstraints;
@@ -39,6 +41,7 @@ import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
 import org.sagebionetworks.bridge.models.surveys.TimeConstraints;
 import org.sagebionetworks.bridge.models.surveys.Unit;
+import org.sagebionetworks.bridge.models.surveys.WeightConstraints;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -272,6 +275,30 @@ public class UploadSchemaServiceFromSurveyTest {
             surveyElementList.add(q);
         }
 
+        // blood pressure
+        {
+            SurveyQuestion q = SurveyQuestion.create();
+            q.setIdentifier("bloodpressure");
+            q.setConstraints(new BloodPressureConstraints());
+            surveyElementList.add(q);
+        }
+
+        // weight
+        {
+            SurveyQuestion q = SurveyQuestion.create();
+            q.setIdentifier("weight");
+            q.setConstraints(new WeightConstraints());
+            surveyElementList.add(q);
+        }
+
+        // height
+        {
+            SurveyQuestion q = SurveyQuestion.create();
+            q.setIdentifier("height");
+            q.setConstraints(new HeightConstraints());
+            surveyElementList.add(q);
+        }
+
         Survey survey = makeSurveyWithElements(surveyElementList);
 
         // Mock DAO. Capture input and return dummy output.
@@ -295,7 +322,7 @@ public class UploadSchemaServiceFromSurveyTest {
         assertEquals(SURVEY_CREATED_ON, daoInputSchema.getSurveyCreatedOn().longValue());
 
         List<UploadFieldDefinition> fieldDefList = daoInputSchema.getFieldDefinitions();
-        assertEquals(16, fieldDefList.size());
+        assertEquals(23, fieldDefList.size());
 
         // validate that none of the fields are required
         for (UploadFieldDefinition oneFieldDef : fieldDefList) {
@@ -362,6 +389,118 @@ public class UploadSchemaServiceFromSurveyTest {
 
         assertEquals("timestamp", fieldDefList.get(15).getName());
         assertEquals(UploadFieldType.TIMESTAMP, fieldDefList.get(15).getType());
+
+        assertEquals("bloodpressure" + UploadUtil.SYSTOLIC_FIELD_SUFFIX, fieldDefList.get(16).getName());
+        assertEquals(UploadFieldType.INT, fieldDefList.get(16).getType());
+
+        assertEquals("bloodpressure" + UploadUtil.DIASTOLIC_FIELD_SUFFIX, fieldDefList.get(17).getName());
+        assertEquals(UploadFieldType.INT, fieldDefList.get(17).getType());
+
+        assertEquals("bloodpressure" + UploadUtil.UNIT_FIELD_SUFFIX, fieldDefList.get(18).getName());
+        assertEquals(UploadFieldType.STRING, fieldDefList.get(18).getType());
+        assertEquals(Unit.MAX_STRING_LENGTH, fieldDefList.get(18).getMaxLength().intValue());
+
+        assertEquals("weight", fieldDefList.get(19).getName());
+        assertEquals(UploadFieldType.FLOAT, fieldDefList.get(19).getType());
+
+        assertEquals("weight" + UploadUtil.UNIT_FIELD_SUFFIX, fieldDefList.get(20).getName());
+        assertEquals(UploadFieldType.STRING, fieldDefList.get(20).getType());
+        assertEquals(Unit.MAX_STRING_LENGTH, fieldDefList.get(20).getMaxLength().intValue());
+
+        assertEquals("height", fieldDefList.get(21).getName());
+        assertEquals(UploadFieldType.FLOAT, fieldDefList.get(21).getType());
+
+        assertEquals("height" + UploadUtil.UNIT_FIELD_SUFFIX, fieldDefList.get(22).getName());
+        assertEquals(UploadFieldType.STRING, fieldDefList.get(22).getType());
+        assertEquals(Unit.MAX_STRING_LENGTH, fieldDefList.get(22).getMaxLength().intValue());
+    }
+
+    @Test
+    public void createUploadFieldDefinitions_IntegerConstraints() {
+        String identifier = "int";
+        SurveyQuestion q = SurveyQuestion.create();
+        q.setIdentifier(identifier);
+        q.setConstraints(new IntegerConstraints());
+
+        List<UploadFieldDefinition> uploadFieldDefinitions = UploadSchemaService.createUploadFieldDefinitions(q);
+
+        assertEquals(2, uploadFieldDefinitions.size());
+
+        UploadFieldDefinition uploadFieldDefinition = uploadFieldDefinitions.get(0);
+        assertEquals(identifier, uploadFieldDefinition.getName());
+        assertEquals(UploadFieldType.INT, uploadFieldDefinition.getType());
+
+        uploadFieldDefinition = uploadFieldDefinitions.get(1);
+        assertEquals(identifier + UploadUtil.UNIT_FIELD_SUFFIX, uploadFieldDefinition.getName());
+        assertEquals(UploadFieldType.STRING, uploadFieldDefinition.getType());
+        assertEquals(Unit.MAX_STRING_LENGTH, uploadFieldDefinition.getMaxLength().intValue());
+    }
+
+    @Test
+    public void createUploadFieldDefinitions_BloodPressureConstraints() {
+        String identifier = "bloodpressure";
+        SurveyQuestion q = SurveyQuestion.create();
+        q.setIdentifier(identifier);
+        q.setConstraints(new BloodPressureConstraints());
+
+        List<UploadFieldDefinition> uploadFieldDefinitions = UploadSchemaService.createUploadFieldDefinitions(q);
+
+        assertEquals(3, uploadFieldDefinitions.size());
+
+        UploadFieldDefinition uploadFieldDefinition = uploadFieldDefinitions.get(0);
+        assertEquals(identifier + UploadUtil.SYSTOLIC_FIELD_SUFFIX, uploadFieldDefinition.getName());
+        assertEquals(UploadFieldType.INT, uploadFieldDefinition.getType());
+
+        uploadFieldDefinition = uploadFieldDefinitions.get(1);
+        assertEquals(identifier + UploadUtil.DIASTOLIC_FIELD_SUFFIX, uploadFieldDefinition.getName());
+        assertEquals(UploadFieldType.INT, uploadFieldDefinition.getType());
+
+        uploadFieldDefinition = uploadFieldDefinitions.get(2);
+        assertEquals(identifier + UploadUtil.UNIT_FIELD_SUFFIX, uploadFieldDefinition.getName());
+        assertEquals(UploadFieldType.STRING, uploadFieldDefinition.getType());
+        assertEquals(Unit.MAX_STRING_LENGTH, uploadFieldDefinition.getMaxLength().intValue());
+    }
+
+    @Test
+    public void createUploadFieldDefinitions_HeightConstraints() {
+        String identifier = "height";
+        SurveyQuestion q = SurveyQuestion.create();
+        q.setIdentifier(identifier);
+        q.setConstraints(new HeightConstraints());
+
+        List<UploadFieldDefinition> uploadFieldDefinitions = UploadSchemaService.createUploadFieldDefinitions(q);
+
+        assertEquals(2, uploadFieldDefinitions.size());
+
+        UploadFieldDefinition uploadFieldDefinition = uploadFieldDefinitions.get(0);
+        assertEquals(identifier, uploadFieldDefinition.getName());
+        assertEquals(UploadFieldType.FLOAT, uploadFieldDefinition.getType());
+
+        uploadFieldDefinition = uploadFieldDefinitions.get(1);
+        assertEquals(identifier + UploadUtil.UNIT_FIELD_SUFFIX, uploadFieldDefinition.getName());
+        assertEquals(UploadFieldType.STRING, uploadFieldDefinition.getType());
+        assertEquals(Unit.MAX_STRING_LENGTH, uploadFieldDefinition.getMaxLength().intValue());
+    }
+
+    @Test
+    public void createUploadFieldDefinitions_WeightConstraints() {
+        String identifier = "weight";
+        SurveyQuestion q = SurveyQuestion.create();
+        q.setIdentifier(identifier);
+        q.setConstraints(new HeightConstraints());
+
+        List<UploadFieldDefinition> uploadFieldDefinitions = UploadSchemaService.createUploadFieldDefinitions(q);
+
+        assertEquals(2, uploadFieldDefinitions.size());
+
+        UploadFieldDefinition uploadFieldDefinition = uploadFieldDefinitions.get(0);
+        assertEquals(identifier, uploadFieldDefinition.getName());
+        assertEquals(UploadFieldType.FLOAT, uploadFieldDefinition.getType());
+
+        uploadFieldDefinition = uploadFieldDefinitions.get(1);
+        assertEquals(identifier + UploadUtil.UNIT_FIELD_SUFFIX, uploadFieldDefinition.getName());
+        assertEquals(UploadFieldType.STRING, uploadFieldDefinition.getType());
+        assertEquals(Unit.MAX_STRING_LENGTH, uploadFieldDefinition.getMaxLength().intValue());
     }
 
     @Test
