@@ -57,7 +57,7 @@ import com.google.common.collect.Maps;
 public class DynamoExternalIdDao implements ExternalIdDao {
     
     static final String PAGE_SIZE_ERROR = "pageSize must be from 1-"+API_MAXIMUM_PAGE_SIZE+" records";
-    static final int QUERY_PAGE_SIZE = 200;
+    static final int PAGE_SCAN_LIMIT = 200;
 
     private static final Logger LOG = LoggerFactory.getLogger(DynamoExternalIdDao.class);
 
@@ -123,8 +123,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             getExternalIdRateLimiter.acquire(capacityAcquired);
 
             list = mapper.queryPage(DynamoExternalIdentifier.class,
-                    createGetQuery(studyId, offsetKey, QUERY_PAGE_SIZE, idFilter, assignmentFilter));
-
+                    createGetQuery(studyId, offsetKey, PAGE_SCAN_LIMIT, idFilter, assignmentFilter));
             for (ExternalIdentifier id : list.getResults()) {
                 if (identifiers.size() == pageSize) {
                     // return no more than pageSize externalIdentifiers
@@ -139,11 +138,15 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             // use capacity consumed by last request to as our estimate for the next request
             capacityAcquired = capacityConsumed;
 
-            // This is the last key, not the next key of the next page of records. It only exists if there's a record
-            // beyond the records we've converted to a page. Then get the last key in the list.
-            Map<String, AttributeValue> lastEvaluated = list.getLastEvaluatedKey();
-            offsetKey = lastEvaluated != null ? lastEvaluated.get(IDENTIFIER).getS() : null;
-            
+            if (list.getCount() > pageSize) {
+                // we retrieved more records from Dynamo than we are returning
+                offsetKey = identifiers.get(pageSize - 1).getIdentifier();
+            } else {
+                // This is the last key, not the next key of the next page of records. It only exists if there's a record
+                // beyond the records we've converted to a page. Then get the last key in the list.
+                Map<String, AttributeValue> lastEvaluated = list.getLastEvaluatedKey();
+                offsetKey = lastEvaluated != null ? lastEvaluated.get(IDENTIFIER).getS() : null;
+            }
         } while ((identifiers.size() < pageSize) && (offsetKey != null));
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> resourceList = new ForwardCursorPagedResourceList<>(

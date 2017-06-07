@@ -53,7 +53,7 @@ public class ForwardCursorPagedResourceListTest {
                 new TypeReference<ForwardCursorPagedResourceList<AccountSummary>>() {
                 });
 
-        assertEquals(page.getOffsetBy(), serPage.getOffsetBy());
+        assertEquals(page.getOffsetKey(), serPage.getOffsetKey());
         assertEquals(page.getPageSize(), serPage.getPageSize());
         assertEquals(page.getFilters().get("emailFilter"), serPage.getFilters().get("emailFilter"));
         assertEquals(page.hasNext(), serPage.hasNext());
@@ -104,7 +104,7 @@ public class ForwardCursorPagedResourceListTest {
         
         assertEquals(page.getPageSize(), serPage.getPageSize());
         assertEquals(page.getFilters().get("offsetBy"), serPage.getFilters().get("offsetBy"));
-        assertEquals(page.getOffsetBy(), serPage.getOffsetBy());
+        assertEquals(page.getOffsetKey(), serPage.getOffsetKey());
         assertEquals(page.getFilters().get("idFilter"), serPage.getFilters().get("idFilter"));
         assertEquals(page.getFilters().get("assignmentFilter"), serPage.getFilters().get("assignmentFilter"));
         assertEquals(page.getItems(), serPage.getItems());

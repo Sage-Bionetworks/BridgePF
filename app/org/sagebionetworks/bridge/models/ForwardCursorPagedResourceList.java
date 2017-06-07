@@ -24,16 +24,16 @@ public class ForwardCursorPagedResourceList<T> {
 
     private final List<T> items;
     private final int pageSize;
-    private final @Nullable String offsetBy;
+    private final @Nullable String offsetKey;
     private final Map<String,String> filters = Maps.newHashMap();
 
     @JsonCreator
     public ForwardCursorPagedResourceList(
             @JsonProperty("items") List<T> items, 
-            @JsonProperty("offsetBy") String offsetBy,
+            @JsonProperty("offsetKey") String offsetKey,
             @JsonProperty("pageSize") int pageSize) {
         this.items = items;
-        this.offsetBy = offsetBy;
+        this.offsetKey = offsetKey;
         this.pageSize = pageSize;
     }
 
@@ -59,12 +59,12 @@ public class ForwardCursorPagedResourceList<T> {
     public List<T> getItems() {
         return items;
     }
-    public String getOffsetBy() {
-        return offsetBy;
+    public String getOffsetKey() {
+        return offsetKey;
     }
     @JsonProperty("hasNext")
     public boolean hasNext() {
-        return (offsetBy != null);
+        return (offsetKey != null);
     }
     public int getPageSize() {
         return pageSize;
@@ -81,7 +81,7 @@ public class ForwardCursorPagedResourceList<T> {
     }
     @Override
     public String toString() {
-        return "ForwardCursorPagedResourceList [items=" + items + ", offsetBy=" + offsetBy + ", pageSize=" + pageSize
+        return "ForwardCursorPagedResourceList [items=" + items + ", offsetKey=" + offsetKey + ", pageSize=" + pageSize
                 + ", filters=" + filters + "]";
     }
 
