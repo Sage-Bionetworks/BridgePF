@@ -121,7 +121,7 @@ public class DynamoUploadDao implements UploadDao {
     @Override
     public ForwardCursorPagedResourceList<Upload> getUploads(String healthCode, DateTime startTime, DateTime endTime, int pageSize,
             String offsetKey) {
-        // Just set a sane upper limit on this.
+        // Set a sane upper limit on this.
         if (pageSize < 1 || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
@@ -142,9 +142,6 @@ public class DynamoUploadDao implements UploadDao {
         }
         ItemCollection<QueryOutcome> query = index.query(spec);
         
-        // NOTE: Don't know if forEach walks through all pages, don't know if the range key condition is applied
-        // before or after the query (as a filter, which can produce unexpected results).
-        
         query.forEach((item) -> {
             DynamoUpload2 oneRecord = BridgeObjectMapper.get().convertValue(item.asMap(), DynamoUpload2.class);
             results.add(oneRecord);
@@ -156,7 +153,6 @@ public class DynamoUploadDao implements UploadDao {
         return new ForwardCursorPagedResourceList<>(results, nextOffsetKey, pageSize)
                 .withFilter("startTime", startTime.toString())
                 .withFilter("endTime", endTime.toString());
-        //return healthCodeRequestedOnIndex.query(DynamoUpload2.class, "healthCode", healthCode, condition);
     }
 
     /** {@inheritDoc} */
