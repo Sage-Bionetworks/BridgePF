@@ -47,6 +47,10 @@ public class DynamoIndexHelper {
         this.index = index;
     }
 
+    final Index getIndex() {
+        return index;
+    }
+    
     /**
      * DynamoDB mapper. This is used to re-query the DynamoDB table to get full entries from the key objects. This setter is
      * called by tests.
