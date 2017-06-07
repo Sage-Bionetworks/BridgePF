@@ -90,7 +90,8 @@ public class ScheduledActivityControllerTest {
     
     private static final ClientInfo CLIENT_INFO = ClientInfo.fromUserAgentCache(USER_AGENT);
     
-    private static final TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>> FORWARD_CURSOR_PAGED_ACTIVITIES_REF = new TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>>() {
+    private static final TypeReference<ScheduledActivityList> FORWARD_CURSOR_PAGED_ACTIVITIES_REF =
+            new TypeReference<ScheduledActivityList>() {
     };
     
     private ScheduledActivityController controller;
@@ -479,7 +480,7 @@ public class ScheduledActivityControllerTest {
         controller.getScheduledActivitiesByDateRange(startsOn.toString(), endsOn.toString());
     }
     
-    private ForwardCursorPagedResourceList<ScheduledActivity> createActivityResultsV2(int pageSize) {
+    private ScheduledActivityList createActivityResultsV2(int pageSize) {
         List<ScheduledActivity> list = Lists.newArrayList();
         
         DynamoScheduledActivity activity = new DynamoScheduledActivity();
@@ -488,6 +489,6 @@ public class ScheduledActivityControllerTest {
         activity.setSchedulePlanGuid("schedulePlanGuid");
         list.add(activity);
         
-        return new ForwardCursorPagedResourceList<>(list, "777", pageSize);
+        return new ScheduledActivityList(list, "777", pageSize);
     }
 }
