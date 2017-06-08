@@ -38,9 +38,21 @@ public interface Account extends BridgeEntity {
 
     String getEmail();
     void setEmail(String email);
-    
+
+    /**
+     * Gets an immutable copy of the consents this account has for the given subpopulation. Consents should be returned
+     * in the order they were signed (earliest first). Returns an empty list if there are no consents.
+     */
     List<ConsentSignature> getConsentSignatureHistory(SubpopulationGuid subpopGuid);
-    
+
+    /**
+     * Sets the consents for the given subpopulation into the account. The consents should be in the order they were
+     * signed (earliest first). A copy of the consent list is mode, so that changes to the input list does not
+     * propagate to the account.
+     */
+    void setConsentSignatureHistory(SubpopulationGuid subpopGuid, List<ConsentSignature> consentSignatureList);
+
+    /** Returns an immutable copy of all consents in the account, keyed by subpopulation. */
     Map<SubpopulationGuid,List<ConsentSignature>> getAllConsentSignatureHistories();
     
     String getHealthCode();
@@ -51,8 +63,14 @@ public interface Account extends BridgeEntity {
     void setStatus(AccountStatus status);
 
     StudyIdentifier getStudyIdentifier();
-    
+
+    /** Gets an immutable copy of the set of roles attached to this account. */
     Set<Roles> getRoles();
+
+    /**
+     * Sets the roles in this account to match the roles specified by the input. A copy of the roles is made, so that
+     * changes to the input list does not propagate to the account.
+     */
     void setRoles(Set<Roles> roles);
 
     /**

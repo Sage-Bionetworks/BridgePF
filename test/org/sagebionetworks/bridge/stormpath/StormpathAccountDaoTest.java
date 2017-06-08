@@ -19,6 +19,7 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -270,7 +271,7 @@ public class StormpathAccountDaoTest {
             assertNull(account.getLastName());
             account.setEmail(email);
             account.setAttribute("phone", "123-456-7890");
-            account.getConsentSignatureHistory(subpop.getGuid()).add(sig);
+            account.setConsentSignatureHistory(subpop.getGuid(), ImmutableList.of(sig));
             account.setAttribute("attribute_one", "value of attribute one");
             
             // Update Account

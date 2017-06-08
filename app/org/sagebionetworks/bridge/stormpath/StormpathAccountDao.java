@@ -306,36 +306,32 @@ public class StormpathAccountDao implements AccountDao {
     }
     
     @Override
-    public String getHealthCodeForEmail(Study study, String email) {
-        checkNotNull(study);
-        checkArgument(isNotBlank(email));
-        
-        Account account = getAccountWithEmail(study, email);
-        if (account == null) {
-            return null;
-        }
-        return account.getHealthCode();
-    }
-    
-    @Override
     public Account constructAccount(Study study, String email, String password) {
+        HealthId healthId = healthCodeService.createMapping(study);
+        return constructAccountForMigration(study, email, password, healthId);
+    }
+
+    /**
+     * Helper method that does all the work for constructAccount(), except we pass in the Health Code mapping instead
+     * of creating it ourselves. This allows us to create an account in both MySQL and Stormpath with the same Health
+     * Code mapping.
+     */
+    public Account constructAccountForMigration(Study study, String email, String password, HealthId healthId) {
         checkNotNull(study);
         checkArgument(isNotBlank(email));
         checkArgument(isNotBlank(password));
-        
+
         List<SubpopulationGuid> subpopGuids = getSubpopulationGuids(study);
-        
+
         com.stormpath.sdk.account.Account acct = client.instantiate(com.stormpath.sdk.account.Account.class);
         acct.setEmail(email);
         acct.setUsername(email);
         acct.setGivenName(STORMPATH_NAME_PLACEHOLDER_STRING);
         acct.setSurname(STORMPATH_NAME_PLACEHOLDER_STRING);
         acct.setPassword(password);
+
         Account account = new StormpathAccount(study.getStudyIdentifier(), subpopGuids, acct, encryptors);
-        
-        HealthId healthId = healthCodeService.createMapping(study);
         account.setHealthId(healthId);
-        
         return account;
     }
     

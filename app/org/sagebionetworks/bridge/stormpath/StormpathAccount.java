@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
@@ -30,7 +32,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /**
@@ -64,7 +65,7 @@ public class StormpathAccount implements Account {
     private final Map<SubpopulationGuid, List<ConsentSignature>> allSignatures;
 
     private com.stormpath.sdk.account.Account acct;
-    private ImmutableSet<Roles> roles;
+    private ImmutableSet<Roles> roles = ImmutableSet.of();
     private String healthCode;
     
     StormpathAccount(StudyIdentifier studyIdentifier, List<? extends SubpopulationGuid> subpopGuids,
@@ -83,16 +84,16 @@ public class StormpathAccount implements Account {
         this.oldHealthIdVersionKey = studyId + OLD_VERSION_SUFFIX;
         this.oldConsentSignatureKey = studyId + CONSENT_SIGNATURE_SUFFIX;
         this.allSignatures = Maps.newHashMap();
-        
+
         for (SubpopulationGuid subpopGuid : subpopGuids) {
             List<ConsentSignature> signatures = decryptJSONFrom(subpopGuid.getGuid()+CONSENT_SIGNATURES_SUFFIX, CONSENT_SIGNATURES_TYPE);
             if (signatures == null || signatures.isEmpty()) {
                 ConsentSignature sig = decryptJSONFrom(subpopGuid.getGuid()+CONSENT_SIGNATURE_SUFFIX, ConsentSignature.class);
                 if (sig != null) {
-                    getConsentSignatureHistory(subpopGuid).add(sig);
+                    setConsentSignatureHistory(subpopGuid, ImmutableList.of(sig));
                 }
             } else {
-                getConsentSignatureHistory(subpopGuid).addAll(signatures);
+                setConsentSignatureHistory(subpopGuid, signatures);
             }
         }
     }
@@ -105,7 +106,7 @@ public class StormpathAccount implements Account {
     }
     public void setAccount(com.stormpath.sdk.account.Account acct) {
         this.acct = acct;
-        this.roles = ImmutableSet.copyOf(BridgeUtils.convertRolesQuietly(acct.getGroups()));
+        setRoles(BridgeUtils.convertRolesQuietly(acct.getGroups()));
     }
     
     @Override
@@ -165,15 +166,34 @@ public class StormpathAccount implements Account {
             this.healthCode = healthId.getCode();
         }
     };
+
+    /** {@inheritDoc} */
     @Override
     public List<ConsentSignature> getConsentSignatureHistory(SubpopulationGuid subpopGuid) {
-        allSignatures.putIfAbsent(subpopGuid, Lists.newArrayList());
-        return allSignatures.get(subpopGuid);
+        List<ConsentSignature> consentList = allSignatures.get(subpopGuid);
+        if (consentList != null) {
+            return consentList;
+        } else {
+            return ImmutableList.of();
+        }
     }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setConsentSignatureHistory(SubpopulationGuid subpopGuid, List<ConsentSignature> consentSignatureList) {
+        if (BridgeUtils.isEmpty(consentSignatureList)) {
+            allSignatures.remove(subpopGuid);
+        } else {
+            allSignatures.put(subpopGuid, ImmutableList.copyOf(consentSignatureList));
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override
     public Map<SubpopulationGuid, List<ConsentSignature>> getAllConsentSignatureHistories() {
-        return allSignatures;
+        return ImmutableMap.copyOf(allSignatures);
     }
+
     @Override
     public StudyIdentifier getStudyIdentifier() {
         return studyIdentifier;

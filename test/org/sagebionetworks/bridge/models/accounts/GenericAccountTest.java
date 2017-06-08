@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
@@ -9,10 +9,13 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
@@ -43,7 +46,6 @@ public class GenericAccountTest {
     @Test
     public void consents() {
         GenericAccount account = new GenericAccount();
-        assertTrue(account.getAllConsentSignatureHistories().isEmpty());
 
         // Make dummy subpops.
         SubpopulationGuid fooSubpopGuid = SubpopulationGuid.create("foo-subpop-guid");
@@ -54,44 +56,51 @@ public class GenericAccountTest {
         ConsentSignature barConsentSignature = new ConsentSignature.Builder().withName("Bar McBarface")
                 .withBirthdate("1999-02-02").build();
 
-        // Getting by subpop instantiates the list
+        // Consents starts off empty.
+        Map<SubpopulationGuid, List<ConsentSignature>> consentsBySubpop0 = account.getAllConsentSignatureHistories();
+        assertTrue(consentsBySubpop0.isEmpty());
+        TestUtils.assertMapIsImmutable(consentsBySubpop0, fooSubpopGuid, ImmutableList.of(fooConsentSignature));
+
+        // Calling get by subpop initially returns an empty list.
+        assertTrue(account.getConsentSignatureHistory(fooSubpopGuid).isEmpty());
+        assertTrue(account.getConsentSignatureHistory(barSubpopGuid).isEmpty());
+
+        // Set consent lists. We create mutable lists, but test that we automatically convert these to immutable lists.
+        account.setConsentSignatureHistory(fooSubpopGuid, Lists.newArrayList(fooConsentSignature));
+        account.setConsentSignatureHistory(barSubpopGuid, Lists.newArrayList(barConsentSignature));
+
         List<ConsentSignature> fooConsentList1 = account.getConsentSignatureHistory(fooSubpopGuid);
-        assertNotNull(fooConsentList1);
-        assertTrue(fooConsentList1.isEmpty());
+        assertEquals(1, fooConsentList1.size());
+        assertEquals(fooConsentSignature, fooConsentList1.get(0));
+        TestUtils.assertListIsImmutable(fooConsentList1, fooConsentSignature);
+
+        List<ConsentSignature> barConsentList1 = account.getConsentSignatureHistory(barSubpopGuid);
+        assertEquals(1, barConsentList1.size());
+        assertEquals(barConsentSignature, barConsentList1.get(0));
+        TestUtils.assertListIsImmutable(barConsentList1, barConsentSignature);
 
         Map<SubpopulationGuid, List<ConsentSignature>> consentsBySubpop1 = account.getAllConsentSignatureHistories();
-        assertEquals(1, consentsBySubpop1.size());
-        assertTrue(consentsBySubpop1.get(fooSubpopGuid).isEmpty());
+        TestUtils.assertMapIsImmutable(consentsBySubpop1, fooSubpopGuid, ImmutableList.of(fooConsentSignature));
+        assertEquals(2, consentsBySubpop1.size());
+        assertEquals(fooConsentList1, consentsBySubpop1.get(fooSubpopGuid));
+        TestUtils.assertListIsImmutable(consentsBySubpop1.get(fooSubpopGuid), fooConsentSignature);
+        assertEquals(barConsentList1, consentsBySubpop1.get(barSubpopGuid));
+        TestUtils.assertListIsImmutable(consentsBySubpop1.get(barSubpopGuid), barConsentSignature);
 
-        // Adding to the list writes back through
-        fooConsentList1.add(fooConsentSignature);
+        // Setting a list to to null clears it from the map.
+        account.setConsentSignatureHistory(fooSubpopGuid, null);
+        assertTrue(account.getConsentSignatureHistory(fooSubpopGuid).isEmpty());
+        assertFalse(account.getAllConsentSignatureHistories().containsKey(fooSubpopGuid));
 
-        List<ConsentSignature> fooConsentList2 = account.getConsentSignatureHistory(fooSubpopGuid);
-        assertEquals(1, fooConsentList2.size());
-        assertEquals(fooConsentSignature, fooConsentList2.get(0));
+        // Setting a list to empty also clears it from the map.
+        account.setConsentSignatureHistory(barSubpopGuid, new ArrayList<>());
+        assertTrue(account.getConsentSignatureHistory(barSubpopGuid).isEmpty());
+        assertFalse(account.getAllConsentSignatureHistories().containsKey(barSubpopGuid));
 
+        // Consent map is back to empty, and is still immutable.
         Map<SubpopulationGuid, List<ConsentSignature>> consentsBySubpop2 = account.getAllConsentSignatureHistories();
-        assertEquals(1, consentsBySubpop2.size());
-        assertEquals(fooConsentList2, consentsBySubpop2.get(fooSubpopGuid));
-
-        // Getting the full map and writing to it writes back through
-        List<ConsentSignature> originalBarConsentList = new ArrayList<>();
-        originalBarConsentList.add(barConsentSignature);
-        consentsBySubpop2.put(barSubpopGuid, originalBarConsentList);
-
-        Map<SubpopulationGuid, List<ConsentSignature>> consentsBySubpop3 = account.getAllConsentSignatureHistories();
-        assertEquals(2, consentsBySubpop3.size());
-
-        List<ConsentSignature> fooConsentList3 = consentsBySubpop3.get(fooSubpopGuid);
-        assertEquals(1, fooConsentList3.size());
-        assertEquals(fooConsentSignature, fooConsentList3.get(0));
-
-        List<ConsentSignature> gettedBarConsentList = consentsBySubpop3.get(barSubpopGuid);
-        assertEquals(1, gettedBarConsentList.size());
-        assertEquals(barConsentSignature, gettedBarConsentList.get(0));
-
-        assertEquals(fooConsentList3, account.getConsentSignatureHistory(fooSubpopGuid));
-        assertEquals(gettedBarConsentList, account.getConsentSignatureHistory(barSubpopGuid));
+        assertTrue(consentsBySubpop2.isEmpty());
+        TestUtils.assertMapIsImmutable(consentsBySubpop2, fooSubpopGuid, ImmutableList.of(fooConsentSignature));
     }
 
     @Test
@@ -116,14 +125,17 @@ public class GenericAccountTest {
         // Initially empty.
         GenericAccount account = new GenericAccount();
         assertTrue(account.getRoles().isEmpty());
+        TestUtils.assertSetIsImmutable(account.getRoles(), Roles.TEST_USERS);
 
         // Set works.
         account.setRoles(EnumSet.of(Roles.ADMIN, Roles.DEVELOPER));
         assertEquals(EnumSet.of(Roles.ADMIN, Roles.DEVELOPER), account.getRoles());
+        TestUtils.assertSetIsImmutable(account.getRoles(), Roles.TEST_USERS);
 
         // Setting to null makes it an empty set.
         account.setRoles(null);
         assertTrue(account.getRoles().isEmpty());
+        TestUtils.assertSetIsImmutable(account.getRoles(), Roles.TEST_USERS);
 
         // Set to non-empty, then set to empty and verify that it works.
         account.setRoles(EnumSet.of(Roles.RESEARCHER));
@@ -131,5 +143,6 @@ public class GenericAccountTest {
 
         account.setRoles(EnumSet.noneOf(Roles.class));
         assertTrue(account.getRoles().isEmpty());
+        TestUtils.assertSetIsImmutable(account.getRoles(), Roles.TEST_USERS);
     }
 }

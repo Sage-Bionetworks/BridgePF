@@ -34,7 +34,6 @@ import com.stormpath.sdk.client.Client;
 import com.stormpath.sdk.client.ClientBuilder;
 import com.stormpath.sdk.client.Clients;
 
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
 import org.sagebionetworks.bridge.dynamodb.DynamoCompoundActivityDefinition;
 import org.sagebionetworks.bridge.dynamodb.DynamoNamingHelper;
@@ -54,8 +53,6 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 import org.springframework.context.annotation.FilterType;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.context.annotation.Primary;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
@@ -83,11 +80,9 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUploadDedupe;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.dynamodb.DynamoUtils;
 import org.sagebionetworks.bridge.hibernate.HibernateAccount;
-import org.sagebionetworks.bridge.hibernate.HibernateAccountDao;
 import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.s3.S3Helper;
-import org.sagebionetworks.bridge.stormpath.StormpathAccountDao;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
 import org.sagebionetworks.bridge.upload.IosSchemaValidationHandler2;
 import org.sagebionetworks.bridge.upload.ParseJsonHandler;
@@ -107,28 +102,6 @@ import org.sagebionetworks.bridge.upload.UploadValidationHandler;
         type = FilterType.ANNOTATION, value = Configuration.class))
 @Configuration
 public class BridgeSpringConfig {
-    // This bean exists so we can use configuration to control whether to use MySQL/Hibernate or Stormpath. In the
-    // future, this bean may be moved to its own class to do multiplexing/fallback between the Hibernate and Stormpath.
-    //
-    // Note that Spring first tries to autowire by type, then falls back to autowiring by name (which includes implicit
-    // names for both beans and setters). To guarantee that this is the bean Spring picks up, we tag it with @Primary.
-    //
-    // In order to address circular dependency wonkiness, we use the @Lazy annotation. This also has the nice side
-    // effect that, whichever DAO we use, the other one will never be instantiated.
-    @Autowired
-    @Bean
-    @Primary
-    public AccountDao migrationAccountDao(@Lazy HibernateAccountDao hibernateAccountDao,
-            @Lazy StormpathAccountDao stormpathAccountDao) {
-        BridgeConfig config = bridgeConfig();
-        String authProvider = config.get("auth.provider");
-        if ("mysql".equalsIgnoreCase(authProvider)) {
-            return hibernateAccountDao;
-        } else {
-            return stormpathAccountDao;
-        }
-    }
-
     @Bean(name = "redisProviders")
     public List<String> redisProviders() {
         return Lists.newArrayList("REDISCLOUD_URL", "REDISTOGO_URL");

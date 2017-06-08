@@ -1,12 +1,13 @@
 package org.sagebionetworks.bridge.models.accounts;
 
-import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 
@@ -37,7 +38,7 @@ public class GenericAccount implements Account {
     private String lastName;
     private PasswordAlgorithm passwordAlgorithm;
     private String passwordHash;
-    private Set<Roles> roleSet = EnumSet.noneOf(Roles.class);
+    private Set<Roles> roleSet = ImmutableSet.of();
     private AccountStatus status;
     private StudyIdentifier studyId;
 
@@ -127,14 +128,28 @@ public class GenericAccount implements Account {
     /** {@inheritDoc} */
     @Override
     public List<ConsentSignature> getConsentSignatureHistory(SubpopulationGuid subpopGuid) {
-        consentHistoryMap.putIfAbsent(subpopGuid, new ArrayList<>());
-        return consentHistoryMap.get(subpopGuid);
+        List<ConsentSignature> consentList = consentHistoryMap.get(subpopGuid);
+        if (consentList != null) {
+            return consentList;
+        } else {
+            return ImmutableList.of();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setConsentSignatureHistory(SubpopulationGuid subpopGuid, List<ConsentSignature> consentSignatureList) {
+        if (BridgeUtils.isEmpty(consentSignatureList)) {
+            consentHistoryMap.remove(subpopGuid);
+        } else {
+            consentHistoryMap.put(subpopGuid, ImmutableList.copyOf(consentSignatureList));
+        }
     }
 
     /** {@inheritDoc} */
     @Override
     public Map<SubpopulationGuid, List<ConsentSignature>> getAllConsentSignatureHistories() {
-        return consentHistoryMap;
+        return ImmutableMap.copyOf(consentHistoryMap);
     }
 
     /** {@inheritDoc} */
@@ -197,7 +212,7 @@ public class GenericAccount implements Account {
     /** {@inheritDoc} */
     @Override
     public void setRoles(Set<Roles> roles) {
-        this.roleSet = !BridgeUtils.isEmpty(roles) ? EnumSet.copyOf(roles) : EnumSet.noneOf(Roles.class);
+        this.roleSet = !BridgeUtils.isEmpty(roles) ? ImmutableSet.copyOf(roles) : ImmutableSet.of();
     }
 
     /** {@inheritDoc} */
