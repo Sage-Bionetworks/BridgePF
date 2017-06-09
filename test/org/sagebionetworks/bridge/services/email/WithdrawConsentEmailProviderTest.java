@@ -12,9 +12,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.SimpleAccount;
 
 public class WithdrawConsentEmailProviderTest {
 
@@ -30,7 +30,7 @@ public class WithdrawConsentEmailProviderTest {
     public void before() {
         study = mock(Study.class);
         
-        account = new SimpleAccount();
+        account = new GenericAccount();
         account.setEmail("d@d.com");
         
         provider = new WithdrawConsentEmailProvider(study, EXTERNAL_ID, account, WITHDRAWAL, UNIX_TIMESTAMP);
@@ -55,7 +55,7 @@ public class WithdrawConsentEmailProviderTest {
         assertEquals("Notification of consent withdrawal for Study Name", email.getSubject());
         
         MimeBodyPart body = email.getMessageParts().get(0);
-        assertEquals("<p>User   &lt;d@d.com&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p><i>No reason given.</i></p>", (String)body.getContent());
+        assertEquals("<p>User   &lt;d@d.com&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p><i>No reason given.</i></p>", body.getContent());
     }
 
     @Test
@@ -80,7 +80,7 @@ public class WithdrawConsentEmailProviderTest {
         assertEquals("Notification of consent withdrawal for Study Name", email.getSubject());
         
         MimeBodyPart body = email.getMessageParts().get(0);
-        assertEquals("<p>User Jack Aubrey &lt;d@d.com&gt; (external ID: AAA)  withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>Because, reasons.</p>", (String)body.getContent());
+        assertEquals("<p>User Jack Aubrey &lt;d@d.com&gt; (external ID: AAA)  withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>Because, reasons.</p>", body.getContent());
     }
     
 }

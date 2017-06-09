@@ -44,6 +44,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
+import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.HealthIdImpl;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
@@ -273,6 +274,22 @@ public class HibernateAccountDaoTest {
     }
 
     @Test
+    public void constructAccountForMigration() throws Exception {
+        HealthId healthId = new HealthIdImpl(HEALTH_ID, HEALTH_CODE);
+
+        // execute
+        GenericAccount account = (GenericAccount) dao.constructAccountForMigration(STUDY, EMAIL, DUMMY_PASSWORD,
+                healthId);
+
+        // Most of this stuff has been tested in the previous test. Just test that we set the expected HealthId.
+        assertEquals(HEALTH_CODE, account.getHealthCode());
+        assertEquals(HEALTH_ID, account.getHealthId());
+
+        // Also verify HealthCodeService is never called
+        verify(mockHealthCodeService, never()).createMapping(any());
+    }
+
+    @Test
     public void createAccountSuccess() {
         // Study passed into createAccount() takes precedence over StudyId in the Account object. To test this, make
         // the account have a different study.
@@ -306,6 +323,31 @@ public class HibernateAccountDaoTest {
         // Most of this is tested in createAccountSuccess(). Just test email workflow.
         String accountId = dao.createAccount(STUDY, makeValidGenericAccount(), true);
         verify(mockAccountWorkflowService).sendEmailVerificationToken(STUDY, accountId, EMAIL);
+
+        // created account has account status unverified
+        ArgumentCaptor<HibernateAccount> createdHibernateAccountCaptor = ArgumentCaptor.forClass(
+                HibernateAccount.class);
+        verify(mockHibernateHelper).create(createdHibernateAccountCaptor.capture());
+
+        HibernateAccount createdHibernateAccount = createdHibernateAccountCaptor.getValue();
+        assertEquals(AccountStatus.UNVERIFIED, createdHibernateAccount.getStatus());
+    }
+
+    @Test
+    public void createAccountForMigration() {
+        // Most of this is tested in createAccountSuccess(). Just test that account ID is correctly propagated and that
+        // email workflow is *not* called despite the flag.
+        dao.createAccountForMigration(STUDY, makeValidGenericAccount(), ACCOUNT_ID, true);
+        verify(mockAccountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+
+        // created account has correct account ID account status unverified
+        ArgumentCaptor<HibernateAccount> createdHibernateAccountCaptor = ArgumentCaptor.forClass(
+                HibernateAccount.class);
+        verify(mockHibernateHelper).create(createdHibernateAccountCaptor.capture());
+
+        HibernateAccount createdHibernateAccount = createdHibernateAccountCaptor.getValue();
+        assertEquals(ACCOUNT_ID, createdHibernateAccount.getId());
+        assertEquals(AccountStatus.UNVERIFIED, createdHibernateAccount.getStatus());
     }
 
     @Test
@@ -649,10 +691,10 @@ public class HibernateAccountDaoTest {
                 .withBirthdate("1999-04-04").withImageData("dummy-image-data").withImageMimeType("image/dummy")
                 .withConsentCreatedOn(4000).withSignedOn(4444).build();
 
-        genericAccount.getConsentSignatureHistory(fooSubpopGuid).add(fooConsentSignature1);
-        genericAccount.getConsentSignatureHistory(fooSubpopGuid).add(fooConsentSignature2);
-        genericAccount.getConsentSignatureHistory(barSubpopGuid).add(barConsentSignature3);
-        genericAccount.getConsentSignatureHistory(barSubpopGuid).add(barConsentSignature4);
+        genericAccount.setConsentSignatureHistory(fooSubpopGuid, ImmutableList.of(fooConsentSignature1,
+                fooConsentSignature2));
+        genericAccount.setConsentSignatureHistory(barSubpopGuid, ImmutableList.of(barConsentSignature3,
+                barConsentSignature4));
 
         // marshall
         HibernateAccount hibernateAccount = HibernateAccountDao.marshallAccount(genericAccount);

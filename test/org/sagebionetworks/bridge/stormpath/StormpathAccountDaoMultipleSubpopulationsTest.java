@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotNull;
 
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
@@ -85,8 +86,8 @@ public class StormpathAccountDaoMultipleSubpopulationsTest {
             String accountId = accountDao.createAccount(study, account, false);
             assertNotNull(accountId);
 
-            account.getConsentSignatureHistory(subpop1.getGuid()).add(sig1);
-            account.getConsentSignatureHistory(subpop2.getGuid()).add(sig2);
+            account.setConsentSignatureHistory(subpop1.getGuid(), ImmutableList.of(sig1));
+            account.setConsentSignatureHistory(subpop2.getGuid(), ImmutableList.of(sig2));
             accountDao.updateAccount(account);
 
             account = accountDao.getAccount(study, account.getId());
