@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 
 import org.joda.time.DateTime;
 
-import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
@@ -42,12 +42,14 @@ public interface UploadDao {
     /**
      * Get the uploads for an indicated time range.
      */
-    List<? extends Upload> getUploads(@Nonnull String healthCode, @Nonnull DateTime startTime, @Nonnull DateTime endTime);
+    ForwardCursorPagedResourceList<Upload> getUploads(@Nonnull String healthCode, @Nonnull DateTime startTime,
+            @Nonnull DateTime endTime, int pageSize, @Nullable String offsetKey);
 
     /**
      * Get the uploads for an entire study in the indicated time range.
      */
-    PagedResourceList<? extends Upload> getStudyUploads(@Nonnull StudyIdentifier studyId, @Nonnull DateTime startTime, @Nonnull DateTime endTime, int pageSize, @Nullable String offsetKey);
+    ForwardCursorPagedResourceList<Upload> getStudyUploads(@Nonnull StudyIdentifier studyId,
+            @Nonnull DateTime startTime, @Nonnull DateTime endTime, int pageSize, @Nullable String offsetKey);
 
     /**
      * Signals to the Bridge server that the file has been uploaded. This also kicks off upload validation.

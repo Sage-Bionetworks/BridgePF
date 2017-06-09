@@ -278,15 +278,16 @@ public class ParticipantController extends BaseController {
         return okResult("User has been withdrawn from subpopulation '"+subpopulationGuid+"'.");
     }
     
-    public Result getUploads(String userId, String startTimeString, String endTimeString) {
+    public Result getUploads(String userId, String startTimeString, String endTimeString, Integer pageSize,
+            String offsetKey) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
         DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
         DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
 
-        PagedResourceList<? extends UploadView> uploads = participantService.getUploads(
-                study, userId, startTime, endTime);
+        ForwardCursorPagedResourceList<UploadView> uploads = participantService.getUploads(
+                study, userId, startTime, endTime, pageSize, offsetKey);
 
         return okResult(uploads);
     }

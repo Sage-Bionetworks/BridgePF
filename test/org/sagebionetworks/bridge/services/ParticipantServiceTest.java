@@ -802,9 +802,9 @@ public class ParticipantServiceTest {
         DateTime startTime = DateTime.parse("2015-11-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2015-11-01T23:59:59.999Z");
         
-        participantService.getUploads(STUDY, ID, startTime, endTime);
+        participantService.getUploads(STUDY, ID, startTime, endTime, 10, "ABC");
         
-        verify(uploadService).getUploads(HEALTH_CODE, startTime, endTime);
+        verify(uploadService).getUploads(HEALTH_CODE, startTime, endTime, 10, "ABC");
     }
     
     @Test
@@ -812,9 +812,9 @@ public class ParticipantServiceTest {
         // Just verify this throws no exceptions
         mockHealthCodeAndAccountRetrieval();
         
-        participantService.getUploads(STUDY, ID, null, null);
+        participantService.getUploads(STUDY, ID, null, null, 10, null);
         
-        verify(uploadService).getUploads(HEALTH_CODE, null, null);
+        verify(uploadService).getUploads(HEALTH_CODE, null, null, 10, null);
     }
     
     @Test
