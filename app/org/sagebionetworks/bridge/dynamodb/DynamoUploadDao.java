@@ -135,7 +135,6 @@ public class DynamoUploadDao implements UploadDao {
         QuerySpec spec = new QuerySpec()
                 .withHashKey(HEALTH_CODE, healthCode)
                 .withMaxPageSize(pageSize)
-                .withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
                 .withRangeKeyCondition(condition); // this is not a filter, it should not require paging on our side.
         if (offsetKey != null) {
             spec.withExclusiveStartKey(new KeyAttribute(UPLOAD_ID, offsetKey));
