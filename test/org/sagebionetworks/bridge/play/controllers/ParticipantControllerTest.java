@@ -688,12 +688,12 @@ public class ParticipantControllerTest {
 
         ForwardCursorPagedResourceList<Upload> uploads = new ForwardCursorPagedResourceList<>(list, null,
                 API_MAXIMUM_PAGE_SIZE);
-        doReturn(uploads).when(mockParticipantService).getUploads(study, ID, null, null, 0, null);
+        doReturn(uploads).when(mockParticipantService).getUploads(study, ID, null, null, null, null);
         
         Result result = controller.getUploads(ID, null, null, null, null);
         assertEquals(200, result.status());
         
-        verify(mockParticipantService).getUploads(study, ID, null, null, 0, null);
+        verify(mockParticipantService).getUploads(study, ID, null, null, null, null);
     }
     
     @Test
