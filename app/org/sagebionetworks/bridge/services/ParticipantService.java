@@ -408,14 +408,14 @@ public class ParticipantService {
         }).collect(BridgeCollectors.toImmutableList());
     }
 
-    public ForwardCursorPagedResourceList<UploadView> getUploads(Study study, String userId, DateTime startTime,
-            DateTime endTime, Integer pageSize, String offsetKey) {
+    public PagedResourceList<? extends UploadView> getUploads(Study study, String userId, DateTime startTime,
+            DateTime endTime) {
         checkNotNull(study);
         checkNotNull(userId);
-        
+
         Account account = getAccountThrowingException(study, userId);
 
-        return uploadService.getUploads(account.getHealthCode(), startTime, endTime, pageSize, offsetKey);
+        return uploadService.getUploads(account.getHealthCode(), startTime, endTime);
     }
 
     public List<NotificationRegistration> listRegistrations(Study study, String userId) {
