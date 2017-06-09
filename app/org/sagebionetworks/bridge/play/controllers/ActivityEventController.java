@@ -18,7 +18,7 @@ public class ActivityEventController extends BaseController {
     private ActivityEventService activityEventService;
 
     public Result createActivityEvent(String eventKey, String timestamp) {
-        UserSession session = getAuthenticatedSession();
+        UserSession session = getAuthenticatedAndConsentedSession();
 
         DateTime eventTime = DateUtils.getDateTimeOrDefault(timestamp, null);
 
