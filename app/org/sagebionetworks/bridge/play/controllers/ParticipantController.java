@@ -124,15 +124,13 @@ public class ParticipantController extends BaseController {
         return okResult(page);
     }
     
-    public Result createParticipant(String verifyEmailString) throws Exception {
+    public Result createParticipant() throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
-        boolean verifyEmail = Boolean.parseBoolean(verifyEmailString);
-        
         IdentifierHolder holder = participantService.createParticipant(study, session.getParticipant().getRoles(),
-                participant, verifyEmail);
+                participant, true);
         return createdResult(holder);
     }
     
