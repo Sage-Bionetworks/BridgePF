@@ -59,6 +59,10 @@ public class StudyValidator implements Validator {
                 errors.rejectValue("identifier", "must be at least 2 characters");
             }
         }
+        if (study.getActivityEventKeys().stream()
+                .anyMatch(k -> !k.matches(BridgeConstants.BRIDGE_IDENTIFIER_PATTERN))) {
+            errors.rejectValue("activityEventKey", "must contain only lower-case letters and/or numbers with optional dashes");
+        }
         if (StringUtils.isBlank(study.getName())) {
             errors.rejectValue("name", "is required");
         }
