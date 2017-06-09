@@ -151,12 +151,18 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     void setTaskIdentifiers(Set<String> taskIdentifiers);
 
     /**
+     * The enumerated activity event keys for timestamps that can be recorded for use when scheduling tasks . These
+     * are provided through the UI to prevent errors when creating schedules.
+     */
+    Set<String> getActivityEventKeys();
+    void setActivityEventKeys(Set<String> activityEventKeys);
+
+    /**
      * The enumerated set of data group strings that can be assigned to users in this study. This enumeration ensures 
      * the values are meaningful to the study and the data groups cannot be filled maliciously with junk tags. 
      */
     Set<String> getDataGroups();
     void setDataGroups(Set<String> dataGroups);
-
     
     /**
      * The password policy for users signing up for this study. 

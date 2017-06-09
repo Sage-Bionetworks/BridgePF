@@ -133,7 +133,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             }
 
             capacityConsumed = list.getConsumedCapacity().getCapacityUnits().intValue();
-            LOG.debug("Capacity acquired: +" + capacityAcquired + ", Consumed Capacity: " + capacityConsumed);
+            LOG.debug("Capacity acquired: " + capacityAcquired + ", Consumed Capacity: " + capacityConsumed);
 
             // use capacity consumed by last request to as our estimate for the next request
             capacityAcquired = capacityConsumed;

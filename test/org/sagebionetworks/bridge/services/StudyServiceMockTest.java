@@ -63,6 +63,7 @@ import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.TaskReference;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
@@ -234,33 +235,55 @@ public class StudyServiceMockTest {
             assertEquals("SchedulePlan", e.getReferrerKeys().get("type"));
         }
     }
-    
+
+    @Test
+    public void cannotRemoveActivityEventKeyInUse() {
+        String eventKey = study.getActivityEventKeys().iterator().next();
+
+        SchedulePlan plan = TestUtils.getSimpleSchedulePlan(new StudyIdentifierImpl(TEST_STUDY_ID));
+        plan.getStrategy().getAllPossibleSchedules().get(0).setEventId(eventKey);
+        when(schedulePlanService.getSchedulePlans(any(), any())).thenReturn(Lists.newArrayList(plan));
+
+        study.getActivityEventKeys().remove(eventKey);
+
+        try {
+            service.updateStudy(study, true);
+            fail("Should have thrown exception");
+        } catch(ConstraintViolationException e) {
+            verify(studyDao, never()).updateStudy(study);
+            assertEquals("test-study", e.getEntityKeys().get("identifier"));
+            assertEquals("Study", e.getEntityKeys().get("type"));
+            assertEquals(plan.getGuid(), e.getReferrerKeys().get("guid"));
+            assertEquals("SchedulePlan", e.getReferrerKeys().get("type"));
+        }
+    }
+
     @Test
     public void canRemoveDataGroupIfSubpopulationDeleted() {
-        String taskId = study.getTaskIdentifiers().iterator().next();
-        study.getTaskIdentifiers().remove(taskId);
-        
+        String dataGroup = study.getDataGroups().iterator().next();
+        study.getDataGroups().remove(dataGroup);
+
         Criteria criteria = Criteria.create();
-        criteria.getAllOfGroups().add(taskId);
+        criteria.getAllOfGroups().add(dataGroup);
         Subpopulation subpop = Subpopulation.create();
         subpop.setCriteria(criteria);
         subpop.setGuidString("guidString");
         subpop.setDeleted(true);
-        
+
         when(subpopService.getSubpopulations(any())).thenReturn(Lists.newArrayList(subpop));
-        
+
         service.updateStudy(study, true);
-        
+
         verify(studyDao).updateStudy(study);
     }
     
     @Test
     public void cannotRemoveDataGroupInUseInSubpopulation() {
-        String taskId = study.getTaskIdentifiers().iterator().next();
-        study.getTaskIdentifiers().remove(taskId);
-        
+        String dataGroup = study.getDataGroups().iterator().next();
+        study.getDataGroups().remove(dataGroup);
+
         Criteria criteria = Criteria.create();
-        criteria.getAllOfGroups().add(taskId);
+        criteria.getAllOfGroups().add(dataGroup);
         Subpopulation subpop = Subpopulation.create();
         subpop.setCriteria(criteria);
         subpop.setGuidString("guidString");
@@ -281,12 +304,12 @@ public class StudyServiceMockTest {
 
     @Test
     public void cannotRemoveDataGroupInUseInSchedulePlan() {
-        String taskId = study.getTaskIdentifiers().iterator().next();
-        study.getTaskIdentifiers().remove(taskId);
+        String dataGroup = study.getDataGroups().iterator().next();
+        study.getDataGroups().remove(dataGroup);
 
         SchedulePlan plan = TestUtils.getCriteriaSchedulePlan(new StudyIdentifierImpl(TEST_STUDY_ID));
         when(schedulePlanService.getSchedulePlans(any(), any())).thenReturn(Lists.newArrayList(plan));
-        
+
         try {
             service.updateStudy(study, true);
             fail("Should have thrown exception");

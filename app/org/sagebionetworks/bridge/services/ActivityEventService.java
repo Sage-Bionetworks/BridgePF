@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_JOINER;
 
@@ -8,10 +9,13 @@ import java.util.Map;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,12 +25,35 @@ import org.springframework.stereotype.Component;
 public class ActivityEventService {
 
     private ActivityEventDao activityEventDao;
-    
+    private StudyService studyService;
+
     @Autowired
     public void setActivityEventDao(ActivityEventDao activityEventDao) {
         this.activityEventDao = activityEventDao;
     }
-    
+
+    public void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
+    }
+
+    public void publishCustomEvent(StudyIdentifier studyId, String healthCode, String eventKey, DateTime timestamp) {
+        checkNotNull(healthCode);
+        checkNotNull(eventKey);
+
+        Study study = studyService.getStudy(studyId);
+
+        if (!study.getActivityEventKeys().contains(eventKey)) {
+            throw new BadRequestException("Study's ActivityEventKeys does not contain eventKey: " + eventKey);
+        }
+
+        ActivityEvent event = new DynamoActivityEvent.Builder()
+                .withHealthCode(healthCode)
+                .withObjectType(ActivityEventObjectType.CUSTOM)
+                .withObjectId(eventKey)
+                .withTimestamp(timestamp).build();
+        activityEventDao.publishEvent(event);
+    }
+
     public void publishEnrollmentEvent(String healthCode, ConsentSignature signature) {
         checkNotNull(signature);
         

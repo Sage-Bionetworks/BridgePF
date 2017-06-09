@@ -507,7 +507,8 @@ public class StudyService {
     private void checkViolationConstraints(Study study) {
         final Set<String> taskIds = study.getTaskIdentifiers();
         final Set<String> dataGroups = study.getDataGroups();
-        
+        final Set<String> eventKeys = study.getActivityEventKeys();
+
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, study);
 
         // If the study is *missing* a task identifier or a data group that is currently in use in a plan, 
@@ -516,6 +517,11 @@ public class StudyService {
             for (Schedule schedule : plan.getStrategy().getAllPossibleSchedules()) {
                 for (Activity activity : schedule.getActivities()) {
                     if (activity.getTask() != null && !taskIds.contains(activity.getTask().getIdentifier())) {
+                        throwConstraintViolation(plan, study);
+                    }
+                }
+                for (String eventId : Schedule.EVENT_ID_SPLITTER.split(schedule.getEventId())) {
+                    if (!eventKeys.contains(eventId)){
                         throwConstraintViolation(plan, study);
                     }
                 }

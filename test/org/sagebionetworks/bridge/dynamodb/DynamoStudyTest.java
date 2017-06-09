@@ -68,6 +68,7 @@ public class DynamoStudyTest {
                 JsonUtils.asEntity(node, "emailSignInTemplate", EmailTemplate.class));
         assertEqualsAndNotNull(study.getUserProfileAttributes(), JsonUtils.asStringSet(node, "userProfileAttributes"));
         assertEqualsAndNotNull(study.getTaskIdentifiers(), JsonUtils.asStringSet(node, "taskIdentifiers"));
+        assertEqualsAndNotNull(study.getActivityEventKeys(), JsonUtils.asStringSet(node, "activityEventKeys"));
         assertEqualsAndNotNull(study.getDataGroups(), JsonUtils.asStringSet(node, "dataGroups"));
         assertEqualsAndNotNull((Long)study.getVersion(), (Long)node.get("version").asLong());
         assertTrue(node.get("strictUploadValidationEnabled").asBoolean());
