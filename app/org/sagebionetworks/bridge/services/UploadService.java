@@ -6,6 +6,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 
 import java.net.URL;
 import java.util.Date;
@@ -39,7 +40,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -59,6 +60,8 @@ public class UploadService {
     private static final Logger logger = LoggerFactory.getLogger(UploadService.class);
 
     private static final long EXPIRATION = 24 * 60 * 60 * 1000; // 24 hours
+
+    private static final int QUERY_WINDOW_IN_DAYS = 2;
     
     // package-scoped to be available in unit tests
     static final String CONFIG_KEY_UPLOAD_BUCKET = "upload.bucket";
@@ -231,13 +234,13 @@ public class UploadService {
      * start time is not provided, it defaults to a day before the end time. The time window is constrained to two days 
      * of uploads (though those days can be any period in time). </p>
      */
-    public ForwardCursorPagedResourceList<UploadView> getUploads(@Nonnull String healthCode,
-            @Nullable DateTime startTime, @Nullable DateTime endTime, Integer pageSize, @Nullable String offsetKey) {
+    public PagedResourceList<? extends UploadView> getUploads(@Nonnull String healthCode,
+            @Nullable DateTime startTime, @Nullable DateTime endTime) {
         checkNotNull(healthCode);
-        
+
         return getUploads(startTime, endTime, (start, end)-> {
-            return uploadDao.getUploads(healthCode, start, end,
-                    (pageSize == null ? API_DEFAULT_PAGE_SIZE : pageSize.intValue()), offsetKey);
+            List<? extends Upload> retList = uploadDao.getUploads(healthCode, start, end);
+            return new PagedResourceList<>(retList, null, API_MAXIMUM_PAGE_SIZE, retList.size());
         });
     }
     
@@ -247,18 +250,17 @@ public class UploadService {
      * start time is not provided, it defaults to a day before the end time. The time window is constrained to two days 
      * of uploads (though those days can be any period in time). </p>
      */
-    public ForwardCursorPagedResourceList<UploadView> getStudyUploads(@Nonnull StudyIdentifier studyId,
+    public PagedResourceList<? extends UploadView> getStudyUploads(@Nonnull StudyIdentifier studyId,
             @Nullable DateTime startTime, @Nullable DateTime endTime, @Nullable Integer pageSize, @Nullable String offsetKey) {
         checkNotNull(studyId);
 
         // in case clients didn't set page size up
         return getUploads(startTime, endTime, (start, end)-> {
-            return uploadDao.getStudyUploads(studyId, start, end,
-                    (pageSize == null ? API_DEFAULT_PAGE_SIZE : pageSize.intValue()), offsetKey);
+            return uploadDao.getStudyUploads(studyId, start, end, (pageSize == null? API_DEFAULT_PAGE_SIZE : pageSize.intValue()), offsetKey);
         });
     }
     
-    private ForwardCursorPagedResourceList<UploadView> getUploads(DateTime startTime, DateTime endTime, UploadSupplier supplier) {
+    private PagedResourceList<? extends UploadView> getUploads(DateTime startTime, DateTime endTime, UploadSupplier supplier) {
         checkNotNull(supplier);
         
         if (startTime == null && endTime == null) {
@@ -272,8 +274,11 @@ public class UploadService {
         if (endTime.isBefore(startTime)) {
             throw new BadRequestException("Start time cannot be after end time: " + startTime + "-" + endTime);
         }
-        
-        ForwardCursorPagedResourceList<Upload> list = supplier.get(startTime, endTime);
+        if (startTime.plusDays(QUERY_WINDOW_IN_DAYS).isBefore(endTime)) {
+            throw new BadRequestException("Query window cannot be longer than two days: " + startTime + "-" + endTime);
+        }
+
+        PagedResourceList<? extends Upload> list = supplier.get(startTime, endTime);
 
         List<UploadView> views = list.getItems().stream().map(upload -> {
             UploadView.Builder builder = new UploadView.Builder();
@@ -289,8 +294,9 @@ public class UploadService {
             return builder.build();
         }).collect(Collectors.toList());
         
-        return new ForwardCursorPagedResourceList<UploadView>(views, list.getOffsetKey(), list.getPageSize())
-                .withFilter("startTime", startTime).withFilter("endTime", endTime);
+        return new PagedResourceList<>(views, list.getOffsetBy(), list.getPageSize(), list.getTotal())
+                .withFilter("startTime", startTime).withFilter("endTime", endTime)
+                .withOffsetKey(list.getOffsetKey());
     }
     
     /**
@@ -373,6 +379,6 @@ public class UploadService {
 
     @FunctionalInterface
     private static interface UploadSupplier {
-        ForwardCursorPagedResourceList<Upload> get(DateTime startTime, DateTime endTime);
+        PagedResourceList<? extends Upload> get(DateTime startTime, DateTime endTime);
     }
 }

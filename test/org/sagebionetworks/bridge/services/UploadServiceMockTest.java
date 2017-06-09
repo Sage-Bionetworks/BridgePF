@@ -31,7 +31,7 @@ import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
@@ -198,11 +198,9 @@ public class UploadServiceMockTest {
 
         // Mock getUploads/getUpload calls
         List<Upload> results = ImmutableList.of(mockUpload, mockFailedUpload, mockUploadWithNoRecord);
-        
-        ForwardCursorPagedResourceList<Upload> pagedListWithoutOffsetKey = new ForwardCursorPagedResourceList<Upload>(results, null, API_MAXIMUM_PAGE_SIZE);
-        doReturn(pagedListWithoutOffsetKey).when(mockDao).getUploads(eq("ABC"), any(DateTime.class), any(DateTime.class), eq(0), eq(null));
-        
-        ForwardCursorPagedResourceList<Upload> pagedList = new ForwardCursorPagedResourceList<Upload>(results, MOCK_OFFSET_KEY, API_MAXIMUM_PAGE_SIZE);
+        PagedResourceList<Upload> pagedList = new PagedResourceList<Upload>(results, null, API_MAXIMUM_PAGE_SIZE, results.size())
+                .withOffsetKey(MOCK_OFFSET_KEY);
+        doReturn(results).when(mockDao).getUploads("ABC", START_TIME, END_TIME);
         doReturn(pagedList).when(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
         doReturn(pagedList).when(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME, API_DEFAULT_PAGE_SIZE, null);
         doReturn(mockUpload).when(mockDao).getUpload("upload-id");
@@ -222,10 +220,11 @@ public class UploadServiceMockTest {
     @Test
     public void canGetUploads() throws Exception {
         setupUploadMocks();
-        ForwardCursorPagedResourceList<UploadView> returned = svc.getUploads("ABC", START_TIME, END_TIME, 0, null);
+        PagedResourceList<? extends UploadView> returned = svc.getUploads("ABC", START_TIME, END_TIME);
         
-        verify(mockDao).getUploads("ABC", START_TIME, END_TIME, 0, null);
-        validateUploadMocks(returned, null);
+        verify(mockDao).getUploads("ABC", START_TIME, END_TIME);
+        validateUploadMocks(returned);
+        assertNull(returned.getOffsetKey());
     }
     
     @Test
@@ -233,11 +232,12 @@ public class UploadServiceMockTest {
         setupUploadMocks();
         
         // Now verify the study uploads works
-        ForwardCursorPagedResourceList<UploadView> returned = svc.getStudyUploads(TestConstants.TEST_STUDY,
+        PagedResourceList<? extends UploadView> returned = svc.getStudyUploads(TestConstants.TEST_STUDY,
                 START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
         
         verify(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
-        validateUploadMocks(returned, MOCK_OFFSET_KEY);
+        validateUploadMocks(returned);
+        assertEquals(MOCK_OFFSET_KEY, returned.getOffsetKey());
     }
 
     @Test
@@ -249,7 +249,7 @@ public class UploadServiceMockTest {
         verify(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME, API_DEFAULT_PAGE_SIZE, null);
     }
 
-    private void validateUploadMocks(ForwardCursorPagedResourceList<UploadView> returned, String expectedOffsetKey) {
+    private void validateUploadMocks(PagedResourceList<? extends UploadView> returned) {
         verify(mockHealthDataService).getRecordById("record-id");
         verify(mockHealthDataService).getRecordById("missing-record-id");
         verifyNoMoreInteractions(mockHealthDataService);
@@ -258,7 +258,8 @@ public class UploadServiceMockTest {
         assertEquals(3, uploadList.size());
 
         assertEquals(API_MAXIMUM_PAGE_SIZE, returned.getPageSize());
-        assertEquals(expectedOffsetKey, returned.getOffsetKey());
+        assertNull(returned.getOffsetBy());
+        assertEquals(uploadList.size(), returned.getTotal());
 
         // The two sources of information are combined in the view.
         UploadView view = uploadList.get(0);
@@ -285,30 +286,24 @@ public class UploadServiceMockTest {
 
     @Test
     public void canPassStartTimeOnly() {
-        setupUploadMocks();
-        
-        svc.getUploads("ABC", START_TIME, null, 0, null);
-        verify(mockDao).getUploads("ABC", START_TIME, END_TIME, 0, null);
+        svc.getUploads("ABC", START_TIME, null);
+        verify(mockDao).getUploads("ABC", START_TIME, END_TIME);
     }
     
     @Test
     public void canPassEndTimeOnly() {
-        setupUploadMocks();
-        
-        svc.getUploads("ABC", null, END_TIME, 0, null);
-        verify(mockDao).getUploads("ABC", START_TIME, END_TIME, 0, null);
+        svc.getUploads("ABC", null, END_TIME);
+        verify(mockDao).getUploads("ABC", START_TIME, END_TIME);
     }
     
     @Test
     public void canPassNoTimes() {
-        setupUploadMocks();
-        
         ArgumentCaptor<DateTime> start = ArgumentCaptor.forClass(DateTime.class);
         ArgumentCaptor<DateTime> end = ArgumentCaptor.forClass(DateTime.class);
         
-        svc.getUploads("ABC", null, null, 0, null);
+        svc.getUploads("ABC", null, null);
         
-        verify(mockDao).getUploads(eq("ABC"), start.capture(), end.capture(), eq(0), eq(null));
+        verify(mockDao).getUploads(eq("ABC"), start.capture(), end.capture());
         
         DateTime actualStart = start.getValue();
         DateTime actualEnd = end.getValue();
@@ -317,7 +312,12 @@ public class UploadServiceMockTest {
     
     @Test(expected = BadRequestException.class)
     public void verifiesEndTimeNotBeforeStartTime() {
-        svc.getUploads("ABC", END_TIME, START_TIME, 0, null);
+        svc.getUploads("ABC", END_TIME, START_TIME);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void verifiesTimeRange() {
+        svc.getUploads("ABC", START_TIME.minusDays(1).minusMinutes(1), END_TIME);
     }
     
     @Test

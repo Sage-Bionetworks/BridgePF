@@ -149,8 +149,8 @@ public class DynamoUploadDaoTest {
     
     @Test
     public void uploadRecordsEmpty() throws Exception {
-        List<Upload> uploads = dao.getUploads("nonexistentCode", DateTime.now().minusMinutes(1),
-                DateTime.now(), 100, null).getItems();
+        List<? extends Upload> uploads = dao.getUploads("nonexistentCode", DateTime.now().minusMinutes(1),
+                DateTime.now());
 
         assertTrue(uploads.isEmpty());
     }

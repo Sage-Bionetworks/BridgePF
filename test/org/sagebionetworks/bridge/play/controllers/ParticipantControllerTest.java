@@ -665,15 +665,15 @@ public class ParticipantControllerTest {
 
         List<? extends Upload> list = Lists.newArrayList();
 
-        ForwardCursorPagedResourceList<? extends Upload> uploads = new ForwardCursorPagedResourceList<>(list, "abc", API_MAXIMUM_PAGE_SIZE)
+        PagedResourceList<? extends Upload> uploads = new PagedResourceList<>(list, null, API_MAXIMUM_PAGE_SIZE, 0)
                 .withFilter("startTime", startTime)
                 .withFilter("endTime", endTime);
-        doReturn(uploads).when(mockParticipantService).getUploads(study, ID, startTime, endTime, 10, "abc");
+        doReturn(uploads).when(mockParticipantService).getUploads(study, ID, startTime, endTime);
         
-        Result result = controller.getUploads(ID, startTime.toString(), endTime.toString(), 10, "abc");
+        Result result = controller.getUploads(ID, startTime.toString(), endTime.toString());
         assertEquals(200, result.status());
         
-        verify(mockParticipantService).getUploads(study, ID, startTime, endTime, 10, "abc");
+        verify(mockParticipantService).getUploads(study, ID, startTime, endTime);
         
         // in other words, it's the object we mocked out from the service, we were returned the value.
         PagedResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
@@ -684,16 +684,16 @@ public class ParticipantControllerTest {
     
     @Test
     public void getUploadsNullsDateRange() throws Exception {
-        List<Upload> list = Lists.newArrayList();
+        List<? extends Upload> list = Lists.newArrayList();
 
-        ForwardCursorPagedResourceList<Upload> uploads = new ForwardCursorPagedResourceList<>(list, null,
-                API_MAXIMUM_PAGE_SIZE);
-        doReturn(uploads).when(mockParticipantService).getUploads(study, ID, null, null, 0, null);
+        PagedResourceList<? extends Upload> uploads = new PagedResourceList<>(list,
+                null, API_MAXIMUM_PAGE_SIZE, 0);
+        doReturn(uploads).when(mockParticipantService).getUploads(study, ID, null, null);
         
-        Result result = controller.getUploads(ID, null, null, null, null);
+        Result result = controller.getUploads(ID, null, null);
         assertEquals(200, result.status());
         
-        verify(mockParticipantService).getUploads(study, ID, null, null, 0, null);
+        verify(mockParticipantService).getUploads(study, ID, null, null);
     }
     
     @Test
