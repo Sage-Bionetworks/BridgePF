@@ -49,6 +49,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DynamoUploadDaoMockTest {
@@ -82,6 +83,9 @@ public class DynamoUploadDaoMockTest {
     
     @Captor
     private ArgumentCaptor<DynamoUpload2> uploadCaptor;
+    
+    @Captor
+    private ArgumentCaptor<List<Upload>> uploadListCaptor;
     
     private DynamoUploadDao dao;
     
@@ -243,22 +247,22 @@ public class DynamoUploadDaoMockTest {
             consumer.accept(mockItem);
             return null;
         }).when(mockQueryOutcome).forEach(any());
+
+        when(mockIndexHelper.query(any(QuerySpec.class))).thenReturn(lastQueryOutcome);
+        when(lastQueryOutcome.getItems()).thenReturn(Lists.newArrayList(mockItem));
         
-        when(mockIndex.query(any(QuerySpec.class))).thenReturn(mockQueryOutcome);
-        when(mockQueryOutcome.getLastLowLevelResult()).thenReturn(lastQueryOutcome);
-        when(lastQueryOutcome.getQueryResult()).thenReturn(mockQueryResult);
         when(mockQueryResult.getLastEvaluatedKey()).thenReturn(key);
         
         dao.getUploads(healthCode, startTime, endTime, pageSize, null);
         
-        verify(mockIndex).query(querySpecCaptor.capture());
+        verify(mockIndexHelper).query(querySpecCaptor.capture());
         QuerySpec mockSpec = querySpecCaptor.getValue();
-        assertEquals(new Integer(50), mockSpec.getMaxPageSize());
+        assertEquals(new Integer(51), mockSpec.getMaxPageSize());
         assertEquals(healthCode, mockSpec.getHashKey().getValue());
         
-        ArgumentCaptor<DynamoUpload2> itemCaptor = ArgumentCaptor.forClass(DynamoUpload2.class);
-        verify(mockMapper).load(itemCaptor.capture());
-        assertEquals(UPLOAD_ID, itemCaptor.getValue().getUploadId());
+        verify(mockMapper).batchLoad(uploadListCaptor.capture());
+        List<Upload> uploads = uploadListCaptor.getValue();
+        assertEquals(1, uploads.size());
     }
 
     private static UploadRequest createUploadRequest() {
