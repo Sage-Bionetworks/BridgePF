@@ -25,7 +25,7 @@ POST   /v3/compoundactivitydefinitions/:taskId @org.sagebionetworks.bridge.play.
 
 # Participants Researcher APIs
 GET    /v3/participants                                      @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipants(offsetBy: String ?= null, pageSize: String ?= null, emailFilter: String ?= null, startDate: String ?= null, endDate: String ?= null)
-POST   /v3/participants                                      @org.sagebionetworks.bridge.play.controllers.ParticipantController.createParticipant(verifyEmail: String ?= "true")
+POST   /v3/participants                                      @org.sagebionetworks.bridge.play.controllers.ParticipantController.createParticipant
 GET    /v3/participants/self                                 @org.sagebionetworks.bridge.play.controllers.ParticipantController.getSelfParticipant
 POST   /v3/participants/self                                 @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateSelfParticipant
 GET    /v3/participants/:userId                              @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipant(userId: String)

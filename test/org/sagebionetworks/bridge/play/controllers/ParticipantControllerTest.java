@@ -311,7 +311,7 @@ public class ParticipantControllerTest {
         IdentifierHolder holder = setUpCreateParticipant();
         doReturn(holder).when(mockParticipantService).createParticipant(eq(study), any(), any(StudyParticipant.class), eq(true));
         
-        Result result = controller.createParticipant("true");
+        Result result = controller.createParticipant();
 
         assertEquals(201, result.status());
         String id = MAPPER.readTree(Helpers.contentAsString(result)).get("identifier").asText();
@@ -330,19 +330,6 @@ public class ParticipantControllerTest {
         assertEquals(Sets.newHashSet("group2","group1"), participant.getDataGroups());
         assertEquals("123456789", participant.getAttributes().get("phone"));
         assertEquals(Sets.newHashSet("en","fr"), participant.getLanguages());
-    }
-    
-    @Test
-    public void createParticipantWithoutEmailVerification() throws Exception {
-        IdentifierHolder holder = setUpCreateParticipant();
-        doReturn(holder).when(mockParticipantService).createParticipant(eq(study), any(), any(StudyParticipant.class), eq(false));
-        
-        Result result = controller.createParticipant("false");
-        
-        String id = MAPPER.readTree(Helpers.contentAsString(result)).get("identifier").asText();
-        assertEquals(holder.getIdentifier(), id);
-        
-        verify(mockParticipantService).createParticipant(eq(study), eq(CALLER_ROLES), participantCaptor.capture(), eq(false));
     }
 
     @Test

@@ -266,9 +266,13 @@ public class ParticipantService {
 
         updateAccountOptionsAndRoles(study, callerRoles, options, account, participant);
         
-        // Only admin roles can change status, after participant is created
-        if (callerIsAdmin(callerRoles) && participant.getStatus() != null) {
-            account.setStatus(participant.getStatus());
+        // Only Admin and Worker accounts controlled by us should be able to bypass email verification. This is
+        // primarily used for integration tests, but is sometimes used to bootstrap external developers and
+        // researchers.
+        if (participant.getStatus() != null) {
+            if (callerRoles.contains(Roles.ADMIN) || callerRoles.contains(Roles.WORKER)) {
+                account.setStatus(participant.getStatus());
+            }
         }
         accountDao.updateAccount(account);
         optionsService.setAllOptions(study.getStudyIdentifier(), account.getHealthCode(), options);
