@@ -7,8 +7,10 @@ import static org.sagebionetworks.bridge.dynamodb.DynamoExternalIdDao.PAGE_SIZE_
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.Resource;
@@ -17,9 +19,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
-import com.amazonaws.services.dynamodbv2.document.Index;
-import com.amazonaws.services.dynamodbv2.document.ItemCollection;
-import com.amazonaws.services.dynamodbv2.document.KeyAttribute;
+import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.QueryOutcome;
 import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
@@ -27,6 +27,7 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
+import com.google.common.collect.Iterables;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -118,38 +119,48 @@ public class DynamoUploadDao implements UploadDao {
     
     /** {@inheritDoc} */
     @Override
-    public ForwardCursorPagedResourceList<Upload> getUploads(String healthCode, DateTime startTime, DateTime endTime, int pageSize,
-            String offsetKey) {
+    public ForwardCursorPagedResourceList<Upload> getUploads(String healthCode, DateTime startTime, DateTime endTime,
+            int pageSize, String offsetKey) {
         // Set a sane upper limit on this.
         if (pageSize < 1 || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
+        int sizeWithIndicatorRecord = pageSize+1;
+        long offsetTimestamp = (offsetKey == null) ? 0 : Long.parseLong(offsetKey);
+        long offsetStartTime = Math.max(startTime.getMillis(), offsetTimestamp);
         
         RangeKeyCondition condition = new RangeKeyCondition(REQUESTED_ON).between(
-                startTime.getMillis(), endTime.getMillis());
+                offsetStartTime, endTime.getMillis());
         
-        Index index = healthCodeRequestedOnIndex.getIndex();
-        List<Upload> results = new ArrayList<>(pageSize);
-
         QuerySpec spec = new QuerySpec()
                 .withHashKey(HEALTH_CODE, healthCode)
-                .withMaxPageSize(pageSize)
+                .withMaxPageSize(sizeWithIndicatorRecord)
                 .withRangeKeyCondition(condition); // this is not a filter, it should not require paging on our side.
-        if (offsetKey != null) {
-            spec.withExclusiveStartKey(new KeyAttribute(UPLOAD_ID, offsetKey));
-        }
-        ItemCollection<QueryOutcome> query = index.query(spec);
+        QueryOutcome outcome = healthCodeRequestedOnIndex.query(spec);
         
-        query.forEach((item) -> {
+        List<Upload> itemsToLoad = new ArrayList<>(pageSize);
+        Iterator<Item> iter = outcome.getItems().iterator();
+        while (iter.hasNext() && itemsToLoad.size() < sizeWithIndicatorRecord) {
+            Item item = iter.next();
             DynamoUpload2 indexKeys = BridgeObjectMapper.get().convertValue(item.asMap(), DynamoUpload2.class);
-            DynamoUpload2 oneRecord = mapper.load(indexKeys);
-            results.add(oneRecord);
-        });
+            itemsToLoad.add(indexKeys); 
+        }
+        
+        List<Upload> results = new ArrayList<>(pageSize);
+        Map<String, List<Object>> resultMap = mapper.batchLoad(itemsToLoad);
+        for (List<Object> resultList : resultMap.values()) {
+            for (Object oneResult : resultList) {
+                results.add((Upload) oneResult);
+            }
+        }
+        
+        String nextOffsetKey = null;
+        if (results.size() > pageSize) {
+            nextOffsetKey = Long.toString(Iterables.getLast(results).getRequestedOn());
+        }
 
-        Map<String,AttributeValue> key = query.getLastLowLevelResult().getQueryResult().getLastEvaluatedKey();
-        String nextOffsetKey = (key != null) ? key.get(UPLOAD_ID).getS() : null;
-
-        return new ForwardCursorPagedResourceList<>(results, nextOffsetKey, pageSize)
+        int lastIndex = Math.min(sizeWithIndicatorRecord-1, results.size());
+        return new ForwardCursorPagedResourceList<>(results.subList(0, lastIndex), nextOffsetKey, pageSize)
                 .withFilter("startTime", startTime.toString())
                 .withFilter("endTime", endTime.toString());
     }
