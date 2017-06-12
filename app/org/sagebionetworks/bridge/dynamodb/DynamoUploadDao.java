@@ -159,7 +159,7 @@ public class DynamoUploadDao implements UploadDao {
             nextOffsetKey = Long.toString(Iterables.getLast(results).getRequestedOn());
         }
 
-        int lastIndex = Math.min(sizeWithIndicatorRecord-1, results.size());
+        int lastIndex = Math.min(pageSize, results.size());
         return new ForwardCursorPagedResourceList<>(results.subList(0, lastIndex), nextOffsetKey, pageSize)
                 .withFilter("startTime", startTime.toString())
                 .withFilter("endTime", endTime.toString());
