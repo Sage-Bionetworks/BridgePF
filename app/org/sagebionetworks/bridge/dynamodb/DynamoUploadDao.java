@@ -141,7 +141,8 @@ public class DynamoUploadDao implements UploadDao {
         ItemCollection<QueryOutcome> query = index.query(spec);
         
         query.forEach((item) -> {
-            DynamoUpload2 oneRecord = BridgeObjectMapper.get().convertValue(item.asMap(), DynamoUpload2.class);
+            DynamoUpload2 indexKeys = BridgeObjectMapper.get().convertValue(item.asMap(), DynamoUpload2.class);
+            DynamoUpload2 oneRecord = mapper.load(indexKeys);
             results.add(oneRecord);
         });
 

@@ -47,7 +47,7 @@ public class DynamoIndexHelper {
         this.index = index;
     }
 
-    final Index getIndex() {
+    public Index getIndex() {
         return index;
     }
     
