@@ -52,6 +52,7 @@ import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DefaultObjectMapper;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -360,9 +361,9 @@ public class StudyControllerTest {
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
 
-        List<? extends Upload> list = Lists.newArrayList();
+        List<Upload> list = Lists.newArrayList();
 
-        PagedResourceList<? extends Upload> uploads = new PagedResourceList<>(list, null, API_MAXIMUM_PAGE_SIZE, 0)
+        ForwardCursorPagedResourceList<Upload> uploads = new ForwardCursorPagedResourceList<>(list, null, API_MAXIMUM_PAGE_SIZE)
                 .withFilter("startTime", startTime)
                 .withFilter("endTime", endTime);
         doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
@@ -420,14 +421,16 @@ public class StudyControllerTest {
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
 
-        List<? extends Upload> list = Lists.newArrayList();
+        List<Upload> list = Lists.newArrayList();
 
-        PagedResourceList<? extends Upload> uploads = new PagedResourceList<>(list, null, API_MAXIMUM_PAGE_SIZE, 0)
+        ForwardCursorPagedResourceList<Upload> uploads = new ForwardCursorPagedResourceList<>(list, null, API_MAXIMUM_PAGE_SIZE)
                 .withFilter("startTime", startTime)
                 .withFilter("endTime", endTime);
-        doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
+        doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE,
+                null);
 
-        Result result = controller.getUploadsForStudy(studyId.getIdentifier(), startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
+        Result result = controller.getUploadsForStudy(studyId.getIdentifier(), startTime.toString(), endTime.toString(),
+                API_MAXIMUM_PAGE_SIZE, null);
         assertEquals(200, result.status());
 
         verify(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
