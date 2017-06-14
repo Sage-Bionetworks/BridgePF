@@ -31,6 +31,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
@@ -77,6 +78,12 @@ public class DynamoUploadDaoMockTest {
     
     @Mock
     private IteratorSupport<Item,QueryOutcome> mockIterSupport;
+    
+    @Mock
+    private DynamoUpload2 upload1;
+    
+    @Mock
+    private DynamoUpload2 upload2;
     
     @Captor
     private ArgumentCaptor<QuerySpec> querySpecCaptor;
@@ -233,27 +240,38 @@ public class DynamoUploadDaoMockTest {
     @Test
     @SuppressWarnings("unchecked")
     public void getUploads() {
-        Map<String, AttributeValue> key = new ImmutableMap.Builder<String, AttributeValue>()
-                .put(UPLOAD_ID, new AttributeValue(UPLOAD_ID_2)).build();
-        
         String healthCode = "abc";
         DateTime startTime = DateTime.now().minusDays(4);
         DateTime endTime = DateTime.now();
         int pageSize = 50;
-
-        Item mockItem = new Item().with("uploadId", UPLOAD_ID);
+        
+        // The mock items are not in order, the later one is returned before the earlier one,
+        // and the order should be reversed by sorting.
+        Item mockItem1 = new Item().withLong("requestedOn", 30000).with("uploadId", UPLOAD_ID);
+        Item mockItem2 = new Item().withLong("requestedOn", 10000).with("uploadId", UPLOAD_ID_2);
+        
+        when(upload1.getRequestedOn()).thenReturn(30000L);
+        when(upload1.getUploadId()).thenReturn(UPLOAD_ID);
+        when(upload2.getRequestedOn()).thenReturn(10000L);
+        when(upload2.getUploadId()).thenReturn(UPLOAD_ID_2);
+        
+        List<Item> callOrder = Lists.newArrayList(mockItem1, mockItem2);
         doAnswer((invocationOnMock) -> {
             Consumer<Item> consumer = invocationOnMock.getArgumentAt(0, Consumer.class);
-            consumer.accept(mockItem);
+            consumer.accept(callOrder.remove(0));
             return null;
         }).when(mockQueryOutcome).forEach(any());
 
         when(mockIndexHelper.query(any(QuerySpec.class))).thenReturn(lastQueryOutcome);
-        when(lastQueryOutcome.getItems()).thenReturn(Lists.newArrayList(mockItem));
+        when(lastQueryOutcome.getItems()).thenReturn(Lists.newArrayList(mockItem1, mockItem2));
         
-        when(mockQueryResult.getLastEvaluatedKey()).thenReturn(key);
+        Map<String,List<Object>> batchLoadMap = new ImmutableMap.Builder<String,List<Object>>()
+                .put(UPLOAD_ID, Lists.newArrayList(upload1))
+                .put(UPLOAD_ID_2, Lists.newArrayList(upload2)).build();
         
-        dao.getUploads(healthCode, startTime, endTime, pageSize, null);
+        when(mockMapper.batchLoad(any(List.class))).thenReturn(batchLoadMap);
+        
+        ForwardCursorPagedResourceList<Upload> page = dao.getUploads(healthCode, startTime, endTime, pageSize, null);
         
         verify(mockIndexHelper).query(querySpecCaptor.capture());
         QuerySpec mockSpec = querySpecCaptor.getValue();
@@ -262,7 +280,12 @@ public class DynamoUploadDaoMockTest {
         
         verify(mockMapper).batchLoad(uploadListCaptor.capture());
         List<Upload> uploads = uploadListCaptor.getValue();
-        assertEquals(1, uploads.size());
+        assertEquals(2, uploads.size());
+        
+        // These have been sorted.
+        assertEquals(2, page.getItems().size());
+        assertEquals(10000, page.getItems().get(0).getRequestedOn());
+        assertEquals(30000, page.getItems().get(1).getRequestedOn());
     }
 
     private static UploadRequest createUploadRequest() {

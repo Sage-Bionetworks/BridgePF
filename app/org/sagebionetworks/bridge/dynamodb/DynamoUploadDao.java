@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.dynamodb.DynamoExternalIdDao.PAGE_SIZE_ERROR;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -138,7 +139,7 @@ public class DynamoUploadDao implements UploadDao {
                 .withRangeKeyCondition(condition); // this is not a filter, it should not require paging on our side.
         QueryOutcome outcome = healthCodeRequestedOnIndex.query(spec);
         
-        List<Upload> itemsToLoad = new ArrayList<>(pageSize);
+        List<Upload> itemsToLoad = new ArrayList<>(sizeWithIndicatorRecord);
         Iterator<Item> iter = outcome.getItems().iterator();
         while (iter.hasNext() && itemsToLoad.size() < sizeWithIndicatorRecord) {
             Item item = iter.next();
@@ -146,13 +147,16 @@ public class DynamoUploadDao implements UploadDao {
             itemsToLoad.add(indexKeys); 
         }
         
-        List<Upload> results = new ArrayList<>(pageSize);
+        List<Upload> results = new ArrayList<>(sizeWithIndicatorRecord);
         Map<String, List<Object>> resultMap = mapper.batchLoad(itemsToLoad);
         for (List<Object> resultList : resultMap.values()) {
             for (Object oneResult : resultList) {
                 results.add((Upload) oneResult);
             }
         }
+        
+        // Due to the return in a map, these items are not in order by requestedOn attribute, so sort them.
+        results.sort(Comparator.comparing(Upload::getRequestedOn));
         
         String nextOffsetKey = null;
         if (results.size() > pageSize) {
