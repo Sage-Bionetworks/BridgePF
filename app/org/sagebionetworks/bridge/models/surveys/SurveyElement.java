@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.models.surveys;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+import java.util.List;
+
 import org.sagebionetworks.bridge.json.JsonNodeToSurveyElementConverter;
 
 @JsonDeserialize(converter = JsonNodeToSurveyElementConverter.class)
@@ -27,6 +29,9 @@ public interface SurveyElement {
     
     JsonNode getData();
     void setData(JsonNode data);
+    
+    List<SurveyRule> getRules();
+    void setRules(List<SurveyRule> rules);
     
 }
 

@@ -63,4 +63,19 @@ public class SurveyRuleTest {
         SurveyRule deser = BridgeObjectMapper.get().treeToValue(node, SurveyRule.class);
         assertEquals(endRule, deser);
     }
+    
+    @Test
+    public void canSerializeAlwaysRule() throws Exception {
+        SurveyRule alwaysRule = new SurveyRule.Builder().withOperator(Operator.ALWAYS).withEndSurvey(true).build();
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(alwaysRule);
+        assertEquals("always", node.get("operator").asText());
+        assertNull(node.get("value"));
+        assertNull(node.get("skipTo"));
+        assertTrue(node.get("endSurvey").asBoolean());
+        assertEquals("SurveyRule", node.get("type").asText());
+        
+        SurveyRule deser = BridgeObjectMapper.get().treeToValue(node, SurveyRule.class);
+        assertEquals(alwaysRule, deser);
+    }    
 }

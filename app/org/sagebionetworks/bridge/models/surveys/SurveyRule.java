@@ -10,13 +10,14 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 public final class SurveyRule {
 
     public enum Operator {
-        EQ, // equal to
-        NE, // not equal to
-        LT, // less than
-        GT, // greater than
-        LE, // less than or equal to
-        GE, // greater than or equal to
-        DE  // declined to answer
+        EQ,    // equal to
+        NE,    // not equal to
+        LT,    // less than
+        GT,    // greater than
+        LE,    // less than or equal to
+        GE,    // greater than or equal to
+        DE,    // declined to answer
+        ALWAYS // always apply this rule
     }
     
     private final Operator operator;

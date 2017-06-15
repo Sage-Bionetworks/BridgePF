@@ -1,12 +1,11 @@
 package org.sagebionetworks.bridge.models.surveys;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyInfoScreen;
-import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
-@JsonDeserialize(as=DynamoSurveyQuestion.class)
+@JsonDeserialize(as=DynamoSurveyInfoScreen.class)
 @BridgeTypeName("SurveyInfoScreen")
 public interface SurveyInfoScreen extends SurveyElement {
     /** Convenience method for creating an instance using a concrete implementation. */
