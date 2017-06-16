@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -16,6 +15,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableList;
 
 @DynamoDBTable(tableName = SurveyElementConstants.SURVEY_ELEMENT_TYPE)
 @JsonFilter("filter")
@@ -27,7 +27,7 @@ public class DynamoSurveyElement implements SurveyElement {
     private String type;
     private int order;
     private JsonNode data;
-    private List<SurveyRule> rules = new ArrayList<>();
+    private List<SurveyRule> rules;
 
     public DynamoSurveyElement() {
     }
@@ -86,10 +86,15 @@ public class DynamoSurveyElement implements SurveyElement {
     public void setData(JsonNode data) {
         this.data = data;
     }
+    /**
+     * For backwards compatibility purposes, a null property here is different than an 
+     * empty list. A null value indicates we have never moved the rules from the constraints 
+     * and persisted them as a property of the element; an empty list is a valid value. 
+     */
     @DynamoDBTypeConverted(converter = SurveyRuleListMarshaller.class)
     @DynamoDBAttribute
     public List<SurveyRule> getRules() {
-        return this.rules;
+        return (this.rules == null) ? null : ImmutableList.copyOf(this.rules);
     }
     public void setRules(List<SurveyRule> rules) {
         this.rules = rules;

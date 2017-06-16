@@ -6,6 +6,7 @@ import org.joda.time.DateTime;
 import org.junit.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
+import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
 import org.sagebionetworks.bridge.models.surveys.Unit;
 
@@ -35,7 +36,7 @@ public class DynamoSurveyQuestionTest {
         String string = BridgeObjectMapper.get().writeValueAsString(question);
         assertEquals("{\"surveyCompoundKey\":\"AAA:1444471810000\",\"guid\":\"AAA\",\"identifier\":\"identifier\",\"type\":\"type\",\"prompt\":\"Prompt\",\"promptDetail\":\"Prompt Detail\",\"fireEvent\":false,\"constraints\":{\"rules\":[],\"dataType\":\"integer\",\"unit\":\"days\",\"minValue\":2.0,\"maxValue\":6.0,\"step\":2.0,\"type\":\"IntegerConstraints\"},\"uiHint\":\"checkbox\"}", string);
 
-        DynamoSurveyQuestion question2 = (DynamoSurveyQuestion)DynamoSurveyQuestion.fromJson(BridgeObjectMapper.get().readTree(string));
+        SurveyQuestion question2 = (SurveyQuestion)SurveyQuestion.fromJson(BridgeObjectMapper.get().readTree(string));
         assertEquals(question.getPromptDetail(), question2.getPromptDetail());
         assertEquals(question.getPrompt(), question2.getPrompt());
         assertEquals(question.getIdentifier(), question2.getIdentifier());

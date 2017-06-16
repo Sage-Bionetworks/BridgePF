@@ -202,7 +202,7 @@ public class DynamoSurveyDao implements SurveyDao {
     private void reconcileRules(SurveyElement element) {
         if (element instanceof SurveyQuestion) {
             SurveyQuestion question = (SurveyQuestion)element;
-            if (BridgeUtils.isEmpty(question.getRules())) {
+            if (question.getRules() == null) {
                 // if question rules don't exist, the constraint rules are used
                 List<SurveyRule> rules = question.getConstraints().getRules();
                 question.setRules(rules);

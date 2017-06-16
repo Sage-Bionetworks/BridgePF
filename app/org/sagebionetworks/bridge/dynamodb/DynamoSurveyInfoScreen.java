@@ -14,26 +14,6 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class DynamoSurveyInfoScreen extends DynamoSurveyElement implements SurveyInfoScreen {
-
-    private static final String PROMPT_PROPERTY = "prompt";
-    private static final String IDENTIFIER_PROPERTY = "identifier";
-    private static final String GUID_PROPERTY = "guid";
-    private static final String PROMPT_DETAIL_PROPERTY = "promptDetail";
-    private static final String TYPE_PROPERTY = "type";
-    private static final String TITLE_PROPERTY = "title";
-    private static final String IMAGE_PROPERTY = "image";
-    
-    public static DynamoSurveyInfoScreen fromJson(JsonNode node) {
-        DynamoSurveyInfoScreen question = new DynamoSurveyInfoScreen();
-        question.setType( JsonUtils.asText(node, TYPE_PROPERTY) );
-        question.setIdentifier( JsonUtils.asText(node, IDENTIFIER_PROPERTY) );
-        question.setGuid( JsonUtils.asText(node, GUID_PROPERTY) );
-        question.setPrompt(JsonUtils.asText(node, PROMPT_PROPERTY));
-        question.setPromptDetail(JsonUtils.asText(node, PROMPT_DETAIL_PROPERTY));
-        question.setTitle(JsonUtils.asText(node, TITLE_PROPERTY));
-        question.setImage(JsonUtils.asEntity(node, IMAGE_PROPERTY, Image.class));
-        return question;
-    }
     
     private String prompt;
     private String promptDetail;

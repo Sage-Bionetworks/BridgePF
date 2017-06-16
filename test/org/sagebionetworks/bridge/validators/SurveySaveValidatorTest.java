@@ -461,8 +461,8 @@ public class SurveySaveValidatorTest {
         question.setUiHint(UIHint.TEXTFIELD);
         question.setPrompt("Prompt");
         question.setConstraints(constraints);
-        question.getRules().add(
-                new SurveyRule.Builder().withOperator(Operator.EQ).withValue("No").withSkipToTarget("theend").build());
+        question.setRules(Lists.newArrayList(
+                new SurveyRule.Builder().withOperator(Operator.EQ).withValue("No").withSkipToTarget("theend").build()));
 
         SurveyInfoScreen info = new DynamoSurveyInfoScreen();
         info.setTitle("Title");
@@ -496,7 +496,7 @@ public class SurveySaveValidatorTest {
         question.setUiHint(UIHint.TEXTFIELD);
         question.setPrompt("Prompt");
         question.setConstraints(constraints);
-        question.getRules().add(rule);
+        question.setRules(Lists.newArrayList(rule));
         
         survey.getElements().add(question);
 
@@ -529,7 +529,7 @@ public class SurveySaveValidatorTest {
         question.setUiHint(UIHint.TEXTFIELD);
         question.setPrompt("Prompt");
         question.setConstraints(constraints);
-        question.getRules().add(rule);
+        question.setRules(Lists.newArrayList(rule));
         
         survey.getElements().add(question);
 
@@ -876,8 +876,8 @@ public class SurveySaveValidatorTest {
         info.setPromptDetail("prompt detail");
         info.setIdentifier("identifier");
         info.setGuid("guid");
-        info.getRules()
-                .add(new SurveyRule.Builder().withValue("foo").withOperator(Operator.EQ).withEndSurvey(true).build());
+        info.setRules(Lists.newArrayList(
+                new SurveyRule.Builder().withValue("foo").withOperator(Operator.EQ).withEndSurvey(true).build()));
         survey.setElements(Lists.newArrayList(info));
         
         assertValidatorMessage(validator, survey, "elements[0].rules[0]",

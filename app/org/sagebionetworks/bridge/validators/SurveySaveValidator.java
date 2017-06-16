@@ -136,26 +136,32 @@ public class SurveySaveValidator implements Validator {
         
         for (int i=0; i < elements.size(); i++) {
             SurveyElement element = elements.get(i);
-            for (int j=0; j < element.getRules().size(); j++) {
-                SurveyRule rule = element.getRules().get(j);
-                validateOneRuleSet(errors, rule, alreadySeenIdentifiers, "elements["+i+"]", "rules["+j+"]");
+            if (element.getRules() != null) {
+                for (int j=0; j < element.getRules().size(); j++) {
+                    SurveyRule rule = element.getRules().get(j);
+                    validateOneRuleSet(errors, rule, alreadySeenIdentifiers, "elements["+i+"]", "rules["+j+"]");
+                }
             }
             if (element instanceof SurveyQuestion) {
                 SurveyQuestion question = (SurveyQuestion)element;
-                for (int j=0; j < question.getConstraints().getRules().size(); j++) {
-                    SurveyRule rule = question.getConstraints().getRules().get(j);
-                    validateOneRuleSet(errors, rule, alreadySeenIdentifiers,
-                            "elements[" + i + "].constraints", "rules[" + j + "]");
+                if (question.getConstraints().getRules() != null) {
+                    for (int j=0; j < question.getConstraints().getRules().size(); j++) {
+                        SurveyRule rule = question.getConstraints().getRules().get(j);
+                        validateOneRuleSet(errors, rule, alreadySeenIdentifiers,
+                                "elements[" + i + "].constraints", "rules[" + j + "]");
+                    }
                 }
             } else if (element instanceof SurveyInfoScreen) {
                 // The only operator that makes sense on an information screen is ALWAYS, since there 
                 // is no value to test against.
-                for (int j=0; j < element.getRules().size(); j++) {
-                    SurveyRule rule = element.getRules().get(j);
-                    if (rule.getOperator() != SurveyRule.Operator.ALWAYS) {
-                        errors.pushNestedPath("elements["+i+"]");
-                        errors.rejectValue("rules["+j+"]", "only valid with the 'always' operator");
-                        errors.popNestedPath();
+                if (element.getRules() != null) {
+                    for (int j=0; j < element.getRules().size(); j++) {
+                        SurveyRule rule = element.getRules().get(j);
+                        if (rule.getOperator() != SurveyRule.Operator.ALWAYS) {
+                            errors.pushNestedPath("elements["+i+"]");
+                            errors.rejectValue("rules["+j+"]", "only valid with the 'always' operator");
+                            errors.popNestedPath();
+                        }
                     }
                 }
             }
@@ -165,16 +171,20 @@ public class SurveySaveValidator implements Validator {
         // Now verify that all skipToTarget identifiers actually exist
         for (int i=0; i < elements.size(); i++) {
             SurveyElement element = elements.get(i);
-            for (int j=0; j < element.getRules().size(); j++) {
-                SurveyRule rule = element.getRules().get(j);
-                validateSkipToTargetExists(errors, rule, alreadySeenIdentifiers, "elements["+i+"]", "rules["+j+"]");
+            if (element.getRules() != null) {
+                for (int j=0; j < element.getRules().size(); j++) {
+                    SurveyRule rule = element.getRules().get(j);
+                    validateSkipToTargetExists(errors, rule, alreadySeenIdentifiers, "elements["+i+"]", "rules["+j+"]");
+                }
             }
             if (element instanceof SurveyQuestion) {
                 SurveyQuestion question = (SurveyQuestion)element;
-                for (int j=0; j < question.getConstraints().getRules().size(); j++) {
-                    // This validation only applies to skipTo target rules.
-                    SurveyRule rule = question.getConstraints().getRules().get(j);
-                    validateSkipToTargetExists(errors, rule, alreadySeenIdentifiers, "elements["+i+"].constraints", "rules["+j+"]");
+                if (question.getConstraints().getRules() != null) {
+                    for (int j=0; j < question.getConstraints().getRules().size(); j++) {
+                        // This validation only applies to skipTo target rules.
+                        SurveyRule rule = question.getConstraints().getRules().get(j);
+                        validateSkipToTargetExists(errors, rule, alreadySeenIdentifiers, "elements["+i+"].constraints", "rules["+j+"]");
+                    }
                 }
             }
         }

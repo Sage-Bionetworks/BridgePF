@@ -7,6 +7,8 @@ import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Lists;
+
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 
@@ -21,8 +23,11 @@ import org.sagebionetworks.bridge.models.surveys.Image;
 import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
+import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
+import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
+import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 
 @SuppressWarnings("unchecked")
 public class DynamoSurveyTest {
@@ -41,16 +46,23 @@ public class DynamoSurveyTest {
     @Test
     public void jsonSerialization() throws Exception {
         Survey survey = makeTestSurvey();
+        
+        SurveyRule rule = new SurveyRule.Builder().withOperator(Operator.ALWAYS).withEndSurvey(true).build();
 
         // add an info screen for completeness
-        DynamoSurveyInfoScreen screen = new DynamoSurveyInfoScreen();
+        SurveyInfoScreen screen = SurveyInfoScreen.create();
         screen.setGuid("test-info-screen-guid");
         screen.setIdentifier("screenA");
         screen.setTitle("The title of the screen");
         screen.setPrompt("This is the prompt");
         screen.setPromptDetail("This is further explanation of the prompt.");
         screen.setImage(new Image("http://foo.bar", 100, 100));
+        screen.setRules(Lists.newArrayList(rule));
         survey.getElements().add(screen);
+        
+        // and add a rule as well to a survey question
+        SurveyElement dateQuestion = (SurveyElement)TestSurvey.selectBy(survey, DataType.DATE);
+        dateQuestion.setRules(Lists.newArrayList(rule));
 
         // Convert to JSON.
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(survey, JsonNode.class);
@@ -68,7 +80,6 @@ public class DynamoSurveyTest {
         assertTrue(jsonNode.get("deleted").booleanValue());
         assertEquals(42, jsonNode.get("schemaRevision").intValue());
         assertEquals("Survey", jsonNode.get("type").textValue());
-        
 
         // Timestamps are stored as long, but serialized as ISO timestamps. Convert them back to long millis so we
         // don't have to deal with timezones and formatting issues.
@@ -107,9 +118,11 @@ public class DynamoSurveyTest {
         }
 
         // validate that date constraints are persisted
-        DateConstraints dc = (DateConstraints)TestSurvey.selectBy(convertedSurvey, DataType.DATE).getConstraints();
+        SurveyQuestion convertedDateQuestion = (SurveyQuestion)TestSurvey.selectBy(convertedSurvey, DataType.DATE);
+        DateConstraints dc = (DateConstraints)convertedDateQuestion.getConstraints();
         assertNotNull("Earliest date exists", dc.getEarliestValue());
         assertNotNull("Latest date exists", dc.getLatestValue());
+        assertEquals(rule, convertedDateQuestion.getRules().get(0));
 
         DateTimeConstraints dtc = (DateTimeConstraints) TestSurvey.selectBy(convertedSurvey, DataType.DATETIME).getConstraints();
         assertNotNull("Earliest date exists", dtc.getEarliestValue());
@@ -122,6 +135,9 @@ public class DynamoSurveyTest {
         
         assertEquals(SurveyRule.Operator.DE, ic.getRules().get(1).getOperator());
         assertEquals("name", ic.getRules().get(1).getSkipToTarget());
+        
+        SurveyInfoScreen retrievedScreen = (SurveyInfoScreen)convertedSurvey.getElements().get(convertedSurvey.getElements().size()-1);
+        assertEquals(rule, retrievedScreen.getRules().get(0));
     }
 
     @Test

@@ -636,7 +636,7 @@ public class DynamoSurveyDaoTest {
         infoScreen.setIdentifier("info_screen");
         infoScreen.setPromptDetail("Be honest: do you have high blood pressue?");
         infoScreen.setGuid(UUID.randomUUID().toString());
-        infoScreen.getRules().add(rule);
+        infoScreen.setRules(ImmutableList.of(rule));
         
         // Element rules override anything set in constraints, once they exist.
         SurveyQuestion question = SurveyQuestion.create();
@@ -651,7 +651,7 @@ public class DynamoSurveyDaoTest {
         question.setUiHint(UIHint.CHECKBOX);
         question.setConstraints(ic);
         question.setGuid(UUID.randomUUID().toString());
-        question.getRules().add(rule);
+        question.setRules(ImmutableList.of(rule));
         
         survey.getElements().add(migrateQuestion);
         survey.getElements().add(infoScreen);
