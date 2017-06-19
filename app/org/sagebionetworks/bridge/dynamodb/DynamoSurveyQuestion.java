@@ -18,28 +18,6 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQuestion {
-    
-    private static final String CONSTRAINTS_PROPERTY = "constraints";
-    private static final String UI_HINTS_PROPERTY = "uiHint";
-    private static final String PROMPT_PROPERTY = "prompt";
-    private static final String PROMPT_DETAIL_PROPERTY = "promptDetail";
-    private static final String FIRE_EVENT_PROPERTY = "fireEvent";
-    private static final String IDENTIFIER_PROPERTY = "identifier";
-    private static final String GUID_PROPERTY = "guid";
-    private static final String TYPE_PROPERTY = "type";
-    
-    public static SurveyQuestion fromJson(JsonNode node) {
-        DynamoSurveyQuestion question = new DynamoSurveyQuestion();
-        question.setType( JsonUtils.asText(node, TYPE_PROPERTY) );
-        question.setIdentifier( JsonUtils.asText(node, IDENTIFIER_PROPERTY) );
-        question.setGuid( JsonUtils.asText(node, GUID_PROPERTY) );
-        question.setPrompt(JsonUtils.asText(node, PROMPT_PROPERTY));
-        question.setPromptDetail(JsonUtils.asText(node, PROMPT_DETAIL_PROPERTY));
-        question.setFireEvent(JsonUtils.asBoolean(node, FIRE_EVENT_PROPERTY));
-        question.setUiHint(JsonUtils.asEntity(node, UI_HINTS_PROPERTY, UIHint.class));
-        question.setConstraints(JsonUtils.asConstraints(node, CONSTRAINTS_PROPERTY));
-        return question;
-    }
 
     private String prompt;
     private String promptDetail;
@@ -56,6 +34,7 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
         setIdentifier( entry.getIdentifier() );
         setGuid( entry.getGuid() );
         setData( entry.getData() );
+        setRules( entry.getRules() );
     }
     
     @Override

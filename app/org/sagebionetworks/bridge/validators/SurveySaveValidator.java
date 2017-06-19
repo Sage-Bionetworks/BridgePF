@@ -130,49 +130,96 @@ public class SurveySaveValidator implements Validator {
             errors.popNestedPath();
         }
     }
+
     private void validateRules(Errors errors, List<SurveyElement> elements) {
-        // Should not try and back-track in the survey.
         Set<String> alreadySeenIdentifiers = Sets.newHashSet();
+        
         for (int i=0; i < elements.size(); i++) {
             SurveyElement element = elements.get(i);
-            if (element instanceof SurveyQuestion) {
-                for (SurveyRule rule : ((SurveyQuestion)element).getConstraints().getRules()) {
-                    errors.pushNestedPath("elements["+i+"]");
-                    // Validate the rule either has a skipTo target, or an endSurvey = TRUE, but not both.
-                    if (rule.getSkipToTarget() != null && rule.getEndSurvey() != null) {
-                        errors.rejectValue("rule", "cannot have a skipTo target and an endSurvey property");
-                    }
-                    // But must have either a skipTo target or an endSurvey property
-                    else if (rule.getSkipToTarget() == null && rule.getEndSurvey() == null) {
-                        errors.rejectValue("rule", "must have a skipTo target or an endSurvey property");
-                    }
-                    // Otherwise we can assume there's a skipToTarget, start checking that by looking for back references.
-                    else if (alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
-                        errors.rejectValue("rule", "back references question " + rule.getSkipToTarget());
-                    }
-                    errors.popNestedPath();
+            if (element.getRules() != null) {
+                for (int j=0; j < element.getRules().size(); j++) {
+                    SurveyRule rule = element.getRules().get(j);
+                    validateOneRuleSet(errors, rule, alreadySeenIdentifiers, "elements["+i+"]", "rules["+j+"]");
                 }
             }
-            alreadySeenIdentifiers.add(element.getIdentifier());
-        }
-        // Now verify that all skipToTarget identifiers actually exist
-        for (int i=0; i < elements.size(); i++) {
-            SurveyElement element = elements.get(i);
             if (element instanceof SurveyQuestion) {
-                for (SurveyRule rule : ((SurveyQuestion)element).getConstraints().getRules()) {
-                    // This validation only applies to skipTo target rules.
-                    if (rule.getSkipToTarget() != null) {
-                        if (!alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
+                SurveyQuestion question = (SurveyQuestion)element;
+                if (question.getConstraints().getRules() != null) {
+                    for (int j=0; j < question.getConstraints().getRules().size(); j++) {
+                        SurveyRule rule = question.getConstraints().getRules().get(j);
+                        validateOneRuleSet(errors, rule, alreadySeenIdentifiers,
+                                "elements[" + i + "].constraints", "rules[" + j + "]");
+                    }
+                }
+            } else if (element instanceof SurveyInfoScreen) {
+                // The only operator that makes sense on an information screen is ALWAYS, since there 
+                // is no value to test against.
+                if (element.getRules() != null) {
+                    for (int j=0; j < element.getRules().size(); j++) {
+                        SurveyRule rule = element.getRules().get(j);
+                        if (rule.getOperator() != SurveyRule.Operator.ALWAYS) {
                             errors.pushNestedPath("elements["+i+"]");
-                            errors.rejectValue("rule", "has a skipTo identifier that doesn't exist: " + rule.getSkipToTarget());
+                            errors.rejectValue("rules["+j+"]", "only valid with the 'always' operator");
                             errors.popNestedPath();
                         }
                     }
                 }
             }
+            alreadySeenIdentifiers.add(element.getIdentifier());
+        }        
+        
+        // Now verify that all skipToTarget identifiers actually exist
+        for (int i=0; i < elements.size(); i++) {
+            SurveyElement element = elements.get(i);
+            if (element.getRules() != null) {
+                for (int j=0; j < element.getRules().size(); j++) {
+                    SurveyRule rule = element.getRules().get(j);
+                    validateSkipToTargetExists(errors, rule, alreadySeenIdentifiers, "elements["+i+"]", "rules["+j+"]");
+                }
+            }
+            if (element instanceof SurveyQuestion) {
+                SurveyQuestion question = (SurveyQuestion)element;
+                if (question.getConstraints().getRules() != null) {
+                    for (int j=0; j < question.getConstraints().getRules().size(); j++) {
+                        // This validation only applies to skipTo target rules.
+                        SurveyRule rule = question.getConstraints().getRules().get(j);
+                        validateSkipToTargetExists(errors, rule, alreadySeenIdentifiers, "elements["+i+"].constraints", "rules["+j+"]");
+                    }
+                }
+            }
         }
-
     }
+    
+    private void validateSkipToTargetExists(Errors errors, SurveyRule rule, Set<String> alreadySeenIdentifiers,
+            String propertyPath, String fieldPath) {
+        
+        if (rule.getSkipToTarget() != null) {
+            if (!alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
+                errors.pushNestedPath(propertyPath);
+                errors.rejectValue(fieldPath, "has a skipTo identifier that doesn't exist: " + rule.getSkipToTarget());
+                errors.popNestedPath();
+            }
+        }
+    }
+
+    private void validateOneRuleSet(Errors errors, SurveyRule rule, Set<String> alreadySeenIdentifiers,
+            String propertyPath, String fieldPath) {
+        // Validate the rule either has a skipTo target, or an endSurvey = TRUE, but not both.
+        errors.pushNestedPath(propertyPath);
+        if (rule.getSkipToTarget() != null && rule.getEndSurvey() != null) {
+            errors.rejectValue(fieldPath, "cannot have a skipTo target and an endSurvey property");
+        }
+        // But must have either a skipTo target or an endSurvey property
+        else if (rule.getSkipToTarget() == null && rule.getEndSurvey() == null) {
+            errors.rejectValue(fieldPath, "must have a skipTo target or an endSurvey property");
+        }
+        // Otherwise we can assume there's a skipToTarget, start checking that by looking for back references.
+        else if (alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
+            errors.rejectValue(fieldPath, "back references question " + rule.getSkipToTarget());
+        }
+        errors.popNestedPath();
+    }
+    
     private void doValidateConstraints(SurveyQuestion question, Constraints con, Errors errors) {
         if (con.getDataType() == null) {
             errors.rejectValue("dataType", "is required");
@@ -304,7 +351,7 @@ public class SurveySaveValidator implements Validator {
             if (min == null) {
                 errors.rejectValue("minValue", "is required for " + hint.name().toLowerCase());
             }
-            if (max == null){
+            if (max == null) {
                 errors.rejectValue("maxValue", "is required for " + hint.name().toLowerCase());
             }
         }

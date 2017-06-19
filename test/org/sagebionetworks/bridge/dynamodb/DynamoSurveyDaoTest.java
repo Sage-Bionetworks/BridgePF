@@ -14,6 +14,8 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
+
 import javax.annotation.Resource;
 
 import com.google.common.collect.ImmutableList;
@@ -37,10 +39,14 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.BooleanConstraints;
 import org.sagebionetworks.bridge.models.surveys.DateConstraints;
+import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
+import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
+import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -601,6 +607,72 @@ public class DynamoSurveyDaoTest {
         } catch(EntityNotFoundException e) {
             // expected exception
         }
+    }
+    
+    @Test
+    public void rulesMovedToSurveyElementInBackwardsCompatibleManner() throws Exception {
+        Survey survey = Survey.create();
+        survey.setGuid(UUID.randomUUID().toString());
+        survey.setName("Rules test");
+        survey.setIdentifier(TestUtils.randomName(DynamoSurveyDaoTest.class));
+        survey.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        
+        SurveyRule rule = new SurveyRule.Builder().withOperator(Operator.DE).withEndSurvey(true).build();
+        
+        // This question needs to copy rules from constraints to the element
+        SurveyQuestion migrateQuestion = SurveyQuestion.create();
+        BooleanConstraints c = new BooleanConstraints();
+        c.getRules().add(rule);
+        migrateQuestion.setPrompt("Do you have high blood pressure?");
+        migrateQuestion.setIdentifier("migrate_question");
+        migrateQuestion.setPromptDetail("Be honest: do you have high blood pressue?");
+        migrateQuestion.setUiHint(UIHint.CHECKBOX);
+        migrateQuestion.setConstraints(c);
+        migrateQuestion.setGuid(UUID.randomUUID().toString());
+        
+        // Information screens can now take rules
+        SurveyInfoScreen infoScreen = SurveyInfoScreen.create();
+        infoScreen.setPrompt("Do you have high blood pressure?");
+        infoScreen.setIdentifier("info_screen");
+        infoScreen.setPromptDetail("Be honest: do you have high blood pressue?");
+        infoScreen.setGuid(UUID.randomUUID().toString());
+        infoScreen.setRules(ImmutableList.of(rule));
+        
+        // Element rules override anything set in constraints, once they exist.
+        SurveyQuestion question = SurveyQuestion.create();
+        IntegerConstraints ic = new IntegerConstraints();
+        // This rule will be overridden by the rules in the element itself, which now takes precedences
+        SurveyRule obsoleteRule = new SurveyRule.Builder().withOperator(Operator.EQ).withValue(10).withEndSurvey(true)
+                .build();
+        ic.getRules().add(obsoleteRule);
+        question.setPrompt("Do you have high blood pressure?");
+        question.setIdentifier("migrate_question");
+        question.setPromptDetail("Be honest: do you have high blood pressue?");
+        question.setUiHint(UIHint.CHECKBOX);
+        question.setConstraints(ic);
+        question.setGuid(UUID.randomUUID().toString());
+        question.setRules(ImmutableList.of(rule));
+        
+        survey.getElements().add(migrateQuestion);
+        survey.getElements().add(infoScreen);
+        survey.getElements().add(question);
+        
+        Survey keys = createSurvey(survey);
+        Survey createdSurvey = surveyDao.getSurvey(keys);
+        
+        // Migrated question has been moved up
+        assertEquals(rule, createdSurvey.getElements().get(0).getRules().get(0));
+        assertEquals(1, createdSurvey.getElements().get(0).getRules().size());
+        // Info screen has rule
+        assertEquals(rule, createdSurvey.getElements().get(1).getRules().get(0));
+        assertEquals(1, createdSurvey.getElements().get(1).getRules().size());
+        // Normal question has been moved down, overwriting existing
+        assertEquals(rule, createdSurvey.getElements().get(2).getRules().get(0));
+        assertEquals(1, createdSurvey.getElements().get(2).getRules().size());
+        
+        SurveyQuestion savedQuestion = (SurveyQuestion)createdSurvey.getElements().get(2);
+        assertEquals(rule, savedQuestion.getRules().get(0));
+        assertEquals(1, savedQuestion.getRules().size());
     }
     
     private static void assertContainsAllKeys(Set<GuidCreatedOnVersionHolderImpl> expected, List<Survey> actual) {
