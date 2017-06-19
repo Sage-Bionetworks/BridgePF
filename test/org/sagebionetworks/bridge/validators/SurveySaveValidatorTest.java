@@ -893,8 +893,6 @@ public class SurveySaveValidatorTest {
     public void validatesAssignDataGroupMustAppearAlone() {
         survey = new TestSurvey(SurveySaveValidatorTest.class, false);
 
-        // The integer question is after the high_bp question. Create a rule that would backgtrack, verify it
-        // doesn't validate.
         SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
         
         String targetId = ((TestSurvey) survey).getStringQuestion().getIdentifier();
@@ -911,8 +909,6 @@ public class SurveySaveValidatorTest {
     public void validateAssignDataGroupAssignsRealDataGroup() {
         survey = new TestSurvey(SurveySaveValidatorTest.class, false);
 
-        // The integer question is after the high_bp question. Create a rule that would backgtrack, verify it
-        // doesn't validate.
         SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
         
         SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)

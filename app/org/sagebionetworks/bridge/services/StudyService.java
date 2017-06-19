@@ -549,8 +549,8 @@ public class StudyService {
             }
         }
         
-        // Check all versions of all surveys (that aren't deleted) and throws a constraint violation if any contain a rule, 
-        // referencing a data group, that has been removed from the study.
+        // Check all versions of all surveys (that aren't deleted) and throw a constraint violation if any survey 
+        // contains a rule, that references a data group, that has been removed from the study.
         List<Survey> allSurveys = surveyService.getAllSurveysMostRecentVersion(study.getStudyIdentifier());
         for (Survey oneSurvey : allSurveys) {
             List<Survey> allVersionsOfSurvey = surveyService.getSurveyAllVersions(study.getStudyIdentifier(), oneSurvey.getGuid());
