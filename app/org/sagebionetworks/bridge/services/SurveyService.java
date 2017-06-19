@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
@@ -37,20 +38,15 @@ import org.springframework.validation.Validator;
 @Component
 public class SurveyService {
 
-    private Validator saveValidator;
     private Validator publishValidator;
     private SurveyDao surveyDao;
     private SchedulePlanService schedulePlanService;
     private SharedModuleMetadataService sharedModuleMetadataService;
+    private StudyService studyService;
 
     @Autowired
     final void setSurveyDao(SurveyDao surveyDao) {
         this.surveyDao = surveyDao;
-    }
-
-    @Autowired
-    final void setSaveValidator(SurveySaveValidator validator) {
-        this.saveValidator = validator;
     }
 
     @Autowired
@@ -68,6 +64,11 @@ public class SurveyService {
         this.sharedModuleMetadataService = sharedModuleMetadataService;
     }
 
+    @Autowired
+    public final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
+    }
+    
     /**
      * Get a list of all published surveys in this study, using the most recently published version of each survey.
      * These surveys will include questions (not other element types, such as info screens). Most properties beyond
@@ -96,8 +97,9 @@ public class SurveyService {
         for (SurveyElement element : survey.getElements()) {
             element.setGuid(BridgeUtils.generateGuid());
         }
-
-        Validate.entityThrowingException(saveValidator, survey);
+        Study study = studyService.getStudy(survey.getStudyIdentifier());
+        Validate.entityThrowingException(new SurveySaveValidator(study.getDataGroups()), survey);
+        
         return surveyDao.createSurvey(survey);
     }
 
@@ -109,8 +111,10 @@ public class SurveyService {
      */
     public Survey updateSurvey(Survey survey) {
         checkNotNull(survey, "Survey cannot be null");
-
-        Validate.entityThrowingException(saveValidator, survey);
+        
+        Study study = studyService.getStudy(survey.getStudyIdentifier());
+        Validate.entityThrowingException(new SurveySaveValidator(study.getDataGroups()), survey);
+        
         return surveyDao.updateSurvey(survey);
     }
 

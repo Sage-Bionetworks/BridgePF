@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableSet;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Whitelist;
 import org.sagebionetworks.client.SynapseClient;
@@ -65,6 +66,9 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.surveys.SurveyElement;
+import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -90,6 +94,7 @@ public class StudyService {
     private SynapseClient synapseClient;
     private ParticipantService participantService;
     private SchedulePlanService schedulePlanService;
+    private SurveyService surveyService;
 
     private String defaultEmailVerificationTemplate;
     private String defaultEmailVerificationTemplateSubject;
@@ -169,6 +174,10 @@ public class StudyService {
     @Autowired
     final void setSchedulePlanService(SchedulePlanService schedulePlanService) {
         this.schedulePlanService = schedulePlanService;
+    }
+    @Autowired
+    final void setSurveyService(SurveyService surveyService) {
+        this.surveyService = surveyService;
     }
     
     @Autowired
@@ -500,9 +509,9 @@ public class StudyService {
     }
     
     /**
-     * The user cannot remove data groups already used by criteria, or task identifiers already used in schedules. If
-     * these entities contain data groups or identifiers that are not in the updated version of the study, this is a
-     * constraint violation.
+     * The user cannot remove data groups already used by criteria or survey rules, or task identifiers already used 
+     * in schedules. If these entities contain data groups or identifiers that are not in the updated version of the 
+     * study, this is a constraint violation.
      */
     private void checkViolationConstraints(Study study) {
         final Set<String> taskIds = study.getTaskIdentifiers();
@@ -539,6 +548,24 @@ public class StudyService {
                 throwConstraintViolation(subpop, study);
             }
         }
+        
+        // Check all versions of all surveys (that aren't deleted) and throws a constraint violation if any contain a rule, 
+        // referencing a data group, that has been removed from the study.
+        List<Survey> allSurveys = surveyService.getAllSurveysMostRecentVersion(study.getStudyIdentifier());
+        for (Survey oneSurvey : allSurveys) {
+            List<Survey> allVersionsOfSurvey = surveyService.getSurveyAllVersions(study.getStudyIdentifier(), oneSurvey.getGuid());
+            for (Survey oneSurveyVersion : allVersionsOfSurvey) {
+                for (SurveyElement element : oneSurveyVersion.getElements()) {
+                    if (element.getRules() != null) {
+                        for (SurveyRule rule : element.getRules()) {
+                            if (rule.getAssignDataGroup() != null && !dataGroups.contains(rule.getAssignDataGroup())) {
+                                throwConstraintViolation(oneSurveyVersion, study);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
     
     private boolean studyHasCriteriaDataGroups(Set<String> studyDataGroups, Criteria criteria) {
@@ -550,6 +577,13 @@ public class StudyService {
         throw new ConstraintViolationException.Builder().withEntityKey("identifier", study.getIdentifier())
                 .withEntityKey("type", "Study").withReferrerKey("guid", match.getGuid())
                 .withReferrerKey("type", "SchedulePlan").build();
+    }
+    
+    private void throwConstraintViolation(Survey match, Study study) {
+        throw new ConstraintViolationException.Builder().withEntityKey("identifier", study.getIdentifier())
+                .withEntityKey("type", "Study").withReferrerKey("guid", match.getGuid())
+                .withReferrerKey("createdOn", new DateTime(match.getCreatedOn()).toString())
+                .withReferrerKey("type", "Survey").build();
     }
     
     private void throwConstraintViolation(Subpopulation match, Study study) {

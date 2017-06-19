@@ -77,5 +77,21 @@ public class SurveyRuleTest {
         
         SurveyRule deser = BridgeObjectMapper.get().treeToValue(node, SurveyRule.class);
         assertEquals(alwaysRule, deser);
-    }    
+    }
+    
+    @Test
+    public void canSerializeAssignDataGroupRule() throws Exception {
+        SurveyRule dataGroupRule = new SurveyRule.Builder().withValue("foo").withOperator(Operator.EQ)
+                .withAssignDataGroup("bar").build();
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(dataGroupRule);
+        assertEquals("eq", node.get("operator").asText());
+        assertEquals("foo", node.get("value").asText());
+        assertNull(node.get("skipTo"));
+        assertEquals("bar", node.get("assignDataGroup").asText());
+        assertEquals("SurveyRule", node.get("type").asText());
+        
+        SurveyRule deser = BridgeObjectMapper.get().treeToValue(node, SurveyRule.class);
+        assertEquals(dataGroupRule, deser);
+    }
 }

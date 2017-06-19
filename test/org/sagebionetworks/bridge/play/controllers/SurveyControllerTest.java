@@ -35,7 +35,6 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -47,6 +46,7 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -132,7 +132,7 @@ public class SurveyControllerTest {
         viewCache.setCacheProvider(provider);
         
         studyService = mock(StudyService.class);
-        DynamoStudy study = new DynamoStudy();
+        Study study = Study.create();
         doReturn(study).when(studyService).getStudy(any(StudyIdentifier.class));
         
         controller = spy(new SurveyController());
