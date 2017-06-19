@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.DateConstraints;
 import org.sagebionetworks.bridge.models.surveys.DateTimeConstraints;
@@ -37,7 +38,13 @@ import org.sagebionetworks.bridge.upload.UploadUtil;
 
 @Component
 public class SurveySaveValidator implements Validator {
-
+    
+    private final Set<String> dataGroups;
+    
+    public SurveySaveValidator(Set<String> dataGroups) {
+        this.dataGroups = dataGroups;
+    }
+    
     @Override
     public boolean supports(Class<?> clazz) {
         return Survey.class.isAssignableFrom(clazz);
@@ -206,15 +213,26 @@ public class SurveySaveValidator implements Validator {
             String propertyPath, String fieldPath) {
         // Validate the rule either has a skipTo target, or an endSurvey = TRUE, but not both.
         errors.pushNestedPath(propertyPath);
-        if (rule.getSkipToTarget() != null && rule.getEndSurvey() != null) {
-            errors.rejectValue(fieldPath, "cannot have a skipTo target and an endSurvey property");
+        
+        int actionCount = 0;
+        if (rule.getSkipToTarget() != null) {
+            actionCount++;
         }
-        // But must have either a skipTo target or an endSurvey property
-        else if (rule.getSkipToTarget() == null && rule.getEndSurvey() == null) {
-            errors.rejectValue(fieldPath, "must have a skipTo target or an endSurvey property");
+        if (rule.getEndSurvey() != null) {
+            actionCount++;
+        }
+        if (rule.getAssignDataGroup() != null) {
+            actionCount++;
+        }
+        if (actionCount != 1) {
+            errors.rejectValue(fieldPath, "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
+        }
+        if (rule.getAssignDataGroup() != null && !dataGroups.contains(rule.getAssignDataGroup())) {
+            errors.rejectValue(fieldPath, "has a data group '" + rule.getAssignDataGroup()
+                    + "' that is not a valid data group: " + BridgeUtils.COMMA_SPACE_JOINER.join(dataGroups));            
         }
         // Otherwise we can assume there's a skipToTarget, start checking that by looking for back references.
-        else if (alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
+        if (alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
             errors.rejectValue(fieldPath, "back references question " + rule.getSkipToTarget());
         }
         errors.popNestedPath();

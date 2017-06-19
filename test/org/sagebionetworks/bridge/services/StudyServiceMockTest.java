@@ -30,6 +30,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -72,6 +74,10 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.surveys.SurveyRule;
+import org.sagebionetworks.bridge.models.surveys.TestSurvey;
+import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -121,6 +127,8 @@ public class StudyServiceMockTest {
     private ParticipantService participantService;
     @Mock
     private SchedulePlanService schedulePlanService;
+    @Mock
+    private SurveyService surveyService;
 
     @Mock
     private SynapseClient mockSynapseClient;
@@ -146,6 +154,7 @@ public class StudyServiceMockTest {
         service.setSynapseClient(mockSynapseClient);
         service.setParticipantService(participantService);
         service.setSchedulePlanService(schedulePlanService);
+        service.setSurveyService(surveyService);
 
         study = getTestStudy();
         when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
@@ -296,6 +305,37 @@ public class StudyServiceMockTest {
             assertEquals("Study", e.getEntityKeys().get("type"));
             assertEquals("GGG", e.getReferrerKeys().get("guid"));
             assertEquals("SchedulePlan", e.getReferrerKeys().get("type"));
+        }
+    }
+    
+    @Test
+    public void cannotRemoveDataGroupInUseInSurveyRule() {
+        String dataGroup = study.getDataGroups().iterator().next();
+        study.getDataGroups().remove(dataGroup);
+        
+        DateTime createdOn = DateTime.now();
+        
+        Survey survey = new TestSurvey(StudyServiceMockTest.class, false);
+        survey.setGuid("AAA-BBB-CCC");
+        survey.setCreatedOn(createdOn.getMillis());
+        survey.getElements().get(0).setRules(Lists.newArrayList(
+                new SurveyRule.Builder().withAssignDataGroup(dataGroup).withOperator(Operator.ALWAYS).build()));
+        
+        List<Survey> surveyList = Lists.newArrayList(survey);
+
+        when(surveyService.getAllSurveysMostRecentVersion(study.getStudyIdentifier())).thenReturn(surveyList);
+        when(surveyService.getSurveyAllVersions(study.getStudyIdentifier(), survey.getGuid())).thenReturn(surveyList);
+        
+        try {
+            service.updateStudy(study, true);
+            fail("Should have thrown exception");
+        } catch(ConstraintViolationException e) {
+            verify(studyDao, never()).updateStudy(study);
+            assertEquals("test-study", e.getEntityKeys().get("identifier"));
+            assertEquals("Study", e.getEntityKeys().get("type"));
+            assertEquals("AAA-BBB-CCC", e.getReferrerKeys().get("guid"));
+            assertEquals(createdOn.toString(), e.getReferrerKeys().get("createdOn"));
+            assertEquals("Survey", e.getReferrerKeys().get("type"));
         }
     }
     

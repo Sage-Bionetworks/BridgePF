@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.validators;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import java.util.List;
+import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
@@ -35,9 +36,12 @@ import org.sagebionetworks.bridge.models.surveys.UIHint;
 import org.sagebionetworks.bridge.upload.UploadUtil;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class SurveySaveValidatorTest {
+    
+    private static final Set<String> STUDY_DATA_GROUPS = Sets.newHashSet("foo", "baz");
 
     private Survey survey;
 
@@ -45,10 +49,11 @@ public class SurveySaveValidatorTest {
 
     @Before
     public void before() {
+        
         survey = new TestSurvey(SurveySaveValidatorTest.class, true);
         // because this is set by the service before validation
         survey.setGuid("AAA");
-        validator = new SurveySaveValidator();
+        validator = new SurveySaveValidator(STUDY_DATA_GROUPS);
     }
 
     private SurveyInfoScreen createSurveyInfoScreen() {
@@ -405,7 +410,7 @@ public class SurveySaveValidatorTest {
         survey.getElements().add(info);
 
         assertValidatorMessage(validator, survey, "elements[0].constraints.rules[0]",
-                "cannot have a skipTo target and an endSurvey property");
+                "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
     }
 
     @Test
@@ -431,7 +436,7 @@ public class SurveySaveValidatorTest {
         survey.getElements().add(question);
 
         assertValidatorMessage(validator, survey, "elements[0].constraints.rules[0]",
-                "must have a skipTo target or an endSurvey property");
+                "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
     }
 
     @Test
@@ -507,7 +512,7 @@ public class SurveySaveValidatorTest {
         survey.getElements().add(info);
 
         assertValidatorMessage(validator, survey, "elements[0].rules[0]",
-                "cannot have a skipTo target and an endSurvey property");
+                "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
     }
 
     @Test
@@ -534,7 +539,7 @@ public class SurveySaveValidatorTest {
         survey.getElements().add(question);
 
         assertValidatorMessage(validator, survey, "elements[0].rules[0]",
-                "must have a skipTo target or an endSurvey property");
+                "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
     }
 
     @Test
@@ -882,5 +887,35 @@ public class SurveySaveValidatorTest {
         
         assertValidatorMessage(validator, survey, "elements[0].rules[0]",
                 "only valid with the 'always' operator");
+    }
+    
+    @Test
+    public void validatesAssignDataGroupMustAppearAlone() {
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
+
+        SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
+        
+        String targetId = ((TestSurvey) survey).getStringQuestion().getIdentifier();
+
+        SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
+                .withSkipToTarget(targetId).withAssignDataGroup("dataGroup").build();
+        question.setRules(Lists.newArrayList(rule));
+
+        assertValidatorMessage(validator, survey, "elements[4].rules[0]",
+                "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
+    }
+    
+    @Test
+    public void validateAssignDataGroupAssignsRealDataGroup() {
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
+
+        SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
+        
+        SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
+                .withAssignDataGroup("bar").build();
+        question.setRules(Lists.newArrayList(rule));
+
+        assertValidatorMessage(validator, survey, "elements[4].rules[0]",
+                "has a data group 'bar' that is not a valid data group: baz, foo");
     }
 }
