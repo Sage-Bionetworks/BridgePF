@@ -4,7 +4,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
@@ -97,8 +99,12 @@ public class SurveyService {
         for (SurveyElement element : survey.getElements()) {
             element.setGuid(BridgeUtils.generateGuid());
         }
-        Study study = studyService.getStudy(survey.getStudyIdentifier());
-        Validate.entityThrowingException(new SurveySaveValidator(study.getDataGroups()), survey);
+        Set<String> dataGroups = Collections.emptySet();
+        if (survey.getStudyIdentifier() != null) {
+            Study study = studyService.getStudy(survey.getStudyIdentifier());
+            dataGroups = study.getDataGroups();
+        }
+        Validate.entityThrowingException(new SurveySaveValidator(dataGroups), survey);
         
         return surveyDao.createSurvey(survey);
     }
@@ -112,8 +118,12 @@ public class SurveyService {
     public Survey updateSurvey(Survey survey) {
         checkNotNull(survey, "Survey cannot be null");
         
-        Study study = studyService.getStudy(survey.getStudyIdentifier());
-        Validate.entityThrowingException(new SurveySaveValidator(study.getDataGroups()), survey);
+        Set<String> dataGroups = Collections.emptySet();
+        if (survey.getStudyIdentifier() != null) {
+            Study study = studyService.getStudy(survey.getStudyIdentifier());
+            dataGroups = study.getDataGroups();
+        }
+        Validate.entityThrowingException(new SurveySaveValidator(dataGroups), survey);
         
         return surveyDao.updateSurvey(survey);
     }
