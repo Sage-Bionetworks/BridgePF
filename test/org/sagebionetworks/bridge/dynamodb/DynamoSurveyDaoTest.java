@@ -693,10 +693,11 @@ public class DynamoSurveyDaoTest {
         assertEquals(0, ((SurveyQuestion)element3).getConstraints().getRules().size());
         
         // null rules list in question, non-null non-empty rules list in constraints
-        Survey survey4 = updateRules(survey3, null, ImmutableList.of());
+        // (this is a variant of the migration case, the rule will be migrated) 
+        Survey survey4 = updateRules(survey3, null, ImmutableList.of(rule));
         SurveyElement element4 = survey4.getElements().get(0);
-        assertEquals(0, element4.getRules().size());
-        assertEquals(0, ((SurveyQuestion)element4).getConstraints().getRules().size());
+        assertEquals(1, element4.getRules().size());
+        assertEquals(1, ((SurveyQuestion)element4).getConstraints().getRules().size());
         
         // empty rules list in question, non-null non-empty rules in constraints
         // (this is a variant of the migration case, the rule will be migrated) 
