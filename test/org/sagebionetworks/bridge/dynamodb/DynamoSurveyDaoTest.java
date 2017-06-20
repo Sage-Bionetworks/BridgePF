@@ -20,6 +20,7 @@ import javax.annotation.Resource;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,6 +42,7 @@ import org.sagebionetworks.bridge.models.surveys.BooleanConstraints;
 import org.sagebionetworks.bridge.models.surveys.DateConstraints;
 import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule;
@@ -661,8 +663,11 @@ public class DynamoSurveyDaoTest {
         Survey createdSurvey = surveyDao.getSurvey(keys);
         
         // Migrated question has been moved up
-        assertEquals(rule, createdSurvey.getElements().get(0).getRules().get(0));
-        assertEquals(1, createdSurvey.getElements().get(0).getRules().size());
+        SurveyElement element1 = createdSurvey.getElements().get(0);
+        assertEquals(rule, element1.getRules().get(0));
+        assertEquals(1, element1.getRules().size());
+        assertEquals(rule, ((SurveyQuestion)element1).getConstraints().getRules().get(0));
+        assertEquals(1, ((SurveyQuestion)element1).getConstraints().getRules().size());
         // Info screen has rule
         assertEquals(rule, createdSurvey.getElements().get(1).getRules().get(0));
         assertEquals(1, createdSurvey.getElements().get(1).getRules().size());
@@ -673,6 +678,27 @@ public class DynamoSurveyDaoTest {
         SurveyQuestion savedQuestion = (SurveyQuestion)createdSurvey.getElements().get(2);
         assertEquals(rule, savedQuestion.getRules().get(0));
         assertEquals(1, savedQuestion.getRules().size());
+        
+        // But if there's a rule on the element and not the constraints, it is not removed. 
+        // Constraints are updated.
+        Survey survey2 = updateRules(createdSurvey, ImmutableList.of(rule), ImmutableList.of());
+        SurveyElement element2 = survey2.getElements().get(0);
+        assertEquals(1, element2.getRules().size());
+        assertEquals(1, ((SurveyQuestion)element2).getConstraints().getRules().size());
+        
+        // Setting both to no rules will clear them.
+        Survey survey3 = updateRules(survey2, ImmutableList.of(), ImmutableList.of());
+        SurveyElement element3 = survey3.getElements().get(0);
+        assertEquals(0, element3.getRules().size());
+        assertEquals(0, ((SurveyQuestion)element3).getConstraints().getRules().size());
+    }
+    
+    private Survey updateRules(Survey survey, List<SurveyRule> inElement, List<SurveyRule> inConstraints) {
+        SurveyElement element = survey.getElements().get(0);
+        element.setRules(inElement);
+        ((SurveyQuestion)element).getConstraints().setRules(inConstraints);
+        Survey keys = surveyDao.updateSurvey(survey);
+        return surveyDao.getSurvey(keys);
     }
     
     private static void assertContainsAllKeys(Set<GuidCreatedOnVersionHolderImpl> expected, List<Survey> actual) {

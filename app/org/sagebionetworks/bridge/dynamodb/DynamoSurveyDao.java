@@ -17,11 +17,11 @@ import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
-import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
@@ -202,13 +202,17 @@ public class DynamoSurveyDao implements SurveyDao {
     private void reconcileRules(SurveyElement element) {
         if (element instanceof SurveyQuestion) {
             SurveyQuestion question = (SurveyQuestion)element;
-            if (question.getRules() == null) {
-                // if question rules don't exist, the constraint rules are used
-                List<SurveyRule> rules = question.getConstraints().getRules();
-                question.setRules(rules);
+            
+            // If the constraints have rules but the element does not, copy them over. Always do 
+            // this: the constraints rules will always take precedence until they are removed. At
+            // that point they will either not be copied on top of element rules which exist, or both 
+            // element and constraint rules will be empty, so it makes no difference.
+            Constraints con = question.getConstraints();
+            if (BridgeUtils.isEmpty(question.getRules())) {
+                question.setRules( con.getRules() );
             }
             // question rules take precedence once they exist.
-            question.getConstraints().setRules(question.getRules());
+            con.setRules(question.getRules());
         }
     }
 
