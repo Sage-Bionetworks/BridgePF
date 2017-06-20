@@ -6,6 +6,8 @@ import java.util.function.Function;
 
 import com.google.common.base.Preconditions;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
@@ -44,6 +46,8 @@ import org.sagebionetworks.bridge.stormpath.StormpathAccountDao;
 @Component
 @Primary
 public class MigrationAccountDao implements AccountDao {
+    private static final Logger LOG = LoggerFactory.getLogger(MigrationAccountDao.class);
+
     final static String CONFIG_KEY_AUTH_PROVIDER = "auth.provider";
     final static String CONFIG_KEY_CREATE_ACCOUNTS = "auth.create.mysql.accounts";
 
@@ -239,12 +243,14 @@ public class MigrationAccountDao implements AccountDao {
     private Account readWithFallback(Function<AccountDao, Account> func) {
         // Read from MySQL first.
         GenericAccount genericAccount = null;
+        RuntimeException hibernateEx = null;
         if (useMySqlAuth) {
             try {
                 genericAccount = (GenericAccount) func.apply(hibernateAccountDao);
             } catch (RuntimeException ex) {
-                // Squelch error. Accounts might not exist in MySQL yet if we haven't migrated the data over, and we
-                // don't want to spam the logs.
+                // Capture the exception for now. Only log if Hibernate fails but Stormpath succeeds, as this indicates
+                // something wrong with the MySQL implementation.
+                hibernateEx = ex;
             }
         }
 
@@ -255,6 +261,13 @@ public class MigrationAccountDao implements AccountDao {
             // This means the account doesn't exist. In keeping with the underlying implementation, we should return
             // null instead of an empty MigrationAccount.
             return null;
+        }
+
+        if (hibernateEx != null) {
+            // This means the MySQL implementation failed, but Stormpath succeeded. This means something either went
+            // wrong with the MySQL implementation or the backfill. Log a warning, so we can track this and follow up
+            // on it later.
+            LOG.warn("MySQL Auth failed, but Stormpath succeeded: " + hibernateEx.getMessage(), hibernateEx);
         }
 
         // Stuff both into a MigrationAccount and return.
