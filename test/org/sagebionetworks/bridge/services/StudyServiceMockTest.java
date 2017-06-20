@@ -314,17 +314,23 @@ public class StudyServiceMockTest {
         study.getDataGroups().remove(dataGroup);
         
         DateTime createdOn = DateTime.now();
+
+        Survey partialSurvey = new TestSurvey(StudyServiceMockTest.class, false);
+        partialSurvey.setGuid("AAA-BBB-CCC");
+        partialSurvey.setCreatedOn(createdOn.getMillis());
+        partialSurvey.setElements(ImmutableList.of());
         
-        Survey survey = new TestSurvey(StudyServiceMockTest.class, false);
-        survey.setGuid("AAA-BBB-CCC");
-        survey.setCreatedOn(createdOn.getMillis());
-        survey.getElements().get(0).setRules(Lists.newArrayList(
+        Survey fullSurvey = new TestSurvey(StudyServiceMockTest.class, false);
+        fullSurvey.setGuid("AAA-BBB-CCC");
+        fullSurvey.setCreatedOn(createdOn.getMillis());
+        fullSurvey.getElements().get(0).setRules(Lists.newArrayList(
                 new SurveyRule.Builder().withAssignDataGroup(dataGroup).withOperator(Operator.ALWAYS).build()));
         
-        List<Survey> surveyList = Lists.newArrayList(survey);
+        List<Survey> surveyList = Lists.newArrayList(partialSurvey);
 
         when(surveyService.getAllSurveysMostRecentVersion(study.getStudyIdentifier())).thenReturn(surveyList);
-        when(surveyService.getSurveyAllVersions(study.getStudyIdentifier(), survey.getGuid())).thenReturn(surveyList);
+        when(surveyService.getSurveyAllVersions(study.getStudyIdentifier(), fullSurvey.getGuid())).thenReturn(surveyList);
+        when(surveyService.getSurvey(partialSurvey)).thenReturn(fullSurvey);
         
         try {
             service.updateStudy(study, true);
