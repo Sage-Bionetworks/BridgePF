@@ -555,7 +555,8 @@ public class StudyService {
         for (Survey oneSurvey : allSurveys) {
             List<Survey> allVersionsOfSurvey = surveyService.getSurveyAllVersions(study.getStudyIdentifier(), oneSurvey.getGuid());
             for (Survey oneSurveyVersion : allVersionsOfSurvey) {
-                for (SurveyElement element : oneSurveyVersion.getElements()) {
+                Survey fullSurvey = surveyService.getSurvey(oneSurveyVersion);
+                for (SurveyElement element : fullSurvey.getElements()) {
                     if (element.getRules() != null) {
                         for (SurveyRule rule : element.getRules()) {
                             if (rule.getAssignDataGroup() != null && !dataGroups.contains(rule.getAssignDataGroup())) {
