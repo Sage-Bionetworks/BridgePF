@@ -25,7 +25,6 @@ public class DynamoActivityEvent implements ActivityEvent {
     public String getHealthCode() {
         return healthCode;
     }
-    @Override
     public void setHealthCode(String healthCode) {
         this.healthCode = healthCode;
     }
@@ -33,7 +32,6 @@ public class DynamoActivityEvent implements ActivityEvent {
     public String getAnswerValue() {
         return answerValue;
     }
-    @Override
     public void setAnswerValue(String answerValue) {
         this.answerValue = answerValue;
     }
@@ -41,7 +39,6 @@ public class DynamoActivityEvent implements ActivityEvent {
     public Long getTimestamp() {
         return timestamp;
     }
-    @Override
     public void setTimestamp(Long timestamp) {
         this.timestamp = timestamp;
     }
@@ -50,7 +47,6 @@ public class DynamoActivityEvent implements ActivityEvent {
     public String getEventId() {
         return eventId;
     }
-    @Override
     public void setEventId(String eventId) {
         this.eventId = eventId;
     }

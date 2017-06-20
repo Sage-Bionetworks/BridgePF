@@ -1,12 +1,14 @@
 package org.sagebionetworks.bridge.services;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_JOINER;
 
 import java.util.Map;
 
 import org.joda.time.DateTime;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -18,8 +20,6 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 @Component
 public class ActivityEventService {
@@ -28,11 +28,8 @@ public class ActivityEventService {
     private StudyService studyService;
 
     @Autowired
-    public void setActivityEventDao(ActivityEventDao activityEventDao) {
+    public ActivityEventService(ActivityEventDao activityEventDao, StudyService studyService) {
         this.activityEventDao = activityEventDao;
-    }
-
-    public void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
 

@@ -45,13 +45,10 @@ public class ActivityEventServiceTest {
     
     @Before
     public void before() {
-        activityEventService = new ActivityEventService();
-        
         activityEventDao = mock(ActivityEventDao.class);
-        activityEventService.setActivityEventDao(activityEventDao);
-
         studyService = mock(StudyService.class);
-        activityEventService.setStudyService(studyService);
+        
+        activityEventService = new ActivityEventService(activityEventDao, studyService);
     }
 
     @Test
