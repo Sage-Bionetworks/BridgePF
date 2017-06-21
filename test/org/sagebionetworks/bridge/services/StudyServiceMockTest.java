@@ -28,10 +28,8 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,23 +59,13 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.schedules.Activity;
-import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.sagebionetworks.bridge.models.schedules.TaskReference;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
-import org.sagebionetworks.bridge.models.surveys.Survey;
-import org.sagebionetworks.bridge.models.surveys.SurveyRule;
-import org.sagebionetworks.bridge.models.surveys.TestSurvey;
-import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -104,6 +92,7 @@ public class StudyServiceMockTest {
     private static final String TEST_ADMIN_ID_1 = "3346407";
     private static final String TEST_ADMIN_ID_2 = "3348228";
     private static final List<String> TEST_ADMIN_IDS = ImmutableList.of(TEST_ADMIN_ID_1, TEST_ADMIN_ID_2);
+    private static final Set<String> EMPTY_SET = ImmutableSet.of();
 
     @Mock
     private CompoundActivityDefinitionService compoundActivityDefinitionService;
@@ -125,10 +114,6 @@ public class StudyServiceMockTest {
     private EmailVerificationService emailVerificationService;
     @Mock
     private ParticipantService participantService;
-    @Mock
-    private SchedulePlanService schedulePlanService;
-    @Mock
-    private SurveyService surveyService;
 
     @Mock
     private SynapseClient mockSynapseClient;
@@ -153,9 +138,7 @@ public class StudyServiceMockTest {
         service.setEmailVerificationService(emailVerificationService);
         service.setSynapseClient(mockSynapseClient);
         service.setParticipantService(participantService);
-        service.setSchedulePlanService(schedulePlanService);
-        service.setSurveyService(surveyService);
-
+        
         study = getTestStudy();
         when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
 
@@ -185,6 +168,66 @@ public class StudyServiceMockTest {
         consumer.accept(study);
         service.updateStudy(study, true);
         verify(directoryDao).updateDirectoryForStudy(study);
+    }
+    
+    @Test
+    public void cannotRemoveTaskIdentifiers() {
+        when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
+        
+        Study updatedStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        updatedStudy.setIdentifier(TEST_STUDY_ID);
+        updatedStudy.setTaskIdentifiers(Sets.newHashSet("task2", "different-tag"));
+        
+        try {
+            service.updateStudy(updatedStudy, true);
+            fail("Should have thrown exception");
+        } catch(ConstraintViolationException e) {
+            assertEquals("Task identifiers cannot be deleted.", e.getMessage());
+            assertEquals(TEST_STUDY_ID, e.getEntityKeys().get("identifier"));
+            assertEquals("Study", e.getEntityKeys().get("type"));
+        }
+    }
+    
+    @Test
+    public void cannotRemoveDataGroups() {
+        when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
+
+        Study updatedStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        updatedStudy.setIdentifier(TEST_STUDY_ID);
+        updatedStudy.setDataGroups(Sets.newHashSet("beta_users", "different-tag"));
+        
+        try {
+            service.updateStudy(updatedStudy, true);
+            fail("Should have thrown exception");
+        } catch(ConstraintViolationException e) {
+            assertEquals("Data groups cannot be deleted.", e.getMessage());
+            assertEquals(TEST_STUDY_ID, e.getEntityKeys().get("identifier"));
+            assertEquals("Study", e.getEntityKeys().get("type"));
+        }
+    }
+    
+    @Test
+    public void cannotRemoveTaskIdentifiersEmptyLists() {
+        study.setTaskIdentifiers(EMPTY_SET);
+        when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
+        
+        Study updatedStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        updatedStudy.setIdentifier(TEST_STUDY_ID);
+        updatedStudy.setTaskIdentifiers(EMPTY_SET);
+        
+        service.updateStudy(updatedStudy, true);
+    }
+    
+    @Test
+    public void cannotRemoveDataGroupsEmptyLists() {
+        study.setDataGroups(EMPTY_SET);
+        when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
+        
+        Study updatedStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        updatedStudy.setIdentifier(TEST_STUDY_ID);
+        updatedStudy.setDataGroups(EMPTY_SET);
+        
+        service.updateStudy(updatedStudy, true);
     }
     
     @Test(expected = BadRequestException.class)
@@ -220,129 +263,6 @@ public class StudyServiceMockTest {
         verify(subpopService).deleteAllSubpopulations(study.getStudyIdentifier());
         verify(topicService).deleteAllTopics(study.getStudyIdentifier());
         verify(cacheProvider).removeStudy(TEST_STUDY_ID);
-    }
-    
-    @Test
-    public void cannotRemoveTaskIdentifierInUse() {
-        String taskId = study.getTaskIdentifiers().iterator().next();
-        study.getTaskIdentifiers().remove(taskId);
-
-        SchedulePlan plan = TestUtils.getSimpleSchedulePlan(new StudyIdentifierImpl(TEST_STUDY_ID));
-        Activity newActivity = new Activity.Builder().withTask(new TaskReference(taskId, null)).build();
-        plan.getStrategy().getAllPossibleSchedules().get(0).getActivities().set(0, newActivity);
-        when(schedulePlanService.getSchedulePlans(any(), any())).thenReturn(Lists.newArrayList(plan));
-        
-        try {
-            service.updateStudy(study, true);
-            fail("Should have thrown exception");
-        } catch(ConstraintViolationException e) {
-            verify(studyDao, never()).updateStudy(study);
-            assertEquals("test-study", e.getEntityKeys().get("identifier"));
-            assertEquals("Study", e.getEntityKeys().get("type"));
-            assertEquals("GGG", e.getReferrerKeys().get("guid"));
-            assertEquals("SchedulePlan", e.getReferrerKeys().get("type"));
-        }
-    }
-    
-    @Test
-    public void canRemoveDataGroupIfSubpopulationDeleted() {
-        String taskId = study.getTaskIdentifiers().iterator().next();
-        study.getTaskIdentifiers().remove(taskId);
-        
-        Criteria criteria = Criteria.create();
-        criteria.getAllOfGroups().add(taskId);
-        Subpopulation subpop = Subpopulation.create();
-        subpop.setCriteria(criteria);
-        subpop.setGuidString("guidString");
-        subpop.setDeleted(true);
-        
-        when(subpopService.getSubpopulations(any())).thenReturn(Lists.newArrayList(subpop));
-        
-        service.updateStudy(study, true);
-        
-        verify(studyDao).updateStudy(study);
-    }
-    
-    @Test
-    public void cannotRemoveDataGroupInUseInSubpopulation() {
-        String taskId = study.getTaskIdentifiers().iterator().next();
-        study.getTaskIdentifiers().remove(taskId);
-        
-        Criteria criteria = Criteria.create();
-        criteria.getAllOfGroups().add(taskId);
-        Subpopulation subpop = Subpopulation.create();
-        subpop.setCriteria(criteria);
-        subpop.setGuidString("guidString");
-        
-        when(subpopService.getSubpopulations(any())).thenReturn(Lists.newArrayList(subpop));
-        
-        try {
-            service.updateStudy(study, true);
-            fail("Should have thrown exception");
-        } catch(ConstraintViolationException e) {
-            verify(studyDao, never()).updateStudy(study);
-            assertEquals("test-study", e.getEntityKeys().get("identifier"));
-            assertEquals("Study", e.getEntityKeys().get("type"));
-            assertEquals("guidString", e.getReferrerKeys().get("guid"));
-            assertEquals("Subpopulation", e.getReferrerKeys().get("type"));
-        }
-    }
-
-    @Test
-    public void cannotRemoveDataGroupInUseInSchedulePlan() {
-        String taskId = study.getTaskIdentifiers().iterator().next();
-        study.getTaskIdentifiers().remove(taskId);
-
-        SchedulePlan plan = TestUtils.getCriteriaSchedulePlan(new StudyIdentifierImpl(TEST_STUDY_ID));
-        when(schedulePlanService.getSchedulePlans(any(), any())).thenReturn(Lists.newArrayList(plan));
-        
-        try {
-            service.updateStudy(study, true);
-            fail("Should have thrown exception");
-        } catch(ConstraintViolationException e) {
-            verify(studyDao, never()).updateStudy(study);
-            assertEquals("test-study", e.getEntityKeys().get("identifier"));
-            assertEquals("Study", e.getEntityKeys().get("type"));
-            assertEquals("GGG", e.getReferrerKeys().get("guid"));
-            assertEquals("SchedulePlan", e.getReferrerKeys().get("type"));
-        }
-    }
-    
-    @Test
-    public void cannotRemoveDataGroupInUseInSurveyRule() {
-        String dataGroup = study.getDataGroups().iterator().next();
-        study.getDataGroups().remove(dataGroup);
-        
-        DateTime createdOn = DateTime.now();
-
-        Survey partialSurvey = new TestSurvey(StudyServiceMockTest.class, false);
-        partialSurvey.setGuid("AAA-BBB-CCC");
-        partialSurvey.setCreatedOn(createdOn.getMillis());
-        partialSurvey.setElements(ImmutableList.of());
-        
-        Survey fullSurvey = new TestSurvey(StudyServiceMockTest.class, false);
-        fullSurvey.setGuid("AAA-BBB-CCC");
-        fullSurvey.setCreatedOn(createdOn.getMillis());
-        fullSurvey.getElements().get(0).setRules(Lists.newArrayList(
-                new SurveyRule.Builder().withAssignDataGroup(dataGroup).withOperator(Operator.ALWAYS).build()));
-        
-        List<Survey> surveyList = Lists.newArrayList(partialSurvey);
-
-        when(surveyService.getAllSurveysMostRecentVersion(study.getStudyIdentifier())).thenReturn(surveyList);
-        when(surveyService.getSurveyAllVersions(study.getStudyIdentifier(), fullSurvey.getGuid())).thenReturn(surveyList);
-        when(surveyService.getSurvey(partialSurvey)).thenReturn(fullSurvey);
-        
-        try {
-            service.updateStudy(study, true);
-            fail("Should have thrown exception");
-        } catch(ConstraintViolationException e) {
-            verify(studyDao, never()).updateStudy(study);
-            assertEquals("test-study", e.getEntityKeys().get("identifier"));
-            assertEquals("Study", e.getEntityKeys().get("type"));
-            assertEquals("AAA-BBB-CCC", e.getReferrerKeys().get("guid"));
-            assertEquals(createdOn.toString(), e.getReferrerKeys().get("createdOn"));
-            assertEquals("Survey", e.getReferrerKeys().get("type"));
-        }
     }
     
     @Test(expected = BadRequestException.class)
@@ -836,8 +756,8 @@ public class StudyServiceMockTest {
         study.setConsentNotificationEmail("newemail@newemail.com");
         study.setMinAgeOfConsent(50);
         study.setUserProfileAttributes(Sets.newHashSet("a", "b"));
-        study.setTaskIdentifiers(Sets.newHashSet("c", "d"));
-        study.setDataGroups(Sets.newHashSet("e", "f"));
+        study.getTaskIdentifiers().add("z");
+        study.getDataGroups().add("z");
         study.setStrictUploadValidationEnabled(false);
         study.setHealthCodeExportEnabled(false);
         study.getMinSupportedAppVersions().put("some platform", 22);
