@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dao;
 
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -261,6 +262,24 @@ public class MigrationAccountDao implements AccountDao {
             // This means the account doesn't exist. In keeping with the underlying implementation, we should return
             // null instead of an empty MigrationAccount.
             return null;
+        }
+
+        if (genericAccount != null && stormpathAccount != null) {
+            if (!Objects.equals(genericAccount.getHealthCode(), stormpathAccount.getHealthCode()) ||
+                    !Objects.equals(genericAccount.getHealthId(), stormpathAccount.getHealthId())) {
+                // Somehow the MySQL and Stormpath accounts have different healthcode mappings, even though they are
+                // the same account. This could happen if for example the account was created directly in the backends
+                // without any health codes, and the Stormpath and MySQL account daos created health code mappings
+                // independently.
+                //
+                // Use the Stormpath health code as the source of truth, since we know this always exists, and may
+                // already have data associated with it.
+                genericAccount.setHealthCode(stormpathAccount.getHealthCode());
+                genericAccount.setHealthId(stormpathAccount.getHealthId());
+
+                // Update the MySQL back-end.
+                hibernateAccountDao.updateAccount(genericAccount);
+            }
         }
 
         if (hibernateEx != null) {
