@@ -47,7 +47,7 @@ public class ActivityEventServiceTest {
     public void before() {
         activityEventDao = mock(ActivityEventDao.class);
         studyService = mock(StudyService.class);
-        
+
         activityEventService = new ActivityEventService(activityEventDao, studyService);
     }
 

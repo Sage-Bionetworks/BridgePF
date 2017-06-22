@@ -7,22 +7,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * Created by jyliu on 6/12/2017.
  */
 public class CustomActivityEventRequest {
-    private final String healthCode;
     private final String eventKey;
     private final Long timestamp;
 
     @JsonCreator
-    public CustomActivityEventRequest(@JsonProperty("healthCode") String healthCode, @JsonProperty("eventKey") String eventKey,
-            @JsonProperty("timestamp") Long
-                    timestamp) {
-        this.healthCode = healthCode;
+    public CustomActivityEventRequest(@JsonProperty("eventKey") String eventKey,
+            @JsonProperty("timestamp") Long timestamp) {
         this.eventKey = eventKey;
         this.timestamp = timestamp;
     }
 
-    public String getHealthCode() {
-        return healthCode;
-    }
 
     public String getEventKey() {
         return eventKey;

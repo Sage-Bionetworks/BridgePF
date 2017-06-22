@@ -40,9 +40,13 @@ public class ActivityEventController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
         CustomActivityEventRequest activityEvent = parseJson(request(), CustomActivityEventRequest.class);
 
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+
+        StudyParticipant participant = participantService.getParticipant(study, session.getId(), false);
+
         DateTime eventTime = activityEvent.getTimestamp() == null ? null : new DateTime(activityEvent.getTimestamp());
 
-        activityEventService.publishCustomEvent(session.getStudyIdentifier(), session.getHealthCode(),
+        activityEventService.publishCustomEvent(session.getStudyIdentifier(), participant.getHealthCode(),
                 activityEvent.getEventKey(), eventTime);
 
         return okResult("Event recorded");
@@ -72,7 +76,7 @@ public class ActivityEventController extends BaseController {
             DateTime timestamp = entry.getValue();
             activityEventList.add(
                     new ActivityEventImpl(
-                            healthCode,
+                            null,
                             entry.getKey(),
                             null,
                             timestamp == null ? null : timestamp.getMillis()
