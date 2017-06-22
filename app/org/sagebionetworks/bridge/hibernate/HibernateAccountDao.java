@@ -146,6 +146,7 @@ public class HibernateAccountDao implements AccountDao {
         }
 
         // Unmarshall account
+        validateHealthCode(study.getStudyIdentifier(), hibernateAccount);
         return unmarshallAccount(hibernateAccount);
     }
 
@@ -254,6 +255,7 @@ public class HibernateAccountDao implements AccountDao {
     public Account getAccount(Study study, String id) {
         HibernateAccount hibernateAccount = hibernateHelper.getById(HibernateAccount.class, id);
         if (hibernateAccount != null) {
+            validateHealthCode(study.getStudyIdentifier(), hibernateAccount);
             return unmarshallAccount(hibernateAccount);
         } else {
             // In keeping with the email implementation, just return null
@@ -266,6 +268,7 @@ public class HibernateAccountDao implements AccountDao {
     public Account getAccountWithEmail(Study study, String email) {
         HibernateAccount hibernateAccount = getHibernateAccountByEmail(study.getStudyIdentifier(), email);
         if (hibernateAccount != null) {
+            validateHealthCode(study.getStudyIdentifier(), hibernateAccount);
             return unmarshallAccount(hibernateAccount);
         } else {
             return null;
@@ -420,6 +423,34 @@ public class HibernateAccountDao implements AccountDao {
         }
 
         return hibernateAccount;
+    }
+
+    // Callers of AccountDao assume that an Account will always a health code and health ID. All accounts created
+    // through the DAO will automatically have health code and ID populated, but accounts created in the DB directly
+    // are left in a bad state. This method validates the health code mapping on a HibernateAccount and updates it as
+    // is necessary.
+    private void validateHealthCode(StudyIdentifier studyId, HibernateAccount hibernateAccount) {
+        if (StringUtils.isBlank(hibernateAccount.getHealthCode()) ||
+                StringUtils.isBlank(hibernateAccount.getHealthId())) {
+            String accountId = hibernateAccount.getId();
+
+            // Generate health code mapping.
+            HealthId healthId = healthCodeService.createMapping(studyId);
+            hibernateAccount.setHealthCode(healthId.getCode());
+            hibernateAccount.setHealthId(healthId.getId());
+
+            // We modified it. Update modifiedOn.
+            long modifiedOn = DateUtils.getCurrentMillisFromEpoch();
+            hibernateAccount.setModifiedOn(modifiedOn);
+
+            // Save it to the back-end.
+            int numRowsUpdated = hibernateHelper.queryUpdate("update HibernateAccount set healthCode='" +
+                    healthId.getCode() + "', healthId='" + healthId.getId() + "', modifiedOn=" + modifiedOn +
+                    " where id='" + accountId + "'");
+            if (numRowsUpdated == 0) {
+                throw new BridgeServiceException("Failed to update password for account " + accountId);
+            }
+        }
     }
 
     // Helper method which unmarshall a HibernateAccount into a GenericAccount.

@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -44,7 +45,6 @@ import org.sagebionetworks.bridge.stormpath.StormpathAccountDao;
 
 public class MigrationAccountDaoTest {
     private static final String ACCOUNT_ID = "account-id";
-    private static final GenericAccount GENERIC_ACCOUNT = new GenericAccount();
     private static final String DUMMY_PASSWORD = "This is not a real password.";
     private static final String DUMMY_TOKEN = "dummy-token";
     private static final String EMAIL = "eggplant@example.com";
@@ -55,6 +55,12 @@ public class MigrationAccountDaoTest {
 
     private static final AccountSummary ACCOUNT_SUMMARY = new AccountSummary("Eggplant", "McTester", EMAIL, ACCOUNT_ID,
             new DateTime(12345678L), AccountStatus.ENABLED, TestConstants.TEST_STUDY);
+
+    private static final GenericAccount GENERIC_ACCOUNT;
+    static {
+        GENERIC_ACCOUNT = new GenericAccount();
+        GENERIC_ACCOUNT.setHealthId(HEALTH_ID);
+    }
 
     private static final Study STUDY;
     static {
@@ -129,6 +135,9 @@ public class MigrationAccountDaoTest {
     @Before
     public void setupMigrationAccount() {
         mockStormpathAccount = mock(StormpathAccount.class);
+        when(mockStormpathAccount.getHealthCode()).thenReturn(HEALTH_CODE);
+        when(mockStormpathAccount.getHealthId()).thenReturn(HEALTH_ID_STRING);
+
         migrationAccount = new MigrationAccount(GENERIC_ACCOUNT, mockStormpathAccount);
     }
 
@@ -235,6 +244,8 @@ public class MigrationAccountDaoTest {
 
             verify(mySqlHibernateAccountDao).authenticate(STUDY, signIn);
             verify(mySqlStormpathAccountDao).authenticate(STUDY, signIn);
+
+            verify(mySqlHibernateAccountDao, never()).updateAccount(any());
         }
 
         // no-create case
@@ -248,6 +259,8 @@ public class MigrationAccountDaoTest {
 
             verify(noCreateHibernateAccountDao).authenticate(STUDY, signIn);
             verify(noCreateStormpathAccountDao).authenticate(STUDY, signIn);
+
+            verify(noCreateHibernateAccountDao, never()).updateAccount(any());
         }
 
         // no MySQL case
@@ -260,7 +273,36 @@ public class MigrationAccountDaoTest {
 
             verify(noMySqlHibernateAccountDao, never()).authenticate(any(), any());
             verify(noMySqlStormpathAccountDao).authenticate(STUDY, signIn);
+
+            verify(noMySqlHibernateAccountDao, never()).updateAccount(any());
         }
+    }
+
+    @Test
+    public void authenticateWithDifferentHealthCodes() {
+        // setup test
+        SignIn signIn = new SignIn(TestConstants.TEST_STUDY_IDENTIFIER, EMAIL, DUMMY_PASSWORD, DUMMY_TOKEN);
+        GenericAccount genericAccount = new GenericAccount();
+        genericAccount.setHealthCode("different-health-code");
+        genericAccount.setHealthId("different-health-id");
+
+        when(mySqlHibernateAccountDao.authenticate(STUDY, signIn)).thenReturn(genericAccount);
+        when(mySqlStormpathAccountDao.authenticate(STUDY, signIn)).thenReturn(mockStormpathAccount);
+
+        // Execute and validate health codes.
+        MigrationAccount retval = (MigrationAccount) mySqlMigrationAccountDao.authenticate(STUDY, signIn);
+        assertSame(HEALTH_CODE, retval.getGenericAccount().getHealthCode());
+        assertSame(HEALTH_ID_STRING, retval.getGenericAccount().getHealthId());
+        assertSame(HEALTH_CODE, retval.getStormpathAccount().getHealthCode());
+        assertSame(HEALTH_ID_STRING, retval.getStormpathAccount().getHealthId());
+
+        // Validate we save the generic account with the new health code mapping.
+        ArgumentCaptor<GenericAccount> updatedAccountCaptor = ArgumentCaptor.forClass(GenericAccount.class);
+        verify(mySqlHibernateAccountDao).updateAccount(updatedAccountCaptor.capture());
+
+        GenericAccount updatedAccount = updatedAccountCaptor.getValue();
+        assertEquals(HEALTH_CODE, updatedAccount.getHealthCode());
+        assertEquals(HEALTH_ID_STRING, updatedAccount.getHealthId());
     }
 
     @Test
@@ -413,6 +455,8 @@ public class MigrationAccountDaoTest {
 
             verify(mySqlHibernateAccountDao).getAccount(STUDY, ACCOUNT_ID);
             verify(mySqlStormpathAccountDao).getAccount(STUDY, ACCOUNT_ID);
+
+            verify(mySqlHibernateAccountDao, never()).updateAccount(any());
         }
 
         // no-create case
@@ -426,6 +470,8 @@ public class MigrationAccountDaoTest {
 
             verify(noCreateHibernateAccountDao).getAccount(STUDY, ACCOUNT_ID);
             verify(noCreateStormpathAccountDao).getAccount(STUDY, ACCOUNT_ID);
+
+            verify(noCreateHibernateAccountDao, never()).updateAccount(any());
         }
 
         // no MySQL case
@@ -438,7 +484,35 @@ public class MigrationAccountDaoTest {
 
             verify(noMySqlHibernateAccountDao, never()).getAccount(any(), any());
             verify(noMySqlStormpathAccountDao).getAccount(STUDY, ACCOUNT_ID);
+
+            verify(noMySqlHibernateAccountDao, never()).updateAccount(any());
         }
+    }
+
+    @Test
+    public void getAccountWithDifferentHealthCodes() {
+        // setup test
+        GenericAccount genericAccount = new GenericAccount();
+        genericAccount.setHealthCode("different-health-code");
+        genericAccount.setHealthId("different-health-id");
+
+        when(mySqlHibernateAccountDao.getAccount(STUDY, ACCOUNT_ID)).thenReturn(genericAccount);
+        when(mySqlStormpathAccountDao.getAccount(STUDY, ACCOUNT_ID)).thenReturn(mockStormpathAccount);
+
+        // Execute and validate health codes.
+        MigrationAccount retval = (MigrationAccount) mySqlMigrationAccountDao.getAccount(STUDY, ACCOUNT_ID);
+        assertSame(HEALTH_CODE, retval.getGenericAccount().getHealthCode());
+        assertSame(HEALTH_ID_STRING, retval.getGenericAccount().getHealthId());
+        assertSame(HEALTH_CODE, retval.getStormpathAccount().getHealthCode());
+        assertSame(HEALTH_ID_STRING, retval.getStormpathAccount().getHealthId());
+
+        // Validate we save the generic account with the new health code mapping.
+        ArgumentCaptor<GenericAccount> updatedAccountCaptor = ArgumentCaptor.forClass(GenericAccount.class);
+        verify(mySqlHibernateAccountDao).updateAccount(updatedAccountCaptor.capture());
+
+        GenericAccount updatedAccount = updatedAccountCaptor.getValue();
+        assertEquals(HEALTH_CODE, updatedAccount.getHealthCode());
+        assertEquals(HEALTH_ID_STRING, updatedAccount.getHealthId());
     }
 
     @Test
@@ -466,6 +540,8 @@ public class MigrationAccountDaoTest {
 
             verify(mySqlHibernateAccountDao).getAccountWithEmail(STUDY, EMAIL);
             verify(mySqlStormpathAccountDao).getAccountWithEmail(STUDY, EMAIL);
+
+            verify(mySqlHibernateAccountDao, never()).updateAccount(any());
         }
 
         // no-create case
@@ -479,6 +555,8 @@ public class MigrationAccountDaoTest {
 
             verify(noCreateHibernateAccountDao).getAccountWithEmail(STUDY, EMAIL);
             verify(noCreateStormpathAccountDao).getAccountWithEmail(STUDY, EMAIL);
+
+            verify(noCreateHibernateAccountDao, never()).updateAccount(any());
         }
 
         // no MySQL case
@@ -491,7 +569,35 @@ public class MigrationAccountDaoTest {
 
             verify(noMySqlHibernateAccountDao, never()).getAccountWithEmail(any(), any());
             verify(noMySqlStormpathAccountDao).getAccountWithEmail(STUDY, EMAIL);
+
+            verify(noMySqlHibernateAccountDao, never()).updateAccount(any());
         }
+    }
+
+    @Test
+    public void getAccountWithEmailWithDifferentHealthCodes() {
+        // setup test
+        GenericAccount genericAccount = new GenericAccount();
+        genericAccount.setHealthCode("different-health-code");
+        genericAccount.setHealthId("different-health-id");
+
+        when(mySqlHibernateAccountDao.getAccountWithEmail(STUDY, EMAIL)).thenReturn(genericAccount);
+        when(mySqlStormpathAccountDao.getAccountWithEmail(STUDY, EMAIL)).thenReturn(mockStormpathAccount);
+
+        // Execute and validate health codes.
+        MigrationAccount retval = (MigrationAccount) mySqlMigrationAccountDao.getAccountWithEmail(STUDY, EMAIL);
+        assertSame(HEALTH_CODE, retval.getGenericAccount().getHealthCode());
+        assertSame(HEALTH_ID_STRING, retval.getGenericAccount().getHealthId());
+        assertSame(HEALTH_CODE, retval.getStormpathAccount().getHealthCode());
+        assertSame(HEALTH_ID_STRING, retval.getStormpathAccount().getHealthId());
+
+        // Validate we save the generic account with the new health code mapping.
+        ArgumentCaptor<GenericAccount> updatedAccountCaptor = ArgumentCaptor.forClass(GenericAccount.class);
+        verify(mySqlHibernateAccountDao).updateAccount(updatedAccountCaptor.capture());
+
+        GenericAccount updatedAccount = updatedAccountCaptor.getValue();
+        assertEquals(HEALTH_CODE, updatedAccount.getHealthCode());
+        assertEquals(HEALTH_ID_STRING, updatedAccount.getHealthId());
     }
 
     @Test
