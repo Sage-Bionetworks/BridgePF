@@ -42,6 +42,7 @@ POST   /v3/participants/:userId/resendEmailVerification      @org.sagebionetwork
 POST   /v3/participants/:userId/consents/withdraw            @org.sagebionetworks.bridge.play.controllers.ParticipantController.withdrawFromAllConsents(userId: String)
 POST   /v3/participants/:userId/consents/:guid/resendConsent @org.sagebionetworks.bridge.play.controllers.ParticipantController.resendConsentAgreement(userId: String, guid: String)
 POST   /v3/participants/:userId/consents/:guid/withdraw      @org.sagebionetworks.bridge.play.controllers.ParticipantController.withdrawConsent(userId: String, guid: String)
+GET    /v3/participants/:userId/activityEvents               @org.sagebionetworks.bridge.play.controllers.ParticipantController.getActivityEvents(userId: String)
 
 # Shared Module
 POST   /v3/sharedmodules/:id/import                   @org.sagebionetworks.bridge.play.controllers.SharedModuleController.importModuleByIdLatestPublishedVersion(id: String)
@@ -167,9 +168,8 @@ POST   /v3/scheduleplans/:guid            @org.sagebionetworks.bridge.play.contr
 DELETE /v3/scheduleplans/:guid            @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.deleteSchedulePlan(guid: String)
 
 # Activity Events
-GET    /v3/activityevents               @org.sagebionetworks.bridge.play.controllers.ActivityEventController.getSelfActivityEvents
-POST   /v3/activityevents/custom        @org.sagebionetworks.bridge.play.controllers.ActivityEventController.createCustomActivityEvent
-GET    /v3/activityevents/:userId       @org.sagebionetworks.bridge.play.controllers.ActivityEventController.getActivityEvents(userId: String)
+GET    /v1/activityevents               @org.sagebionetworks.bridge.play.controllers.ActivityEventController.getSelfActivityEvents
+POST   /v1/activityevents              @org.sagebionetworks.bridge.play.controllers.ActivityEventController.createCustomActivityEvent
 
 # Notifications
 GET    /v3/notifications                      @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.getAllRegistrations

@@ -44,45 +44,14 @@ public class ActivityEventController extends BaseController {
 
         StudyParticipant participant = participantService.getParticipant(study, session.getId(), false);
 
-        DateTime eventTime = activityEvent.getTimestamp() == null ? null : new DateTime(activityEvent.getTimestamp());
-
         activityEventService.publishCustomEvent(session.getStudyIdentifier(), participant.getHealthCode(),
-                activityEvent.getEventKey(), eventTime);
+                activityEvent.getEventKey(), activityEvent.getTimestamp());
 
         return okResult("Event recorded");
     }
 
     public Result getSelfActivityEvents() {
         UserSession session = getAuthenticatedAndConsentedSession();
-
-        return okResult(getActivityEventList(session.getHealthCode()));
-    }
-
-    public Result getActivityEvents(String participantId) {
-        UserSession researcherSession = getAuthenticatedSession(Roles.RESEARCHER);
-
-        Study study = studyService.getStudy(researcherSession.getStudyIdentifier());
-
-        StudyParticipant studyParticipant = participantService.getParticipant(study, participantId, false);
-
-        return okResult(getActivityEventList(studyParticipant.getHealthCode()));
-    }
-
-    private PagedResourceList<ActivityEvent> getActivityEventList(String healthCode) {
-        Map<String, DateTime> activityEvents = activityEventService.getActivityEventMap(healthCode);
-
-        List<ActivityEvent> activityEventList = Lists.newArrayList();
-        for (Map.Entry<String, DateTime> entry : activityEvents.entrySet()) {
-            DateTime timestamp = entry.getValue();
-            activityEventList.add(
-                    new ActivityEventImpl(
-                            null,
-                            entry.getKey(),
-                            null,
-                            timestamp == null ? null : timestamp.getMillis()
-                    ));
-        }
-        return new PagedResourceList<>(activityEventList, null, activityEventList.size(),
-                activityEventList.size());
+        return okResult(activityEventService.getActivityEventList(session.getHealthCode()));
     }
 }

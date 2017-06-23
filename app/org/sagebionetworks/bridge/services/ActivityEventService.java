@@ -3,8 +3,10 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_JOINER;
 
+import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.Lists;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -13,6 +15,7 @@ import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
+import org.sagebionetworks.bridge.models.activities.ActivityEventImpl;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
@@ -116,6 +119,23 @@ public class ActivityEventService {
     public Map<String, DateTime> getActivityEventMap(String healthCode) {
         checkNotNull(healthCode);
         return activityEventDao.getActivityEventMap(healthCode);
+    }
+
+    public List<ActivityEvent> getActivityEventList(String healthCode) {
+        Map<String, DateTime> activityEvents = getActivityEventMap(healthCode);
+
+        List<ActivityEvent> activityEventList = Lists.newArrayList();
+        for (Map.Entry<String, DateTime> entry : activityEvents.entrySet()) {
+            DateTime timestamp = entry.getValue();
+            activityEventList.add(
+                    new ActivityEventImpl(
+                            null,
+                            entry.getKey(),
+                            null,
+                            timestamp == null ? null : timestamp.getMillis()
+                    ));
+        }
+        return activityEventList;
     }
 
     public void deleteActivityEvents(String healthCode) {
