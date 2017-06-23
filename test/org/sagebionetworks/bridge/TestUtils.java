@@ -115,7 +115,6 @@ public class TestUtils {
             Validate.entityThrowingException(validator, object);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
-            System.out.println(e);
             assertEquals(fieldNameAsLabel+error, e.getErrors().get(fieldName).get(0));
         }
     }
