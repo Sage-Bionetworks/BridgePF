@@ -29,6 +29,7 @@ public class DynamoSurveyInfoScreen extends DynamoSurveyElement implements Surve
         setIdentifier(entry.getIdentifier());
         setGuid(entry.getGuid());
         setData(entry.getData());
+        setBeforeRules(entry.getBeforeRules());
         setAfterRules(entry.getAfterRules());
     }
 
