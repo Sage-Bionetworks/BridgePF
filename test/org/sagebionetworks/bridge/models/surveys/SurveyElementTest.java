@@ -18,8 +18,15 @@ import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 
 @SuppressWarnings("unchecked")
 public class SurveyElementTest {
+    
+    private static final SurveyRule BEFORE_RULE = new SurveyRule.Builder().withOperator(Operator.EQ).withValue(10)
+            .withAssignDataGroup("foo").build();
+    private static final SurveyRule AFTER_RULE = new SurveyRule.Builder().withEndSurvey(true)
+            .withOperator(Operator.ALWAYS).build();
+    
     @Test
     public void serializeSurveyQuestion() throws Exception {
+        
         // start with JSON
         String jsonText = "{" +
                 "   \"fireEvent\":false," +
@@ -27,7 +34,8 @@ public class SurveyElementTest {
                 "   \"identifier\":\"test-survey-question\"," +
                 "   \"prompt\":\"Is this a survey question?\"," +
                 "   \"promptDetail\":\"Details about question\"," +
-                "   \"rules\":[{\"operator\":\"always\",\"endSurvey\":true}],"+
+                "   \"beforeRules\":[{\"operator\":\"eq\",\"value\":10,\"assignDataGroup\":\"foo\"}],"+
+                "   \"afterRules\":[{\"operator\":\"always\",\"endSurvey\":true}],"+
                 "   \"type\":\"SurveyQuestion\"," +
                 "   \"uiHint\":\"textfield\"" +
                 "}";
@@ -46,13 +54,16 @@ public class SurveyElementTest {
         assertNull(question.getSurveyCompoundKey());
         assertEquals("SurveyQuestion", question.getType());
         assertEquals(UIHint.TEXTFIELD, question.getUiHint());
+        
+        assertEquals(BEFORE_RULE, question.getBeforeRules().get(0));
+        assertEquals(AFTER_RULE, question.getAfterRules().get(0));
 
         // convert back to JSON
         String convertedJson = BridgeObjectMapper.get().writeValueAsString(question);
 
         // then convert to a map so we can validate the raw JSON
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(8, jsonMap.size());
+        assertEquals(9, jsonMap.size());
         assertFalse((boolean) jsonMap.get("fireEvent"));
         assertEquals("test-guid", jsonMap.get("guid"));
         assertEquals("test-survey-question", jsonMap.get("identifier"));
@@ -63,7 +74,6 @@ public class SurveyElementTest {
         
         SurveyQuestion deserQuestion = BridgeObjectMapper.get().readValue(convertedJson, SurveyQuestion.class);
         
-        SurveyRule rule = new SurveyRule.Builder().withEndSurvey(true).withOperator(Operator.ALWAYS).build();
         assertFalse(deserQuestion.getFireEvent());
         assertEquals("test-guid", deserQuestion.getGuid());
         assertEquals("test-survey-question", deserQuestion.getIdentifier());
@@ -71,7 +81,8 @@ public class SurveyElementTest {
         assertEquals("Details about question", deserQuestion.getPromptDetail());
         assertEquals("SurveyQuestion", deserQuestion.getType());
         assertEquals(UIHint.TEXTFIELD, deserQuestion.getUiHint());
-        assertEquals(rule, deserQuestion.getRules().get(0));
+        assertEquals(BEFORE_RULE, deserQuestion.getBeforeRules().get(0));
+        assertEquals(AFTER_RULE, deserQuestion.getAfterRules().get(0));
     }
 
     @Test
@@ -87,7 +98,8 @@ public class SurveyElementTest {
                 "       \"height\":150" +
                 "   }," +
                 "   \"prompt\":\"This is the survey info\"," +
-                "   \"rules\":[{\"operator\":\"always\",\"endSurvey\":true}],"+
+                "   \"beforeRules\":[{\"operator\":\"eq\",\"value\":10,\"assignDataGroup\":\"foo\"}],"+
+                "   \"afterRules\":[{\"operator\":\"always\",\"endSurvey\":true}],"+
                 "   \"promptDetail\":\"More info\"," +
                 "   \"title\":\"Survey Info\"," +
                 "   \"type\":\"SurveyInfoScreen\"" +
@@ -105,8 +117,8 @@ public class SurveyElementTest {
         assertNull(infoScreen.getSurveyCompoundKey());
         assertEquals("Survey Info", infoScreen.getTitle());
         assertEquals("SurveyInfoScreen", infoScreen.getType());
-        SurveyRule rule = new SurveyRule.Builder().withEndSurvey(true).withOperator(Operator.ALWAYS).build();
-        assertEquals(rule, infoScreen.getRules().get(0));
+        assertEquals(BEFORE_RULE, infoScreen.getBeforeRules().get(0));
+        assertEquals(AFTER_RULE, infoScreen.getAfterRules().get(0));
 
         assertEquals("http://www.example.com/test.png", infoScreen.getImage().getSource());
         assertEquals(200, infoScreen.getImage().getWidth());
@@ -117,7 +129,7 @@ public class SurveyElementTest {
 
         // then convert to a map so we can validate the raw JSON
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(8, jsonMap.size());
+        assertEquals(9, jsonMap.size());
         assertEquals("test-guid", jsonMap.get("guid"));
         assertEquals("test-survey-info-screen", jsonMap.get("identifier"));
         assertEquals("This is the survey info", jsonMap.get("prompt"));

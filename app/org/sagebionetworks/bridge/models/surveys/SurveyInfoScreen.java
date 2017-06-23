@@ -24,7 +24,8 @@ public interface SurveyInfoScreen extends SurveyElement {
         question.setPromptDetail(JsonUtils.asText(node, PROMPT_DETAIL_PROPERTY));
         question.setTitle(JsonUtils.asText(node, TITLE_PROPERTY));
         question.setImage(JsonUtils.asEntity(node, IMAGE_PROPERTY, Image.class));
-        question.setRules(JsonUtils.asEntityList(node, RULES_PROPERTY, SurveyRule.class));
+        question.setBeforeRules(JsonUtils.asEntityList(node, BEFORE_RULES_PROPERTY, SurveyRule.class));
+        question.setAfterRules(JsonUtils.asEntityList(node, AFTER_RULES_PROPERTY, SurveyRule.class));
         return question;
     }
     

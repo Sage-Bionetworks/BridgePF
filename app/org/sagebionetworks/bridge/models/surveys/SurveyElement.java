@@ -17,7 +17,8 @@ public interface SurveyElement {
     public static final String IMAGE_PROPERTY = "image";
     public static final String PROMPT_DETAIL_PROPERTY = "promptDetail";
     public static final String PROMPT_PROPERTY = "prompt";
-    public static final String RULES_PROPERTY = "rules";
+    public static final String BEFORE_RULES_PROPERTY = "beforeRules";
+    public static final String AFTER_RULES_PROPERTY = "afterRules";
     public static final String TITLE_PROPERTY = "title";
     public static final String TYPE_PROPERTY = "type";    
     public static final String UI_HINTS_PROPERTY = "uiHint";
@@ -42,8 +43,11 @@ public interface SurveyElement {
     JsonNode getData();
     void setData(JsonNode data);
     
-    List<SurveyRule> getRules();
-    void setRules(List<SurveyRule> rules);
+    List<SurveyRule> getBeforeRules();
+    void setBeforeRules(List<SurveyRule> beforeRules);
+    
+    List<SurveyRule> getAfterRules();
+    void setAfterRules(List<SurveyRule> afterRules);
     
 }
 

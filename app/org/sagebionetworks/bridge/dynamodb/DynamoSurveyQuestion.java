@@ -34,7 +34,7 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
         setIdentifier( entry.getIdentifier() );
         setGuid( entry.getGuid() );
         setData( entry.getData() );
-        setRules( entry.getRules() );
+        setAfterRules( entry.getAfterRules() );
     }
     
     @Override

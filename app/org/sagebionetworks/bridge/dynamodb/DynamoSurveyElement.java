@@ -27,7 +27,8 @@ public class DynamoSurveyElement implements SurveyElement {
     private String type;
     private int order;
     private JsonNode data;
-    private List<SurveyRule> rules;
+    private List<SurveyRule> beforeRules;
+    private List<SurveyRule> afterRules;
 
     public DynamoSurveyElement() {
     }
@@ -93,15 +94,23 @@ public class DynamoSurveyElement implements SurveyElement {
      */
     @DynamoDBTypeConverted(converter = SurveyRuleListMarshaller.class)
     @DynamoDBAttribute
-    public List<SurveyRule> getRules() {
-        return (this.rules == null) ? null : ImmutableList.copyOf(this.rules);
+    public List<SurveyRule> getAfterRules() {
+        return (this.afterRules == null) ? null : ImmutableList.copyOf(this.afterRules);
     }
-    public void setRules(List<SurveyRule> rules) {
-        this.rules = rules;
+    public void setAfterRules(List<SurveyRule> afterRules) {
+        this.afterRules = afterRules;
+    }
+    @DynamoDBTypeConverted(converter = SurveyRuleListMarshaller.class)
+    @DynamoDBAttribute
+    public List<SurveyRule> getBeforeRules() {
+        return (this.beforeRules == null) ? null : ImmutableList.copyOf(this.beforeRules);
+    }
+    public void setBeforeRules(List<SurveyRule> beforeRules) {
+        this.beforeRules = beforeRules;
     }
     @Override
     public int hashCode() {
-        return Objects.hash(guid, identifier, order, surveyCompoundKey, type, rules);
+        return Objects.hash(guid, identifier, order, surveyCompoundKey, type, beforeRules, afterRules);
     }
 
     @Override
@@ -116,7 +125,8 @@ public class DynamoSurveyElement implements SurveyElement {
                 Objects.equals(order, this.order) &&
                 Objects.equals(surveyCompoundKey, this.surveyCompoundKey) &&
                 Objects.equals(type, other.type) &&
-                Objects.equals(rules, other.rules);
+                Objects.equals(afterRules, other.afterRules) &&
+                Objects.equals(beforeRules, other.beforeRules);
     }
     
 }

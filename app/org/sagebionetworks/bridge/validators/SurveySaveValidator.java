@@ -143,10 +143,10 @@ public class SurveySaveValidator implements Validator {
         
         for (int i=0; i < elements.size(); i++) {
             SurveyElement element = elements.get(i);
-            if (element.getRules() != null) {
-                for (int j=0; j < element.getRules().size(); j++) {
-                    SurveyRule rule = element.getRules().get(j);
-                    validateOneRuleSet(errors, rule, alreadySeenIdentifiers, "elements["+i+"]", "rules["+j+"]");
+            if (element.getAfterRules() != null) {
+                for (int j=0; j < element.getAfterRules().size(); j++) {
+                    SurveyRule rule = element.getAfterRules().get(j);
+                    validateOneRuleSet(errors, rule, alreadySeenIdentifiers, "elements["+i+"]", "afterRules["+j+"]");
                 }
             }
             if (element instanceof SurveyQuestion) {
@@ -155,18 +155,18 @@ public class SurveySaveValidator implements Validator {
                     for (int j=0; j < question.getConstraints().getRules().size(); j++) {
                         SurveyRule rule = question.getConstraints().getRules().get(j);
                         validateOneRuleSet(errors, rule, alreadySeenIdentifiers,
-                                "elements[" + i + "].constraints", "rules[" + j + "]");
+                                "elements[" + i + "].constraints", "afterRules[" + j + "]");
                     }
                 }
             } else if (element instanceof SurveyInfoScreen) {
                 // The only operator that makes sense on an information screen is ALWAYS, since there 
                 // is no value to test against.
-                if (element.getRules() != null) {
-                    for (int j=0; j < element.getRules().size(); j++) {
-                        SurveyRule rule = element.getRules().get(j);
+                if (element.getAfterRules() != null) {
+                    for (int j=0; j < element.getAfterRules().size(); j++) {
+                        SurveyRule rule = element.getAfterRules().get(j);
                         if (rule.getOperator() != SurveyRule.Operator.ALWAYS) {
                             errors.pushNestedPath("elements["+i+"]");
-                            errors.rejectValue("rules["+j+"]", "only valid with the 'always' operator");
+                            errors.rejectValue("afterRules["+j+"]", "only valid with the 'always' operator");
                             errors.popNestedPath();
                         }
                     }
@@ -178,10 +178,10 @@ public class SurveySaveValidator implements Validator {
         // Now verify that all skipToTarget identifiers actually exist
         for (int i=0; i < elements.size(); i++) {
             SurveyElement element = elements.get(i);
-            if (element.getRules() != null) {
-                for (int j=0; j < element.getRules().size(); j++) {
-                    SurveyRule rule = element.getRules().get(j);
-                    validateSkipToTargetExists(errors, rule, alreadySeenIdentifiers, "elements["+i+"]", "rules["+j+"]");
+            if (element.getAfterRules() != null) {
+                for (int j=0; j < element.getAfterRules().size(); j++) {
+                    SurveyRule rule = element.getAfterRules().get(j);
+                    validateSkipToTargetExists(errors, rule, alreadySeenIdentifiers, "elements["+i+"]", "afterRules["+j+"]");
                 }
             }
             if (element instanceof SurveyQuestion) {

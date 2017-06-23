@@ -409,7 +409,7 @@ public class SurveySaveValidatorTest {
         info.setIdentifier("theend");
         survey.getElements().add(info);
 
-        assertValidatorMessage(validator, survey, "elements[0].constraints.rules[0]",
+        assertValidatorMessage(validator, survey, "elements[0].constraints.afterRules[0]",
                 "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
     }
 
@@ -435,7 +435,7 @@ public class SurveySaveValidatorTest {
         question.setConstraints(constraints);
         survey.getElements().add(question);
 
-        assertValidatorMessage(validator, survey, "elements[0].constraints.rules[0]",
+        assertValidatorMessage(validator, survey, "elements[0].constraints.afterRules[0]",
                 "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
     }
 
@@ -466,7 +466,7 @@ public class SurveySaveValidatorTest {
         question.setUiHint(UIHint.TEXTFIELD);
         question.setPrompt("Prompt");
         question.setConstraints(constraints);
-        question.setRules(Lists.newArrayList(
+        question.setAfterRules(Lists.newArrayList(
                 new SurveyRule.Builder().withOperator(Operator.EQ).withValue("No").withSkipToTarget("theend").build()));
 
         SurveyInfoScreen info = new DynamoSurveyInfoScreen();
@@ -501,7 +501,7 @@ public class SurveySaveValidatorTest {
         question.setUiHint(UIHint.TEXTFIELD);
         question.setPrompt("Prompt");
         question.setConstraints(constraints);
-        question.setRules(Lists.newArrayList(rule));
+        question.setAfterRules(Lists.newArrayList(rule));
         
         survey.getElements().add(question);
 
@@ -511,7 +511,7 @@ public class SurveySaveValidatorTest {
         info.setIdentifier("theend");
         survey.getElements().add(info);
 
-        assertValidatorMessage(validator, survey, "elements[0].rules[0]",
+        assertValidatorMessage(validator, survey, "elements[0].afterRules[0]",
                 "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
     }
 
@@ -534,11 +534,11 @@ public class SurveySaveValidatorTest {
         question.setUiHint(UIHint.TEXTFIELD);
         question.setPrompt("Prompt");
         question.setConstraints(constraints);
-        question.setRules(Lists.newArrayList(rule));
+        question.setAfterRules(Lists.newArrayList(rule));
         
         survey.getElements().add(question);
 
-        assertValidatorMessage(validator, survey, "elements[0].rules[0]",
+        assertValidatorMessage(validator, survey, "elements[0].afterRules[0]",
                 "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
     }
 
@@ -795,7 +795,7 @@ public class SurveySaveValidatorTest {
                 .withSkipToTarget("high_bp").build();
         question.getConstraints().setRules(Lists.newArrayList(rule));
 
-        assertValidatorMessage(validator, survey, "elements[4].constraints.rules[0]", "back references question high_bp");
+        assertValidatorMessage(validator, survey, "elements[4].constraints.afterRules[0]", "back references question high_bp");
     }
 
     @Test
@@ -837,9 +837,9 @@ public class SurveySaveValidatorTest {
 
         SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
                 .withSkipToTarget("high_bp").build();
-        question.setRules(Lists.newArrayList(rule));
+        question.setAfterRules(Lists.newArrayList(rule));
 
-        assertValidatorMessage(validator, survey, "elements[4].rules[0]", "back references question high_bp");
+        assertValidatorMessage(validator, survey, "elements[4].afterRules[0]", "back references question high_bp");
     }
 
     @Test
@@ -850,7 +850,7 @@ public class SurveySaveValidatorTest {
         SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
         SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
                 .withEndSurvey(Boolean.TRUE).build();
-        question.setRules(Lists.newArrayList(rule));
+        question.setAfterRules(Lists.newArrayList(rule));
 
         Validate.entityThrowingException(validator, survey);
     }
@@ -865,9 +865,9 @@ public class SurveySaveValidatorTest {
 
         SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
                 .withSkipToTarget("this_does_not_exist").build();
-        question.setRules(Lists.newArrayList(rule));
+        question.setAfterRules(Lists.newArrayList(rule));
 
-        assertValidatorMessage(validator, survey, "elements[4].rules[0]",
+        assertValidatorMessage(validator, survey, "elements[4].afterRules[0]",
                 "has a skipTo identifier that doesn't exist: this_does_not_exist");
     }
     
@@ -881,11 +881,11 @@ public class SurveySaveValidatorTest {
         info.setPromptDetail("prompt detail");
         info.setIdentifier("identifier");
         info.setGuid("guid");
-        info.setRules(Lists.newArrayList(
+        info.setAfterRules(Lists.newArrayList(
                 new SurveyRule.Builder().withValue("foo").withOperator(Operator.EQ).withEndSurvey(true).build()));
         survey.setElements(Lists.newArrayList(info));
         
-        assertValidatorMessage(validator, survey, "elements[0].rules[0]",
+        assertValidatorMessage(validator, survey, "elements[0].afterRules[0]",
                 "only valid with the 'always' operator");
     }
     
@@ -899,9 +899,9 @@ public class SurveySaveValidatorTest {
 
         SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
                 .withSkipToTarget(targetId).withAssignDataGroup("dataGroup").build();
-        question.setRules(Lists.newArrayList(rule));
+        question.setAfterRules(Lists.newArrayList(rule));
 
-        assertValidatorMessage(validator, survey, "elements[4].rules[0]",
+        assertValidatorMessage(validator, survey, "elements[4].afterRules[0]",
                 "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
     }
     
@@ -913,9 +913,9 @@ public class SurveySaveValidatorTest {
         
         SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
                 .withAssignDataGroup("bar").build();
-        question.setRules(Lists.newArrayList(rule));
+        question.setAfterRules(Lists.newArrayList(rule));
 
-        assertValidatorMessage(validator, survey, "elements[4].rules[0]",
+        assertValidatorMessage(validator, survey, "elements[4].afterRules[0]",
                 "has a data group 'bar' that is not a valid data group: baz, foo");
     }
 }
