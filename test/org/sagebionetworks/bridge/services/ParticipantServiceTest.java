@@ -25,6 +25,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
+import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -489,7 +490,6 @@ public class ParticipantServiceTest {
         Account account = accountCaptor.getValue();
         verify(account).setFirstName(FIRST_NAME);
         verify(account).setLastName(LAST_NAME);
-        verify(account).setStatus(AccountStatus.DISABLED);
         verify(account).setAttribute(PHONE, "123456789");
     }
     
@@ -528,24 +528,43 @@ public class ParticipantServiceTest {
     
     @Test
     public void userCannotChangeStatus() {
-        verifyStatusUpdate(Sets.newHashSet(), null);
+        verifyStatusUpdate(EnumSet.noneOf(Roles.class), false);
     }
     
     @Test
-    public void developerCanChangeStatusOnEdit() {
-        verifyStatusUpdate(Sets.newHashSet(DEVELOPER), AccountStatus.DISABLED);
+    public void developerCannotChangeStatusOnEdit() {
+        verifyStatusUpdate(EnumSet.of(DEVELOPER), false);
     }
     
     @Test
-    public void researcherCanChangeStatusOnEdit() {
-        verifyStatusUpdate(Sets.newHashSet(RESEARCHER), AccountStatus.DISABLED);
+    public void researcherCannotChangeStatusOnEdit() {
+        verifyStatusUpdate(EnumSet.of(RESEARCHER), false);
     }
     
     @Test
     public void adminCanChangeStatusOnEdit() {
-        verifyStatusUpdate(Sets.newHashSet(ADMIN), AccountStatus.DISABLED);
+        verifyStatusUpdate(EnumSet.of(ADMIN), true);
     }
-    
+
+    @Test
+    public void workerCanChangeStatusOnEdit() {
+        verifyStatusUpdate(EnumSet.of(WORKER), true);
+    }
+
+    @Test
+    public void notSettingStatusDoesntClearStatus() {
+        mockHealthCodeAndAccountRetrieval();
+
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withStatus(null).build();
+
+        participantService.updateParticipant(STUDY, EnumSet.of(ADMIN), participant);
+
+        verify(accountDao).updateAccount(accountCaptor.capture());
+        Account account = accountCaptor.getValue();
+        verify(account, never()).setStatus(any());
+    }
+
     @Test
     public void userCannotCreateAnyRoles() {
         verifyRoleCreate(Sets.newHashSet(), null);
@@ -802,9 +821,9 @@ public class ParticipantServiceTest {
         DateTime startTime = DateTime.parse("2015-11-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2015-11-01T23:59:59.999Z");
         
-        participantService.getUploads(STUDY, ID, startTime, endTime);
+        participantService.getUploads(STUDY, ID, startTime, endTime, 10, "ABC");
         
-        verify(uploadService).getUploads(HEALTH_CODE, startTime, endTime);
+        verify(uploadService).getUploads(HEALTH_CODE, startTime, endTime, 10, "ABC");
     }
     
     @Test
@@ -812,9 +831,9 @@ public class ParticipantServiceTest {
         // Just verify this throws no exceptions
         mockHealthCodeAndAccountRetrieval();
         
-        participantService.getUploads(STUDY, ID, null, null);
+        participantService.getUploads(STUDY, ID, null, null, 10, null);
         
-        verify(uploadService).getUploads(HEALTH_CODE, null, null);
+        verify(uploadService).getUploads(HEALTH_CODE, null, null, 10, null);
     }
     
     @Test
@@ -912,24 +931,24 @@ public class ParticipantServiceTest {
         
         verify(account, never()).setStatus(any());
     }
-    
-    // There's no actual vs expected here because either we don't set it, or we set it and that's what we're verifying, 
+
+    // There's no actual vs expected here because either we don't set it, or we set it and that's what we're verifying,
     // that it has been set. If the setter is not called, the existing status will be sent back to Stormpath.
-    private void verifyStatusUpdate(Set<Roles> roles, AccountStatus status) {
+    private void verifyStatusUpdate(Set<Roles> roles, boolean canSetStatus) {
         mockHealthCodeAndAccountRetrieval();
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
-                .withStatus(status).build();
+                .withStatus(AccountStatus.ENABLED).build();
         
         participantService.updateParticipant(STUDY, roles, participant);
 
         verify(accountDao).updateAccount(accountCaptor.capture());
         Account account = accountCaptor.getValue();
 
-        if (status == null) {
-            verify(account, never()).setStatus(any());    
+        if (canSetStatus) {
+            verify(account).setStatus(AccountStatus.ENABLED);
         } else {
-            verify(account).setStatus(status);
+            verify(account, never()).setStatus(any());
         }
     }
 

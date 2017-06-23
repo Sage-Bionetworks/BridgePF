@@ -311,7 +311,7 @@ public class ParticipantControllerTest {
         IdentifierHolder holder = setUpCreateParticipant();
         doReturn(holder).when(mockParticipantService).createParticipant(eq(study), any(), any(StudyParticipant.class), eq(true));
         
-        Result result = controller.createParticipant("true");
+        Result result = controller.createParticipant();
 
         assertEquals(201, result.status());
         String id = MAPPER.readTree(Helpers.contentAsString(result)).get("identifier").asText();
@@ -330,19 +330,6 @@ public class ParticipantControllerTest {
         assertEquals(Sets.newHashSet("group2","group1"), participant.getDataGroups());
         assertEquals("123456789", participant.getAttributes().get("phone"));
         assertEquals(Sets.newHashSet("en","fr"), participant.getLanguages());
-    }
-    
-    @Test
-    public void createParticipantWithoutEmailVerification() throws Exception {
-        IdentifierHolder holder = setUpCreateParticipant();
-        doReturn(holder).when(mockParticipantService).createParticipant(eq(study), any(), any(StudyParticipant.class), eq(false));
-        
-        Result result = controller.createParticipant("false");
-        
-        String id = MAPPER.readTree(Helpers.contentAsString(result)).get("identifier").asText();
-        assertEquals(holder.getIdentifier(), id);
-        
-        verify(mockParticipantService).createParticipant(eq(study), eq(CALLER_ROLES), participantCaptor.capture(), eq(false));
     }
 
     @Test
@@ -665,15 +652,15 @@ public class ParticipantControllerTest {
 
         List<? extends Upload> list = Lists.newArrayList();
 
-        PagedResourceList<? extends Upload> uploads = new PagedResourceList<>(list, null, API_MAXIMUM_PAGE_SIZE, 0)
+        ForwardCursorPagedResourceList<? extends Upload> uploads = new ForwardCursorPagedResourceList<>(list, "abc", API_MAXIMUM_PAGE_SIZE)
                 .withFilter("startTime", startTime)
                 .withFilter("endTime", endTime);
-        doReturn(uploads).when(mockParticipantService).getUploads(study, ID, startTime, endTime);
+        doReturn(uploads).when(mockParticipantService).getUploads(study, ID, startTime, endTime, 10, "abc");
         
-        Result result = controller.getUploads(ID, startTime.toString(), endTime.toString());
+        Result result = controller.getUploads(ID, startTime.toString(), endTime.toString(), 10, "abc");
         assertEquals(200, result.status());
         
-        verify(mockParticipantService).getUploads(study, ID, startTime, endTime);
+        verify(mockParticipantService).getUploads(study, ID, startTime, endTime, 10, "abc");
         
         // in other words, it's the object we mocked out from the service, we were returned the value.
         PagedResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
@@ -684,16 +671,16 @@ public class ParticipantControllerTest {
     
     @Test
     public void getUploadsNullsDateRange() throws Exception {
-        List<? extends Upload> list = Lists.newArrayList();
+        List<Upload> list = Lists.newArrayList();
 
-        PagedResourceList<? extends Upload> uploads = new PagedResourceList<>(list,
-                null, API_MAXIMUM_PAGE_SIZE, 0);
-        doReturn(uploads).when(mockParticipantService).getUploads(study, ID, null, null);
+        ForwardCursorPagedResourceList<Upload> uploads = new ForwardCursorPagedResourceList<>(list, null,
+                API_MAXIMUM_PAGE_SIZE);
+        doReturn(uploads).when(mockParticipantService).getUploads(study, ID, null, null, null, null);
         
-        Result result = controller.getUploads(ID, null, null);
+        Result result = controller.getUploads(ID, null, null, null, null);
         assertEquals(200, result.status());
         
-        verify(mockParticipantService).getUploads(study, ID, null, null);
+        verify(mockParticipantService).getUploads(study, ID, null, null, null, null);
     }
     
     @Test

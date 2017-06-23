@@ -6,9 +6,12 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.dynamodb.DynamoExternalIdDao.PAGE_SIZE_ERROR;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.Resource;
@@ -17,11 +20,16 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.QueryOutcome;
 import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
+import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
+import com.google.common.collect.Iterables;
+
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
@@ -34,8 +42,9 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
@@ -50,6 +59,7 @@ public class DynamoUploadDao implements UploadDao {
     private static final String UPLOAD_ID = "uploadId";
     private static final String STUDY_ID = "studyId";
     private static final String REQUESTED_ON = "requestedOn";
+    private static final String HEALTH_CODE = "healthCode";
     private static final String STUDY_ID_REQUESTED_ON_INDEX = "studyId-requestedOn-index";
     
     /**
@@ -110,16 +120,59 @@ public class DynamoUploadDao implements UploadDao {
     
     /** {@inheritDoc} */
     @Override
-    public List<? extends Upload> getUploads(String healthCode, DateTime startTime, DateTime endTime) {
-        RangeKeyCondition condition = new RangeKeyCondition("requestedOn").between(
-                startTime.getMillis(), endTime.getMillis());
+    public ForwardCursorPagedResourceList<Upload> getUploads(String healthCode, DateTime startTime, DateTime endTime,
+            int pageSize, String offsetKey) {
+        // Set a sane upper limit on this.
+        if (pageSize < 1 || pageSize > API_MAXIMUM_PAGE_SIZE) {
+            throw new BadRequestException(PAGE_SIZE_ERROR);
+        }
+        int sizeWithIndicatorRecord = pageSize+1;
+        long offsetTimestamp = (offsetKey == null) ? 0 : Long.parseLong(offsetKey);
+        long offsetStartTime = Math.max(startTime.getMillis(), offsetTimestamp);
         
-        return healthCodeRequestedOnIndex.query(DynamoUpload2.class, "healthCode", healthCode, condition);
+        RangeKeyCondition condition = new RangeKeyCondition(REQUESTED_ON).between(
+                offsetStartTime, endTime.getMillis());
+        
+        QuerySpec spec = new QuerySpec()
+                .withHashKey(HEALTH_CODE, healthCode)
+                .withMaxPageSize(sizeWithIndicatorRecord)
+                .withRangeKeyCondition(condition); // this is not a filter, it should not require paging on our side.
+        QueryOutcome outcome = healthCodeRequestedOnIndex.query(spec);
+        
+        List<Upload> itemsToLoad = new ArrayList<>(sizeWithIndicatorRecord);
+        Iterator<Item> iter = outcome.getItems().iterator();
+        while (iter.hasNext() && itemsToLoad.size() < sizeWithIndicatorRecord) {
+            Item item = iter.next();
+            DynamoUpload2 indexKeys = BridgeObjectMapper.get().convertValue(item.asMap(), DynamoUpload2.class);
+            itemsToLoad.add(indexKeys); 
+        }
+        
+        List<Upload> results = new ArrayList<>(sizeWithIndicatorRecord);
+        Map<String, List<Object>> resultMap = mapper.batchLoad(itemsToLoad);
+        for (List<Object> resultList : resultMap.values()) {
+            for (Object oneResult : resultList) {
+                results.add((Upload) oneResult);
+            }
+        }
+        
+        // Due to the return in a map, these items are not in order by requestedOn attribute, so sort them.
+        results.sort(Comparator.comparing(Upload::getRequestedOn));
+        
+        String nextOffsetKey = null;
+        if (results.size() > pageSize) {
+            nextOffsetKey = Long.toString(Iterables.getLast(results).getRequestedOn());
+        }
+
+        int lastIndex = Math.min(pageSize, results.size());
+        return new ForwardCursorPagedResourceList<>(results.subList(0, lastIndex), nextOffsetKey, pageSize)
+                .withFilter("startTime", startTime.toString())
+                .withFilter("endTime", endTime.toString());
     }
 
     /** {@inheritDoc} */
     @Override
-    public PagedResourceList<? extends Upload> getStudyUploads(StudyIdentifier studyId, DateTime startTime, DateTime endTime, int pageSize, String offsetKey) {
+    public ForwardCursorPagedResourceList<Upload> getStudyUploads(StudyIdentifier studyId, DateTime startTime,
+            DateTime endTime, int pageSize, String offsetKey) {
         checkNotNull(studyId);
 
         // Just set a sane upper limit on this.
@@ -132,7 +185,7 @@ public class DynamoUploadDao implements UploadDao {
                 createGetQuery(studyId, startTime, endTime, offsetKey, pageSize));
 
         Map<String, List<Object>> resultMap = mapper.batchLoad(page.getResults());
-        List<DynamoUpload2> uploadList = new ArrayList<>();
+        List<Upload> uploadList = new ArrayList<>();
         for (List<Object> resultList : resultMap.values()) {
             for (Object oneResult : resultList) {
                 if (!DynamoUpload2.class.isInstance(oneResult)) {
@@ -147,9 +200,10 @@ public class DynamoUploadDao implements UploadDao {
         }
 
         String nextPageOffsetKey = (page.getLastEvaluatedKey() != null) ? page.getLastEvaluatedKey().get(UPLOAD_ID).getS() : null;
-
-        return new PagedResourceList<>(uploadList, null, pageSize, uploadList.size())
-                .withOffsetKey(nextPageOffsetKey);
+        
+        return new ForwardCursorPagedResourceList<>(uploadList, nextPageOffsetKey, pageSize)
+                .withFilter("startDate", startTime.toString())
+                .withFilter("endDate", endTime.toString());
     }
 
     private DynamoDBQueryExpression<DynamoUpload2> createGetQuery(StudyIdentifier studyId, DateTime startTime, DateTime endTime,
@@ -231,7 +285,7 @@ public class DynamoUploadDao implements UploadDao {
     @Override
     public void deleteUploadsForHealthCode(@Nonnull String healthCode) {
         List<? extends Upload> uploadsToDelete = healthCodeRequestedOnIndex.queryKeys(
-                DynamoUpload2.class, "healthCode", healthCode, null);
+                DynamoUpload2.class, HEALTH_CODE, healthCode, null);
         
         if (!uploadsToDelete.isEmpty()) {
             List<FailedBatch> failures = mapper.batchDelete(uploadsToDelete);

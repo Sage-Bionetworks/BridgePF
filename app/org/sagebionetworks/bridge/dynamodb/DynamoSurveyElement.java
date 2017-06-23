@@ -1,7 +1,11 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.List;
+import java.util.Objects;
+
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyElementConstants;
+import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
@@ -11,6 +15,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableList;
 
 @DynamoDBTable(tableName = SurveyElementConstants.SURVEY_ELEMENT_TYPE)
 @JsonFilter("filter")
@@ -22,6 +27,7 @@ public class DynamoSurveyElement implements SurveyElement {
     private String type;
     private int order;
     private JsonNode data;
+    private List<SurveyRule> rules;
 
     public DynamoSurveyElement() {
     }
@@ -80,51 +86,37 @@ public class DynamoSurveyElement implements SurveyElement {
     public void setData(JsonNode data) {
         this.data = data;
     }
-
+    /**
+     * For backwards compatibility purposes, a null property here is different than an 
+     * empty list. A null value indicates we have never moved the rules from the constraints 
+     * and persisted them as a property of the element; an empty list is a valid value. 
+     */
+    @DynamoDBTypeConverted(converter = SurveyRuleListMarshaller.class)
+    @DynamoDBAttribute
+    public List<SurveyRule> getRules() {
+        return (this.rules == null) ? null : ImmutableList.copyOf(this.rules);
+    }
+    public void setRules(List<SurveyRule> rules) {
+        this.rules = rules;
+    }
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((guid == null) ? 0 : guid.hashCode());
-        result = prime * result + ((identifier == null) ? 0 : identifier.hashCode());
-        result = prime * result + order;
-        result = prime * result + ((surveyCompoundKey == null) ? 0 : surveyCompoundKey.hashCode());
-        result = prime * result + ((type == null) ? 0 : type.hashCode());
-        return result;
+        return Objects.hash(guid, identifier, order, surveyCompoundKey, type, rules);
     }
 
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
             return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
+        if (obj == null || getClass() != obj.getClass())
             return false;
         DynamoSurveyElement other = (DynamoSurveyElement) obj;
-        if (guid == null) {
-            if (other.guid != null)
-                return false;
-        } else if (!guid.equals(other.guid))
-            return false;
-        if (identifier == null) {
-            if (other.identifier != null)
-                return false;
-        } else if (!identifier.equals(other.identifier))
-            return false;
-        if (order != other.order)
-            return false;
-        if (surveyCompoundKey == null) {
-            if (other.surveyCompoundKey != null)
-                return false;
-        } else if (!surveyCompoundKey.equals(other.surveyCompoundKey))
-            return false;
-        if (type == null) {
-            if (other.type != null)
-                return false;
-        } else if (!type.equals(other.type))
-            return false;
-        return true;
+        return Objects.equals(guid, other.guid) &&
+                Objects.equals(identifier, other.identifier) &&
+                Objects.equals(order, this.order) &&
+                Objects.equals(surveyCompoundKey, this.surveyCompoundKey) &&
+                Objects.equals(type, other.type) &&
+                Objects.equals(rules, other.rules);
     }
     
 }

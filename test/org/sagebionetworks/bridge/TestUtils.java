@@ -75,6 +75,33 @@ public class TestUtils {
     
     private static final DateTime TEST_CREATED_ON = DateTime.parse("2015-01-27T00:38:32.486Z");
 
+    public static <E> void assertListIsImmutable(List<E> list, E sampleElement) {
+        try {
+            list.add(sampleElement);
+            fail("expected exception");
+        } catch (RuntimeException ex) {
+            // expected exception
+        }
+    }
+
+    public static <K, V> void assertMapIsImmutable(Map<K, V> map, K sampleKey, V sampleValue) {
+        try {
+            map.put(sampleKey, sampleValue);
+            fail("expected exception");
+        } catch (RuntimeException ex) {
+            // expected exception
+        }
+    }
+
+    public static <E> void assertSetIsImmutable(Set<E> set, E sampleElement) {
+        try {
+            set.add(sampleElement);
+            fail("expected exception");
+        } catch (RuntimeException ex) {
+            // expected exception
+        }
+    }
+
     /**
      * Asserts that on validation, InvalidEntityException has been thrown with an error key that is the nested path to
      * the object value that is invalid, and the correct error message.

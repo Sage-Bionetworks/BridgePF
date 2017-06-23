@@ -19,9 +19,9 @@ public class SurveyElementFactory {
     public static SurveyElement fromJson(JsonNode node) {
         String type = JsonUtils.asText(node, "type");
         if (SURVEY_QUESTION_TYPE.equals(type)) {
-            return DynamoSurveyQuestion.fromJson(node);
+            return SurveyQuestion.fromJson(node);
         } else if (SURVEY_INFO_SCREEN_TYPE.equals(type)) {
-            return DynamoSurveyInfoScreen.fromJson(node);
+            return SurveyInfoScreen.fromJson(node);
         } else {
             throw new InvalidEntityException("Survey element type '"+type+"' not recognized.");
         }

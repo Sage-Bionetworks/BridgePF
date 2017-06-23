@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
@@ -124,20 +125,18 @@ public class ParticipantController extends BaseController {
         return okResult(page);
     }
     
-    public Result createParticipant(String verifyEmailString) throws Exception {
+    public Result createParticipant() throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
-        boolean verifyEmail = Boolean.parseBoolean(verifyEmailString);
-        
         IdentifierHolder holder = participantService.createParticipant(study, session.getParticipant().getRoles(),
-                participant, verifyEmail);
+                participant, true);
         return createdResult(holder);
     }
     
     public Result getParticipant(String userId) throws Exception {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(ADMIN, RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         StudyParticipant participant = participantService.getParticipant(study, userId, true);
@@ -178,7 +177,7 @@ public class ParticipantController extends BaseController {
     }
     
     public Result updateParticipant(String userId) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(ADMIN, RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
@@ -278,15 +277,16 @@ public class ParticipantController extends BaseController {
         return okResult("User has been withdrawn from subpopulation '"+subpopulationGuid+"'.");
     }
     
-    public Result getUploads(String userId, String startTimeString, String endTimeString) {
+    public Result getUploads(String userId, String startTimeString, String endTimeString, Integer pageSize,
+            String offsetKey) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
         DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
         DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
 
-        PagedResourceList<? extends UploadView> uploads = participantService.getUploads(
-                study, userId, startTime, endTime);
+        ForwardCursorPagedResourceList<UploadView> uploads = participantService.getUploads(
+                study, userId, startTime, endTime, pageSize, offsetKey);
 
         return okResult(uploads);
     }

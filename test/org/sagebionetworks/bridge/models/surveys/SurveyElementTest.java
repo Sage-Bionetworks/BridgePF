@@ -14,20 +14,22 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 
 @SuppressWarnings("unchecked")
 public class SurveyElementTest {
     @Test
     public void serializeSurveyQuestion() throws Exception {
         // start with JSON
-        String jsonText = "{\n" +
-                "   \"fireEvent\":false,\n" +
-                "   \"guid\":\"test-guid\",\n" +
-                "   \"identifier\":\"test-survey-question\",\n" +
-                "   \"prompt\":\"Is this a survey question?\",\n" +
-                "   \"promptDetail\":\"Details about question\",\n" +
-                "   \"type\":\"SurveyQuestion\",\n" +
-                "   \"uiHint\":\"textfield\"\n" +
+        String jsonText = "{" +
+                "   \"fireEvent\":false," +
+                "   \"guid\":\"test-guid\"," +
+                "   \"identifier\":\"test-survey-question\"," +
+                "   \"prompt\":\"Is this a survey question?\"," +
+                "   \"promptDetail\":\"Details about question\"," +
+                "   \"rules\":[{\"operator\":\"always\",\"endSurvey\":true}],"+
+                "   \"type\":\"SurveyQuestion\"," +
+                "   \"uiHint\":\"textfield\"" +
                 "}";
 
         // convert to POJO
@@ -50,7 +52,7 @@ public class SurveyElementTest {
 
         // then convert to a map so we can validate the raw JSON
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(7, jsonMap.size());
+        assertEquals(8, jsonMap.size());
         assertFalse((boolean) jsonMap.get("fireEvent"));
         assertEquals("test-guid", jsonMap.get("guid"));
         assertEquals("test-survey-question", jsonMap.get("identifier"));
@@ -58,23 +60,37 @@ public class SurveyElementTest {
         assertEquals("Details about question", jsonMap.get("promptDetail"));
         assertEquals("SurveyQuestion", jsonMap.get("type"));
         assertEquals("textfield", jsonMap.get("uiHint"));
+        
+        SurveyQuestion deserQuestion = BridgeObjectMapper.get().readValue(convertedJson, SurveyQuestion.class);
+        
+        SurveyRule rule = new SurveyRule.Builder().withEndSurvey(true).withOperator(Operator.ALWAYS).build();
+        assertFalse(deserQuestion.getFireEvent());
+        assertEquals("test-guid", deserQuestion.getGuid());
+        assertEquals("test-survey-question", deserQuestion.getIdentifier());
+        assertEquals("Is this a survey question?", deserQuestion.getPrompt());
+        assertEquals("Details about question", deserQuestion.getPromptDetail());
+        assertEquals("SurveyQuestion", deserQuestion.getType());
+        assertEquals(UIHint.TEXTFIELD, deserQuestion.getUiHint());
+        assertEquals(rule, deserQuestion.getRules().get(0));
     }
 
     @Test
     public void serializeSurveyInfoScreen() throws Exception {
         // start with JSON
-        String jsonText = "{\n" +
-                "   \"guid\":\"test-guid\",\n" +
-                "   \"identifier\":\"test-survey-info-screen\",\n" +
-                "   \"image\":{\n" +
-                "       \"source\":\"http://www.example.com/test.png\",\n" +
-                "       \"width\":200,\n" +
-                "       \"height\":150\n" +
-                "   },\n" +
-                "   \"prompt\":\"This is the survey info\",\n" +
-                "   \"promptDetail\":\"More info\",\n" +
-                "   \"title\":\"Survey Info\",\n" +
-                "   \"type\":\"SurveyInfoScreen\"\n" +
+        
+        String jsonText = "{" +
+                "   \"guid\":\"test-guid\"," +
+                "   \"identifier\":\"test-survey-info-screen\"," +
+                "   \"image\":{" +
+                "       \"source\":\"http://www.example.com/test.png\"," +
+                "       \"width\":200," +
+                "       \"height\":150" +
+                "   }," +
+                "   \"prompt\":\"This is the survey info\"," +
+                "   \"rules\":[{\"operator\":\"always\",\"endSurvey\":true}],"+
+                "   \"promptDetail\":\"More info\"," +
+                "   \"title\":\"Survey Info\"," +
+                "   \"type\":\"SurveyInfoScreen\"" +
                 "}";
 
         // convert to POJO
@@ -89,6 +105,8 @@ public class SurveyElementTest {
         assertNull(infoScreen.getSurveyCompoundKey());
         assertEquals("Survey Info", infoScreen.getTitle());
         assertEquals("SurveyInfoScreen", infoScreen.getType());
+        SurveyRule rule = new SurveyRule.Builder().withEndSurvey(true).withOperator(Operator.ALWAYS).build();
+        assertEquals(rule, infoScreen.getRules().get(0));
 
         assertEquals("http://www.example.com/test.png", infoScreen.getImage().getSource());
         assertEquals(200, infoScreen.getImage().getWidth());
@@ -99,7 +117,7 @@ public class SurveyElementTest {
 
         // then convert to a map so we can validate the raw JSON
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(7, jsonMap.size());
+        assertEquals(8, jsonMap.size());
         assertEquals("test-guid", jsonMap.get("guid"));
         assertEquals("test-survey-info-screen", jsonMap.get("identifier"));
         assertEquals("This is the survey info", jsonMap.get("prompt"));

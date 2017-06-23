@@ -3,7 +3,9 @@ package org.sagebionetworks.bridge.hibernate;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -144,16 +146,28 @@ public class HibernateAccountDao implements AccountDao {
         }
 
         // Unmarshall account
+        validateHealthCode(study.getStudyIdentifier(), hibernateAccount);
         return unmarshallAccount(hibernateAccount);
     }
 
     /** {@inheritDoc} */
     @Override
     public Account constructAccount(Study study, String email, String password) {
+        HealthId healthId = healthCodeService.createMapping(study.getStudyIdentifier());
+        return constructAccountForMigration(study, email, password, healthId);
+    }
+
+    /**
+     * Helper method that does all the work for constructAccount(), except we pass in the Health Code mapping instead
+     * of creating it ourselves. This allows us to create an account in both MySQL and Stormpath with the same Health
+     * Code mapping.
+     */
+    public Account constructAccountForMigration(Study study, String email, String password, HealthId healthId) {
         // Set basic params from inputs.
         GenericAccount account = new GenericAccount();
         account.setStudyId(study.getStudyIdentifier());
         account.setEmail(email);
+        account.setHealthId(healthId);
 
         // Hash password.
         PasswordAlgorithm passwordAlgorithm = PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
@@ -166,19 +180,30 @@ public class HibernateAccountDao implements AccountDao {
         account.setPasswordAlgorithm(passwordAlgorithm);
         account.setPasswordHash(passwordHash);
 
-        // Generate health code.
-        HealthId healthId = healthCodeService.createMapping(study.getStudyIdentifier());
-        account.setHealthId(healthId);
-
         return account;
     }
 
     /** {@inheritDoc} */
     @Override
     public String createAccount(Study study, Account account, boolean sendVerifyEmail) {
-        // Initial creation of account. Fill in basic initial parameters.
         String accountId = BridgeUtils.generateGuid();
+        createAccountForMigration(study, account, accountId, sendVerifyEmail);
 
+        // send verify email
+        if (sendVerifyEmail) {
+            accountWorkflowService.sendEmailVerificationToken(study, accountId, account.getEmail());
+        }
+
+        return accountId;
+    }
+
+    /**
+     * Helper method that does the same work as createAccount(), except account ID generation and email verification
+     * happen outside of this method. This is used during migration so that Stormpath does ID generation and so we
+     * don't verify email twice.
+     */
+    public void createAccountForMigration(Study study, Account account, String accountId, boolean sendVerifyEmail) {
+        // Initial creation of account. Fill in basic initial parameters.
         HibernateAccount hibernateAccount = marshallAccount(account);
         hibernateAccount.setId(accountId);
         hibernateAccount.setStudyId(study.getIdentifier());
@@ -200,13 +225,6 @@ public class HibernateAccountDao implements AccountDao {
                         "account with the same study and email");
             }
         }
-
-        // send verify email
-        if (sendVerifyEmail) {
-            accountWorkflowService.sendEmailVerificationToken(study, accountId, account.getEmail());
-        }
-
-        return accountId;
     }
 
     /** {@inheritDoc} */
@@ -237,6 +255,7 @@ public class HibernateAccountDao implements AccountDao {
     public Account getAccount(Study study, String id) {
         HibernateAccount hibernateAccount = hibernateHelper.getById(HibernateAccount.class, id);
         if (hibernateAccount != null) {
+            validateHealthCode(study.getStudyIdentifier(), hibernateAccount);
             return unmarshallAccount(hibernateAccount);
         } else {
             // In keeping with the email implementation, just return null
@@ -249,6 +268,7 @@ public class HibernateAccountDao implements AccountDao {
     public Account getAccountWithEmail(Study study, String email) {
         HibernateAccount hibernateAccount = getHibernateAccountByEmail(study.getStudyIdentifier(), email);
         if (hibernateAccount != null) {
+            validateHealthCode(study.getStudyIdentifier(), hibernateAccount);
             return unmarshallAccount(hibernateAccount);
         } else {
             return null;
@@ -336,17 +356,6 @@ public class HibernateAccountDao implements AccountDao {
                 .withFilter("endDate", endDate);
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public String getHealthCodeForEmail(Study study, String email) {
-        HibernateAccount hibernateAccount = getHibernateAccountByEmail(study.getStudyIdentifier(), email);
-        if (hibernateAccount != null) {
-            return hibernateAccount.getHealthCode();
-        } else {
-            return null;
-        }
-    }
-
     // Helper method which marshalls a GenericAccount into a HibernateAccount.
     // Package-scoped to facilitate unit tests.
     static HibernateAccount marshallAccount(Account account) {
@@ -416,6 +425,34 @@ public class HibernateAccountDao implements AccountDao {
         return hibernateAccount;
     }
 
+    // Callers of AccountDao assume that an Account will always a health code and health ID. All accounts created
+    // through the DAO will automatically have health code and ID populated, but accounts created in the DB directly
+    // are left in a bad state. This method validates the health code mapping on a HibernateAccount and updates it as
+    // is necessary.
+    private void validateHealthCode(StudyIdentifier studyId, HibernateAccount hibernateAccount) {
+        if (StringUtils.isBlank(hibernateAccount.getHealthCode()) ||
+                StringUtils.isBlank(hibernateAccount.getHealthId())) {
+            String accountId = hibernateAccount.getId();
+
+            // Generate health code mapping.
+            HealthId healthId = healthCodeService.createMapping(studyId);
+            hibernateAccount.setHealthCode(healthId.getCode());
+            hibernateAccount.setHealthId(healthId.getId());
+
+            // We modified it. Update modifiedOn.
+            long modifiedOn = DateUtils.getCurrentMillisFromEpoch();
+            hibernateAccount.setModifiedOn(modifiedOn);
+
+            // Save it to the back-end.
+            int numRowsUpdated = hibernateHelper.queryUpdate("update HibernateAccount set healthCode='" +
+                    healthId.getCode() + "', healthId='" + healthId.getId() + "', modifiedOn=" + modifiedOn +
+                    " where id='" + accountId + "'");
+            if (numRowsUpdated == 0) {
+                throw new BridgeServiceException("Failed to update password for account " + accountId);
+            }
+        }
+    }
+
     // Helper method which unmarshall a HibernateAccount into a GenericAccount.
     // Package-scoped to facilitate unit tests.
     static Account unmarshallAccount(HibernateAccount hibernateAccount) {
@@ -446,6 +483,7 @@ public class HibernateAccountDao implements AccountDao {
         }
 
         // Consents
+        Map<SubpopulationGuid, List<ConsentSignature>> tempConsentsBySubpop = new HashMap<>();
         for (Map.Entry<HibernateAccountConsentKey, HibernateAccountConsent> oneConsent : hibernateAccount
                 .getConsents().entrySet()) {
             // Consent key
@@ -462,14 +500,17 @@ public class HibernateAccountDao implements AccountDao {
                     .withWithdrewOn(consentValue.getWithdrewOn()).build();
 
             // Store in map.
-            account.getConsentSignatureHistory(subpopGuid).add(consentSignature);
+            tempConsentsBySubpop.putIfAbsent(subpopGuid, new ArrayList<>());
+            tempConsentsBySubpop.get(subpopGuid).add(consentSignature);
         }
 
         // Sort consents by signedOn, from oldest to newest.
-        for (List<ConsentSignature> consentSignatureListForSubpop : account.getAllConsentSignatureHistories()
-                .values()) {
-            Collections.sort(consentSignatureListForSubpop, (c1, c2) -> Long.compare(c1.getSignedOn(),
-                    c2.getSignedOn()));
+        for (Map.Entry<SubpopulationGuid, List<ConsentSignature>> consentSignatureListForSubpop :
+                tempConsentsBySubpop.entrySet()) {
+            SubpopulationGuid subpopGuid = consentSignatureListForSubpop.getKey();
+            List<ConsentSignature> consentListCopy = new ArrayList<>(consentSignatureListForSubpop.getValue());
+            Collections.sort(consentListCopy, (c1, c2) -> Long.compare(c1.getSignedOn(), c2.getSignedOn()));
+            account.setConsentSignatureHistory(subpopGuid, consentListCopy);
         }
 
         return account;

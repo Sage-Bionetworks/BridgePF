@@ -53,6 +53,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
+import org.sagebionetworks.bridge.models.accounts.HealthIdImpl;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -76,7 +77,10 @@ import com.stormpath.sdk.tenant.Tenant;
 
 @RunWith(MockitoJUnitRunner.class)
 public class StormpathAccountDaoMockTest {
-
+    private static final String EMAIL = "example@example.com";
+    private static final String HEALTH_CODE = "health-code";
+    private static final String HEALTH_ID_STRING = "health-id";
+    private static final HealthId HEALTH_ID = new HealthIdImpl(HEALTH_ID_STRING, HEALTH_CODE);
     private static final String PASSWORD = "P4ssword!";
 
     @Mock
@@ -96,10 +100,7 @@ public class StormpathAccountDaoMockTest {
     
     @Mock
     Tenant tenant;
-    
-    @Mock
-    HealthId healthId;
-    
+
     @Mock
     com.stormpath.sdk.account.Account stormpathAccount;
     
@@ -204,7 +205,7 @@ public class StormpathAccountDaoMockTest {
         when(customData.get("test-study_version")).thenReturn(2);
         when(customData.get("test-study_code")).thenReturn("healthId");
         when(stormpathAccount.getCustomData()).thenReturn(customData);
-        when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
+        when(healthCodeService.getMapping("healthId")).thenReturn(HEALTH_ID);
 
         dao.verifyEmail(verification);
         verify(accountWorkflowService).verifyEmail(verification);
@@ -240,7 +241,7 @@ public class StormpathAccountDaoMockTest {
         when(client.getResource(study.getStormpathHref(), Directory.class)).thenReturn(directory);
         when(directory.createAccount(any(), eq(false))).thenReturn(stormpathAccount);
         
-        doReturn(healthId).when(healthCodeService).createMapping(study);
+        doReturn(HEALTH_ID).when(healthCodeService).createMapping(study);
         
         String random = RandomStringUtils.randomAlphabetic(5);
         String email = "bridge-testing+"+random+"@sagebridge.org";
@@ -261,6 +262,29 @@ public class StormpathAccountDaoMockTest {
         verify(acct).setEmail(email);
         verify(acct).setPassword(PASSWORD);
     }
+
+    @Test
+    public void constructAccountForMigration() {
+        // Mock Stormpath with a minimal account.
+        when(stormpathAccount.getCustomData()).thenReturn(customData);
+        when(client.instantiate(com.stormpath.sdk.account.Account.class)).thenReturn(stormpathAccount);
+
+        // Mock encryptor.
+        when(encryptor.encrypt(HEALTH_ID_STRING)).thenReturn("encrypted-health-id");
+        when(encryptor.getVersion()).thenReturn(2);
+
+        // execute
+        StormpathAccount account = (StormpathAccount) dao.constructAccountForMigration(study, EMAIL, PASSWORD,
+                HEALTH_ID);
+
+        // Most of this stuff has been tested in the previous test. Just test that we set the expected HealthId.
+        verify(customData).put("test-study_code_version", 2);
+        verify(customData).put("test-study_code", "encrypted-health-id");
+        assertEquals(HEALTH_CODE, account.getHealthCode());
+
+        // Also verify that we never call HealthCodeService.
+        verify(healthCodeService, never()).createMapping(any());
+    }
     
     @Test
     public void authenticate() {
@@ -280,7 +304,7 @@ public class StormpathAccountDaoMockTest {
         when(customData.get("test-study_version")).thenReturn(2);
         when(customData.get("test-study_code")).thenReturn("healthId");
         when(stormpathAccount.getCustomData()).thenReturn(customData);
-        when(healthCodeService.getMapping("healthId")).thenReturn(healthId);
+        when(healthCodeService.getMapping("healthId")).thenReturn(HEALTH_ID);
         
         // authenticate
         Account account = dao.authenticate(study, new SignIn("test-study", "dummy-user", PASSWORD, null));

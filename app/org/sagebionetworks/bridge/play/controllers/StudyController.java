@@ -25,7 +25,7 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CmsPublicKey;
-import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -204,7 +204,7 @@ public class StudyController extends BaseController {
         DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
         DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
 
-        PagedResourceList<? extends UploadView> uploads = uploadService.getStudyUploads(
+        ForwardCursorPagedResourceList<UploadView> uploads = uploadService.getStudyUploads(
                 session.getStudyIdentifier(), startTime, endTime, pageSize, offsetKey);
 
         return okResult(uploads);
@@ -224,7 +224,7 @@ public class StudyController extends BaseController {
 
         StudyIdentifier studyId = new StudyIdentifierImpl(studyIdString);
 
-        PagedResourceList<? extends UploadView> uploads = uploadService.getStudyUploads(
+        ForwardCursorPagedResourceList<UploadView> uploads = uploadService.getStudyUploads(
                 studyId, startTime, endTime, pageSize, offsetKey);
 
         return okResult(uploads);

@@ -17,9 +17,11 @@ import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
+import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
@@ -182,9 +184,35 @@ public class DynamoSurveyDao implements SurveyDao {
 
             List<SurveyElement> elements = Lists.newArrayList();
             for (DynamoSurveyElement element : page.getResults()) {
-                elements.add(SurveyElementFactory.fromDynamoEntity(element));
+                SurveyElement surveyElement = SurveyElementFactory.fromDynamoEntity(element);
+                reconcileRules(surveyElement);
+                elements.add(surveyElement);
             }
             survey.setElements(elements);
+        }
+    }
+    
+    /**
+     * Rules began as part of constraints, but constraints are only applied to questions. To apply
+     * rules like "always end the survey after this screen," rules are being moved to be a property 
+     * of SurveyElement. In the interim, existing surveys copy constraint rules to the element if 
+     * the element's rules are empty. Once there are element rules, they take precedence over anything
+     * set in the constraints going forward.
+     */
+    private void reconcileRules(SurveyElement element) {
+        if (element instanceof SurveyQuestion) {
+            SurveyQuestion question = (SurveyQuestion)element;
+            
+            // If the constraints have rules but the element does not, copy them over. Always do 
+            // this: the constraints rules will always take precedence until they are removed. At
+            // that point they will either not be copied on top of element rules which exist, or both 
+            // element and constraint rules will be empty, so it makes no difference.
+            Constraints con = question.getConstraints();
+            if (BridgeUtils.isEmpty(question.getRules())) {
+                question.setRules( con.getRules() );
+            }
+            // question rules take precedence once they exist.
+            con.setRules(question.getRules());
         }
     }
 
@@ -387,6 +415,7 @@ public class DynamoSurveyDao implements SurveyDao {
             if (element.getGuid() == null) {
                 element.setGuid(BridgeUtils.generateGuid());
             }
+            reconcileRules(element);
             dynamoElements.add((DynamoSurveyElement)element);
         }
         

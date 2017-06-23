@@ -25,7 +25,8 @@ public class SurveyPublishValidator implements Validator {
         return Survey.class.isAssignableFrom(clazz);
     }
 
-    @Override public void validate(Object target, Errors errors) {
+    @Override 
+    public void validate(Object target, Errors errors) {
         Survey survey = (Survey) target;
         // Validate that no identifier has been duplicated.
         Set<String> foundIdentifiers = Sets.newHashSet();

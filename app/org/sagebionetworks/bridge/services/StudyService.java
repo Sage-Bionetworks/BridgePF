@@ -49,32 +49,28 @@ import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
-import org.sagebionetworks.bridge.models.ClientInfo;
-import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.schedules.Activity;
-import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy;
-import org.sagebionetworks.bridge.models.schedules.Schedule;
-import org.sagebionetworks.bridge.models.schedules.ScheduleCriteria;
-import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 @Component("studyService")
 public class StudyService {
+
     private static Logger LOG = LoggerFactory.getLogger(StudyService.class);
 
     static final String EXPORTER_SYNAPSE_USER_ID = BridgeConfigFactory.getConfig().getExporterSynapseId(); // copy-paste from website
     static final String SYNAPSE_REGISTER_END_POINT = "https://www.synapse.org/#!NewAccount:";
+    private static final String STUDY_PROPERTY = "Study";
+    private static final String TYPE_PROPERTY = "type";
+    private static final String IDENTIFIER_PROPERTY = "identifier";
     private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
             BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
 
@@ -89,7 +85,6 @@ public class StudyService {
     private EmailVerificationService emailVerificationService;
     private SynapseClient synapseClient;
     private ParticipantService participantService;
-    private SchedulePlanService schedulePlanService;
 
     private String defaultEmailVerificationTemplate;
     private String defaultEmailVerificationTemplateSubject;
@@ -166,10 +161,6 @@ public class StudyService {
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
     }
-    @Autowired
-    final void setSchedulePlanService(SchedulePlanService schedulePlanService) {
-        this.schedulePlanService = schedulePlanService;
-    }
     
     @Autowired
     @Qualifier("bridgePFSynapseClient")
@@ -178,7 +169,7 @@ public class StudyService {
     }
 
     public Study getStudy(String identifier, boolean includeDeleted) {
-        checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
+        checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, IDENTIFIER_PROPERTY);
 
         Study study = cacheProvider.getStudy(identifier);
         if (study == null) {
@@ -297,7 +288,7 @@ public class StudyService {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         if (study.getVersion() != null){
             throw new EntityAlreadyExistsException(Study.class, "Study has a version value; it may already exist",
-                new ImmutableMap.Builder<String,Object>().put("identifier", study.getIdentifier()).build());
+                new ImmutableMap.Builder<String,Object>().put(IDENTIFIER_PROPERTY, study.getIdentifier()).build());
         }
 
         study.setActive(true);
@@ -308,7 +299,7 @@ public class StudyService {
         Validate.entityThrowingException(validator, study);
 
         if (studyDao.doesIdentifierExist(study.getIdentifier())) {
-            throw new EntityAlreadyExistsException(Study.class, "identifier", study.getIdentifier());
+            throw new EntityAlreadyExistsException(Study.class, IDENTIFIER_PROPERTY, study.getIdentifier());
         }
         
         subpopService.createDefaultSubpopulation(study);
@@ -337,12 +328,12 @@ public class StudyService {
         // first check if study already has project and team ids
         if (study.getSynapseDataAccessTeamId() != null){
             throw new EntityAlreadyExistsException(Study.class, "Study already has a team ID.",
-                new ImmutableMap.Builder<String,Object>().put("identifier", study.getIdentifier())
+                new ImmutableMap.Builder<String,Object>().put(IDENTIFIER_PROPERTY, study.getIdentifier())
                     .put("synapseDataAccessTeamId", study.getSynapseDataAccessTeamId()).build());
         }
         if (study.getSynapseProjectId() != null){
             throw new EntityAlreadyExistsException(Study.class, "Study already has a project ID.",
-                new ImmutableMap.Builder<String,Object>().put("identifier", study.getIdentifier())
+                new ImmutableMap.Builder<String,Object>().put(IDENTIFIER_PROPERTY, study.getIdentifier())
                 .put("synapseProjectId", study.getSynapseProjectId()).build());
         }
 
@@ -413,7 +404,7 @@ public class StudyService {
         // These cannot be set through the API and will be null here, so they are set on update
         Study originalStudy = studyDao.getStudy(study.getIdentifier());
         
-        checkViolationConstraints(study);
+        checkViolationConstraints(originalStudy, study);
         
         // A number of fields can only be set by an administrator. We set these to their existing values if the 
         // caller is not an admin.
@@ -465,7 +456,7 @@ public class StudyService {
     }
 
     public void deleteStudy(String identifier, boolean physical) {
-        checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
+        checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, IDENTIFIER_PROPERTY);
 
         if (studyWhitelist.contains(identifier)) {
             throw new UnauthorizedException(identifier + " is protected by whitelist.");
@@ -500,68 +491,27 @@ public class StudyService {
     }
     
     /**
-     * The user cannot remove data groups already used by criteria, or task identifiers already used in schedules. If
-     * these entities contain data groups or identifiers that are not in the updated version of the study, this is a
-     * constraint violation.
+     * The user cannot remove data groups or task identifiers. These may be referenced by many objects on the server,
+     * and may be used by the client application. If any of these are missing on an update, throw a constraint
+     * violation exception.
      */
-    private void checkViolationConstraints(Study study) {
-        final Set<String> taskIds = study.getTaskIdentifiers();
-        final Set<String> dataGroups = study.getDataGroups();
-        final Set<String> eventKeys = study.getActivityEventKeys();
-
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, study);
-
-        // If the study is *missing* a task identifier or a data group that is currently in use in a plan, 
-        // that's a constraint error.
-        for (SchedulePlan plan : plans) {
-            for (Schedule schedule : plan.getStrategy().getAllPossibleSchedules()) {
-                for (Activity activity : schedule.getActivities()) {
-                    if (activity.getTask() != null && !taskIds.contains(activity.getTask().getIdentifier())) {
-                        throwConstraintViolation(plan, study);
-                    }
-                }
-                for (String eventId : Schedule.EVENT_ID_SPLITTER.split(schedule.getEventId())) {
-                    if (!eventKeys.contains(eventId)){
-                        throwConstraintViolation(plan, study);
-                    }
-                }
-            }
-            if (plan.getStrategy() instanceof CriteriaScheduleStrategy) {
-                CriteriaScheduleStrategy strategy = (CriteriaScheduleStrategy)plan.getStrategy();
-                for (ScheduleCriteria scheduleCriteria : strategy.getScheduleCriteria()) {
-                    if (!studyHasCriteriaDataGroups(dataGroups, scheduleCriteria.getCriteria())) {
-                        throwConstraintViolation(plan, study);
-                    }
-                }
-                
-            }
+    private void checkViolationConstraints(Study originalStudy, Study study) {
+        if (!study.getDataGroups().containsAll(originalStudy.getDataGroups())) {
+            throw new ConstraintViolationException.Builder()
+                    .withEntityKey(IDENTIFIER_PROPERTY, study.getIdentifier()).withEntityKey(TYPE_PROPERTY, STUDY_PROPERTY)
+                    .withMessage("Data groups cannot be deleted.").build();
         }
-
-        // If the study is missing a dataGroup that is used by a subpopulation, that's a constraint error
-        // This does not include logically deleted subpopulations, so these may be corrupted when restored.  
-        List<Subpopulation> subpopulations = subpopService.getSubpopulations(study);
-        for (Subpopulation subpop : subpopulations) {
-            if (!subpop.isDeleted() && !studyHasCriteriaDataGroups(study.getDataGroups(), subpop.getCriteria())) {
-                throwConstraintViolation(subpop, study);
-            }
+        if (!study.getTaskIdentifiers().containsAll(originalStudy.getTaskIdentifiers())) {
+            throw new ConstraintViolationException.Builder()
+                    .withEntityKey(IDENTIFIER_PROPERTY, study.getIdentifier()).withEntityKey(TYPE_PROPERTY, STUDY_PROPERTY)
+                    .withMessage("Task identifiers cannot be deleted.").build();
         }
-    }
-    
-    private boolean studyHasCriteriaDataGroups(Set<String> studyDataGroups, Criteria criteria) {
-        return studyDataGroups.containsAll(criteria.getAllOfGroups()) &&
-                studyDataGroups.containsAll(criteria.getNoneOfGroups());
-    }
-    
-    private void throwConstraintViolation(SchedulePlan match, Study study) {
-        throw new ConstraintViolationException.Builder().withEntityKey("identifier", study.getIdentifier())
-                .withEntityKey("type", "Study").withReferrerKey("guid", match.getGuid())
-                .withReferrerKey("type", "SchedulePlan").build();
-    }
-    
-    private void throwConstraintViolation(Subpopulation match, Study study) {
-        throw new ConstraintViolationException.Builder().withEntityKey("identifier", study.getIdentifier())
-                .withEntityKey("type", "Study").withReferrerKey("guid", match.getGuidString())
-                .withReferrerKey("type", "Subpopulation").build();
+        if (!study.getActivityEventKeys().containsAll(originalStudy.getActivityEventKeys())) {
+            throw new ConstraintViolationException.Builder()
+                    .withEntityKey(IDENTIFIER_PROPERTY, study.getIdentifier()).withEntityKey(TYPE_PROPERTY, STUDY_PROPERTY)
+                    .withMessage("Activity event keys cannot be deleted.").build();
+
+        }
     }
     
     /**

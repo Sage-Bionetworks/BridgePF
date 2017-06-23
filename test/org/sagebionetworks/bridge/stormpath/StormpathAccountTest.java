@@ -1,32 +1,37 @@
 package org.sagebionetworks.bridge.stormpath;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
@@ -109,19 +114,103 @@ public class StormpathAccountTest {
             return (encValue == null) ? encValue : encValue.replace("encrypted-"+version+"-", "");
         });
     }
-    
+
+    @Test
+    public void settingAccountSetsRoles() {
+        // mock account and groups
+        Group mockDeveloperGroup = mock(Group.class);
+        when(mockDeveloperGroup.getName()).thenReturn("developer");
+
+        Group mockResearcherGroup = mock(Group.class);
+        when(mockResearcherGroup.getName()).thenReturn("researcher");
+
+        GroupList mockGroupList = mock(GroupList.class);
+        when(mockGroupList.iterator()).thenReturn(ImmutableList.of(mockDeveloperGroup, mockResearcherGroup)
+                .iterator());
+
+        when(account.getGroups()).thenReturn(mockGroupList);
+
+        // execute and validate roles
+        acct.setAccount(account);
+        assertEquals(EnumSet.of(Roles.DEVELOPER, Roles.RESEARCHER), acct.getRoles());
+
+        // can't use getAccount() in test as that has side effects
+    }
+
     @Test
     public void consentSignaturesEncrypted() throws Exception {
-        List<ConsentSignature> signatures = acct.getConsentSignatureHistory(SUBPOP_GUID);
-        signatures.add(new ConsentSignature.Builder().withName("Another Name").withBirthdate("1983-05-10").build());
+        ConsentSignature testSignature = new ConsentSignature.Builder().withName("Another Name")
+                .withBirthdate("1983-05-10").build();
+        acct.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(testSignature));
         
         String json = BridgeObjectMapper.get().writeValueAsString(acct.getConsentSignatureHistory(SUBPOP_GUID));
         acct.getAccount(); // necessary to trigger update of customData
         
         assertEquals("encrypted-2-"+json, data.get("foo_consent_signatures"));
-        assertEquals(signatures, acct.getConsentSignatureHistory(SUBPOP_GUID));
+
+        List<ConsentSignature> outputConsentList = acct.getConsentSignatureHistory(SUBPOP_GUID);
+        assertEquals(1, outputConsentList.size());
+        assertEquals(testSignature, outputConsentList.get(0));
     }
-    
+
+    @Test
+    public void consents() {
+        // Make dummy subpops.
+        SubpopulationGuid fooSubpopGuid = SubpopulationGuid.create("foo-subpop-guid");
+        SubpopulationGuid barSubpopGuid = SubpopulationGuid.create("bar-subpop-guid");
+
+        ConsentSignature fooConsentSignature = new ConsentSignature.Builder().withName("Foo McFooface")
+                .withBirthdate("1999-01-01").build();
+        ConsentSignature barConsentSignature = new ConsentSignature.Builder().withName("Bar McBarface")
+                .withBirthdate("1999-02-02").build();
+
+        // Consents starts off empty.
+        Map<SubpopulationGuid, List<ConsentSignature>> consentsBySubpop0 = acct.getAllConsentSignatureHistories();
+        assertTrue(consentsBySubpop0.isEmpty());
+        TestUtils.assertMapIsImmutable(consentsBySubpop0, fooSubpopGuid, ImmutableList.of(fooConsentSignature));
+
+        // Calling get by subpop initially returns an empty list.
+        assertTrue(acct.getConsentSignatureHistory(fooSubpopGuid).isEmpty());
+        assertTrue(acct.getConsentSignatureHistory(barSubpopGuid).isEmpty());
+
+        // Set consent lists. We create mutable lists, but test that we automatically convert these to immutable lists.
+        acct.setConsentSignatureHistory(fooSubpopGuid, Lists.newArrayList(fooConsentSignature));
+        acct.setConsentSignatureHistory(barSubpopGuid, Lists.newArrayList(barConsentSignature));
+
+        List<ConsentSignature> fooConsentList1 = acct.getConsentSignatureHistory(fooSubpopGuid);
+        assertEquals(1, fooConsentList1.size());
+        assertEquals(fooConsentSignature, fooConsentList1.get(0));
+        TestUtils.assertListIsImmutable(fooConsentList1, fooConsentSignature);
+
+        List<ConsentSignature> barConsentList1 = acct.getConsentSignatureHistory(barSubpopGuid);
+        assertEquals(1, barConsentList1.size());
+        assertEquals(barConsentSignature, barConsentList1.get(0));
+        TestUtils.assertListIsImmutable(barConsentList1, barConsentSignature);
+
+        Map<SubpopulationGuid, List<ConsentSignature>> consentsBySubpop1 = acct.getAllConsentSignatureHistories();
+        TestUtils.assertMapIsImmutable(consentsBySubpop1, fooSubpopGuid, ImmutableList.of(fooConsentSignature));
+        assertEquals(2, consentsBySubpop1.size());
+        assertEquals(fooConsentList1, consentsBySubpop1.get(fooSubpopGuid));
+        TestUtils.assertListIsImmutable(consentsBySubpop1.get(fooSubpopGuid), fooConsentSignature);
+        assertEquals(barConsentList1, consentsBySubpop1.get(barSubpopGuid));
+        TestUtils.assertListIsImmutable(consentsBySubpop1.get(barSubpopGuid), barConsentSignature);
+
+        // Setting a list to to null clears it from the map.
+        acct.setConsentSignatureHistory(fooSubpopGuid, null);
+        assertTrue(acct.getConsentSignatureHistory(fooSubpopGuid).isEmpty());
+        assertFalse(acct.getAllConsentSignatureHistories().containsKey(fooSubpopGuid));
+
+        // Setting a list to empty also clears it from the map.
+        acct.setConsentSignatureHistory(barSubpopGuid, new ArrayList<>());
+        assertTrue(acct.getConsentSignatureHistory(barSubpopGuid).isEmpty());
+        assertFalse(acct.getAllConsentSignatureHistories().containsKey(barSubpopGuid));
+
+        // Consent map is back to empty, and is still immutable.
+        Map<SubpopulationGuid, List<ConsentSignature>> consentsBySubpop2 = acct.getAllConsentSignatureHistories();
+        assertTrue(consentsBySubpop2.isEmpty());
+        TestUtils.assertMapIsImmutable(consentsBySubpop2, fooSubpopGuid, ImmutableList.of(fooConsentSignature));
+    }
+
     @Test
     public void basicFieldWorks() {
         when(account.getEmail()).thenReturn("test@test.com");
@@ -180,7 +269,7 @@ public class StormpathAccountTest {
     
     @Test
     public void consentSignatureRAndEncrypted() {
-        acct.getConsentSignatureHistory(SUBPOP_GUID).add(sig);
+        acct.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(sig));
         
         ConsentSignature restoredSig = acct.getActiveConsentSignature(SUBPOP_GUID);
         assertEquals("Test", restoredSig.getName());
@@ -332,15 +421,33 @@ public class StormpathAccountTest {
         String phone = acct.getAttribute("phone");
         assertNull(phone);
     }
-    
+
     @Test
     public void canSetAndGetRoles() {
-        acct.setRoles(Sets.newHashSet(DEVELOPER));
-        
-        assertEquals(1, acct.getRoles().size());
-        assertEquals(DEVELOPER, acct.getRoles().iterator().next());
+        // Initially empty.
+        GenericAccount account = new GenericAccount();
+        assertTrue(account.getRoles().isEmpty());
+        TestUtils.assertSetIsImmutable(account.getRoles(), Roles.TEST_USERS);
+
+        // Set works.
+        account.setRoles(EnumSet.of(Roles.ADMIN, Roles.DEVELOPER));
+        assertEquals(EnumSet.of(Roles.ADMIN, Roles.DEVELOPER), account.getRoles());
+        TestUtils.assertSetIsImmutable(account.getRoles(), Roles.TEST_USERS);
+
+        // Setting to null makes it an empty set.
+        account.setRoles(null);
+        assertTrue(account.getRoles().isEmpty());
+        TestUtils.assertSetIsImmutable(account.getRoles(), Roles.TEST_USERS);
+
+        // Set to non-empty, then set to empty and verify that it works.
+        account.setRoles(EnumSet.of(Roles.RESEARCHER));
+        assertEquals(EnumSet.of(Roles.RESEARCHER), account.getRoles());
+
+        account.setRoles(EnumSet.noneOf(Roles.class));
+        assertTrue(account.getRoles().isEmpty());
+        TestUtils.assertSetIsImmutable(account.getRoles(), Roles.TEST_USERS);
     }
-    
+
     // see the StormpathAccountDaoTest.canSetAndRetrieveConsentsForMultipleSubpopulations test where we 
     // test encryption into and out of Stormpath.
     @Test
@@ -356,8 +463,8 @@ public class StormpathAccountTest {
                 .withBirthdate("2000-02-02")
                 .withSignedOn(DateTime.now().getMillis())
                 .build();
-        acct.getConsentSignatureHistory(SUBPOP_GUID).add(sig1);
-        acct.getConsentSignatureHistory(SUBPOP_GUID_2).add(sig2);
+        acct.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(sig1));
+        acct.setConsentSignatureHistory(SUBPOP_GUID_2, ImmutableList.of(sig2));
         
         ConsentSignature sig1Retrieved = acct.getActiveConsentSignature(SUBPOP_GUID);
         assertEquals(sig1, sig1Retrieved);
