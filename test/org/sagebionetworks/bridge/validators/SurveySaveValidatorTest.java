@@ -409,7 +409,7 @@ public class SurveySaveValidatorTest {
         info.setIdentifier("theend");
         survey.getElements().add(info);
 
-        assertValidatorMessage(validator, survey, "elements[0].constraints.afterRules[0]",
+        assertValidatorMessage(validator, survey, "elements[0].constraints.rules[0]",
                 "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
     }
 
@@ -435,7 +435,7 @@ public class SurveySaveValidatorTest {
         question.setConstraints(constraints);
         survey.getElements().add(question);
 
-        assertValidatorMessage(validator, survey, "elements[0].constraints.afterRules[0]",
+        assertValidatorMessage(validator, survey, "elements[0].constraints.rules[0]",
                 "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
     }
 
@@ -795,7 +795,7 @@ public class SurveySaveValidatorTest {
                 .withSkipToTarget("high_bp").build();
         question.getConstraints().setRules(Lists.newArrayList(rule));
 
-        assertValidatorMessage(validator, survey, "elements[4].constraints.afterRules[0]", "back references question high_bp");
+        assertValidatorMessage(validator, survey, "elements[4].constraints.rules[0]", "back references question high_bp");
     }
 
     @Test
@@ -917,5 +917,23 @@ public class SurveySaveValidatorTest {
 
         assertValidatorMessage(validator, survey, "elements[4].afterRules[0]",
                 "has a data group 'bar' that is not a valid data group: baz, foo");
+    }
+    
+    @Test
+    public void beforeRulesAreValidated() {
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
+
+        SurveyRule invalidSkipTo = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1).withSkipToTarget("some-nonsense").build();
+        SurveyRule tooManyActions = new SurveyRule.Builder().withOperator(SurveyRule.Operator.LE).withValue(1).withSkipToTarget("nonsense").withEndSurvey(true).build();
+
+        SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
+        question.setBeforeRules(Lists.newArrayList(invalidSkipTo, tooManyActions));
+        
+        survey.setElements(Lists.newArrayList(question));
+        
+        assertValidatorMessage(validator, survey, "elements[0].beforeRules[0]",
+                "has a skipTo identifier that doesn't exist: some-nonsense");
+        assertValidatorMessage(validator, survey, "elements[0].beforeRules[1]",
+                "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
     }
 }

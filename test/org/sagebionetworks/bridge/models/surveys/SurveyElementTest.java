@@ -9,6 +9,7 @@ import java.util.Map;
 
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyInfoScreen;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -26,19 +27,16 @@ public class SurveyElementTest {
     
     @Test
     public void serializeSurveyQuestion() throws Exception {
-        
         // start with JSON
-        String jsonText = "{" +
-                "   \"fireEvent\":false," +
-                "   \"guid\":\"test-guid\"," +
-                "   \"identifier\":\"test-survey-question\"," +
-                "   \"prompt\":\"Is this a survey question?\"," +
-                "   \"promptDetail\":\"Details about question\"," +
-                "   \"beforeRules\":[{\"operator\":\"eq\",\"value\":10,\"assignDataGroup\":\"foo\"}],"+
-                "   \"afterRules\":[{\"operator\":\"always\",\"endSurvey\":true}],"+
-                "   \"type\":\"SurveyQuestion\"," +
-                "   \"uiHint\":\"textfield\"" +
-                "}";
+        String jsonText = TestUtils.createJson("{'fireEvent':false," +
+                "'guid':'test-guid'," +
+                "'identifier':'test-survey-question'," +
+                "'prompt':'Is this a survey question?'," +
+                "'promptDetail':'Details about question'," +
+                "'beforeRules':[{'operator':'eq','value':10,'assignDataGroup':'foo'}],"+
+                "'afterRules':[{'operator':'always','endSurvey':true}],"+
+                "'type':'SurveyQuestion'," +
+                "'uiHint':'textfield'}");
 
         // convert to POJO
         DynamoSurveyQuestion question = (DynamoSurveyQuestion) BridgeObjectMapper.get().readValue(jsonText,
@@ -88,22 +86,19 @@ public class SurveyElementTest {
     @Test
     public void serializeSurveyInfoScreen() throws Exception {
         // start with JSON
-        
-        String jsonText = "{" +
-                "   \"guid\":\"test-guid\"," +
-                "   \"identifier\":\"test-survey-info-screen\"," +
-                "   \"image\":{" +
-                "       \"source\":\"http://www.example.com/test.png\"," +
-                "       \"width\":200," +
-                "       \"height\":150" +
-                "   }," +
-                "   \"prompt\":\"This is the survey info\"," +
-                "   \"beforeRules\":[{\"operator\":\"eq\",\"value\":10,\"assignDataGroup\":\"foo\"}],"+
-                "   \"afterRules\":[{\"operator\":\"always\",\"endSurvey\":true}],"+
-                "   \"promptDetail\":\"More info\"," +
-                "   \"title\":\"Survey Info\"," +
-                "   \"type\":\"SurveyInfoScreen\"" +
-                "}";
+        String jsonText = TestUtils.createJson("{'guid':'test-guid'," +
+                "'identifier':'test-survey-info-screen'," +
+                "'image':{" +
+                "    'source':'http://www.example.com/test.png'," +
+                "    'width':200," +
+                "    'height':150" +
+                "}," +
+                "'prompt':'This is the survey info'," +
+                "'beforeRules':[{'operator':'eq','value':10,'assignDataGroup':'foo'}],"+
+                "'afterRules':[{'operator':'always','endSurvey':true}],"+
+                "'promptDetail':'More info'," +
+                "'title':'Survey Info'," +
+                "'type':'SurveyInfoScreen'}");
 
         // convert to POJO
         DynamoSurveyInfoScreen infoScreen = (DynamoSurveyInfoScreen) BridgeObjectMapper.get().readValue(jsonText,
@@ -148,13 +143,11 @@ public class SurveyElementTest {
     @Test(expected = InvalidEntityException.class)
     public void serializeInvalidSurveyElementType() throws Exception {
         // start with JSON
-        String jsonText = "{\n" +
-                "   \"guid\":\"bad-guid\",\n" +
-                "   \"identifier\":\"bad-survey-element\",\n" +
-                "   \"prompt\":\"Is this valid?\",\n" +
-                "   \"promptDetail\":\"Details about validity\",\n" +
-                "   \"type\":\"SurveyEggplant\"\n" +
-                "}";
+        String jsonText = TestUtils.createJson("{'guid': 'bad-guid'," +
+                "'identifier': 'bad-survey-element'," +
+                "'prompt': 'Is this valid?'," +
+                "'promptDetail': 'Details about validity'," +
+                "'type': 'SurveyEggplant'}");
 
         // convert to POJO
         BridgeObjectMapper.get().readValue(jsonText, SurveyElement.class);
