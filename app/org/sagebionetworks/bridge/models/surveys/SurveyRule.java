@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.models.surveys;
 
+import java.util.EnumSet;
 import java.util.Objects;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -31,22 +33,34 @@ public final class SurveyRule {
         LE,    // less than or equal to
         GE,    // greater than or equal to
         DE,    // declined to answer
-        ALWAYS // always apply this rule
+        ALWAYS,// always apply this rule
+        ANY,   // at least one is contained in set
+        ALL    // all are contained in set
     }
+    
+    public static final EnumSet<SurveyRule.Operator> SET_OPERATORS = EnumSet.of(Operator.ANY, Operator.ALL);
+    
+    public static final EnumSet<SurveyRule.Operator> NULL_VALUE_OPERATORS = EnumSet.of(Operator.DE, Operator.ALWAYS);
     
     private final Operator operator;
     private final Object value;
     private final String skipToTarget;
     private final Boolean endSurvey;
+    private final Boolean displayIf;
+    private final Boolean displayUnless;
     private final String assignDataGroup;
+    private final Set<String> dataGroups;
     
     private SurveyRule(Operator operator, Object value, String skipToTarget, Boolean endSurvey,
-            String assignDataGroup) {
+            String assignDataGroup, Set<String> dataGroups, Boolean displayIf, Boolean displayUnless) {
         this.operator = operator;
         this.value = value;
         this.skipToTarget = skipToTarget;
         this.endSurvey = endSurvey;
         this.assignDataGroup = assignDataGroup;
+        this.dataGroups = dataGroups;
+        this.displayIf = displayIf;
+        this.displayUnless = displayUnless;
     }
     public Operator getOperator() {
         return operator;
@@ -81,10 +95,31 @@ public final class SurveyRule {
     public String getAssignDataGroup() {
         return assignDataGroup;
     }
-
+    /**
+     * The data groups that will be tested against the user's assigned data groups, using the appropriate
+     * set operator (any contained, all contained). 
+     */
+    public Set<String> getDataGroups() {
+        return dataGroups;
+    }
+    /**
+     * If an expression is true, display the current screen. This action only makes sense in the rules 
+     * before a question executes, and it does not stop evaluation of further rules in the list. 
+     */
+    public Boolean getDisplayIf() {
+        return displayIf;
+    }
+    /**
+     * Unless an expression is true, display the current screen. This action only makes sense in the 
+     * rules before a question executes, and it does not stop evaluation of further rules in the list. 
+     */
+    public Boolean getDisplayUnless() {
+        return displayUnless;
+    }
+    
     @Override
     public int hashCode() {
-        return Objects.hash(operator, value, skipToTarget, endSurvey, assignDataGroup);
+        return Objects.hash(operator, value, skipToTarget, endSurvey, assignDataGroup, dataGroups);
     }
 
     @Override
@@ -98,13 +133,15 @@ public final class SurveyRule {
                Objects.equals(operator, other.operator) &&
                Objects.equals(value, other.value) &&
                Objects.equals(endSurvey, other.endSurvey) &&
-               Objects.equals(assignDataGroup, other.assignDataGroup);
+               Objects.equals(assignDataGroup, other.assignDataGroup) &&
+               Objects.equals(dataGroups, other.dataGroups);
     }
 
     @Override
     public String toString() {
         return "SurveyRule [operator=" + operator + ", value=" + value + ", skipToTarget=" + skipToTarget
-                + ", endSurvey=" + endSurvey + ", assignDataGroup=" + assignDataGroup + "]";
+                + ", endSurvey=" + endSurvey + ", assignDataGroup=" + assignDataGroup + ", dataGroups=" + 
+                dataGroups + "]";
     }
 
     public static class Builder {
@@ -112,7 +149,10 @@ public final class SurveyRule {
         private Object value;
         private String skipToTarget;
         private Boolean endSurvey;
+        private Boolean displayIf;
+        private Boolean displayUnless;
         private String assignDataGroup;
+        private Set<String> dataGroups;
 
         public Builder withOperator(SurveyRule.Operator operator) {
             this.operator = operator;
@@ -133,12 +173,29 @@ public final class SurveyRule {
             }
             return this;
         }
+        public Builder withDisplayIf(Boolean displayIf) {
+            if (Boolean.TRUE.equals(displayIf)) {
+                this.displayIf = displayIf;
+            }
+            return this;
+        }
+        public Builder withDisplayUnless(Boolean displayUnless) {
+            if (Boolean.TRUE.equals(displayUnless)) {
+                this.displayUnless = displayUnless;
+            }
+            return this;
+        }
         public Builder withAssignDataGroup(String dataGroup) {
             this.assignDataGroup = dataGroup;
             return this;
         }
+        public Builder withDataGroups(Set<String> dataGroups) {
+            this.dataGroups = dataGroups;
+            return this;
+        }
         public SurveyRule build() {
-            return new SurveyRule(operator, value, skipToTarget, endSurvey, assignDataGroup);
+            return new SurveyRule(operator, value, skipToTarget, endSurvey, assignDataGroup, dataGroups, displayIf,
+                    displayUnless);
         }
     }
     

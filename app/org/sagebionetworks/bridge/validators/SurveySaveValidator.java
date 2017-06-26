@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.BridgeUtils.isEmpty;
+import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.models.surveys.SurveyElementConstants.SURVEY_INFO_SCREEN_TYPE;
 import static org.sagebionetworks.bridge.models.surveys.SurveyElementConstants.SURVEY_QUESTION_TYPE;
@@ -19,7 +21,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.DateConstraints;
 import org.sagebionetworks.bridge.models.surveys.DateTimeConstraints;
@@ -154,8 +155,7 @@ public class SurveySaveValidator implements Validator {
                 validateOneRuleSet(errors, question.getConstraints().getRules(), alreadySeenIdentifiers,
                         propertyPath+".constraints", "rules");
             } else if (element instanceof SurveyInfoScreen) {
-                // The only operator that makes sense on an information screen is ALWAYS, since there 
-                // is no value to test against.
+                // There are some additional constraints for information screens.
                 validateOnRuleSetInInfoScreen(errors, element.getBeforeRules(), propertyPath, "beforeRules");
                 validateOnRuleSetInInfoScreen(errors, element.getAfterRules(), propertyPath, "afterRules");
             }
@@ -202,30 +202,66 @@ public class SurveySaveValidator implements Validator {
                 String fieldPath = fieldName+"["+j+"]";
                 
                 errors.pushNestedPath(propertyPath);
-                int actionCount = 0;
-                if (rule.getSkipToTarget() != null) {
-                    actionCount++;
+                
+                if (!hasOneAction(rule)) {
+                    errors.rejectValue(fieldPath, "must have one and only one action");
                 }
-                if (rule.getEndSurvey() != null) {
-                    actionCount++;
-                }
-                if (rule.getAssignDataGroup() != null) {
-                    actionCount++;
-                }
-                if (actionCount != 1) {
-                    errors.rejectValue(fieldPath, "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
-                }
-                if (rule.getAssignDataGroup() != null && !dataGroups.contains(rule.getAssignDataGroup())) {
+                if (assignedDataGroupDoesNotExist(rule)) {
                     errors.rejectValue(fieldPath, "has a data group '" + rule.getAssignDataGroup()
-                            + "' that is not a valid data group: " + BridgeUtils.COMMA_SPACE_JOINER.join(dataGroups));            
+                            + "' that is not a valid data group: " + COMMA_SPACE_JOINER.join(dataGroups));            
                 }
-                // Otherwise we can assume there's a skipToTarget, start checking that by looking for back references.
-                if (alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
+                if (skipToBackReferencesQuestion(alreadySeenIdentifiers, rule)) {
                     errors.rejectValue(fieldPath, "back references question " + rule.getSkipToTarget());
+                }
+                // Split rules by their operator, the operators determines what data is being tested. 
+                // Only validate rules for fields that are relevant for the operator, ignore the other.
+                if (SurveyRule.SET_OPERATORS.contains(rule.getOperator())) {
+                    // tests against data groups
+                    if (isEmpty(rule.getDataGroups())) {
+                        errors.rejectValue(fieldPath, "should define one or more data groups");
+                    } else if (!dataGroups.containsAll(rule.getDataGroups())) {
+                        errors.rejectValue(fieldPath,
+                            "contains dataGroups '" + COMMA_SPACE_JOINER.join(rule.getDataGroups())
+                                    + "' that are not valid data groups: " + COMMA_SPACE_JOINER.join(dataGroups));
+                    }
+                } else if (valueMissingForOperator(rule)) {
+                    errors.rejectValue(fieldPath, "is required");
                 }
                 errors.popNestedPath();
             }
         }
+    }
+
+    private boolean valueMissingForOperator(SurveyRule rule) {
+        return !SurveyRule.NULL_VALUE_OPERATORS.contains(rule.getOperator()) && rule.getValue() == null;
+    }
+
+    private boolean skipToBackReferencesQuestion(Set<String> alreadySeenIdentifiers, SurveyRule rule) {
+        return rule.getSkipToTarget() != null && alreadySeenIdentifiers.contains(rule.getSkipToTarget());
+    }
+
+    private boolean assignedDataGroupDoesNotExist(SurveyRule rule) {
+        return rule.getAssignDataGroup() != null && !dataGroups.contains(rule.getAssignDataGroup());
+    }
+
+    private boolean hasOneAction(SurveyRule rule) {
+        int actionCount = 0;
+        if (rule.getSkipToTarget() != null) {
+            actionCount++;
+        }
+        if (rule.getEndSurvey() != null) {
+            actionCount++;
+        }
+        if (rule.getAssignDataGroup() != null) {
+            actionCount++;
+        }
+        if (rule.getDisplayIf() != null) {
+            actionCount++;
+        }
+        if (rule.getDisplayUnless() != null) {
+            actionCount++;
+        }
+        return actionCount == 1;
     }
     
     private void validateSkipToTargetExists(Errors errors, List<SurveyRule> rules, Set<String> alreadySeenIdentifiers,
@@ -235,7 +271,7 @@ public class SurveySaveValidator implements Validator {
                 SurveyRule rule = rules.get(j);
                 
                 if (rule.getSkipToTarget() != null) {
-                    if (!alreadySeenIdentifiers.contains(rule.getSkipToTarget())) {
+                    if (!skipToBackReferencesQuestion(alreadySeenIdentifiers, rule)) {
                         errors.pushNestedPath(propertyPath);
                         errors.rejectValue(fieldName+"["+j+"]", "has a skipTo identifier that doesn't exist: " + rule.getSkipToTarget());
                         errors.popNestedPath();

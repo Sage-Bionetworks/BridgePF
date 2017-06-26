@@ -410,7 +410,7 @@ public class SurveySaveValidatorTest {
         survey.getElements().add(info);
 
         assertValidatorMessage(validator, survey, "elements[0].constraints.rules[0]",
-                "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
+                "must have one and only one action");
     }
 
     @Test
@@ -436,7 +436,7 @@ public class SurveySaveValidatorTest {
         survey.getElements().add(question);
 
         assertValidatorMessage(validator, survey, "elements[0].constraints.rules[0]",
-                "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
+                "must have one and only one action");
     }
 
     @Test
@@ -512,7 +512,7 @@ public class SurveySaveValidatorTest {
         survey.getElements().add(info);
 
         assertValidatorMessage(validator, survey, "elements[0].afterRules[0]",
-                "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
+                "must have one and only one action");
     }
 
     @Test
@@ -539,7 +539,7 @@ public class SurveySaveValidatorTest {
         survey.getElements().add(question);
 
         assertValidatorMessage(validator, survey, "elements[0].afterRules[0]",
-                "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
+                "must have one and only one action");
     }
 
     @Test
@@ -898,11 +898,11 @@ public class SurveySaveValidatorTest {
         String targetId = ((TestSurvey) survey).getStringQuestion().getIdentifier();
 
         SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
-                .withSkipToTarget(targetId).withAssignDataGroup("dataGroup").build();
+                .withSkipToTarget(targetId).withAssignDataGroup("baz").build();
         question.setAfterRules(Lists.newArrayList(rule));
 
         assertValidatorMessage(validator, survey, "elements[4].afterRules[0]",
-                "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
+                "must have one and only one action");
     }
     
     @Test
@@ -934,6 +934,6 @@ public class SurveySaveValidatorTest {
         assertValidatorMessage(validator, survey, "elements[0].beforeRules[0]",
                 "has a skipTo identifier that doesn't exist: some-nonsense");
         assertValidatorMessage(validator, survey, "elements[0].beforeRules[1]",
-                "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
+                "must have one and only one action");
     }
 }
