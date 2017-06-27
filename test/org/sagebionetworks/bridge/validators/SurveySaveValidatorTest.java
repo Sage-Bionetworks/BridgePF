@@ -936,4 +936,24 @@ public class SurveySaveValidatorTest {
         assertValidatorMessage(validator, survey, "elements[0].beforeRules[1]",
                 "must have one and only one action");
     }
+    
+    @Test
+    public void cannotSetDisplayRuleAfterScreenDisplayed() {
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
+        
+        // Most rules work in most places, but these specifically refer to the current screen and 
+        // must be evaluated before the screen is displayed in "after rules" is not useful.
+        SurveyRule displayIf = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1).withDisplayIf(true).build();
+        SurveyRule displayUnless = new SurveyRule.Builder().withOperator(SurveyRule.Operator.LE).withValue(1).withDisplayUnless(true).build();
+        
+        SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
+        question.setAfterRules(Lists.newArrayList(displayIf, displayUnless));
+        
+        survey.setElements(Lists.newArrayList(question));
+        
+        assertValidatorMessage(validator, survey, "elements[0].afterRules[0]",
+                "specifies display after screen has been shown");
+        assertValidatorMessage(validator, survey, "elements[0].afterRules[1]",
+                "specifies display after screen has been shown");
+    }
 }

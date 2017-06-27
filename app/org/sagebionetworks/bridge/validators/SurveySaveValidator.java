@@ -210,11 +210,14 @@ public class SurveySaveValidator implements Validator {
                     errors.rejectValue(fieldPath, "has a data group '" + rule.getAssignDataGroup()
                             + "' that is not a valid data group: " + COMMA_SPACE_JOINER.join(dataGroups));            
                 }
+                if (afterRuleControlsDisplay(fieldPath, rule)) {
+                    errors.rejectValue(fieldPath, "specifies display after screen has been shown");
+                }
                 if (skipToBackReferencesQuestion(alreadySeenIdentifiers, rule)) {
                     errors.rejectValue(fieldPath, "back references question " + rule.getSkipToTarget());
                 }
                 // Split rules by their operator, the operators determines what data is being tested. 
-                // Only validate rules for fields that are relevant for the operator, ignore the other.
+                // Only validate fields that are relevant for the operator, ignore the other.
                 if (SurveyRule.SET_OPERATORS.contains(rule.getOperator())) {
                     // tests against data groups
                     if (isEmpty(rule.getDataGroups())) {
@@ -232,6 +235,11 @@ public class SurveySaveValidator implements Validator {
         }
     }
 
+    private boolean afterRuleControlsDisplay(String propertyPath, SurveyRule rule) {
+        return propertyPath.startsWith("afterRules") && 
+            (rule.getDisplayIf() == Boolean.TRUE || rule.getDisplayUnless() == Boolean.TRUE);
+    }
+    
     private boolean valueMissingForOperator(SurveyRule rule) {
         return !SurveyRule.NULL_VALUE_OPERATORS.contains(rule.getOperator()) && rule.getValue() == null;
     }
