@@ -28,7 +28,7 @@ libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk-ses" % "1.10.20",
   
   // New Relic
-  "com.newrelic.agent.java" % "newrelic-agent" % "3.39.1",
+  "com.newrelic.agent.java" % "newrelic-agent" % "3.32.0",
   // Dom4j, needed to resolve dependency conflicts for Hibernate
   "dom4j" % "dom4j" % "1.6.1",
   // MySQL JDBC connector
