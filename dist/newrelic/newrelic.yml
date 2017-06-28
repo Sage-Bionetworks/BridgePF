@@ -1,0 +1,47 @@
+# This file configures the New Relic Agent.  New Relic monitors
+# Java applications with deep visibility and low overhead.  For more details and additional
+# configuration options visit https://docs.newrelic.com/docs/java/java-agent-configuration.
+#
+# This section is for settings common to all environments.
+# Do not add anything above this next line.
+common: &default_settings
+
+  # ============================== LICENSE KEY ===============================
+  # You must specify the license key associated with your New Relic
+  # account. For example, if your license key is 12345 use this:
+  # license_key: '12345'
+  # The key binds your Agent's data to your account in the New Relic service.
+  # license_key: 'your license key'
+
+  # Set the name of your application as you'd like it show up in New Relic.
+  # If enable_auto_app_naming is false, the agent reports all data to this application.
+  # Otherwise, the agent reports only background tasks (transactions for non-web applications)
+  # to this application. To report data to more than one application 
+  # (useful for rollup reporting), separate the application names with ";".
+  # For example, to report data to "My Application" and "My Application 2" use this:
+  # app_name: My Application;My Application 2
+  # This setting is required. Up to 3 different application names can be specified.
+  # The first application name must be unique.
+  app_name: BridgePF
+
+  # Set to true to enable support for auto app naming.
+  # The name of each web app is detected automatically
+  # and the agent reports data separately for each one.
+  # This provides a finer-grained performance breakdown for
+  # web apps in New Relic.
+  # Default is false.
+  enable_auto_app_naming: true
+
+  # Set to true to enable component-based transaction naming.
+  # Set to false to use the URI of a web request as the name of the transaction.
+  # Default is true.
+  enable_auto_transaction_naming: true
+
+  # The agent uses its own log file to keep its logging
+  # separate from that of your application.  Specify the log level here.
+  # This setting is dynamic, so changes do not require restarting your application.
+  # The levels in increasing order of verboseness are:
+  #   off, severe, warning, info, fine, finer, finest
+  # Default is info.
+  log_level: info
+
