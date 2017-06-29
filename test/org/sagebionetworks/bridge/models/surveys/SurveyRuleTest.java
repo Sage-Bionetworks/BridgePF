@@ -139,4 +139,14 @@ public class SurveyRuleTest {
         assertNull(node.get("displayUnless"));
         assertNull(node.get("endSurvey"));
     }
+    
+    @Test
+    public void settingBooleanActionToFalseNullifiesIt() {
+        SurveyRule.Builder builder = new SurveyRule.Builder().withDisplayIf(true).withDisplayUnless(true).withEndSurvey(true);
+        
+        SurveyRule rule = builder.withDisplayIf(false).withDisplayUnless(false).withEndSurvey(false).build();
+        assertNull(rule.getDisplayIf());
+        assertNull(rule.getDisplayUnless());
+        assertNull(rule.getEndSurvey());
+    }
 }

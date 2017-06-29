@@ -171,21 +171,15 @@ public final class SurveyRule {
             return this;
         }
         public Builder withEndSurvey(Boolean endSurvey) {
-            if (Boolean.TRUE.equals(endSurvey)) {
-                this.endSurvey = endSurvey;    
-            }
+            this.endSurvey = (Boolean.TRUE.equals(endSurvey)) ? Boolean.TRUE : null;
             return this;
         }
         public Builder withDisplayIf(Boolean displayIf) {
-            if (Boolean.TRUE.equals(displayIf)) {
-                this.displayIf = displayIf;
-            }
+            this.displayIf = (Boolean.TRUE.equals(displayIf)) ? Boolean.TRUE : null;
             return this;
         }
         public Builder withDisplayUnless(Boolean displayUnless) {
-            if (Boolean.TRUE.equals(displayUnless)) {
-                this.displayUnless = displayUnless;
-            }
+            this.displayUnless = (Boolean.TRUE.equals(displayUnless)) ? Boolean.TRUE : null;
             return this;
         }
         public Builder withAssignDataGroup(String dataGroup) {
