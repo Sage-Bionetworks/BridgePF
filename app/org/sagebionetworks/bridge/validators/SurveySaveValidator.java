@@ -156,8 +156,8 @@ public class SurveySaveValidator implements Validator {
                         propertyPath+".constraints", "rules");
             } else if (element instanceof SurveyInfoScreen) {
                 // There are some additional constraints for information screens.
-                validateOnRuleSetInInfoScreen(errors, element.getBeforeRules(), propertyPath, "beforeRules");
-                validateOnRuleSetInInfoScreen(errors, element.getAfterRules(), propertyPath, "afterRules");
+                validateOneRuleSetInInfoScreen(errors, element.getBeforeRules(), propertyPath, "beforeRules");
+                validateOneRuleSetInInfoScreen(errors, element.getAfterRules(), propertyPath, "afterRules");
             }
             alreadySeenIdentifiers.add(element.getIdentifier());
         }        
@@ -181,7 +181,7 @@ public class SurveySaveValidator implements Validator {
         }
     }
 
-    private void validateOnRuleSetInInfoScreen(Errors errors, List<SurveyRule> rules, String propertyPath, String fieldName) {
+    private void validateOneRuleSetInInfoScreen(Errors errors, List<SurveyRule> rules, String propertyPath, String fieldName) {
         if (rules != null) {
             for (int j=0; j < rules.size(); j++) {
                 SurveyRule rule = rules.get(j);
