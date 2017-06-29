@@ -119,7 +119,8 @@ public final class SurveyRule {
     
     @Override
     public int hashCode() {
-        return Objects.hash(operator, value, skipToTarget, endSurvey, assignDataGroup, dataGroups);
+        return Objects.hash(operator, value, skipToTarget, endSurvey, assignDataGroup, dataGroups, displayIf,
+                displayUnless);
     }
 
     @Override
@@ -134,14 +135,16 @@ public final class SurveyRule {
                Objects.equals(value, other.value) &&
                Objects.equals(endSurvey, other.endSurvey) &&
                Objects.equals(assignDataGroup, other.assignDataGroup) &&
-               Objects.equals(dataGroups, other.dataGroups);
+               Objects.equals(dataGroups, other.dataGroups) &&
+               Objects.equals(displayIf, other.displayIf) &&
+               Objects.equals(displayUnless, other.displayUnless);
     }
 
     @Override
     public String toString() {
         return "SurveyRule [operator=" + operator + ", value=" + value + ", skipToTarget=" + skipToTarget
                 + ", endSurvey=" + endSurvey + ", assignDataGroup=" + assignDataGroup + ", dataGroups=" + 
-                dataGroups + "]";
+                dataGroups + ", displayIf=" + displayIf + ", displayUnless=" + displayUnless + "]";
     }
 
     public static class Builder {

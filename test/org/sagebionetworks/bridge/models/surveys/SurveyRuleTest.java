@@ -11,6 +11,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Sets;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -93,5 +94,49 @@ public class SurveyRuleTest {
         
         SurveyRule deser = BridgeObjectMapper.get().treeToValue(node, SurveyRule.class);
         assertEquals(dataGroupRule, deser);
+    }
+    
+    @Test
+    public void canSerializeDisplayIf() throws Exception {
+        SurveyRule displayIf = new SurveyRule.Builder().withOperator(Operator.ANY)
+                .withDataGroups(Sets.newHashSet("foo")).withDisplayIf(Boolean.TRUE).build();
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(displayIf);
+        assertEquals("any", node.get("operator").asText());
+        assertEquals("foo", node.get("dataGroups").get(0).asText());
+        assertTrue(node.get("displayIf").asBoolean());
+        assertEquals("SurveyRule", node.get("type").asText());
+        
+        SurveyRule deser = BridgeObjectMapper.get().treeToValue(node, SurveyRule.class);
+        assertEquals(displayIf, deser);
+    }
+    
+    @Test
+    public void canSerializeDisplayUnless() throws Exception {
+        SurveyRule displayIf = new SurveyRule.Builder().withOperator(Operator.ANY)
+                .withDataGroups(Sets.newHashSet("foo")).withDisplayUnless(Boolean.TRUE).build();
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(displayIf);
+        assertEquals("any", node.get("operator").asText());
+        assertEquals("foo", node.get("dataGroups").get(0).asText());
+        assertTrue(node.get("displayUnless").asBoolean());
+        assertEquals("SurveyRule", node.get("type").asText());
+        
+        SurveyRule deser = BridgeObjectMapper.get().treeToValue(node, SurveyRule.class);
+        assertEquals(displayIf, deser);
+    }
+    
+    // If the user sends a property set to false, ensure the field is set to null and
+    // that serialization of the rule excludes that property. Only one boolean property
+    // can be true at a time and only the true property will be in JSON representations.
+    @Test
+    public void sendingFalseDeserializesToNullProperty() throws Exception {
+        String json = TestUtils.createJson("{'displayIf':false,"+
+                "'displayUnless':false,'endSurvey':false}");
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(json);
+        assertNull(node.get("displayIf"));
+        assertNull(node.get("displayUnless"));
+        assertNull(node.get("endSurvey"));
     }
 }
