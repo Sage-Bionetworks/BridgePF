@@ -25,11 +25,13 @@ public class DynamoSurveyInfoScreen extends DynamoSurveyElement implements Surve
     }
     
     public DynamoSurveyInfoScreen(SurveyElement entry) {
+        setSurveyCompoundKey(entry.getSurveyCompoundKey());
         setType(entry.getType());
         setIdentifier(entry.getIdentifier());
         setGuid(entry.getGuid());
         setData(entry.getData());
-        setRules(entry.getRules());
+        setBeforeRules(entry.getBeforeRules());
+        setAfterRules(entry.getAfterRules());
     }
 
     @Override
@@ -96,48 +98,4 @@ public class DynamoSurveyInfoScreen extends DynamoSurveyElement implements Surve
         this.title = JsonUtils.asText(data, TITLE_PROPERTY);
         this.image = JsonUtils.asEntity(data, IMAGE_PROPERTY, Image.class);
     }
-
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = super.hashCode();
-        result = prime * result + ((prompt == null) ? 0 : prompt.hashCode());
-        result = prime * result + ((promptDetail == null) ? 0 : promptDetail.hashCode());
-        result = prime * result + ((title == null) ? 0 : title.hashCode());
-        result = prime * result + ((image == null) ? 0 : image.hashCode());
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (!super.equals(obj))
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        DynamoSurveyInfoScreen other = (DynamoSurveyInfoScreen) obj;
-        if (prompt == null) {
-            if (other.prompt != null)
-                return false;
-        } else if (!prompt.equals(other.prompt))
-            return false;
-        if (promptDetail == null) {
-            if (other.promptDetail != null)
-                return false;
-        } else if (!promptDetail.equals(other.promptDetail))
-            return false;
-        if (title == null) {
-            if (other.title != null)
-                return false;
-        } else if (!title.equals(other.title))
-            return false;
-        if (image == null) {
-            if (other.image != null)
-                return false;
-        } else if (!image.equals(other.image))
-            return false;
-        return true;
-    }
-
 }

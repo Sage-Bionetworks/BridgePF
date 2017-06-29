@@ -638,7 +638,7 @@ public class DynamoSurveyDaoTest {
         infoScreen.setIdentifier("info_screen");
         infoScreen.setPromptDetail("Be honest: do you have high blood pressue?");
         infoScreen.setGuid(UUID.randomUUID().toString());
-        infoScreen.setRules(ImmutableList.of(rule));
+        infoScreen.setAfterRules(ImmutableList.of(rule));
         
         // Element rules override anything set in constraints, once they exist.
         SurveyQuestion question = SurveyQuestion.create();
@@ -653,7 +653,7 @@ public class DynamoSurveyDaoTest {
         question.setUiHint(UIHint.CHECKBOX);
         question.setConstraints(ic);
         question.setGuid(UUID.randomUUID().toString());
-        question.setRules(ImmutableList.of(rule));
+        question.setAfterRules(ImmutableList.of(rule));
         
         survey.getElements().add(migrateQuestion);
         survey.getElements().add(infoScreen);
@@ -664,52 +664,52 @@ public class DynamoSurveyDaoTest {
         
         // Migrated question has been moved up
         SurveyElement element1 = createdSurvey.getElements().get(0);
-        assertEquals(rule, element1.getRules().get(0));
-        assertEquals(1, element1.getRules().size());
+        assertEquals(rule, element1.getAfterRules().get(0));
+        assertEquals(1, element1.getAfterRules().size());
         assertEquals(rule, ((SurveyQuestion)element1).getConstraints().getRules().get(0));
         assertEquals(1, ((SurveyQuestion)element1).getConstraints().getRules().size());
         // Info screen has rule
-        assertEquals(rule, createdSurvey.getElements().get(1).getRules().get(0));
-        assertEquals(1, createdSurvey.getElements().get(1).getRules().size());
+        assertEquals(rule, createdSurvey.getElements().get(1).getAfterRules().get(0));
+        assertEquals(1, createdSurvey.getElements().get(1).getAfterRules().size());
         // Normal question has been moved down, overwriting existing
-        assertEquals(rule, createdSurvey.getElements().get(2).getRules().get(0));
-        assertEquals(1, createdSurvey.getElements().get(2).getRules().size());
+        assertEquals(rule, createdSurvey.getElements().get(2).getAfterRules().get(0));
+        assertEquals(1, createdSurvey.getElements().get(2).getAfterRules().size());
         
         SurveyQuestion savedQuestion = (SurveyQuestion)createdSurvey.getElements().get(2);
-        assertEquals(rule, savedQuestion.getRules().get(0));
-        assertEquals(1, savedQuestion.getRules().size());
+        assertEquals(rule, savedQuestion.getAfterRules().get(0));
+        assertEquals(1, savedQuestion.getAfterRules().size());
         
         // But if there's a rule on the element and not the constraints, it is not removed. 
         // Constraints are updated.
-        Survey survey2 = updateRules(createdSurvey, ImmutableList.of(rule), ImmutableList.of());
+        Survey survey2 = updateAfterRules(createdSurvey, ImmutableList.of(rule), ImmutableList.of());
         SurveyElement element2 = survey2.getElements().get(0);
-        assertEquals(1, element2.getRules().size());
+        assertEquals(1, element2.getAfterRules().size());
         assertEquals(1, ((SurveyQuestion)element2).getConstraints().getRules().size());
         
         // Setting both to no rules will clear them.
-        Survey survey3 = updateRules(survey2, ImmutableList.of(), ImmutableList.of());
+        Survey survey3 = updateAfterRules(survey2, ImmutableList.of(), ImmutableList.of());
         SurveyElement element3 = survey3.getElements().get(0);
-        assertEquals(0, element3.getRules().size());
+        assertEquals(0, element3.getAfterRules().size());
         assertEquals(0, ((SurveyQuestion)element3).getConstraints().getRules().size());
         
         // null rules list in question, non-null non-empty rules list in constraints
         // (this is a variant of the migration case, the rule will be migrated) 
-        Survey survey4 = updateRules(survey3, null, ImmutableList.of(rule));
+        Survey survey4 = updateAfterRules(survey3, null, ImmutableList.of(rule));
         SurveyElement element4 = survey4.getElements().get(0);
-        assertEquals(1, element4.getRules().size());
+        assertEquals(1, element4.getAfterRules().size());
         assertEquals(1, ((SurveyQuestion)element4).getConstraints().getRules().size());
         
         // empty rules list in question, non-null non-empty rules in constraints
         // (this is a variant of the migration case, the rule will be migrated) 
-        Survey survey5 = updateRules(survey4, ImmutableList.of(), ImmutableList.of(rule));
+        Survey survey5 = updateAfterRules(survey4, ImmutableList.of(), ImmutableList.of(rule));
         SurveyElement element5 = survey5.getElements().get(0);
-        assertEquals(1, element5.getRules().size());
+        assertEquals(1, element5.getAfterRules().size());
         assertEquals(1, ((SurveyQuestion)element5).getConstraints().getRules().size());
     }
     
-    private Survey updateRules(Survey survey, List<SurveyRule> inElement, List<SurveyRule> inConstraints) {
+    private Survey updateAfterRules(Survey survey, List<SurveyRule> inElement, List<SurveyRule> inConstraints) {
         SurveyElement element = survey.getElements().get(0);
-        element.setRules(inElement);
+        element.setAfterRules(inElement);
         ((SurveyQuestion)element).getConstraints().setRules(inConstraints);
         Survey keys = surveyDao.updateSurvey(survey);
         return surveyDao.getSurvey(keys);

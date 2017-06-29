@@ -208,11 +208,11 @@ public class DynamoSurveyDao implements SurveyDao {
             // that point they will either not be copied on top of element rules which exist, or both 
             // element and constraint rules will be empty, so it makes no difference.
             Constraints con = question.getConstraints();
-            if (BridgeUtils.isEmpty(question.getRules())) {
-                question.setRules( con.getRules() );
+            if (BridgeUtils.isEmpty(question.getAfterRules())) {
+                question.setAfterRules( con.getRules() );
             }
             // question rules take precedence once they exist.
-            con.setRules(question.getRules());
+            con.setRules(question.getAfterRules());
         }
     }
 

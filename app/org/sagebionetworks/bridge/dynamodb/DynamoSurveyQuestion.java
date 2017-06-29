@@ -1,12 +1,13 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import java.util.Objects;
+import java.util.List;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
+import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
@@ -30,11 +31,13 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
     }
     
     public DynamoSurveyQuestion(SurveyElement entry) {
-        setType( entry.getType() );
-        setIdentifier( entry.getIdentifier() );
-        setGuid( entry.getGuid() );
-        setData( entry.getData() );
-        setRules( entry.getRules() );
+        setSurveyCompoundKey(entry.getSurveyCompoundKey());
+        setType(entry.getType());
+        setIdentifier(entry.getIdentifier());
+        setGuid(entry.getGuid());
+        setData(entry.getData());
+        setBeforeRules(entry.getBeforeRules());
+        setAfterRules(entry.getAfterRules());
     }
     
     @Override
@@ -116,34 +119,9 @@ public class DynamoSurveyQuestion extends DynamoSurveyElement implements SurveyQ
     }
 
     @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = super.hashCode();
-        result = prime * result + Objects.hashCode(constraints);
-        result = prime * result + Objects.hashCode(hint);
-        result = prime * result + Objects.hashCode(prompt);
-        result = prime * result + Objects.hashCode(promptDetail);
-        result = prime * result + Objects.hashCode(fireEvent);
-        return result;
-    }
-    
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        } else if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        final DynamoSurveyQuestion that = (DynamoSurveyQuestion) obj;
-        return Objects.equals(constraints, that.constraints) && Objects.equals(hint, that.hint)
-            && Objects.equals(prompt, that.prompt) && Objects.equals(fireEvent, that.fireEvent)
-            && Objects.equals(promptDetail, that.promptDetail);
-    }
-
-    @Override
     public String toString() {
-        return String.format("DynamoSurveyQuestion [hint=%s, prompt=%s, promptDetail=%s, fireEvent=%s, constraints=%s]", 
-            hint, prompt, promptDetail, fireEvent, constraints);
+        return String.format("DynamoSurveyQuestion [surveyCompoundKey=%s, guid=%s, identifier=%s, type=%s, order=%s, beforeRules=%s, afterRules=%s, hint=%s, prompt=%s, promptDetail=%s, fireEvent=%s, constraints=%s]", 
+            getSurveyCompoundKey(), getGuid(), getIdentifier(), getType(), getOrder(), getBeforeRules(), getAfterRules(), hint, prompt, promptDetail, fireEvent, constraints);
     }
 
 }

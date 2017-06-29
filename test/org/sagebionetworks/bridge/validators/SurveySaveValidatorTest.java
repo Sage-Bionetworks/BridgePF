@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
@@ -410,7 +411,7 @@ public class SurveySaveValidatorTest {
         survey.getElements().add(info);
 
         assertValidatorMessage(validator, survey, "elements[0].constraints.rules[0]",
-                "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
+                "must have one and only one action");
     }
 
     @Test
@@ -436,7 +437,7 @@ public class SurveySaveValidatorTest {
         survey.getElements().add(question);
 
         assertValidatorMessage(validator, survey, "elements[0].constraints.rules[0]",
-                "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
+                "must have one and only one action");
     }
 
     @Test
@@ -466,7 +467,7 @@ public class SurveySaveValidatorTest {
         question.setUiHint(UIHint.TEXTFIELD);
         question.setPrompt("Prompt");
         question.setConstraints(constraints);
-        question.setRules(Lists.newArrayList(
+        question.setAfterRules(Lists.newArrayList(
                 new SurveyRule.Builder().withOperator(Operator.EQ).withValue("No").withSkipToTarget("theend").build()));
 
         SurveyInfoScreen info = new DynamoSurveyInfoScreen();
@@ -501,7 +502,7 @@ public class SurveySaveValidatorTest {
         question.setUiHint(UIHint.TEXTFIELD);
         question.setPrompt("Prompt");
         question.setConstraints(constraints);
-        question.setRules(Lists.newArrayList(rule));
+        question.setAfterRules(Lists.newArrayList(rule));
         
         survey.getElements().add(question);
 
@@ -511,8 +512,8 @@ public class SurveySaveValidatorTest {
         info.setIdentifier("theend");
         survey.getElements().add(info);
 
-        assertValidatorMessage(validator, survey, "elements[0].rules[0]",
-                "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
+        assertValidatorMessage(validator, survey, "elements[0].afterRules[0]",
+                "must have one and only one action");
     }
 
     @Test
@@ -534,12 +535,12 @@ public class SurveySaveValidatorTest {
         question.setUiHint(UIHint.TEXTFIELD);
         question.setPrompt("Prompt");
         question.setConstraints(constraints);
-        question.setRules(Lists.newArrayList(rule));
+        question.setAfterRules(Lists.newArrayList(rule));
         
         survey.getElements().add(question);
 
-        assertValidatorMessage(validator, survey, "elements[0].rules[0]",
-                "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
+        assertValidatorMessage(validator, survey, "elements[0].afterRules[0]",
+                "must have one and only one action");
     }
 
     @Test
@@ -785,90 +786,71 @@ public class SurveySaveValidatorTest {
 
     @Test
     public void backreferenceSkipToTargetInvalidInConstraints() throws Exception {
-        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
-
-        // The integer question is after the high_bp question. Create a rule that would backgtrack, verify it
-        // doesn't validate.
-        SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
-
         SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
-                .withSkipToTarget("high_bp").build();
-        question.getConstraints().setRules(Lists.newArrayList(rule));
+                .withSkipToTarget("foo").build();
+        updateSurveyWithRulesInConstraints(rule);
+        
+        // need a backreference to trigger failure 
+        Survey tempSurvey = new TestSurvey(SurveySaveValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey)tempSurvey).getStringQuestion();
+        question.setIdentifier("foo");
+        survey.getElements().add(0, question);
 
-        assertValidatorMessage(validator, survey, "elements[4].constraints.rules[0]", "back references question high_bp");
+        assertValidatorMessage(validator, survey, "elements[1].constraints.rules[0].skipTo", "back references question foo");
     }
 
     @Test
     public void endSurveyRuleValidInConstraints() {
-        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
-
-        // This rule is a valid "end the survey" rule, and passes validation.
-        SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
         SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
                 .withEndSurvey(Boolean.TRUE).build();
-        question.getConstraints().setRules(Lists.newArrayList(rule));
+        updateSurveyWithRulesInConstraints(rule);
 
         Validate.entityThrowingException(validator, survey);
     }
 
     @Test
     public void noSkipToTargetInvalidInConstraints() throws Exception {
-        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
-
-        // The integer question is after the high_bp question. Create a rule that would backgtrack, verify it
-        // doesn't validate.
-        SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
-
         SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
                 .withSkipToTarget("this_does_not_exist").build();
-        question.getConstraints().setRules(Lists.newArrayList(rule));
+        updateSurveyWithRulesInConstraints(rule);
 
-        assertValidatorMessage(validator, survey, "elements[4].constraints.rules[0]",
-                "has a skipTo identifier that doesn't exist: this_does_not_exist");
-    }
-
-    @Test
-    public void backreferenceSkipToTargetInvalidInElement() throws Exception {
-        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
-
-        // The integer question is after the high_bp question. Create a rule that would backgtrack, verify it
-        // doesn't validate.
-        SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
-
-        SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
-                .withSkipToTarget("high_bp").build();
-        question.setRules(Lists.newArrayList(rule));
-
-        assertValidatorMessage(validator, survey, "elements[4].rules[0]", "back references question high_bp");
+        assertValidatorMessage(validator, survey, "elements[0].constraints.rules[0].skipTo",
+                "identifier doesn't exist: this_does_not_exist");
     }
 
     @Test
     public void endSurveyRuleValidInElement() {
-        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
-
         // This rule is a valid "end the survey" rule, and passes validation.
-        SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
         SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
                 .withEndSurvey(Boolean.TRUE).build();
-        question.setRules(Lists.newArrayList(rule));
+        updateSurveyWithAfterRulesInOneQuestion(rule);
 
         Validate.entityThrowingException(validator, survey);
     }
 
     @Test
+    public void backreferenceSkipToTargetInvalidInElement() throws Exception {
+        SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
+                .withSkipToTarget("foo").build();
+        updateSurveyWithAfterRulesInOneQuestion(rule);
+        
+        // need a backreference to trigger failure 
+        Survey tempSurvey = new TestSurvey(SurveySaveValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey)tempSurvey).getStringQuestion();
+        question.setIdentifier("foo");
+        survey.getElements().add(0, question);
+
+        assertValidatorMessage(validator, survey, "elements[1].afterRules[0].skipTo", "back references question foo");
+    }
+
+    @Test
     public void noSkipToTargetInvalidInElement() throws Exception {
-        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
-
-        // The integer question is after the high_bp question. Create a rule that would backgtrack, verify it
-        // doesn't validate.
-        SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
-
         SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
                 .withSkipToTarget("this_does_not_exist").build();
-        question.setRules(Lists.newArrayList(rule));
+        updateSurveyWithAfterRulesInOneQuestion(rule);
 
-        assertValidatorMessage(validator, survey, "elements[4].rules[0]",
-                "has a skipTo identifier that doesn't exist: this_does_not_exist");
+        assertValidatorMessage(validator, survey, "elements[0].afterRules[0].skipTo",
+                "identifier doesn't exist: this_does_not_exist");
     }
     
     @Test
@@ -881,41 +863,218 @@ public class SurveySaveValidatorTest {
         info.setPromptDetail("prompt detail");
         info.setIdentifier("identifier");
         info.setGuid("guid");
-        info.setRules(Lists.newArrayList(
+        info.setBeforeRules(Lists.newArrayList(
+                new SurveyRule.Builder().withValue("foo").withOperator(Operator.EQ).withEndSurvey(true).build()));
+        info.setAfterRules(Lists.newArrayList(
                 new SurveyRule.Builder().withValue("foo").withOperator(Operator.EQ).withEndSurvey(true).build()));
         survey.setElements(Lists.newArrayList(info));
         
-        assertValidatorMessage(validator, survey, "elements[0].rules[0]",
-                "only valid with the 'always' operator");
+        assertValidatorMessage(validator, survey, "elements[0].beforeRules[0].operator",
+                "only 'always' operator is valid for info screen rules");
+        assertValidatorMessage(validator, survey, "elements[0].afterRules[0].operator",
+                "only 'always' operator is valid for info screen rules");
     }
     
     @Test
     public void validatesAssignDataGroupMustAppearAlone() {
-        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
-
-        SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
-        
         String targetId = ((TestSurvey) survey).getStringQuestion().getIdentifier();
 
         SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
-                .withSkipToTarget(targetId).withAssignDataGroup("dataGroup").build();
-        question.setRules(Lists.newArrayList(rule));
+                .withSkipToTarget(targetId).withAssignDataGroup("baz").build();
+        updateSurveyWithAfterRulesInOneQuestion(rule);
 
-        assertValidatorMessage(validator, survey, "elements[4].rules[0]",
-                "must have one and only one action: skipTo, endSurvey, or assignDataGroup");
+        assertValidatorMessage(validator, survey, "elements[0].afterRules[0]",
+                "must have one and only one action");
     }
     
     @Test
     public void validateAssignDataGroupAssignsRealDataGroup() {
-        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
-
-        SurveyQuestion question = ((TestSurvey) survey).getIntegerQuestion();
-        
         SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1)
                 .withAssignDataGroup("bar").build();
-        question.setRules(Lists.newArrayList(rule));
+        updateSurveyWithAfterRulesInOneQuestion(rule);
 
-        assertValidatorMessage(validator, survey, "elements[4].rules[0]",
+        assertValidatorMessage(validator, survey, "elements[0].afterRules[0].assignDataGroup",
                 "has a data group 'bar' that is not a valid data group: baz, foo");
     }
+    
+    @Test
+    public void validatesEmptyDataGroupsForAnyOperator() {
+        SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.ANY)
+                .withDataGroups(Sets.newHashSet()).withEndSurvey(true).build();
+        updateSurveyWithAfterRulesInOneQuestion(rule);
+
+        assertValidatorMessage(validator, survey, "elements[0].afterRules[0].dataGroups",
+                "should define one or more data groups");
+    }
+    
+    @Test
+    public void validatesInvalidDataGroupsForAnyOperator() {
+        SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.ANY)
+                .withDataGroups(Sets.newHashSet("notInStudy")).withEndSurvey(true).build();
+        updateSurveyWithAfterRulesInOneQuestion(rule);
+
+        assertValidatorMessage(validator, survey, "elements[0].afterRules[0].dataGroups",
+                "contains data groups 'notInStudy' that are not valid data groups: baz, foo");
+    }
+    
+    @Test
+    public void validatesMixedValidityDataGroupsForAllOperator() {
+        TreeSet<String> dataGroups = new TreeSet();
+        dataGroups.add("foo");
+        dataGroups.add("notInStudy");
+        
+        SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.ALL)
+                .withDataGroups(dataGroups).withEndSurvey(true).build();
+
+        updateSurveyWithAfterRulesInOneQuestion(rule);
+
+        assertValidatorMessage(validator, survey, "elements[0].afterRules[0].dataGroups",
+                "contains data groups 'foo, notInStudy' that are not valid data groups: baz, foo");
+    }
+    
+    @Test
+    public void beforeRulesAreValidated() {
+        SurveyRule invalidSkipTo = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1).withSkipToTarget("some-nonsense").build();
+        SurveyRule tooManyActions = new SurveyRule.Builder().withOperator(SurveyRule.Operator.LE).withValue(1).withSkipToTarget("nonsense").withEndSurvey(true).build();
+
+        updateSurveyWithBeforeRulesInOneQuestion(invalidSkipTo, tooManyActions);
+        
+        assertValidatorMessage(validator, survey, "elements[0].beforeRules[0].skipTo",
+                "identifier doesn't exist: some-nonsense");
+        assertValidatorMessage(validator, survey, "elements[0].beforeRules[1]",
+                "must have one and only one action");
+    }
+    
+    @Test
+    public void cannotSetDisplayRuleAfterScreenDisplayed() {
+        // Most rules work in most places, but these specifically refer to the current screen and 
+        // must be evaluated before the screen is displayed in "after rules" is not useful.
+        SurveyRule displayIf = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withValue(1).withDisplayIf(true).build();
+        SurveyRule displayUnless = new SurveyRule.Builder().withOperator(SurveyRule.Operator.LE).withValue(1).withDisplayUnless(true).build();
+        
+        updateSurveyWithAfterRulesInOneQuestion(displayIf, displayUnless);
+        
+        assertValidatorMessage(validator, survey, "elements[0].afterRules[0].displayIf",
+                "specifies display after screen has been shown");
+        assertValidatorMessage(validator, survey, "elements[0].afterRules[1].displayUnless",
+                "specifies display after screen has been shown");
+    }
+    
+    @Test
+    public void validatesValueSetForRulesRequiringIt() {
+        SurveyRule displayIf = new SurveyRule.Builder().withOperator(SurveyRule.Operator.EQ).withDisplayIf(true).build();
+        
+        updateSurveyWithBeforeRulesInOneQuestion(displayIf);
+        
+        assertValidatorMessage(validator, survey, "elements[0].beforeRules[0].value", "is required");
+    }
+    
+    @Test
+    public void valueMissingForNullValueOperatorsIsValid() {
+        SurveyRule displayIf = new SurveyRule.Builder().withOperator(SurveyRule.Operator.DE).withDisplayIf(true).build();
+        
+        updateSurveyWithBeforeRulesInOneQuestion(displayIf);
+        
+        Validate.entityThrowingException(validator, survey);
+    }
+    
+    @Test
+    public void actionSkipToTargetValid() {
+        SurveyRule rule = new SurveyRule.Builder().withSkipToTarget("afterTarget").withOperator(Operator.ALWAYS).build();
+        
+        updateSurveyWithAfterRulesInOneQuestion(rule);
+        
+        // need afterTarget to pass validation
+        Survey tempSurvey = new TestSurvey(SurveySaveValidatorTest.class, false);
+        SurveyQuestion question = ((TestSurvey)tempSurvey).getStringQuestion();
+        question.setIdentifier("afterTarget");
+        survey.getElements().add(question);
+        
+        Validate.entityThrowingException(validator, survey);
+    }
+    
+    @Test
+    public void actionEndSurveyValid() {
+        SurveyRule rule = new SurveyRule.Builder().withEndSurvey(true).withOperator(Operator.ALWAYS).build();
+        
+        updateSurveyWithAfterRulesInOneQuestion(rule);
+        
+        Validate.entityThrowingException(validator, survey);
+    }
+    
+    @Test
+    public void actionAssignDataGroupValid() {
+        SurveyRule rule = new SurveyRule.Builder().withAssignDataGroup("foo").withOperator(Operator.ALWAYS).build();
+        
+        updateSurveyWithAfterRulesInOneQuestion(rule);
+        
+        Validate.entityThrowingException(validator, survey);
+    }
+    
+    @Test
+    public void actionDisplayIfValid() {
+        SurveyRule rule = new SurveyRule.Builder().withDisplayIf(true).withOperator(Operator.ALWAYS).build();
+        
+        updateSurveyWithBeforeRulesInOneQuestion(rule);
+        
+        Validate.entityThrowingException(validator, survey);
+    }
+    
+    @Test
+    public void actionDisplayUnlessValid() {
+        SurveyRule rule = new SurveyRule.Builder().withDisplayUnless(true).withOperator(Operator.ALWAYS).build();
+        
+        updateSurveyWithBeforeRulesInOneQuestion(rule);
+        
+        Validate.entityThrowingException(validator, survey);
+    }
+    
+    @Test
+    public void validateNoAction() {
+        SurveyRule rule = new SurveyRule.Builder().withOperator(Operator.ALWAYS).build();
+        
+        updateSurveyWithBeforeRulesInOneQuestion(rule);
+        
+        assertValidatorMessage(validator, survey, "elements[0].beforeRules[0]", "must have one and only one action");
+    }
+    
+    @Test
+    public void validateMultipleActions() {
+        SurveyRule rule = new SurveyRule.Builder().withEndSurvey(true).withAssignDataGroup("foo")
+                .withOperator(Operator.ALWAYS).build();
+        
+        updateSurveyWithBeforeRulesInOneQuestion(rule);
+        
+        assertValidatorMessage(validator, survey, "elements[0].beforeRules[0]", "must have one and only one action");
+    }
+    
+    private Survey updateSurveyWithBeforeRulesInOneQuestion(SurveyRule... rules) {
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
+        
+        SurveyQuestion question = ((TestSurvey) survey).getStringQuestion();
+        question.setBeforeRules(Lists.newArrayList(rules));
+        
+        survey.setElements(Lists.newArrayList(question));
+        return survey;
+    }
+    
+    private Survey updateSurveyWithAfterRulesInOneQuestion(SurveyRule... rules) {
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
+        
+        SurveyQuestion question = ((TestSurvey) survey).getStringQuestion();
+        question.setAfterRules(Lists.newArrayList(rules));
+        
+        survey.setElements(Lists.newArrayList(question));
+        return survey;
+    }
+    
+    private Survey updateSurveyWithRulesInConstraints(SurveyRule... rules) {
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
+        
+        SurveyQuestion question = ((TestSurvey) survey).getStringQuestion();
+        question.getConstraints().getRules().addAll(Lists.newArrayList(rules));
+        
+        survey.setElements(Lists.newArrayList(question));
+        return survey;
+    }    
 }
