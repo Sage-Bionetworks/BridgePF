@@ -187,7 +187,7 @@ public class SurveySaveValidator implements Validator {
                 SurveyRule rule = rules.get(j);
                 if (rule.getOperator() != SurveyRule.Operator.ALWAYS) {
                     errors.pushNestedPath(propertyPath);
-                    errors.rejectValue(fieldName+"["+j+"]", "only valid with the 'always' operator");
+                    errors.rejectValue(fieldName+"["+j+"].operator", "only 'always' operator is valid for info screen rules");
                     errors.popNestedPath();
                 }
             }
@@ -207,28 +207,32 @@ public class SurveySaveValidator implements Validator {
                     errors.rejectValue(fieldPath, "must have one and only one action");
                 }
                 if (assignedDataGroupDoesNotExist(rule)) {
-                    errors.rejectValue(fieldPath, "has a data group '" + rule.getAssignDataGroup()
+                    errors.rejectValue(fieldPath + ".assignDataGroup", "has a data group '" + rule.getAssignDataGroup()
                             + "' that is not a valid data group: " + COMMA_SPACE_JOINER.join(dataGroups));            
                 }
                 if (afterRuleControlsDisplay(fieldPath, rule)) {
-                    errors.rejectValue(fieldPath, "specifies display after screen has been shown");
+                    if (rule.getDisplayIf() == Boolean.TRUE) {
+                        errors.rejectValue(fieldPath + ".displayIf", "specifies display after screen has been shown");    
+                    } else if (rule.getDisplayUnless() == Boolean.TRUE) {
+                        errors.rejectValue(fieldPath + ".displayUnless", "specifies display after screen has been shown");
+                    }
                 }
                 if (skipToBackReferencesQuestion(alreadySeenIdentifiers, rule)) {
-                    errors.rejectValue(fieldPath, "back references question " + rule.getSkipToTarget());
+                    errors.rejectValue(fieldPath + ".skipTo", "back references question " + rule.getSkipToTarget());
                 }
                 // Split rules by their operator, the operators determines what data is being tested. 
                 // Only validate fields that are relevant for the operator, ignore the other.
                 if (SurveyRule.SET_OPERATORS.contains(rule.getOperator())) {
                     // tests against data groups
                     if (isEmpty(rule.getDataGroups())) {
-                        errors.rejectValue(fieldPath, "should define one or more data groups");
+                        errors.rejectValue(fieldPath + ".dataGroups", "should define one or more data groups");
                     } else if (!dataGroups.containsAll(rule.getDataGroups())) {
-                        errors.rejectValue(fieldPath,
-                            "contains dataGroups '" + COMMA_SPACE_JOINER.join(rule.getDataGroups())
+                        errors.rejectValue(fieldPath + ".dataGroups",
+                            "contains data groups '" + COMMA_SPACE_JOINER.join(rule.getDataGroups())
                                     + "' that are not valid data groups: " + COMMA_SPACE_JOINER.join(dataGroups));
                     }
                 } else if (valueMissingForOperator(rule)) {
-                    errors.rejectValue(fieldPath, "is required");
+                    errors.rejectValue(fieldPath + ".value", "is required");
                 }
                 errors.popNestedPath();
             }
@@ -281,7 +285,7 @@ public class SurveySaveValidator implements Validator {
                 if (rule.getSkipToTarget() != null) {
                     if (!skipToBackReferencesQuestion(alreadySeenIdentifiers, rule)) {
                         errors.pushNestedPath(propertyPath);
-                        errors.rejectValue(fieldName+"["+j+"]", "has a skipTo identifier that doesn't exist: " + rule.getSkipToTarget());
+                        errors.rejectValue(fieldName+"["+j+"].skipTo", "identifier doesn't exist: " + rule.getSkipToTarget());
                         errors.popNestedPath();
                     }
                 }

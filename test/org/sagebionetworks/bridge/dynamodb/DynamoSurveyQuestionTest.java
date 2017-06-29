@@ -45,6 +45,10 @@ public class DynamoSurveyQuestionTest {
         assertEquals("guid", copy.getGuid());
         assertEquals("identifier", copy.getIdentifier());
         assertEquals("SurveyQuestion", copy.getType());
+        assertEquals(1, copy.getBeforeRules().size());
+        assertEquals(question.getBeforeRules().get(0), copy.getBeforeRules().get(0));
+        assertEquals(1, copy.getAfterRules().size());
+        assertEquals(question.getAfterRules().get(0), copy.getAfterRules().get(0));
     }
     
     @Test

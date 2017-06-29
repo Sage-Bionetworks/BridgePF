@@ -39,7 +39,9 @@ public class DynamoSurveyInfoScreenTest {
         assertEquals("guid", copy.getGuid());
         assertEquals("identifier", copy.getIdentifier());
         assertEquals("SurveyInfoScreen", copy.getType());
+        assertEquals(1, copy.getBeforeRules().size());
         assertEquals(beforeRule, copy.getBeforeRules().get(0));
+        assertEquals(1, copy.getAfterRules().size());
         assertEquals(afterRule, copy.getAfterRules().get(0));
     }
 }
