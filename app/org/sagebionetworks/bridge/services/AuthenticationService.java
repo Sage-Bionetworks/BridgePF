@@ -59,6 +59,7 @@ public class AuthenticationService {
     private SendMailService sendMailService;
     private StudyService studyService;
     private PasswordResetValidator passwordResetValidator;
+    private AccountWorkflowService accountWorkflowService;
 
     @Autowired
     final void setCacheProvider(CacheProvider cache) {
@@ -96,7 +97,11 @@ public class AuthenticationService {
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
-
+    @Autowired
+    final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
+        this.accountWorkflowService = accountWorkflowService;
+    }
+    
     public void requestEmailSignIn(SignIn signIn) {
         Validate.entityThrowingException(SignInValidator.EMAIL_SIGNIN_REQUEST, signIn);
         
@@ -228,14 +233,12 @@ public class AuthenticationService {
         try {
             // Since caller has no roles, no roles can be assigned on sign up.
             return participantService.createParticipant(study, NO_CALLER_ROLES, participant, true);
-            
         } catch(EntityAlreadyExistsException e) {
-            // Suppress this. Otherwise it the response reveals that the email has already been taken, 
-            // and you can infer who is in the study from the response. Instead send a reset password 
-            // request to the email address in case user has forgotten password and is trying to sign 
-            // up again.
+            // Suppress this and send an email to notify the user that the account already exists. From 
+            // this call, we simply return a 200 the same as any other sign up. Otherwise the response 
+            // reveals that the email has been taken.
             Email email = new Email(study.getIdentifier(), participant.getEmail());
-            requestResetPassword(study, email);
+            accountWorkflowService.notifyAccountExists(study, email);
             logger.info("Sign up attempt for existing email address in study '"+study.getIdentifier()+"'");
         }
         return null;

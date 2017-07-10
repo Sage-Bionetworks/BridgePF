@@ -23,6 +23,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -91,6 +93,12 @@ public class AuthenticationServiceTest {
     
     @Resource
     private UserAdminService userAdminService;
+    
+    @Resource
+    private AccountWorkflowService accountWorkflowService;
+    
+    @Captor
+    ArgumentCaptor<Email> emailCaptor;
     
     private Study study;
     
@@ -299,13 +307,16 @@ public class AuthenticationServiceTest {
 
     @Test
     public void secondSignUpTriggersResetPasswordInstead() {
-        // Verify that requestResetPassword is called in this case
-        AuthenticationService authServiceSpy = spy(authService);
+        AccountWorkflowService accountWorkflowServiceSpy = spy(accountWorkflowService);
+        authService.setAccountWorkflowService(accountWorkflowServiceSpy);
         
         testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).build();
-        authServiceSpy.signUp(testUser.getStudy(), testUser.getStudyParticipant());
-        verify(authServiceSpy).requestResetPassword(any(Study.class), any(Email.class));
+        authService.signUp(testUser.getStudy(), testUser.getStudyParticipant());
+        
+        verify(accountWorkflowServiceSpy).notifyAccountExists(study, emailCaptor.capture());
+        assertEquals(testUser.getStudyIdentifier(), emailCaptor.getValue().getStudyIdentifier());
+        assertEquals(testUser.getEmail(), emailCaptor.getValue().getEmail());
     }
     
     @Test
