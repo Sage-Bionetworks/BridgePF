@@ -92,6 +92,8 @@ public class StudyService {
     private String defaultResetPasswordTemplateSubject;
     private String defaultEmailSignInTemplate;
     private String defaultEmailSignInTemplateSubject;
+    private String defaultAccountExistsTemplate;
+    private String defaultAccountExistsTemplateSubject;
     
     @Value("classpath:study-defaults/email-verification.txt")
     final void setDefaultEmailVerificationTemplate(org.springframework.core.io.Resource resource) throws IOException {
@@ -116,6 +118,14 @@ public class StudyService {
     @Value("classpath:study-defaults/email-sign-in-subject.txt")
     final void setDefaultEmailSignInTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultEmailSignInTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
+    }
+    @Value("classpath:study-defaults/account-exists.txt")
+    final void setDefaultAccountExistsTemplate(org.springframework.core.io.Resource resource) throws IOException {
+        this.defaultAccountExistsTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
+    }
+    @Value("classpath:study-defaults/account-exists-subject.txt")
+    final void setDefaultAccountExistsTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
+        this.defaultAccountExistsTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
 
     /** Compound activity definition service, used to clean up deleted studies. This is set by Spring. */
@@ -167,6 +177,26 @@ public class StudyService {
     public final void setSynapseClient(SynapseClient synapseClient) {
         this.synapseClient = synapseClient;
     }
+    
+    private EmailTemplate getEmailVerificationTemplate() {
+        return getTemplate(defaultEmailVerificationTemplateSubject, defaultEmailVerificationTemplate);
+    }
+    
+    private EmailTemplate getResetPasswordTemplate() {
+        return getTemplate(defaultResetPasswordTemplateSubject, defaultResetPasswordTemplate);
+    }
+    
+    private EmailTemplate getEmailSignInTemplate() {
+        return getTemplate(defaultEmailSignInTemplateSubject, defaultEmailSignInTemplate);
+    }
+    
+    private EmailTemplate getAccountExistsTemplate() {
+        return getTemplate(defaultAccountExistsTemplateSubject, defaultAccountExistsTemplate);
+    }
+    
+    private EmailTemplate getTemplate(String subject, String body) {
+        return new EmailTemplate(subject, body, MimeType.HTML);
+    }
 
     public Study getStudy(String identifier, boolean includeDeleted) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, IDENTIFIER_PROPERTY);
@@ -182,11 +212,12 @@ public class StudyService {
             if (!study.isActive() && !includeDeleted) {
                 throw new EntityNotFoundException(Study.class, "Study not found.");
             }
-            // Because this template does not currently exist in studies, add the default if it is null.
+            // Because these templates do not exist in all studies, add the default if it is null.
             if (study.getEmailSignInTemplate() == null) {
-                EmailTemplate template = new EmailTemplate(defaultEmailSignInTemplateSubject,
-                        defaultEmailSignInTemplate, MimeType.HTML);
-                study.setEmailSignInTemplate(template);
+                study.setEmailSignInTemplate( getEmailSignInTemplate() );
+            }
+            if (study.getAccountExistsTemplate() == null) {
+                study.setAccountExistsTemplate( getAccountExistsTemplate() );
             }
         }
 
@@ -523,7 +554,9 @@ public class StudyService {
                 !study.getTechnicalEmail().equals(originalStudy.getTechnicalEmail()) ||
                 !study.getPasswordPolicy().equals(originalStudy.getPasswordPolicy()) || 
                 !study.getVerifyEmailTemplate().equals(originalStudy.getVerifyEmailTemplate()) || 
-                !study.getResetPasswordTemplate().equals(originalStudy.getResetPasswordTemplate()) || 
+                !study.getResetPasswordTemplate().equals(originalStudy.getResetPasswordTemplate()) ||
+                !study.getEmailSignInTemplate().equals(originalStudy.getEmailSignInTemplate()) ||
+                !study.getAccountExistsTemplate().equals(originalStudy.getAccountExistsTemplate()) ||
                 study.isEmailVerificationEnabled() != originalStudy.isEmailVerificationEnabled());
     }
     
@@ -537,19 +570,16 @@ public class StudyService {
             study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         }
         if (study.getVerifyEmailTemplate() == null) {
-            EmailTemplate template = new EmailTemplate(defaultEmailVerificationTemplateSubject,
-                    defaultEmailVerificationTemplate, MimeType.HTML);
-            study.setVerifyEmailTemplate(template);
+            study.setVerifyEmailTemplate( getEmailVerificationTemplate() );
         }
         if (study.getResetPasswordTemplate() == null) {
-            EmailTemplate template = new EmailTemplate(defaultResetPasswordTemplateSubject,
-                    defaultResetPasswordTemplate, MimeType.HTML);
-            study.setResetPasswordTemplate(template);
+            study.setResetPasswordTemplate( getResetPasswordTemplate() );
         }
         if (study.getEmailSignInTemplate() == null) {
-            EmailTemplate template = new EmailTemplate(defaultEmailSignInTemplateSubject,
-                    defaultEmailSignInTemplate, MimeType.HTML);
-            study.setEmailSignInTemplate(template);
+            study.setEmailSignInTemplate( getEmailSignInTemplate() );
+        }
+        if (study.getAccountExistsTemplate() == null) {
+            study.setAccountExistsTemplate( getAccountExistsTemplate() );
         }
     }
 
@@ -568,6 +598,9 @@ public class StudyService {
         
         template = study.getEmailSignInTemplate();
         study.setEmailSignInTemplate(sanitizeEmailTemplate(template));
+
+        template = study.getAccountExistsTemplate();
+        study.setAccountExistsTemplate(sanitizeEmailTemplate(template));
     }
     
     protected EmailTemplate sanitizeEmailTemplate(EmailTemplate template) {
