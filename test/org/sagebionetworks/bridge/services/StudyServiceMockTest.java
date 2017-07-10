@@ -74,6 +74,8 @@ public class StudyServiceMockTest {
     private static final PasswordPolicy PASSWORD_POLICY = new PasswordPolicy(2, false, false, false, false);
     private static final EmailTemplate EMAIL_TEMPLATE = new EmailTemplate("new subject", "new body ${url}",
             MimeType.HTML);
+    private static final EmailTemplate EMAIL_SIGNIN_TEMPLATE = new EmailTemplate("new subject", "new body ${token}",
+            MimeType.HTML);
     private static final Long TEST_USER_ID = Long.parseLong("3348228"); // test user exists in synapse
     private static final String TEST_PROJECT_NAME = TEST_USER_ID.toString() + "Project";
     private static final String TEST_TEAM_NAME = TEST_USER_ID.toString() + "Team";
@@ -250,6 +252,17 @@ public class StudyServiceMockTest {
         assertNotNull(retStudy.getEmailSignInTemplate());
     }
 
+    @Test
+    public void loadingStudyWithoutAccountExistsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setEmailSignInTemplate(null);
+        when(studyDao.getStudy("foo")).thenReturn(study);
+        
+        Study retStudy = service.getStudy("foo");
+        assertNotNull(retStudy.getEmailSignInTemplate());
+        assertNotNull(retStudy.getAccountExistsTemplate());
+    }
+    
     @Test
     public void physicallyDeleteStudy() {
         // execute
@@ -805,6 +818,16 @@ public class StudyServiceMockTest {
     public void changingEmailVerificationEnabledUpdatesDirectory() {
         assertDirectoryUpdated(study -> study.setEmailVerificationEnabled(false));
     }
+    
+    @Test
+    public void changingEmailSignInEmailTemplateUpdatesDirectory() {
+        assertDirectoryUpdated(study -> study.setEmailSignInTemplate(EMAIL_SIGNIN_TEMPLATE));
+    }
+    
+    @Test
+    public void changingAccountExistsTemplateUpdatesDirectory() {
+        assertDirectoryUpdated(study -> study.setAccountExistsTemplate(EMAIL_TEMPLATE));
+    }
 
     @Test
     public void newStudyVerifiesSupportEmail() {
@@ -876,17 +899,19 @@ public class StudyServiceMockTest {
     }
     
     @Test
-    public void testAllThreeTemplatesAreSanitized() {
+    public void testAllFourTemplatesAreSanitized() {
         EmailTemplate source = new EmailTemplate("<p>${studyName} test</p>", "<p>This should remove: <iframe src=''></iframe></p>", MimeType.HTML);
         Study study = new DynamoStudy();
         study.setEmailSignInTemplate(source);
         study.setResetPasswordTemplate(source);
         study.setVerifyEmailTemplate(source);
+        study.setAccountExistsTemplate(source);
         
         service.sanitizeHTML(study);
         assertHtmlTemplateSanitized( study.getEmailSignInTemplate() );
         assertHtmlTemplateSanitized( study.getResetPasswordTemplate() );
         assertHtmlTemplateSanitized( study.getVerifyEmailTemplate() );
+        assertHtmlTemplateSanitized( study.getAccountExistsTemplate() );
     }
 
     private void assertHtmlTemplateSanitized(EmailTemplate result) {

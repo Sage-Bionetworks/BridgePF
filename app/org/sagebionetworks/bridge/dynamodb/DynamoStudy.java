@@ -47,6 +47,7 @@ public final class DynamoStudy implements Study {
     private EmailTemplate verifyEmailTemplate;
     private EmailTemplate resetPasswordTemplate;
     private EmailTemplate emailSignInTemplate;
+    private EmailTemplate accountExistsTemplate;
     private boolean strictUploadValidationEnabled;
     private boolean healthCodeExportEnabled;
     private boolean emailVerificationEnabled;
@@ -292,6 +293,18 @@ public final class DynamoStudy implements Study {
     public void setEmailSignInTemplate(EmailTemplate template) {
         this.emailSignInTemplate = template;
     }
+    
+    /** {@inheritDoc} */
+    @DynamoDBTypeConvertedJson
+    @Override
+    public EmailTemplate getAccountExistsTemplate() {
+        return accountExistsTemplate;
+    }
+    
+    @Override
+    public void setAccountExistsTemplate(EmailTemplate template) {
+        this.accountExistsTemplate = template;
+    }
 
     /** {@inheritDoc} */
     @Override
@@ -419,11 +432,11 @@ public final class DynamoStudy implements Study {
     public int hashCode() {
         return Objects.hash(identifier, minAgeOfConsent, name, sponsorName, supportEmail, technicalEmail,
                 consentNotificationEmail, stormpathHref, version, profileAttributes, taskIdentifiers, dataGroups,
-                passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, active, strictUploadValidationEnabled,
-                healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled,
-                externalIdRequiredOnSignup, minSupportedAppVersions, synapseDataAccessTeamId, synapseProjectId,
-                usesCustomExportSchedule, pushNotificationARNs, disableExport, emailSignInTemplate,
-                emailSignInEnabled, accountLimit);
+                passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, accountExistsTemplate, active,
+                strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
+                externalIdValidationEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
+                synapseDataAccessTeamId, synapseProjectId, usesCustomExportSchedule, pushNotificationARNs,
+                disableExport, emailSignInTemplate, emailSignInEnabled, accountLimit);
     }
 
     @Override
@@ -441,6 +454,7 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(verifyEmailTemplate, other.verifyEmailTemplate)
                 && Objects.equals(consentNotificationEmail, other.consentNotificationEmail)
                 && Objects.equals(resetPasswordTemplate, other.resetPasswordTemplate)
+                && Objects.equals(accountExistsTemplate, other.accountExistsTemplate)
                 && Objects.equals(version, other.version)
                 && Objects.equals(profileAttributes, other.profileAttributes)
                 && Objects.equals(taskIdentifiers, other.taskIdentifiers)
@@ -473,13 +487,13 @@ public final class DynamoStudy implements Study {
                         + "strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, emailVerificationEnabled=%s, "
                         + "externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, minSupportedAppVersions=%s, "
                         + "usesCustomExportSchedule=%s, pushNotificationARNs=%s, disableExport=%s, "
-                        + "emailSignInTemplate=%s, emailSignInEnabled=%s, accountLimit=%s]",
+                        + "emailSignInTemplate=%s, emailSignInEnabled=%s, accountLimit=%s, accountExistsTemplate=%s]",
                 name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, supportEmail,
                 synapseDataAccessTeamId, synapseProjectId, technicalEmail, consentNotificationEmail, version,
                 profileAttributes, taskIdentifiers, dataGroups, passwordPolicy, verifyEmailTemplate,
                 resetPasswordTemplate, strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
                 externalIdValidationEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
                 usesCustomExportSchedule, pushNotificationARNs, disableExport, emailSignInTemplate,
-                emailSignInEnabled, accountLimit);
+                emailSignInEnabled, accountLimit, accountExistsTemplate);
     }
 }

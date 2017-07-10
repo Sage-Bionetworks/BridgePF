@@ -398,9 +398,10 @@ public class TestUtils {
         DynamoStudy study = new DynamoStudy();
         study.setName("Test Study ["+clazz.getSimpleName()+"]");
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        study.setVerifyEmailTemplate(new EmailTemplate("subject", "body with ${url}", MimeType.TEXT));
-        study.setResetPasswordTemplate(new EmailTemplate("subject", "body with ${url}", MimeType.TEXT));
+        study.setVerifyEmailTemplate(new EmailTemplate("verifyEmail subject", "body with ${url}", MimeType.TEXT));
+        study.setResetPasswordTemplate(new EmailTemplate("resetPassword subject", "body with ${url}", MimeType.TEXT));
         study.setEmailSignInTemplate(new EmailTemplate("${studyName} link", "Follow link ${token}", MimeType.TEXT));
+        study.setAccountExistsTemplate(new EmailTemplate("accountExists subject", "body with ${url}", MimeType.TEXT));
         study.setIdentifier(id);
         study.setMinAgeOfConsent(18);
         study.setSponsorName("The Council on Test Studies");
