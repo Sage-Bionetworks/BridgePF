@@ -40,7 +40,7 @@ deploy:
       prod: bridge-prod
   - provider: elasticbeanstalk
     skip_cleanup: true
-    bucket_name: org.sagebridge.bridgepf.deploy
+    bucket_name: org-sagebridge-bridgepf-deployment-prod
     zip_file: target/universal/bridgepf-0.1-SNAPSHOT.zip
     region: us-east-1
     app: BridgePF
@@ -52,4 +52,4 @@ deploy:
       all_branches: true
     access_key_id: AKIAIG6T67NMROEIMC7A
     secret_access_key:
-      secure: WygEvdxSQNZpJnPtmk8GDK6ueHUO0tissYQU3rV3ZCQLNjPwPSYxuqEwno2zP07XPQBxzD2TTZRKQYY5q3st14wdkoaKyiEo97VF5kitQCHK6aCs2L9MUPfL6SjhE2KFzJVDdSJzAYQcxoSPps5mqqcvceYYPhgVg3sUriK7c10=
+      secure: CLFotSo13K0zlthNcr8xZ88lDLtw7EL9+Er2MpzczJ5I4ywvRXuRY7Dy6BMfxjscoAdTICFhIT+aniX0Ie4DMVQvuVdNFRYiw93FKcjkPQI0tTetiU6mCmUgZLZDhcdQjtEnew6J1SeAB+oxF8ALYVOzkRddFqn0LeFr11nZk7Y=
