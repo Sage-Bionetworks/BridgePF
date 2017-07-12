@@ -1,13 +1,10 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import java.util.List;
-
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
-import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
