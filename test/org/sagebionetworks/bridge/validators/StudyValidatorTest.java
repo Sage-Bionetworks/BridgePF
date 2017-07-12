@@ -271,6 +271,30 @@ public class StudyValidatorTest {
     }
     
     @Test
+    public void accountExistsTemplateNotRequired() {
+        study.setAccountExistsTemplate(null);
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    }
+
+    @Test
+    public void requiresAccountExistsTemplateWithSubject() {
+        study.setAccountExistsTemplate(new EmailTemplate(null, "body", MimeType.HTML));
+        assertCorrectMessage(study, "accountExistsTemplate.subject", "accountExistsTemplate.subject is required");
+    }
+
+    @Test
+    public void requiresAccountExistsTemplateWithBody() {
+        study.setAccountExistsTemplate(new EmailTemplate("subject", null, MimeType.HTML));
+        assertCorrectMessage(study, "accountExistsTemplate.body", "accountExistsTemplate.body is required");
+    }
+    
+    @Test
+    public void requiresAccountExistsTemplateRequiresURL() {
+        study.setAccountExistsTemplate(new EmailTemplate("subject", "body with no url", MimeType.HTML));
+        assertCorrectMessage(study, "accountExistsTemplate.body", "accountExistsTemplate.body must contain the ${url} template variable");
+    }
+    
+    @Test
     public void cannotSetMinAgeOfConsentLessThanZero() {
         study.setMinAgeOfConsent(-100);
         assertCorrectMessage(study, "minAgeOfConsent", "minAgeOfConsent must be zero (no minimum age of consent) or higher");

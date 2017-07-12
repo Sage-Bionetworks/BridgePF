@@ -24,7 +24,8 @@ public interface SurveyQuestion extends SurveyElement {
         question.setPromptDetail(JsonUtils.asText(node, PROMPT_DETAIL_PROPERTY));
         question.setFireEvent(JsonUtils.asBoolean(node, FIRE_EVENT_PROPERTY));
         question.setUiHint(JsonUtils.asEntity(node, UI_HINTS_PROPERTY, UIHint.class));
-        question.setRules(JsonUtils.asEntityList(node, RULES_PROPERTY, SurveyRule.class));
+        question.setBeforeRules(JsonUtils.asEntityList(node, BEFORE_RULES_PROPERTY, SurveyRule.class));
+        question.setAfterRules(JsonUtils.asEntityList(node, AFTER_RULES_PROPERTY, SurveyRule.class));
         question.setConstraints(JsonUtils.asConstraints(node, CONSTRAINTS_PROPERTY));
         return question;
     }

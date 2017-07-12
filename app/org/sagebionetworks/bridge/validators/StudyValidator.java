@@ -101,6 +101,9 @@ public class StudyValidator implements Validator {
         if (study.getEmailSignInTemplate() != null) {
             validateTemplate(errors, study.getEmailSignInTemplate(), "emailSignInTemplate", "${token}");
         }
+        if (study.getAccountExistsTemplate() != null) {
+            validateTemplate(errors, study.getAccountExistsTemplate(), "accountExistsTemplate", "${url}");
+        }
         
         for (String userProfileAttribute : study.getUserProfileAttributes()) {
             if (RESERVED_ATTR_NAMES.contains(userProfileAttribute)) {

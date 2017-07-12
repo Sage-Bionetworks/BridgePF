@@ -235,6 +235,7 @@ public class StudyServiceTest {
         study.setVerifyEmailTemplate(null);
         study.setResetPasswordTemplate(null);
         study.setEmailSignInTemplate(null);
+        study.setAccountExistsTemplate(null);
         study = studyService.createStudy(study);
         
         assertEquals(PasswordPolicy.DEFAULT_PASSWORD_POLICY, study.getPasswordPolicy());
@@ -243,17 +244,20 @@ public class StudyServiceTest {
         assertNotNull(study.getResetPasswordTemplate().getSubject());
         assertNotNull(study.getResetPasswordTemplate().getBody());
         assertNotNull(study.getEmailSignInTemplate());
+        assertNotNull(study.getAccountExistsTemplate());
         
         // Remove them and update... we are set back to defaults
         study.setPasswordPolicy(null);
         study.setVerifyEmailTemplate(null);
         study.setResetPasswordTemplate(null);
         study.setEmailSignInTemplate(null);
+        study.setAccountExistsTemplate(null);
         study = studyService.updateStudy(study, false);
         
         assertNotNull(study.getVerifyEmailTemplate());
         assertNotNull(study.getResetPasswordTemplate());
         assertNotNull(study.getEmailSignInTemplate());
+        assertNotNull(study.getAccountExistsTemplate());
     }
     
     @Test

@@ -196,6 +196,14 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     void setEmailSignInTemplate(EmailTemplate template);
     
     /**
+     * The template for an email that is sent to a user when they sign up for a study using an 
+     * existing email address. The email will provide a way to reset the password since the user 
+     * appears to have forgotten they have an account. 
+     */
+    EmailTemplate getAccountExistsTemplate();
+    void setAccountExistsTemplate(EmailTemplate template);
+    
+    /**
      * Is this study active? Currently not in use, a de-activated study will be hidden from the 
      * study APIs and will no longer be available for use (a logical delete).
      */

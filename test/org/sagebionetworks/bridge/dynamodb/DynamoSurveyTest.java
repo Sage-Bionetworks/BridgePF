@@ -57,12 +57,12 @@ public class DynamoSurveyTest {
         screen.setPrompt("This is the prompt");
         screen.setPromptDetail("This is further explanation of the prompt.");
         screen.setImage(new Image("http://foo.bar", 100, 100));
-        screen.setRules(Lists.newArrayList(rule));
+        screen.setAfterRules(Lists.newArrayList(rule));
         survey.getElements().add(screen);
         
         // and add a rule as well to a survey question
         SurveyElement dateQuestion = (SurveyElement)TestSurvey.selectBy(survey, DataType.DATE);
-        dateQuestion.setRules(Lists.newArrayList(rule));
+        dateQuestion.setAfterRules(Lists.newArrayList(rule));
 
         // Convert to JSON.
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(survey, JsonNode.class);
@@ -122,7 +122,7 @@ public class DynamoSurveyTest {
         DateConstraints dc = (DateConstraints)convertedDateQuestion.getConstraints();
         assertNotNull("Earliest date exists", dc.getEarliestValue());
         assertNotNull("Latest date exists", dc.getLatestValue());
-        assertEquals(rule, convertedDateQuestion.getRules().get(0));
+        assertEquals(rule, convertedDateQuestion.getAfterRules().get(0));
 
         DateTimeConstraints dtc = (DateTimeConstraints) TestSurvey.selectBy(convertedSurvey, DataType.DATETIME).getConstraints();
         assertNotNull("Earliest date exists", dtc.getEarliestValue());
@@ -137,7 +137,7 @@ public class DynamoSurveyTest {
         assertEquals("name", ic.getRules().get(1).getSkipToTarget());
         
         SurveyInfoScreen retrievedScreen = (SurveyInfoScreen)convertedSurvey.getElements().get(convertedSurvey.getElements().size()-1);
-        assertEquals(rule, retrievedScreen.getRules().get(0));
+        assertEquals(rule, retrievedScreen.getAfterRules().get(0));
     }
 
     @Test
