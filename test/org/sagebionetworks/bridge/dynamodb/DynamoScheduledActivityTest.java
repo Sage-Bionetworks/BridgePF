@@ -120,7 +120,7 @@ public class DynamoScheduledActivityTest {
         assertEquals("AAA-BBB-CCC", node.get("guid").asText());
         assertEquals(scheduledOnString, node.get("scheduledOn").asText());
         assertEquals(expiresOnString, node.get("expiresOn").asText());
-        assertEquals("scheduled", node.get("status").asText());
+        assertEquals("available", node.get("status").asText());
         assertEquals("ScheduledActivity", node.get("type").asText());
         assertTrue(node.get("persistent").asBoolean());
         assertNull(node.get("schedule"));

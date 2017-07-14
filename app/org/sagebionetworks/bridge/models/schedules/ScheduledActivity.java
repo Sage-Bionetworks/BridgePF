@@ -72,6 +72,13 @@ public interface ScheduledActivity extends BridgeEntity {
         } else if (getStartedOn() != null) {
             return ScheduledActivityStatus.STARTED;
         }
+        // To prevent duplicate tasks, we freeze user's time zone at the initial time zone.
+        // This can cause disruption in status when a user changes time zones, not a huge 
+        // problem and these resolve, but with persistent tasks it is odd for them to be 
+        // any status but available.
+        if (getPersistent()) {
+            return ScheduledActivityStatus.AVAILABLE;
+        }
         if (getTimeZone() != null) {
             DateTime now = DateTime.now(getTimeZone());
             DateTime expiresOn = getExpiresOn();
