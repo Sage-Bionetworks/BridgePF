@@ -60,7 +60,6 @@ public class DefaultStudyBootstrapper {
             study.setConsentNotificationEmail("bridge-testing+consent@sagebase.org");
             study.setTechnicalEmail("bridge-testing+technical@sagebase.org");
             study.setSupportEmail("support@sagebridge.org");
-            study.setStormpathHref("https://enterprise.stormpath.io/v1/directories/3OBNJsxNxvaaK5nSFwv8RD");
             study.setDataGroups(TEST_DATA_GROUPS);
             study.setTaskIdentifiers(TEST_TASK_IDENTIFIERS);
             study.setUserProfileAttributes(Sets.newHashSet("phone", "can_be_recontacted"));
@@ -80,7 +79,6 @@ public class DefaultStudyBootstrapper {
             study.setSupportEmail("bridgeit@sagebridge.org");
             study.setTechnicalEmail("bridgeit@sagebridge.org");
             study.setConsentNotificationEmail("bridgeit@sagebridge.org");
-            study.setStormpathHref("https://enterprise.stormpath.io/v1/directories/4VaJ0y63TCKDmJTIV8YGAs");
             study.setPasswordPolicy(new PasswordPolicy(2, false, false, false, false));
             studyService.createStudy(study);
         }

@@ -74,8 +74,8 @@ public interface Account extends BridgeEntity {
     void setRoles(Set<Roles> roles);
 
     /**
-     * This is the store-specific identifier for the account (in the case of 
-     * Stormpath, it's the unique part of the href they return for this account).
+     * Unique identifier for the account. This is used so that we have an opaque identifier that's not the user's email
+     * address or a user-chosen (possibly identifying) username.
      */
     String getId();
     

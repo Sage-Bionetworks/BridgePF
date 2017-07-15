@@ -42,8 +42,7 @@ public class DynamoStudyTest {
         final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
         study.setVersion(2L);
         study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 2);
-        study.setStormpathHref("test");
-        
+
         final String json = BridgeObjectMapper.get().writeValueAsString(study);
         final JsonNode node = BridgeObjectMapper.get().readTree(json);
         
@@ -58,7 +57,6 @@ public class DynamoStudyTest {
         assertEqualsAndNotNull(study.isActive(), node.get("active").asBoolean());
         assertEqualsAndNotNull(study.getIdentifier(), node.get("identifier").asText());
         assertEqualsAndNotNull(study.getMinAgeOfConsent(), node.get("minAgeOfConsent").asInt());
-        assertEqualsAndNotNull(study.getStormpathHref(), node.get("stormpathHref").asText());
         assertEqualsAndNotNull(study.getPasswordPolicy(), JsonUtils.asEntity(node, "passwordPolicy", PasswordPolicy.class));
         assertEqualsAndNotNull(study.getVerifyEmailTemplate(),
                 JsonUtils.asEntity(node, "verifyEmailTemplate", EmailTemplate.class));
@@ -91,14 +89,6 @@ public class DynamoStudyTest {
         assertEqualsAndNotNull(
                 study.getMinSupportedAppVersions().get(OperatingSystem.IOS), 
                 (Integer)supportedVersionsNode.get(OperatingSystem.IOS).asInt());
-        
-        // Using the filtered view of a study, this should not include a couple of fields we don't expose to researchers.
-        // Negates the need for a view wrapper object, is contextually adjustable, unlike @JsonIgnore.
-        // You do need to create a new instance of the writer from a new mapper, SFAICT. This is stored as 
-        // Study.STUDY_WRITER.
-        final String filteredJson = Study.STUDY_WRITER.writeValueAsString(study);
-        final JsonNode filteredNode = BridgeObjectMapper.get().readTree(filteredJson);
-        assertNull(filteredNode.get("stormpathHref"));
 
         // Deserialize back to a POJO and verify.
         final Study deserStudy = BridgeObjectMapper.get().readValue(json, Study.class);
@@ -109,8 +99,7 @@ public class DynamoStudyTest {
     public void testThatEmptyMinSupportedVersionMapperDoesNotThrowException() throws Exception {
         final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
         study.setVersion(2L);
-        study.setStormpathHref("test");
-        
+
         final String json = BridgeObjectMapper.get().writeValueAsString(study);
         BridgeObjectMapper.get().readTree(json);
 

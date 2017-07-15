@@ -106,9 +106,7 @@ public class StudyValidator implements Validator {
                 String msg = String.format("'%s' conflicts with existing user profile property", userProfileAttribute);
                 errors.rejectValue("userProfileAttributes", msg);
             }
-            // Stormpath requires this to be a valid JavaScript identifier, despite the fact that it
-            // is using JSON to store the data (where properties are string escaped). So don't allow invalid 
-            // identifiers to be saved in study metadata.
+            // For backwards compatibility, we require this to be a valid JavaScript identifier.
             if (!userProfileAttribute.matches(BridgeConstants.JS_IDENTIFIER_PATTERN)) {
                 String msg = String.format("'%s' must contain only digits, letters, underscores and dashes, and cannot start with a dash", userProfileAttribute);
                 errors.rejectValue("userProfileAttributes", msg);

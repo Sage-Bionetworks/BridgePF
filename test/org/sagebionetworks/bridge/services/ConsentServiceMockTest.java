@@ -302,7 +302,7 @@ public class ConsentServiceMockTest {
     }
     
     @Test
-    public void stormpathFailureConsistent() {
+    public void accountFailureConsistent() {
         when(accountDao.getAccount(any(), any())).thenThrow(new BridgeServiceException("Something bad happend", 500));
         
         CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(study.getStudyIdentifier()).build();
