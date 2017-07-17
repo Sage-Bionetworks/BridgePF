@@ -1,31 +1,16 @@
 package org.sagebionetworks.bridge.models.accounts;
 
-import static org.sagebionetworks.bridge.BridgeConstants.STORMPATH_NAME_PLACEHOLDER_STRING;
-
 import java.util.Objects;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public final class AccountSummary {
-
-    public static final AccountSummary create(StudyIdentifier studyId, com.stormpath.sdk.account.Account acct) {
-        java.util.Date javaDate = acct.getCreatedAt();
-        DateTime createdOn = (javaDate != null) ? new DateTime(javaDate) : null;
-        String id = BridgeUtils.getIdFromStormpathHref(acct.getHref());
-        
-        String firstName = (STORMPATH_NAME_PLACEHOLDER_STRING.equals(acct.getGivenName())) ? null : acct.getGivenName();
-        String lastName = (STORMPATH_NAME_PLACEHOLDER_STRING.equals(acct.getSurname())) ? null : acct.getSurname();
-        return new AccountSummary(firstName, lastName, acct.getEmail(), id, createdOn,
-                AccountStatus.valueOf(acct.getStatus().name()), studyId);
-    }
-    
     private final String firstName;
     private final String lastName;
     private final String email;

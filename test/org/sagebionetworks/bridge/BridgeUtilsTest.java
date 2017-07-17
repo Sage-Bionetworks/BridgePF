@@ -181,23 +181,6 @@ public class BridgeUtilsTest {
     }    
     
     @Test
-    public void getIdFromStormpathHref() {
-        String href = "https://enterprise.stormpath.io/v1/accounts/6278jk74xoPOXkruh9vJnh";
-        String id = BridgeUtils.getIdFromStormpathHref(href);
-        assertEquals("6278jk74xoPOXkruh9vJnh", id);
-    }
-    
-    @Test
-    public void getIdFromStormpathHrefNullSafe() {
-        assertNull(BridgeUtils.getIdFromStormpathHref(null));
-    }
-    
-    @Test(expected = IllegalArgumentException.class)
-    public void unexpectedIdFormatThrowsUnambiguousException() {
-        BridgeUtils.getIdFromStormpathHref("https://enterprise.stormpath.io/v2/accounts/6278jk74xoPOXkruh9vJnh");
-    }
-    
-    @Test
     public void textToErrorKey() {
         assertEquals("iphone_os", BridgeUtils.textToErrorKey("iPhone OS"));
         assertEquals("android", BridgeUtils.textToErrorKey("Android"));

@@ -61,7 +61,6 @@ public class DefaultStudyBootstrapperTest {
         assertEquals("bridge-testing+consent@sagebase.org", study.getConsentNotificationEmail());
         assertEquals("bridge-testing+technical@sagebase.org", study.getTechnicalEmail());
         assertEquals("support@sagebridge.org", study.getSupportEmail());
-        assertEquals("https://enterprise.stormpath.io/v1/directories/3OBNJsxNxvaaK5nSFwv8RD", study.getStormpathHref());
         assertEquals(Sets.newHashSet("phone", "can_be_recontacted"), study.getUserProfileAttributes());
         assertEquals(new PasswordPolicy(2, false, false, false, false), study.getPasswordPolicy());
         assertTrue(study.isEmailVerificationEnabled());
@@ -70,9 +69,7 @@ public class DefaultStudyBootstrapperTest {
         Study sharedStudy = createdStudyList.get(1);
         assertEquals("Shared Module Library", sharedStudy.getName());
         assertEquals(BridgeConstants.SHARED_STUDY_ID_STRING, sharedStudy.getIdentifier());
-        assertEquals("https://enterprise.stormpath.io/v1/directories/4VaJ0y63TCKDmJTIV8YGAs",
-                sharedStudy.getStormpathHref());
-        
+
         // So it doesn't get out of sync, validate the study. However, default templates are set 
         // by the service. so those two errors are expected.
         try {

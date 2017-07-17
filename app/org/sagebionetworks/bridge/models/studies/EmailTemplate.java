@@ -8,8 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * The content describing an email template that will be user for workflow related to account 
  * management (email verification, reset password emails). For a list of all the template 
- * variables that can be used in these templates, see the API documentation (it combines both 
- * Bridge and Stormpath variables).
+ * variables that can be used in these templates, see the API documentation.
  */
 public final class EmailTemplate {
     

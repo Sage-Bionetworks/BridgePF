@@ -70,7 +70,7 @@ public class AuthenticationControllerMockTest {
     
     private static final String TEST_INTERNAL_SESSION_ID = "internal-session-id";
     private static final String TEST_PASSWORD = "password";
-    private static final String TEST_USER_STORMPATH_ID = "spId";
+    private static final String TEST_ACCOUNT_ID = "spId";
     private static final String TEST_EMAIL = "email@email.com";
     private static final String TEST_REQUEST_ID = "request-id";
     private static final String TEST_SESSION_TOKEN = "session-token";
@@ -695,12 +695,12 @@ public class AuthenticationControllerMockTest {
         ObjectNode metricsJsonNode = metrics.getJson();
         assertEquals(TEST_INTERNAL_SESSION_ID, metricsJsonNode.get("session_id").textValue());
         assertEquals(TEST_STUDY_ID_STRING, metricsJsonNode.get("study").textValue());
-        assertEquals(TEST_USER_STORMPATH_ID, metricsJsonNode.get("user_id").textValue());
+        assertEquals(TEST_ACCOUNT_ID, metricsJsonNode.get("user_id").textValue());
     }
 
     private UserSession createSession(ConsentStatus status, Roles role) {
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
-        builder.withId(TEST_USER_STORMPATH_ID);
+        builder.withId(TEST_ACCOUNT_ID);
         // set this value so we can verify it is copied into RequestInfo on a sign in.
         builder.withDataGroups(TestConstants.USER_DATA_GROUPS);
         if (role != null) {

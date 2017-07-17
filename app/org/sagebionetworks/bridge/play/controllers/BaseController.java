@@ -386,7 +386,7 @@ public abstract class BaseController extends Controller {
         return (Metrics)Cache.get(cacheKey);
     }
 
-    /** Writes the user's stormpath token, internal session ID, and study ID to the metrics. */
+    /** Writes the user's account ID, internal session ID, and study ID to the metrics. */
     protected void writeSessionInfoToMetrics(UserSession session) {
         Metrics metrics = getMetrics();
         if (metrics != null && session != null) {

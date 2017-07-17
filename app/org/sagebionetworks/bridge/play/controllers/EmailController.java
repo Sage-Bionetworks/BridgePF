@@ -63,7 +63,7 @@ public class EmailController extends BaseController {
                 throw new BadRequestException("Email not found.");
             }
             
-            // This should always return a healthCode unless this is not actually an email in Stormpath
+            // This should always return a healthCode under normal circumstances.
             String healthCode = accountDao.getHealthCodeForEmail(study, email);
             if (healthCode == null) {
                 throw new BadRequestException("Email not found.");
