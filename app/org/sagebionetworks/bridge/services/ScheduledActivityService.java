@@ -214,13 +214,14 @@ public class ScheduledActivityService {
         Map<String, DateTime> events = createEventsMap(context);
         ScheduleContext newContext = new ScheduleContext.Builder().withContext(context).withEvents(events).build();
         
-        // Get scheduled activities, persisted activities, and compare them
+        // Get scheduled activities
         List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(newContext);
 
         // Get all persisted activities within the time frame, not just those found by the scheduler (as in v3).
         Set<String> activityGuids = getScheduleActivityGuids(scheduledActivities);
         Map<String, ScheduledActivity> dbMap = retrieveAllPersistedActivitiesIntoMap(context, activityGuids);
         
+        // Compare scheduled and persisted activities, replacing scheduled with persisted where they exist
         List<ScheduledActivity> saves = Lists.newArrayList();
         for (int i=0; i < scheduledActivities.size(); i++) {
             ScheduledActivity activity = scheduledActivities.get(i);
@@ -233,7 +234,7 @@ public class ScheduledActivityService {
         // We've removed all the persisted activities that were found by the scheduler. Those have been saved
         // as necessary. The remaining tasks were scheduled based on user-triggered events that can be updated, 
         // not events like "enrollment" but events like "when this activity is finished." These are now all 
-        // added to the activities that will be return.
+        // added to the activities that will be returned.
         scheduledActivities.addAll(dbMap.values());
         
         return orderActivities(scheduledActivities, V4_FILTER);
