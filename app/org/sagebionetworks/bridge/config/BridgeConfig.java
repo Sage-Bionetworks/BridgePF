@@ -15,10 +15,6 @@ public class BridgeConfig implements Config {
     private static final String TEMPLATE_CONFIG = CONFIG_FILE;
     private static final String LOCAL_CONFIG = System.getProperty("user.home") + "/" + ".bridge" + "/" + CONFIG_FILE;
 
-    private static final String ENTERPRISE_STORMPATH_ID = "enterprise.stormpath.id";
-    private static final String ENTERPRISE_STORMPATH_SECRET = "enterprise.stormpath.secret";
-    private static final String ENTERPRISE_STORMPATH_APPLICATION_HREF = "enterprise.stormpath.application.href";
-
     private static final String CONSENTS_BUCKET = "consents.bucket";
 
     // Property for a token that is checked before user is unsubscribed from further emails
@@ -108,18 +104,6 @@ public class BridgeConfig implements Config {
 
     public List<String> getPropertyAsList(String name) {
         return config.getList(name);
-    }
-
-    public String getStormpathId() {
-        return config.get(ENTERPRISE_STORMPATH_ID);
-    }
-
-    public String getStormpathSecret() {
-        return config.get(ENTERPRISE_STORMPATH_SECRET);
-    }
-
-    public String getStormpathApplicationHref() {
-        return config.get(ENTERPRISE_STORMPATH_APPLICATION_HREF);
     }
 
     public String getHealthCodeKey() {

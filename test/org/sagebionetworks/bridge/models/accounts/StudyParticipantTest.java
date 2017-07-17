@@ -32,7 +32,7 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class StudyParticipantTest {
 
-    private static final String STORMPATH_ID = "6278uk74xoQkXkrbh9vJnh";
+    private static final String ACCOUNT_ID = "6278uk74xoQkXkrbh9vJnh";
     private static final DateTime CREATED_ON = DateTime.now();
     private static final DateTime CREATED_ON_UTC = CREATED_ON.withZone(DateTimeZone.UTC);
     private static final Set<Roles> ROLES = Sets.newHashSet(Roles.ADMIN, Roles.WORKER);
@@ -66,7 +66,7 @@ public class StudyParticipantTest {
         assertNotNull(node.get("encryptedHealthCode"));
         assertEquals("enabled", node.get("status").asText());
         assertEquals(CREATED_ON_UTC.toString(), node.get("createdOn").asText());
-        assertEquals(STORMPATH_ID, node.get("id").asText());
+        assertEquals(ACCOUNT_ID, node.get("id").asText());
         assertEquals("+04:00", node.get("timeZone").asText());
         assertEquals("StudyParticipant", node.get("type").asText());
 
@@ -105,7 +105,7 @@ public class StudyParticipantTest {
         assertEquals(ATTRIBUTES, deserParticipant.getAttributes());
         assertEquals(CREATED_ON_UTC, deserParticipant.getCreatedOn());
         assertEquals(AccountStatus.ENABLED, deserParticipant.getStatus());
-        assertEquals(STORMPATH_ID, deserParticipant.getId());
+        assertEquals(ACCOUNT_ID, deserParticipant.getId());
         
         UserConsentHistory deserHistory = deserParticipant.getConsentHistories().get("AAA").get(0);
         assertEquals("2002-02-02", deserHistory.getBirthdate());
@@ -156,7 +156,7 @@ public class StudyParticipantTest {
         assertEquals(ATTRIBUTES, copy.getAttributes());
         assertEquals(CREATED_ON, copy.getCreatedOn());
         assertEquals(AccountStatus.ENABLED, copy.getStatus());
-        assertEquals(STORMPATH_ID, copy.getId());
+        assertEquals(ACCOUNT_ID, copy.getId());
         
         // And they are equal in the Java sense
         assertEquals(copy, participant);
@@ -217,7 +217,7 @@ public class StudyParticipantTest {
                 .withRoles(ROLES)
                 .withLanguages(LANGS)
                 .withCreatedOn(CREATED_ON)
-                .withId(STORMPATH_ID)
+                .withId(ACCOUNT_ID)
                 .withStatus(AccountStatus.ENABLED)
                 .withTimeZone(TIME_ZONE);
         

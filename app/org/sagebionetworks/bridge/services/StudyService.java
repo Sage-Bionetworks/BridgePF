@@ -42,7 +42,6 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
@@ -77,7 +76,6 @@ public class StudyService {
     private CompoundActivityDefinitionService compoundActivityDefinitionService;
     private UploadCertificateService uploadCertService;
     private StudyDao studyDao;
-    private DirectoryDao directoryDao;
     private StudyValidator validator;
     private CacheProvider cacheProvider;
     private SubpopulationService subpopService;
@@ -146,10 +144,6 @@ public class StudyService {
     @Autowired
     final void setStudyDao(StudyDao studyDao) {
         this.studyDao = studyDao;
-    }
-    @Autowired
-    final void setDirectoryDao(DirectoryDao directoryDao) {
-        this.directoryDao = directoryDao;
     }
     @Autowired
     final void setCacheProvider(CacheProvider cacheProvider) {
@@ -334,9 +328,6 @@ public class StudyService {
         }
         
         subpopService.createDefaultSubpopulation(study);
-        
-        String directory = directoryDao.createDirectoryForStudy(study);
-        study.setStormpathHref(directory);
 
         // do not create certs for whitelisted studies (legacy studies)
         if (!studyWhitelist.contains(study.getIdentifier())) {
@@ -463,7 +454,6 @@ public class StudyService {
         setDefaultsIfAbsent(study);
         sanitizeHTML(study);
 
-        study.setStormpathHref(originalStudy.getStormpathHref());
         Validate.entityThrowingException(validator, study);
 
         // When the version is out of sync in the cache, then an exception is thrown and the study 
@@ -471,10 +461,6 @@ public class StudyService {
         // time it should succeed. Have not figured out why they get out of sync.
         cacheProvider.removeStudy(study.getIdentifier());
         
-        // Only update the directory if a relevant aspect of the study has changed.
-        if (studyDirectoryHasChanged(originalStudy, study)) {
-            directoryDao.updateDirectoryForStudy(study);
-        }
         Study updatedStudy = studyDao.updateStudy(study);
         
         if (!originalStudy.getSupportEmail().equals(study.getSupportEmail())) {
@@ -509,7 +495,6 @@ public class StudyService {
         } else {
             // actual delete
             studyDao.deleteStudy(existing);
-            directoryDao.deleteDirectoryForStudy(existing);
 
             // delete study data
             compoundActivityDefinitionService.deleteAllCompoundActivityDefinitionsInStudy(
@@ -537,27 +522,6 @@ public class StudyService {
                 .withEntityKey(IDENTIFIER_PROPERTY, study.getIdentifier()).withEntityKey(TYPE_PROPERTY, STUDY_PROPERTY)
                 .withMessage("Task identifiers cannot be deleted.").build();
         }
-    }
-    
-    /**
-     * Has an aspect of the study changed that must be saved as well in the Stormpath directory? This 
-     * includes the email templates for emails sent by Stormpath, but also all the fields that can be 
-     * substituted into the email templates such as names and emal addresses.
-     * @param originalStudy
-     * @param study
-     * @return true if the password policy or email templates have changed
-     */
-    private boolean studyDirectoryHasChanged(Study originalStudy, Study study) {
-        return (!study.getName().equals(originalStudy.getName()) ||
-                !study.getSponsorName().equals(originalStudy.getSponsorName()) ||
-                !study.getSupportEmail().equals(originalStudy.getSupportEmail()) ||
-                !study.getTechnicalEmail().equals(originalStudy.getTechnicalEmail()) ||
-                !study.getPasswordPolicy().equals(originalStudy.getPasswordPolicy()) || 
-                !study.getVerifyEmailTemplate().equals(originalStudy.getVerifyEmailTemplate()) || 
-                !study.getResetPasswordTemplate().equals(originalStudy.getResetPasswordTemplate()) ||
-                !study.getEmailSignInTemplate().equals(originalStudy.getEmailSignInTemplate()) ||
-                !study.getAccountExistsTemplate().equals(originalStudy.getAccountExistsTemplate()) ||
-                study.isEmailVerificationEnabled() != originalStudy.isEmailVerificationEnabled());
     }
     
     /**

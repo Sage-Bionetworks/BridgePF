@@ -59,9 +59,6 @@ libraryDependencies ++= Seq(
   "javax.mail" % "mail" % "1.4.7",
   // Joda-Time
   "joda-time" % "joda-time" % "2.8.2",
-  // Stormpath
-  "com.stormpath.sdk" % "stormpath-sdk-api" % "1.0.RC9.2",
-  "com.stormpath.sdk" % "stormpath-sdk-httpclient" % "1.0.RC9.2",
   "org.apache.httpcomponents" % "httpclient" % "4.5",
   // Redis
   "redis.clients" % "jedis" % "2.7.2",

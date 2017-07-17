@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -27,7 +26,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -54,10 +52,7 @@ public class StudyServiceTest {
     
     @Resource
     SubpopulationService subpopService;
-    
-    @Resource
-    DirectoryDao directoryDao;
-    
+
     @Resource
     SubpopulationDao subpopDao;
 
@@ -147,7 +142,6 @@ public class StudyServiceTest {
                 newStudy.getDataGroups());
         assertEquals(0, newStudy.getTaskIdentifiers().size());
         // these should have been changed
-        assertNotEquals("http://local-test-junk", newStudy.getStormpathHref());
         assertEquals("${studyName} link", newStudy.getEmailSignInTemplate().getSubject());
         assertEquals("Follow link ${token}", newStudy.getEmailSignInTemplate().getBody());
         
@@ -168,7 +162,6 @@ public class StudyServiceTest {
             // expected exception
         }
         // Verify that all the dependent stuff has been deleted as well:
-        assertNull(directoryDao.getDirectoryForStudy(study));
         assertEquals(0, subpopDao.getSubpopulations(study.getStudyIdentifier(), false, true).size());
         assertEquals(0, studyConsentService.getAllConsents(SubpopulationGuid.create(study.getIdentifier())).size());
         study = null;

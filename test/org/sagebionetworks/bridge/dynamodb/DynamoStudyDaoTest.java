@@ -70,7 +70,6 @@ public class DynamoStudyDaoTest {
         assertNotNull(androidARN);
         assertNotNull(iosARN);
         
-        study.setStormpathHref("http://url.com/");
         study.setUserProfileAttributes(USER_PROFILE_ATTRIBUTES);
         study.setTaskIdentifiers(TASK_IDENTIFIERS);
         study.setDataGroups(DATA_GROUPS);

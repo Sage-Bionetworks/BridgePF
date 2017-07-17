@@ -9,7 +9,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.security.SecureRandom;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -37,8 +36,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.stormpath.sdk.group.Group;
-import com.stormpath.sdk.group.GroupList;
 
 public class BridgeUtils {
     
@@ -84,9 +81,8 @@ public class BridgeUtils {
     /**
      * A simple means of providing template variables in template strings, in the format <code>${variableName}</code>.
      * This value will be replaced with the value of the variable name. The variable name/value pairs are passed to the
-     * method as a map. Variables that are not found in the map will be left in the string as is. This includes
-     * variables that are resolved by Stormpath when resolving templates for the emails sent by that system.
-     * 
+     * method as a map. Variables that are not found in the map will be left in the string as is.
+     *
      * @see https://sagebionetworks.jira.com/wiki/display/BRIDGE/EmailTemplate
      * 
      * @param template
@@ -173,16 +169,6 @@ public class BridgeUtils {
         }
     }
 
-    public static Set<Roles> convertRolesQuietly(GroupList groups) {
-        Set<Roles> roleSet = new HashSet<>();
-        if (groups != null) {
-            for (Group group : groups) {
-                roleSet.add(Roles.valueOf(group.getName().toUpperCase()));
-            }
-        }
-        return roleSet;
-    }
-    
     public static Set<String> commaListToOrderedSet(String commaList) {
         if (commaList != null) {
             // This implementation must return a LinkedHashSet. This is a set
@@ -235,16 +221,6 @@ public class BridgeUtils {
             }
         }
         return builder.build();
-    }
-    
-    public static String getIdFromStormpathHref(String href) {
-        if (href != null) {
-            if (!href.contains(BridgeConstants.STORMPATH_ACCOUNT_BASE_HREF)) {
-                throw new IllegalArgumentException("Invalid Stormpath URL: " + href);
-            }
-            return href.substring(BridgeConstants.STORMPATH_ACCOUNT_BASE_HREF.length());
-        }
-        return null;
     }
     
     /**
