@@ -8,6 +8,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.CLIENT_DATA_MAX_BYTES;
+import static org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus.UPDATABLE_STATUSES;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableList;
 import static org.sagebionetworks.bridge.validators.ScheduleContextValidator.MAX_DATE_RANGE_IN_DAYS;
 
@@ -70,7 +71,7 @@ public class ScheduledActivityService {
     };
     
     static final NewAndPersistedActivitiesMerger V3_MERGE = (saves, scheduledActivities, activity, dbActivity, i) -> {
-        if (dbActivity != null && !ScheduledActivityStatus.UPDATABLE_STATUSES.contains(dbActivity.getStatus())) {
+        if (dbActivity != null && !UPDATABLE_STATUSES.contains(dbActivity.getStatus())) {
             // Once the activity is in the database and is in a non-updatable state, we should use the one from the
             // database. Otherwise, either (a) it doesn't exist yet and needs to be persisted or (b) the user
             // hasn't interacted with it yet, so we can safely replace it with the newly generated one, which may
@@ -85,10 +86,9 @@ public class ScheduledActivityService {
         }
     };
     
-    static final NewAndPersistedActivitiesMerger V4_MERGE = (saves, scheduledActivities, activity, dbActivity, i) -> {
-        if (dbActivity != null) {
-            scheduledActivities.set(i, dbActivity);
-        } else {
+    static final NewAndPersistedActivitiesMerger V4_COLLECT_SAVES = (saves, scheduledActivities, activity, dbActivity, i) -> {
+        // We even want to save expired tasks. These are desirable to retrieve in the v4 API.
+        if (dbActivity == null || UPDATABLE_STATUSES.contains(dbActivity.getStatus())) {
             saves.add(activity);
         }
     };    
@@ -227,7 +227,7 @@ public class ScheduledActivityService {
             ScheduledActivity activity = scheduledActivities.get(i);
             ScheduledActivity dbActivity = dbMap.remove(activity.getGuid());
             
-            V4_MERGE.mergeActivityLists(saves, scheduledActivities, activity, dbActivity, i);
+            V4_COLLECT_SAVES.mergeActivityLists(saves, scheduledActivities, activity, dbActivity, i);
         }
         activityDao.saveActivities(saves);
         

@@ -17,7 +17,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.services.ScheduledActivityService.V3_FILTER;
 import static org.sagebionetworks.bridge.services.ScheduledActivityService.V4_FILTER;
 import static org.sagebionetworks.bridge.services.ScheduledActivityService.V3_MERGE;
-import static org.sagebionetworks.bridge.services.ScheduledActivityService.V4_MERGE;
+import static org.sagebionetworks.bridge.services.ScheduledActivityService.V4_COLLECT_SAVES;
 import static org.sagebionetworks.bridge.validators.ScheduleContextValidator.MAX_DATE_RANGE_IN_DAYS;
 
 import java.util.List;
@@ -395,7 +395,7 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> scheduled = createNewActivities("AAA", "BBB");
         List<ScheduledActivity> db = createStartedActivities("BBB");
         
-        List<ScheduledActivity> saves = merge(scheduled,db, V4_MERGE);
+        List<ScheduledActivity> saves = merge(scheduled,db, V4_COLLECT_SAVES);
         assertActivities(saves, "AAA");
         
         scheduled = service.orderActivities(scheduled, V4_FILTER);
@@ -451,7 +451,7 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> db = Lists.newArrayList(createExpiredActivities("AAA").get(0),
                 createFinishedActivities("BBB").get(0));
         
-        List<ScheduledActivity> saves = merge(scheduled, db, V4_MERGE);
+        List<ScheduledActivity> saves = merge(scheduled, db, V4_COLLECT_SAVES);
         assertActivities(saves,  "CCC");
         
         scheduled = service.orderActivities(scheduled, ScheduledActivityService.V4_FILTER);
@@ -480,7 +480,7 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> scheduled = createNewActivities("AAA", "BBB", "CCC");
         List<ScheduledActivity> db = createStartedActivities("AAA","CCC");
 
-        List<ScheduledActivity> saves = merge(scheduled, db, V4_MERGE);
+        List<ScheduledActivity> saves = merge(scheduled, db, V4_COLLECT_SAVES);
         assertActivities(saves, "BBB");
         
         scheduled = service.orderActivities(scheduled, V4_FILTER);
