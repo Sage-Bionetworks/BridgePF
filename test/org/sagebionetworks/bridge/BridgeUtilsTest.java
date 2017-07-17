@@ -341,7 +341,7 @@ public class BridgeUtilsTest {
     public void passwordPolicyDescription() {
         PasswordPolicy policy = new PasswordPolicy(8, false, true, false, true);
         String description = BridgeUtils.passwordPolicyDescription(policy);
-        assertEquals("Password must be 8 or more characters, and must contain at least one upper-case letter, and one symoblic character.", description);
+        assertEquals("Password must be 8 or more characters, and must contain at least one upper-case letter, and one symbolic character.", description);
         
         policy = new PasswordPolicy(2, false, false, false, false);
         description = BridgeUtils.passwordPolicyDescription(policy);

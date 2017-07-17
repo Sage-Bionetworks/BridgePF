@@ -357,7 +357,7 @@ public class BridgeUtils {
                 phrases.add("one number");
             }
             if (policy.isSymbolRequired()) {
-                phrases.add("one symoblic character");
+                phrases.add("one symbolic character");
             }
             for (int i=0; i < phrases.size(); i++) {
                 if (i == phrases.size()-1) {
