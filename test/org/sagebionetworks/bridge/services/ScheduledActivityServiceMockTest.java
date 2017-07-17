@@ -931,14 +931,6 @@ public class ScheduledActivityServiceMockTest {
         return createScheduleContext(ENDS_ON).withEvents(eventsMap).build();
     }
     
-    private void log(String tag, List<ScheduledActivity> activities) {
-        System.out.println(tag + ": " + activities.size() + " activities, NOW: " + NOW);
-        for (ScheduledActivity act : activities) {
-            System.out.println("   scheduledOn: " + act.getScheduledOn() + ", finishedOn: "
-                    + new DateTime(act.getFinishedOn(), act.getScheduledOn().getZone()));
-        }
-    }
-    
     @Test
     public void getActivitiesV4ReturnsExpiredAndFinishedActivities() throws Exception {
         DateTime startsOn = DateTime.now().minusDays(2);

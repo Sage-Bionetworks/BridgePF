@@ -230,10 +230,10 @@ public class ScheduledActivityService {
         }
         activityDao.saveActivities(saves);
         
-        // We've removed all the persisted activities that were found by the scheduler. Those have been updated  
-        // or saved as necessary. The remaining tasks were found due to an activity GUID that applied to the user
-        // in scheduling, but the scheduled activities were create with an event timestamp that is no longer in 
-        // the event map.
+        // We've removed all the persisted activities that were found by the scheduler. Those have been saved
+        // as necessary. The remaining tasks were scheduled based on user-triggered events that can be updated, 
+        // not events like "enrollment" but events like "when this activity is finished." These are now all 
+        // added to the activities that will be return.
         scheduledActivities.addAll(dbMap.values());
         
         return orderActivities(scheduledActivities, V4_FILTER);
