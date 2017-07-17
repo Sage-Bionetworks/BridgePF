@@ -117,14 +117,10 @@ public class ScheduledActivityServiceMockTest {
     @Captor
     private ArgumentCaptor<List<ScheduledActivity>> scheduledActivityListCaptor;
     
-    private DateTime endsOn;
-    
     @SuppressWarnings("unchecked")
     @Before
     public void before() {
         DateTimeUtils.setCurrentMillisFixed(NOW.getMillis());
-        
-        endsOn = NOW.plusDays(2);
         
         service = new ScheduledActivityService();
         
@@ -134,7 +130,7 @@ public class ScheduledActivityServiceMockTest {
         Map<String,DateTime> map = ImmutableMap.of();
         when(activityEventService.getActivityEventMap(anyString())).thenReturn(map);
         
-        ScheduleContext context = createScheduleContext(endsOn).build();
+        ScheduleContext context = createScheduleContext(ENDS_ON).build();
         List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
         
         when(activityDao.getActivity(anyString(), anyString())).thenAnswer(invocation -> {
@@ -236,7 +232,7 @@ public class ScheduledActivityServiceMockTest {
 
     @Test(expected = BadRequestException.class)
     public void rejectsListOfActivitiesWithNullElement() {
-        ScheduleContext context = createScheduleContext(endsOn).build();
+        ScheduleContext context = createScheduleContext(ENDS_ON).build();
         List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
         scheduledActivities.set(0, null);
         
@@ -245,7 +241,7 @@ public class ScheduledActivityServiceMockTest {
     
     @Test(expected = BadRequestException.class)
     public void rejectsListOfActivitiesWithTaskThatLacksGUID() {
-        ScheduleContext context = createScheduleContext(endsOn).build();
+        ScheduleContext context = createScheduleContext(ENDS_ON).build();
         List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
         scheduledActivities.get(0).setGuid(null);
         
@@ -258,7 +254,7 @@ public class ScheduledActivityServiceMockTest {
                 .withStudyIdentifier(TEST_STUDY)
                 .withInitialTimeZone(DateTimeZone.UTC)
                 .withAccountCreatedOn(ENROLLMENT.minusHours(2))
-                .withEndsOn(endsOn)
+                .withEndsOn(ENDS_ON)
                 .withHealthCode(HEALTH_CODE)
                 .withUserId(USER_ID).build();        
         
@@ -272,7 +268,7 @@ public class ScheduledActivityServiceMockTest {
                 .withStudyIdentifier(TEST_STUDY)
                 .withInitialTimeZone(DateTimeZone.UTC)
                 .withAccountCreatedOn(ENROLLMENT.minusHours(2))
-                .withEndsOn(endsOn)
+                .withEndsOn(ENDS_ON)
                 .withHealthCode(HEALTH_CODE)
                 .withUserId(USER_ID).build();        
         
@@ -289,7 +285,7 @@ public class ScheduledActivityServiceMockTest {
     @SuppressWarnings({"unchecked","rawtypes"})
     @Test
     public void updateActivitiesWorks() throws Exception {
-        ScheduleContext context = createScheduleContext(endsOn).build();
+        ScheduleContext context = createScheduleContext(ENDS_ON).build();
         List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
         
         int count = scheduledActivities.size();
@@ -333,7 +329,7 @@ public class ScheduledActivityServiceMockTest {
             array.add(node);
         }
         
-        ScheduleContext context = createScheduleContext(endsOn).build();
+        ScheduleContext context = createScheduleContext(ENDS_ON).build();
         List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
         activities.get(0).setClientData(array);
         
@@ -342,7 +338,7 @@ public class ScheduledActivityServiceMockTest {
     
     @Test(expected = BadRequestException.class)
     public void activityListWithNullsRejected() {
-        ScheduleContext context = createScheduleContext(endsOn).build();
+        ScheduleContext context = createScheduleContext(ENDS_ON).build();
         List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
         activities.set(0, null);
         
@@ -351,7 +347,7 @@ public class ScheduledActivityServiceMockTest {
     
     @Test(expected = BadRequestException.class)
     public void activityListWithNullGuidRejected() {
-        ScheduleContext context = createScheduleContext(endsOn).build();
+        ScheduleContext context = createScheduleContext(ENDS_ON).build();
         List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
         activities.get(1).setGuid(null);
         

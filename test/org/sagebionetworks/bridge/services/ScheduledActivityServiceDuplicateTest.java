@@ -350,7 +350,6 @@ public class ScheduledActivityServiceDuplicateTest {
         // It's adjusted, magically it's still 6/30 I haven't figured out why yet.
         List<ScheduledActivity> list = filterByLabel(activities, "Do Persistent Activity");
         assertEquals(1, list.size());
-        System.out.println("context.getStartsOn(): " + context.getStartsOn());
         assertEquals("21e97935-6d64-4cd5-ae70-653caad7b2f9:2016-06-30T12:43:07.951", list.get(0).getGuid());
         // This one hasn't been started, obviously
         assertNull(filterByLabel(activities, "Training Session 1").get(0).getStartedOn());
