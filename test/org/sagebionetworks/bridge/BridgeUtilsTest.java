@@ -17,6 +17,7 @@ import org.joda.time.DateTime;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.Lists;
@@ -334,6 +335,17 @@ public class BridgeUtilsTest {
     @Test
     public void encodeURIComponentNoEscaping() {
         assertEquals("foo-bar", BridgeUtils.encodeURIComponent("foo-bar"));
+    }
+    
+    @Test
+    public void passwordPolicyDescription() {
+        PasswordPolicy policy = new PasswordPolicy(8, false, true, false, true);
+        String description = BridgeUtils.passwordPolicyDescription(policy);
+        assertEquals("Password must be 8 or more characters, and must contain at least one upper-case letter, and one symoblic character.", description);
+        
+        policy = new PasswordPolicy(2, false, false, false, false);
+        description = BridgeUtils.passwordPolicyDescription(policy);
+        assertEquals("Password must be 2 or more characters.", description);
     }
     
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.

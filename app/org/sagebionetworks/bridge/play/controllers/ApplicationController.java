@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.ASSETS_HOST;
 
 import org.apache.commons.lang3.StringEscapeUtils;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -33,8 +34,10 @@ public class ApplicationController extends BaseController {
 
     public Result resetPassword(String studyId) {
         Study study = studyService.getStudy(studyId);
+        String passwordDescription = BridgeUtils.passwordPolicyDescription(study.getPasswordPolicy());
         return ok(views.html.resetPassword.render(ASSETS_HOST, ASSETS_BUILD,
-                StringEscapeUtils.escapeHtml4(study.getName()), study.getSupportEmail()));
+            StringEscapeUtils.escapeHtml4(study.getName()), study.getSupportEmail(), 
+            passwordDescription));
     }
     
     public Result startSession(String studyId, String email, String token) {
