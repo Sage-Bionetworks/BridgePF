@@ -357,7 +357,8 @@ public class BridgeUtils {
                 phrases.add("one number");
             }
             if (policy.isSymbolRequired()) {
-                phrases.add("one symbolic character");
+                // !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~
+                phrases.add("one symbolic character (non-alphanumerics like #$%&@)");
             }
             for (int i=0; i < phrases.size(); i++) {
                 if (i == phrases.size()-1) {
