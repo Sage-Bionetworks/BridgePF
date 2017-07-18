@@ -23,6 +23,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -60,6 +61,7 @@ public class ApplicationControllerMockTest {
         Study study = new DynamoStudy();
         study.setIdentifier("test-study");
         study.setSupportEmail("support@email.com");
+        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         
         doReturn(study).when(studyService).getStudy("test-study");
     }
