@@ -184,6 +184,7 @@ public class ScheduledActivityService {
         List<ScheduledActivity> dbActivities = activityDao.getActivities(context.getEndsOn().getZone(), scheduledActivities);
         
         Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(dbActivities, ScheduledActivity::getGuid);
+        
         List<ScheduledActivity> saves = performMerge(scheduledActivities, dbMap, V3_MERGE);
         activityDao.saveActivities(saves);
         
@@ -194,8 +195,7 @@ public class ScheduledActivityService {
         List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(context);
 
         // Get all persisted activities within the time frame, not just those found by the scheduler (as in v3).
-        Set<String> activityGuids = getScheduleActivityGuids(scheduledActivities);
-        Map<String, ScheduledActivity> dbMap = retrieveAllPersistedActivitiesIntoMap(context, activityGuids);
+        Map<String, ScheduledActivity> dbMap = retrieveAllPersistedActivitiesIntoMap(context, scheduledActivities);
         
         // Compare scheduled and persisted activities, replacing scheduled with persisted where they exist
         List<ScheduledActivity> saves = performMerge(scheduledActivities, dbMap, V4_COLLECT_SAVES);
@@ -222,15 +222,13 @@ public class ScheduledActivityService {
         return saves;
     }
     
-    private Set<String> getScheduleActivityGuids(List<ScheduledActivity> scheduledActivities) {
+    private Map<String, ScheduledActivity> retrieveAllPersistedActivitiesIntoMap(ScheduleContext context,
+            List<ScheduledActivity> scheduledActivities) {
+        
         Set<String> activityGuids = scheduledActivities.stream().map((activity) -> {
             return activity.getGuid().split(":")[0];
         }).collect(Collectors.toSet());
-        return activityGuids;
-    }
-    
-    private Map<String, ScheduledActivity> retrieveAllPersistedActivitiesIntoMap(ScheduleContext context,
-            Set<String> activityGuids) {
+        
         Map<String,ScheduledActivity> dbMap = Maps.newHashMap();
         for (String activityGuid : activityGuids) {
             ScheduledActivityList list = activityDao.getActivityHistoryV2(
