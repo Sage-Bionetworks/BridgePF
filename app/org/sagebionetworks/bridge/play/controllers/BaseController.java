@@ -401,8 +401,7 @@ public abstract class BaseController extends Controller {
         checkNotNull(session);
         
         RequestInfo.Builder builder = new RequestInfo.Builder();
-        // We have to preserve the timestamps, if they exist, so we copy the 
-        // existing requestInfo if it exists
+        // If any timestamps exist, retrieve and preserve them in the returned requestInfo
         RequestInfo requestInfo = cacheProvider.getRequestInfo(session.getId());
         if (requestInfo != null) {
             builder.copyOf(requestInfo);

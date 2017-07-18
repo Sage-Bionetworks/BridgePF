@@ -679,7 +679,7 @@ public class BaseControllerTest {
     
     @Test
     public void getRequestInfoBuilder() throws Exception {
-        // Let's set a date and see it returned successfully too
+        // Set the dates and verify they are retrieved from cache and added to response
         RequestInfo persistedInfo = new RequestInfo.Builder()
                 .withSignedInOn(SIGNED_IN_ON)
                 .withActivitiesAccessedOn(ACTIVITIES_ACCESSED_ON)
