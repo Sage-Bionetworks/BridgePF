@@ -61,7 +61,6 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
-import org.sagebionetworks.bridge.services.ScheduledActivityService.NewAndPersistedActivitiesMerger;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -382,8 +381,9 @@ public class ScheduledActivityServiceMockTest {
     public void newActivitiesIncludedInSaveAndResultsV3() {
         List<ScheduledActivity> scheduled = createNewActivities("AAA", "BBB");
         List<ScheduledActivity> db = createStartedActivities("BBB");
+        Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(db, ScheduledActivity::getGuid);
         
-        List<ScheduledActivity> saves = merge(scheduled, db, V3_MERGE);
+        List<ScheduledActivity> saves = service.performMerge(scheduled, dbMap, V3_MERGE);
         assertActivities(saves, "AAA");
         
         scheduled = service.orderActivities(scheduled, V3_FILTER);
@@ -394,8 +394,9 @@ public class ScheduledActivityServiceMockTest {
     public void newActivitiesIncludedInSaveAndResultsV4() {
         List<ScheduledActivity> scheduled = createNewActivities("AAA", "BBB");
         List<ScheduledActivity> db = createStartedActivities("BBB");
-        
-        List<ScheduledActivity> saves = merge(scheduled,db, V4_COLLECT_SAVES);
+        Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(db, ScheduledActivity::getGuid);
+
+        List<ScheduledActivity> saves = service.performMerge(scheduled, dbMap, V4_COLLECT_SAVES);
         assertActivities(saves, "AAA");
         
         scheduled = service.orderActivities(scheduled, V4_FILTER);
@@ -411,8 +412,9 @@ public class ScheduledActivityServiceMockTest {
     public void persistedAndScheduledIncludedInResultsV3() {
         List<ScheduledActivity> scheduled = createNewActivities("CCC");
         List<ScheduledActivity> db = createStartedActivities("CCC");
+        Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(db, ScheduledActivity::getGuid);
 
-        List<ScheduledActivity> saves = merge(scheduled, db, V3_MERGE);
+        List<ScheduledActivity> saves = service.performMerge(scheduled, dbMap, V3_MERGE);
         assertActivities(saves);
         
         scheduled = service.orderActivities(scheduled, V3_FILTER);
@@ -424,8 +426,9 @@ public class ScheduledActivityServiceMockTest {
         // create activities in the past that are now expired.
         List<ScheduledActivity> scheduled = createExpiredActivities("AAA","BBB");
         List<ScheduledActivity> db = createExpiredActivities("AAA","CCC");
-        
-        List<ScheduledActivity> saves = merge(scheduled, db, V3_MERGE);
+        Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(db, ScheduledActivity::getGuid);
+
+        List<ScheduledActivity> saves = service.performMerge(scheduled, dbMap, V3_MERGE);
         assertActivities(saves);
         
         scheduled = service.orderActivities(scheduled, V3_FILTER);
@@ -437,8 +440,9 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> scheduled = createNewActivities("AAA", "BBB", "CCC");
         List<ScheduledActivity> db = Lists.newArrayList(createFinishedActivities("AAA").get(0),
                 createStartedActivities("BBB").get(0));
-        
-        List<ScheduledActivity> saves = merge(scheduled, db, V3_MERGE);
+        Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(db, ScheduledActivity::getGuid);
+
+        List<ScheduledActivity> saves = service.performMerge(scheduled, dbMap, V3_MERGE);
         assertActivities(saves, "CCC");
         
         scheduled = service.orderActivities(scheduled, V3_FILTER);
@@ -450,8 +454,9 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> scheduled = createNewActivities("AAA","BBB","CCC");
         List<ScheduledActivity> db = Lists.newArrayList(createExpiredActivities("AAA").get(0),
                 createFinishedActivities("BBB").get(0));
-        
-        List<ScheduledActivity> saves = merge(scheduled, db, V4_COLLECT_SAVES);
+        Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(db, ScheduledActivity::getGuid);
+
+        List<ScheduledActivity> saves = service.performMerge(scheduled, dbMap, V4_COLLECT_SAVES);
         assertActivities(saves,  "CCC");
         
         scheduled = service.orderActivities(scheduled, ScheduledActivityService.V4_FILTER);
@@ -463,8 +468,9 @@ public class ScheduledActivityServiceMockTest {
     public void newAndExistingActivitiesAreMergedV3() {
         List<ScheduledActivity> scheduled = createNewActivities("AAA", "BBB", "CCC");
         List<ScheduledActivity> db = createStartedActivities("AAA","CCC");
+        Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(db, ScheduledActivity::getGuid);
 
-        List<ScheduledActivity> saves = merge(scheduled, db, V3_MERGE);
+        List<ScheduledActivity> saves = service.performMerge(scheduled, dbMap, V3_MERGE);
         assertActivities(saves, "BBB");
         
         scheduled = service.orderActivities(scheduled, V3_FILTER);
@@ -479,8 +485,9 @@ public class ScheduledActivityServiceMockTest {
     public void newAndExistingActivitiesAreMergedV4() {
         List<ScheduledActivity> scheduled = createNewActivities("AAA", "BBB", "CCC");
         List<ScheduledActivity> db = createStartedActivities("AAA","CCC");
+        Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(db, ScheduledActivity::getGuid);
 
-        List<ScheduledActivity> saves = merge(scheduled, db, V4_COLLECT_SAVES);
+        List<ScheduledActivity> saves = service.performMerge(scheduled, dbMap, V4_COLLECT_SAVES);
         assertActivities(saves, "BBB");
         
         scheduled = service.orderActivities(scheduled, V4_FILTER);
@@ -505,7 +512,9 @@ public class ScheduledActivityServiceMockTest {
         scheduled.get(0).setActivity(newActivity);
 
         // execute and validate
-        List<ScheduledActivity> saves = merge(scheduled, db, V3_MERGE);
+        Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(db, ScheduledActivity::getGuid);
+
+        List<ScheduledActivity> saves = service.performMerge(scheduled, dbMap, V3_MERGE);
         scheduled = service.orderActivities(scheduled, V3_FILTER);
 
         // We save the task, because we want to update it.
@@ -516,6 +525,37 @@ public class ScheduledActivityServiceMockTest {
         assertEquals(5678, scheduled.get(0).getActivity().getSurvey().getCreatedOn().getMillis());
     }
 
+    @Test
+    public void taskNotStartedIsUpdatedV4() {
+        // Activity in DDB has survey reference pointing to createdOn 1234. Newly created activity has survey reference
+        // pointing to createdOn 5678. Activity in DDB hasn't been started. We should update the activity in DDB.
+
+        // Create task references and activities.
+        Activity oldActivity = new Activity.Builder().withSurvey("my-survey", "my-survey-guid", new DateTime(1234))
+                .build();
+        Activity newActivity = new Activity.Builder().withSurvey("my-survey", "my-survey-guid", new DateTime(5678))
+                .build();
+
+        // Create scheduled activities.
+        List<ScheduledActivity> db = createNewActivities("CCC");
+        db.get(0).setActivity(oldActivity);
+        List<ScheduledActivity> scheduled = createNewActivities("CCC");
+        scheduled.get(0).setActivity(newActivity);
+
+        // execute and validate
+        Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(db, ScheduledActivity::getGuid);
+
+        List<ScheduledActivity> saves = service.performMerge(scheduled, dbMap, V4_COLLECT_SAVES);
+        scheduled = service.orderActivities(scheduled, V4_FILTER);
+
+        // We save the task, because we want to update it.
+        assertEquals(ImmutableSet.of("CCC"), toGuids(saves));
+
+        // Verify that the schedule contains the new surveyCreatedOn
+        assertEquals(1, scheduled.size());
+        assertEquals(5678, scheduled.get(0).getActivity().getSurvey().getCreatedOn().getMillis());
+    }
+    
     @Test
     public void orderActivitieFiltersAndSorts() {
         DateTime time1 = DateTime.parse("2014-10-01T00:00:00.000Z");
@@ -1015,7 +1055,8 @@ public class ScheduledActivityServiceMockTest {
         return activities.get(0).getScheduledOn().toString();
     }
     
-    private List<ScheduledActivity> merge(List<ScheduledActivity> scheduled, List<ScheduledActivity> db, NewAndPersistedActivitiesMerger merger) {
+    /*
+    private List<ScheduledActivity> merge2(List<ScheduledActivity> scheduled, List<ScheduledActivity> db, NewAndPersistedActivitiesMerger merger) {
         Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(db, ScheduledActivity::getGuid);
         
         List<ScheduledActivity> saves = Lists.newArrayList();
@@ -1025,7 +1066,7 @@ public class ScheduledActivityServiceMockTest {
             merger.mergeActivityLists(saves, scheduled, activity, dbActivity, i);
         }
         return saves;
-    }
+    }*/
 
     private List<ScheduledActivity> createNewActivities(String... guids) {
         return createActivities(false, false, false, guids);
@@ -1072,19 +1113,13 @@ public class ScheduledActivityServiceMockTest {
         return activities.stream().map(ScheduledActivity::getGuid).collect(Collectors.toSet());
     }
     
-    // TODO: Make endsOn a constant, no reason for it to be here.
     private ScheduleContext.Builder createScheduleContext(DateTime endsOn) {
         Map<String,DateTime> events = Maps.newHashMap();
-        events.put("enrollment", ENROLLMENT.withZone(DateTimeZone.UTC));
+        events.put("enrollment", ENROLLMENT);
         
-        return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY)
-                .withInitialTimeZone(DateTimeZone.forOffsetHours(-7))
-                .withAccountCreatedOn(ENROLLMENT.minusHours(2))
-                .withStartsOn(STARTS_ON)
-                .withEndsOn(endsOn)
-                .withHealthCode(HEALTH_CODE)
-                .withUserId(USER_ID)
-                .withEvents(events);
+        return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY).withInitialTimeZone(DateTimeZone.UTC)
+                .withStartsOn(NOW).withAccountCreatedOn(ENROLLMENT.minusHours(2)).withEndsOn(endsOn)
+                .withHealthCode(HEALTH_CODE).withUserId(USER_ID).withEvents(events);
     }
     
 }

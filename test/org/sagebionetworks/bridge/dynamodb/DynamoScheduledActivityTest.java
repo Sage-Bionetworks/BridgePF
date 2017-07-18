@@ -182,6 +182,42 @@ public class DynamoScheduledActivityTest {
         assertEquals(ScheduledActivityStatus.AVAILABLE, schActivity.getStatus());
     }
     
+    @Test
+    public void hasValidStatusBasedOnTimestampsInPersistentActivity() {
+        LocalDateTime now = LocalDateTime.now(DateTimeZone.UTC);
+        
+        DynamoScheduledActivity schActivity = new DynamoScheduledActivity();
+        schActivity.setPersistent(true);
+        schActivity.setTimeZone(DateTimeZone.UTC);
+        
+        assertEquals(ScheduledActivityStatus.AVAILABLE, schActivity.getStatus());
+
+        schActivity.setLocalScheduledOn(now.plusHours(1));
+        assertEquals(ScheduledActivityStatus.AVAILABLE, schActivity.getStatus());
+        
+        schActivity.setLocalScheduledOn(now.minusHours(3));
+        schActivity.setLocalExpiresOn(now.minusHours(1));
+        assertEquals(ScheduledActivityStatus.AVAILABLE, schActivity.getStatus());
+        
+        schActivity.setLocalScheduledOn(null);
+        schActivity.setLocalExpiresOn(null);
+        
+        schActivity.setStartedOn(now.toDateTime(DateTimeZone.UTC).getMillis());
+        assertEquals(ScheduledActivityStatus.STARTED, schActivity.getStatus());
+        
+        schActivity.setFinishedOn(now.toDateTime(DateTimeZone.UTC).getMillis());
+        assertEquals(ScheduledActivityStatus.FINISHED, schActivity.getStatus());
+        
+        schActivity = new DynamoScheduledActivity();
+        schActivity.setFinishedOn(DateTime.now().getMillis());
+        assertEquals(ScheduledActivityStatus.DELETED, schActivity.getStatus());
+        
+        schActivity = new DynamoScheduledActivity();
+        schActivity.setLocalScheduledOn(now.minusHours(1));
+        schActivity.setLocalExpiresOn(now.plusHours(1));
+        assertEquals(ScheduledActivityStatus.AVAILABLE, schActivity.getStatus());
+    }
+    
     /**
      * If a timestamp is not derived from a DateTime value passed into DynamoScheduledActivity, or set 
      * after construction, then the DateTime scheduledOn and expiresOn values are null.

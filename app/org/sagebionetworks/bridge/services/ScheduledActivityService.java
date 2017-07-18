@@ -87,7 +87,7 @@ public class ScheduledActivityService {
     };
     
     static final NewAndPersistedActivitiesMerger V4_COLLECT_SAVES = (saves, scheduledActivities, activity, dbActivity, i) -> {
-        // We even want to save expired tasks. These are desirable to retrieve in the v4 API.
+        // We even want to save expired tasks if there's none in the db. These are desirable to retrieve in the v4 API.
         if (dbActivity == null || UPDATABLE_STATUSES.contains(dbActivity.getStatus())) {
             saves.add(activity);
         }
@@ -193,13 +193,7 @@ public class ScheduledActivityService {
         List<ScheduledActivity> dbActivities = activityDao.getActivities(newContext.getEndsOn().getZone(), scheduledActivities);
         
         Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(dbActivities, ScheduledActivity::getGuid);
-        List<ScheduledActivity> saves = Lists.newArrayList();
-        for (int i=0; i < scheduledActivities.size(); i++) {
-            ScheduledActivity activity = scheduledActivities.get(i);
-            ScheduledActivity dbActivity = dbMap.get(activity.getGuid());
-            
-            V3_MERGE.mergeActivityLists(saves, scheduledActivities, activity, dbActivity, i);
-        }        
+        List<ScheduledActivity> saves = performMerge(scheduledActivities, dbMap, V3_MERGE);
         activityDao.saveActivities(saves);
         
         return orderActivities(scheduledActivities, V3_FILTER);
@@ -222,13 +216,7 @@ public class ScheduledActivityService {
         Map<String, ScheduledActivity> dbMap = retrieveAllPersistedActivitiesIntoMap(context, activityGuids);
         
         // Compare scheduled and persisted activities, replacing scheduled with persisted where they exist
-        List<ScheduledActivity> saves = Lists.newArrayList();
-        for (int i=0; i < scheduledActivities.size(); i++) {
-            ScheduledActivity activity = scheduledActivities.get(i);
-            ScheduledActivity dbActivity = dbMap.remove(activity.getGuid());
-            
-            V4_COLLECT_SAVES.mergeActivityLists(saves, scheduledActivities, activity, dbActivity, i);
-        }
+        List<ScheduledActivity> saves = performMerge(scheduledActivities, dbMap, V4_COLLECT_SAVES);
         activityDao.saveActivities(saves);
         
         // We've removed all the persisted activities that were found by the scheduler. Those have been saved
@@ -239,7 +227,19 @@ public class ScheduledActivityService {
         
         return orderActivities(scheduledActivities, V4_FILTER);
     }
-
+    
+    protected List<ScheduledActivity> performMerge(List<ScheduledActivity> scheduledActivities,
+            Map<String, ScheduledActivity> dbMap, NewAndPersistedActivitiesMerger merger) {
+        List<ScheduledActivity> saves = Lists.newArrayList();
+        for (int i=0; i < scheduledActivities.size(); i++) {
+            ScheduledActivity activity = scheduledActivities.get(i);
+            ScheduledActivity dbActivity = dbMap.get(activity.getGuid());
+            
+            merger.mergeActivityLists(saves, scheduledActivities, activity, dbActivity, i);
+        }
+        return saves;
+    }
+    
     private Set<String> getScheduleActivityGuids(List<ScheduledActivity> scheduledActivities) {
         Set<String> activityGuids = scheduledActivities.stream().map((activity) -> {
             return activity.getGuid().split(":")[0];
