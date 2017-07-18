@@ -8,6 +8,7 @@ import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -24,6 +25,7 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import org.springframework.core.annotation.AnnotationUtils;
@@ -313,6 +315,38 @@ public class BridgeUtils {
             }
         }
         return encoded;
+    }
+    
+    public static String passwordPolicyDescription(PasswordPolicy policy) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Password must be ").append(policy.getMinLength()).append(" or more characters");
+        if (policy.isLowerCaseRequired() || policy.isNumericRequired() || policy.isSymbolRequired() || policy.isUpperCaseRequired()) {
+            sb.append(", and must contain at least ");
+            List<String> phrases = new ArrayList<>();
+            if (policy.isLowerCaseRequired()) {
+                phrases.add("one lower-case letter");
+            }
+            if (policy.isUpperCaseRequired()) {
+                phrases.add("one upper-case letter");
+            }
+            if (policy.isNumericRequired()) {
+                phrases.add("one number");
+            }
+            if (policy.isSymbolRequired()) {
+                // !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~
+                phrases.add("one symbolic character (non-alphanumerics like #$%&@)");
+            }
+            for (int i=0; i < phrases.size(); i++) {
+                if (i == phrases.size()-1) {
+                    sb.append(", and ");
+                } else if (i > 0) {
+                    sb.append(", ");
+                }
+                sb.append(phrases.get(i));
+            }
+        }
+        sb.append(".");
+        return sb.toString();
     }
 
 }
