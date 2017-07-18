@@ -180,17 +180,8 @@ public class ScheduledActivityService {
     }
 
     public List<ScheduledActivity> getScheduledActivities(ScheduleContext context) {
-        checkNotNull(context);
-        
-        Validate.nonEntityThrowingException(VALIDATOR, context);
-        
-        // Add events for scheduling
-        Map<String, DateTime> events = createEventsMap(context);
-        ScheduleContext newContext = new ScheduleContext.Builder().withContext(context).withEvents(events).build();
-        
-        // Get scheduled activities, persisted activities, and compare them
-        List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(newContext);
-        List<ScheduledActivity> dbActivities = activityDao.getActivities(newContext.getEndsOn().getZone(), scheduledActivities);
+        List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(context);
+        List<ScheduledActivity> dbActivities = activityDao.getActivities(context.getEndsOn().getZone(), scheduledActivities);
         
         Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(dbActivities, ScheduledActivity::getGuid);
         List<ScheduledActivity> saves = performMerge(scheduledActivities, dbMap, V3_MERGE);
@@ -200,16 +191,7 @@ public class ScheduledActivityService {
     }
     
     public List<ScheduledActivity> getScheduledActivitiesV4(ScheduleContext context) {
-        checkNotNull(context);
-        
-        Validate.nonEntityThrowingException(VALIDATOR, context);
-        
-        // Add events for scheduling
-        Map<String, DateTime> events = createEventsMap(context);
-        ScheduleContext newContext = new ScheduleContext.Builder().withContext(context).withEvents(events).build();
-        
-        // Get scheduled activities
-        List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(newContext);
+        List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(context);
 
         // Get all persisted activities within the time frame, not just those found by the scheduler (as in v3).
         Set<String> activityGuids = getScheduleActivityGuids(scheduledActivities);
@@ -347,7 +329,15 @@ public class ScheduledActivityService {
         return builder.build();
     }
 
-    protected List<ScheduledActivity> scheduleActivitiesForPlans(ScheduleContext context) {
+    protected List<ScheduledActivity> scheduleActivitiesForPlans(ScheduleContext originalContext) {
+        checkNotNull(originalContext);
+        
+        Validate.nonEntityThrowingException(VALIDATOR, originalContext);
+        
+        // Add events for scheduling
+        Map<String, DateTime> events = createEventsMap(originalContext);
+        ScheduleContext context = new ScheduleContext.Builder().withContext(originalContext).withEvents(events).build();
+        
         // Cache compound activity defs, schemas, and surveys to reduce calls from duplicate requests.
         Map<String, CompoundActivity> compoundActivityCache = new HashMap<>();
         Map<String, SchemaReference> schemaCache = new HashMap<>();
