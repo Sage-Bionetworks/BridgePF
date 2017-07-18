@@ -32,6 +32,7 @@ public class RequestInfoTest {
     private static final DateTimeZone MST = DateTimeZone.forOffsetHours(3);
     private static final DateTime ACTIVITIES_REQUESTED_ON = DateUtils.getCurrentDateTime().withZone(PST);
     private static final DateTime SIGNED_IN_ON = ACTIVITIES_REQUESTED_ON.minusHours(4).withZone(PST);
+    private static final DateTime UPLOADED_ON = ACTIVITIES_REQUESTED_ON.minusHours(3).withZone(PST);
     
     @Test
     public void hashCodeEquals() {
@@ -49,12 +50,14 @@ public class RequestInfoTest {
                 .withUserId(USER_ID)
                 .withTimeZone(MST)
                 .withActivitiesAccessedOn(ACTIVITIES_REQUESTED_ON)
+                .withUploadedOn(UPLOADED_ON)
                 .withSignedInOn(SIGNED_IN_ON).build();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(requestInfo);
 
         assertEquals("userId", node.get("userId").asText());
         assertEquals(ACTIVITIES_REQUESTED_ON.withZone(MST).toString(), node.get("activitiesAccessedOn").asText());
+        assertEquals(UPLOADED_ON.withZone(MST).toString(), node.get("uploadedOn").asText());
         assertEquals("en", node.get("languages").get(0).asText());
         assertEquals("fr", node.get("languages").get(1).asText());
         Set<String> groups = Sets.newHashSet(
@@ -66,7 +69,7 @@ public class RequestInfoTest {
         assertEquals("+03:00", node.get("timeZone").asText());
         assertEquals("RequestInfo", node.get("type").asText());
         assertEquals(USER_AGENT_STRING, node.get("userAgent").asText());
-        assertEquals(10, node.size());
+        assertEquals(11, node.size());
         
         JsonNode studyIdNode = node.get("studyIdentifier");
         assertEquals("test-study", studyIdNode.get("identifier").asText());

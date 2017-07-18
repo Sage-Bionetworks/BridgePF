@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -433,6 +434,7 @@ public class AuthenticationControllerMockTest {
             assertEquals(TEST_STUDY_ID, requestInfo.getStudyIdentifier());
             assertTrue(requestInfo.getSignedInOn() != null);
             assertEquals(TestConstants.USER_DATA_GROUPS, requestInfo.getUserDataGroups());
+            assertNotNull(requestInfo.getSignedInOn());
             
         } catch (ConsentRequiredException ex) {
             if (!shouldThrow) {

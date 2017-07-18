@@ -1,12 +1,15 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+
+import java.net.URL;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
@@ -24,16 +27,19 @@ import play.test.Helpers;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Metrics;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
+import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.services.UploadService;
@@ -64,16 +70,23 @@ public class UploadControllerTest {
     @Mock
     private UserSession researcherSession;
     
+    @Mock
+    private CacheProvider cacheProvider;
+    
     @Mock 
     private Metrics metrics;
     
     @Captor
     private ArgumentCaptor<Upload> uploadCaptor;
     
+    @Captor
+    private ArgumentCaptor<RequestInfo> requestInfoCaptor;
+    
     @Before
     public void before() {
         controller.setUploadService(uploadService);
         controller.setHealthCodeDao(healthCodeDao);
+        controller.setCacheProvider(cacheProvider);
         
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setHealthCode("consented-user-health-code");
@@ -92,6 +105,8 @@ public class UploadControllerTest {
         doReturn(new StudyIdentifierImpl("consented-user-study-id")).when(consentedUserSession).getStudyIdentifier();
         doReturn(true).when(consentedUserSession).isAuthenticated();
         doReturn(true).when(consentedUserSession).doesConsent();
+        doReturn("userId").when(consentedUserSession).getId();
+        doReturn(new StudyParticipant.Builder().build()).when(consentedUserSession).getParticipant();
         
         doReturn("researcher-health-code").when(researcherSession).getHealthCode();
         doReturn(new StudyIdentifierImpl("researcher-study-id")).when(researcherSession).getStudyIdentifier();
@@ -106,6 +121,24 @@ public class UploadControllerTest {
         
         doReturn("worker-study-id").when(healthCodeDao).getStudyIdentifier("worker-health-code");
         doReturn("consented-user-study-id").when(healthCodeDao).getStudyIdentifier("consented-user-health-code");
+    }
+    
+    @Test
+    public void startingUploadRecordedInRequestInfo() throws Exception {
+        doReturn(consentedUserSession).when(controller).getAuthenticatedAndConsentedSession();
+        TestUtils.mockPlayContextWithJson(TestUtils.createJson(
+            "{'name':'uploadName','contentLength':100,'contentMd5':'abc','contentType':'application/zip'}"));
+        
+        UploadSession uploadSession = new UploadSession("id", new URL("http://server.com/"), 1000);
+        
+        doReturn(uploadSession).when(uploadService).createUpload(any(), any(), any());
+        
+        controller.upload();
+        
+        verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
+        RequestInfo info = requestInfoCaptor.getValue();
+        assertNotNull(info.getUploadedOn());
+        assertEquals("userId", info.getUserId());
     }
     
     @Test
