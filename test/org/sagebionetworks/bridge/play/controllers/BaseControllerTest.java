@@ -19,7 +19,10 @@ import static org.sagebionetworks.bridge.TestUtils.newLinkedHashSet;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -36,6 +39,7 @@ import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.OperatingSystem;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -53,6 +57,12 @@ import com.google.common.collect.Sets;
 @SuppressWarnings("unchecked")
 public class BaseControllerTest {
     
+    private static final DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
+    private static final Set<String> GROUPS = Sets.newHashSet("group1");
+    private static final ClientInfo CLIENTINFO = ClientInfo.fromUserAgentCache("app/10");
+    private static final DateTime UPLOADED_ON = DateTime.now().minusHours(1);
+    private static final DateTime ACTIVITIES_ACCESSED_ON = DateTime.now().minusHours(2);
+    private static final DateTime SIGNED_IN_ON = DateTime.now().minusHours(3);
     private static final String DUMMY_JSON = createJson("{'dummy-key':'dummy-value'}");
     private static final LinkedHashSet<String> LANGUAGE_SET = newLinkedHashSet("en","fr");
     private static final String TEST_WARNING_MSG = "test warning msg";
@@ -665,6 +675,49 @@ public class BaseControllerTest {
         
         verify(mockResponse).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, "ABC",
                 BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
+    }
+    
+    @Test
+    public void getRequestInfoBuilder() throws Exception {
+        // Set the dates and verify they are retrieved from cache and added to response
+        RequestInfo persistedInfo = new RequestInfo.Builder()
+                .withSignedInOn(SIGNED_IN_ON)
+                .withActivitiesAccessedOn(ACTIVITIES_ACCESSED_ON)
+                .withUploadedOn(UPLOADED_ON).build();
+        
+        CacheProvider cacheProvider = mock(CacheProvider.class);
+        doReturn(persistedInfo).when(cacheProvider).getRequestInfo("userId");
+        
+        UserSession session = new UserSession();
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withId("userId")
+                .withLanguages(LANGUAGE_SET)
+                .withDataGroups(GROUPS)
+                .withTimeZone(MSK)
+                .build();
+        session.setParticipant(participant);
+        session.setStudyIdentifier(TEST_STUDY);
+        
+        BaseController controller = spy(new SchedulePlanController());
+        doReturn(CLIENTINFO).when(controller).getClientInfoFromUserAgentHeader();
+        controller.setCacheProvider(cacheProvider);
+        
+        Map<String,String[]> headers = Maps.newHashMap();
+        headers.put("User-Agent", new String[]{"app/10"});
+        TestUtils.mockPlayContextWithJson("{}", headers);
+        
+        RequestInfo info = controller.getRequestInfoBuilder(session).build();
+        
+        assertEquals("userId", info.getUserId());
+        assertEquals(LANGUAGE_SET, info.getLanguages());
+        assertEquals(GROUPS, info.getUserDataGroups());
+        assertEquals(MSK, info.getTimeZone());
+        assertEquals("app/10", info.getUserAgent());
+        assertEquals(CLIENTINFO, info.getClientInfo());
+        assertEquals(TEST_STUDY, info.getStudyIdentifier());
+        assertEquals(ACTIVITIES_ACCESSED_ON.withZone(MSK), info.getActivitiesAccessedOn());
+        assertEquals(UPLOADED_ON.withZone(MSK), info.getUploadedOn());
+        assertEquals(SIGNED_IN_ON.withZone(MSK), info.getSignedInOn());
     }
     
     private BaseController setupForSessionTest(UserSession session) {
