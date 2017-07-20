@@ -55,13 +55,6 @@ import org.sagebionetworks.bridge.validators.Validate;
 @Component
 public class ScheduledActivityService {
 
-    @FunctionalInterface
-    interface NewAndPersistedActivitiesMerger {
-        public void mergeActivityLists(List<ScheduledActivity> saves,
-                List<ScheduledActivity> scheduledActivities, ScheduledActivity activity, 
-                ScheduledActivity dbActivity, int i);
-    }
-    
     static final Predicate<ScheduledActivity> V3_FILTER = activity -> {
         return ScheduledActivityStatus.VISIBLE_STATUSES.contains(activity.getStatus());
     };
@@ -69,29 +62,6 @@ public class ScheduledActivityService {
     static final Predicate<ScheduledActivity> V4_FILTER = activity -> {
         return activity.getStatus() != ScheduledActivityStatus.DELETED;
     };
-    
-    static final NewAndPersistedActivitiesMerger V3_MERGE = (saves, scheduledActivities, activity, dbActivity, i) -> {
-        if (dbActivity != null && !UPDATABLE_STATUSES.contains(dbActivity.getStatus())) {
-            // Once the activity is in the database and is in a non-updatable state, we should use the one from the
-            // database. Otherwise, either (a) it doesn't exist yet and needs to be persisted or (b) the user
-            // hasn't interacted with it yet, so we can safely replace it with the newly generated one, which may
-            // have updated schemas or surveys.
-            //
-            // Note that this only works because the scheduled activity guid is actually the schedule plan's
-            // activity guid concatenated with scheduled time. So when the scheduler regenerates the scheduled
-            // activity, it always has the same guid.
-            scheduledActivities.set(i, dbActivity);
-        } else if (activity.getStatus() != ScheduledActivityStatus.EXPIRED) {
-            saves.add(activity);
-        }
-    };
-    
-    static final NewAndPersistedActivitiesMerger V4_COLLECT_SAVES = (saves, scheduledActivities, activity, dbActivity, i) -> {
-        // We even want to save expired tasks if there's none in the db. These are desirable to retrieve in the v4 API.
-        if (dbActivity == null || UPDATABLE_STATUSES.contains(dbActivity.getStatus())) {
-            saves.add(activity);
-        }
-    };    
     
     private static final String PAGE_SIZE_ERROR = "pageSize must be from " + API_MINIMUM_PAGE_SIZE + "-"
             + API_MAXIMUM_PAGE_SIZE + " records";
@@ -180,25 +150,43 @@ public class ScheduledActivityService {
     }
 
     public List<ScheduledActivity> getScheduledActivities(ScheduleContext context) {
-        List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(context);
+        checkNotNull(context);
+        
+        Validate.nonEntityThrowingException(VALIDATOR, context);
+        // Add events for scheduling
+        Map<String, DateTime> events = createEventsMap(context);
+        ScheduleContext updatedContext = new ScheduleContext.Builder().withContext(context).withEvents(events).build();
+        
+        List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(updatedContext);
         List<ScheduledActivity> dbActivities = activityDao.getActivities(context.getEndsOn().getZone(), scheduledActivities);
         
-        Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(dbActivities, ScheduledActivity::getGuid);
+        // Must be a mutable map because performMerge removes items when found 
+        Map<String, ScheduledActivity> dbMap = Maps.newHashMap();
+        for (ScheduledActivity dbActivity : dbActivities) {
+            dbMap.put(dbActivity.getGuid(), dbActivity);
+        }
         
-        List<ScheduledActivity> saves = performMerge(scheduledActivities, dbMap, V3_MERGE);
+        List<ScheduledActivity> saves = performMerge(scheduledActivities, dbMap);
         activityDao.saveActivities(saves);
         
         return orderActivities(scheduledActivities, V3_FILTER);
     }
     
     public List<ScheduledActivity> getScheduledActivitiesV4(ScheduleContext context) {
-        List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(context);
+        checkNotNull(context);
+        
+        Validate.nonEntityThrowingException(VALIDATOR, context);
+        // Add events for scheduling
+        Map<String, DateTime> events = createEventsMap(context);
+        ScheduleContext updatedContext = new ScheduleContext.Builder().withContext(context).withEvents(events).build();
+
+        List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(updatedContext);
 
         // Get all persisted activities within the time frame, not just those found by the scheduler (as in v3).
-        Map<String, ScheduledActivity> dbMap = retrieveAllPersistedActivitiesIntoMap(context, scheduledActivities);
+        Map<String, ScheduledActivity> dbMap = retrieveAllPersistedActivitiesIntoMap(updatedContext, scheduledActivities);
         
         // Compare scheduled and persisted activities, replacing scheduled with persisted where they exist
-        List<ScheduledActivity> saves = performMerge(scheduledActivities, dbMap, V4_COLLECT_SAVES);
+        List<ScheduledActivity> saves = performMerge(scheduledActivities, dbMap);
         activityDao.saveActivities(saves);
         
         // We've removed all the persisted activities that were found by the scheduler. Those have been saved
@@ -211,13 +199,25 @@ public class ScheduledActivityService {
     }
     
     protected List<ScheduledActivity> performMerge(List<ScheduledActivity> scheduledActivities,
-            Map<String, ScheduledActivity> dbMap, NewAndPersistedActivitiesMerger merger) {
+            Map<String, ScheduledActivity> dbMap) {
         List<ScheduledActivity> saves = Lists.newArrayList();
         for (int i=0; i < scheduledActivities.size(); i++) {
             ScheduledActivity activity = scheduledActivities.get(i);
-            ScheduledActivity dbActivity = dbMap.get(activity.getGuid());
+            ScheduledActivity dbActivity = dbMap.remove(activity.getGuid());
             
-            merger.mergeActivityLists(saves, scheduledActivities, activity, dbActivity, i);
+            if (dbActivity != null && !UPDATABLE_STATUSES.contains(dbActivity.getStatus())) {
+                // Once the activity is in the database and is in a non-updatable state, we should use the one from the
+                // database. Otherwise, either (a) it doesn't exist yet and needs to be persisted or (b) the user
+                // hasn't interacted with it yet, so we can safely replace it with the newly generated one, which may
+                // have updated schemas or surveys.
+                //
+                // Note that this only works because the scheduled activity guid is actually the schedule plan's
+                // activity guid concatenated with scheduled time. So when the scheduler regenerates the scheduled
+                // activity, it always has the same guid.
+                scheduledActivities.set(i, dbActivity);
+            } else if (activity.getStatus() != ScheduledActivityStatus.EXPIRED) {
+                saves.add(activity);
+            }
         }
         return saves;
     }
@@ -327,15 +327,7 @@ public class ScheduledActivityService {
         return builder.build();
     }
 
-    protected List<ScheduledActivity> scheduleActivitiesForPlans(ScheduleContext originalContext) {
-        checkNotNull(originalContext);
-        
-        Validate.nonEntityThrowingException(VALIDATOR, originalContext);
-        
-        // Add events for scheduling
-        Map<String, DateTime> events = createEventsMap(originalContext);
-        ScheduleContext context = new ScheduleContext.Builder().withContext(originalContext).withEvents(events).build();
-        
+    protected List<ScheduledActivity> scheduleActivitiesForPlans(ScheduleContext context) {
         // Cache compound activity defs, schemas, and surveys to reduce calls from duplicate requests.
         Map<String, CompoundActivity> compoundActivityCache = new HashMap<>();
         Map<String, SchemaReference> schemaCache = new HashMap<>();
