@@ -172,7 +172,7 @@ public class ParticipantControllerTest {
         summaries.add(SUMMARY);
         summaries.add(SUMMARY);
         summaries.add(SUMMARY);
-        PagedResourceList<AccountSummary> page = new PagedResourceList<AccountSummary>(summaries, 10, 20, 30).withFilter("emailFilter", "foo");
+        PagedResourceList<AccountSummary> page = new PagedResourceList<>(summaries, 10, 20, 30).withFilter("emailFilter", "foo");
         
         when(authService.getSession(eq(study), any())).thenReturn(session);
         
@@ -769,11 +769,11 @@ public class ParticipantControllerTest {
         
         Result result = controller.getParticipantForWorker(study.getIdentifier(), ID);
         assertEquals(200, result.status());
-        
-        StudyParticipant participant = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
-                StudyParticipant.class);
-        assertNull(participant.getHealthCode());
-        assertEquals(ID, participant.getId());
+
+        JsonNode participantNode = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        assertEquals("healthCode", participantNode.get("healthCode").textValue());
+        assertNull(participantNode.get("encryptedHealthCode"));
+        assertEquals(ID, participantNode.get("id").textValue());
     }
     
     private ForwardCursorPagedResourceList<ScheduledActivity> createActivityResultsV2() {
