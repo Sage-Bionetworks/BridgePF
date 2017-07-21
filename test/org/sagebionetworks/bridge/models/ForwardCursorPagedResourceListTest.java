@@ -30,12 +30,12 @@ public class ForwardCursorPagedResourceListTest {
                 AccountStatus.ENABLED, TestConstants.TEST_STUDY));
         
         ForwardCursorPagedResourceList<AccountSummary> page = new ForwardCursorPagedResourceList<AccountSummary>(
-                accounts, "2", 100).withFilter("emailFilter", "filterString");
+                accounts, "2", 100).withRequestParam("emailFilter", "filterString");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(page);
         assertEquals(2, node.get("offsetKey").asInt());
         assertEquals(100, node.get("pageSize").asInt());
-        assertEquals("filterString", node.get("emailFilter").asText());
+        assertEquals("filterString", node.get("requestParams").get("emailFilter").asText());
         assertTrue(node.get("hasNext").asBoolean());
         assertEquals("ForwardCursorPagedResourceList", node.get("type").asText());
         
@@ -55,7 +55,7 @@ public class ForwardCursorPagedResourceListTest {
 
         assertEquals(page.getOffsetKey(), serPage.getOffsetKey());
         assertEquals(page.getPageSize(), serPage.getPageSize());
-        assertEquals(page.getFilters().get("emailFilter"), serPage.getFilters().get("emailFilter"));
+        assertEquals(page.getRequestParams().get("emailFilter"), serPage.getRequestParams().get("emailFilter"));
         assertEquals(page.hasNext(), serPage.hasNext());
         
         assertEquals(page.getItems(), serPage.getItems());
@@ -65,12 +65,12 @@ public class ForwardCursorPagedResourceListTest {
     public void offsetKeyCanBeNull() throws Exception {
         List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
         ForwardCursorPagedResourceList<AccountSummary> page = new ForwardCursorPagedResourceList<AccountSummary>(
-                accounts, null, 100).withFilter("emailFilter", "filterString");
+                accounts, null, 100).withRequestParam("emailFilter", "filterString");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(page);
         assertNull(node.get("offsetKey"));
         assertEquals(100, node.get("pageSize").asInt());
-        assertEquals("filterString", node.get("emailFilter").asText());
+        assertEquals("filterString", node.get("requestParams").get("emailFilter").asText());
         assertEquals("ForwardCursorPagedResourceList", node.get("type").asText());
         assertFalse(node.get("hasNext").asBoolean());
         assertEquals(5, node.size());
@@ -86,11 +86,11 @@ public class ForwardCursorPagedResourceListTest {
         accounts.add("value2");
         
         ForwardCursorPagedResourceList<String> page = new ForwardCursorPagedResourceList<>(accounts, null, 100)
-                .withFilter("idFilter", "foo").withFilter("assignmentFilter", "bar");
+                .withRequestParam("idFilter", "foo").withRequestParam("assignmentFilter", "bar");
         JsonNode node = BridgeObjectMapper.get().valueToTree(page);
         assertEquals(100, node.get("pageSize").asInt());
-        assertEquals("foo", node.get("idFilter").asText());
-        assertEquals("bar", node.get("assignmentFilter").asText());
+        assertEquals("foo", node.get("requestParams").get("idFilter").asText());
+        assertEquals("bar", node.get("requestParams").get("assignmentFilter").asText());
         assertEquals("ForwardCursorPagedResourceList", node.get("type").asText());
         
         ArrayNode items = (ArrayNode)node.get("items");
@@ -99,14 +99,13 @@ public class ForwardCursorPagedResourceListTest {
         assertEquals("value2", items.get(1).asText());
         
         // We don't deserialize this, but let's verify for the SDK
-        PagedResourceList<String> serPage = BridgeObjectMapper.get().readValue(node.toString(), 
-                new TypeReference<PagedResourceList<String>>() {});
+        ForwardCursorPagedResourceList<String> serPage = BridgeObjectMapper.get().readValue(node.toString(), 
+                new TypeReference<ForwardCursorPagedResourceList<String>>() {});
         
         assertEquals(page.getPageSize(), serPage.getPageSize());
-        assertEquals(page.getFilters().get("offsetKey"), serPage.getFilters().get("offsetKey"));
         assertEquals(page.getOffsetKey(), serPage.getOffsetKey());
-        assertEquals(page.getFilters().get("idFilter"), serPage.getFilters().get("idFilter"));
-        assertEquals(page.getFilters().get("assignmentFilter"), serPage.getFilters().get("assignmentFilter"));
+        assertEquals(page.getRequestParams().get("idFilter"), serPage.getRequestParams().get("idFilter"));
+        assertEquals(page.getRequestParams().get("assignmentFilter"), serPage.getRequestParams().get("assignmentFilter"));
         assertEquals(page.getItems(), serPage.getItems());
     }
 }

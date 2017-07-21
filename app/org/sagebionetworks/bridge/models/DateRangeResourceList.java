@@ -7,24 +7,24 @@ import org.joda.time.LocalDate;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class DateRangeResourceList<T> {
+public class DateRangeResourceList<T> extends ResourceList<T> {
     
-    private final List<T> items;
+    private static final String START_DATE = "startDate";
+    private static final String END_DATE = "endDate";
+    
     private final LocalDate startDate;
     private final LocalDate endDate;
 
     @JsonCreator
-    public DateRangeResourceList(@JsonProperty("items") List<T> items, @JsonProperty("startDate") LocalDate startDate,
-            @JsonProperty("endDate") LocalDate endDate) {
-        this.items = items;
+    public DateRangeResourceList(
+            @JsonProperty(ITEMS) List<T> items, 
+            @JsonProperty(START_DATE) LocalDate startDate,
+            @JsonProperty(END_DATE) LocalDate endDate) {
+        super(items);
         this.startDate = startDate;
         this.endDate = endDate;
-    }
-    public List<T> getItems() {
-        return items;
-    }
-    public int getTotal() {
-        return items.size();
+        super.withRequestParam(START_DATE, startDate);
+        super.withRequestParam(END_DATE, endDate);
     }
     public LocalDate getStartDate() {
         return startDate;
@@ -32,5 +32,4 @@ public class DateRangeResourceList<T> {
     public LocalDate getEndDate() {
         return endDate;
     }
-    
 }

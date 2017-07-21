@@ -96,7 +96,7 @@ public class ExternalIdControllerTest {
         doReturn(session).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.RESEARCHER);
         // Mock out a response from service
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = new ForwardCursorPagedResourceList<>(EXT_IDS, "CCC", 5)
-                .withFilter("idFilter", "A");
+                .withRequestParam("idFilter", "A");
         when(externalIdService.getExternalIds(any(), any(), any(), any(), any())).thenReturn(page);
         
         // execute the controller
@@ -107,7 +107,7 @@ public class ExternalIdControllerTest {
         assertEquals(EXT_IDS, deserPage.getItems());
         assertEquals("CCC", deserPage.getOffsetKey());
         assertEquals(5, deserPage.getPageSize());
-        assertEquals("A", deserPage.getFilters().get("idFilter"));
+        assertEquals("A", deserPage.getRequestParams().get("idFilter"));
     }
     
     @Test

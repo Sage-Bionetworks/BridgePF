@@ -364,8 +364,8 @@ public class StudyControllerTest {
         List<Upload> list = Lists.newArrayList();
 
         ForwardCursorPagedResourceList<Upload> uploads = new ForwardCursorPagedResourceList<>(list, null, API_MAXIMUM_PAGE_SIZE)
-                .withFilter("startTime", startTime)
-                .withFilter("endTime", endTime);
+                .withRequestParam("startTime", startTime)
+                .withRequestParam("endTime", endTime);
         doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
         
         Result result = controller.getUploads(startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
@@ -377,11 +377,11 @@ public class StudyControllerTest {
         PagedResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), UPLOADS_REF);
         assertNull(retrieved.getOffsetBy());
-        assertNull(retrieved.getOffsetKey());
+        assertNull(retrieved.getOffsetBy());
         assertEquals(0, retrieved.getTotal());
         assertEquals(API_MAXIMUM_PAGE_SIZE, retrieved.getPageSize());
-        assertEquals(startTime.toString(), retrieved.getFilters().get("startTime"));
-        assertEquals(endTime.toString(), retrieved.getFilters().get("endTime"));
+        assertEquals(startTime.toString(), retrieved.getRequestParams().get("startTime"));
+        assertEquals(endTime.toString(), retrieved.getRequestParams().get("endTime"));
     }
 
     @Test(expected = BadRequestException.class)
@@ -424,8 +424,8 @@ public class StudyControllerTest {
         List<Upload> list = Lists.newArrayList();
 
         ForwardCursorPagedResourceList<Upload> uploads = new ForwardCursorPagedResourceList<>(list, null, API_MAXIMUM_PAGE_SIZE)
-                .withFilter("startTime", startTime)
-                .withFilter("endTime", endTime);
+                .withRequestParam("startTime", startTime)
+                .withRequestParam("endTime", endTime);
         doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE,
                 null);
 
@@ -439,11 +439,10 @@ public class StudyControllerTest {
         PagedResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), UPLOADS_REF);
         assertNull(retrieved.getOffsetBy());
-        assertNull(retrieved.getOffsetKey());
         assertEquals(0, retrieved.getTotal());
         assertEquals(API_MAXIMUM_PAGE_SIZE, retrieved.getPageSize());
-        assertEquals(startTime.toString(), retrieved.getFilters().get("startTime"));
-        assertEquals(endTime.toString(), retrieved.getFilters().get("endTime"));
+        assertEquals(startTime.toString(), retrieved.getRequestParams().get("startTime"));
+        assertEquals(endTime.toString(), retrieved.getRequestParams().get("endTime"));
     }
     
     @Test

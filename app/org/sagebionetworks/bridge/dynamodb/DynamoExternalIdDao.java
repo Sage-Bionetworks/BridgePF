@@ -151,9 +151,9 @@ public class DynamoExternalIdDao implements ExternalIdDao {
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> resourceList = new ForwardCursorPagedResourceList<>(
                 identifiers, offsetKey, pageSize)
-                .withFilter(ID_FILTER, idFilter);
+                .withRequestParam(ID_FILTER, idFilter);
         if (assignmentFilter != null) {
-            resourceList = resourceList.withFilter(ASSIGNMENT_FILTER, assignmentFilter.toString());
+            resourceList = resourceList.withRequestParam(ASSIGNMENT_FILTER, assignmentFilter.toString());
         }
         return resourceList;
     }

@@ -31,7 +31,8 @@ public class ReportTypeResourceListTest {
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(list);
         assertEquals("participant", node.get("reportType").asText());
-        assertEquals(2, node.get("total").asInt());
+        assertEquals(2, node.get("items").size());
+        assertEquals("participant", node.get("requestParams").get("reportType").asText());
         assertEquals("ReportTypeResourceList", node.get("type").asText());
         assertEquals("foo", node.get("items").get(0).get("identifier").asText());
         assertFalse(node.get("items").get(0).get("public").asBoolean());

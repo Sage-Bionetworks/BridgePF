@@ -290,7 +290,7 @@ public class UploadService {
         }).collect(Collectors.toList());
         
         return new ForwardCursorPagedResourceList<UploadView>(views, list.getOffsetKey(), list.getPageSize())
-                .withFilter("startTime", startTime).withFilter("endTime", endTime);
+                .withRequestParam("startTime", startTime).withRequestParam("endTime", endTime);
     }
     
     /**

@@ -99,7 +99,7 @@ public class StudyConsentControllerTest {
         
         // Do not need to extensively verify, just verify contents are returned in ResourceList
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
-        assertEquals(2, node.get("total").asInt());
+        assertEquals(2, node.get("items").size());
     }
 
     @Test

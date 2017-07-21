@@ -352,8 +352,9 @@ public class HibernateAccountDao implements AccountDao {
 
         // Package results and return.
         return new PagedResourceList<>(accountSummaryList, offsetBy, pageSize, count)
-                .withFilter("emailFilter", emailFilter).withFilter("startDate", startDate)
-                .withFilter("endDate", endDate);
+                .withRequestParam("emailFilter", emailFilter)
+                .withRequestParam("startDate", startDate)
+                .withRequestParam("endDate", endDate);
     }
 
     // Helper method which marshalls a GenericAccount into a HibernateAccount.

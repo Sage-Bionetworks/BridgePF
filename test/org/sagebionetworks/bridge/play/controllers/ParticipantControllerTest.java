@@ -172,7 +172,7 @@ public class ParticipantControllerTest {
         summaries.add(SUMMARY);
         summaries.add(SUMMARY);
         summaries.add(SUMMARY);
-        PagedResourceList<AccountSummary> page = new PagedResourceList<>(summaries, 10, 20, 30).withFilter("emailFilter", "foo");
+        PagedResourceList<AccountSummary> page = new PagedResourceList<>(summaries, 10, 20, 30).withRequestParam("emailFilter", "foo");
         
         when(authService.getSession(eq(study), any())).thenReturn(session);
         
@@ -207,7 +207,7 @@ public class ParticipantControllerTest {
         //verify paging/filtering
         assertEquals(new Integer(10), page.getOffsetBy());
         assertEquals(20, page.getPageSize());
-        assertEquals("foo", page.getFilters().get("emailFilter"));
+        assertEquals("foo", page.getRequestParams().get("emailFilter"));
         
         // DateTime instances don't seem to be equal unless you use the library's equality methods, which
         // verification does not do. So capture and compare that way.
@@ -653,8 +653,8 @@ public class ParticipantControllerTest {
         List<? extends Upload> list = Lists.newArrayList();
 
         ForwardCursorPagedResourceList<? extends Upload> uploads = new ForwardCursorPagedResourceList<>(list, "abc", API_MAXIMUM_PAGE_SIZE)
-                .withFilter("startTime", startTime)
-                .withFilter("endTime", endTime);
+                .withRequestParam("startTime", startTime)
+                .withRequestParam("endTime", endTime);
         doReturn(uploads).when(mockParticipantService).getUploads(study, ID, startTime, endTime, 10, "abc");
         
         Result result = controller.getUploads(ID, startTime.toString(), endTime.toString(), 10, "abc");
@@ -665,8 +665,8 @@ public class ParticipantControllerTest {
         // in other words, it's the object we mocked out from the service, we were returned the value.
         PagedResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), UPLOADS_REF);
-        assertEquals(startTime.toString(), retrieved.getFilters().get("startTime"));
-        assertEquals(endTime.toString(), retrieved.getFilters().get("endTime"));
+        assertEquals(startTime.toString(), retrieved.getRequestParams().get("startTime"));
+        assertEquals(endTime.toString(), retrieved.getRequestParams().get("endTime"));
     }
     
     @Test
@@ -691,7 +691,7 @@ public class ParticipantControllerTest {
         Result result = controller.getNotificationRegistrations(ID);
         assertEquals(200, result.status());
         JsonNode node = TestUtils.getJson(result);
-        assertEquals(0, node.get("total").asInt());
+        assertEquals(0, node.get("items").size());
         assertEquals("ResourceList", node.get("type").asText());
         
         verify(mockParticipantService).listRegistrations(study, ID);
@@ -746,7 +746,7 @@ public class ParticipantControllerTest {
         //verify paging/filtering
         assertEquals(new Integer(10), page.getOffsetBy());
         assertEquals(20, page.getPageSize());
-        assertEquals("foo", page.getFilters().get("emailFilter"));
+        assertEquals("foo", page.getRequestParams().get("emailFilter"));
         
         // DateTime instances don't seem to be equal unless you use the library's equality methods, which
         // verification does not do. So capture and compare that way.

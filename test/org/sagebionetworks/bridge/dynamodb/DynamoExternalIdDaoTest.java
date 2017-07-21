@@ -206,14 +206,14 @@ public class DynamoExternalIdDaoTest {
             ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 10, "A", null);
             assertEquals(3, page.getItems().size());
             assertEquals(10, page.getPageSize());
-            assertEquals("A", page.getFilters().get("idFilter"));
+            assertEquals("A", page.getRequestParams().get("idFilter"));
             assertNull(page.getOffsetKey());
 
             // Nothing matches this filter
             page = dao.getExternalIds(studyId, null, 10, "ZZZ", null);
             assertEquals(0, page.getItems().size());
             assertEquals(10, page.getPageSize());
-            assertEquals("ZZZ", page.getFilters().get("idFilter"));
+            assertEquals("ZZZ", page.getRequestParams().get("idFilter"));
             assertNull(page.getOffsetKey());
             
             dao.assignExternalId(studyId, "AAA", "healthCode1");

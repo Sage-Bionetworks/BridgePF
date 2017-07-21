@@ -22,8 +22,10 @@ public class DateRangeResourceListTest {
         JsonNode node = BridgeObjectMapper.get().valueToTree(list);
         assertEquals("2016-02-03", node.get("startDate").asText());
         assertEquals("2016-02-23", node.get("endDate").asText());
-        assertEquals(3, node.get("total").asInt());
+        assertEquals("2016-02-03", node.get("requestParams").get("startDate").asText());
+        assertEquals("2016-02-23", node.get("requestParams").get("endDate").asText());
         assertEquals("DateRangeResourceList", node.get("type").asText());
+        assertEquals(3, node.get("items").size());
         assertEquals("1", node.get("items").get(0).asText());
         assertEquals("2", node.get("items").get(1).asText());
         assertEquals("3", node.get("items").get(2).asText());
@@ -33,10 +35,12 @@ public class DateRangeResourceListTest {
                 new TypeReference<DateRangeResourceList<String>>() {});
         assertEquals(list.getStartDate(), LocalDate.parse("2016-02-03"));
         assertEquals(list.getEndDate(), LocalDate.parse("2016-02-23"));
-        assertEquals(3, list.getTotal());
+        assertEquals(3, list.getItems().size());
         assertEquals("1", list.getItems().get(0));
         assertEquals("2", list.getItems().get(1));
         assertEquals("3", list.getItems().get(2));
+        assertEquals("2016-02-03", list.getRequestParams().get("startDate"));
+        assertEquals("2016-02-23", list.getRequestParams().get("endDate"));
     }
     
 }

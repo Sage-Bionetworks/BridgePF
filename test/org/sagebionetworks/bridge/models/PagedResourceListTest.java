@@ -29,13 +29,13 @@ public class PagedResourceListTest {
                 AccountStatus.ENABLED, TestConstants.TEST_STUDY));
         
         PagedResourceList<AccountSummary> page = new PagedResourceList<AccountSummary>(accounts, 2, 100, 123)
-                .withFilter("emailFilter", "filterString");
+                .withRequestParam("emailFilter", "filterString");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(page);
         assertEquals(2, node.get("offsetBy").asInt());
         assertEquals(123, node.get("total").asInt());
         assertEquals(100, node.get("pageSize").asInt());
-        assertEquals("filterString", node.get("emailFilter").asText());
+        assertEquals("filterString", node.get("requestParams").get("emailFilter").asText());
         assertEquals("PagedResourceList", node.get("type").asText());
         
         ArrayNode items = (ArrayNode)node.get("items");
@@ -54,7 +54,7 @@ public class PagedResourceListTest {
         assertEquals(page.getTotal(), serPage.getTotal());
         assertEquals(page.getOffsetBy(), serPage.getOffsetBy());
         assertEquals(page.getPageSize(), serPage.getPageSize());
-        assertEquals(page.getFilters().get("emailFilter"), serPage.getFilters().get("emailFilter"));
+        assertEquals(page.getRequestParams().get("emailFilter"), serPage.getRequestParams().get("emailFilter"));
         
         assertEquals(page.getItems(), serPage.getItems());
     }
@@ -63,13 +63,13 @@ public class PagedResourceListTest {
     public void offsetByCanBeNull() throws Exception {
         List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
         PagedResourceList<AccountSummary> page = new PagedResourceList<AccountSummary>(accounts, null, 100, 123)
-                .withFilter("emailFilter", "filterString");
+                .withRequestParam("emailFilter", "filterString");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(page);
         assertNull(node.get("offsetBy"));
         assertEquals(123, node.get("total").asInt());
         assertEquals(100, node.get("pageSize").asInt());
-        assertEquals("filterString", node.get("emailFilter").asText());
+        assertEquals("filterString", node.get("requestParams").get("emailFilter").asText());
         assertEquals("PagedResourceList", node.get("type").asText());
         assertEquals(5, node.size());
     }
@@ -84,13 +84,13 @@ public class PagedResourceListTest {
         accounts.add("value2");
         
         PagedResourceList<String> page = new PagedResourceList<>(accounts, null, 100, 123)
-                .withFilter("idFilter", "foo")
-                .withFilter("assignmentFilter", "bar");
+                .withRequestParam("idFilter", "foo")
+                .withRequestParam("assignmentFilter", "bar");
         JsonNode node = BridgeObjectMapper.get().valueToTree(page);
         assertEquals(123, node.get("total").asInt());
         assertEquals(100, node.get("pageSize").asInt());
-        assertEquals("foo", node.get("idFilter").asText());
-        assertEquals("bar", node.get("assignmentFilter").asText());
+        assertEquals("foo", node.get("requestParams").get("idFilter").asText());
+        assertEquals("bar", node.get("requestParams").get("assignmentFilter").asText());
         assertEquals("PagedResourceList", node.get("type").asText());
         
         ArrayNode items = (ArrayNode)node.get("items");
@@ -104,10 +104,10 @@ public class PagedResourceListTest {
         
         assertEquals(page.getTotal(), serPage.getTotal());
         assertEquals(page.getPageSize(), serPage.getPageSize());
-        assertEquals(page.getFilters().get("offsetKey"), serPage.getFilters().get("offsetKey"));
-        assertEquals(page.getOffsetKey(), serPage.getOffsetKey());
-        assertEquals(page.getFilters().get("idFilter"), serPage.getFilters().get("idFilter"));
-        assertEquals(page.getFilters().get("assignmentFilter"), serPage.getFilters().get("assignmentFilter"));
+        assertEquals(page.getRequestParams().get("offsetKey"), serPage.getRequestParams().get("offsetKey"));
+        assertEquals(page.getOffsetBy(), serPage.getOffsetBy());
+        assertEquals(page.getRequestParams().get("idFilter"), serPage.getRequestParams().get("idFilter"));
+        assertEquals(page.getRequestParams().get("assignmentFilter"), serPage.getRequestParams().get("assignmentFilter"));
         assertEquals(page.getItems(), serPage.getItems());
     }
 }

@@ -10,23 +10,24 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-public class DateTimeRangeResourceList<T> {
-    private final List<T> items;
+public class DateTimeRangeResourceList<T> extends ResourceList<T> {
+    
+    private static final String START_TIME = "startTime";
+    private static final String END_TIME = "endTime";
+    
     private final DateTime startTime;
     private final DateTime endTime;
 
     @JsonCreator
-    public DateTimeRangeResourceList(@JsonProperty("items") List<T> items,
-            @JsonProperty("startTime") DateTime startTime, @JsonProperty("endTime") DateTime endTime) {
-        this.items = items;
+    public DateTimeRangeResourceList(
+            @JsonProperty(ITEMS) List<T> items,
+            @JsonProperty(START_TIME) DateTime startTime, 
+            @JsonProperty(END_TIME) DateTime endTime) {
+        super(items);
         this.startTime = startTime;
         this.endTime = endTime;
-    }
-    public List<T> getItems() {
-        return items;
-    }
-    public int getTotal() {
-        return items.size();
+        super.withRequestParam(START_TIME, startTime);    
+        super.withRequestParam(END_TIME, endTime);    
     }
     @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getStartTime() {

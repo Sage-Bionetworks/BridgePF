@@ -673,8 +673,8 @@ public class HibernateAccountDaoTest {
         assertEquals(5, accountSummaryResourceList.getPageSize());
         assertEquals(12, accountSummaryResourceList.getTotal());
 
-        Map<String, String> filterMap = accountSummaryResourceList.getFilters();
-        assertTrue(filterMap.isEmpty());
+        Map<String, Object> paramsMap = accountSummaryResourceList.getRequestParams();
+        assertTrue(paramsMap.isEmpty());
 
         // just ID, study, and email is sufficient
         List<AccountSummary> accountSummaryList = accountSummaryResourceList.getItems();
@@ -710,11 +710,11 @@ public class HibernateAccountDaoTest {
         PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(STUDY, 10, 5,
                 EMAIL, startDate, endDate);
 
-        Map<String, String> filterMap = accountSummaryResourceList.getFilters();
-        assertEquals(3, filterMap.size());
-        assertEquals(EMAIL, filterMap.get("emailFilter"));
-        assertEquals(startDate.toString(), filterMap.get("startDate"));
-        assertEquals(endDate.toString(), filterMap.get("endDate"));
+        Map<String, Object> paramsMap = accountSummaryResourceList.getRequestParams();
+        assertEquals(3, paramsMap.size());
+        assertEquals(EMAIL, paramsMap.get("emailFilter"));
+        assertEquals(startDate.toString(), paramsMap.get("startDate"));
+        assertEquals(endDate.toString(), paramsMap.get("endDate"));
 
         // verify hibernate calls
         String expectedQueryString = "from HibernateAccount where studyId='" + TestConstants.TEST_STUDY_IDENTIFIER +

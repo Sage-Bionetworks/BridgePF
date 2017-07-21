@@ -108,8 +108,8 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         }
 
         ScheduledActivityList result = new ScheduledActivityList(activities, nextOffsetBy, pageSize);
-        result.withFilter(SCHEDULED_ON_START, scheduledOnStart)
-                .withFilter(SCHEDULED_ON_END, scheduledOnEnd);
+        result.withRequestParam(SCHEDULED_ON_START, scheduledOnStart)
+                .withRequestParam(SCHEDULED_ON_END, scheduledOnEnd);
         return result;
     }
     

@@ -91,15 +91,15 @@ public class DynamoReportIndexDaoTest {
     
     @Test
     public void canCRUDReportIndex() {
-        int studyIndexCount = dao.getIndices(TEST_STUDY, ReportType.STUDY).getTotal();
-        int participantIndexCount = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT).getTotal();
+        int studyIndexCount = dao.getIndices(TEST_STUDY, ReportType.STUDY).getItems().size();
+        int participantIndexCount = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT).getItems().size();
         // adding twice is fine
         dao.addIndex(studyReportKey1);
         dao.addIndex(studyReportKey1);
         dao.addIndex(studyReportKey2);
 
         ReportTypeResourceList<? extends ReportIndex> indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
-        assertEquals(studyIndexCount+2, indices.getTotal());
+        assertEquals(studyIndexCount+2, indices.getItems().size());
         
         // Update studyReportKey2
         ReportIndex index = dao.getIndex(studyReportKey2);
@@ -145,7 +145,7 @@ public class DynamoReportIndexDaoTest {
     
     @Test
     public void canCreateAndReadParticipantIndex() {
-        int studyIndexCount = dao.getIndices(TEST_STUDY, ReportType.STUDY).getTotal();
+        int studyIndexCount = dao.getIndices(TEST_STUDY, ReportType.STUDY).getItems().size();
         int participantIndexCount = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT).getItems().size();
         
         // adding twice is fine

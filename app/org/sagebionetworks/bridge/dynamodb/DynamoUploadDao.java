@@ -165,8 +165,8 @@ public class DynamoUploadDao implements UploadDao {
 
         int lastIndex = Math.min(pageSize, results.size());
         return new ForwardCursorPagedResourceList<>(results.subList(0, lastIndex), nextOffsetKey, pageSize)
-                .withFilter("startTime", startTime.toString())
-                .withFilter("endTime", endTime.toString());
+                .withRequestParam("startTime", startTime.toString())
+                .withRequestParam("endTime", endTime.toString());
     }
 
     /** {@inheritDoc} */
@@ -202,8 +202,8 @@ public class DynamoUploadDao implements UploadDao {
         String nextPageOffsetKey = (page.getLastEvaluatedKey() != null) ? page.getLastEvaluatedKey().get(UPLOAD_ID).getS() : null;
         
         return new ForwardCursorPagedResourceList<>(uploadList, nextPageOffsetKey, pageSize)
-                .withFilter("startDate", startTime.toString())
-                .withFilter("endDate", endTime.toString());
+                .withRequestParam("startDate", startTime.toString())
+                .withRequestParam("endDate", endTime.toString());
     }
 
     private DynamoDBQueryExpression<DynamoUpload2> createGetQuery(StudyIdentifier studyId, DateTime startTime, DateTime endTime,
