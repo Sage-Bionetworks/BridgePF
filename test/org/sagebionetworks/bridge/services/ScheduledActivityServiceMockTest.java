@@ -387,11 +387,11 @@ public class ScheduledActivityServiceMockTest {
         when(activityDao.getActivities(eq(TIME_ZONE), any())).thenReturn(createStartedActivities("BBB"+TIME_PORTION));
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivities(createScheduleContext(NOW).build());
-        assertActivityGuids("returned", returnedActivities, "AAA", "BBB");
+        assertActivityGuids(returnedActivities, "AAA", "BBB");
         
         verify(activityDao).saveActivities(scheduledActivityListCaptor.capture());
         List<ScheduledActivity> saves = scheduledActivityListCaptor.getValue();
-        assertActivityGuids("saved", saves, "AAA");
+        assertActivityGuids(saves, "AAA");
     }
     
     @Test
@@ -406,11 +406,11 @@ public class ScheduledActivityServiceMockTest {
                 .thenReturn(list);        
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivitiesV4(createScheduleContext(NOW).build());
-        assertActivityGuids("returned", returnedActivities, "AAA", "BBB");
+        assertActivityGuids(returnedActivities, "AAA", "BBB");
         
         verify(activityDao).saveActivities(scheduledActivityListCaptor.capture());
         List<ScheduledActivity> saves = scheduledActivityListCaptor.getValue();
-        assertActivityGuids("saved", saves, "AAA");
+        assertActivityGuids(saves, "AAA");
     }
     
     @Test
@@ -424,11 +424,11 @@ public class ScheduledActivityServiceMockTest {
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivities(createScheduleContext(NOW).build());
         assertNotNull(returnedActivities.get(0).getStartedOn());
-        assertActivityGuids("returned", returnedActivities, "AAA", "BBB", "CCC");
+        assertActivityGuids(returnedActivities, "AAA", "BBB", "CCC");
         
         verify(activityDao).saveActivities(scheduledActivityListCaptor.capture());
         List<ScheduledActivity> saves = scheduledActivityListCaptor.getValue();
-        assertActivityGuids("saved", saves, "AAA", "BBB");
+        assertActivityGuids(saves, "AAA", "BBB");
     }
 
     @Test
@@ -441,11 +441,11 @@ public class ScheduledActivityServiceMockTest {
         when(activityDao.getActivities(eq(TIME_ZONE), any())).thenReturn(createExpiredActivities("AAA"+TIME_PORTION,"CCC"+TIME_PORTION));
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivities(createScheduleContext(NOW).build());
-        assertActivityGuids("returned", returnedActivities, "BBB");
+        assertActivityGuids(returnedActivities, "BBB");
         
         verify(activityDao).saveActivities(scheduledActivityListCaptor.capture());
         List<ScheduledActivity> saves = scheduledActivityListCaptor.getValue();
-        assertActivityGuids("saved", saves, "BBB");
+        assertActivityGuids(saves, "BBB");
     }
     
     @Test
@@ -459,11 +459,11 @@ public class ScheduledActivityServiceMockTest {
                 createStartedActivities("BBB"+TIME_PORTION).get(0)));
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivities(createScheduleContext(NOW).build());
-        assertActivityGuids("returned", returnedActivities, "BBB", "CCC");
+        assertActivityGuids(returnedActivities, "BBB", "CCC");
         
         verify(activityDao).saveActivities(scheduledActivityListCaptor.capture());
         List<ScheduledActivity> saves = scheduledActivityListCaptor.getValue();
-        assertActivityGuids("saved", saves, "CCC");
+        assertActivityGuids(saves, "CCC");
     }
     
     @Test
@@ -480,11 +480,11 @@ public class ScheduledActivityServiceMockTest {
                 .thenReturn(new ScheduledActivityList(db, null, 0));
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivitiesV4(createScheduleContext(NOW).build());
-        assertActivityGuids("returned", returnedActivities, "AAA", "BBB", "CCC");
+        assertActivityGuids(returnedActivities, "AAA", "BBB", "CCC");
         
         verify(activityDao).saveActivities(scheduledActivityListCaptor.capture());
         List<ScheduledActivity> saves = scheduledActivityListCaptor.getValue();
-        assertActivityGuids("saved", saves, "CCC");
+        assertActivityGuids(saves, "CCC");
     }
 
     @Test
@@ -499,7 +499,7 @@ public class ScheduledActivityServiceMockTest {
         when(activityDao.getActivities(eq(TIME_ZONE), any())).thenReturn(db);
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivities(createScheduleContext(NOW).build());
-        assertActivityGuids("returned", returnedActivities, "BBB", "CCC");
+        assertActivityGuids(returnedActivities, "BBB", "CCC");
         
         ScheduledActivity activity = returnedActivities.stream()
                 .filter(act -> { return act.getGuid().startsWith("BBB"); }).findFirst().get();
@@ -507,7 +507,7 @@ public class ScheduledActivityServiceMockTest {
         
         verify(activityDao).saveActivities(scheduledActivityListCaptor.capture());
         List<ScheduledActivity> saves = scheduledActivityListCaptor.getValue();
-        assertActivityGuids("saved", saves, "CCC");
+        assertActivityGuids(saves, "CCC");
     }
     
     @Test
@@ -523,11 +523,11 @@ public class ScheduledActivityServiceMockTest {
                 .thenReturn(new ScheduledActivityList(db, null, 0));
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivitiesV4(createScheduleContext(NOW).build());
-        assertActivityGuids("returned", returnedActivities, "AAA", "BBB", "CCC");
+        assertActivityGuids(returnedActivities, "AAA", "BBB", "CCC");
         
         verify(activityDao).saveActivities(scheduledActivityListCaptor.capture());
         List<ScheduledActivity> saves = scheduledActivityListCaptor.getValue();
-        assertActivityGuids("saved", saves, "BBB");
+        assertActivityGuids(saves, "BBB");
     }
 
     @Test
@@ -614,7 +614,7 @@ public class ScheduledActivityServiceMockTest {
         executeComplexTestInTimeZone(23, DateTimeZone.forOffsetHours(8));
     }
 
-    private void assertActivityGuids(String tag, List<ScheduledActivity> activities, String... guids) {
+    private void assertActivityGuids(List<ScheduledActivity> activities, String... guids) {
         Set<String> activityGuids = activities.stream().map(ScheduledActivity::getGuid).collect(toSet());
 
         Set<String> expectedGuids = Arrays.stream(guids).map(guid -> guid + TIME_PORTION).collect(toSet());
