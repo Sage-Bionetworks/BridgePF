@@ -1,13 +1,11 @@
 package org.sagebionetworks.bridge.models;
 
 import java.util.List;
-import java.util.Set;
 
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.Sets;
 
 /**
  * This list represents one page of a larger list, for which we know the total number of items in the list 
@@ -25,7 +23,6 @@ public class PagedResourceList<T> extends ResourceList<T> {
     private static final String PAGE_SIZE = "pageSize";
     private static final String OFFSET_BY = "offsetBy";
     private static final String TOTAL = "total";
-    private static final Set<String> MODELED_FIELDS = Sets.newHashSet(PAGE_SIZE, OFFSET_BY, TOTAL); 
     
     /**
      * Calls from a RDMS use an offset index; DynamoDB uses an offsetKey which is usually a string, and 
@@ -45,6 +42,9 @@ public class PagedResourceList<T> extends ResourceList<T> {
         this.offsetBy = offsetBy;
         this.pageSize = pageSize;
         this.total = total;
+        super.withRequestParam(OFFSET_BY, offsetBy);
+        super.withRequestParam(PAGE_SIZE, pageSize);
+        super.withRequestParam(TOTAL, total);
     }
 
     public Integer getOffsetBy() {
@@ -57,9 +57,7 @@ public class PagedResourceList<T> extends ResourceList<T> {
         return total;
     }
     public PagedResourceList<T> withRequestParam(String key, Object value) {
-        if (!MODELED_FIELDS.contains(key)) {
-            super.withRequestParam(key, value);
-        }
+        super.withRequestParam(key, value);
         return this;
     }
 }

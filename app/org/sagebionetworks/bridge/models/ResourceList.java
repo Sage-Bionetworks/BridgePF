@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.joda.time.DateTime;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
@@ -35,7 +37,11 @@ public class ResourceList<T> {
         if (isNotBlank(key) && value != null) {
             // For DateTime, forcing toString() here rather than using Jackson's 
             // serialization mechanism, ensures the string is in the supplied timezone
-            requestParams.put(key, value.toString());    
+            if (value instanceof DateTime) {
+                requestParams.put(key, value.toString());    
+            } else {
+                requestParams.put(key, value);    
+            }
         }
         return this;
     }
