@@ -35,6 +35,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -188,7 +189,10 @@ public class ScheduledActivityServiceMockTest {
         ArgumentCaptor<DateTime> endCaptor = ArgumentCaptor.forClass(DateTime.class);
         ArgumentCaptor<DateTimeZone> zoneCaptor = ArgumentCaptor.forClass(DateTimeZone.class);
         
-        service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, null, null, null, 40);
+        ScheduledActivityService serviceSpy = Mockito.spy(service);
+        when(serviceSpy.getDateTime()).thenReturn(DateTime.now(TIME_ZONE));
+        
+        serviceSpy.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, null, null, null, 40);
         verify(activityDao).getActivityHistoryV2(eq(HEALTH_CODE), eq(ACTIVITY_GUID), startCaptor.capture(),
                 endCaptor.capture(), zoneCaptor.capture(), eq(null), eq(40));
         

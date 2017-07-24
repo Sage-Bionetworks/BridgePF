@@ -131,7 +131,7 @@ public class ScheduledActivityService {
         }
         // If nothing is provided, we will default to two weeks, going max days into future.
         if (scheduledOnStart == null && scheduledOnEnd == null) {
-            DateTime now = DateTime.now();
+            DateTime now = getDateTime();
             scheduledOnEnd = now.plusDays(MAX_DATE_RANGE_IN_DAYS/2);
             scheduledOnStart = now.minusDays(MAX_DATE_RANGE_IN_DAYS/2);
         }
@@ -147,6 +147,12 @@ public class ScheduledActivityService {
 
         return activityDao.getActivityHistoryV2(
                 healthCode, activityGuid, scheduledOnStart, scheduledOnEnd, timezone, offsetBy, pageSize);
+    }
+    
+    // This needs to be exposed for tests because although we can fix a point of time for tests, we cannot
+    // change the time zone in a test without controlling construction of the DateTime instance.
+    protected DateTime getDateTime() {
+        return DateTime.now();
     }
 
     public List<ScheduledActivity> getScheduledActivities(ScheduleContext context) {
