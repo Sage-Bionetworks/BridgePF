@@ -415,37 +415,40 @@ public class ScheduledActivityServiceMockTest {
     
     @Test
     public void persistedAndScheduledIncludedInResultsV3() {
-        SchedulePlan aaa = schedulePlan("AAA");
-        SchedulePlan bbb = schedulePlan("BBB");
         SchedulePlan ccc = schedulePlan("CCC");
         
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(aaa,bbb,ccc));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(ccc));
         when(activityDao.getActivities(eq(TIME_ZONE), any())).thenReturn(createStartedActivities("CCC"+TIME_PORTION));
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivities(createScheduleContext(NOW).build());
         assertNotNull(returnedActivities.get(0).getStartedOn());
-        assertActivityGuids(returnedActivities, "AAA", "BBB", "CCC");
+        assertActivityGuids(returnedActivities, "CCC");
         
         verify(activityDao).saveActivities(scheduledActivityListCaptor.capture());
         List<ScheduledActivity> saves = scheduledActivityListCaptor.getValue();
-        assertActivityGuids(saves, "AAA", "BBB");
+        assertActivityGuids(saves);
     }
 
     @Test
     public void expiredTasksExcludedFromCalculationsV3() {
         SchedulePlan aaa = schedulePlan("AAA");
         SchedulePlan bbb = schedulePlan("BBB");
-        SchedulePlan ccc = schedulePlan("CCC");
         
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(aaa,bbb,ccc));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(aaa,bbb));
         when(activityDao.getActivities(eq(TIME_ZONE), any())).thenReturn(createExpiredActivities("AAA"+TIME_PORTION,"CCC"+TIME_PORTION));
         
-        List<ScheduledActivity> returnedActivities = service.getScheduledActivities(createScheduleContext(NOW).build());
-        assertActivityGuids(returnedActivities, "BBB");
+        // Ask for activities in the past so they will be expired.
+        ScheduleContext contextAhead = new ScheduleContext.Builder()
+                .withContext(createScheduleContext(NOW).build())
+                .withStartsOn(NOW.minusMonths(1).minusDays(1))
+                .withEndsOn(NOW.minusMonths(1)).build();
+        
+        List<ScheduledActivity> returnedActivities = service.getScheduledActivities(contextAhead);
+        assertActivityGuids(returnedActivities);
         
         verify(activityDao).saveActivities(scheduledActivityListCaptor.capture());
         List<ScheduledActivity> saves = scheduledActivityListCaptor.getValue();
-        assertActivityGuids(saves, "BBB");
+        assertActivityGuids(saves);
     }
     
     @Test
@@ -524,10 +527,21 @@ public class ScheduledActivityServiceMockTest {
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivitiesV4(createScheduleContext(NOW).build());
         assertActivityGuids(returnedActivities, "AAA", "BBB", "CCC");
+        assertNotNull(getByGuidPrefix(returnedActivities, "AAA").getStartedOn());
+        assertNotNull(getByGuidPrefix(returnedActivities, "CCC").getStartedOn());
         
         verify(activityDao).saveActivities(scheduledActivityListCaptor.capture());
         List<ScheduledActivity> saves = scheduledActivityListCaptor.getValue();
         assertActivityGuids(saves, "BBB");
+    }
+    
+    private ScheduledActivity getByGuidPrefix(List<ScheduledActivity> activities, String prefix) {
+        for (ScheduledActivity activity : activities) {
+            if (activity.getGuid().startsWith(prefix)) {
+                return activity;
+            }
+        }
+        return null;
     }
 
     @Test
