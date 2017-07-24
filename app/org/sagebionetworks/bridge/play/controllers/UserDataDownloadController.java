@@ -33,13 +33,13 @@ public class UserDataDownloadController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
         StudyIdentifier studyIdentifier = session.getStudyIdentifier();
         
-        DateRange dateRange = null;
+        DateRange dateRange;
         if (isNotBlank(startDate) && isNotBlank(endDate)) {
             dateRange = new DateRange(LocalDate.parse(startDate), LocalDate.parse(endDate));
         } else {
             dateRange = parseJson(request(), DateRange.class);    
         }
-        userDataDownloadService.requestUserData(studyIdentifier, session.getParticipant().getEmail(), dateRange);
+        userDataDownloadService.requestUserData(studyIdentifier, session.getParticipant().getId(), dateRange);
         return acceptedResult("Request submitted.");
     }
 }
