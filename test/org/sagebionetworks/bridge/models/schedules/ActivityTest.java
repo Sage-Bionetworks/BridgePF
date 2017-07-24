@@ -217,6 +217,10 @@ public class ActivityTest {
         // Wrong activity, not persistent
         schedule = BridgeObjectMapper.get().readValue("{\"scheduleType\":\"once\",\"eventId\":\"survey:HHH:finished\",\"activities\":[{\"label\":\"Label\",\"labelDetail\":\"Label Detail\",\"guid\":\"III\",\"task\":{\"identifier\":\"foo\"},\"activityType\":\"task\"}]}", Schedule.class);
         assertFalse(schedule.getActivities().get(0).isPersistentlyRescheduledBy(schedule));
+        
+        // Persistent schedule type, creates persistent activities
+        schedule = BridgeObjectMapper.get().readValue("{\"scheduleType\":\"persistent\",\"activities\":[{\"label\":\"Label\",\"labelDetail\":\"Label Detail\",\"guid\":\"III\",\"task\":{\"identifier\":\"foo\"},\"activityType\":\"task\"}]}", Schedule.class);
+        assertTrue(schedule.getActivities().get(0).isPersistentlyRescheduledBy(schedule));
     }
 
     @Test
