@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Metrics;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -394,6 +395,25 @@ public abstract class BaseController extends Controller {
             metrics.setUserId(session.getId());
             metrics.setStudy(session.getStudyIdentifier().getIdentifier());
         }
+    }
+    
+    protected RequestInfo.Builder getRequestInfoBuilder(UserSession session) {
+        checkNotNull(session);
+        
+        RequestInfo.Builder builder = new RequestInfo.Builder();
+        // If any timestamps exist, retrieve and preserve them in the returned requestInfo
+        RequestInfo requestInfo = cacheProvider.getRequestInfo(session.getId());
+        if (requestInfo != null) {
+            builder.copyOf(requestInfo);
+        }
+        builder.withUserId(session.getId());
+        builder.withClientInfo(getClientInfoFromUserAgentHeader());
+        builder.withUserAgent(request().getHeader(USER_AGENT));
+        builder.withLanguages(session.getParticipant().getLanguages());
+        builder.withUserDataGroups(session.getParticipant().getDataGroups());
+        builder.withTimeZone(session.getParticipant().getTimeZone());
+        builder.withStudyIdentifier(session.getStudyIdentifier());
+        return builder;
     }
 
     /**

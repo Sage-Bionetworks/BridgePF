@@ -28,6 +28,7 @@ public final class RequestInfo {
     private final Set<String> userDataGroups;
     private final DateTime activitiesAccessedOn;
     private final DateTime signedInOn;
+    private final DateTime uploadedOn;
     private final DateTimeZone timeZone;
     private final StudyIdentifier studyIdentifier;
 
@@ -36,8 +37,8 @@ public final class RequestInfo {
             @JsonProperty("userAgent") String userAgent, @JsonProperty("languages") LinkedHashSet<String> languages,
             @JsonProperty("userDataGroups") Set<String> userDataGroups,
             @JsonProperty("activitiesAccessedOn") DateTime activitiesAccessedOn,
-            @JsonProperty("signedInOn") DateTime signedInOn, @JsonProperty("timeZone") DateTimeZone timeZone,
-            @JsonProperty("studyIdentifier") StudyIdentifier studyIdentifier) {
+            @JsonProperty("signedInOn") DateTime signedInOn, @JsonProperty("uploadedOn") DateTime uploadedOn, 
+            @JsonProperty("timeZone") DateTimeZone timeZone, @JsonProperty("studyIdentifier") StudyIdentifier studyIdentifier) {
         this.userId = userId;
         this.clientInfo = clientInfo;
         this.userAgent = userAgent;
@@ -45,6 +46,7 @@ public final class RequestInfo {
         this.userDataGroups = userDataGroups;
         this.activitiesAccessedOn = activitiesAccessedOn;
         this.signedInOn = signedInOn;
+        this.uploadedOn = uploadedOn;
         this.timeZone = timeZone;
         this.studyIdentifier = studyIdentifier;
     }
@@ -79,6 +81,11 @@ public final class RequestInfo {
         return (signedInOn == null) ? null : signedInOn.withZone(timeZone);
     }
     
+    @JsonSerialize(using=DateTimeSerializer.class)
+    public DateTime getUploadedOn() {
+        return (uploadedOn == null) ? null : uploadedOn.withZone(timeZone);
+    }
+    
     public DateTimeZone getTimeZone() {
         return timeZone;
     }
@@ -90,7 +97,7 @@ public final class RequestInfo {
     @Override
     public int hashCode() {
         return Objects.hash(getActivitiesAccessedOn(), clientInfo, userAgent, languages, getSignedInOn(),
-                userDataGroups, userId, timeZone, studyIdentifier);
+                userDataGroups, userId, timeZone, uploadedOn, studyIdentifier);
     }
 
     @Override
@@ -105,6 +112,7 @@ public final class RequestInfo {
                Objects.equals(userAgent, other.userAgent) &&
                Objects.equals(languages, other.languages) &&
                Objects.equals(getSignedInOn(), other.getSignedInOn()) && 
+               Objects.equals(getUploadedOn(), other.getUploadedOn()) &&
                Objects.equals(userDataGroups, other.userDataGroups) && 
                Objects.equals(userId, other.userId) && 
                Objects.equals(timeZone, other.timeZone) && 
@@ -115,7 +123,8 @@ public final class RequestInfo {
     public String toString() {
         return "RequestInfo [userId=" + userId + ", userAgent=" + userAgent + ", languages=" + languages
                 + ", userDataGroups=" + userDataGroups + ", activitiesAccessedOn=" + getActivitiesAccessedOn()
-                + ", signedInOn=" + getSignedInOn() + ", timeZone=" + timeZone + ", studyIdentifier=" + studyIdentifier + "]";
+                + ", signedInOn=" + getSignedInOn() + ", uploadedOn=" + getUploadedOn() + ", timeZone=" + timeZone
+                + ", studyIdentifier=" + studyIdentifier + "]";
     }
 
     public static class Builder {
@@ -126,6 +135,7 @@ public final class RequestInfo {
         private Set<String> userDataGroups;
         private DateTime activitiesAccessedOn;
         private DateTime signedInOn;
+        private DateTime uploadedOn;
         private DateTimeZone timeZone = DateTimeZone.UTC;
         private StudyIdentifier studyIdentifier;
 
@@ -138,6 +148,7 @@ public final class RequestInfo {
                 withUserDataGroups(requestInfo.getUserDataGroups());
                 withActivitiesAccessedOn(requestInfo.getActivitiesAccessedOn());
                 withSignedInOn(requestInfo.getSignedInOn());
+                withUploadedOn(requestInfo.getUploadedOn());
                 withTimeZone(requestInfo.getTimeZone());
                 withStudyIdentifier(requestInfo.getStudyIdentifier());
             }
@@ -185,6 +196,12 @@ public final class RequestInfo {
             }
             return this;
         }
+        public Builder withUploadedOn(DateTime uploadedOn) {
+            if (uploadedOn != null) {
+                this.uploadedOn = uploadedOn;
+            }
+            return this;
+        }
         public Builder withTimeZone(DateTimeZone timeZone) {
             if (timeZone != null) {
                 this.timeZone = timeZone;
@@ -200,7 +217,7 @@ public final class RequestInfo {
         
         public RequestInfo build() {
             return new RequestInfo(userId, clientInfo, userAgent, languages, userDataGroups, activitiesAccessedOn,
-                    signedInOn, timeZone, studyIdentifier);
+                    signedInOn, uploadedOn, timeZone, studyIdentifier);
         }
     }
     
