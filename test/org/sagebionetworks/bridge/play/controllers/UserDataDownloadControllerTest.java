@@ -26,9 +26,9 @@ import org.sagebionetworks.bridge.services.UserDataDownloadService;
 
 @RunWith(MockitoJUnitRunner.class)
 public class UserDataDownloadControllerTest {
-    
-    private StudyIdentifier studyIdentifier = new StudyIdentifierImpl("test-study");
-    
+    private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("test-study");
+    private static final String USER_ID = "test-user-id";
+
     @Mock
     UserSession mockSession;
     
@@ -43,8 +43,8 @@ public class UserDataDownloadControllerTest {
     
     @Before
     public void before() throws Exception {
-        doReturn(studyIdentifier).when(mockSession).getStudyIdentifier();
-        doReturn(new StudyParticipant.Builder().withEmail("email@email.com").build()).when(mockSession).getParticipant();
+        doReturn(STUDY_ID).when(mockSession).getStudyIdentifier();
+        doReturn(new StudyParticipant.Builder().withId(USER_ID).build()).when(mockSession).getParticipant();
 
         controller.setUserDataDownloadService(mockService);
         doReturn(mockSession).when(controller).getAuthenticatedAndConsentedSession();
@@ -64,7 +64,7 @@ public class UserDataDownloadControllerTest {
         Result result = controller.requestUserData(null, null);
         assertEquals(202, result.status());
 
-        verify(mockService).requestUserData(eq(studyIdentifier), eq("email@email.com"), dateRangeCaptor.capture());
+        verify(mockService).requestUserData(eq(STUDY_ID), eq(USER_ID), dateRangeCaptor.capture());
         
         // validate args sent to mock service
         DateRange dateRange = dateRangeCaptor.getValue();
@@ -77,7 +77,7 @@ public class UserDataDownloadControllerTest {
         Result result = controller.requestUserData("2015-08-15", "2015-08-19");
         assertEquals(202, result.status());
 
-        verify(mockService).requestUserData(eq(studyIdentifier), eq("email@email.com"), dateRangeCaptor.capture());
+        verify(mockService).requestUserData(eq(STUDY_ID), eq(USER_ID), dateRangeCaptor.capture());
         
         // validate args sent to mock service
         DateRange dateRange = dateRangeCaptor.getValue();
