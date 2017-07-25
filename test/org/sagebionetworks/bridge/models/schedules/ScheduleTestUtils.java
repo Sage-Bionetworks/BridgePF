@@ -47,7 +47,7 @@ public class ScheduleTestUtils {
         assertEquals(output.length, activities.size());
         for (int i=0; i < activities.size(); i++) {
             DateTime datetime = asDT(output[i], zone);
-            assertEquals(datetime, activities.get(i).getScheduledOn());
+            assertEquals(datetime.toString(), activities.get(i).getScheduledOn().toString());
         }
     }
     

@@ -30,6 +30,7 @@ public class PersistentActivityScheduler extends ActivityScheduler {
 
             if (scheduledTime != null) {
                 DateTime localDateTime = scheduledTime.withZone(context.getInitialTimeZone());
+                
                 addScheduledActivityAtTimeForOneActivity(scheduledActivities, plan, context,
                         localDateTime.toLocalDate(), localDateTime.toLocalTime(), activity);
             }

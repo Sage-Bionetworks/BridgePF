@@ -120,7 +120,7 @@ public class DynamoScheduledActivityTest {
         assertEquals("AAA-BBB-CCC", node.get("guid").asText());
         assertEquals(scheduledOnString, node.get("scheduledOn").asText());
         assertEquals(expiresOnString, node.get("expiresOn").asText());
-        assertEquals("scheduled", node.get("status").asText());
+        assertEquals("available", node.get("status").asText());
         assertEquals("ScheduledActivity", node.get("type").asText());
         assertTrue(node.get("persistent").asBoolean());
         assertNull(node.get("schedule"));
@@ -162,6 +162,42 @@ public class DynamoScheduledActivityTest {
         schActivity.setLocalScheduledOn(now.minusHours(3));
         schActivity.setLocalExpiresOn(now.minusHours(1));
         assertEquals(ScheduledActivityStatus.EXPIRED, schActivity.getStatus());
+        
+        schActivity.setLocalScheduledOn(null);
+        schActivity.setLocalExpiresOn(null);
+        
+        schActivity.setStartedOn(now.toDateTime(DateTimeZone.UTC).getMillis());
+        assertEquals(ScheduledActivityStatus.STARTED, schActivity.getStatus());
+        
+        schActivity.setFinishedOn(now.toDateTime(DateTimeZone.UTC).getMillis());
+        assertEquals(ScheduledActivityStatus.FINISHED, schActivity.getStatus());
+        
+        schActivity = new DynamoScheduledActivity();
+        schActivity.setFinishedOn(DateTime.now().getMillis());
+        assertEquals(ScheduledActivityStatus.DELETED, schActivity.getStatus());
+        
+        schActivity = new DynamoScheduledActivity();
+        schActivity.setLocalScheduledOn(now.minusHours(1));
+        schActivity.setLocalExpiresOn(now.plusHours(1));
+        assertEquals(ScheduledActivityStatus.AVAILABLE, schActivity.getStatus());
+    }
+    
+    @Test
+    public void hasValidStatusBasedOnTimestampsInPersistentActivity() {
+        LocalDateTime now = LocalDateTime.now(DateTimeZone.UTC);
+        
+        DynamoScheduledActivity schActivity = new DynamoScheduledActivity();
+        schActivity.setPersistent(true);
+        schActivity.setTimeZone(DateTimeZone.UTC);
+        
+        assertEquals(ScheduledActivityStatus.AVAILABLE, schActivity.getStatus());
+
+        schActivity.setLocalScheduledOn(now.plusHours(1));
+        assertEquals(ScheduledActivityStatus.AVAILABLE, schActivity.getStatus());
+        
+        schActivity.setLocalScheduledOn(now.minusHours(3));
+        schActivity.setLocalExpiresOn(now.minusHours(1));
+        assertEquals(ScheduledActivityStatus.AVAILABLE, schActivity.getStatus());
         
         schActivity.setLocalScheduledOn(null);
         schActivity.setLocalExpiresOn(null);
