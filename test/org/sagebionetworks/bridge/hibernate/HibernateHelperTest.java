@@ -5,6 +5,7 @@ import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -14,6 +15,7 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.function.Function;
 
+import javax.persistence.OptimisticLockException;
 import javax.persistence.PersistenceException;
 
 import com.google.common.collect.ImmutableList;
@@ -76,9 +78,13 @@ public class HibernateHelperTest {
 
     @Test
     public void delete() {
-        Object testObj = new Object();
-        helper.delete(testObj);
-        verify(mockSession).delete(testObj);
+        // set up
+        Object hibernateOutput = new Object();
+        when(mockSession.get(Object.class, "test-id")).thenReturn(hibernateOutput);
+
+        // execute and validate
+        helper.deleteById(Object.class, "test-id");
+        verify(mockSession).delete(hibernateOutput);
     }
 
     @Test
@@ -164,6 +170,15 @@ public class HibernateHelperTest {
         Object testObj = new Object();
         helper.update(testObj);
         verify(mockSession).update(testObj);
+    }
+
+    @Test(expected = ConcurrentModificationException.class)
+    public void updateConcurrentModification() {
+        // Note: It's the transaction.commit() that throws, not the session.update(). However, to simplify error
+        // handling tests, we're going to have the update() throw.
+        Object testObj = new Object();
+        doThrow(OptimisticLockException.class).when(mockSession).update(testObj);
+        helper.update(testObj);
     }
 
     @Test
