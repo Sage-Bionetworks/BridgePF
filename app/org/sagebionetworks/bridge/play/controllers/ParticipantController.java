@@ -7,6 +7,10 @@ import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.models.ResourceList.START_TIME;
+import static org.sagebionetworks.bridge.models.ResourceList.END_TIME;
+import static org.sagebionetworks.bridge.models.ResourceList.START_DATE;
+import static org.sagebionetworks.bridge.models.ResourceList.END_DATE;
 
 import java.util.List;
 import java.util.Map;
@@ -135,11 +139,11 @@ public class ParticipantController extends BaseController {
         // request map in case they have been set to defaults by the service.
         ObjectNode node = (ObjectNode)MAPPER.valueToTree(page);
         Map<String,Object> rp = page.getRequestParams();
-        if (rp.get("startTime") != null) {
-            node.put("startDate", (String)rp.get("startTime"));    
+        if (rp.get(START_TIME) != null) {
+            node.put(START_DATE, (String)rp.get(START_TIME));    
         }
-        if (rp.get("endTime") != null) {
-            node.put("endDate", (String)rp.get("endTime"));    
+        if (rp.get(END_TIME) != null) {
+            node.put(END_DATE, (String)rp.get(END_TIME));    
         }
         return ok(node);
     }

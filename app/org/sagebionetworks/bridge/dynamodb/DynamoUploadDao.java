@@ -168,8 +168,8 @@ public class DynamoUploadDao implements UploadDao {
         return new ForwardCursorPagedResourceList<>(results.subList(0, lastIndex), nextOffsetKey)
                 .withRequestParam(ResourceList.OFFSET_KEY, offsetKey)
                 .withRequestParam(ResourceList.PAGE_SIZE, pageSize)
-                .withRequestParam(ResourceList.START_TIME, startTime.toString())
-                .withRequestParam(ResourceList.END_TIME, endTime.toString());
+                .withRequestParam(ResourceList.START_TIME, startTime)
+                .withRequestParam(ResourceList.END_TIME, endTime);
     }
 
     /** {@inheritDoc} */
