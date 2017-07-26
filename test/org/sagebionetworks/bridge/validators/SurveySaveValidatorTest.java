@@ -1048,6 +1048,22 @@ public class SurveySaveValidatorTest {
         assertValidatorMessage(validator, survey, "elements[0].beforeRules[0]", "must have one and only one action");
     }
     
+    @Test
+    public void validateGuidsNotDuplicates() {
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
+        survey.getElements().get(0).setGuid(survey.getElements().get(1).getGuid());
+        
+        assertValidatorMessage(validator, survey, "elements[1].guid", "exists in an earlier survey element");
+    }
+    
+    @Test
+    public void validateIdentifiersNotDuplicates() {
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
+        survey.getElements().get(0).setIdentifier(survey.getElements().get(1).getIdentifier());
+        
+        assertValidatorMessage(validator, survey, "elements[1].identifier", "exists in an earlier survey element");
+    }
+    
     private Survey updateSurveyWithBeforeRulesInOneQuestion(SurveyRule... rules) {
         survey = new TestSurvey(SurveySaveValidatorTest.class, false);
         
