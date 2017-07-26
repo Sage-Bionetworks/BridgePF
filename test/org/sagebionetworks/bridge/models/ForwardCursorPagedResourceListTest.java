@@ -30,10 +30,11 @@ public class ForwardCursorPagedResourceListTest {
                 AccountStatus.ENABLED, TestConstants.TEST_STUDY));
         
         ForwardCursorPagedResourceList<AccountSummary> page = new ForwardCursorPagedResourceList<AccountSummary>(
-                accounts, "2", 100).withRequestParam("emailFilter", "filterString");
+                accounts, "anOffsetKey", 100).withRequestParam("emailFilter", "filterString");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(page);
-        assertEquals(2, node.get("offsetKey").asInt());
+        assertEquals("anOffsetKey", node.get("offsetKey").asText());
+        assertEquals("anOffsetKey", node.get("nextPageOffsetKey").asText());
         assertEquals(100, node.get("pageSize").asInt());
         assertEquals("filterString", node.get("requestParams").get("emailFilter").asText());
         assertTrue(node.get("hasNext").asBoolean());
@@ -53,7 +54,7 @@ public class ForwardCursorPagedResourceListTest {
                 new TypeReference<ForwardCursorPagedResourceList<AccountSummary>>() {
                 });
 
-        assertEquals(page.getOffsetKey(), serPage.getOffsetKey());
+        assertEquals(page.getNextPageOffsetKey(), serPage.getNextPageOffsetKey());
         assertEquals(page.getPageSize(), serPage.getPageSize());
         assertEquals(page.getRequestParams().get("emailFilter"), serPage.getRequestParams().get("emailFilter"));
         assertEquals(page.hasNext(), serPage.hasNext());
@@ -103,7 +104,7 @@ public class ForwardCursorPagedResourceListTest {
                 new TypeReference<ForwardCursorPagedResourceList<String>>() {});
         
         assertEquals(page.getPageSize(), serPage.getPageSize());
-        assertEquals(page.getOffsetKey(), serPage.getOffsetKey());
+        assertEquals(page.getNextPageOffsetKey(), serPage.getNextPageOffsetKey());
         assertEquals(page.getRequestParams().get("idFilter"), serPage.getRequestParams().get("idFilter"));
         assertEquals(page.getRequestParams().get("assignmentFilter"), serPage.getRequestParams().get("assignmentFilter"));
         assertEquals(page.getItems(), serPage.getItems());

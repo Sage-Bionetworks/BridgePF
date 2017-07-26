@@ -202,8 +202,8 @@ public class DynamoUploadDao implements UploadDao {
         String nextPageOffsetKey = (page.getLastEvaluatedKey() != null) ? page.getLastEvaluatedKey().get(UPLOAD_ID).getS() : null;
         
         return new ForwardCursorPagedResourceList<>(uploadList, nextPageOffsetKey, pageSize)
-                .withRequestParam("startDate", startTime.toString())
-                .withRequestParam("endDate", endTime.toString());
+                .withRequestParam("startTime", startTime)
+                .withRequestParam("endTime", endTime);
     }
 
     private DynamoDBQueryExpression<DynamoUpload2> createGetQuery(StudyIdentifier studyId, DateTime startTime, DateTime endTime,

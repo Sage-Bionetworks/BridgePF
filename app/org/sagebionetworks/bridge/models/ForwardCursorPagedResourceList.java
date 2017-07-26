@@ -4,6 +4,8 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import org.joda.time.DateTime;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -13,6 +15,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class ForwardCursorPagedResourceList<T> extends ResourceList<T> {
 
+    private static final String SCHEDULED_ON_END = "scheduledOnEnd";
+    private static final String SCHEDULED_ON_START = "scheduledOnStart";
+    private static final String END_TIME = "endTime";
+    private static final String START_TIME = "startTime";
     private static final String PAGE_SIZE = "pageSize";
     private static final String OFFSET_KEY = "offsetKey";
     
@@ -30,8 +36,28 @@ public class ForwardCursorPagedResourceList<T> extends ResourceList<T> {
         super.withRequestParam(OFFSET_KEY, offsetKey);
         super.withRequestParam(PAGE_SIZE, pageSize);
     }
-
+    
+    @Deprecated
+    public DateTime getStartTime() {
+        return getDateValue(START_TIME);
+    }
+    @Deprecated
+    public DateTime getEndTime() {
+        return getDateValue(END_TIME);
+    }
+    @Deprecated
+    public DateTime getScheduledOnStart() {
+        return getDateValue(SCHEDULED_ON_START);
+    }
+    @Deprecated
+    public DateTime getScheduledOnEnd() {
+        return getDateValue(SCHEDULED_ON_END);
+    }
+    @Deprecated
     public String getOffsetKey() {
+        return offsetKey;
+    }
+    public String getNextPageOffsetKey() {
         return offsetKey;
     }
     @JsonProperty("hasNext")

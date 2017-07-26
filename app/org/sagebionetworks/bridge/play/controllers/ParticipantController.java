@@ -9,10 +9,12 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,34 +97,51 @@ public class ParticipantController extends BaseController {
     }
     
     public Result getParticipants(String offsetByString, String pageSizeString, String emailFilter,
-            String startDateString, String endDateString) {
+            String startDateString, String endDateString, String startTimeString, String endTimeString) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
         return getParticipantsInternal(study, offsetByString, pageSizeString, emailFilter, startDateString,
-                endDateString);
+                endDateString, startTimeString, endTimeString);
     }
 
     public Result getParticipantsForWorker(String studyId, String offsetByString, String pageSizeString, String emailFilter,
-            String startDateString, String endDateString) {
+            String startDateString, String endDateString, String startTimeString, String endTimeString) {
         getAuthenticatedSession(WORKER);
         
         Study study = studyService.getStudy(studyId);
         return getParticipantsInternal(study, offsetByString, pageSizeString, emailFilter, startDateString,
-                endDateString);
+                endDateString, startTimeString, endTimeString);
     }
     
     private Result getParticipantsInternal(Study study, String offsetByString, String pageSizeString,
-            String emailFilter, String startDateString, String endDateString) {
+            String emailFilter, String startDateString, String endDateString, String startTimeString,
+            String endTimeString) {
         
         int offsetBy = getIntOrDefault(offsetByString, 0);
         int pageSize = getIntOrDefault(pageSizeString, API_DEFAULT_PAGE_SIZE);
-        DateTime startDate = DateUtils.getDateTimeOrDefault(startDateString, null);
-        DateTime endDate = DateUtils.getDateTimeOrDefault(endDateString, null);
-        
+        DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
+        if (startTime == null) {
+            startTime = DateUtils.getDateTimeOrDefault(startDateString, null);
+        }
+        DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
+        if (endTime == null) {
+            endTime = DateUtils.getDateTimeOrDefault(endDateString, null);
+        }
         PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, offsetBy, pageSize,
-                emailFilter, startDate, endDate);
-        return okResult(page);
+                emailFilter, startTime, endTime);
+        
+        // Transitioning to consistent naming: fooTime = DateTime, fooDate = LocalDate. Pull values out of 
+        // request map in case they have been set to defaults by the service.
+        ObjectNode node = (ObjectNode)MAPPER.valueToTree(page);
+        Map<String,Object> rp = page.getRequestParams();
+        if (rp.get("startTime") != null) {
+            node.put("startDate", (String)rp.get("startTime"));    
+        }
+        if (rp.get("endTime") != null) {
+            node.put("endDate", (String)rp.get("endTime"));    
+        }
+        return ok(node);
     }
     
     public Result createParticipant() throws Exception {

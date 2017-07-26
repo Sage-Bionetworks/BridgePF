@@ -26,9 +26,12 @@ public class DateRangeResourceList<T> extends ResourceList<T> {
         super.withRequestParam(START_DATE, startDate);
         super.withRequestParam(END_DATE, endDate);
     }
+    
+    @Deprecated
     public LocalDate getStartDate() {
         return startDate;
     }
+    @Deprecated
     public LocalDate getEndDate() {
         return endDate;
     }

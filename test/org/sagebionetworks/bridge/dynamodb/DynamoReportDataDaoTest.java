@@ -127,7 +127,7 @@ public class DynamoReportDataDaoTest {
     
     private void assertResourceList(DateRangeResourceList<? extends ReportData> results, int recordNumber) {
         assertEquals(recordNumber, results.getItems().size());
-        assertEquals(START_DATE, results.getStartDate());
-        assertEquals(END_DATE, results.getEndDate());
+        assertEquals(START_DATE.toString(), results.getRequestParams().get("startDate"));
+        assertEquals(END_DATE.toString(), results.getRequestParams().get("endDate"));
     }
 }

@@ -29,12 +29,12 @@ public class DateRangeResourceListTest {
         assertEquals("1", node.get("items").get(0).asText());
         assertEquals("2", node.get("items").get(1).asText());
         assertEquals("3", node.get("items").get(2).asText());
-        assertEquals(5, node.size());
+        assertEquals(6, node.size());
         
         list = BridgeObjectMapper.get().readValue(node.toString(), 
                 new TypeReference<DateRangeResourceList<String>>() {});
-        assertEquals(list.getStartDate(), LocalDate.parse("2016-02-03"));
-        assertEquals(list.getEndDate(), LocalDate.parse("2016-02-23"));
+        assertEquals("2016-02-03", (String)list.getRequestParams().get("startDate"));
+        assertEquals("2016-02-23", (String)list.getRequestParams().get("endDate"));
         assertEquals(3, list.getItems().size());
         assertEquals("1", list.getItems().get(0));
         assertEquals("2", list.getItems().get(1));

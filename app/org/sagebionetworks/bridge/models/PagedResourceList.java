@@ -4,6 +4,8 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import org.joda.time.DateTime;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -20,6 +22,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class PagedResourceList<T> extends ResourceList<T> {
 
+    private static final String END_DATE = "endDate";
+    private static final String START_DATE = "startDate";
+    private static final String EMAIL_FILTER = "emailFilter";
     private static final String PAGE_SIZE = "pageSize";
     private static final String OFFSET_BY = "offsetBy";
     private static final String TOTAL = "total";
@@ -47,6 +52,19 @@ public class PagedResourceList<T> extends ResourceList<T> {
         super.withRequestParam(TOTAL, total);
     }
 
+    @Deprecated
+    public String getEmailFilter() {
+        return (String)getRequestParams().get(EMAIL_FILTER);
+    }
+    @Deprecated
+    public DateTime getStartDate() {
+        return getDateValue(START_DATE);
+    }
+    @Deprecated
+    public DateTime getEndDate() {
+        return getDateValue(END_DATE);
+    }
+    
     public Integer getOffsetBy() {
         return offsetBy;
     }

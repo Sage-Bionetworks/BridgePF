@@ -258,7 +258,7 @@ public class UploadServiceMockTest {
         assertEquals(3, uploadList.size());
 
         assertEquals(API_MAXIMUM_PAGE_SIZE, returned.getPageSize());
-        assertEquals(expectedOffsetKey, returned.getOffsetKey());
+        assertEquals(expectedOffsetKey, returned.getNextPageOffsetKey());
 
         // The two sources of information are combined in the view.
         UploadView view = uploadList.get(0);

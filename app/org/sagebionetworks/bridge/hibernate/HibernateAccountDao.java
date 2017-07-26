@@ -319,9 +319,9 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize,
-            String emailFilter, DateTime startDate, DateTime endDate) {
+            String emailFilter, DateTime startTime, DateTime endTime) {
         // Note: emailFilter can be any substring, not just prefix/suffix
-        // Note: start- and endDate are inclusive.
+        // Note: start- and endTime are inclusive.
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("from HibernateAccount where studyId='");
         queryBuilder.append(study.getIdentifier());
@@ -331,13 +331,13 @@ public class HibernateAccountDao implements AccountDao {
             queryBuilder.append(emailFilter);
             queryBuilder.append("%'");
         }
-        if (startDate != null) {
+        if (startTime != null) {
             queryBuilder.append(" and createdOn >= ");
-            queryBuilder.append(startDate.getMillis());
+            queryBuilder.append(startTime.getMillis());
         }
-        if (endDate != null) {
+        if (endTime != null) {
             queryBuilder.append(" and createdOn <= ");
-            queryBuilder.append(endDate.getMillis());
+            queryBuilder.append(endTime.getMillis());
         }
         String query = queryBuilder.toString();
 
@@ -353,8 +353,8 @@ public class HibernateAccountDao implements AccountDao {
         // Package results and return.
         return new PagedResourceList<>(accountSummaryList, offsetBy, pageSize, count)
                 .withRequestParam("emailFilter", emailFilter)
-                .withRequestParam("startDate", startDate)
-                .withRequestParam("endDate", endDate);
+                .withRequestParam("startTime", startTime)
+                .withRequestParam("endTime", endTime);
     }
 
     // Helper method which marshalls a GenericAccount into a HibernateAccount.

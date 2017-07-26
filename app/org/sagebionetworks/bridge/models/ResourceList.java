@@ -35,8 +35,8 @@ public class ResourceList<T> {
     }
     public ResourceList<T> withRequestParam(String key, Object value) {
         if (isNotBlank(key) && value != null) {
-            // For DateTime, forcing toString() here rather than using Jackson's 
-            // serialization mechanism, ensures the string is in the supplied timezone
+            // For DateTime, forcing toString() here rather than using Jackson's serialization mechanism, 
+            // ensures the string is in the timezone supplied by the user.
             if (value instanceof DateTime) {
                 requestParams.put(key, value.toString());    
             } else {
@@ -44,5 +44,13 @@ public class ResourceList<T> {
             }
         }
         return this;
+    }
+    @Deprecated
+    public int getTotal() {
+        return getItems().size();
+    }
+    protected DateTime getDateValue(String fieldName) {
+        String value = (String)requestParams.get(fieldName);
+        return (value == null) ? null : DateTime.parse(value);
     }
 }

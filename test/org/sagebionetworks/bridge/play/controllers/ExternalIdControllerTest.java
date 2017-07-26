@@ -105,7 +105,7 @@ public class ExternalIdControllerTest {
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> deserPage =  MAPPER.readValue(content, PAGE_REF);
         assertEquals(EXT_IDS, deserPage.getItems());
-        assertEquals("CCC", deserPage.getOffsetKey());
+        assertEquals("CCC", deserPage.getNextPageOffsetKey());
         assertEquals(5, deserPage.getPageSize());
         assertEquals("A", deserPage.getRequestParams().get("idFilter"));
     }

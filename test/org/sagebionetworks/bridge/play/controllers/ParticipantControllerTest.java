@@ -196,7 +196,34 @@ public class ParticipantControllerTest {
     public void getParticipants() throws Exception {
         DateTime start = DateTime.now();
         DateTime end = DateTime.now();
-        Result result = controller.getParticipants("10", "20", "foo", start.toString(), end.toString());
+        
+        Result result = controller.getParticipants("10", "20", "foo", start.toString(), end.toString(), null, null);
+        
+        PagedResourceList<AccountSummary> page = resultToPage(result);
+        
+        // verify the result contains items
+        assertEquals(3, page.getItems().size());
+        assertEquals(30, page.getTotal());
+        assertEquals(SUMMARY, page.getItems().get(0));
+        
+        //verify paging/filtering
+        assertEquals(new Integer(10), page.getOffsetBy());
+        assertEquals(20, page.getPageSize());
+        assertEquals("foo", page.getRequestParams().get("emailFilter"));
+        
+        // DateTime instances don't seem to be equal unless you use the library's equality methods, which
+        // verification does not do. So capture and compare that way.
+        verify(mockParticipantService).getPagedAccountSummaries(eq(study), eq(10), eq(20), eq("foo"),
+                startTimeCaptor.capture(), endTimeCaptor.capture());
+        assertEquals(start.toString(), startTimeCaptor.getValue().toString());
+        assertEquals(end.toString(), endTimeCaptor.getValue().toString());
+    }
+    
+    @Test
+    public void getParticipantsWithStartTimeEndTime() throws Exception {
+        DateTime start = DateTime.now();
+        DateTime end = DateTime.now();
+        Result result = controller.getParticipants("10", "20", "foo", null, null, start.toString(), end.toString());
         PagedResourceList<AccountSummary> page = resultToPage(result);
         
         // verify the result contains items
@@ -219,7 +246,7 @@ public class ParticipantControllerTest {
     
     @Test(expected = BadRequestException.class)
     public void oddParametersUseDefaults() throws Exception {
-        controller.getParticipants("asdf", "qwer", null, null, null);
+        controller.getParticipants("asdf", "qwer", null, null, null, null, null);
         
         // paging with defaults
         verify(mockParticipantService).getPagedAccountSummaries(study, 0, API_DEFAULT_PAGE_SIZE, null, null, null);
@@ -300,7 +327,7 @@ public class ParticipantControllerTest {
     
     @Test
     public void nullParametersUseDefaults() throws Exception {
-        controller.getParticipants(null, null, null, null, null);
+        controller.getParticipants(null, null, null, null, null,null, null);
 
         // paging with defaults
         verify(mockParticipantService).getPagedAccountSummaries(study, 0, API_DEFAULT_PAGE_SIZE, null, null, null);
@@ -718,7 +745,7 @@ public class ParticipantControllerTest {
         DateTime start = DateTime.now();
         DateTime end = DateTime.now();
         
-        controller.getParticipantsForWorker(study.getIdentifier(), "10", "20", "foo", start.toString(), end.toString());
+        controller.getParticipantsForWorker(study.getIdentifier(), "10", "20", "foo", start.toString(), end.toString(), null, null);
     }
     
     @Test(expected = UnauthorizedException.class)
@@ -735,7 +762,37 @@ public class ParticipantControllerTest {
         
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
         
-        Result result = controller.getParticipantsForWorker(study.getIdentifier(), "10", "20", "foo", start.toString(), end.toString());
+        Result result = controller.getParticipantsForWorker(study.getIdentifier(), "10", "20", "foo", start.toString(), end.toString(), null, null);
+        PagedResourceList<AccountSummary> page = resultToPage(result);
+        
+        // verify the result contains items
+        assertEquals(3, page.getItems().size());
+        assertEquals(30, page.getTotal());
+        assertEquals(SUMMARY, page.getItems().get(0));
+        
+        //verify paging/filtering
+        assertEquals(new Integer(10), page.getOffsetBy());
+        assertEquals(20, page.getPageSize());
+        assertEquals("foo", page.getRequestParams().get("emailFilter"));
+        
+        // DateTime instances don't seem to be equal unless you use the library's equality methods, which
+        // verification does not do. So capture and compare that way.
+        verify(mockParticipantService).getPagedAccountSummaries(eq(study), eq(10), eq(20), eq("foo"),
+                startTimeCaptor.capture(), endTimeCaptor.capture());
+        assertEquals(start.toString(), startTimeCaptor.getValue().toString());
+        assertEquals(end.toString(), endTimeCaptor.getValue().toString());
+    }
+    
+    @Test
+    public void getParticipantsForWorkerUsingStartTimeEndTime() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
+                .withRoles(Sets.newHashSet(Roles.WORKER)).build());
+        DateTime start = DateTime.now();
+        DateTime end = DateTime.now();
+        
+        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
+        
+        Result result = controller.getParticipantsForWorker(study.getIdentifier(), "10", "20", "foo", null, null, start.toString(), end.toString());
         PagedResourceList<AccountSummary> page = resultToPage(result);
         
         // verify the result contains items
@@ -790,6 +847,7 @@ public class ParticipantControllerTest {
     
     private PagedResourceList<AccountSummary> resultToPage(Result result) throws Exception {
         String string = Helpers.contentAsString(result);
+        System.out.println(string);
         return MAPPER.readValue(string, ACCOUNT_SUMMARY_PAGE);
     }
 }
