@@ -377,8 +377,7 @@ public class StudyControllerTest {
         // in other words, it's the object we mocked out from the service, we were returned the value.
         PagedResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), UPLOADS_REF);
-        assertNull(retrieved.getOffsetBy());
-        assertNull(retrieved.getOffsetBy());
+        assertNull(retrieved.getRequestParams().get("offsetBy"));
         assertNull(retrieved.getTotal());
         assertEquals(API_MAXIMUM_PAGE_SIZE, retrieved.getRequestParams().get("pageSize"));
         assertEquals(startTime.toString(), retrieved.getRequestParams().get("startTime"));
@@ -440,7 +439,7 @@ public class StudyControllerTest {
         // in other words, it's the object we mocked out from the service, we were returned the value.
         PagedResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), UPLOADS_REF);
-        assertNull(retrieved.getOffsetBy());
+        assertNull(retrieved.getRequestParams().get("offsetBy"));
         assertNull(retrieved.getTotal());
         assertEquals(API_MAXIMUM_PAGE_SIZE, retrieved.getRequestParams().get("pageSize"));
         assertEquals(startTime.toString(), retrieved.getRequestParams().get("startTime"));

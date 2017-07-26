@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.models;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import org.joda.time.DateTime;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -22,19 +20,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class PagedResourceList<T> extends ResourceList<T> {
     
-    private final @Nullable Integer offsetBy;
     private final Integer total;
 
     @JsonCreator
     public PagedResourceList(
             @JsonProperty(ITEMS) List<T> items, 
-            @JsonProperty(OFFSET_BY) Integer offsetBy,
-            @JsonProperty(TOTAL) int total) {
+            @JsonProperty(TOTAL) Integer total) {
         super(items);
-        this.offsetBy = offsetBy;
         this.total = total;
-        super.withRequestParam(OFFSET_BY, offsetBy);
-        super.withRequestParam(TOTAL, total);
     }
 
     @Deprecated
@@ -53,8 +46,9 @@ public class PagedResourceList<T> extends ResourceList<T> {
     public int getPageSize() {
         return (Integer)getRequestParams().get(PAGE_SIZE);
     }
+    @Deprecated
     public Integer getOffsetBy() {
-        return offsetBy;
+        return (Integer)getRequestParams().get(OFFSET_BY);
     }
     public Integer getTotal() {
         return total;

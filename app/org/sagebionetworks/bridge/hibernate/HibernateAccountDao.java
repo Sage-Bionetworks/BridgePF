@@ -357,7 +357,8 @@ public class HibernateAccountDao implements AccountDao {
         int count = hibernateHelper.queryCount(query);
 
         // Package results and return.
-        return new PagedResourceList<>(accountSummaryList, offsetBy, count)
+        return new PagedResourceList<>(accountSummaryList, count)
+                .withRequestParam(ResourceList.OFFSET_BY, offsetBy)
                 .withRequestParam(ResourceList.PAGE_SIZE, pageSize)
                 .withRequestParam(ResourceList.EMAIL_FILTER, emailFilter)
                 .withRequestParam(ResourceList.START_TIME, startTime)

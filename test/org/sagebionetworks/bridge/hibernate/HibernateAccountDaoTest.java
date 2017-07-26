@@ -647,12 +647,13 @@ public class HibernateAccountDaoTest {
         // execute and validate
         PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(STUDY, 10, 5,
                 null, null, null);
-        assertEquals(10, accountSummaryResourceList.getOffsetBy().intValue());
+        assertEquals(10, accountSummaryResourceList.getRequestParams().get("offsetBy"));
         assertEquals(5, accountSummaryResourceList.getRequestParams().get("pageSize"));
         assertEquals((Integer)12, accountSummaryResourceList.getTotal());
 
         Map<String, Object> paramsMap = accountSummaryResourceList.getRequestParams();
-        assertTrue(paramsMap.isEmpty());
+        assertEquals(10, paramsMap.get("offsetBy"));
+        assertEquals(5, paramsMap.get("pageSize"));
 
         // just ID, study, and email is sufficient
         List<AccountSummary> accountSummaryList = accountSummaryResourceList.getItems();
@@ -689,10 +690,12 @@ public class HibernateAccountDaoTest {
                 EMAIL, startDate, endDate);
 
         Map<String, Object> paramsMap = accountSummaryResourceList.getRequestParams();
-        assertEquals(3, paramsMap.size());
+        assertEquals(5, paramsMap.size());
+        assertEquals(5, paramsMap.get("pageSize"));
+        assertEquals(10, paramsMap.get("offsetBy"));
         assertEquals(EMAIL, paramsMap.get("emailFilter"));
-        assertEquals(startDate.toString(), paramsMap.get("startDate"));
-        assertEquals(endDate.toString(), paramsMap.get("endDate"));
+        assertEquals(startDate.toString(), paramsMap.get("startTime"));
+        assertEquals(endDate.toString(), paramsMap.get("endTime"));
 
         // verify hibernate calls
         String expectedQueryString = "from HibernateAccount where studyId='" + TestConstants.TEST_STUDY_IDENTIFIER +
