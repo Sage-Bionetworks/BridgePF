@@ -41,6 +41,7 @@ public class GenericAccount implements Account {
     private Set<Roles> roleSet = ImmutableSet.of();
     private AccountStatus status;
     private StudyIdentifier studyId;
+    private int version;
 
     /** {@inheritDoc} */
     @Override
@@ -235,5 +236,15 @@ public class GenericAccount implements Account {
     /** @see #getCreatedOn */
     public void setCreatedOn(DateTime createdOn) {
         this.createdOn = createdOn;
+    }
+
+    /** Version number, used by Hibernate to handle optimistic locking. */
+    public int getVersion() {
+        return version;
+    }
+
+    /** @see #getVersion */
+    public void setVersion(int version) {
+        this.version = version;
     }
 }

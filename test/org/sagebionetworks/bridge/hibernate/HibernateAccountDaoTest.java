@@ -17,8 +17,6 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -68,8 +66,7 @@ public class HibernateAccountDaoTest {
     private static final long MOCK_NOW_MILLIS = DateTime.parse("2017-05-19T14:45:27.593-0700").getMillis();
     private static final String FIRST_NAME = "Eggplant";
     private static final String LAST_NAME = "McTester";
-    private static final Pattern PASSWORD_HASH_QUERY_PATTERN = Pattern.compile(
-            "passwordHash='(?<passwordHash>[^']+)'");
+    private static final int VERSION = 7;
 
     private static final Study STUDY;
     static {
@@ -138,7 +135,9 @@ public class HibernateAccountDaoTest {
     @Test
     public void changePasswordSuccess() throws Exception {
         // mock hibernate
-        when(mockHibernateHelper.queryUpdate(any())).thenReturn(1);
+        HibernateAccount hibernateAccount = new HibernateAccount();
+        hibernateAccount.setId(ACCOUNT_ID);
+        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
 
         // Set up test account
         GenericAccount account = new GenericAccount();
@@ -146,33 +145,30 @@ public class HibernateAccountDaoTest {
 
         // execute and verify
         dao.changePassword(account, DUMMY_PASSWORD);
-        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
-        verify(mockHibernateHelper).queryUpdate(queryCaptor.capture());
+        ArgumentCaptor<HibernateAccount> updatedAccountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
+        verify(mockHibernateHelper).update(updatedAccountCaptor.capture());
 
-        String query = queryCaptor.getValue();
-        assertTrue(query.startsWith("update HibernateAccount"));
-        assertTrue(query.contains("modifiedOn=" + MOCK_NOW_MILLIS));
-        assertTrue(query.contains("passwordAlgorithm='" + PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM + "'"));
-        assertTrue(query.contains("passwordModifiedOn=" + MOCK_NOW_MILLIS));
-        assertTrue(query.endsWith("where id='" + ACCOUNT_ID + "'"));
+        HibernateAccount updatedAccount = updatedAccountCaptor.getValue();
+        assertEquals(ACCOUNT_ID, updatedAccount.getId());
+        assertEquals(MOCK_NOW_MILLIS, updatedAccount.getModifiedOn().longValue());
+        assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, updatedAccount.getPasswordAlgorithm());
+        assertEquals(MOCK_NOW_MILLIS, updatedAccount.getPasswordModifiedOn().longValue());
 
-        // parse out the password hash and validate
-        Matcher passwordHashMatcher = PASSWORD_HASH_QUERY_PATTERN.matcher(query);
-        assertTrue(passwordHashMatcher.find(0));
-        String passwordHash = passwordHashMatcher.group("passwordHash");
-        assertTrue(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM.checkHash(passwordHash, DUMMY_PASSWORD));
+        // validate password hash
+        assertTrue(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM.checkHash(updatedAccount.getPasswordHash(),
+                DUMMY_PASSWORD));
     }
 
-    @Test(expected = BridgeServiceException.class)
-    public void changePasswordFailure() {
+    @Test(expected = EntityNotFoundException.class)
+    public void changePasswordAccountNotFound() {
         // mock hibernate
-        when(mockHibernateHelper.queryUpdate(any())).thenReturn(0);
+        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(null);
 
         // Set up test account
         GenericAccount account = new GenericAccount();
         account.setId(ACCOUNT_ID);
 
-        // execute and verify
+        // execute
         dao.changePassword(account, DUMMY_PASSWORD);
     }
 
@@ -200,7 +196,7 @@ public class HibernateAccountDaoTest {
 
         // We don't create a new health code mapping nor update the account.
         verify(mockHealthCodeService, never()).createMapping(any());
-        verify(mockHibernateHelper, never()).queryUpdate(any());
+        verify(mockHibernateHelper, never()).update(any());
     }
 
     @Test
@@ -208,7 +204,6 @@ public class HibernateAccountDaoTest {
         // mock hibernate
         when(mockHibernateHelper.queryGet(any(), any(), any(), any())).thenReturn(ImmutableList.of(
                 makeValidHibernateAccount(true)));
-        when(mockHibernateHelper.queryUpdate(any())).thenReturn(1);
 
         // execute and verify - Verify just ID, study, and email, and health code mapping is enough.
         GenericAccount account = (GenericAccount) dao.authenticate(STUDY,
@@ -223,11 +218,7 @@ public class HibernateAccountDaoTest {
         verify(mockHibernateHelper).queryGet("from HibernateAccount where studyId='" +
                         TestConstants.TEST_STUDY_IDENTIFIER + "' and email='" + EMAIL + "'", null, null,
                 HibernateAccount.class);
-
-        // Verify we create the new health code mapping
-        verify(mockHealthCodeService).createMapping(TestConstants.TEST_STUDY);
-        verify(mockHibernateHelper).queryUpdate("update HibernateAccount set healthCode='" + HEALTH_CODE +
-                "', healthId='" + HEALTH_ID + "', modifiedOn=" + MOCK_NOW_MILLIS + " where id='" + ACCOUNT_ID + "'");
+        verifyCreatedHealthCode();
     }
 
     @Test(expected = EntityNotFoundException.class)
@@ -479,7 +470,7 @@ public class HibernateAccountDaoTest {
 
         // We don't create a new health code mapping nor update the account.
         verify(mockHealthCodeService, never()).createMapping(any());
-        verify(mockHibernateHelper, never()).queryUpdate(any());
+        verify(mockHibernateHelper, never()).update(any());
     }
 
     @Test
@@ -487,7 +478,6 @@ public class HibernateAccountDaoTest {
         // mock hibernate
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(
                 makeValidHibernateAccount(false));
-        when(mockHibernateHelper.queryUpdate(any())).thenReturn(1);
 
         // execute and validate - just validate ID, study, and email, and health code mapping
         GenericAccount account = (GenericAccount) dao.getAccount(STUDY, ACCOUNT_ID);
@@ -498,9 +488,7 @@ public class HibernateAccountDaoTest {
         assertEquals(HEALTH_ID, account.getHealthId());
 
         // Verify we create the new health code mapping
-        verify(mockHealthCodeService).createMapping(TestConstants.TEST_STUDY);
-        verify(mockHibernateHelper).queryUpdate("update HibernateAccount set healthCode='" + HEALTH_CODE +
-                "', healthId='" + HEALTH_ID + "', modifiedOn=" + MOCK_NOW_MILLIS + " where id='" + ACCOUNT_ID + "'");
+        verifyCreatedHealthCode();
     }
 
     @Test
@@ -536,7 +524,7 @@ public class HibernateAccountDaoTest {
 
         // We don't create a new health code mapping nor update the account.
         verify(mockHealthCodeService, never()).createMapping(any());
-        verify(mockHibernateHelper, never()).queryUpdate(any());
+        verify(mockHibernateHelper, never()).update(any());
     }
 
     @Test
@@ -544,7 +532,6 @@ public class HibernateAccountDaoTest {
         // mock hibernate
         when(mockHibernateHelper.queryGet(any(), any(), any(), any())).thenReturn(ImmutableList.of(
                 makeValidHibernateAccount(false)));
-        when(mockHibernateHelper.queryUpdate(any())).thenReturn(1);
 
         // execute and validate - just validate ID, study, and email, and health code mapping
         GenericAccount account = (GenericAccount) dao.getAccountWithEmail(STUDY, EMAIL);
@@ -560,9 +547,7 @@ public class HibernateAccountDaoTest {
                 HibernateAccount.class);
 
         // Verify we create the new health code mapping
-        verify(mockHealthCodeService).createMapping(TestConstants.TEST_STUDY);
-        verify(mockHibernateHelper).queryUpdate("update HibernateAccount set healthCode='" + HEALTH_CODE +
-                "', healthId='" + HEALTH_ID + "', modifiedOn=" + MOCK_NOW_MILLIS + " where id='" + ACCOUNT_ID + "'");
+        verifyCreatedHealthCode();
     }
 
     @Test
@@ -577,15 +562,8 @@ public class HibernateAccountDaoTest {
 
     @Test
     public void delete() {
-        // execute
         dao.deleteAccount(STUDY, ACCOUNT_ID);
-
-        // verify hibernate
-        ArgumentCaptor<HibernateAccount> keyToDeleteCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
-        verify(mockHibernateHelper).delete(keyToDeleteCaptor.capture());
-
-        HibernateAccount keyToDelete = keyToDeleteCaptor.getValue();
-        assertEquals(ACCOUNT_ID, keyToDelete.getId());
+        verify(mockHibernateHelper).deleteById(HibernateAccount.class, ACCOUNT_ID);
     }
 
     @Test
@@ -768,6 +746,7 @@ public class HibernateAccountDaoTest {
         genericAccount.setPasswordHash(DUMMY_PASSWORD_HASH);
         genericAccount.setRoles(EnumSet.of(Roles.DEVELOPER, Roles.TEST_USERS));
         genericAccount.setStatus(AccountStatus.ENABLED);
+        genericAccount.setVersion(VERSION);
 
         // populate attributes
         genericAccount.setAttribute("foo-attr", "foo-value");
@@ -809,6 +788,7 @@ public class HibernateAccountDaoTest {
         assertEquals(DUMMY_PASSWORD_HASH, hibernateAccount.getPasswordHash());
         assertEquals(EnumSet.of(Roles.DEVELOPER, Roles.TEST_USERS), hibernateAccount.getRoles());
         assertEquals(AccountStatus.ENABLED, hibernateAccount.getStatus());
+        assertEquals(VERSION, hibernateAccount.getVersion());
 
         // validate attributes
         Map<String, String> hibernateAttrMap = hibernateAccount.getAttributes();
@@ -861,6 +841,7 @@ public class HibernateAccountDaoTest {
         hibernateAccount.setPasswordHash(DUMMY_PASSWORD_HASH);
         hibernateAccount.setRoles(EnumSet.of(Roles.DEVELOPER, Roles.TEST_USERS));
         hibernateAccount.setStatus(AccountStatus.ENABLED);
+        hibernateAccount.setVersion(VERSION);
 
         // populate attributes
         hibernateAccount.getAttributes().put("foo-attr", "foo-value");
@@ -919,6 +900,7 @@ public class HibernateAccountDaoTest {
         assertEquals(DUMMY_PASSWORD_HASH, genericAccount.getPasswordHash());
         assertEquals(EnumSet.of(Roles.DEVELOPER, Roles.TEST_USERS), genericAccount.getRoles());
         assertEquals(AccountStatus.ENABLED, genericAccount.getStatus());
+        assertEquals(VERSION, genericAccount.getVersion());
 
         // createdOn is stored as a long, so just compare epoch milliseconds.
         assertEquals(CREATED_ON.getMillis(), genericAccount.getCreatedOn().getMillis());
@@ -981,6 +963,20 @@ public class HibernateAccountDaoTest {
     public void unmarshallAccountSummaryBlankAccount() {
         AccountSummary accountSummary = HibernateAccountDao.unmarshallAccountSummary(new HibernateAccount());
         assertNotNull(accountSummary);
+    }
+
+    private void verifyCreatedHealthCode() {
+        // Verify we create the new health code mapping
+        verify(mockHealthCodeService).createMapping(TestConstants.TEST_STUDY);
+
+        ArgumentCaptor<HibernateAccount> updatedAccountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
+        verify(mockHibernateHelper).update(updatedAccountCaptor.capture());
+
+        HibernateAccount updatedAccount = updatedAccountCaptor.getValue();
+        assertEquals(ACCOUNT_ID, updatedAccount.getId());
+        assertEquals(HEALTH_CODE, updatedAccount.getHealthCode());
+        assertEquals(HEALTH_ID, updatedAccount.getHealthId());
+        assertEquals(MOCK_NOW_MILLIS, updatedAccount.getModifiedOn().longValue());
     }
 
     private static void validateHibernateConsent(ConsentSignature consentSignature,

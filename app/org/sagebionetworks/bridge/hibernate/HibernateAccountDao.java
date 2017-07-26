@@ -110,13 +110,19 @@ public class HibernateAccountDao implements AccountDao {
             throw new BridgeServiceException("Error changing password: " + ex.getMessage(), ex);
         }
 
-        long modifiedOn = DateUtils.getCurrentMillisFromEpoch();
-        int numRowsUpdated = hibernateHelper.queryUpdate("update HibernateAccount set modifiedOn=" + modifiedOn +
-                ", passwordAlgorithm='" + passwordAlgorithm.name() + "', passwordHash='" +  passwordHash +
-                "', passwordModifiedOn=" + modifiedOn + " where id='" + accountId + "'");
-        if (numRowsUpdated == 0) {
-            throw new BridgeServiceException("Failed to update password for account " + accountId);
+        // We have to load and update the whole account in order to use Hibernate's optimistic versioning.
+        HibernateAccount hibernateAccount = hibernateHelper.getById(HibernateAccount.class, accountId);
+        if (hibernateAccount == null) {
+            throw new EntityNotFoundException(Account.class, "Account " + accountId + " not found");
         }
+
+        // Update
+        long modifiedOn = DateUtils.getCurrentMillisFromEpoch();
+        hibernateAccount.setModifiedOn(modifiedOn);
+        hibernateAccount.setPasswordAlgorithm(passwordAlgorithm);
+        hibernateAccount.setPasswordHash(passwordHash);
+        hibernateAccount.setPasswordModifiedOn(modifiedOn);
+        hibernateHelper.update(hibernateAccount);
     }
 
     /** {@inheritDoc} */
@@ -297,9 +303,7 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public void deleteAccount(Study study, String id) {
-        HibernateAccount key = new HibernateAccount();
-        key.setId(id);
-        hibernateHelper.delete(key);
+        hibernateHelper.deleteById(HibernateAccount.class, id);
     }
 
     /** {@inheritDoc} */
@@ -382,6 +386,7 @@ public class HibernateAccountDao implements AccountDao {
         hibernateAccount.setPasswordHash(genericAccount.getPasswordHash());
         hibernateAccount.setRoles(genericAccount.getRoles());
         hibernateAccount.setStatus(genericAccount.getStatus());
+        hibernateAccount.setVersion(genericAccount.getVersion());
 
         // Attributes that need parsing.
         if (genericAccount.getStudyIdentifier() != null) {
@@ -436,8 +441,6 @@ public class HibernateAccountDao implements AccountDao {
     private void validateHealthCode(StudyIdentifier studyId, HibernateAccount hibernateAccount) {
         if (StringUtils.isBlank(hibernateAccount.getHealthCode()) ||
                 StringUtils.isBlank(hibernateAccount.getHealthId())) {
-            String accountId = hibernateAccount.getId();
-
             // Generate health code mapping.
             HealthId healthId = healthCodeService.createMapping(studyId);
             hibernateAccount.setHealthCode(healthId.getCode());
@@ -447,13 +450,8 @@ public class HibernateAccountDao implements AccountDao {
             long modifiedOn = DateUtils.getCurrentMillisFromEpoch();
             hibernateAccount.setModifiedOn(modifiedOn);
 
-            // Save it to the back-end.
-            int numRowsUpdated = hibernateHelper.queryUpdate("update HibernateAccount set healthCode='" +
-                    healthId.getCode() + "', healthId='" + healthId.getId() + "', modifiedOn=" + modifiedOn +
-                    " where id='" + accountId + "'");
-            if (numRowsUpdated == 0) {
-                throw new BridgeServiceException("Failed to update password for account " + accountId);
-            }
+            // We need to save the whole account to use Hibernate's optimistic versioning.
+            hibernateHelper.update(hibernateAccount);
         }
     }
 
@@ -472,6 +470,7 @@ public class HibernateAccountDao implements AccountDao {
         account.setHealthId(hibernateAccount.getHealthId());
         account.setStatus(hibernateAccount.getStatus());
         account.setRoles(hibernateAccount.getRoles());
+        account.setVersion(hibernateAccount.getVersion());
 
         // attributes that need parsing
         if (StringUtils.isNotBlank(hibernateAccount.getStudyId())) {
