@@ -40,6 +40,7 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -289,9 +290,10 @@ public class UploadService {
             return builder.build();
         }).collect(Collectors.toList());
         
-        return new ForwardCursorPagedResourceList<UploadView>(views, list.getNextPageOffsetKey(), list.getPageSize())
-                .withRequestParam("offsetKey", list.getRequestParams().get("offsetKey"))
-                .withRequestParam("startTime", startTime).withRequestParam("endTime", endTime);
+        return new ForwardCursorPagedResourceList<UploadView>(views, list.getNextPageOffsetKey())
+                .withRequestParam(ResourceList.OFFSET_KEY, list.getRequestParams().get(ResourceList.OFFSET_KEY))
+                .withRequestParam(ResourceList.PAGE_SIZE, list.getRequestParams().get(ResourceList.PAGE_SIZE))
+                .withRequestParam(ResourceList.START_TIME, startTime).withRequestParam(ResourceList.END_TIME, endTime);
     }
     
     /**

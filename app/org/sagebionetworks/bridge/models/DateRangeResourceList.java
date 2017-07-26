@@ -9,9 +9,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class DateRangeResourceList<T> extends ResourceList<T> {
     
-    private static final String START_DATE = "startDate";
-    private static final String END_DATE = "endDate";
-    
     private final LocalDate startDate;
     private final LocalDate endDate;
 

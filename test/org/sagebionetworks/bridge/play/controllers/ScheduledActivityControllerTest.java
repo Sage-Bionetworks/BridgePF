@@ -46,6 +46,7 @@ import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -375,7 +376,7 @@ public class ScheduledActivityControllerTest {
         
         assertEquals(1, page.getItems().size());
         assertEquals("777", page.getNextPageOffsetKey());
-        assertEquals(77, page.getPageSize());
+        assertEquals(77, page.getRequestParams().get("pageSize"));
 
         verify(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE), eq(ACTIVITY_GUID), startsOnCaptor.capture(),
                 endsOnCaptor.capture(), eq("2000"), eq(77));
@@ -488,6 +489,7 @@ public class ScheduledActivityControllerTest {
         activity.setSchedulePlanGuid("schedulePlanGuid");
         list.add(activity);
         
-        return new ForwardCursorPagedResourceList<ScheduledActivity>(list, "777", pageSize);
+        return new ForwardCursorPagedResourceList<ScheduledActivity>(list, "777")
+                .withRequestParam(ResourceList.PAGE_SIZE, pageSize);
     }
 }

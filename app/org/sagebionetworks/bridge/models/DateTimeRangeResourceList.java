@@ -12,9 +12,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 public class DateTimeRangeResourceList<T> extends ResourceList<T> {
     
-    private static final String START_TIME = "startTime";
-    private static final String END_TIME = "endTime";
-    
     private final DateTime startTime;
     private final DateTime endTime;
 
@@ -29,10 +26,12 @@ public class DateTimeRangeResourceList<T> extends ResourceList<T> {
         super.withRequestParam(START_TIME, startTime);    
         super.withRequestParam(END_TIME, endTime);    
     }
+    @Deprecated
     @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getStartTime() {
         return startTime;
     }
+    @Deprecated
     @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getEndTime() {
         return endTime;

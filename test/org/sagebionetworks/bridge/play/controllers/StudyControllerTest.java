@@ -363,7 +363,8 @@ public class StudyControllerTest {
 
         List<Upload> list = Lists.newArrayList();
 
-        ForwardCursorPagedResourceList<Upload> uploads = new ForwardCursorPagedResourceList<>(list, null, API_MAXIMUM_PAGE_SIZE)
+        ForwardCursorPagedResourceList<Upload> uploads = new ForwardCursorPagedResourceList<>(list, null)
+                .withRequestParam("pageSize", API_MAXIMUM_PAGE_SIZE)
                 .withRequestParam("startTime", startTime)
                 .withRequestParam("endTime", endTime);
         doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
@@ -378,8 +379,8 @@ public class StudyControllerTest {
                 .readValue(Helpers.contentAsString(result), UPLOADS_REF);
         assertNull(retrieved.getOffsetBy());
         assertNull(retrieved.getOffsetBy());
-        assertEquals(0, retrieved.getTotal());
-        assertEquals(API_MAXIMUM_PAGE_SIZE, retrieved.getPageSize());
+        assertNull(retrieved.getTotal());
+        assertEquals(API_MAXIMUM_PAGE_SIZE, retrieved.getRequestParams().get("pageSize"));
         assertEquals(startTime.toString(), retrieved.getRequestParams().get("startTime"));
         assertEquals(endTime.toString(), retrieved.getRequestParams().get("endTime"));
     }
@@ -423,7 +424,8 @@ public class StudyControllerTest {
 
         List<Upload> list = Lists.newArrayList();
 
-        ForwardCursorPagedResourceList<Upload> uploads = new ForwardCursorPagedResourceList<>(list, null, API_MAXIMUM_PAGE_SIZE)
+        ForwardCursorPagedResourceList<Upload> uploads = new ForwardCursorPagedResourceList<>(list, null)
+                .withRequestParam("pageSize", API_MAXIMUM_PAGE_SIZE)
                 .withRequestParam("startTime", startTime)
                 .withRequestParam("endTime", endTime);
         doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE,
@@ -439,8 +441,8 @@ public class StudyControllerTest {
         PagedResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), UPLOADS_REF);
         assertNull(retrieved.getOffsetBy());
-        assertEquals(0, retrieved.getTotal());
-        assertEquals(API_MAXIMUM_PAGE_SIZE, retrieved.getPageSize());
+        assertNull(retrieved.getTotal());
+        assertEquals(API_MAXIMUM_PAGE_SIZE, retrieved.getRequestParams().get("pageSize"));
         assertEquals(startTime.toString(), retrieved.getRequestParams().get("startTime"));
         assertEquals(endTime.toString(), retrieved.getRequestParams().get("endTime"));
     }

@@ -34,6 +34,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -138,12 +139,13 @@ public class ReportControllerTest {
         ReportIndex index = ReportIndex.create();
         index.setIdentifier("fofo");
         ReportTypeResourceList<? extends ReportIndex> list = new ReportTypeResourceList<>(
-                Lists.newArrayList(index), ReportType.STUDY);
+                Lists.newArrayList(index)).withRequestParam(ResourceList.REPORT_TYPE, ReportType.STUDY);
         doReturn(list).when(mockReportService).getReportIndices(TEST_STUDY, ReportType.STUDY);
         
         index = ReportIndex.create();
         index.setIdentifier("fofo");
-        list = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.PARTICIPANT);
+        list = new ReportTypeResourceList<>(Lists.newArrayList(index))
+                .withRequestParam(ResourceList.REPORT_TYPE, ReportType.PARTICIPANT);
         doReturn(list).when(mockReportService).getReportIndices(TEST_STUDY, ReportType.PARTICIPANT);
     }
     
@@ -375,7 +377,7 @@ public class ReportControllerTest {
                 Helpers.contentAsString(result),
                 new TypeReference<ReportTypeResourceList<ReportIndex>>() {});
         assertEquals(1, results.getItems().size());
-        assertEquals(ReportType.STUDY, results.getReportType());
+        assertEquals("study", results.getRequestParams().get("reportType"));
         assertEquals("fofo", results.getItems().get(0).getIdentifier());
         
         verify(mockReportService).getReportIndices(TEST_STUDY, ReportType.STUDY);
@@ -390,7 +392,7 @@ public class ReportControllerTest {
                 Helpers.contentAsString(result),
                 new TypeReference<ReportTypeResourceList<ReportIndex>>() {});
         assertEquals(1, results.getItems().size());
-        assertEquals(ReportType.PARTICIPANT, results.getReportType());
+        assertEquals("participant", results.getRequestParams().get("reportType"));
         assertEquals("fofo", results.getItems().get(0).getIdentifier());
         
         verify(mockReportService).getReportIndices(TEST_STUDY, ReportType.PARTICIPANT);

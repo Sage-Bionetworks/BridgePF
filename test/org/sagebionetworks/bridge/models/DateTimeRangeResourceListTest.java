@@ -26,7 +26,7 @@ public class DateTimeRangeResourceListTest {
         assertEquals("1", node.get("items").get(0).asText());
         assertEquals("2", node.get("items").get(1).asText());
         assertEquals("3", node.get("items").get(2).asText());
-        assertEquals(5, node.size());
+        assertEquals(6, node.size());
         assertEquals("2016-02-03T10:10:10.000-08:00", node.get("requestParams").get("startTime").asText());
         assertEquals("2016-02-23T14:14:14.000-08:00", node.get("requestParams").get("endTime").asText());
         

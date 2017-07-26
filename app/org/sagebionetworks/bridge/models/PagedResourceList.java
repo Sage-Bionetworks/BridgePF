@@ -21,34 +21,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * ImmutableMap).
  */
 public class PagedResourceList<T> extends ResourceList<T> {
-
-    private static final String END_DATE = "endDate";
-    private static final String START_DATE = "startDate";
-    private static final String EMAIL_FILTER = "emailFilter";
-    private static final String PAGE_SIZE = "pageSize";
-    private static final String OFFSET_BY = "offsetBy";
-    private static final String TOTAL = "total";
     
-    /**
-     * Calls from a RDMS use an offset index; DynamoDB uses an offsetKey which is usually a string, and 
-     * added to the filer using the LAST_KEY_FILTER property. So offsetKey can be null when not in use.
-     */
     private final @Nullable Integer offsetBy;
-    private final int pageSize;
-    private final int total;
+    private final Integer total;
 
     @JsonCreator
     public PagedResourceList(
             @JsonProperty(ITEMS) List<T> items, 
             @JsonProperty(OFFSET_BY) Integer offsetBy,
-            @JsonProperty(PAGE_SIZE) int pageSize, 
             @JsonProperty(TOTAL) int total) {
         super(items);
         this.offsetBy = offsetBy;
-        this.pageSize = pageSize;
         this.total = total;
         super.withRequestParam(OFFSET_BY, offsetBy);
-        super.withRequestParam(PAGE_SIZE, pageSize);
         super.withRequestParam(TOTAL, total);
     }
 
@@ -64,14 +49,14 @@ public class PagedResourceList<T> extends ResourceList<T> {
     public DateTime getEndDate() {
         return getDateValue(END_DATE);
     }
-    
+    @Deprecated
+    public int getPageSize() {
+        return (Integer)getRequestParams().get(PAGE_SIZE);
+    }
     public Integer getOffsetBy() {
         return offsetBy;
     }
-    public int getPageSize() {
-        return pageSize;
-    }
-    public int getTotal() {
+    public Integer getTotal() {
         return total;
     }
     public PagedResourceList<T> withRequestParam(String key, Object value) {

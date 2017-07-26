@@ -27,6 +27,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
@@ -48,6 +49,7 @@ import org.sagebionetworks.bridge.services.HealthCodeService;
 /** Hibernate implementation of Account Dao. */
 @Component
 public class HibernateAccountDao implements AccountDao {
+    
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
 
     private AccountWorkflowService accountWorkflowService;
@@ -351,10 +353,11 @@ public class HibernateAccountDao implements AccountDao {
         int count = hibernateHelper.queryCount(query);
 
         // Package results and return.
-        return new PagedResourceList<>(accountSummaryList, offsetBy, pageSize, count)
-                .withRequestParam("emailFilter", emailFilter)
-                .withRequestParam("startTime", startTime)
-                .withRequestParam("endTime", endTime);
+        return new PagedResourceList<>(accountSummaryList, offsetBy, count)
+                .withRequestParam(ResourceList.PAGE_SIZE, pageSize)
+                .withRequestParam(ResourceList.EMAIL_FILTER, emailFilter)
+                .withRequestParam(ResourceList.START_TIME, startTime)
+                .withRequestParam(ResourceList.END_TIME, endTime);
     }
 
     // Helper method which marshalls a GenericAccount into a HibernateAccount.

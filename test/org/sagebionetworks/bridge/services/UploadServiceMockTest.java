@@ -32,6 +32,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
@@ -199,10 +200,12 @@ public class UploadServiceMockTest {
         // Mock getUploads/getUpload calls
         List<Upload> results = ImmutableList.of(mockUpload, mockFailedUpload, mockUploadWithNoRecord);
         
-        ForwardCursorPagedResourceList<Upload> pagedListWithoutOffsetKey = new ForwardCursorPagedResourceList<Upload>(results, null, API_MAXIMUM_PAGE_SIZE);
+        ForwardCursorPagedResourceList<Upload> pagedListWithoutOffsetKey = new ForwardCursorPagedResourceList<Upload>(results, null)
+                .withRequestParam(ResourceList.PAGE_SIZE, API_MAXIMUM_PAGE_SIZE);
         doReturn(pagedListWithoutOffsetKey).when(mockDao).getUploads(eq("ABC"), any(DateTime.class), any(DateTime.class), eq(0), eq(null));
         
-        ForwardCursorPagedResourceList<Upload> pagedList = new ForwardCursorPagedResourceList<Upload>(results, MOCK_OFFSET_KEY, API_MAXIMUM_PAGE_SIZE);
+        ForwardCursorPagedResourceList<Upload> pagedList = new ForwardCursorPagedResourceList<Upload>(results, MOCK_OFFSET_KEY)
+            .withRequestParam(ResourceList.PAGE_SIZE, API_MAXIMUM_PAGE_SIZE);
         doReturn(pagedList).when(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
         doReturn(pagedList).when(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME, API_DEFAULT_PAGE_SIZE, null);
         doReturn(mockUpload).when(mockDao).getUpload("upload-id");
@@ -257,7 +260,7 @@ public class UploadServiceMockTest {
         List<? extends UploadView> uploadList = returned.getItems();
         assertEquals(3, uploadList.size());
 
-        assertEquals(API_MAXIMUM_PAGE_SIZE, returned.getPageSize());
+        assertEquals(API_MAXIMUM_PAGE_SIZE, returned.getRequestParams().get("pageSize"));
         assertEquals(expectedOffsetKey, returned.getNextPageOffsetKey());
 
         // The two sources of information are combined in the view.

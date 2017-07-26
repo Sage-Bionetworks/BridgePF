@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -95,8 +96,8 @@ public class ExternalIdControllerTest {
     public void getExternalIds() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.RESEARCHER);
         // Mock out a response from service
-        ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = new ForwardCursorPagedResourceList<>(EXT_IDS, "CCC", 5)
-                .withRequestParam("idFilter", "A");
+        ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = new ForwardCursorPagedResourceList<>(EXT_IDS, "CCC")
+                .withRequestParam(ResourceList.PAGE_SIZE, 5).withRequestParam(ResourceList.ID_FILTER, "A");
         when(externalIdService.getExternalIds(any(), any(), any(), any(), any())).thenReturn(page);
         
         // execute the controller
@@ -106,7 +107,7 @@ public class ExternalIdControllerTest {
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> deserPage =  MAPPER.readValue(content, PAGE_REF);
         assertEquals(EXT_IDS, deserPage.getItems());
         assertEquals("CCC", deserPage.getNextPageOffsetKey());
-        assertEquals(5, deserPage.getPageSize());
+        assertEquals(5, deserPage.getRequestParams().get("pageSize"));
         assertEquals("A", deserPage.getRequestParams().get("idFilter"));
     }
     

@@ -172,7 +172,9 @@ public class ParticipantControllerTest {
         summaries.add(SUMMARY);
         summaries.add(SUMMARY);
         summaries.add(SUMMARY);
-        PagedResourceList<AccountSummary> page = new PagedResourceList<>(summaries, 10, 20, 30).withRequestParam("emailFilter", "foo");
+        PagedResourceList<AccountSummary> page = new PagedResourceList<>(summaries, 10, 30)
+                .withRequestParam("pageSize", 20)
+                .withRequestParam("emailFilter", "foo");
         
         when(authService.getSession(eq(study), any())).thenReturn(session);
         
@@ -203,12 +205,12 @@ public class ParticipantControllerTest {
         
         // verify the result contains items
         assertEquals(3, page.getItems().size());
-        assertEquals(30, page.getTotal());
+        assertEquals((Integer)30, page.getTotal());
         assertEquals(SUMMARY, page.getItems().get(0));
         
         //verify paging/filtering
         assertEquals(new Integer(10), page.getOffsetBy());
-        assertEquals(20, page.getPageSize());
+        assertEquals(20, page.getRequestParams().get("pageSize"));
         assertEquals("foo", page.getRequestParams().get("emailFilter"));
         
         // DateTime instances don't seem to be equal unless you use the library's equality methods, which
@@ -228,12 +230,12 @@ public class ParticipantControllerTest {
         
         // verify the result contains items
         assertEquals(3, page.getItems().size());
-        assertEquals(30, page.getTotal());
+        assertEquals((Integer)30, page.getTotal());
         assertEquals(SUMMARY, page.getItems().get(0));
         
         //verify paging/filtering
         assertEquals(new Integer(10), page.getOffsetBy());
-        assertEquals(20, page.getPageSize());
+        assertEquals(20, page.getRequestParams().get("pageSize"));
         assertEquals("foo", page.getRequestParams().get("emailFilter"));
         
         // DateTime instances don't seem to be equal unless you use the library's equality methods, which
@@ -590,7 +592,7 @@ public class ParticipantControllerTest {
         assertNull(activity.getHealthCode());
         
         assertEquals(1, page.getItems().size()); // have not mocked out these items, but the list is there.
-        assertEquals(1, page.getPageSize());
+        assertEquals(1, page.getRequestParams().get("pageSize"));
         
         verify(mockParticipantService).getActivityHistory(eq(study), eq(ID), eq(ACTIVITY_GUID),
                 startsOnCaptor.capture(), endsOnCaptor.capture(), eq("200"), eq(77));
@@ -613,7 +615,7 @@ public class ParticipantControllerTest {
         assertNull(activity.getHealthCode());
         
         assertEquals(1, page.getItems().size()); // have not mocked out these items, but the list is there.
-        assertEquals(1, page.getPageSize());
+        assertEquals(1, page.getRequestParams().get("pageSize"));
         
         verify(mockParticipantService).getActivityHistory(eq(study), eq(ID), eq(ACTIVITY_GUID), eq(null), eq(null),
                 eq(null), eq(API_DEFAULT_PAGE_SIZE));
@@ -679,7 +681,8 @@ public class ParticipantControllerTest {
 
         List<? extends Upload> list = Lists.newArrayList();
 
-        ForwardCursorPagedResourceList<? extends Upload> uploads = new ForwardCursorPagedResourceList<>(list, "abc", API_MAXIMUM_PAGE_SIZE)
+        ForwardCursorPagedResourceList<? extends Upload> uploads = new ForwardCursorPagedResourceList<>(list, "abc")
+                .withRequestParam("pageSize", API_MAXIMUM_PAGE_SIZE)
                 .withRequestParam("startTime", startTime)
                 .withRequestParam("endTime", endTime);
         doReturn(uploads).when(mockParticipantService).getUploads(study, ID, startTime, endTime, 10, "abc");
@@ -700,8 +703,8 @@ public class ParticipantControllerTest {
     public void getUploadsNullsDateRange() throws Exception {
         List<Upload> list = Lists.newArrayList();
 
-        ForwardCursorPagedResourceList<Upload> uploads = new ForwardCursorPagedResourceList<>(list, null,
-                API_MAXIMUM_PAGE_SIZE);
+        ForwardCursorPagedResourceList<Upload> uploads = new ForwardCursorPagedResourceList<>(list, null)
+                .withRequestParam("pageSize", API_MAXIMUM_PAGE_SIZE);
         doReturn(uploads).when(mockParticipantService).getUploads(study, ID, null, null, null, null);
         
         Result result = controller.getUploads(ID, null, null, null, null);
@@ -767,12 +770,12 @@ public class ParticipantControllerTest {
         
         // verify the result contains items
         assertEquals(3, page.getItems().size());
-        assertEquals(30, page.getTotal());
+        assertEquals((Integer)30, page.getTotal());
         assertEquals(SUMMARY, page.getItems().get(0));
         
         //verify paging/filtering
         assertEquals(new Integer(10), page.getOffsetBy());
-        assertEquals(20, page.getPageSize());
+        assertEquals(20, page.getRequestParams().get("pageSize"));
         assertEquals("foo", page.getRequestParams().get("emailFilter"));
         
         // DateTime instances don't seem to be equal unless you use the library's equality methods, which
@@ -797,12 +800,12 @@ public class ParticipantControllerTest {
         
         // verify the result contains items
         assertEquals(3, page.getItems().size());
-        assertEquals(30, page.getTotal());
+        assertEquals((Integer)30, page.getTotal());
         assertEquals(SUMMARY, page.getItems().get(0));
         
         //verify paging/filtering
         assertEquals(new Integer(10), page.getOffsetBy());
-        assertEquals(20, page.getPageSize());
+        assertEquals(20, page.getRequestParams().get("pageSize"));
         assertEquals("foo", page.getRequestParams().get("emailFilter"));
         
         // DateTime instances don't seem to be equal unless you use the library's equality methods, which
@@ -842,12 +845,11 @@ public class ParticipantControllerTest {
         activity.setSchedulePlanGuid("schedulePlanGuid");
         list.add(activity);
         
-        return new ForwardCursorPagedResourceList<>(list, null, list.size());
+        return new ForwardCursorPagedResourceList<>(list, null).withRequestParam("pageSize", list.size());
     }
     
     private PagedResourceList<AccountSummary> resultToPage(Result result) throws Exception {
         String string = Helpers.contentAsString(result);
-        System.out.println(string);
         return MAPPER.readValue(string, ACCOUNT_SUMMARY_PAGE);
     }
 }

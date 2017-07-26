@@ -9,21 +9,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class ReportTypeResourceList<T> extends ResourceList<T> {
     
-    private static final String REPORT_TYPE = "reportType";
-    
-    private final ReportType reportType;
-
     @JsonCreator
-    public ReportTypeResourceList(
-            @JsonProperty(ITEMS) List<T> items,
-            @JsonProperty(REPORT_TYPE) ReportType reportType) {
+    public ReportTypeResourceList(@JsonProperty(ITEMS) List<T> items) {
         super(items);
-        this.reportType = reportType;
-        if (reportType != null) {
-            super.withRequestParam(REPORT_TYPE, reportType.name().toLowerCase());    
-        }
     }
+    @Deprecated
     public ReportType getReportType() {
-        return reportType;
+        return (ReportType)getRequestParams().get(REPORT_TYPE);
     }
+    public ReportTypeResourceList<T> withRequestParam(String key, Object value) {
+        super.withRequestParam(key, value);
+        return this;
+    }
+    
 }

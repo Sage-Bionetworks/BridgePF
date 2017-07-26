@@ -36,6 +36,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -65,8 +66,6 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     private static final String HEALTH_CODE = "healthCode";
     static final String IDENTIFIER = "identifier";
     private static final String STUDY_ID = "studyId";
-    private static final String ASSIGNMENT_FILTER = "assignmentFilter";
-    private static final String ID_FILTER = "idFilter";
 
     private int addLimit;
     private int lockDuration;
@@ -108,8 +107,9 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         // The offset key is applied after the idFilter. If the offsetKey doesn't match the beginning
         // of the idFilter, the AWS SDK throws a validation exception. So when providing an idFilter and 
         // a paging offset, clear the offset (go back to the first page) if they don't match.
-        if (offsetKey != null && idFilter != null && !offsetKey.startsWith(idFilter)) {
-            offsetKey = null;
+        String nextPageOffsetKey = offsetKey;
+        if (nextPageOffsetKey != null && idFilter != null && !nextPageOffsetKey.startsWith(idFilter)) {
+            nextPageOffsetKey = null;
         }
         QueryResultPage<DynamoExternalIdentifier> list;
         List<ExternalIdentifierInfo> identifiers = Lists.newArrayListWithCapacity(pageSize);
@@ -123,7 +123,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             getExternalIdRateLimiter.acquire(capacityAcquired);
 
             list = mapper.queryPage(DynamoExternalIdentifier.class,
-                    createGetQuery(studyId, offsetKey, PAGE_SCAN_LIMIT, idFilter, assignmentFilter));
+                    createGetQuery(studyId, nextPageOffsetKey, PAGE_SCAN_LIMIT, idFilter, assignmentFilter));
             for (ExternalIdentifier id : list.getResults()) {
                 if (identifiers.size() == pageSize) {
                     // return no more than pageSize externalIdentifiers
@@ -140,20 +140,22 @@ public class DynamoExternalIdDao implements ExternalIdDao {
 
             if (list.getCount() > pageSize) {
                 // we retrieved more records from Dynamo than we are returning
-                offsetKey = identifiers.get(pageSize - 1).getIdentifier();
+                nextPageOffsetKey = identifiers.get(pageSize - 1).getIdentifier();
             } else {
                 // This is the last key, not the next key of the next page of records. It only exists if there's a record
                 // beyond the records we've converted to a page. Then get the last key in the list.
                 Map<String, AttributeValue> lastEvaluated = list.getLastEvaluatedKey();
-                offsetKey = lastEvaluated != null ? lastEvaluated.get(IDENTIFIER).getS() : null;
+                nextPageOffsetKey = lastEvaluated != null ? lastEvaluated.get(IDENTIFIER).getS() : null;
             }
-        } while ((identifiers.size() < pageSize) && (offsetKey != null));
+        } while ((identifiers.size() < pageSize) && (nextPageOffsetKey != null));
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> resourceList = new ForwardCursorPagedResourceList<>(
-                identifiers, offsetKey, pageSize)
-                .withRequestParam(ID_FILTER, idFilter);
+                identifiers, nextPageOffsetKey)
+                .withRequestParam(ResourceList.OFFSET_KEY, offsetKey)
+                .withRequestParam(ResourceList.PAGE_SIZE, pageSize)
+                .withRequestParam(ResourceList.ID_FILTER, idFilter);
         if (assignmentFilter != null) {
-            resourceList = resourceList.withRequestParam(ASSIGNMENT_FILTER, assignmentFilter.toString());
+            resourceList = resourceList.withRequestParam(ResourceList.ASSIGNMENT_FILTER, assignmentFilter.toString());
         }
         return resourceList;
     }

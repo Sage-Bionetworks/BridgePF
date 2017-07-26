@@ -192,7 +192,7 @@ public class DynamoExternalIdDaoTest {
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 10, null, null);
         
         assertEquals(3, page.getItems().size());
-        assertEquals(10, page.getPageSize());
+        assertEquals(10, page.getRequestParams().get("pageSize"));
         assertNull(page.getNextPageOffsetKey());
     }
     
@@ -205,14 +205,14 @@ public class DynamoExternalIdDaoTest {
             // AAA, AEE, AFF
             ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 10, "A", null);
             assertEquals(3, page.getItems().size());
-            assertEquals(10, page.getPageSize());
+            assertEquals(10, page.getRequestParams().get("pageSize"));
             assertEquals("A", page.getRequestParams().get("idFilter"));
             assertNull(page.getNextPageOffsetKey());
 
             // Nothing matches this filter
             page = dao.getExternalIds(studyId, null, 10, "ZZZ", null);
             assertEquals(0, page.getItems().size());
-            assertEquals(10, page.getPageSize());
+            assertEquals(10, page.getRequestParams().get("pageSize"));
             assertEquals("ZZZ", page.getRequestParams().get("idFilter"));
             assertNull(page.getNextPageOffsetKey());
             

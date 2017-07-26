@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.ReportIndexDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
@@ -127,7 +128,8 @@ public class DynamoReportIndexDao implements ReportIndexDao {
         DynamoDBQueryExpression<DynamoReportIndex> query =
                 new DynamoDBQueryExpression<DynamoReportIndex>().withHashKeyValues(hashKey);
 
-        return new ReportTypeResourceList<>(mapper.query(DynamoReportIndex.class, query), reportType);
+        return new ReportTypeResourceList<>(mapper.query(DynamoReportIndex.class, query))
+                .withRequestParam(ResourceList.REPORT_TYPE, reportType);
     }
 
 }

@@ -15,26 +15,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class ForwardCursorPagedResourceList<T> extends ResourceList<T> {
 
-    private static final String SCHEDULED_ON_END = "scheduledOnEnd";
-    private static final String SCHEDULED_ON_START = "scheduledOnStart";
-    private static final String END_TIME = "endTime";
-    private static final String START_TIME = "startTime";
-    private static final String PAGE_SIZE = "pageSize";
-    private static final String OFFSET_KEY = "offsetKey";
+    private static final String HAS_NEXT = "hasNext";
     
-    private final int pageSize;
-    private final @Nullable String offsetKey;
+    private final @Nullable String nextOffsetKey;
 
     @JsonCreator
     public ForwardCursorPagedResourceList(
             @JsonProperty(ITEMS) List<T> items, 
-            @JsonProperty(OFFSET_KEY) String offsetKey,
-            @JsonProperty(PAGE_SIZE) int pageSize) {
+            @JsonProperty(OFFSET_KEY) String nextOffsetKey) {
         super(items);
-        this.offsetKey = offsetKey;
-        this.pageSize = pageSize;
-        super.withRequestParam(OFFSET_KEY, offsetKey);
-        super.withRequestParam(PAGE_SIZE, pageSize);
+        this.nextOffsetKey = nextOffsetKey;
     }
     
     @Deprecated
@@ -55,17 +45,19 @@ public class ForwardCursorPagedResourceList<T> extends ResourceList<T> {
     }
     @Deprecated
     public String getOffsetKey() {
-        return offsetKey;
+        return nextOffsetKey;
+    }
+    @Deprecated
+    public Integer getPageSize() {
+        Object value = getRequestParams().get(PAGE_SIZE);
+        return (value == null) ? null : (int)value;
     }
     public String getNextPageOffsetKey() {
-        return offsetKey;
+        return nextOffsetKey;
     }
-    @JsonProperty("hasNext")
+    @JsonProperty(HAS_NEXT)
     public boolean hasNext() {
-        return (offsetKey != null);
-    }
-    public int getPageSize() {
-        return pageSize;
+        return (nextOffsetKey != null);
     }
     public ForwardCursorPagedResourceList<T> withRequestParam(String key, Object value) {
         super.withRequestParam(key, value);

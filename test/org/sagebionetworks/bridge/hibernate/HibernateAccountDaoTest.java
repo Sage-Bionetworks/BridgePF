@@ -670,8 +670,8 @@ public class HibernateAccountDaoTest {
         PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(STUDY, 10, 5,
                 null, null, null);
         assertEquals(10, accountSummaryResourceList.getOffsetBy().intValue());
-        assertEquals(5, accountSummaryResourceList.getPageSize());
-        assertEquals(12, accountSummaryResourceList.getTotal());
+        assertEquals(5, accountSummaryResourceList.getRequestParams().get("pageSize"));
+        assertEquals((Integer)12, accountSummaryResourceList.getTotal());
 
         Map<String, Object> paramsMap = accountSummaryResourceList.getRequestParams();
         assertTrue(paramsMap.isEmpty());

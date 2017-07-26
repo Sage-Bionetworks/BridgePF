@@ -29,6 +29,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
@@ -94,7 +95,8 @@ public class ReportServiceTest {
         
         ReportIndex index = ReportIndex.create();
         index.setIdentifier(IDENTIFIER);
-        indices = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.STUDY);
+        indices = new ReportTypeResourceList<>(Lists.newArrayList(index))
+                .withRequestParam(ResourceList.REPORT_TYPE, ReportType.STUDY);
     }
     
     private static ReportData createReport(LocalDate date, String fieldValue1, String fieldValue2) {
@@ -464,7 +466,7 @@ public class ReportServiceTest {
         ReportTypeResourceList<? extends ReportIndex> indices = service.getReportIndices(TEST_STUDY, ReportType.STUDY);
         
         assertEquals(IDENTIFIER, indices.getItems().get(0).getIdentifier());
-        assertEquals(ReportType.STUDY, indices.getReportType());
+        assertEquals(ReportType.STUDY, indices.getRequestParams().get("reportType"));
         verify(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.STUDY);
     }
     
@@ -473,14 +475,14 @@ public class ReportServiceTest {
         // Need to create an index list with ReportType.PARTICIPANT for this test
         ReportIndex index = ReportIndex.create();
         index.setIdentifier(IDENTIFIER);
-        indices = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.PARTICIPANT);
+        indices = new ReportTypeResourceList<>(Lists.newArrayList(index)).withRequestParam(ResourceList.REPORT_TYPE, ReportType.PARTICIPANT);
         
         doReturn(indices).when(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.PARTICIPANT);
 
         ReportTypeResourceList<? extends ReportIndex> indices = service.getReportIndices(TEST_STUDY, ReportType.PARTICIPANT);
         
         assertEquals(IDENTIFIER, indices.getItems().get(0).getIdentifier());
-        assertEquals(ReportType.PARTICIPANT, indices.getReportType());
+        assertEquals(ReportType.PARTICIPANT, indices.getRequestParams().get("reportType"));
         verify(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.PARTICIPANT);
     }
     
@@ -488,7 +490,7 @@ public class ReportServiceTest {
     public void updateIndex() {
         ReportIndex index = ReportIndex.create();
         index.setIdentifier(IDENTIFIER);
-        indices = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.STUDY);
+        indices = new ReportTypeResourceList<>(Lists.newArrayList(index)).withRequestParam(ResourceList.REPORT_TYPE, ReportType.STUDY);
         doReturn(indices).when(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.STUDY);
         
         // This is all that is needed. Everything else is actually inferred by the controller
@@ -510,7 +512,7 @@ public class ReportServiceTest {
     public void cannotMakeParticipantStudyPublic() {
         ReportIndex index = ReportIndex.create();
         index.setIdentifier(IDENTIFIER);
-        indices = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.PARTICIPANT);
+        indices = new ReportTypeResourceList<>(Lists.newArrayList(index)).withRequestParam(ResourceList.REPORT_TYPE, ReportType.PARTICIPANT);
         doReturn(indices).when(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.PARTICIPANT);
         
         // This is all that is needed. Everything else is actually inferred by the controller

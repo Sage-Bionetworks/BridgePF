@@ -27,9 +27,10 @@ public class ReportTypeResourceListTest {
         index2.setPublic(true);
         
         ReportTypeResourceList<ReportIndex> list = new ReportTypeResourceList<>(
-                Lists.newArrayList(index1, index2), ReportType.PARTICIPANT);
+                Lists.newArrayList(index1, index2)).withRequestParam(ResourceList.REPORT_TYPE, ReportType.PARTICIPANT);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(list);
+        System.out.println(node);
         assertEquals("participant", node.get("reportType").asText());
         assertEquals(2, node.get("items").size());
         assertEquals("participant", node.get("requestParams").get("reportType").asText());
@@ -38,7 +39,7 @@ public class ReportTypeResourceListTest {
         assertFalse(node.get("items").get(0).get("public").asBoolean());
         assertEquals("bar", node.get("items").get(1).get("identifier").asText());
         assertTrue(node.get("items").get(1).get("public").asBoolean());
-        assertEquals(4, node.size());
+        assertEquals(5, node.size());
         
         // We never deserialize this on the server side (only in the SDK).
     }

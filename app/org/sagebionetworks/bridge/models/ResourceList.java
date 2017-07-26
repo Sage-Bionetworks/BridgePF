@@ -18,6 +18,21 @@ import com.google.common.collect.ImmutableMap;
  */
 public class ResourceList<T> {
     
+    public static final String START_TIME = "startTime";
+    public static final String END_TIME = "endTime";
+    public static final String START_DATE = "startDate";
+    public static final String END_DATE = "endDate";
+    public static final String SCHEDULED_ON_START = "scheduledOnStart";
+    public static final String SCHEDULED_ON_END = "scheduledOnEnd";
+    public static final String PAGE_SIZE = "pageSize";
+    public static final String OFFSET_KEY = "offsetKey";
+    public static final String OFFSET_BY = "offsetBy";
+    public static final String EMAIL_FILTER = "emailFilter";
+    public static final String ASSIGNMENT_FILTER = "assignmentFilter";
+    public static final String ID_FILTER = "idFilter";
+    public static final String TOTAL = "total";
+    public static final String REPORT_TYPE = "reportType";
+    
     protected static final String ITEMS = "items";
     
     private final List<T> items;
@@ -35,9 +50,9 @@ public class ResourceList<T> {
     }
     public ResourceList<T> withRequestParam(String key, Object value) {
         if (isNotBlank(key) && value != null) {
-            // For DateTime, forcing toString() here rather than using Jackson's serialization mechanism, 
-            // ensures the string is in the timezone supplied by the user.
             if (value instanceof DateTime) {
+                // For DateTime, forcing toString() here rather than using Jackson's serialization mechanism, 
+                // ensures the string is in the timezone supplied by the user.
                 requestParams.put(key, value.toString());    
             } else {
                 requestParams.put(key, value);    
@@ -46,8 +61,8 @@ public class ResourceList<T> {
         return this;
     }
     @Deprecated
-    public int getTotal() {
-        return getItems().size();
+    public Integer getTotal() {
+        return (getItems().isEmpty()) ? null : getItems().size();
     }
     protected DateTime getDateValue(String fieldName) {
         String value = (String)requestParams.get(fieldName);

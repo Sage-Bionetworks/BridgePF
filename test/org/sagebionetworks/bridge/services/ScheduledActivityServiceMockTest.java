@@ -405,7 +405,7 @@ public class ScheduledActivityServiceMockTest {
         
         when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(aaa,bbb));
         
-        ForwardCursorPagedResourceList<ScheduledActivity> list = new ForwardCursorPagedResourceList<>(createStartedActivities("BBB"+TIME_PORTION), null, 0);
+        ForwardCursorPagedResourceList<ScheduledActivity> list = new ForwardCursorPagedResourceList<>(createStartedActivities("BBB"+TIME_PORTION), null);
         when(activityDao.getActivityHistoryV2(HEALTH_CODE, "BBB", NOW, NOW, TIME_ZONE, null, API_MAXIMUM_PAGE_SIZE))
                 .thenReturn(list);        
         
@@ -484,7 +484,7 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> db = Lists.newArrayList(createExpiredActivities("AAA"+TIME_PORTION).get(0),
                 createFinishedActivities("BBB"+TIME_PORTION).get(0));
         when(activityDao.getActivityHistoryV2(HEALTH_CODE, "BBB", NOW, NOW, TIME_ZONE, null, API_MAXIMUM_PAGE_SIZE))
-                .thenReturn(new ForwardCursorPagedResourceList<>(db, null, 0));
+                .thenReturn(new ForwardCursorPagedResourceList<>(db, null));
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivitiesV4(createScheduleContext(NOW).build());
         assertActivityGuids(returnedActivities, "AAA", "BBB", "CCC");
@@ -527,7 +527,7 @@ public class ScheduledActivityServiceMockTest {
         
         List<ScheduledActivity> db = createStartedActivities("AAA"+TIME_PORTION,"CCC"+TIME_PORTION);
         when(activityDao.getActivityHistoryV2(HEALTH_CODE, "BBB", NOW, NOW, TIME_ZONE, null, API_MAXIMUM_PAGE_SIZE))
-                .thenReturn(new ForwardCursorPagedResourceList<>(db, null, 0));
+                .thenReturn(new ForwardCursorPagedResourceList<>(db, null));
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivitiesV4(createScheduleContext(NOW).build());
         assertActivityGuids(returnedActivities, "AAA", "BBB", "CCC");
@@ -1088,7 +1088,7 @@ public class ScheduledActivityServiceMockTest {
     }
     
     private void mockGetActivitiesV2(String activityGuid, List<ScheduledActivity> activities) {
-        ForwardCursorPagedResourceList<ScheduledActivity> list = new ForwardCursorPagedResourceList<>(activities, null, 0);
+        ForwardCursorPagedResourceList<ScheduledActivity> list = new ForwardCursorPagedResourceList<>(activities, null);
 
         when(activityDao.getActivityHistoryV2(eq(HEALTH_CODE), eq(activityGuid), any(), any(), 
                 any(), eq(null), eq(BridgeConstants.API_MAXIMUM_PAGE_SIZE))).thenReturn(list);
