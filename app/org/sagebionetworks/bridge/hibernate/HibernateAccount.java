@@ -16,6 +16,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.MapKeyClass;
 import javax.persistence.MapKeyColumn;
 import javax.persistence.Table;
+import javax.persistence.Version;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -45,6 +46,7 @@ public class HibernateAccount {
     private Long passwordModifiedOn;
     private Set<Roles> roles;
     private AccountStatus status;
+    private int version;
 
     /**
      * Account ID, used as a unique identifier for the account that doesn't leak email address (which is personally
@@ -247,5 +249,16 @@ public class HibernateAccount {
     /** @see #getStatus */
     public void setStatus(AccountStatus status) {
         this.status = status;
+    }
+
+    @Version
+    /** Version number, used by Hibernate to handle optimistic locking. */
+    public int getVersion() {
+        return version;
+    }
+
+    /** @see #getVersion */
+    public void setVersion(int version) {
+        this.version = version;
     }
 }
