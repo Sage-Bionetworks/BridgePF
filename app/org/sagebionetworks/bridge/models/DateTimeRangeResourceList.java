@@ -12,29 +12,22 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 public class DateTimeRangeResourceList<T> extends ResourceList<T> {
     
-    private final DateTime startTime;
-    private final DateTime endTime;
-
     @JsonCreator
-    public DateTimeRangeResourceList(
-            @JsonProperty(ITEMS) List<T> items,
-            @JsonProperty(START_TIME) DateTime startTime, 
-            @JsonProperty(END_TIME) DateTime endTime) {
+    public DateTimeRangeResourceList(@JsonProperty(ITEMS) List<T> items) {
         super(items);
-        this.startTime = startTime;
-        this.endTime = endTime;
-        super.withRequestParam(START_TIME, startTime);    
-        super.withRequestParam(END_TIME, endTime);    
     }
     @Deprecated
     @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getStartTime() {
-        return startTime;
+        return getDateTime(START_TIME);
     }
     @Deprecated
     @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getEndTime() {
-        return endTime;
+        return getDateTime(END_TIME);
     }
-
+    public DateTimeRangeResourceList<T> withRequestParam(String key, Object value) {
+        super.withRequestParam(key, value);
+        return this;
+    }
 }

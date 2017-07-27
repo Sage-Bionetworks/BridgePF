@@ -107,10 +107,11 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         // The offset key is applied after the idFilter. If the offsetKey doesn't match the beginning
         // of the idFilter, the AWS SDK throws a validation exception. So when providing an idFilter and 
         // a paging offset, clear the offset (go back to the first page) if they don't match.
-        String nextPageOffsetKey = offsetKey;
-        if (nextPageOffsetKey != null && idFilter != null && !nextPageOffsetKey.startsWith(idFilter)) {
-            nextPageOffsetKey = null;
+        if (offsetKey != null && idFilter != null && !offsetKey.startsWith(idFilter)) {
+            offsetKey = null;
         }
+        String nextPageOffsetKey = offsetKey;
+        
         QueryResultPage<DynamoExternalIdentifier> list;
         List<ExternalIdentifierInfo> identifiers = Lists.newArrayListWithCapacity(pageSize);
 

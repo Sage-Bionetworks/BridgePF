@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.models;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.List;
+
 import org.joda.time.DateTime;
 import org.junit.Test;
 
@@ -14,9 +16,12 @@ public class DateTimeRangeResourceListTest {
 
     @Test
     public void canSerialize() throws Exception {
-        DateTimeRangeResourceList<String> list = new DateTimeRangeResourceList<>(
-                Lists.newArrayList("1", "2", "3"), DateTime.parse("2016-02-03T10:10:10.000-08:00"),
-                DateTime.parse("2016-02-23T14:14:14.000-08:00"));
+        DateTime startTime = DateTime.parse("2016-02-03T10:10:10.000-08:00");
+        DateTime endTime = DateTime.parse("2016-02-23T14:14:14.000-08:00");
+        List<String> items = Lists.newArrayList("1", "2", "3");
+        DateTimeRangeResourceList<String> list = new DateTimeRangeResourceList<>(items)
+                .withRequestParam(ResourceList.START_TIME, startTime)
+                .withRequestParam(ResourceList.END_TIME, endTime);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(list);
         assertEquals("2016-02-03T10:10:10.000-08:00", node.get("startTime").asText());

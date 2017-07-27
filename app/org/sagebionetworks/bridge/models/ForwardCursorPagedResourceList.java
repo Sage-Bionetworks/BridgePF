@@ -6,8 +6,11 @@ import javax.annotation.Nullable;
 
 import org.joda.time.DateTime;
 
+import org.sagebionetworks.bridge.json.DateTimeSerializer;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * A paged list of items from a data store that can provide a pointer to the next page of records, but 
@@ -28,20 +31,24 @@ public class ForwardCursorPagedResourceList<T> extends ResourceList<T> {
     }
     
     @Deprecated
+    @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getStartTime() {
-        return getDateValue(START_TIME);
+        return getDateTime(START_TIME);
     }
     @Deprecated
+    @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getEndTime() {
-        return getDateValue(END_TIME);
+        return getDateTime(END_TIME);
     }
     @Deprecated
+    @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getScheduledOnStart() {
-        return getDateValue(SCHEDULED_ON_START);
+        return getDateTime(SCHEDULED_ON_START);
     }
     @Deprecated
+    @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getScheduledOnEnd() {
-        return getDateValue(SCHEDULED_ON_END);
+        return getDateTime(SCHEDULED_ON_END);
     }
     @Deprecated
     public String getOffsetKey() {

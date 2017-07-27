@@ -30,7 +30,6 @@ public class ReportTypeResourceListTest {
                 Lists.newArrayList(index1, index2)).withRequestParam(ResourceList.REPORT_TYPE, ReportType.PARTICIPANT);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(list);
-        System.out.println(node);
         assertEquals("participant", node.get("reportType").asText());
         assertEquals(2, node.get("items").size());
         assertEquals("participant", node.get("requestParams").get("reportType").asText());

@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.models;
 
 import static org.junit.Assert.assertEquals;
+import static org.sagebionetworks.bridge.models.ResourceList.START_DATE;
+import static org.sagebionetworks.bridge.models.ResourceList.END_DATE;
 
 import org.joda.time.LocalDate;
 import org.junit.Test;
@@ -13,11 +15,13 @@ import com.google.common.collect.Lists;
 
 public class DateRangeResourceListTest {
 
+    @SuppressWarnings("deprecation")
     @Test
     public void canSerialize() throws Exception {
         DateRangeResourceList<String> list = new DateRangeResourceList<>(
-                Lists.newArrayList("1", "2", "3"), LocalDate.parse("2016-02-03"),
-                LocalDate.parse("2016-02-23"));
+                Lists.newArrayList("1", "2", "3"))
+                .withRequestParam(START_DATE, LocalDate.parse("2016-02-03"))
+                .withRequestParam(END_DATE, LocalDate.parse("2016-02-23"));
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(list);
         assertEquals("2016-02-03", node.get("startDate").asText());
@@ -33,8 +37,8 @@ public class DateRangeResourceListTest {
         
         list = BridgeObjectMapper.get().readValue(node.toString(), 
                 new TypeReference<DateRangeResourceList<String>>() {});
-        assertEquals("2016-02-03", (String)list.getRequestParams().get("startDate"));
-        assertEquals("2016-02-23", (String)list.getRequestParams().get("endDate"));
+        assertEquals(LocalDate.parse("2016-02-03"), list.getStartDate());
+        assertEquals(LocalDate.parse("2016-02-23"), list.getEndDate());
         assertEquals(3, list.getItems().size());
         assertEquals("1", list.getItems().get(0));
         assertEquals("2", list.getItems().get(1));

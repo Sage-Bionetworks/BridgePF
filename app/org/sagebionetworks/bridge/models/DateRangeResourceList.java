@@ -9,27 +9,30 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class DateRangeResourceList<T> extends ResourceList<T> {
     
-    private final LocalDate startDate;
-    private final LocalDate endDate;
-
     @JsonCreator
-    public DateRangeResourceList(
-            @JsonProperty(ITEMS) List<T> items, 
-            @JsonProperty(START_DATE) LocalDate startDate,
-            @JsonProperty(END_DATE) LocalDate endDate) {
+    public DateRangeResourceList(@JsonProperty(ITEMS) List<T> items) {
         super(items);
-        this.startDate = startDate;
-        this.endDate = endDate;
-        super.withRequestParam(START_DATE, startDate);
-        super.withRequestParam(END_DATE, endDate);
     }
     
     @Deprecated
     public LocalDate getStartDate() {
-        return startDate;
+        return getLocalDate(START_DATE);
     }
     @Deprecated
     public LocalDate getEndDate() {
-        return endDate;
+        return getLocalDate(END_DATE);
     }
+    @Override
+    @Deprecated
+    public Integer getTotal() {
+        // This is necessary solely to keep current integration tests passing. 
+        // The total property is going away on everything except PagedReportList.
+        Integer total = super.getTotal();
+        return (total == null) ? 0 : total;
+    }
+    public DateRangeResourceList<T> withRequestParam(String key, Object value) {
+        super.withRequestParam(key, value);
+        return this;
+    }
+    
 }

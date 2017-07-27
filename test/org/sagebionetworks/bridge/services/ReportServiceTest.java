@@ -91,7 +91,9 @@ public class ReportServiceTest {
         List<ReportData> list = Lists.newArrayList();
         list.add(createReport(LocalDate.parse("2015-02-10"), "First", "Name"));
         list.add(createReport(LocalDate.parse("2015-02-12"), "Last", "Name"));
-        results = new DateRangeResourceList<>(list, START_DATE, END_DATE);
+        results = new DateRangeResourceList<>(list)
+                .withRequestParam("startDate", START_DATE)
+                .withRequestParam("endDate", END_DATE);
         
         ReportIndex index = ReportIndex.create();
         index.setIdentifier(IDENTIFIER);
@@ -284,7 +286,9 @@ public class ReportServiceTest {
     public void deleteStudyReportRecord() {
         LocalDate startDate = LocalDate.parse("2015-05-05").minusDays(45);
         LocalDate endDate = LocalDate.parse("2015-05-05");
-        DateRangeResourceList<ReportData> emptyResults = new DateRangeResourceList<>(Lists.newArrayList(), START_DATE, END_DATE);
+        DateRangeResourceList<ReportData> emptyResults = new DateRangeResourceList<>(Lists.<ReportData>newArrayList())
+                .withRequestParam("startDate", START_DATE)
+                .withRequestParam("endDate", END_DATE);
         doReturn(emptyResults).when(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, startDate, endDate);
         
         DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-05-05").getMillis());

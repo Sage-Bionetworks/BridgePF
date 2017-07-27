@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 import java.util.List;
+import java.util.Map;
 
 import org.joda.time.DateTime;
 import org.junit.Test;
@@ -20,6 +21,7 @@ import com.google.common.collect.Lists;
 
 public class PagedResourceListTest {
 
+    @SuppressWarnings("deprecation")
     @Test
     public void canSerialize() throws Exception {
         List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
@@ -27,19 +29,29 @@ public class PagedResourceListTest {
                 AccountStatus.DISABLED, TestConstants.TEST_STUDY));
         accounts.add(new AccountSummary("firstName2", "lastName2", "email2@email.com", "id2", DateTime.now(),
                 AccountStatus.ENABLED, TestConstants.TEST_STUDY));
+
+        DateTime startTime = DateTime.parse("2016-02-03T10:10:10.000-08:00");
+        DateTime endTime = DateTime.parse("2016-02-23T14:14:14.000-08:00");
         
         PagedResourceList<AccountSummary> page = new PagedResourceList<AccountSummary>(accounts, 2)
                 .withRequestParam("offsetBy", 123)
                 .withRequestParam("pageSize", 100)
+                .withRequestParam("startTime", startTime)
+                .withRequestParam("endTime", endTime)
                 .withRequestParam("emailFilter", "filterString");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(page);
         assertEquals(123, node.get("offsetBy").asInt());
         assertEquals(2, node.get("total").asInt());
         assertEquals(100, node.get("pageSize").asInt());
-        assertEquals("filterString", node.get("requestParams").get("emailFilter").asText());
+        assertEquals("filterString", node.get("emailFilter").asText());
         assertEquals("PagedResourceList", node.get("type").asText());
         
+        JsonNode rp = node.get("requestParams");
+        assertEquals(123, rp.get("offsetBy").asInt());
+        assertEquals(100, rp.get("pageSize").asInt());
+        assertEquals("filterString", rp.get("emailFilter").asText());
+                
         ArrayNode items = (ArrayNode)node.get("items");
         assertEquals(2, items.size());
         
@@ -54,9 +66,15 @@ public class PagedResourceListTest {
                 new TypeReference<PagedResourceList<AccountSummary>>() {});
 
         assertEquals(page.getTotal(), serPage.getTotal());
-        assertEquals(page.getRequestParams().get("offsetBy"), serPage.getRequestParams().get("offsetBy"));
-        assertEquals(page.getRequestParams().get("pageSize"), serPage.getRequestParams().get("pageSize"));
-        assertEquals(page.getRequestParams().get("emailFilter"), serPage.getRequestParams().get("emailFilter"));
+        assertEquals(100, page.getPageSize());
+        assertEquals((Integer)123, page.getOffsetBy());
+        assertEquals("filterString", page.getEmailFilter());
+        
+        Map<String,Object> params = page.getRequestParams();
+        Map<String,Object> serParams = serPage.getRequestParams();
+        assertEquals(params.get("offsetBy"), serParams.get("offsetBy"));
+        assertEquals(params.get("pageSize"), serParams.get("pageSize"));
+        assertEquals(params.get("emailFilter"), serParams.get("emailFilter"));
         
         assertEquals(page.getItems(), serPage.getItems());
     }

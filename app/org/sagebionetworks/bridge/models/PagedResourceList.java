@@ -22,6 +22,7 @@ public class PagedResourceList<T> extends ResourceList<T> {
     
     private final Integer total;
 
+    // NOTE: Logically this could have a nextPageOffsetBy, but it's trivial to calculate client-side
     @JsonCreator
     public PagedResourceList(
             @JsonProperty(ITEMS) List<T> items, 
@@ -35,12 +36,12 @@ public class PagedResourceList<T> extends ResourceList<T> {
         return (String)getRequestParams().get(EMAIL_FILTER);
     }
     @Deprecated
-    public DateTime getStartDate() {
-        return getDateValue(START_DATE);
+    public DateTime getStartTime() {
+        return getDateTime(START_TIME);
     }
     @Deprecated
-    public DateTime getEndDate() {
-        return getDateValue(END_DATE);
+    public DateTime getEndTime() {
+        return getDateTime(END_TIME);
     }
     @Deprecated
     public int getPageSize() {

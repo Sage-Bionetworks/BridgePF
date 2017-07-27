@@ -135,8 +135,8 @@ public class ParticipantController extends BaseController {
         PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, offsetBy, pageSize,
                 emailFilter, startTime, endTime);
         
-        // Transitioning to consistent naming: fooTime = DateTime, fooDate = LocalDate. Pull values out of 
-        // request map in case they have been set to defaults by the service.
+        // Transitioning to consistent naming: fooTime = DateTime, fooDate = LocalDate. Copying these values 
+        // to their existing places under their existing property names for backwards compatibility.
         ObjectNode node = (ObjectNode)MAPPER.valueToTree(page);
         Map<String,Object> rp = page.getRequestParams();
         if (rp.get(START_TIME) != null) {

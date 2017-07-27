@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -64,8 +65,15 @@ public class ResourceList<T> {
     public Integer getTotal() {
         return (items == null || items.isEmpty()) ? null : getItems().size();
     }
-    protected DateTime getDateValue(String fieldName) {
+    protected DateTime getDateTime(String fieldName) {
         String value = (String)requestParams.get(fieldName);
         return (value == null) ? null : DateTime.parse(value);
+    }
+    protected LocalDate getLocalDate(String fieldName) {
+        Object object = requestParams.get(fieldName);
+        if (object instanceof String) {
+            return LocalDate.parse((String)object);
+        }
+        return (LocalDate)object;
     }
 }

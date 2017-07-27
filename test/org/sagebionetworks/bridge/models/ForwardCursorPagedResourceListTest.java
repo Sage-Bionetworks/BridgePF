@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
+import java.util.Map;
 
 import org.joda.time.DateTime;
 import org.junit.Test;
@@ -21,6 +22,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Lists;
 
 public class ForwardCursorPagedResourceListTest {
+    @SuppressWarnings("deprecation")
     @Test
     public void canSerialize() throws Exception {
         List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
@@ -29,17 +31,39 @@ public class ForwardCursorPagedResourceListTest {
         accounts.add(new AccountSummary("firstName2", "lastName2", "email2@email.com", "id2", DateTime.now(),
                 AccountStatus.ENABLED, TestConstants.TEST_STUDY));
         
+        DateTime startTime = DateTime.parse("2016-02-03T10:10:10.000-08:00");
+        DateTime endTime = DateTime.parse("2016-02-23T14:14:14.000-08:00");
+        
         ForwardCursorPagedResourceList<AccountSummary> page = new ForwardCursorPagedResourceList<AccountSummary>(
-                accounts, "anOffsetKey").withRequestParam(ResourceList.PAGE_SIZE, 100)
-                        .withRequestParam(ResourceList.EMAIL_FILTER, "filterString");
+                accounts, "nextOffsetKey")
+                .withRequestParam(ResourceList.OFFSET_KEY, "offsetKey")
+                .withRequestParam(ResourceList.START_TIME, startTime)
+                .withRequestParam(ResourceList.END_TIME, endTime)
+                .withRequestParam(ResourceList.SCHEDULED_ON_START, startTime)
+                .withRequestParam(ResourceList.SCHEDULED_ON_END, endTime)
+                .withRequestParam(ResourceList.PAGE_SIZE, 100)
+                .withRequestParam(ResourceList.EMAIL_FILTER, "filterString");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(page);
-        assertEquals("anOffsetKey", node.get("offsetKey").asText());
-        assertEquals("anOffsetKey", node.get("nextPageOffsetKey").asText());
+        
+        assertEquals("nextOffsetKey", node.get("offsetKey").asText());
+        assertEquals("nextOffsetKey", node.get("nextPageOffsetKey").asText());
+        assertEquals(startTime.toString(), node.get("startTime").asText());
+        assertEquals(endTime.toString(), node.get("endTime").asText());
+        assertEquals(startTime.toString(), node.get("scheduledOnStart").asText());
+        assertEquals(endTime.toString(), node.get("scheduledOnEnd").asText());
         assertEquals(100, node.get("pageSize").asInt());
-        assertEquals("filterString", node.get("requestParams").get("emailFilter").asText());
-        assertTrue(node.get("hasNext").asBoolean());
+        assertEquals(2, node.get("total").asInt());
         assertEquals("ForwardCursorPagedResourceList", node.get("type").asText());
+        assertTrue(node.get("hasNext").asBoolean());
+        
+        JsonNode rp = node.get("requestParams");
+        assertEquals(startTime.toString(), rp.get("startTime").asText());
+        assertEquals(endTime.toString(), rp.get("endTime").asText());
+        assertEquals(startTime.toString(), rp.get("scheduledOnStart").asText());
+        assertEquals(endTime.toString(), rp.get("scheduledOnEnd").asText());
+        assertEquals(100, rp.get("pageSize").asInt());
+        assertEquals("offsetKey", rp.get("offsetKey").asText());
         
         ArrayNode items = (ArrayNode)node.get("items");
         assertEquals(2, items.size());
@@ -54,11 +78,23 @@ public class ForwardCursorPagedResourceListTest {
         ForwardCursorPagedResourceList<AccountSummary> serPage = BridgeObjectMapper.get().readValue(node.toString(),
                 new TypeReference<ForwardCursorPagedResourceList<AccountSummary>>() {
                 });
-
-        assertEquals(page.getNextPageOffsetKey(), serPage.getNextPageOffsetKey());
-        assertEquals(page.getRequestParams().get("pageSize"), serPage.getRequestParams().get("pageSize"));
-        assertEquals(page.getRequestParams().get("emailFilter"), serPage.getRequestParams().get("emailFilter"));
-        assertEquals(page.hasNext(), serPage.hasNext());
+        
+        assertEquals("nextOffsetKey", serPage.getNextPageOffsetKey());
+        assertEquals("nextOffsetKey", serPage.getOffsetKey());
+        assertEquals(startTime, serPage.getStartTime());
+        assertEquals(endTime, serPage.getEndTime());
+        assertEquals(startTime, serPage.getScheduledOnStart());
+        assertEquals(endTime, serPage.getScheduledOnEnd());
+        assertEquals((Integer)100, serPage.getPageSize());
+        assertEquals((Integer)2, serPage.getTotal());
+        
+        Map<String,Object> params = serPage.getRequestParams();
+        assertEquals(startTime.toString(), params.get("startTime"));
+        assertEquals(endTime.toString(), params.get("endTime"));
+        assertEquals(startTime.toString(), params.get("scheduledOnStart"));
+        assertEquals(endTime.toString(), params.get("scheduledOnEnd"));
+        assertEquals(100, params.get("pageSize"));
+        assertEquals("offsetKey", params.get("offsetKey"));
         
         assertEquals(page.getItems(), serPage.getItems());
     }
@@ -71,7 +107,6 @@ public class ForwardCursorPagedResourceListTest {
                 .withRequestParam(ResourceList.EMAIL_FILTER, "filterString");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(page);
-        System.out.println(node.toString());
         assertNull(node.get("offsetKey"));
         assertEquals(100, node.get("pageSize").asInt());
         assertEquals("filterString", node.get("requestParams").get("emailFilter").asText());

@@ -559,7 +559,10 @@ public class ReportControllerTest {
         List<ReportData> list = Lists.newArrayList();
         list.add(createReport(LocalDate.parse("2015-02-10"), "First", "Name"));
         list.add(createReport(LocalDate.parse("2015-02-12"), "Last", "Name"));
-        return new DateRangeResourceList<ReportData>(list, startDate, endDate);
+        
+        return new DateRangeResourceList<ReportData>(list)
+                .withRequestParam("startDate", startDate)
+                .withRequestParam("endDate", endDate);
     }
     
     private ReportData createReport(LocalDate date, String fieldValue1, String fieldValue2) {
