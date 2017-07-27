@@ -374,7 +374,7 @@ public class ReportControllerTest {
         ReportTypeResourceList<ReportIndex> results = BridgeObjectMapper.get().readValue(
                 Helpers.contentAsString(result),
                 new TypeReference<ReportTypeResourceList<ReportIndex>>() {});
-        assertEquals(1, results.getTotal());
+        assertEquals(1, results.getItems().size());
         assertEquals(1, results.getItems().size());
         assertEquals(ReportType.STUDY, results.getReportType());
         assertEquals("fofo", results.getItems().get(0).getIdentifier());
@@ -390,7 +390,6 @@ public class ReportControllerTest {
         ReportTypeResourceList<ReportIndex> results = BridgeObjectMapper.get().readValue(
                 Helpers.contentAsString(result),
                 new TypeReference<ReportTypeResourceList<ReportIndex>>() {});
-        assertEquals(1, results.getTotal());
         assertEquals(1, results.getItems().size());
         assertEquals(ReportType.PARTICIPANT, results.getReportType());
         assertEquals("fofo", results.getItems().get(0).getIdentifier());
@@ -537,7 +536,7 @@ public class ReportControllerTest {
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals("2015-01-02", node.get("startDate").asText());
         assertEquals("2015-02-02", node.get("endDate").asText());
-        assertEquals(2, node.get("total").asInt());
+        assertEquals(2, node.get("items").size());
         assertEquals("DateRangeResourceList", node.get("type").asText());
         
         JsonNode child1 = node.get("items").get(0);

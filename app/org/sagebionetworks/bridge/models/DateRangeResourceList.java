@@ -1,30 +1,24 @@
 package org.sagebionetworks.bridge.models;
 
 import java.util.List;
+import java.util.Map;
 
 import org.joda.time.LocalDate;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class DateRangeResourceList<T> {
+public class DateRangeResourceList<T> extends ResourceList<T> {
     
-    private final List<T> items;
     private final LocalDate startDate;
     private final LocalDate endDate;
 
     @JsonCreator
-    public DateRangeResourceList(@JsonProperty("items") List<T> items, @JsonProperty("startDate") LocalDate startDate,
-            @JsonProperty("endDate") LocalDate endDate) {
-        this.items = items;
+    public DateRangeResourceList(@JsonProperty(ITEMS_KEY) List<T> items, @JsonProperty(STARTDATE_KEY) LocalDate startDate,
+            @JsonProperty(ENDDATE_KEY) LocalDate endDate) {
+        super(items);
         this.startDate = startDate;
         this.endDate = endDate;
-    }
-    public List<T> getItems() {
-        return items;
-    }
-    public int getTotal() {
-        return items.size();
     }
     public LocalDate getStartDate() {
         return startDate;
@@ -32,5 +26,11 @@ public class DateRangeResourceList<T> {
     public LocalDate getEndDate() {
         return endDate;
     }
-    
+    @Override
+    public Map<String, Object> getRequestParams() {
+        Map<String, Object> map = super.getRequestParams();
+        addMapItem(map, STARTDATE_KEY, startDate);
+        addMapItem(map, ENDDATE_KEY, endDate);
+        return map;
+    }
 }

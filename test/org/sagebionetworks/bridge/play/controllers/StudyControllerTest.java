@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
@@ -364,8 +363,8 @@ public class StudyControllerTest {
         List<Upload> list = Lists.newArrayList();
 
         ForwardCursorPagedResourceList<Upload> uploads = new ForwardCursorPagedResourceList<>(list, null, API_MAXIMUM_PAGE_SIZE)
-                .withFilter("startTime", startTime)
-                .withFilter("endTime", endTime);
+                .withFilter("startTime", startTime.toString())
+                .withFilter("endTime", endTime.toString());
         doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
         
         Result result = controller.getUploads(startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
@@ -376,8 +375,7 @@ public class StudyControllerTest {
         // in other words, it's the object we mocked out from the service, we were returned the value.
         PagedResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), UPLOADS_REF);
-        assertNull(retrieved.getOffsetBy());
-        assertNull(retrieved.getOffsetKey());
+        assertEquals(0, retrieved.getOffsetBy());
         assertEquals(0, retrieved.getTotal());
         assertEquals(API_MAXIMUM_PAGE_SIZE, retrieved.getPageSize());
         assertEquals(startTime.toString(), retrieved.getFilters().get("startTime"));
@@ -438,8 +436,7 @@ public class StudyControllerTest {
         // in other words, it's the object we mocked out from the service, we were returned the value.
         PagedResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), UPLOADS_REF);
-        assertNull(retrieved.getOffsetBy());
-        assertNull(retrieved.getOffsetKey());
+        assertEquals(0, retrieved.getOffsetBy());
         assertEquals(0, retrieved.getTotal());
         assertEquals(API_MAXIMUM_PAGE_SIZE, retrieved.getPageSize());
         assertEquals(startTime.toString(), retrieved.getFilters().get("startTime"));

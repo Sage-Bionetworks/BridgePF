@@ -96,13 +96,13 @@ public class DynamoReportDataDaoTest {
         
         dao.saveReportData(report1);
         dao.saveReportData(report2);
-        assertEquals(2, dao.getReportData(reportDataKey, START_DATE, END_DATE).getTotal());
+        assertEquals(2, dao.getReportData(reportDataKey, START_DATE, END_DATE).getItems().size());
         
         dao.deleteReportDataRecord(reportDataKey, LocalDate.parse("2016-03-30"));
-        assertEquals(1, dao.getReportData(reportDataKey, START_DATE, END_DATE).getTotal());
+        assertEquals(1, dao.getReportData(reportDataKey, START_DATE, END_DATE).getItems().size());
         
         dao.deleteReportDataRecord(reportDataKey, LocalDate.parse("2016-03-31"));
-        assertEquals(0, dao.getReportData(reportDataKey, START_DATE, END_DATE).getTotal());
+        assertEquals(0, dao.getReportData(reportDataKey, START_DATE, END_DATE).getItems().size());
     }
     
     private ReportData createReport(LocalDate date, String fieldValue1, String fieldValue2) {
@@ -126,7 +126,7 @@ public class DynamoReportDataDaoTest {
     }
     
     private void assertResourceList(DateRangeResourceList<? extends ReportData> results, int recordNumber) {
-        assertEquals(recordNumber, results.getTotal());
+        assertEquals(recordNumber, results.getItems().size());
         assertEquals(recordNumber, results.getItems().size());
         assertEquals(START_DATE, results.getStartDate());
         assertEquals(END_DATE, results.getEndDate());

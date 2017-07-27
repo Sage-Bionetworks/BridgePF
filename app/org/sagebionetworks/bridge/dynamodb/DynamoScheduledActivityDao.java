@@ -15,8 +15,8 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
-import org.sagebionetworks.bridge.models.schedules.ScheduledActivityList;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -56,7 +56,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     }
     
     @Override
-    public ScheduledActivityList getActivityHistoryV2(String healthCode,
+    public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistoryV2(String healthCode,
             String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, DateTimeZone timezone,
             String offsetBy, int pageSize) {
         checkNotNull(healthCode);
@@ -107,8 +107,8 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
             nextOffsetBy = queryResult.getLastEvaluatedKey().get(GUID).getS().split(":",2)[1];
         }
 
-        ScheduledActivityList result = new ScheduledActivityList(activities, nextOffsetBy, pageSize);
-        result.withFilter(SCHEDULED_ON_START, scheduledOnStart)
+        ForwardCursorPagedResourceList<ScheduledActivity> result = new ForwardCursorPagedResourceList<ScheduledActivity>(activities, nextOffsetBy, pageSize)
+                .withFilter(SCHEDULED_ON_START, scheduledOnStart)
                 .withFilter(SCHEDULED_ON_END, scheduledOnEnd);
         return result;
     }

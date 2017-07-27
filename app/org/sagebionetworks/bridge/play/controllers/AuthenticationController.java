@@ -140,7 +140,13 @@ public class AuthenticationController extends BaseController {
             response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
                     BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
             
-            RequestInfo requestInfo = getRequestInfoBuilder(session)
+            RequestInfo requestInfo = new RequestInfo.Builder()
+                    .withUserId(session.getId())
+                    .withClientInfo(context.getClientInfo())
+                    .withUserAgent(request().getHeader(USER_AGENT))
+                    .withLanguages(session.getParticipant().getLanguages())
+                    .withUserDataGroups(session.getParticipant().getDataGroups())
+                    .withStudyIdentifier(session.getStudyIdentifier())
                     .withSignedInOn(DateUtils.getCurrentDateTime()).build();
             cacheProvider.updateRequestInfo(requestInfo);
         }

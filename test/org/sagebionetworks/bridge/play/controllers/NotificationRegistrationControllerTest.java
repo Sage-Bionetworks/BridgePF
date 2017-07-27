@@ -100,7 +100,6 @@ public class NotificationRegistrationControllerTest {
         ResourceList<NotificationRegistration> list = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
                 new TypeReference<ResourceList<NotificationRegistration>>() {});
 
-        assertEquals(1, list.getTotal());
         assertEquals(1, list.getItems().size());
         
         NotificationRegistration registration = list.getItems().get(0);
@@ -193,7 +192,7 @@ public class NotificationRegistrationControllerTest {
         
         ResourceList<SubscriptionStatus> statuses = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
                 new TypeReference<ResourceList<SubscriptionStatus>>() {});
-        assertEquals(1, statuses.getTotal());
+        assertEquals(1, statuses.getItems().size());
         SubscriptionStatus retrievedStatus = statuses.getItems().get(0);
         assertEquals("topicGuid", retrievedStatus.getTopicGuid());
         assertEquals("topicName", retrievedStatus.getTopicName());
@@ -213,7 +212,7 @@ public class NotificationRegistrationControllerTest {
         
         ResourceList<SubscriptionStatus> statuses = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
                 new TypeReference<ResourceList<SubscriptionStatus>>() {});
-        assertEquals(1, statuses.getTotal());
+        assertEquals(1, statuses.getItems().size());
         SubscriptionStatus retrievedStatus = statuses.getItems().get(0);
         assertEquals("topicGuid", retrievedStatus.getTopicGuid());
         assertEquals("topicName", retrievedStatus.getTopicName());

@@ -93,7 +93,7 @@ public class ScheduleControllerTest {
         
         JsonNode node = BridgeObjectMapper.get().readTree(content);
         
-        assertEquals(3, node.get("total").asInt());
+        assertEquals(3, node.get("items").size());
     }
     
     @SuppressWarnings("deprecation")

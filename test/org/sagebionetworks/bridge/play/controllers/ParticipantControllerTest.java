@@ -172,7 +172,8 @@ public class ParticipantControllerTest {
         summaries.add(SUMMARY);
         summaries.add(SUMMARY);
         summaries.add(SUMMARY);
-        PagedResourceList<AccountSummary> page = new PagedResourceList<>(summaries, 10, 20, 30).withFilter("emailFilter", "foo");
+        PagedResourceList<AccountSummary> page = new PagedResourceList<AccountSummary>(summaries, 10, 20, 30)
+                .withFilter("emailFilter", "foo");
         
         when(authService.getSession(eq(study), any())).thenReturn(session);
         
@@ -205,7 +206,7 @@ public class ParticipantControllerTest {
         assertEquals(SUMMARY, page.getItems().get(0));
         
         //verify paging/filtering
-        assertEquals(new Integer(10), page.getOffsetBy());
+        assertEquals(10, page.getOffsetBy());
         assertEquals(20, page.getPageSize());
         assertEquals("foo", page.getFilters().get("emailFilter"));
         
@@ -673,8 +674,7 @@ public class ParticipantControllerTest {
     public void getUploadsNullsDateRange() throws Exception {
         List<Upload> list = Lists.newArrayList();
 
-        ForwardCursorPagedResourceList<Upload> uploads = new ForwardCursorPagedResourceList<>(list, null,
-                API_MAXIMUM_PAGE_SIZE);
+        ForwardCursorPagedResourceList<Upload> uploads = new ForwardCursorPagedResourceList<>(list, null, API_MAXIMUM_PAGE_SIZE);
         doReturn(uploads).when(mockParticipantService).getUploads(study, ID, null, null, null, null);
         
         Result result = controller.getUploads(ID, null, null, null, null);
@@ -691,7 +691,6 @@ public class ParticipantControllerTest {
         Result result = controller.getNotificationRegistrations(ID);
         assertEquals(200, result.status());
         JsonNode node = TestUtils.getJson(result);
-        assertEquals(0, node.get("total").asInt());
         assertEquals("ResourceList", node.get("type").asText());
         
         verify(mockParticipantService).listRegistrations(study, ID);
@@ -744,7 +743,7 @@ public class ParticipantControllerTest {
         assertEquals(SUMMARY, page.getItems().get(0));
         
         //verify paging/filtering
-        assertEquals(new Integer(10), page.getOffsetBy());
+        assertEquals(10, page.getOffsetBy());
         assertEquals(20, page.getPageSize());
         assertEquals("foo", page.getFilters().get("emailFilter"));
         
@@ -769,11 +768,11 @@ public class ParticipantControllerTest {
         
         Result result = controller.getParticipantForWorker(study.getIdentifier(), ID);
         assertEquals(200, result.status());
-
-        JsonNode participantNode = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
-        assertEquals("healthCode", participantNode.get("healthCode").textValue());
-        assertNull(participantNode.get("encryptedHealthCode"));
-        assertEquals(ID, participantNode.get("id").textValue());
+        
+        StudyParticipant participant = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
+                StudyParticipant.class);
+        assertNull(participant.getHealthCode());
+        assertEquals(ID, participant.getId());
     }
     
     private ForwardCursorPagedResourceList<ScheduledActivity> createActivityResultsV2() {

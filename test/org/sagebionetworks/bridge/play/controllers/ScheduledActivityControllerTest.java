@@ -51,7 +51,6 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
-import org.sagebionetworks.bridge.models.schedules.ScheduledActivityList;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.ScheduledActivityService;
@@ -90,8 +89,8 @@ public class ScheduledActivityControllerTest {
     
     private static final ClientInfo CLIENT_INFO = ClientInfo.fromUserAgentCache(USER_AGENT);
     
-    private static final TypeReference<ScheduledActivityList> FORWARD_CURSOR_PAGED_ACTIVITIES_REF =
-            new TypeReference<ScheduledActivityList>() {
+    private static final TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>> FORWARD_CURSOR_PAGED_ACTIVITIES_REF =
+            new TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>>() {
     };
     
     private ScheduledActivityController controller;
@@ -371,11 +370,11 @@ public class ScheduledActivityControllerTest {
                 ENDS_ON.toString(), OFFSET_BY, PAGE_SIZE);
         assertEquals(200, result.status());
         
-        ScheduledActivityList page = BridgeObjectMapper.get()
+        ForwardCursorPagedResourceList<ScheduledActivity> page = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), FORWARD_CURSOR_PAGED_ACTIVITIES_REF);
         
         assertEquals(1, page.getItems().size());
-        assertEquals("777", page.getOffsetBy());
+        assertEquals("777", page.getOffsetKey());
         assertEquals(77, page.getPageSize());
 
         verify(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE), eq(ACTIVITY_GUID), startsOnCaptor.capture(),
@@ -480,7 +479,7 @@ public class ScheduledActivityControllerTest {
         controller.getScheduledActivitiesByDateRange(startsOn.toString(), endsOn.toString());
     }
     
-    private ScheduledActivityList createActivityResultsV2(int pageSize) {
+    private ForwardCursorPagedResourceList<ScheduledActivity> createActivityResultsV2(int pageSize) {
         List<ScheduledActivity> list = Lists.newArrayList();
         
         DynamoScheduledActivity activity = new DynamoScheduledActivity();
@@ -489,6 +488,6 @@ public class ScheduledActivityControllerTest {
         activity.setSchedulePlanGuid("schedulePlanGuid");
         list.add(activity);
         
-        return new ScheduledActivityList(list, "777", pageSize);
+        return new ForwardCursorPagedResourceList<>(list, "777", pageSize);
     }
 }

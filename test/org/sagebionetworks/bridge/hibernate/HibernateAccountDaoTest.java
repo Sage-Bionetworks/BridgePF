@@ -647,7 +647,7 @@ public class HibernateAccountDaoTest {
         // execute and validate
         PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(STUDY, 10, 5,
                 null, null, null);
-        assertEquals(10, accountSummaryResourceList.getOffsetBy().intValue());
+        assertEquals(10, accountSummaryResourceList.getOffsetBy());
         assertEquals(5, accountSummaryResourceList.getPageSize());
         assertEquals(12, accountSummaryResourceList.getTotal());
 

@@ -101,7 +101,7 @@ public class SubpopulationControllerTest {
         
         ResourceList<Subpopulation> rList = BridgeObjectMapper.get().readValue(json, subpopType);
         assertEquals(list, rList.getItems());
-        assertEquals(2, rList.getTotal());
+        assertEquals(2, rList.getItems().size());
         
         verify(subpopService).getSubpopulations(study.getStudyIdentifier());
     }

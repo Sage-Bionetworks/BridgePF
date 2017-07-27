@@ -24,12 +24,12 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
-import org.sagebionetworks.bridge.models.schedules.ScheduledActivityList;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
@@ -115,7 +115,7 @@ public class DynamoScheduledActivityDaoTest {
         String activityGuid = extractActivityGuid();
         
         // Get the first page of 10 records
-        ScheduledActivityList history = activityDao.getActivityHistoryV2(
+        ForwardCursorPagedResourceList<ScheduledActivity> history = activityDao.getActivityHistoryV2(
                 healthCode, activityGuid, startDateTime, endDateTime, MSK, null, 10);
         assertEquals(10, history.getItems().size());
         history.getItems().stream().forEach(scheduledActivity -> assertEquals(MSK, scheduledActivity.getTimeZone()));
@@ -124,7 +124,7 @@ public class DynamoScheduledActivityDaoTest {
 
         // Get second page of records
         history = activityDao.getActivityHistoryV2(
-                healthCode, activityGuid, startDateTime, endDateTime, MSK, history.getOffsetBy(), 10);
+                healthCode, activityGuid, startDateTime, endDateTime, MSK, history.getOffsetKey(), 10);
         assertEquals(10, history.getItems().size());
         history.getItems().stream().forEach(scheduledActivity -> assertEquals(MSK, scheduledActivity.getTimeZone()));
 
@@ -138,7 +138,7 @@ public class DynamoScheduledActivityDaoTest {
         history = activityDao.getActivityHistoryV2(
                 healthCode, activityGuid, startDateTime, startDateTime, MSK, null, 10);
         assertEquals(0, history.getItems().size());
-        assertNull(history.getOffsetBy());
+        assertNull(history.getOffsetKey());
     }
     
     @Test
