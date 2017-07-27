@@ -26,7 +26,7 @@ public class DateRangeResourceList<T> extends ResourceList<T> {
     @Deprecated
     public Integer getTotal() {
         // This is necessary solely to keep current integration tests passing. 
-        // The total property is going away on everything except PagedReportList.
+        // The total property is going away on everything except PagedResourceList.
         Integer total = super.getTotal();
         return (total == null) ? 0 : total;
     }

@@ -13,21 +13,23 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
- * A paged list of items from a data store that can provide a pointer to the next page of records, but 
- * which cannot return the total number of records across all pages (DynamoDB).
+ * A page of items from a longer list of items, as calculated based on the supplied 
+ * request parameters, with a <code>nextPageOffsetKey</code> to retrieve the next page 
+ * of records. This kind of list cannot calculate the total number of records across 
+ * all pages, or provide the information to page backwards in the list.
  */
 public class ForwardCursorPagedResourceList<T> extends ResourceList<T> {
 
     private static final String HAS_NEXT = "hasNext";
     
-    private final @Nullable String nextOffsetKey;
+    private final @Nullable String nextPageOffsetKey;
 
     @JsonCreator
     public ForwardCursorPagedResourceList(
             @JsonProperty(ITEMS) List<T> items, 
-            @JsonProperty(OFFSET_KEY) String nextOffsetKey) {
+            @JsonProperty(NEXT_PAGE_OFFSET_KEY) String nextPageOffsetKey) {
         super(items);
-        this.nextOffsetKey = nextOffsetKey;
+        this.nextPageOffsetKey = nextPageOffsetKey;
     }
     
     @Deprecated
@@ -52,7 +54,7 @@ public class ForwardCursorPagedResourceList<T> extends ResourceList<T> {
     }
     @Deprecated
     public String getOffsetKey() {
-        return nextOffsetKey;
+        return nextPageOffsetKey;
     }
     @Deprecated
     public Integer getPageSize() {
@@ -60,11 +62,11 @@ public class ForwardCursorPagedResourceList<T> extends ResourceList<T> {
         return (value == null) ? null : (int)value;
     }
     public String getNextPageOffsetKey() {
-        return nextOffsetKey;
+        return nextPageOffsetKey;
     }
     @JsonProperty(HAS_NEXT)
     public boolean hasNext() {
-        return (nextOffsetKey != null);
+        return (nextPageOffsetKey != null);
     }
     public ForwardCursorPagedResourceList<T> withRequestParam(String key, Object value) {
         super.withRequestParam(key, value);

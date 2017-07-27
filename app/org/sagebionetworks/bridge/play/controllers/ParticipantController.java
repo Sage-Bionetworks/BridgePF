@@ -124,6 +124,10 @@ public class ParticipantController extends BaseController {
         
         int offsetBy = getIntOrDefault(offsetByString, 0);
         int pageSize = getIntOrDefault(pageSizeString, API_DEFAULT_PAGE_SIZE);
+        
+        // For naming consistency, we are changing from the user of startDate/endDate to startTime/endTime
+        // for DateTime parameters. Both are accepted by these participant API endpoints (the only places 
+        // where this needed to change).
         DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
         if (startTime == null) {
             startTime = DateUtils.getDateTimeOrDefault(startDateString, null);
@@ -135,8 +139,8 @@ public class ParticipantController extends BaseController {
         PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, offsetBy, pageSize,
                 emailFilter, startTime, endTime);
         
-        // Transitioning to consistent naming: fooTime = DateTime, fooDate = LocalDate. Copying these values 
-        // to their existing places under their existing property names for backwards compatibility.
+        // Similarly, we will return startTime/endTime in the top-level request parameter properties as 
+        // startDate/endDate while transitioning, to maintain backwards compatibility.
         ObjectNode node = (ObjectNode)MAPPER.valueToTree(page);
         Map<String,Object> rp = page.getRequestParams();
         if (rp.get(START_TIME) != null) {

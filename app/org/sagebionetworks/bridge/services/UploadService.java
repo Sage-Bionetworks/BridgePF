@@ -6,6 +6,10 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_KEY;
+import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
+import static org.sagebionetworks.bridge.models.ResourceList.START_TIME;
+import static org.sagebionetworks.bridge.models.ResourceList.END_TIME;
 
 import java.net.URL;
 import java.util.Date;
@@ -40,7 +44,6 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
-import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -291,9 +294,10 @@ public class UploadService {
         }).collect(Collectors.toList());
         
         return new ForwardCursorPagedResourceList<UploadView>(views, list.getNextPageOffsetKey())
-                .withRequestParam(ResourceList.OFFSET_KEY, list.getRequestParams().get(ResourceList.OFFSET_KEY))
-                .withRequestParam(ResourceList.PAGE_SIZE, list.getRequestParams().get(ResourceList.PAGE_SIZE))
-                .withRequestParam(ResourceList.START_TIME, startTime).withRequestParam(ResourceList.END_TIME, endTime);
+                .withRequestParam(OFFSET_KEY, list.getRequestParams().get(OFFSET_KEY))
+                .withRequestParam(PAGE_SIZE, list.getRequestParams().get(PAGE_SIZE))
+                .withRequestParam(START_TIME, startTime)
+                .withRequestParam(END_TIME, endTime);
     }
     
     /**

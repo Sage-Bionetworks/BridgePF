@@ -172,8 +172,8 @@ public class ParticipantControllerTest {
         summaries.add(SUMMARY);
         summaries.add(SUMMARY);
         summaries.add(SUMMARY);
-        PagedResourceList<AccountSummary> page = new PagedResourceList<>(summaries, 10)
-                .withRequestParam("offsetBy", 30)
+        PagedResourceList<AccountSummary> page = new PagedResourceList<>(summaries, 30)
+                .withRequestParam("offsetBy", 10)
                 .withRequestParam("pageSize", 20)
                 .withRequestParam("emailFilter", "foo");
         
@@ -199,18 +199,16 @@ public class ParticipantControllerTest {
     public void getParticipants() throws Exception {
         DateTime start = DateTime.now();
         DateTime end = DateTime.now();
-        
         Result result = controller.getParticipants("10", "20", "foo", start.toString(), end.toString(), null, null);
-        
         PagedResourceList<AccountSummary> page = resultToPage(result);
         
         // verify the result contains items
         assertEquals(3, page.getItems().size());
-        assertEquals((Integer)10, page.getTotal());
+        assertEquals((Integer)30, page.getTotal());
         assertEquals(SUMMARY, page.getItems().get(0));
         
         //verify paging/filtering
-        assertEquals((Integer)30, page.getRequestParams().get("offsetBy"));
+        assertEquals((Integer)10, page.getRequestParams().get("offsetBy"));
         assertEquals(20, page.getRequestParams().get("pageSize"));
         assertEquals("foo", page.getRequestParams().get("emailFilter"));
         
@@ -231,11 +229,11 @@ public class ParticipantControllerTest {
         
         // verify the result contains items
         assertEquals(3, page.getItems().size());
-        assertEquals((Integer)10, page.getTotal());
+        assertEquals((Integer)30, page.getTotal());
         assertEquals(SUMMARY, page.getItems().get(0));
         
         //verify paging/filtering
-        assertEquals((Integer)30, page.getRequestParams().get("offsetBy"));
+        assertEquals((Integer)10, page.getRequestParams().get("offsetBy"));
         assertEquals(20, page.getRequestParams().get("pageSize"));
         assertEquals("foo", page.getRequestParams().get("emailFilter"));
         
@@ -771,11 +769,11 @@ public class ParticipantControllerTest {
         
         // verify the result contains items
         assertEquals(3, page.getItems().size());
-        assertEquals((Integer)10, page.getTotal());
+        assertEquals((Integer)30, page.getTotal());
         assertEquals(SUMMARY, page.getItems().get(0));
         
         //verify paging/filtering
-        assertEquals(new Integer(30), page.getRequestParams().get("offsetBy"));
+        assertEquals((Integer)10, page.getRequestParams().get("offsetBy"));
         assertEquals(20, page.getRequestParams().get("pageSize"));
         assertEquals("foo", page.getRequestParams().get("emailFilter"));
         
@@ -801,11 +799,11 @@ public class ParticipantControllerTest {
         
         // verify the result contains items
         assertEquals(3, page.getItems().size());
-        assertEquals((Integer)10, page.getTotal());
+        assertEquals((Integer)30, page.getTotal());
         assertEquals(SUMMARY, page.getItems().get(0));
         
         //verify paging/filtering
-        assertEquals((Integer)30, page.getRequestParams().get("offsetBy"));
+        assertEquals((Integer)10, page.getRequestParams().get("offsetBy"));
         assertEquals(20, page.getRequestParams().get("pageSize"));
         assertEquals("foo", page.getRequestParams().get("emailFilter"));
         

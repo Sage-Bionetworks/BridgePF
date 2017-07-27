@@ -150,15 +150,12 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             }
         } while ((identifiers.size() < pageSize) && (nextPageOffsetKey != null));
 
-        ForwardCursorPagedResourceList<ExternalIdentifierInfo> resourceList = new ForwardCursorPagedResourceList<>(
+        return new ForwardCursorPagedResourceList<>(
                 identifiers, nextPageOffsetKey)
                 .withRequestParam(ResourceList.OFFSET_KEY, offsetKey)
                 .withRequestParam(ResourceList.PAGE_SIZE, pageSize)
-                .withRequestParam(ResourceList.ID_FILTER, idFilter);
-        if (assignmentFilter != null) {
-            resourceList = resourceList.withRequestParam(ResourceList.ASSIGNMENT_FILTER, assignmentFilter.toString());
-        }
-        return resourceList;
+                .withRequestParam(ResourceList.ID_FILTER, idFilter)
+                .withRequestParam(ResourceList.ASSIGNMENT_FILTER, assignmentFilter);
     }
 
     @Override

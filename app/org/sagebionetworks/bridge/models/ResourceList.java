@@ -14,8 +14,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 
 /**
- * Basic array of items, not paged (these are all there are given the requested parameters), 
- * with any parameters that were sent to the server to produce the list.
+ * Basic list of items, not paged, as calculated based on the parameters that were 
+ * sent to the server and are included in the <code>ResourceList</code>.
  */
 public class ResourceList<T> {
     
@@ -24,6 +24,7 @@ public class ResourceList<T> {
     public static final String END_DATE = "endDate";
     public static final String END_TIME = "endTime";
     public static final String ID_FILTER = "idFilter";
+    public static final String NEXT_PAGE_OFFSET_KEY = "nextPageOffsetKey";
     public static final String OFFSET_BY = "offsetBy";
     public static final String OFFSET_KEY = "offsetKey";
     public static final String PAGE_SIZE = "pageSize";

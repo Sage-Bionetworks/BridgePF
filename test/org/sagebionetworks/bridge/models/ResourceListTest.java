@@ -33,7 +33,7 @@ public class ResourceListTest {
         assertEquals("A", deser.getItems().get(0));
         assertEquals("B", deser.getItems().get(1));
         assertEquals("C", deser.getItems().get(2));
-        // This is deserialized as an integer, not a long, that is a property fo the library
+        // This is deserialized as an integer, not a long, that is a property of the library. Looks the same in JSON.
         assertEquals((Integer)13, (Integer)deser.getRequestParams().get("test"));
         assertEquals((Integer)3, deser.getTotal());
     }
