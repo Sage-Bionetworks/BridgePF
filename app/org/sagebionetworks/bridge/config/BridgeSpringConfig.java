@@ -101,6 +101,11 @@ public class BridgeSpringConfig {
         return Lists.newArrayList("REDISCLOUD_URL", "REDISTOGO_URL");
     }
     
+    @Bean(name = "newRedisProviders")
+    public List<String> newRedisProviders() {
+        return Lists.newArrayList(BridgeConfigFactory.getConfig().get("rediscloud.external.url"));
+    }
+    
     @Bean(name = "bridgeObjectMapper")
     public BridgeObjectMapper bridgeObjectMapper() {
         return BridgeObjectMapper.get();

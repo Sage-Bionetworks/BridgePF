@@ -30,15 +30,32 @@ public class BridgeProductionSpringConfig {
     @Resource(name = "redisProviders")
     List<String> redisProviders;
     
+    @Resource(name = "newRedisProviders")
+    List<String> newRedisProviders;
+    
     @Bean(name = "jedisOps")
     @Resource(name = "jedisPool")
     public JedisOps jedisOps(final JedisPool jedisPool) {
         return new JedisOps(jedisPool);
     }
 
+    @Bean(name = "newJedisOps")
+    @Resource(name = "newJedisPool")
+    public JedisOps newJedisOps(final JedisPool jedisPool) {
+        return new JedisOps(jedisPool);
+    }
+    
     @Bean(name = "jedisPool")
     public JedisPool jedisPool() throws Exception {
-        // Configure pool
+        return createJedisPool("original server", redisProviders);
+    }
+
+    @Bean(name = "newJedisPool")
+    public JedisPool newJedisPool(List<String> providers) throws Exception {
+        return createJedisPool("new server", newRedisProviders);
+    }
+    
+    private JedisPool createJedisPool(String stack, List<String> providers) throws Exception {
         final JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setMaxTotal(bridgeConfig.getPropertyAsInt("redis.max.total"));
         poolConfig.setMinIdle(bridgeConfig.getPropertyAsInt("redis.min.idle"));
@@ -47,9 +64,8 @@ public class BridgeProductionSpringConfig {
         poolConfig.setTestOnBorrow(false);
         poolConfig.setTestOnReturn(false);
         poolConfig.setTestWhileIdle(false);
-
-        // Create pool.
-        final String url = getRedisURL();
+        
+        final String url = getRedisURL(stack, providers);
         final JedisPool jedisPool = constructJedisPool(url, poolConfig);
 
         // Shutdown hook
@@ -57,19 +73,19 @@ public class BridgeProductionSpringConfig {
 
         return jedisPool;
     }
-
+    
     /**
      * Try Redis providers to find one that is provisioned. Using this URL in the environment variables
      * is the documented way to interact with these services.
      */
-    private String getRedisURL() {
-        for (String provider : redisProviders) {
+    private String getRedisURL(String stack, List<String> providers) {
+        for (String provider : providers) {
             if (System.getenv(provider) != null) {
-                LOG.info("Using Redis Provider: " + provider);
+                LOG.info("Using Redis Provider for '"+stack+"': " + provider);
                 return System.getenv(provider);
             }
         }
-        LOG.info("Using Redis Provider: redis.url");
+        LOG.info("Using Redis Provider for '"+stack+"': redis.url");
         return bridgeConfig.getProperty("redis.url");
     }
 
@@ -78,7 +94,7 @@ public class BridgeProductionSpringConfig {
         // With changes in Redis provisioning, passwords are now parseable by Java's URI class.
         URI redisURI = new URI(url);
         String password = redisURI.getUserInfo().split(":",2)[1];
-
+        
         if (bridgeConfig.isLocal() || password.equals("AWS")) {
             return new JedisPool(poolConfig, redisURI.getHost(), redisURI.getPort(),
                     bridgeConfig.getPropertyAsInt("redis.timeout"));

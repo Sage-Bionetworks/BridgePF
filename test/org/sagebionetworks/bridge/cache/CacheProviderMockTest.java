@@ -67,11 +67,15 @@ public class CacheProviderMockTest {
         JedisOps jedisOps = mock(JedisOps.class);
         when(jedisOps.getTransaction()).thenReturn(transaction);
         
+        JedisOps newJedisOps = mock(JedisOps.class);
+        when(newJedisOps.getTransaction()).thenReturn(transaction);
+        
         String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
         when(jedisOps.get(userKey)).thenReturn(SESSION_TOKEN);
         
         cacheProvider = new CacheProvider();
         cacheProvider.setJedisOps(jedisOps);
+        cacheProvider.setNewJedisOps(newJedisOps);
         cacheProvider.setBridgeObjectMapper(BridgeObjectMapper.get());
     }
 
@@ -173,9 +177,9 @@ public class CacheProviderMockTest {
         cacheProvider.getUserSession(SESSION_TOKEN);
         String sessionKey = RedisKey.SESSION.getRedisKey(SESSION_TOKEN);
         String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
-        verify(transaction, times(1)).del(sessionKey);
-        verify(transaction, times(1)).del(userKey);
-        verify(transaction, times(1)).exec();
+        verify(transaction, times(2)).del(sessionKey);
+        verify(transaction, times(2)).del(userKey);
+        verify(transaction, times(2)).exec();
     }
 
     @Test
@@ -183,15 +187,16 @@ public class CacheProviderMockTest {
         cacheProvider.removeSessionByUserId(USER_ID);
         String sessionKey = RedisKey.SESSION.getRedisKey(SESSION_TOKEN);
         String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
-        verify(transaction, times(1)).del(sessionKey);
-        verify(transaction, times(1)).del(userKey);
-        verify(transaction, times(1)).exec();
+        verify(transaction, times(2)).del(sessionKey);
+        verify(transaction, times(2)).del(userKey);
+        verify(transaction, times(2)).exec();
     }
 
     @Test
     public void addAndRemoveViewFromCacheProvider() throws Exception {
         final CacheProvider simpleCacheProvider = new CacheProvider();
         simpleCacheProvider.setJedisOps(getJedisOps());
+        simpleCacheProvider.setNewJedisOps(getJedisOps());
         simpleCacheProvider.setBridgeObjectMapper(BridgeObjectMapper.get());
 
         final Study study = TestUtils.getValidStudy(CacheProviderMockTest.class);
