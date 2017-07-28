@@ -30,6 +30,7 @@ public class SurveyPublishValidator implements Validator {
         Survey survey = (Survey) target;
         // Validate that no identifier has been duplicated.
         Set<String> foundIdentifiers = Sets.newHashSet();
+        Set<String> foundGuids = Sets.newHashSet();
         for (int i = 0; i < survey.getElements().size(); i++) {
             SurveyElement element = survey.getElements().get(i);
             errors.pushNestedPath("elements["+i+"]");
@@ -40,7 +41,13 @@ public class SurveyPublishValidator implements Validator {
             if (foundIdentifiers.contains(element.getIdentifier())) {
                 errors.rejectValue("identifier", "exists in an earlier survey element");
             }
+            if (element.getGuid() != null && foundGuids.contains(element.getGuid())) {
+                errors.rejectValue("guid", "exists in an earlier survey element");
+            }
             foundIdentifiers.add(element.getIdentifier());
+            if (element.getGuid() != null) {
+                foundGuids.add(element.getGuid());    
+            }
             errors.popNestedPath();
         }
     }
