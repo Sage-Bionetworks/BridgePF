@@ -52,17 +52,18 @@ public class ForwardCursorPagedResourceListTest {
         assertEquals(endTime.toString(), node.get("endTime").asText());
         assertEquals(startTime.toString(), node.get("scheduledOnStart").asText());
         assertEquals(endTime.toString(), node.get("scheduledOnEnd").asText());
-        assertEquals(100, node.get("pageSize").asInt());
-        assertEquals(2, node.get("total").asInt());
+        assertEquals(100, node.get("pageSize").intValue());
+        assertEquals(2, node.get("total").intValue());
         assertEquals("ForwardCursorPagedResourceList", node.get("type").asText());
-        assertTrue(node.get("hasNext").asBoolean());
+        assertTrue(node.get("hasNext").booleanValue());
         
         JsonNode rp = node.get("requestParams");
         assertEquals(startTime.toString(), rp.get("startTime").asText());
         assertEquals(endTime.toString(), rp.get("endTime").asText());
         assertEquals(startTime.toString(), rp.get("scheduledOnStart").asText());
         assertEquals(endTime.toString(), rp.get("scheduledOnEnd").asText());
-        assertEquals(100, rp.get("pageSize").asInt());
+        assertEquals("filterString", rp.get("emailFilter").asText());
+        assertEquals(100, rp.get("pageSize").intValue());
         assertEquals("offsetKey", rp.get("offsetKey").asText());
         
         ArrayNode items = (ArrayNode)node.get("items");
@@ -87,6 +88,7 @@ public class ForwardCursorPagedResourceListTest {
         assertEquals(endTime, serPage.getScheduledOnEnd());
         assertEquals((Integer)100, serPage.getPageSize());
         assertEquals((Integer)2, serPage.getTotal());
+        assertTrue(serPage.hasNext());
         
         Map<String,Object> params = serPage.getRequestParams();
         assertEquals(startTime.toString(), params.get("startTime"));
@@ -94,6 +96,7 @@ public class ForwardCursorPagedResourceListTest {
         assertEquals(startTime.toString(), params.get("scheduledOnStart"));
         assertEquals(endTime.toString(), params.get("scheduledOnEnd"));
         assertEquals(100, params.get("pageSize"));
+        assertEquals("filterString", params.get("emailFilter"));
         assertEquals("offsetKey", params.get("offsetKey"));
         
         assertEquals(page.getItems(), serPage.getItems());
@@ -106,12 +109,14 @@ public class ForwardCursorPagedResourceListTest {
                 accounts, null).withRequestParam(ResourceList.PAGE_SIZE, 100)
                 .withRequestParam(ResourceList.EMAIL_FILTER, "filterString");
         
+        assertFalse(page.hasNext());
+        
         JsonNode node = BridgeObjectMapper.get().valueToTree(page);
         assertNull(node.get("offsetKey"));
         assertEquals(100, node.get("pageSize").asInt());
         assertEquals("filterString", node.get("requestParams").get("emailFilter").asText());
         assertEquals("ForwardCursorPagedResourceList", node.get("type").asText());
-        assertFalse(node.get("hasNext").asBoolean());
+        assertFalse(node.get("hasNext").booleanValue());
         assertEquals(5, node.size());
     }
     
@@ -129,7 +134,7 @@ public class ForwardCursorPagedResourceListTest {
                 .withRequestParam(ResourceList.ID_FILTER, "foo")
                 .withRequestParam(ResourceList.ASSIGNMENT_FILTER, "bar");
         JsonNode node = BridgeObjectMapper.get().valueToTree(page);
-        assertEquals(100, node.get("pageSize").asInt());
+        assertEquals(100, node.get("pageSize").intValue());
         assertEquals("foo", node.get("requestParams").get("idFilter").asText());
         assertEquals("bar", node.get("requestParams").get("assignmentFilter").asText());
         assertEquals("ForwardCursorPagedResourceList", node.get("type").asText());

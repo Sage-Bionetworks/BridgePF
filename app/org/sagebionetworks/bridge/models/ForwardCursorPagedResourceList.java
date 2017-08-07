@@ -58,8 +58,7 @@ public class ForwardCursorPagedResourceList<T> extends ResourceList<T> {
     }
     @Deprecated
     public Integer getPageSize() {
-        Object value = getRequestParams().get(PAGE_SIZE);
-        return (value == null) ? null : (int)value;
+        return (Integer)getRequestParams().get(PAGE_SIZE);
     }
     public String getNextPageOffsetKey() {
         return nextPageOffsetKey;
@@ -72,4 +71,12 @@ public class ForwardCursorPagedResourceList<T> extends ResourceList<T> {
         super.withRequestParam(key, value);
         return this;
     }
+
+    @Override
+    public String toString() {
+        return "ForwardCursorPagedResourceList [nextPageOffsetKey=" + nextPageOffsetKey + ", getNextPageOffsetKey()="
+                + getNextPageOffsetKey() + ", getItems()=" + getItems() + ", getRequestParams()=" + getRequestParams()
+                + "]";
+    }
+    
 }

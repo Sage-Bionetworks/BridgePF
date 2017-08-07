@@ -2,7 +2,13 @@ package org.sagebionetworks.bridge.models;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
+import java.util.List;
+
+import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -10,6 +16,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 public class ResourceListTest {
 
@@ -47,5 +54,56 @@ public class ResourceListTest {
         ResourceList<String> list2 = new ResourceList<>(null);
         JsonNode node2 = BridgeObjectMapper.get().valueToTree(list2);
         assertFalse(node2.has("total"));
+    }
+    
+    @Test
+    public void requestParams() {
+        ResourceList<String> list = makeResourceList();
+        
+        assertEquals("bar", list.getRequestParams().get("foo"));
+        assertNull(list.getRequestParams().get("baz"));
+    }
+    
+    @Test
+    public void getDateTime() {
+        DateTime dateTime = DateTime.now();
+        
+        ResourceList<String> list = makeResourceList();
+        list.withRequestParam("dateTime1", dateTime);
+        list.withRequestParam("dateTime2", dateTime.toString());
+        
+        assertTrue(dateTime.isEqual(list.getDateTime("dateTime1")));
+        assertTrue(dateTime.isEqual(list.getDateTime("dateTime2")));
+    }
+    
+    @Test
+    public void getLocalDate() {
+        LocalDate localDate = LocalDate.parse("2017-04-15");
+        
+        ResourceList<String> list = makeResourceList();
+        list.withRequestParam("localDate1", localDate);
+        list.withRequestParam("localDate2", localDate.toString());
+        
+        assertEquals(localDate, list.getLocalDate("localDate1"));
+        assertEquals(localDate, list.getLocalDate("localDate2"));
+    }
+    
+    @SuppressWarnings("deprecation")
+    @Test
+    public void getTotal() {
+        ResourceList<String> list = makeResourceList();
+        
+        list.withRequestParam("total", 3);
+        
+        assertEquals(3, list.getRequestParams().get("total"));
+        assertEquals((Integer)3, list.getTotal());
+    }
+
+    private ResourceList<String> makeResourceList() {
+        List<String> items = Lists.newArrayList("A","B","C");
+        
+        ResourceList<String> list = new ResourceList<>(items);
+        list.withRequestParam("foo", "bar");
+        return list;
     }
 }

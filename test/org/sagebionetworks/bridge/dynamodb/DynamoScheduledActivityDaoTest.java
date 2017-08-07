@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
@@ -91,6 +92,7 @@ public class DynamoScheduledActivityDaoTest {
         activityDao.deleteActivitiesForUser(healthCode);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void getScheduledActivityHistoryV2() throws Exception {
         // Let's use an interesting time zone so we can verify it is being used.
@@ -123,9 +125,23 @@ public class DynamoScheduledActivityDaoTest {
         Set<String> allTaskGuids = history.getItems().stream().map(ScheduledActivity::getGuid).collect(toSet());
 
         // Get second page of records
+        String nextPageOffsetKey = history.getNextPageOffsetKey();
         history = activityDao.getActivityHistoryV2(
-                healthCode, activityGuid, startDateTime, endDateTime, MSK, history.getNextPageOffsetKey(), 10);
+                healthCode, activityGuid, startDateTime, endDateTime, MSK, nextPageOffsetKey, 10);
         assertEquals(10, history.getItems().size());
+        
+        // Assert request params are all set (nextPageOffsetKey is now the offsetKey submitted in the request) 
+        assertNotEquals(nextPageOffsetKey, history.getNextPageOffsetKey());
+        assertEquals(nextPageOffsetKey, history.getRequestParams().get("offsetKey"));
+        assertEquals(10, history.getRequestParams().get("pageSize"));
+        assertEquals(startDateTime.toString(), history.getRequestParams().get("scheduledOnStart"));
+        assertEquals(endDateTime.toString(), history.getRequestParams().get("scheduledOnEnd"));
+
+        assertNotEquals(nextPageOffsetKey, history.getOffsetKey());
+        assertEquals((Integer)10, history.getPageSize());
+        assertTrue(startDateTime.isEqual(history.getScheduledOnStart()));
+        assertTrue(endDateTime.isEqual(history.getScheduledOnEnd()));
+        
         history.getItems().stream().forEach(scheduledActivity -> assertEquals(MSK, scheduledActivity.getTimeZone()));
 
         // Now add the GUIDS of the next ten records to the set

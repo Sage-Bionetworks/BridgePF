@@ -14,6 +14,7 @@ import com.google.common.collect.Lists;
 
 public class DateTimeRangeResourceListTest {
 
+    @SuppressWarnings("deprecation")
     @Test
     public void canSerialize() throws Exception {
         DateTime startTime = DateTime.parse("2016-02-03T10:10:10.000-08:00");
@@ -22,6 +23,9 @@ public class DateTimeRangeResourceListTest {
         DateTimeRangeResourceList<String> list = new DateTimeRangeResourceList<>(items)
                 .withRequestParam(ResourceList.START_TIME, startTime)
                 .withRequestParam(ResourceList.END_TIME, endTime);
+        
+        assertEquals(startTime, list.getStartTime());
+        assertEquals(endTime, list.getEndTime());
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(list);
         assertEquals("2016-02-03T10:10:10.000-08:00", node.get("startTime").asText());

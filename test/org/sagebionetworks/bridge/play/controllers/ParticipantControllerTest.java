@@ -88,7 +88,7 @@ public class ParticipantControllerTest {
     
     private static final TypeReference<PagedResourceList<AccountSummary>> ACCOUNT_SUMMARY_PAGE = new TypeReference<PagedResourceList<AccountSummary>>(){};
     
-    private static final TypeReference<PagedResourceList<? extends Upload>> UPLOADS_REF = new TypeReference<PagedResourceList<? extends Upload>>(){};
+    private static final TypeReference<ForwardCursorPagedResourceList<? extends Upload>> UPLOADS_REF = new TypeReference<ForwardCursorPagedResourceList<? extends Upload>>(){};
     
     private static final Set<Roles> CALLER_ROLES = Sets.newHashSet(Roles.RESEARCHER);
     
@@ -222,7 +222,7 @@ public class ParticipantControllerTest {
     
     @Test
     public void getParticipantsWithStartTimeEndTime() throws Exception {
-        DateTime start = DateTime.now();
+        DateTime start = DateTime.now().minusMinutes(2);
         DateTime end = DateTime.now();
         Result result = controller.getParticipants("10", "20", "foo", null, null, start.toString(), end.toString());
         PagedResourceList<AccountSummary> page = resultToPage(result);
@@ -692,7 +692,7 @@ public class ParticipantControllerTest {
         verify(mockParticipantService).getUploads(study, ID, startTime, endTime, 10, "abc");
         
         // in other words, it's the object we mocked out from the service, we were returned the value.
-        PagedResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
+        ForwardCursorPagedResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), UPLOADS_REF);
         assertEquals(startTime.toString(), retrieved.getRequestParams().get("startTime"));
         assertEquals(endTime.toString(), retrieved.getRequestParams().get("endTime"));

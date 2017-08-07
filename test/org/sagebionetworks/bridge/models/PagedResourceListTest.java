@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.models;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 import java.util.List;
 import java.util.Map;
@@ -45,11 +44,15 @@ public class PagedResourceListTest {
         assertEquals(2, node.get("total").asInt());
         assertEquals(100, node.get("pageSize").asInt());
         assertEquals("filterString", node.get("emailFilter").asText());
+        assertEquals(startTime.toString(), node.get("startTime").asText());
+        assertEquals(endTime.toString(), node.get("endTime").asText());
         assertEquals("PagedResourceList", node.get("type").asText());
         
         JsonNode rp = node.get("requestParams");
         assertEquals(123, rp.get("offsetBy").asInt());
         assertEquals(100, rp.get("pageSize").asInt());
+        assertEquals(startTime.toString(), rp.get("startTime").asText());
+        assertEquals(endTime.toString(), rp.get("endTime").asText());
         assertEquals("filterString", rp.get("emailFilter").asText());
                 
         ArrayNode items = (ArrayNode)node.get("items");
@@ -66,73 +69,26 @@ public class PagedResourceListTest {
                 new TypeReference<PagedResourceList<AccountSummary>>() {});
 
         assertEquals(page.getTotal(), serPage.getTotal());
-        assertEquals(100, page.getPageSize());
-        assertEquals((Integer)123, page.getOffsetBy());
-        assertEquals("filterString", page.getEmailFilter());
+        assertEquals(100, serPage.getPageSize());
+        assertEquals((Integer)123, serPage.getOffsetBy());
+        assertEquals(startTime, serPage.getStartTime());
+        assertEquals(endTime, serPage.getEndTime());
+        assertEquals("filterString", serPage.getEmailFilter());
         
         Map<String,Object> params = page.getRequestParams();
         Map<String,Object> serParams = serPage.getRequestParams();
         assertEquals(params.get("offsetBy"), serParams.get("offsetBy"));
         assertEquals(params.get("pageSize"), serParams.get("pageSize"));
         assertEquals(params.get("emailFilter"), serParams.get("emailFilter"));
+        assertEquals(params.get("startTime"), serParams.get("startTime"));
+        assertEquals(params.get("endTime"), serParams.get("endTime"));
         
         assertEquals(page.getItems(), serPage.getItems());
     }
     
-    @Test
+    @Test(expected = NullPointerException.class)
     public void offsetByCanBeNull() throws Exception {
         List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
-        PagedResourceList<AccountSummary> page = new PagedResourceList<AccountSummary>(accounts, null)
-                .withRequestParam("offsetBy", 123)
-                .withRequestParam("pageSize", 100)
-                .withRequestParam("emailFilter", "filterString");
-        
-        JsonNode node = BridgeObjectMapper.get().valueToTree(page);
-        assertNull(node.get("total"));
-        assertEquals(123, node.get("offsetBy").asInt());
-        assertEquals(100, node.get("pageSize").asInt());
-        assertEquals("filterString", node.get("requestParams").get("emailFilter").asText());
-        assertEquals("PagedResourceList", node.get("type").asText());
-        assertEquals(6, node.size());
-    }
-    
-    // This test was moved from another class that implemented PagedResourceList for
-    // DynamoDB, that was easily incorporated into this implementation. This test verifies
-    // that the results are the same as before.
-    @Test
-    public void canSerializeWithDynamoOffsetKey() throws Exception {
-        List<String> accounts = Lists.newArrayListWithCapacity(2);
-        accounts.add("value1");
-        accounts.add("value2");
-        
-        PagedResourceList<String> page = new PagedResourceList<>(accounts, null)
-                .withRequestParam("offsetBy", 123)
-                .withRequestParam("pageSize", 100)
-                .withRequestParam("idFilter", "foo")
-                .withRequestParam("assignmentFilter", "bar");
-        JsonNode node = BridgeObjectMapper.get().valueToTree(page);
-        assertNull(node.get("total"));
-        assertEquals(100, node.get("pageSize").asInt());
-        assertEquals(100, node.get("requestParams").get("pageSize").asInt());
-        assertEquals("foo", node.get("requestParams").get("idFilter").asText());
-        assertEquals("bar", node.get("requestParams").get("assignmentFilter").asText());
-        assertEquals("PagedResourceList", node.get("type").asText());
-        
-        ArrayNode items = (ArrayNode)node.get("items");
-        assertEquals(2, items.size());
-        assertEquals("value1", items.get(0).asText());
-        assertEquals("value2", items.get(1).asText());
-        
-        // We don't deserialize this, but let's verify for the SDK
-        PagedResourceList<String> serPage = BridgeObjectMapper.get().readValue(node.toString(), 
-                new TypeReference<PagedResourceList<String>>() {});
-        
-        assertEquals(page.getTotal(), serPage.getTotal());
-        assertEquals(page.getRequestParams().get("pageSize"), serPage.getRequestParams().get("pageSize"));
-        assertEquals(page.getRequestParams().get("offsetKey"), serPage.getRequestParams().get("offsetKey"));
-        assertEquals(page.getRequestParams().get("offsetBy"), serPage.getRequestParams().get("offsetBy"));
-        assertEquals(page.getRequestParams().get("idFilter"), serPage.getRequestParams().get("idFilter"));
-        assertEquals(page.getRequestParams().get("assignmentFilter"), serPage.getRequestParams().get("assignmentFilter"));
-        assertEquals(page.getItems(), serPage.getItems());
+        new PagedResourceList<AccountSummary>(accounts, null);
     }
 }

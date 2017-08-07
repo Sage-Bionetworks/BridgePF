@@ -92,7 +92,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
 
     @Override
     public ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIds(StudyIdentifier studyId,
-            String offsetKey, int pageSize, String idFilter, Boolean assignmentFilter) {
+            String offsetKey, final int pageSize, String idFilter, Boolean assignmentFilter) {
         checkNotNull(studyId);
 
         // Just set a sane upper limit on this.

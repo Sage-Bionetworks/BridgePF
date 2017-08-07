@@ -1,11 +1,16 @@
 package org.sagebionetworks.bridge.models;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.List;
 
 import org.joda.time.DateTime;
 
+import org.sagebionetworks.bridge.json.DateTimeSerializer;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * This list represents one page of a larger list, for which we know the total number of items in the list 
@@ -28,6 +33,7 @@ public class PagedResourceList<T> extends ResourceList<T> {
             @JsonProperty(ITEMS) List<T> items, 
             @JsonProperty(TOTAL) Integer total) {
         super(items);
+        checkNotNull(total);
         this.total = total;
     }
 
@@ -36,10 +42,12 @@ public class PagedResourceList<T> extends ResourceList<T> {
         return (String)getRequestParams().get(EMAIL_FILTER);
     }
     @Deprecated
+    @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getStartTime() {
         return getDateTime(START_TIME);
     }
     @Deprecated
+    @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getEndTime() {
         return getDateTime(END_TIME);
     }
