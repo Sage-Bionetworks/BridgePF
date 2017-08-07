@@ -1,4 +1,4 @@
-sudo: false
+sudo: required
 language: scala
 scala:
 - 2.11
@@ -40,7 +40,7 @@ deploy:
       prod: bridge-prod
   - provider: elasticbeanstalk
     skip_cleanup: true
-    bucket_name: org-sagebridge-bridgepf-deployment-develop
+    bucket_name: org-sagebridge-bridgepf-deployment-$TRAVIS_BRANCH
     zip_file: target/universal/bridgepf-0.1-SNAPSHOT.zip
     region: us-east-1
     app: BridgePF

@@ -19,6 +19,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
@@ -149,6 +150,18 @@ public class AccountWorkflowService {
     }
     
     /**
+     * Send an email message to the user notifying them that the account already exists, and 
+     * provide a link to reset the password if desired. The workflow of this email then merges 
+     * with the workflow to reset a password.
+     */
+    public void notifyAccountExists(Study study, Email email) {
+        checkNotNull(study);
+        checkNotNull(email);
+        
+        sendPasswordResetRelatedEmail(study, email, study.getAccountExistsTemplate());
+    }
+    
+    /**
      * Request that a token be sent to the user's email address that can be used to 
      * submit a password change to the server. This method will fail silently if 
      * the email does not map to an account, in order to prevent account enumeration 
@@ -160,22 +173,26 @@ public class AccountWorkflowService {
         
         Account account = accountDao.getAccountWithEmail(study, email.getEmail());
         if (account != null) {
-            String sptoken = createTimeLimitedToken();
-            
-            String cacheKey = sptoken + ":" + study.getIdentifier();
-            cacheProvider.setString(cacheKey, email.getEmail(), EXPIRE_IN_SECONDS);
-            
-            String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
-            String url = String.format(RESET_PASSWORD_URL, BASE_URL, studyId, sptoken);
-            
-            BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(study)
-                .withEmailTemplate(study.getResetPasswordTemplate())
-                .withRecipientEmail(email.getEmail())
-                .withToken(URL_TOKEN, url)
-                .withToken(EXP_WINDOW_TOKEN, Integer.toString(EXPIRE_IN_SECONDS/60/60)).build();
-            sendMailService.sendEmail(provider);
+            sendPasswordResetRelatedEmail(study, email, study.getResetPasswordTemplate());    
         }
+    }
+
+    private void sendPasswordResetRelatedEmail(Study study, Email email, EmailTemplate template) {
+        String sptoken = createTimeLimitedToken();
+        
+        String cacheKey = sptoken + ":" + study.getIdentifier();
+        cacheProvider.setString(cacheKey, email.getEmail(), EXPIRE_IN_SECONDS);
+        
+        String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
+        String url = String.format(RESET_PASSWORD_URL, BASE_URL, studyId, sptoken);
+        
+        BasicEmailProvider provider = new BasicEmailProvider.Builder()
+            .withStudy(study)
+            .withEmailTemplate(template)
+            .withRecipientEmail(email.getEmail())
+            .withToken(URL_TOKEN, url)
+            .withToken(EXP_WINDOW_TOKEN, Integer.toString(EXPIRE_IN_SECONDS/60/60)).build();
+        sendMailService.sendEmail(provider);
     }
 
     /**

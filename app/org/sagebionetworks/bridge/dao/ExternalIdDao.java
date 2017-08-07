@@ -47,7 +47,7 @@ public interface ExternalIdDao {
     
     /**
      * Reserve this ID. Reserving the ID prevents it from being taken by another caller for a short duration (30 seconds), 
-     * allowing this reserving thread to do other work to set up the user (e.g. creating a Stormpath account, which can 
+     * allowing this reserving thread to do other work to set up the user (e.g. creating an account, which can
      * take a long time to finish). If the code is not assigned by calling assignExternalId(...), it will become available 
      * again after the duration expires.   
      */

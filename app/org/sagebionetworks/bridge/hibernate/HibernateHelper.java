@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.function.Function;
 
+import javax.persistence.OptimisticLockException;
 import javax.persistence.PersistenceException;
 
 import org.hibernate.Session;
@@ -47,9 +48,13 @@ public class HibernateHelper {
     }
 
     /** Deletes the given object. */
-    public void delete(Object key) {
+    public <T> void deleteById(Class<T> clazz, Serializable id) {
+        // Hibernate optimistic versioning also applies to deletes. However, unlike updates, when we delete something,
+        // we want it gone, so we generally don't care about optimistic versioning. In order to handle this in
+        // Hibernate, we need to load the whole object before deleting it.
         execute(session -> {
-            session.delete(key);
+            T obj = session.get(clazz, id);
+            session.delete(obj);
             return null;
         });
     }
@@ -102,10 +107,15 @@ public class HibernateHelper {
 
     /** Updates a single object. */
     public void update(Object obj) {
-        execute(session -> {
-            session.update(obj);
-            return null;
-        });
+        try {
+            execute(session -> {
+                session.update(obj);
+                return null;
+            });
+        } catch (OptimisticLockException ex) {
+            throw new ConcurrentModificationException("Row has the wrong version number; it may have been saved in " +
+                    "the background.");
+        }
     }
 
     // Helper function, which handles opening and closing sessions and transactions.

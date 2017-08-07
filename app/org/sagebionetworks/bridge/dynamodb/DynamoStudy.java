@@ -30,7 +30,6 @@ public final class DynamoStudy implements Study {
     private String name;
     private String sponsorName;
     private String identifier;
-    private String stormpathHref;
     private String supportEmail;
     private Long synapseDataAccessTeamId;
     private String synapseProjectId;
@@ -131,17 +130,6 @@ public final class DynamoStudy implements Study {
     @Override
     public void setMinAgeOfConsent(int minAge) {
         this.minAgeOfConsent = minAge;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public String getStormpathHref() {
-        return stormpathHref;
-    }
-
-    @Override
-    public void setStormpathHref(String stormpathHref) {
-        this.stormpathHref = stormpathHref;
     }
 
     /** {@inheritDoc} */
@@ -437,7 +425,7 @@ public final class DynamoStudy implements Study {
     @Override
     public int getAccountLimit() {
         return accountLimit;
-    };
+    }
     
     @Override
     public void setAccountLimit(int accountLimit) {
@@ -446,7 +434,7 @@ public final class DynamoStudy implements Study {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, sponsorName, identifier, stormpathHref, supportEmail, synapseDataAccessTeamId,
+        return Objects.hash(name, sponsorName, identifier, supportEmail, synapseDataAccessTeamId,
                 synapseProjectId, technicalEmail, usesCustomExportSchedule, consentNotificationEmail, minAgeOfConsent,
                 accountLimit, version, active, profileAttributes, taskIdentifiers, activityEventKeys, dataGroups,
                 passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, emailSignInTemplate, accountExistsTemplate,
@@ -465,7 +453,6 @@ public final class DynamoStudy implements Study {
 
         return (Objects.equals(identifier, other.identifier) && Objects.equals(supportEmail, other.supportEmail)
                 && Objects.equals(minAgeOfConsent, other.minAgeOfConsent) && Objects.equals(name, other.name)
-                && Objects.equals(stormpathHref, other.stormpathHref)
                 && Objects.equals(passwordPolicy, other.passwordPolicy) && Objects.equals(active, other.active))
                 && Objects.equals(verifyEmailTemplate, other.verifyEmailTemplate)
                 && Objects.equals(consentNotificationEmail, other.consentNotificationEmail)
@@ -497,7 +484,7 @@ public final class DynamoStudy implements Study {
     @Override
     public String toString() {
         return String.format(
-            "DynamoStudy [name=%s, active=%s, sponsorName=%s, identifier=%s, stormpathHref=%s, minAgeOfConsent=%s, "
+            "DynamoStudy [name=%s, active=%s, sponsorName=%s, identifier=%s, minAgeOfConsent=%s, "
                         + "supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, technicalEmail=%s, "
                         + "consentNotificationEmail=%s, version=%s, userProfileAttributes=%s, taskIdentifiers=%s, "
                         + "activityEventKeys=%s, dataGroups=%s, passwordPolicy=%s, verifyEmailTemplate=%s, "
@@ -505,7 +492,7 @@ public final class DynamoStudy implements Study {
                         + "emailVerificationEnabled=%s, externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, "
                         + "minSupportedAppVersions=%s, usesCustomExportSchedule=%s, pushNotificationARNs=%s, "
                         + "disableExport=%s, emailSignInTemplate=%s, emailSignInEnabled=%s, accountLimit=%s]",
-                name, active, sponsorName, identifier, stormpathHref, minAgeOfConsent, supportEmail,
+                name, active, sponsorName, identifier, minAgeOfConsent, supportEmail,
                 synapseDataAccessTeamId, synapseProjectId, technicalEmail, consentNotificationEmail, version,
                 profileAttributes, taskIdentifiers, activityEventKeys, dataGroups, passwordPolicy, verifyEmailTemplate,
                 resetPasswordTemplate, strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,

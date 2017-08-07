@@ -3,7 +3,9 @@ package org.sagebionetworks.bridge.play.controllers;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.Metrics;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -15,6 +17,7 @@ import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.services.UploadService;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -66,6 +69,11 @@ public class UploadController extends BaseController {
             metrics.setUploadSize(uploadRequest.getContentLength());
             metrics.setUploadId(uploadSession.getId());
         }
+        
+        RequestInfo requestInfo = getRequestInfoBuilder(session)
+                .withUploadedOn(DateUtils.getCurrentDateTime()).build();
+        cacheProvider.updateRequestInfo(requestInfo);
+        
         return okResult(uploadSession);
     }
 

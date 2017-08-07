@@ -156,8 +156,7 @@ public class ParticipantController extends BaseController {
 
         StudyParticipant participant = participantService.getParticipant(study, userId, true);
         
-        // Workers can never retrieve a health code. There's just no reason to leak it here.
-        ObjectWriter writer = StudyParticipant.API_NO_HEALTH_CODE_WRITER;
+        ObjectWriter writer = StudyParticipant.API_WITH_HEALTH_CODE_WRITER;
         String ser = writer.writeValueAsString(participant);
 
         return ok(ser).as(BridgeConstants.JSON_MIME_TYPE);

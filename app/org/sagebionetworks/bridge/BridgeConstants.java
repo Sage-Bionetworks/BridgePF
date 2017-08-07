@@ -49,12 +49,6 @@ public class BridgeConstants {
 
     public static final String X_FORWARDED_FOR_HEADER = "X-Forwarded-For";
 
-    public static final String CUSTOM_DATA_HEALTH_CODE_SUFFIX = "_code";
-
-    public static final String CUSTOM_DATA_CONSENT_SIGNATURE_SUFFIX = "_consent_signature";
-
-    public static final String CUSTOM_DATA_VERSION = "version";
-    
     /** Limit the total length of JSON string that is submitted as client data for a scheduled activity. */
     public static final int CLIENT_DATA_MAX_BYTES = 2048;
 
@@ -91,10 +85,6 @@ public class BridgeConstants {
     public static final int API_DEFAULT_PAGE_SIZE = 50;
     
     public static final int API_MAXIMUM_PAGE_SIZE = 100;
-    
-    public static final String STORMPATH_ACCOUNT_BASE_HREF = "https://enterprise.stormpath.io/v1/accounts/";
-    
-    public static final String STORMPATH_NAME_PLACEHOLDER_STRING = "<EMPTY>";
     
     public static final String TEST_USER_GROUP = "test_user";
     

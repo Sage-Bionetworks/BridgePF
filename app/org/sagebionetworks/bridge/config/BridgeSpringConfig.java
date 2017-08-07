@@ -27,12 +27,6 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.stormpath.sdk.api.ApiKey;
-import com.stormpath.sdk.api.ApiKeys;
-import com.stormpath.sdk.application.Application;
-import com.stormpath.sdk.client.Client;
-import com.stormpath.sdk.client.ClientBuilder;
-import com.stormpath.sdk.client.Clients;
 
 import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
 import org.sagebionetworks.bridge.dynamodb.DynamoCompoundActivityDefinition;
@@ -536,26 +530,6 @@ public class BridgeSpringConfig {
         return metadataSources.buildMetadata().buildSessionFactory();
     }
 
-    // Do NOT reference this bean outside of StormpathAccountDao. Injected for testing purposes.
-    @Bean(name = "stormpathClient")
-    public Client stormpathClient() {
-        BridgeConfig bridgeConfig = bridgeConfig();
-
-        ApiKey apiKey = ApiKeys.builder()
-            .setId(bridgeConfig.getStormpathId())
-            .setSecret(bridgeConfig.getStormpathSecret()).build();
-
-        ClientBuilder clientBuilder = Clients.builder().setApiKey(apiKey);
-        clientBuilder.setBaseUrl("https://enterprise.stormpath.io/v1");
-        return clientBuilder.build();        
-    }
-
-    // Do NOT reference this bean outside of StormpathAccountDao. Injected for testing purposes.
-    @Bean(name = "stormpathApplication")
-    public Application stormpathApplication() {
-        return stormpathClient().getResource(bridgeConfig().getStormpathApplicationHref(), Application.class);
-    }
-    
     @Bean(name = "sessionExpireInSeconds")
     public int getSessionExpireInSeconds() {
         return BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;

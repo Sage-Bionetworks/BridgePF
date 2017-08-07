@@ -4,7 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -91,6 +92,9 @@ public class AuthenticationServiceTest {
     
     @Resource
     private UserAdminService userAdminService;
+    
+    @Resource
+    private AccountWorkflowService accountWorkflowService;
     
     private Study study;
     
@@ -299,13 +303,20 @@ public class AuthenticationServiceTest {
 
     @Test
     public void secondSignUpTriggersResetPasswordInstead() {
-        // Verify that requestResetPassword is called in this case
-        AuthenticationService authServiceSpy = spy(authService);
-        
+        // First sign up
         testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).build();
-        authServiceSpy.signUp(testUser.getStudy(), testUser.getStudyParticipant());
-        verify(authServiceSpy).requestResetPassword(any(Study.class), any(Email.class));
+        
+        AccountWorkflowService accountWorkflowServiceSpy = spy(accountWorkflowService);
+        authService.setAccountWorkflowService(accountWorkflowServiceSpy);
+
+        // Second sign up
+        authService.signUp(testUser.getStudy(), testUser.getStudyParticipant());
+        
+        ArgumentCaptor<Email> emailCaptor = ArgumentCaptor.forClass(Email.class);
+        verify(accountWorkflowServiceSpy).notifyAccountExists(eq(testUser.getStudy()), emailCaptor.capture());
+        assertEquals(testUser.getStudyIdentifier(), emailCaptor.getValue().getStudyIdentifier());
+        assertEquals(testUser.getEmail(), emailCaptor.getValue().getEmail());
     }
     
     @Test

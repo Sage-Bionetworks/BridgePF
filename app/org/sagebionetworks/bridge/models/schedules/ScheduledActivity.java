@@ -72,6 +72,15 @@ public interface ScheduledActivity extends BridgeEntity {
         } else if (getStartedOn() != null) {
             return ScheduledActivityStatus.STARTED;
         }
+        // We freeze the user's time zone to the initial time zone in order to prevent duplicates.
+        // For schedules that use the time portion of an event timestamp, this can cause odd 
+        // behavior when a user changes time zones. For the most part this resolves and is  
+        // acceptable, but persistent tasks are logically always available, even if you move in 
+        // a way that would shift the task to "scheduled" for some number of hours. Just prevent
+        // this.
+        if (getPersistent()) {
+            return ScheduledActivityStatus.AVAILABLE;
+        }
         if (getTimeZone() != null) {
             DateTime now = DateTime.now(getTimeZone());
             DateTime expiresOn = getExpiresOn();

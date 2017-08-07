@@ -20,11 +20,6 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 // and attempts to use that to deserialize study (not what you want).
 @JsonDeserialize(as=DynamoStudy.class)
 public interface Study extends BridgeEntity, StudyIdentifier {
-
-    ObjectWriter STUDY_WRITER = new BridgeObjectMapper().writer(
-        new SimpleFilterProvider().addFilter("filter", 
-        SimpleBeanPropertyFilter.serializeAllExcept("stormpathHref")));
-
     ObjectWriter STUDY_LIST_WRITER = new BridgeObjectMapper().writer(
         new SimpleFilterProvider().addFilter("filter",
         SimpleBeanPropertyFilter.filterOutAllExcept("name", "identifier")));
@@ -128,14 +123,7 @@ public interface Study extends BridgeEntity, StudyIdentifier {
      */
     String getConsentNotificationEmail();
     void setConsentNotificationEmail(String email);
-    
-    /**
-     * The URI that identifies the Stormpath directory where all accounts for this study, in a given 
-     * environment, will be stored.
-     */
-    String getStormpathHref();
-    void setStormpathHref(String stormpathHref);
-    
+
     /**
      * Extension attributes that can be accepted on the UserProfile object for this study. These 
      * attributes will be exported with the participant roster. 

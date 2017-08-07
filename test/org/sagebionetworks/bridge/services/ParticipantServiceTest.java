@@ -933,7 +933,7 @@ public class ParticipantServiceTest {
     }
 
     // There's no actual vs expected here because either we don't set it, or we set it and that's what we're verifying,
-    // that it has been set. If the setter is not called, the existing status will be sent back to Stormpath.
+    // that it has been set. If the setter is not called, the existing status will be sent back to account store.
     private void verifyStatusUpdate(Set<Roles> roles, boolean canSetStatus) {
         mockHealthCodeAndAccountRetrieval();
         

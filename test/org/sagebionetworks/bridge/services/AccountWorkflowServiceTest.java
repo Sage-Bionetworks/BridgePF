@@ -41,8 +41,9 @@ import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 public class AccountWorkflowServiceTest {
     
     private static final String SUPPORT_EMAIL = "support@support.com";
-
     private static final String SPTOKEN = "sptoken";
+    private static final String USER_ID = "userId";
+    private static final String EMAIL = "email@email.com";
 
     @Mock
     private StudyService mockStudyService;
@@ -73,8 +74,8 @@ public class AccountWorkflowServiceTest {
     @Before
     public void before() {
         EmailTemplate verifyEmailTemplate = new EmailTemplate("VE ${studyName}", "Body ${url}", MimeType.TEXT);
-        
         EmailTemplate resetPasswordTemplate = new EmailTemplate("RP ${studyName}", "Body ${url}", MimeType.TEXT);
+        EmailTemplate accountExistsTemplate = new EmailTemplate("AE ${studyName}", "Body ${url}", MimeType.TEXT);
         
         study = Study.create();
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
@@ -82,15 +83,13 @@ public class AccountWorkflowServiceTest {
         study.setSupportEmail(SUPPORT_EMAIL);
         study.setVerifyEmailTemplate(verifyEmailTemplate);
         study.setResetPasswordTemplate(resetPasswordTemplate);
+        study.setAccountExistsTemplate(accountExistsTemplate);
         
         service.setAccountDao(mockAccountDao);
         service.setCacheProvider(mockCacheProvider);
         service.setSendMailService(mockSendMailService);
         service.setStudyService(mockStudyService);
     }
-    
-    private static final String USER_ID = "userId";
-    private static final String EMAIL = "email@email.com";
     
     @Test
     public void sendEmailVerificationToken() throws Exception {
@@ -176,6 +175,27 @@ public class AccountWorkflowServiceTest {
         EmailVerification verification = new EmailVerification(SPTOKEN);
         
         service.verifyEmail(verification);
+    }
+    
+    @Test
+    public void notifyAccountExists() throws Exception {
+        when(service.createTimeLimitedToken()).thenReturn("ABC");
+        
+        Email emailObj = new Email(TEST_STUDY_IDENTIFIER, EMAIL);
+        
+        service.notifyAccountExists(study, emailObj);
+        
+        verify(mockCacheProvider).setString("ABC:api", EMAIL, 60*60*2);
+        verify(mockSendMailService).sendEmail(emailProviderCaptor.capture());
+        MimeTypeEmailProvider provider = emailProviderCaptor.getValue();
+        MimeTypeEmail email = provider.getMimeTypeEmail();
+        assertEquals("\"This study name\" <support@support.com>", email.getSenderAddress());
+        assertEquals(1, email.getRecipientAddresses().size());
+        assertEquals(EMAIL, email.getRecipientAddresses().get(0));
+        assertEquals("AE This study name", email.getSubject());
+        MimeBodyPart body = email.getMessageParts().get(0);
+        String bodyString = (String)body.getContent();
+        assertTrue(bodyString.contains("/mobile/resetPassword.html?study=api&sptoken=ABC"));
     }
     
     @Test

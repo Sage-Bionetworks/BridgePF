@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
@@ -52,7 +51,6 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.dao.DirectoryDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -70,12 +68,6 @@ import org.sagebionetworks.bridge.validators.StudyValidator;
 
 @RunWith(MockitoJUnitRunner.class)
 public class StudyServiceMockTest {
-
-    private static final PasswordPolicy PASSWORD_POLICY = new PasswordPolicy(2, false, false, false, false);
-    private static final EmailTemplate EMAIL_TEMPLATE = new EmailTemplate("new subject", "new body ${url}",
-            MimeType.HTML);
-    private static final EmailTemplate EMAIL_SIGNIN_TEMPLATE = new EmailTemplate("new subject", "new body ${token}",
-            MimeType.HTML);
     private static final Long TEST_USER_ID = Long.parseLong("3348228"); // test user exists in synapse
     private static final String TEST_PROJECT_NAME = TEST_USER_ID.toString() + "Project";
     private static final String TEST_TEAM_NAME = TEST_USER_ID.toString() + "Team";
@@ -107,8 +99,6 @@ public class StudyServiceMockTest {
     @Mock
     private StudyDao studyDao;
     @Mock
-    private DirectoryDao directoryDao;
-    @Mock
     private CacheProvider cacheProvider;
     @Mock
     private SubpopulationService subpopService;
@@ -133,7 +123,6 @@ public class StudyServiceMockTest {
         service.setNotificationTopicService(topicService);
         service.setUploadCertificateService(uploadCertService);
         service.setStudyDao(studyDao);
-        service.setDirectoryDao(directoryDao);
         service.setValidator(new StudyValidator());
         service.setCacheProvider(cacheProvider);
         service.setSubpopulationService(subpopService);
@@ -161,17 +150,9 @@ public class StudyServiceMockTest {
     private Study getTestStudy() {
         Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
         study.setIdentifier(TEST_STUDY_ID);
-        study.setStormpathHref("http://foo");
         return study;
     }
 
-    private void assertDirectoryUpdated(Consumer<Study> consumer) {
-        Study study = getTestStudy();
-        consumer.accept(study);
-        service.updateStudy(study, true);
-        verify(directoryDao).updateDirectoryForStudy(study);
-    }
-    
     @Test
     public void cannotRemoveTaskIdentifiers() {
         when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
@@ -270,7 +251,6 @@ public class StudyServiceMockTest {
 
         // verify we called the correct dependent services
         verify(studyDao).deleteStudy(study);
-        verify(directoryDao).deleteDirectoryForStudy(study);
         verify(compoundActivityDefinitionService).deleteAllCompoundActivityDefinitionsInStudy(
                 study.getStudyIdentifier());
         verify(subpopService).deleteAllSubpopulations(study.getStudyIdentifier());
@@ -653,8 +633,8 @@ public class StudyServiceMockTest {
 
         AccessControlList mockAcl = new AccessControlList();
         AccessControlList mockTeamAcl = new AccessControlList();
-        mockAcl.setResourceAccess(new HashSet<ResourceAccess>());
-        mockTeamAcl.setResourceAccess(new HashSet<ResourceAccess>());
+        mockAcl.setResourceAccess(new HashSet<>());
+        mockTeamAcl.setResourceAccess(new HashSet<>());
 
         // pre-setup
         when(mockSynapseClient.createTeam(any())).thenReturn(mockTeam);
@@ -757,76 +737,6 @@ public class StudyServiceMockTest {
 
         // execute
         service.createSynapseProjectTeam(ImmutableList.of(), study);
-    }
-
-    @Test
-    public void changingIrrelevantFieldsDoesNotUpdateDirectory() {
-        Study study = getTestStudy();
-
-        // here's a bunch of things we can change that won't cause the directory to be updated
-        study.setSynapseDataAccessTeamId(23L);
-        study.setSynapseProjectId("newid");
-        study.setConsentNotificationEmail("newemail@newemail.com");
-        study.setMinAgeOfConsent(50);
-        study.setUserProfileAttributes(Sets.newHashSet("a", "b"));
-        study.getTaskIdentifiers().add("z");
-        study.getDataGroups().add("z");
-        study.setStrictUploadValidationEnabled(false);
-        study.setHealthCodeExportEnabled(false);
-        study.getMinSupportedAppVersions().put("some platform", 22);
-
-        service.updateStudy(study, true);
-        verify(directoryDao, never()).updateDirectoryForStudy(study);
-    }
-
-    @Test
-    public void changingNameUpdatesDirectory() {
-        assertDirectoryUpdated(study -> study.setName("name"));
-    }
-
-    @Test
-    public void changingSponsorNameUpdatesDirectory() {
-        assertDirectoryUpdated(study -> study.setSponsorName("a new name"));
-    }
-
-    @Test
-    public void changingSupportEmailUpdatesDirectory() {
-        assertDirectoryUpdated(study -> study.setSupportEmail("new@new.com"));
-    }
-
-    @Test
-    public void changingTechnicalEmailUpdatesDirectory() {
-        assertDirectoryUpdated(study -> study.setTechnicalEmail("new@new.com"));
-    }
-
-    @Test
-    public void changingPasswordPolicyUpdatesDirectory() {
-        assertDirectoryUpdated(study -> study.setPasswordPolicy(PASSWORD_POLICY));
-    }
-
-    @Test
-    public void changingVerifyEmailTemplateUpdatesDirectory() {
-        assertDirectoryUpdated(study -> study.setVerifyEmailTemplate(EMAIL_TEMPLATE));
-    }
-
-    @Test
-    public void changingResetPasswordTemplateUpdatesDirectory() {
-        assertDirectoryUpdated(study -> study.setResetPasswordTemplate(EMAIL_TEMPLATE));
-    }
-
-    @Test
-    public void changingEmailVerificationEnabledUpdatesDirectory() {
-        assertDirectoryUpdated(study -> study.setEmailVerificationEnabled(false));
-    }
-    
-    @Test
-    public void changingEmailSignInEmailTemplateUpdatesDirectory() {
-        assertDirectoryUpdated(study -> study.setEmailSignInTemplate(EMAIL_SIGNIN_TEMPLATE));
-    }
-    
-    @Test
-    public void changingAccountExistsTemplateUpdatesDirectory() {
-        assertDirectoryUpdated(study -> study.setAccountExistsTemplate(EMAIL_TEMPLATE));
     }
 
     @Test

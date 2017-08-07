@@ -85,7 +85,7 @@ public class StudyController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        return ok(Study.STUDY_WRITER.writeValueAsString(study));
+        return okResult(study);
     }
 
     public Result updateStudyForDeveloper() throws Exception {
@@ -112,7 +112,7 @@ public class StudyController extends BaseController {
 
         // since only admin can call this method, we need to return all studies including deactivated ones
         Study study = studyService.getStudy(identifier, true);
-        return ok(Study.STUDY_WRITER.writeValueAsString(study));
+        return okResult(study);
     }
 
     // You can get a truncated view of studies with either format=summary or summary=true;
@@ -129,7 +129,7 @@ public class StudyController extends BaseController {
         getAuthenticatedSession(ADMIN);
 
         // otherwise, return all studies including deactivated ones
-        return ok(Study.STUDY_WRITER.writeValueAsString(new ResourceList<Study>(studies)));
+        return okResult(new ResourceList<>(studies));
     }
 
     public Result createStudy() throws Exception {

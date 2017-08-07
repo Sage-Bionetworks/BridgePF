@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import javax.annotation.Nonnull;
-
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -26,10 +24,12 @@ public class UserDataDownloadViaSqsService implements UserDataDownloadService {
     private static final ObjectMapper JSON_OBJECT_MAPPER = new ObjectMapper();
     // constants - these are package scoped so unit tests can access them
     static final String CONFIG_KEY_UDD_SQS_QUEUE_URL = "udd.sqs.queue.url";
+    static final String REQUEST_KEY_BODY = "body";
     static final String REQUEST_KEY_END_DATE = "endDate";
     static final String REQUEST_KEY_START_DATE = "startDate";
+    static final String REQUEST_KEY_SERVICE = "service";
     static final String REQUEST_KEY_STUDY_ID = "studyId";
-    static final String REQUEST_KEY_USERNAME = "username";
+    static final String REQUEST_KEY_USER_ID = "userId";
     static final String UDD_SERVICE_TITLE = "UDD";
 
     private BridgeConfig bridgeConfig;
@@ -49,8 +49,8 @@ public class UserDataDownloadViaSqsService implements UserDataDownloadService {
 
     /** {@inheritDoc} */
     @Override
-    public void requestUserData(@Nonnull StudyIdentifier studyIdentifier, @Nonnull String email,
-            @Nonnull DateRange dateRange) throws JsonProcessingException {
+    public void requestUserData(StudyIdentifier studyIdentifier, String userId, DateRange dateRange)
+            throws JsonProcessingException {
         String studyId = studyIdentifier.getIdentifier();
         String startDateStr = dateRange.getStartDate().toString();
         String endDateStr = dateRange.getEndDate().toString();
@@ -58,20 +58,20 @@ public class UserDataDownloadViaSqsService implements UserDataDownloadService {
         // wrap msg as nested json node
         ObjectNode requestNode = JSON_OBJECT_MAPPER.createObjectNode();
         requestNode.put(REQUEST_KEY_STUDY_ID, studyId);
-        requestNode.put(REQUEST_KEY_USERNAME, email);
+        requestNode.put(REQUEST_KEY_USER_ID, userId);
         requestNode.put(REQUEST_KEY_START_DATE, startDateStr);
         requestNode.put(REQUEST_KEY_END_DATE, endDateStr);
 
         ObjectNode requestMsg = JSON_OBJECT_MAPPER.createObjectNode();
-        requestMsg.put("service", UDD_SERVICE_TITLE);
-        requestMsg.set("body", requestNode);
+        requestMsg.put(REQUEST_KEY_SERVICE, UDD_SERVICE_TITLE);
+        requestMsg.set(REQUEST_KEY_BODY, requestNode);
 
         String requestJson = JSON_OBJECT_MAPPER.writeValueAsString(requestMsg);
 
         // send to SQS
         String queueUrl = bridgeConfig.getProperty(CONFIG_KEY_UDD_SQS_QUEUE_URL);
         SendMessageResult sqsResult = sqsClient.sendMessage(queueUrl, requestJson);
-        logger.info("Sent request to SQS for hash[username]=" + email.hashCode() + ", study=" + studyId +
+        logger.info("Sent request to SQS for userId=" + userId + ", study=" + studyId +
                 ", startDate=" + startDateStr + ", endDate=" + endDateStr + "; received message ID=" +
                 sqsResult.getMessageId());
     }
