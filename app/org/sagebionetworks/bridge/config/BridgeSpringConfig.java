@@ -103,7 +103,7 @@ public class BridgeSpringConfig {
     
     @Bean(name = "newRedisProviders")
     public List<String> newRedisProviders() {
-        return Lists.newArrayList(BridgeConfigFactory.getConfig().get("rediscloud.external.url"));
+        return Lists.newArrayList(BridgeConfigFactory.getConfig().get("elasticache.url"));
     }
     
     @Bean(name = "bridgeObjectMapper")
