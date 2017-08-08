@@ -143,6 +143,7 @@ public class DynamoReportIndexDaoTest {
         assertTrue(index.isPublic());
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void canCreateAndReadParticipantIndex() {
         int studyIndexCount = dao.getIndices(TEST_STUDY, ReportType.STUDY).getItems().size();
@@ -155,7 +156,9 @@ public class DynamoReportIndexDaoTest {
         
         ReportTypeResourceList<? extends ReportIndex> indices = dao.getIndices(TEST_STUDY, ReportType.PARTICIPANT);
         assertEquals(participantIndexCount+2, indices.getItems().size());
-
+        assertEquals(ReportType.PARTICIPANT, indices.getReportType());
+        assertEquals(ReportType.PARTICIPANT, indices.getRequestParams().get("reportType"));
+        
         boolean containsKey1 = false;
         boolean containsKey2 = false;
         for (ReportIndex oneIndex : indices.getItems()) {
@@ -171,6 +174,8 @@ public class DynamoReportIndexDaoTest {
         // Wrong type returns same count as before
         indices = dao.getIndices(TEST_STUDY, ReportType.STUDY);
         assertEquals(studyIndexCount, indices.getItems().size());
+        assertEquals(ReportType.STUDY, indices.getReportType());
+        assertEquals(ReportType.STUDY, indices.getRequestParams().get("reportType"));
         
         dao.removeIndex(participantReportKey1);
         dao.removeIndex(participantReportKey2);

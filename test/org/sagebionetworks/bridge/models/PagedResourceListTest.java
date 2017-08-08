@@ -40,17 +40,17 @@ public class PagedResourceListTest {
                 .withRequestParam("emailFilter", "filterString");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(page);
-        assertEquals(123, node.get("offsetBy").asInt());
-        assertEquals(2, node.get("total").asInt());
-        assertEquals(100, node.get("pageSize").asInt());
+        assertEquals(123, node.get("offsetBy").intValue());
+        assertEquals(2, node.get("total").intValue());
+        assertEquals(100, node.get("pageSize").intValue());
         assertEquals("filterString", node.get("emailFilter").asText());
         assertEquals(startTime.toString(), node.get("startTime").asText());
         assertEquals(endTime.toString(), node.get("endTime").asText());
         assertEquals("PagedResourceList", node.get("type").asText());
         
         JsonNode rp = node.get("requestParams");
-        assertEquals(123, rp.get("offsetBy").asInt());
-        assertEquals(100, rp.get("pageSize").asInt());
+        assertEquals(123, rp.get("offsetBy").intValue());
+        assertEquals(100, rp.get("pageSize").intValue());
         assertEquals(startTime.toString(), rp.get("startTime").asText());
         assertEquals(endTime.toString(), rp.get("endTime").asText());
         assertEquals("filterString", rp.get("emailFilter").asText());
@@ -77,17 +77,13 @@ public class PagedResourceListTest {
         
         Map<String,Object> params = page.getRequestParams();
         Map<String,Object> serParams = serPage.getRequestParams();
-        assertEquals(params.get("offsetBy"), serParams.get("offsetBy"));
-        assertEquals(params.get("pageSize"), serParams.get("pageSize"));
-        assertEquals(params.get("emailFilter"), serParams.get("emailFilter"));
-        assertEquals(params.get("startTime"), serParams.get("startTime"));
-        assertEquals(params.get("endTime"), serParams.get("endTime"));
+        assertEquals(params, serParams);
         
         assertEquals(page.getItems(), serPage.getItems());
     }
     
     @Test(expected = NullPointerException.class)
-    public void offsetByCanBeNull() throws Exception {
+    public void totalCannotBeNull() throws Exception {
         List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
         new PagedResourceList<AccountSummary>(accounts, null);
     }

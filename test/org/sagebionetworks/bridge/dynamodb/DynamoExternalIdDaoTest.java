@@ -311,10 +311,13 @@ public class DynamoExternalIdDaoTest {
             ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 3, null, null);
             assertEquals(3, page.getItems().size());
             assertNotNull(page.getNextPageOffsetKey());
+            assertNull(page.getRequestParams().get("offsetKey"));
             
-            page = dao.getExternalIds(studyId, page.getNextPageOffsetKey(), 3, null, null);
+            String nextOffsetKey = page.getNextPageOffsetKey();
+            page = dao.getExternalIds(studyId, nextOffsetKey, 3, null, null);
             assertEquals(3, page.getItems().size());
             assertNull(page.getNextPageOffsetKey());
+            assertEquals(nextOffsetKey, page.getRequestParams().get("offsetKey"));
         } finally {
             dao.deleteExternalIds(studyId, moreIds);
         }

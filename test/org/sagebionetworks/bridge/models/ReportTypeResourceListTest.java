@@ -15,6 +15,7 @@ import com.google.common.collect.Lists;
 
 public class ReportTypeResourceListTest {
 
+    @SuppressWarnings("deprecation")
     @Test
     public void canSerialize() throws Exception {
         ReportIndex index1 = ReportIndex.create();
@@ -28,6 +29,8 @@ public class ReportTypeResourceListTest {
         
         ReportTypeResourceList<ReportIndex> list = new ReportTypeResourceList<>(
                 Lists.newArrayList(index1, index2)).withRequestParam(ResourceList.REPORT_TYPE, ReportType.PARTICIPANT);
+        
+        assertEquals(ReportType.PARTICIPANT, list.getReportType());
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(list);
         assertEquals("participant", node.get("reportType").asText());

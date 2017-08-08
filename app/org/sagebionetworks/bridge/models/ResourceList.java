@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +43,7 @@ public class ResourceList<T> {
 
     @JsonCreator
     public ResourceList(@JsonProperty(ITEMS) List<T> items) {
+        checkNotNull(items);
         this.items = items;
     }
     public List<T> getItems() {
@@ -64,7 +66,7 @@ public class ResourceList<T> {
     }
     @Deprecated
     public Integer getTotal() {
-        return (items == null || items.isEmpty()) ? null : getItems().size();
+        return items.size();
     }
     protected DateTime getDateTime(String fieldName) {
         String value = (String)requestParams.get(fieldName);

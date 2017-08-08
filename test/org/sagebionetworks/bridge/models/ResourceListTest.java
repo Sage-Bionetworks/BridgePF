@@ -8,9 +8,11 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -50,10 +52,6 @@ public class ResourceListTest {
         ResourceList<String> list = new ResourceList<>(ImmutableList.of());
         JsonNode node = BridgeObjectMapper.get().valueToTree(list);
         assertFalse(node.has("total"));
-        
-        ResourceList<String> list2 = new ResourceList<>(null);
-        JsonNode node2 = BridgeObjectMapper.get().valueToTree(list2);
-        assertFalse(node2.has("total"));
     }
     
     @Test
@@ -66,14 +64,22 @@ public class ResourceListTest {
     
     @Test
     public void getDateTime() {
-        DateTime dateTime = DateTime.now();
+        DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
+        DateTime dateTime = DateTime.now(MSK);
         
         ResourceList<String> list = makeResourceList();
         list.withRequestParam("dateTime1", dateTime);
         list.withRequestParam("dateTime2", dateTime.toString());
         
-        assertTrue(dateTime.isEqual(list.getDateTime("dateTime1")));
-        assertTrue(dateTime.isEqual(list.getDateTime("dateTime2")));
+        TestUtils.assertDatesWithTimeZoneEqual(dateTime,  list.getDateTime("dateTime1"));
+        TestUtils.assertDatesWithTimeZoneEqual(dateTime,  list.getDateTime("dateTime2"));
+    }
+    
+    @Test
+    public void getNullDateTime() {
+        ResourceList<String> list = makeResourceList();
+        
+        assertNull(list.getDateTime("No value"));
     }
     
     @Test
@@ -88,17 +94,57 @@ public class ResourceListTest {
         assertEquals(localDate, list.getLocalDate("localDate2"));
     }
     
+    @Test
+    public void getNullLocalDate() {
+        ResourceList<String> list = makeResourceList();
+        
+        assertNull(list.getLocalDate("No value"));
+    }
+    
     @SuppressWarnings("deprecation")
     @Test
     public void getTotal() {
         ResourceList<String> list = makeResourceList();
         
-        list.withRequestParam("total", 3);
-        
-        assertEquals(3, list.getRequestParams().get("total"));
         assertEquals((Integer)3, list.getTotal());
     }
+    
+    @SuppressWarnings("deprecation")
+    @Test(expected = NullPointerException.class)
+    public void nullList() {
+        new ResourceList<>(null);
+    }
+    
+    @SuppressWarnings("deprecation")
+    @Test
+    public void emptyList() {
+        ResourceList<String> list = new ResourceList<>(Lists.newArrayList());
 
+        assertTrue(list.getItems().isEmpty());
+        assertNull(list.getTotal());
+    }
+    
+    @Test
+    public void blankOrNullRequestParamKeysNotAdded() {
+        List<String> items = Lists.newArrayList("A","B","C");
+        ResourceList<String> list = new ResourceList<>(items);
+        
+        list.withRequestParam(null, "a");
+        list.withRequestParam("", "a");
+        list.withRequestParam("  ", "a");
+        
+        assertEquals(0, list.getRequestParams().size());
+    }
+
+    @Test
+    public void nullRequestParamValuesNotAdded() {
+        List<String> items = Lists.newArrayList("A","B","C");
+        ResourceList<String> list = new ResourceList<>(items);
+        list.withRequestParam("a valid key", null);
+        
+        assertEquals(0, list.getRequestParams().size());
+    }
+    
     private ResourceList<String> makeResourceList() {
         List<String> items = Lists.newArrayList("A","B","C");
         

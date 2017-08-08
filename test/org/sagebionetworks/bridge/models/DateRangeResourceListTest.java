@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.models;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.models.ResourceList.START_DATE;
 import static org.sagebionetworks.bridge.models.ResourceList.END_DATE;
 
@@ -29,7 +31,6 @@ public class DateRangeResourceListTest {
         assertEquals("2016-02-03", node.get("requestParams").get("startDate").asText());
         assertEquals("2016-02-23", node.get("requestParams").get("endDate").asText());
         assertEquals("DateRangeResourceList", node.get("type").asText());
-        assertEquals(3, node.get("total").intValue());
         assertEquals(3, node.get("items").size());
         assertEquals("1", node.get("items").get(0).asText());
         assertEquals("2", node.get("items").get(1).asText());
@@ -41,7 +42,6 @@ public class DateRangeResourceListTest {
         assertEquals(LocalDate.parse("2016-02-03"), list.getStartDate());
         assertEquals(LocalDate.parse("2016-02-23"), list.getEndDate());
         assertEquals(3, list.getItems().size());
-        assertEquals((Integer)3, list.getTotal());
         assertEquals("1", list.getItems().get(0));
         assertEquals("2", list.getItems().get(1));
         assertEquals("3", list.getItems().get(2));
@@ -49,4 +49,34 @@ public class DateRangeResourceListTest {
         assertEquals("2016-02-23", list.getRequestParams().get("endDate"));
     }
     
+    @SuppressWarnings("deprecation")
+    @Test
+    public void getTotal() throws Exception {
+        DateRangeResourceList<String> list = new DateRangeResourceList<>(
+                Lists.newArrayList("1", "2", "3"));
+        
+        assertEquals((Integer)3, list.getTotal());
+        assertNull(list.getRequestParams().get("total")); // not a request parameter
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(list);
+        assertEquals(3, node.get("total").intValue());
+    }
+
+    @SuppressWarnings("deprecation")
+    @Test(expected = NullPointerException.class)
+    public void nullList() {
+        new DateRangeResourceList<>(null);
+    }
+    
+    @SuppressWarnings("deprecation")
+    @Test
+    public void emptyList() {
+        DateRangeResourceList<String> list = new DateRangeResourceList<>(Lists.newArrayList());
+
+        assertTrue(list.getItems().isEmpty());
+        // We are carrying over an exceptional behavior into this deprecated method where this 
+        // list returns 0 instead of null, to keep integration tests and any potential clients
+        // working. This value is going away as it is entirely redundent with the list size.
+        assertEquals((Integer)0, list.getTotal());
+    }
 }

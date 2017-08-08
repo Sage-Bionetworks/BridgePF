@@ -55,7 +55,6 @@ public class ForwardCursorPagedResourceListTest {
         assertEquals(100, node.get("pageSize").intValue());
         assertEquals(2, node.get("total").intValue());
         assertEquals("ForwardCursorPagedResourceList", node.get("type").asText());
-        assertTrue(node.get("hasNext").booleanValue());
         
         JsonNode rp = node.get("requestParams");
         assertEquals(startTime.toString(), rp.get("startTime").asText());
@@ -88,7 +87,6 @@ public class ForwardCursorPagedResourceListTest {
         assertEquals(endTime, serPage.getScheduledOnEnd());
         assertEquals((Integer)100, serPage.getPageSize());
         assertEquals((Integer)2, serPage.getTotal());
-        assertTrue(serPage.hasNext());
         
         Map<String,Object> params = serPage.getRequestParams();
         assertEquals(startTime.toString(), params.get("startTime"));
@@ -103,21 +101,23 @@ public class ForwardCursorPagedResourceListTest {
     }
     
     @Test
-    public void offsetKeyCanBeNull() throws Exception {
-        List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
-        ForwardCursorPagedResourceList<AccountSummary> page = new ForwardCursorPagedResourceList<AccountSummary>(
-                accounts, null).withRequestParam(ResourceList.PAGE_SIZE, 100)
-                .withRequestParam(ResourceList.EMAIL_FILTER, "filterString");
+    public void hasNext() {
+        ForwardCursorPagedResourceList<AccountSummary> list;
+        JsonNode node;
         
-        assertFalse(page.hasNext());
-        
-        JsonNode node = BridgeObjectMapper.get().valueToTree(page);
-        assertNull(node.get("offsetKey"));
-        assertEquals(100, node.get("pageSize").asInt());
-        assertEquals("filterString", node.get("requestParams").get("emailFilter").asText());
-        assertEquals("ForwardCursorPagedResourceList", node.get("type").asText());
+        list = new ForwardCursorPagedResourceList<>(Lists.newArrayList(), null);
+        assertFalse(list.hasNext());
+        node = BridgeObjectMapper.get().valueToTree(list);
         assertFalse(node.get("hasNext").booleanValue());
-        assertEquals(5, node.size());
+        assertNull(node.get("offsetKey"));
+        assertNull(node.get("nextPageOffsetKey"));
+        
+        list = new ForwardCursorPagedResourceList<>(Lists.newArrayList(), "nextPageKey");
+        assertTrue(list.hasNext());
+        node = BridgeObjectMapper.get().valueToTree(list);
+        assertTrue(node.get("hasNext").booleanValue());
+        assertEquals("nextPageKey", node.get("offsetKey").asText());
+        assertEquals("nextPageKey", node.get("nextPageOffsetKey").asText());
     }
     
     // This test was moved from another class that implemented PagedResourceList for
