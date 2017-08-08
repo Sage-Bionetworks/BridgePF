@@ -313,11 +313,11 @@ public abstract class BaseController extends Controller {
         return ok((JsonNode)MAPPER.valueToTree(new ResourceList<T>(list)));
     }
     
-    Result createdResult(String message) throws Exception {
+    Result createdResult(String message)  {
         return created(Json.toJson(new StatusMessage(message)));
     }
     
-    Result createdResult(Object obj) throws Exception {
+    Result createdResult(Object obj) {
         return created((JsonNode)MAPPER.valueToTree(obj));
     }
     

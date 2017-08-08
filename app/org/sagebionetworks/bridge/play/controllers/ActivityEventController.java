@@ -1,21 +1,17 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import java.util.List;
-import java.util.Map;
+import static org.sagebionetworks.bridge.models.activities.ActivityEvent.ACTIVITY_EVENT_WRITER;
 
-import com.google.common.collect.Lists;
-import org.joda.time.DateTime;
-import org.sagebionetworks.evaluation.model.Participant;
+import java.util.List;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import play.mvc.Result;
 
-import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
-import org.sagebionetworks.bridge.models.activities.ActivityEventImpl;
 import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ActivityEventService;
@@ -40,18 +36,17 @@ public class ActivityEventController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
         CustomActivityEventRequest activityEvent = parseJson(request(), CustomActivityEventRequest.class);
 
-        Study study = studyService.getStudy(session.getStudyIdentifier());
-
-        StudyParticipant participant = participantService.getParticipant(study, session.getId(), false);
-
-        activityEventService.publishCustomEvent(session.getStudyIdentifier(), participant.getHealthCode(),
+        activityEventService.publishCustomEvent(session.getStudyIdentifier(), session.getHealthCode(),
                 activityEvent.getEventKey(), activityEvent.getTimestamp());
 
-        return okResult("Event recorded");
+        return createdResult("Event recorded");
     }
 
-    public Result getSelfActivityEvents() {
+    public Result getSelfActivityEvents() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        return okResult(activityEventService.getActivityEventList(session.getHealthCode()));
+
+        List<ActivityEvent> activityEvents = activityEventService.getActivityEventList(session.getHealthCode());
+
+        return okResult(ACTIVITY_EVENT_WRITER.writeValueAsString(activityEvents));
     }
 }

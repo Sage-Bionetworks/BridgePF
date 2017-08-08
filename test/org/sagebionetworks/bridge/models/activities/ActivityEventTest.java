@@ -5,11 +5,10 @@ import static org.junit.Assert.fail;
 
 import org.joda.time.DateTime;
 import org.junit.Test;
+
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent.Builder;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.models.activities.ActivityEvent;
-import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 
 public class ActivityEventTest {
 

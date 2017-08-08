@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import org.joda.time.DateTime;
+
+import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
@@ -10,6 +13,8 @@ import org.sagebionetworks.bridge.validators.Validate;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 // We must preserve the table name until any migration occurs.
 @DynamoDBTable(tableName = "TaskEvent")
@@ -36,9 +41,11 @@ public class DynamoActivityEvent implements ActivityEvent {
         this.answerValue = answerValue;
     }
     @Override
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     public Long getTimestamp() {
         return timestamp;
     }
+    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
     public void setTimestamp(Long timestamp) {
         this.timestamp = timestamp;
     }

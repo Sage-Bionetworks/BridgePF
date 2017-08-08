@@ -15,7 +15,6 @@ import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
-import org.sagebionetworks.bridge.models.activities.ActivityEventImpl;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
@@ -126,14 +125,15 @@ public class ActivityEventService {
 
         List<ActivityEvent> activityEventList = Lists.newArrayList();
         for (Map.Entry<String, DateTime> entry : activityEvents.entrySet()) {
+            DynamoActivityEvent event = new DynamoActivityEvent();
+            event.setEventId(entry.getKey());
+
             DateTime timestamp = entry.getValue();
-            activityEventList.add(
-                    new ActivityEventImpl(
-                            null,
-                            entry.getKey(),
-                            null,
-                            timestamp == null ? null : timestamp.getMillis()
-                    ));
+            if (timestamp !=null) {
+                event.setTimestamp(timestamp.getMillis());
+            }
+
+            activityEventList.add(event);
         }
         return activityEventList;
     }
