@@ -557,11 +557,11 @@ public class ParticipantControllerTest {
     
     @Test
     public void canGetActivityHistoryV2() throws Exception {
-        doReturn(createActivityResultsV2()).when(mockParticipantService).getActivityHistory(eq(study), eq(ID), eq(ACTIVITY_GUID),
-                any(), any(), eq("200"), eq(77));
+        doReturn(createActivityResultsV2("200")).when(mockParticipantService).getActivityHistory(eq(study), eq(ID),
+                eq(ACTIVITY_GUID), any(), any(), eq("200"), eq(77));
         
         Result result = controller.getActivityHistoryV2(ID, ACTIVITY_GUID, START_TIME.toString(), END_TIME.toString(),
-                "200", "77");
+                "200", null, "77");
         assertEquals(200, result.status());
         ForwardCursorPagedResourceList<ScheduledActivity> page = MAPPER.readValue(Helpers.contentAsString(result),
                 FORWARD_CURSOR_PAGED_ACTIVITIES_REF);
@@ -569,9 +569,38 @@ public class ParticipantControllerTest {
         ScheduledActivity activity = page.getItems().iterator().next();
         assertEquals("schedulePlanGuid", activity.getSchedulePlanGuid());
         assertNull(activity.getHealthCode());
+
+        JsonNode node = MAPPER.readTree(Helpers.contentAsString(result));
+        assertEquals("200", node.get("offsetBy").asText());
         
         assertEquals(1, page.getItems().size()); // have not mocked out these items, but the list is there.
         assertEquals(1, page.getRequestParams().get("pageSize"));
+        assertEquals("200", page.getRequestParams().get("offsetKey"));
+        
+        verify(mockParticipantService).getActivityHistory(eq(study), eq(ID), eq(ACTIVITY_GUID),
+                startsOnCaptor.capture(), endsOnCaptor.capture(), eq("200"), eq(77));
+        assertTrue(START_TIME.isEqual(startsOnCaptor.getValue()));
+        assertTrue(END_TIME.isEqual(endsOnCaptor.getValue()));
+    }
+    
+    @Test
+    public void canGetActivityHistoryV2WithOffsetKey() throws Exception {
+        doReturn(createActivityResultsV2("200")).when(mockParticipantService).getActivityHistory(eq(study), eq(ID),
+                eq(ACTIVITY_GUID), any(), any(), eq("200"), eq(77));
+        
+        Result result = controller.getActivityHistoryV2(ID, ACTIVITY_GUID, START_TIME.toString(), END_TIME.toString(),
+                null, "200", "77");
+        assertEquals(200, result.status());
+        ForwardCursorPagedResourceList<ScheduledActivity> page = MAPPER.readValue(Helpers.contentAsString(result),
+                FORWARD_CURSOR_PAGED_ACTIVITIES_REF);
+        
+        ScheduledActivity activity = page.getItems().iterator().next();
+        assertEquals("schedulePlanGuid", activity.getSchedulePlanGuid());
+        assertNull(activity.getHealthCode());
+
+        assertEquals(1, page.getItems().size()); // have not mocked out these items, but the list is there.
+        assertEquals(1, page.getRequestParams().get("pageSize"));
+        assertEquals("200", page.getRequestParams().get("offsetKey"));
         
         verify(mockParticipantService).getActivityHistory(eq(study), eq(ID), eq(ACTIVITY_GUID),
                 startsOnCaptor.capture(), endsOnCaptor.capture(), eq("200"), eq(77));
@@ -581,10 +610,10 @@ public class ParticipantControllerTest {
 
     @Test
     public void canGetActivityV2WithNullValues() throws Exception {
-        doReturn(createActivityResultsV2()).when(mockParticipantService).getActivityHistory(eq(study), eq(ID), eq(ACTIVITY_GUID),
-                any(), any(), eq(null), eq(API_DEFAULT_PAGE_SIZE));
+        doReturn(createActivityResultsV2(null)).when(mockParticipantService).getActivityHistory(eq(study), eq(ID),
+                eq(ACTIVITY_GUID), any(), any(), eq(null), eq(API_DEFAULT_PAGE_SIZE));
         
-        Result result = controller.getActivityHistoryV2(ID, ACTIVITY_GUID, null, null, null, null);
+        Result result = controller.getActivityHistoryV2(ID, ACTIVITY_GUID, null, null, null, null, null);
         assertEquals(200, result.status());
         ForwardCursorPagedResourceList<ScheduledActivity> page = MAPPER.readValue(Helpers.contentAsString(result),
                 FORWARD_CURSOR_PAGED_ACTIVITIES_REF);
@@ -818,7 +847,7 @@ public class ParticipantControllerTest {
         assertEquals("foo", page.getRequestParams().get("emailFilter"));
     }
     
-    private ForwardCursorPagedResourceList<ScheduledActivity> createActivityResultsV2() {
+    private ForwardCursorPagedResourceList<ScheduledActivity> createActivityResultsV2(String offsetKey) {
         List<ScheduledActivity> list = Lists.newArrayList();
         
         DynamoScheduledActivity activity = new DynamoScheduledActivity();
@@ -827,7 +856,8 @@ public class ParticipantControllerTest {
         activity.setSchedulePlanGuid("schedulePlanGuid");
         list.add(activity);
         
-        return new ForwardCursorPagedResourceList<>(list, null).withRequestParam("pageSize", list.size());
+        return new ForwardCursorPagedResourceList<>(list, null).withRequestParam("pageSize", list.size())
+                .withRequestParam("offsetKey", offsetKey);
     }
     
     private PagedResourceList<AccountSummary> resultToPage(Result result) throws Exception {

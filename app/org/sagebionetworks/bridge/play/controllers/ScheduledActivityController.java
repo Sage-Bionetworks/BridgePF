@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
+import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,17 +66,27 @@ public class ScheduledActivityController extends BaseController {
     }
 
     public Result getActivityHistory(String activityGuid, String scheduledOnStartString,
-            String scheduledOnEndString, String offsetBy, String pageSizeString) throws Exception {
+            String scheduledOnEndString, String offsetBy, String offsetKey, String pageSizeString) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
+        
+        if (offsetKey == null) {
+            offsetKey = offsetBy;
+        }
         
         DateTime scheduledOnStart = getDateTimeOrDefault(scheduledOnStartString, null);
         DateTime scheduledOnEnd = getDateTimeOrDefault(scheduledOnEndString, null);
         int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
         
         ForwardCursorPagedResourceList<ScheduledActivity> page = scheduledActivityService.getActivityHistory(
-                session.getHealthCode(), activityGuid, scheduledOnStart, scheduledOnEnd, offsetBy, pageSize);
-        
-        return ok(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(page));
+                session.getHealthCode(), activityGuid, scheduledOnStart, scheduledOnEnd, offsetKey, pageSize);
+
+        // If offsetBy was supplied, we return it as a top-level property of the list for backwards compatibility.
+        String json = ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(page);
+        ObjectNode node = (ObjectNode)MAPPER.readTree(json);
+        if (offsetBy != null) {
+            node.put(OFFSET_BY, offsetBy);    
+        }
+        return ok(node);
     }
     
     public Result getScheduledActivitiesByDateRange(String startTimeString, String endTimeString) throws Exception {

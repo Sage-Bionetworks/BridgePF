@@ -15,7 +15,7 @@ public interface ScheduledActivityDao {
      */
     ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistoryV2(String healthCode,
             String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, DateTimeZone timezone,
-            String offsetBy, int pageSize);
+            String offsetKey, int pageSize);
     
     /**
      * Load an individual activity.

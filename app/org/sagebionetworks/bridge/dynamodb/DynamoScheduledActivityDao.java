@@ -55,7 +55,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     @Override
     public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistoryV2(String healthCode,
             String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, DateTimeZone timezone,
-            String offsetBy, int pageSize) {
+            String offsetKey, int pageSize) {
         checkNotNull(healthCode);
         checkNotNull(scheduledOnStart);
         checkNotNull(scheduledOnEnd);
@@ -83,10 +83,10 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
             .withScanIndexForward(false)
             .withRangeKeyCondition(GUID, dateCondition);
         
-        if (offsetBy != null) {
+        if (offsetKey != null) {
             Map<String,AttributeValue> map = Maps.newHashMap();
             map.put(HEALTH_CODE, new AttributeValue(healthCode));
-            map.put(GUID, new AttributeValue(activityGuid+":"+offsetBy));
+            map.put(GUID, new AttributeValue(activityGuid+":"+offsetKey));
             
             query.withExclusiveStartKey(map);
         }
@@ -99,13 +99,13 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
             activities.add((ScheduledActivity)act);
         }
         
-        String nextOffsetBy = null;
+        String nextPageOffsetKey = null;
         if (queryResult.getLastEvaluatedKey() != null) {
-            nextOffsetBy = queryResult.getLastEvaluatedKey().get(GUID).getS().split(":",2)[1];
+            nextPageOffsetKey = queryResult.getLastEvaluatedKey().get(GUID).getS().split(":",2)[1];
         }
 
-        return new ForwardCursorPagedResourceList<ScheduledActivity>(activities, nextOffsetBy)
-                .withRequestParam(ResourceList.OFFSET_KEY, offsetBy)
+        return new ForwardCursorPagedResourceList<ScheduledActivity>(activities, nextPageOffsetKey)
+                .withRequestParam(ResourceList.OFFSET_KEY, offsetKey)
                 .withRequestParam(ResourceList.PAGE_SIZE, pageSize)
                 .withRequestParam(ResourceList.SCHEDULED_ON_START, scheduledOnStart)
                 .withRequestParam(ResourceList.SCHEDULED_ON_END, scheduledOnEnd);

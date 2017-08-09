@@ -121,7 +121,7 @@ public class ScheduledActivityService {
     }
 
     public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(String healthCode,
-            String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, String offsetBy,
+            String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, String offsetKey,
             int pageSize) {
         checkArgument(isNotBlank(healthCode));
         checkArgument(isNotBlank(activityGuid));
@@ -146,7 +146,7 @@ public class ScheduledActivityService {
         }
 
         return activityDao.getActivityHistoryV2(
-                healthCode, activityGuid, scheduledOnStart, scheduledOnEnd, timezone, offsetBy, pageSize);
+                healthCode, activityGuid, scheduledOnStart, scheduledOnEnd, timezone, offsetKey, pageSize);
     }
     
     // This needs to be exposed for tests because although we can fix a point of time for tests, we cannot

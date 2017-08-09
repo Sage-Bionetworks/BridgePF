@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.anyString;
@@ -348,10 +349,10 @@ public class ScheduledActivityControllerTest {
     
     @Test
     public void activityHistoryWithDefaults() throws Exception {
-        doReturn(createActivityResultsV2(77)).when(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE),
+        doReturn(createActivityResultsV2(77, null)).when(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE),
                 eq(ACTIVITY_GUID), any(null), any(null), eq(null), eq(BridgeConstants.API_DEFAULT_PAGE_SIZE));
         
-        Result result = controller.getActivityHistory(ACTIVITY_GUID, null, null, null, null);
+        Result result = controller.getActivityHistory(ACTIVITY_GUID, null, null, null, null, null);
         assertEquals(200, result.status());
 
         verify(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE), eq(ACTIVITY_GUID), eq(null),
@@ -364,11 +365,37 @@ public class ScheduledActivityControllerTest {
     
     @Test
     public void activityHistoryWithAllValues() throws Exception {
-        doReturn(createActivityResultsV2(77)).when(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE),
+        doReturn(createActivityResultsV2(77, "2000")).when(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE),
                 eq(ACTIVITY_GUID), any(), any(), eq("2000"), eq(77));
         
         Result result = controller.getActivityHistory(ACTIVITY_GUID, STARTS_ON.toString(),
-                ENDS_ON.toString(), OFFSET_BY, PAGE_SIZE);
+                ENDS_ON.toString(), OFFSET_BY, null, PAGE_SIZE);
+        assertEquals(200, result.status());
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> page = BridgeObjectMapper.get()
+                .readValue(Helpers.contentAsString(result), FORWARD_CURSOR_PAGED_ACTIVITIES_REF);
+        
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        assertEquals(OFFSET_BY, node.get("offsetBy").asText());
+        
+        assertEquals(1, page.getItems().size());
+        assertEquals("777", page.getNextPageOffsetKey());
+        assertEquals(77, page.getRequestParams().get("pageSize"));
+        assertEquals(OFFSET_BY, page.getRequestParams().get("offsetKey"));
+
+        verify(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE), eq(ACTIVITY_GUID), startsOnCaptor.capture(),
+                endsOnCaptor.capture(), eq("2000"), eq(77));
+        assertTrue(STARTS_ON.isEqual(startsOnCaptor.getValue()));
+        assertTrue(ENDS_ON.isEqual(endsOnCaptor.getValue()));
+    }
+    
+    @Test
+    public void activityHistoryWithOffsetKey() throws Exception {
+        doReturn(createActivityResultsV2(77, "2000")).when(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE),
+                eq(ACTIVITY_GUID), any(), any(), eq("2000"), eq(77));
+
+        Result result = controller.getActivityHistory(ACTIVITY_GUID, STARTS_ON.toString(),
+                ENDS_ON.toString(), null, OFFSET_BY, PAGE_SIZE);
         assertEquals(200, result.status());
         
         ForwardCursorPagedResourceList<ScheduledActivity> page = BridgeObjectMapper.get()
@@ -377,6 +404,7 @@ public class ScheduledActivityControllerTest {
         assertEquals(1, page.getItems().size());
         assertEquals("777", page.getNextPageOffsetKey());
         assertEquals(77, page.getRequestParams().get("pageSize"));
+        assertEquals(OFFSET_BY, page.getRequestParams().get("offsetKey"));
 
         verify(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE), eq(ACTIVITY_GUID), startsOnCaptor.capture(),
                 endsOnCaptor.capture(), eq("2000"), eq(77));
@@ -480,7 +508,7 @@ public class ScheduledActivityControllerTest {
         controller.getScheduledActivitiesByDateRange(startsOn.toString(), endsOn.toString());
     }
     
-    private ForwardCursorPagedResourceList<ScheduledActivity> createActivityResultsV2(int pageSize) {
+    private ForwardCursorPagedResourceList<ScheduledActivity> createActivityResultsV2(int pageSize, String offsetKey) {
         List<ScheduledActivity> list = Lists.newArrayList();
         
         DynamoScheduledActivity activity = new DynamoScheduledActivity();
@@ -490,6 +518,7 @@ public class ScheduledActivityControllerTest {
         list.add(activity);
         
         return new ForwardCursorPagedResourceList<ScheduledActivity>(list, "777")
-                .withRequestParam(ResourceList.PAGE_SIZE, pageSize);
+                .withRequestParam(ResourceList.PAGE_SIZE, pageSize)
+                .withRequestParam(ResourceList.OFFSET_KEY, offsetKey);
     }
 }
