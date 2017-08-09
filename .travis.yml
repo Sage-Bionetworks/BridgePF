@@ -40,14 +40,14 @@ deploy:
       prod: bridge-prod
   - provider: elasticbeanstalk
     skip_cleanup: true
-    bucket_name: org-sagebridge-bridgepf-deployment-$TRAVIS_BRANCH
+    bucket_name: org-sagebridge-bridgepf-deployment-bridgepf-$TRAVIS_BRANCH
     zip_file: target/universal/bridgepf-0.1-SNAPSHOT.zip
     region: us-east-1
-    app: BridgePF
+    app: bridgepf-$TRAVIS_BRANCH-application
     env:
-      develop: BridgePF-develop
-      uat: BridgePF-uat
-      prod: BridgePF-prod
+      develop: bridgepf-develop
+      uat: bridgepf-uat
+      prod: bridgepf-prod
     on:
       all_branches: true
     access_key_id: AKIAIG6T67NMROEIMC7A
