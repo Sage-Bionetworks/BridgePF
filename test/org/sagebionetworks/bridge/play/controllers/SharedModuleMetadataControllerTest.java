@@ -213,7 +213,7 @@ public class SharedModuleMetadataControllerTest {
 
         ResourceList<SharedModuleMetadata> metadataResourceList = BridgeObjectMapper.get().readValue(jsonText,
                 METADATA_RESOURCE_LIST_TYPE);
-        assertEquals(1, metadataResourceList.getTotal());
+        assertEquals(1, metadataResourceList.getItems().size());
 
         List<SharedModuleMetadata> metadataList = metadataResourceList.getItems();
         assertEquals(1, metadataList.size());

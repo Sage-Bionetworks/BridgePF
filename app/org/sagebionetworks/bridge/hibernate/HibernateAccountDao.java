@@ -27,6 +27,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
@@ -48,6 +49,7 @@ import org.sagebionetworks.bridge.services.HealthCodeService;
 /** Hibernate implementation of Account Dao. */
 @Component
 public class HibernateAccountDao implements AccountDao {
+    
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
 
     private AccountWorkflowService accountWorkflowService;
@@ -323,9 +325,9 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize,
-            String emailFilter, DateTime startDate, DateTime endDate) {
+            String emailFilter, DateTime startTime, DateTime endTime) {
         // Note: emailFilter can be any substring, not just prefix/suffix
-        // Note: start- and endDate are inclusive.
+        // Note: start- and endTime are inclusive.
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("from HibernateAccount where studyId='");
         queryBuilder.append(study.getIdentifier());
@@ -335,13 +337,13 @@ public class HibernateAccountDao implements AccountDao {
             queryBuilder.append(emailFilter);
             queryBuilder.append("%'");
         }
-        if (startDate != null) {
+        if (startTime != null) {
             queryBuilder.append(" and createdOn >= ");
-            queryBuilder.append(startDate.getMillis());
+            queryBuilder.append(startTime.getMillis());
         }
-        if (endDate != null) {
+        if (endTime != null) {
             queryBuilder.append(" and createdOn <= ");
-            queryBuilder.append(endDate.getMillis());
+            queryBuilder.append(endTime.getMillis());
         }
         String query = queryBuilder.toString();
 
@@ -355,9 +357,12 @@ public class HibernateAccountDao implements AccountDao {
         int count = hibernateHelper.queryCount(query);
 
         // Package results and return.
-        return new PagedResourceList<>(accountSummaryList, offsetBy, pageSize, count)
-                .withFilter("emailFilter", emailFilter).withFilter("startDate", startDate)
-                .withFilter("endDate", endDate);
+        return new PagedResourceList<>(accountSummaryList, count)
+                .withRequestParam(ResourceList.OFFSET_BY, offsetBy)
+                .withRequestParam(ResourceList.PAGE_SIZE, pageSize)
+                .withRequestParam(ResourceList.EMAIL_FILTER, emailFilter)
+                .withRequestParam(ResourceList.START_TIME, startTime)
+                .withRequestParam(ResourceList.END_TIME, endTime);
     }
 
     // Helper method which marshalls a GenericAccount into a HibernateAccount.

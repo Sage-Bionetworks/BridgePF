@@ -7,23 +7,19 @@ import org.sagebionetworks.bridge.models.reports.ReportType;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class ReportTypeResourceList<T> {
-    private final List<T> items;
-    private final ReportType reportType;
-
+public class ReportTypeResourceList<T> extends ResourceList<T> {
+    
     @JsonCreator
-    public ReportTypeResourceList(@JsonProperty("items") List<T> items,
-            @JsonProperty("reportType") ReportType reportType) {
-        this.items = items;
-        this.reportType = reportType;
+    public ReportTypeResourceList(@JsonProperty(ITEMS) List<T> items) {
+        super(items);
     }
-    public List<T> getItems() {
-        return items;
-    }
-    public int getTotal() {
-        return items.size();
-    }
+    @Deprecated
     public ReportType getReportType() {
-        return reportType;
+        return (ReportType)getRequestParams().get(REPORT_TYPE);
     }
+    public ReportTypeResourceList<T> withRequestParam(String key, Object value) {
+        super.withRequestParam(key, value);
+        return this;
+    }
+    
 }

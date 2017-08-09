@@ -192,8 +192,8 @@ public class DynamoExternalIdDaoTest {
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 10, null, null);
         
         assertEquals(3, page.getItems().size());
-        assertEquals(10, page.getPageSize());
-        assertNull(page.getOffsetKey());
+        assertEquals(10, page.getRequestParams().get("pageSize"));
+        assertNull(page.getNextPageOffsetKey());
     }
     
     @Test
@@ -205,16 +205,16 @@ public class DynamoExternalIdDaoTest {
             // AAA, AEE, AFF
             ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 10, "A", null);
             assertEquals(3, page.getItems().size());
-            assertEquals(10, page.getPageSize());
-            assertEquals("A", page.getFilters().get("idFilter"));
-            assertNull(page.getOffsetKey());
+            assertEquals(10, page.getRequestParams().get("pageSize"));
+            assertEquals("A", page.getRequestParams().get("idFilter"));
+            assertNull(page.getNextPageOffsetKey());
 
             // Nothing matches this filter
             page = dao.getExternalIds(studyId, null, 10, "ZZZ", null);
             assertEquals(0, page.getItems().size());
-            assertEquals(10, page.getPageSize());
-            assertEquals("ZZZ", page.getFilters().get("idFilter"));
-            assertNull(page.getOffsetKey());
+            assertEquals(10, page.getRequestParams().get("pageSize"));
+            assertEquals("ZZZ", page.getRequestParams().get("idFilter"));
+            assertNull(page.getNextPageOffsetKey());
             
             dao.assignExternalId(studyId, "AAA", "healthCode1");
             dao.assignExternalId(studyId, "BBB", "healthCode1");
@@ -240,19 +240,25 @@ public class DynamoExternalIdDaoTest {
 
             ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 5, null, null);
             assertEquals(5, page.getItems().size());
-            assertEquals("EEE", page.getOffsetKey());
+            assertEquals("EEE", page.getNextPageOffsetKey());
+            assertNull(page.getRequestParams().get("offsetKey"));
             assertEquals(toSet(false, "AAA","BBB","CCC","DDD","EEE"), Sets.newHashSet(page.getItems()));
             
-            page = dao.getExternalIds(studyId, page.getOffsetKey(), 5, null, null);
+            page = dao.getExternalIds(studyId, page.getNextPageOffsetKey(), 5, null, null);
             assertEquals(toSet(false, "FFF","GGG","HHH","III","JJJ"), Sets.newHashSet(page.getItems()));
+            assertEquals("JJJ", page.getNextPageOffsetKey());
+            assertEquals("EEE", page.getRequestParams().get("offsetKey"));
             
-            page = dao.getExternalIds(studyId, page.getOffsetKey(), 5, null, null);
+            page = dao.getExternalIds(studyId, page.getNextPageOffsetKey(), 5, null, null);
             assertEquals(toSet(false, "KKK","LLL","MMM","NNN","OOO"), Sets.newHashSet(page.getItems()));
+            assertEquals("OOO", page.getNextPageOffsetKey());
+            assertEquals("JJJ", page.getRequestParams().get("offsetKey"));
             
-            page = dao.getExternalIds(studyId, page.getOffsetKey(), 15, null, null);
+            page = dao.getExternalIds(studyId, page.getNextPageOffsetKey(), 15, null, null);
             assertEquals(toSet(false, "PPP", "QQQ", "RRR", "SSS", "TTT", "UUU", "VVV", "WWW", "XXX", "YYY", "ZZZ"),
                     Sets.newHashSet(page.getItems()));
-            assertNull(page.getOffsetKey());
+            assertNull(page.getNextPageOffsetKey());
+            assertEquals("OOO", page.getRequestParams().get("offsetKey"));
         } finally {
             try {
                 dao.deleteExternalIds(studyId, moreIds1);
@@ -278,7 +284,7 @@ public class DynamoExternalIdDaoTest {
     public void pagingWithFilterResetsInapplicableOffsetKey() {
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, "B", 5, "C", null);
         assertEquals(new ExternalIdentifierInfo("CCC", false), page.getItems().get(0));
-        assertNull(page.getOffsetKey());
+        assertNull(page.getNextPageOffsetKey());
     }
     
     @Test
@@ -291,7 +297,7 @@ public class DynamoExternalIdDaoTest {
     public void pagingWithFilterShorterThanKeyWorks() {
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, "C", 5, "CC", null);
         assertEquals(new ExternalIdentifierInfo("CCC", false), page.getItems().get(0));
-        assertNull(page.getOffsetKey());
+        assertNull(page.getNextPageOffsetKey());
     }
     
     // Sometimes paging fails when the total records divided by the page has no remainder. 
@@ -304,11 +310,14 @@ public class DynamoExternalIdDaoTest {
 
             ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 3, null, null);
             assertEquals(3, page.getItems().size());
-            assertNotNull(page.getOffsetKey());
+            assertNotNull(page.getNextPageOffsetKey());
+            assertNull(page.getRequestParams().get("offsetKey"));
             
-            page = dao.getExternalIds(studyId, page.getOffsetKey(), 3, null, null);
+            String nextOffsetKey = page.getNextPageOffsetKey();
+            page = dao.getExternalIds(studyId, nextOffsetKey, 3, null, null);
             assertEquals(3, page.getItems().size());
-            assertNull(page.getOffsetKey());
+            assertNull(page.getNextPageOffsetKey());
+            assertEquals(nextOffsetKey, page.getRequestParams().get("offsetKey"));
         } finally {
             dao.deleteExternalIds(studyId, moreIds);
         }
@@ -358,6 +367,18 @@ public class DynamoExternalIdDaoTest {
         
         assertEquals(1, ids.getItems().size());
         assertEquals("CCC", ids.getItems().get(0).getIdentifier());
+    }
+    
+    @Test
+    public void hasCorrectRequestParams() {
+        // StudyIdentifier studyId,String offsetKey, int pageSize, String idFilter, Boolean assignmentFilter
+        ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, "offsetKeyValue", 1,
+                "offsetKey", Boolean.FALSE);
+        
+        assertEquals("offsetKeyValue", page.getRequestParams().get("offsetKey"));
+        assertEquals((Integer)1, (Integer)page.getRequestParams().get("pageSize"));
+        assertEquals("offsetKey", page.getRequestParams().get("idFilter"));
+        assertEquals(Boolean.FALSE, page.getRequestParams().get("assignmentFilter"));
     }
 
     private Set<ExternalIdentifierInfo> toSet(boolean isAssigned, String... infos) {

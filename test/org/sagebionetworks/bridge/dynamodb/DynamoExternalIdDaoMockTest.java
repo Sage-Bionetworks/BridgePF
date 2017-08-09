@@ -83,7 +83,7 @@ public class DynamoExternalIdDaoMockTest {
                         null,
                         false);
 
-        assertEquals(pageSize, result.getPageSize());
+        assertEquals(pageSize, result.getRequestParams().get("pageSize"));
 
         List<ExternalIdentifierInfo> externalIds = result.getItems();
         assertEquals(3, externalIds.size());
@@ -108,7 +108,7 @@ public class DynamoExternalIdDaoMockTest {
                         null,
                         false);
 
-        assertEquals(pageSize, result.getPageSize());
+        assertEquals(pageSize, result.getRequestParams().get("pageSize"));
 
         List<ExternalIdentifierInfo> externalIds = result.getItems();
         assertEquals(3, externalIds.size());
@@ -133,7 +133,7 @@ public class DynamoExternalIdDaoMockTest {
                         null,
                         false);
 
-        assertEquals(pageSize, result.getPageSize());
+        assertEquals(pageSize, result.getRequestParams().get("pageSize"));
 
         List<ExternalIdentifierInfo> externalIds = result.getItems();
         assertEquals(5, externalIds.size());
@@ -158,7 +158,7 @@ public class DynamoExternalIdDaoMockTest {
                         null,
                         false);
 
-        assertEquals(pageSize, result.getPageSize());
+        assertEquals(pageSize, result.getRequestParams().get("pageSize"));
 
         List<ExternalIdentifierInfo> externalIds = result.getItems();
         assertEquals(4, externalIds.size());

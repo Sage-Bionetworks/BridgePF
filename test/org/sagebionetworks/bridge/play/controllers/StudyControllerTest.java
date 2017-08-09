@@ -53,7 +53,6 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DefaultObjectMapper;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
-import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -77,7 +76,7 @@ public class StudyControllerTest {
 
     private static final String PEM_TEXT = "-----BEGIN CERTIFICATE-----\nMIIExDCCA6ygAwIBAgIGBhCnnOuXMA0GCSqGSIb3DQEBBQUAMIGeMQswCQYDVQQG\nEwJVUzELMAkGA1UECAwCV0ExEDAOBgNVBAcMB1NlYXR0bGUxGTAXBgNVBAoMEFNh\nVlOwuuAxumMyIq5W4Dqk8SBcH9Y4qlk7\nEND CERTIFICATE-----";
 
-    private static final TypeReference<PagedResourceList<? extends Upload>> UPLOADS_REF = new TypeReference<PagedResourceList<? extends Upload>>(){};
+    private static final TypeReference<ForwardCursorPagedResourceList<? extends Upload>> UPLOADS_REF = new TypeReference<ForwardCursorPagedResourceList<? extends Upload>>(){};
 
     private static final String TEST_PROJECT_ID = "synapseProjectId";
     private static final Long TEST_TEAM_ID = Long.parseLong("123");
@@ -354,6 +353,7 @@ public class StudyControllerTest {
         testRoleAccessToCurrentStudy(null);
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void canGetUploadsForStudy() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
@@ -363,9 +363,10 @@ public class StudyControllerTest {
 
         List<Upload> list = Lists.newArrayList();
 
-        ForwardCursorPagedResourceList<Upload> uploads = new ForwardCursorPagedResourceList<>(list, null, API_MAXIMUM_PAGE_SIZE)
-                .withFilter("startTime", startTime)
-                .withFilter("endTime", endTime);
+        ForwardCursorPagedResourceList<Upload> uploads = new ForwardCursorPagedResourceList<>(list, null)
+                .withRequestParam("pageSize", API_MAXIMUM_PAGE_SIZE)
+                .withRequestParam("startTime", startTime)
+                .withRequestParam("endTime", endTime);
         doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
         
         Result result = controller.getUploads(startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
@@ -374,14 +375,13 @@ public class StudyControllerTest {
         verify(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
         verify(mockStudyService, never()).getStudy(studyId.toString());
         // in other words, it's the object we mocked out from the service, we were returned the value.
-        PagedResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
+        ForwardCursorPagedResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), UPLOADS_REF);
-        assertNull(retrieved.getOffsetBy());
-        assertNull(retrieved.getOffsetKey());
-        assertEquals(0, retrieved.getTotal());
-        assertEquals(API_MAXIMUM_PAGE_SIZE, retrieved.getPageSize());
-        assertEquals(startTime.toString(), retrieved.getFilters().get("startTime"));
-        assertEquals(endTime.toString(), retrieved.getFilters().get("endTime"));
+        assertNull(retrieved.getRequestParams().get("offsetBy"));
+        assertNull(retrieved.getTotal());
+        assertEquals(API_MAXIMUM_PAGE_SIZE, retrieved.getRequestParams().get("pageSize"));
+        assertEquals(startTime.toString(), retrieved.getRequestParams().get("startTime"));
+        assertEquals(endTime.toString(), retrieved.getRequestParams().get("endTime"));
     }
 
     @Test(expected = BadRequestException.class)
@@ -414,6 +414,7 @@ public class StudyControllerTest {
         controller.getUploadsForStudy(" ", startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void canGetUploadsForSpecifiedStudy() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(WORKER);
@@ -423,9 +424,10 @@ public class StudyControllerTest {
 
         List<Upload> list = Lists.newArrayList();
 
-        ForwardCursorPagedResourceList<Upload> uploads = new ForwardCursorPagedResourceList<>(list, null, API_MAXIMUM_PAGE_SIZE)
-                .withFilter("startTime", startTime)
-                .withFilter("endTime", endTime);
+        ForwardCursorPagedResourceList<Upload> uploads = new ForwardCursorPagedResourceList<>(list, null)
+                .withRequestParam("pageSize", API_MAXIMUM_PAGE_SIZE)
+                .withRequestParam("startTime", startTime)
+                .withRequestParam("endTime", endTime);
         doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE,
                 null);
 
@@ -436,14 +438,13 @@ public class StudyControllerTest {
         verify(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
 
         // in other words, it's the object we mocked out from the service, we were returned the value.
-        PagedResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
+        ForwardCursorPagedResourceList<? extends Upload> retrieved = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), UPLOADS_REF);
-        assertNull(retrieved.getOffsetBy());
-        assertNull(retrieved.getOffsetKey());
-        assertEquals(0, retrieved.getTotal());
-        assertEquals(API_MAXIMUM_PAGE_SIZE, retrieved.getPageSize());
-        assertEquals(startTime.toString(), retrieved.getFilters().get("startTime"));
-        assertEquals(endTime.toString(), retrieved.getFilters().get("endTime"));
+        assertNull(retrieved.getRequestParams().get("offsetBy"));
+        assertNull(retrieved.getTotal());
+        assertEquals(API_MAXIMUM_PAGE_SIZE, retrieved.getRequestParams().get("pageSize"));
+        assertEquals(startTime.toString(), retrieved.getRequestParams().get("startTime"));
+        assertEquals(endTime.toString(), retrieved.getRequestParams().get("endTime"));
     }
     
     @Test

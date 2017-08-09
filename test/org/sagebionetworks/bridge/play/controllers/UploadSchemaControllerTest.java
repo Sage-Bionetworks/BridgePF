@@ -151,7 +151,7 @@ public class UploadSchemaControllerTest {
         String resultJson = Helpers.contentAsString(result);
         JsonNode resultNode = BridgeObjectMapper.get().readTree(resultJson);
         assertEquals("ResourceList", resultNode.get("type").textValue());
-        assertEquals(1, resultNode.get("total").intValue());
+        assertEquals(1, resultNode.get("items").size());
 
         JsonNode itemListNode = resultNode.get("items");
         assertEquals(1, itemListNode.size());
@@ -183,7 +183,7 @@ public class UploadSchemaControllerTest {
         String resultJson = Helpers.contentAsString(result);
         JsonNode resultNode = BridgeObjectMapper.get().readTree(resultJson);
         assertEquals("ResourceList", resultNode.get("type").textValue());
-        assertEquals(3, resultNode.get("total").intValue());
+        assertEquals(3, resultNode.get("items").size());
 
         JsonNode itemsNode = resultNode.get("items");
         assertEquals(3, itemsNode.size());

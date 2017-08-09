@@ -38,6 +38,7 @@ public class ConcurrentModificationExceptionTest {
     // Trivial class with a single getter. We need a concrete implementation of BridgeEntity, and Jackson requires that
     // it be non-empty.
     private static class TestEntity implements BridgeEntity {
+        @SuppressWarnings("unused")
         public String getFoo() {
             return "foo";
         }

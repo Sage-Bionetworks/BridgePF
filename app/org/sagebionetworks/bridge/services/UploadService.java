@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import java.net.URL;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -289,8 +290,11 @@ public class UploadService {
             return builder.build();
         }).collect(Collectors.toList());
         
-        return new ForwardCursorPagedResourceList<UploadView>(views, list.getOffsetKey(), list.getPageSize())
-                .withFilter("startTime", startTime).withFilter("endTime", endTime);
+        ForwardCursorPagedResourceList<UploadView> page = new ForwardCursorPagedResourceList<>(views, list.getNextPageOffsetKey());
+        for (Map.Entry<String,Object> entry : list.getRequestParams().entrySet()) {
+            page.withRequestParam(entry.getKey(), entry.getValue());
+        }
+        return page;
     }
     
     /**

@@ -29,6 +29,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
@@ -90,11 +91,14 @@ public class ReportServiceTest {
         List<ReportData> list = Lists.newArrayList();
         list.add(createReport(LocalDate.parse("2015-02-10"), "First", "Name"));
         list.add(createReport(LocalDate.parse("2015-02-12"), "Last", "Name"));
-        results = new DateRangeResourceList<>(list, START_DATE, END_DATE);
+        results = new DateRangeResourceList<>(list)
+                .withRequestParam("startDate", START_DATE)
+                .withRequestParam("endDate", END_DATE);
         
         ReportIndex index = ReportIndex.create();
         index.setIdentifier(IDENTIFIER);
-        indices = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.STUDY);
+        indices = new ReportTypeResourceList<>(Lists.newArrayList(index))
+                .withRequestParam(ResourceList.REPORT_TYPE, ReportType.STUDY);
     }
     
     private static ReportData createReport(LocalDate date, String fieldValue1, String fieldValue2) {
@@ -282,7 +286,9 @@ public class ReportServiceTest {
     public void deleteStudyReportRecord() {
         LocalDate startDate = LocalDate.parse("2015-05-05").minusDays(45);
         LocalDate endDate = LocalDate.parse("2015-05-05");
-        DateRangeResourceList<ReportData> emptyResults = new DateRangeResourceList<>(Lists.newArrayList(), START_DATE, END_DATE);
+        DateRangeResourceList<ReportData> emptyResults = new DateRangeResourceList<>(Lists.<ReportData>newArrayList())
+                .withRequestParam("startDate", START_DATE)
+                .withRequestParam("endDate", END_DATE);
         doReturn(emptyResults).when(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, startDate, endDate);
         
         DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-05-05").getMillis());
@@ -464,7 +470,7 @@ public class ReportServiceTest {
         ReportTypeResourceList<? extends ReportIndex> indices = service.getReportIndices(TEST_STUDY, ReportType.STUDY);
         
         assertEquals(IDENTIFIER, indices.getItems().get(0).getIdentifier());
-        assertEquals(ReportType.STUDY, indices.getReportType());
+        assertEquals(ReportType.STUDY, indices.getRequestParams().get("reportType"));
         verify(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.STUDY);
     }
     
@@ -473,14 +479,14 @@ public class ReportServiceTest {
         // Need to create an index list with ReportType.PARTICIPANT for this test
         ReportIndex index = ReportIndex.create();
         index.setIdentifier(IDENTIFIER);
-        indices = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.PARTICIPANT);
+        indices = new ReportTypeResourceList<>(Lists.newArrayList(index)).withRequestParam(ResourceList.REPORT_TYPE, ReportType.PARTICIPANT);
         
         doReturn(indices).when(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.PARTICIPANT);
 
         ReportTypeResourceList<? extends ReportIndex> indices = service.getReportIndices(TEST_STUDY, ReportType.PARTICIPANT);
         
         assertEquals(IDENTIFIER, indices.getItems().get(0).getIdentifier());
-        assertEquals(ReportType.PARTICIPANT, indices.getReportType());
+        assertEquals(ReportType.PARTICIPANT, indices.getRequestParams().get("reportType"));
         verify(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.PARTICIPANT);
     }
     
@@ -488,7 +494,7 @@ public class ReportServiceTest {
     public void updateIndex() {
         ReportIndex index = ReportIndex.create();
         index.setIdentifier(IDENTIFIER);
-        indices = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.STUDY);
+        indices = new ReportTypeResourceList<>(Lists.newArrayList(index)).withRequestParam(ResourceList.REPORT_TYPE, ReportType.STUDY);
         doReturn(indices).when(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.STUDY);
         
         // This is all that is needed. Everything else is actually inferred by the controller
@@ -510,7 +516,7 @@ public class ReportServiceTest {
     public void cannotMakeParticipantStudyPublic() {
         ReportIndex index = ReportIndex.create();
         index.setIdentifier(IDENTIFIER);
-        indices = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.PARTICIPANT);
+        indices = new ReportTypeResourceList<>(Lists.newArrayList(index)).withRequestParam(ResourceList.REPORT_TYPE, ReportType.PARTICIPANT);
         doReturn(indices).when(mockReportIndexDao).getIndices(TEST_STUDY, ReportType.PARTICIPANT);
         
         // This is all that is needed. Everything else is actually inferred by the controller

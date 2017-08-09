@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
@@ -32,18 +33,23 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.document.Index;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.ItemCollection;
 import com.amazonaws.services.dynamodbv2.document.QueryOutcome;
 import com.amazonaws.services.dynamodbv2.document.internal.IteratorSupport;
 import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.QueryResult;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -56,6 +62,8 @@ public class DynamoUploadDaoMockTest {
     
     private static String UPLOAD_ID = "uploadId";
     private static String UPLOAD_ID_2 = "uploadId2";
+    private static String UPLOAD_ID_3 = "uploadId3";
+    private static String UPLOAD_ID_4 = "uploadId4";
     
     @Mock
     private DynamoDBMapper mockMapper;
@@ -83,6 +91,18 @@ public class DynamoUploadDaoMockTest {
     
     @Mock
     private DynamoUpload2 upload2;
+    
+    @Mock
+    private DynamoUpload2 upload3;
+    
+    @Mock
+    private DynamoUpload2 upload4;
+    
+    @Mock
+    QueryResultPage<DynamoUpload2> queryPage1;
+    
+    @Mock
+    QueryResultPage<DynamoUpload2> queryPage2;
     
     @Captor
     private ArgumentCaptor<QuerySpec> querySpecCaptor;
@@ -285,8 +305,146 @@ public class DynamoUploadDaoMockTest {
         assertEquals(2, page.getItems().size());
         assertEquals(10000, page.getItems().get(0).getRequestedOn());
         assertEquals(30000, page.getItems().get(1).getRequestedOn());
+        
+        // All parameters were returned. No paging in this test
+        assertEquals((Integer)pageSize, page.getRequestParams().get("pageSize"));
+        assertEquals(startTime.toString(), page.getRequestParams().get("startTime"));
+        assertEquals(endTime.toString(), page.getRequestParams().get("endTime"));
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    public void getUploadsPagingWorks() {
+        String healthCode = "abc";
+        DateTime startTime = DateTime.now().minusDays(4);
+        DateTime endTime = DateTime.now();
+        int pageSize = 2;
+        
+        Item mockItem1 = new Item().withLong("requestedOn", 10000).with("uploadId", UPLOAD_ID);
+        Item mockItem2 = new Item().withLong("requestedOn", 20000).with("uploadId", UPLOAD_ID_2);
+        Item mockItem3 = new Item().withLong("requestedOn", 30000).with("uploadId", UPLOAD_ID_3);
+        Item mockItem4 = new Item().withLong("requestedOn", 40000).with("uploadId", UPLOAD_ID_4);
+        
+        when(upload1.getRequestedOn()).thenReturn(10000L);
+        when(upload1.getUploadId()).thenReturn(UPLOAD_ID);
+        when(upload2.getRequestedOn()).thenReturn(20000L);
+        when(upload2.getUploadId()).thenReturn(UPLOAD_ID_2);
+        when(upload3.getRequestedOn()).thenReturn(30000L);
+        when(upload3.getUploadId()).thenReturn(UPLOAD_ID_3);
+        when(upload4.getRequestedOn()).thenReturn(40000L);
+        when(upload4.getUploadId()).thenReturn(UPLOAD_ID_4);
+        
+        List<Item> callOrder = Lists.newArrayList(mockItem1, mockItem2, mockItem3, mockItem4);
+        doAnswer((invocationOnMock) -> {
+            Consumer<Item> consumer = invocationOnMock.getArgumentAt(0, Consumer.class);
+            consumer.accept(callOrder.remove(0));
+            return null;
+        }).when(mockQueryOutcome).forEach(any());
+
+        when(mockIndexHelper.query(any(QuerySpec.class))).thenReturn(lastQueryOutcome);
+        
+        when(lastQueryOutcome.getItems()).thenReturn(
+                Lists.newArrayList(mockItem1, mockItem2), 
+                Lists.newArrayList(mockItem3, mockItem4));
+        
+        Map<String,List<Object>> batchLoadMap1 = new ImmutableMap.Builder<String,List<Object>>()
+                .put(UPLOAD_ID, Lists.newArrayList(upload1))
+                .put(UPLOAD_ID_2, Lists.newArrayList(upload2))
+                .put(UPLOAD_ID_3, Lists.newArrayList(upload3)).build();
+        
+        Map<String,List<Object>> batchLoadMap2 = new ImmutableMap.Builder<String,List<Object>>()
+                .put(UPLOAD_ID_3, Lists.newArrayList(upload3))
+                .put(UPLOAD_ID_4, Lists.newArrayList(upload4)).build();
+        
+        when(mockMapper.batchLoad(any(List.class))).thenReturn(batchLoadMap1, batchLoadMap2);
+        
+        ForwardCursorPagedResourceList<Upload> page1 = dao.getUploads(healthCode, startTime, endTime, pageSize, null);
+        assertEquals("30000", page1.getNextPageOffsetKey());
+        assertNull(page1.getRequestParams().get("offsetKey"));
+        assertEquals(pageSize, page1.getRequestParams().get("pageSize"));
+        assertEquals(startTime.toString(), page1.getRequestParams().get("startTime"));
+        assertEquals(endTime.toString(), page1.getRequestParams().get("endTime"));
+        
+        ForwardCursorPagedResourceList<Upload> page2 = dao.getUploads(healthCode, startTime, endTime, pageSize, page1.getNextPageOffsetKey());
+        assertNull(page2.getNextPageOffsetKey());
+        assertEquals("30000", page2.getRequestParams().get("offsetKey"));
+        assertEquals(pageSize, page2.getRequestParams().get("pageSize"));
+        assertEquals(startTime.toString(), page2.getRequestParams().get("startTime"));
+        assertEquals(endTime.toString(), page2.getRequestParams().get("endTime"));
+    }
+    
+    @SuppressWarnings("unchecked")
+    @Test
+    public void getStudyUploadsPagingWorks() throws Exception {
+        StudyIdentifier studyId = new StudyIdentifierImpl("test-study");
+        DateTime startTime = DateTime.now().minusDays(4);
+        DateTime endTime = DateTime.now();
+        int pageSize = 2;
+        
+        Item mockItem1 = new Item().withLong("requestedOn", 10000).with("uploadId", UPLOAD_ID);
+        Item mockItem2 = new Item().withLong("requestedOn", 20000).with("uploadId", UPLOAD_ID_2);
+        Item mockItem3 = new Item().withLong("requestedOn", 30000).with("uploadId", UPLOAD_ID_3);
+        Item mockItem4 = new Item().withLong("requestedOn", 40000).with("uploadId", UPLOAD_ID_4);
+        
+        when(upload1.getRequestedOn()).thenReturn(10000L);
+        when(upload1.getUploadId()).thenReturn(UPLOAD_ID);
+        when(upload2.getRequestedOn()).thenReturn(20000L);
+        when(upload2.getUploadId()).thenReturn(UPLOAD_ID_2);
+        when(upload3.getRequestedOn()).thenReturn(30000L);
+        when(upload3.getUploadId()).thenReturn(UPLOAD_ID_3);
+        when(upload4.getRequestedOn()).thenReturn(40000L);
+        when(upload4.getUploadId()).thenReturn(UPLOAD_ID_4);
+        
+        when(mockMapper.load(DynamoUpload2.class, upload3.getUploadId())).thenReturn(upload3);
+        
+        List<Item> callOrder = Lists.newArrayList(mockItem1, mockItem2, mockItem3, mockItem4);
+        doAnswer((invocationOnMock) -> {
+            Consumer<Item> consumer = invocationOnMock.getArgumentAt(0, Consumer.class);
+            consumer.accept(callOrder.remove(0));
+            return null;
+        }).when(mockQueryOutcome).forEach(any());
+        
+        when(mockMapper.queryPage(eq(DynamoUpload2.class), any(DynamoDBQueryExpression.class))).thenReturn(queryPage1, queryPage2);
+        
+        when(queryPage1.getResults()).thenReturn(Lists.newArrayList(upload1, upload2));
+        
+        Map<String,AttributeValue> lastKey1 = new ImmutableMap.Builder<String,AttributeValue>()
+                .put(UPLOAD_ID, new AttributeValue().withS(upload3.getUploadId())).build();
+        when(queryPage1.getLastEvaluatedKey()).thenReturn(lastKey1);
+        
+        Map<String,AttributeValue> lastKey2 = new ImmutableMap.Builder<String,AttributeValue>()
+                .put(UPLOAD_ID, new AttributeValue().withS(null)).build();
+        when(queryPage2.getLastEvaluatedKey()).thenReturn(lastKey2);
+        
+        when(queryPage2.getResults()).thenReturn(Lists.newArrayList(upload3, upload4));
+        
+        Map<String,List<Object>> batchLoadMap1 = new ImmutableMap.Builder<String,List<Object>>()
+                .put(UPLOAD_ID, Lists.newArrayList(upload1))
+                .put(UPLOAD_ID_2, Lists.newArrayList(upload2))
+                .put(UPLOAD_ID_3, Lists.newArrayList(upload3)).build();
+        
+        Map<String,List<Object>> batchLoadMap2 = new ImmutableMap.Builder<String,List<Object>>()
+                .put(UPLOAD_ID_3, Lists.newArrayList(upload3))
+                .put(UPLOAD_ID_4, Lists.newArrayList(upload4)).build();
+        
+        when(mockMapper.batchLoad(any(List.class))).thenReturn(batchLoadMap1, batchLoadMap2);
+        
+        ForwardCursorPagedResourceList<Upload> page1 = dao.getStudyUploads(studyId, startTime, endTime, pageSize, null);
+        assertEquals("uploadId3", page1.getNextPageOffsetKey());
+        assertNull(page1.getRequestParams().get("offsetKey"));
+        assertEquals(pageSize, page1.getRequestParams().get("pageSize"));
+        assertEquals(startTime.toString(), page1.getRequestParams().get("startTime"));
+        assertEquals(endTime.toString(), page1.getRequestParams().get("endTime"));
+        
+        ForwardCursorPagedResourceList<Upload> page2 = dao.getStudyUploads(studyId, startTime, endTime, pageSize, page1.getNextPageOffsetKey());
+        assertNull(page2.getNextPageOffsetKey());
+        assertEquals("uploadId3", page2.getRequestParams().get("offsetKey"));
+        assertEquals(pageSize, page1.getRequestParams().get("pageSize"));
+        assertEquals(startTime.toString(), page1.getRequestParams().get("startTime"));
+        assertEquals(endTime.toString(), page1.getRequestParams().get("endTime"));
+    }
+    
+    
     private static UploadRequest createUploadRequest() {
         final String text = "test upload dao";
         ObjectNode node = JsonNodeFactory.instance.objectNode();

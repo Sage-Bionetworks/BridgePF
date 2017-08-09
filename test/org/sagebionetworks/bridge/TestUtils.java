@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
@@ -75,6 +76,13 @@ public class TestUtils {
     
     private static final DateTime TEST_CREATED_ON = DateTime.parse("2015-01-27T00:38:32.486Z");
 
+    public static void assertDatesWithTimeZoneEqual(DateTime date1, DateTime date2) {
+        // I don't know of a one line test for this... maybe just comparing ISO string formats of the date.
+        assertTrue(date1.isEqual(date2));
+        // This ensures that zones such as "America/Los_Angeles" and "-07:00" are equal 
+        assertEquals( date1.getZone().getOffset(date1), date2.getZone().getOffset(date2) );
+    }
+    
     public static <E> void assertListIsImmutable(List<E> list, E sampleElement) {
         try {
             list.add(sampleElement);

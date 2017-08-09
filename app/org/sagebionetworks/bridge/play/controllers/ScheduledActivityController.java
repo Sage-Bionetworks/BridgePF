@@ -96,8 +96,10 @@ public class ScheduledActivityController extends BaseController {
 
         List<ScheduledActivity> scheduledActivities = scheduledActivityService.getScheduledActivitiesV4(context);
         
-        return ok(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(
-                new DateTimeRangeResourceList<ScheduledActivity>(scheduledActivities, startsOn, endsOn)));
+        DateTimeRangeResourceList<ScheduledActivity> results = new DateTimeRangeResourceList<>(scheduledActivities)
+                .withRequestParam(ResourceList.START_TIME, startsOn)
+                .withRequestParam(ResourceList.END_TIME, endsOn);
+        return ok(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(results));
     }
 
     public Result updateScheduledActivities() throws Exception {

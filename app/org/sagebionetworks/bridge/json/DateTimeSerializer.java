@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
  * Convert DateTime preserving the time zone. Joda's Jackson module does not do this.
  * Not clear at this point how much of the Joda Module we *are* using.
  */
-public class DateTimeSerializer  extends JsonSerializer<DateTime> {
+public class DateTimeSerializer extends JsonSerializer<DateTime> {
 
     @Override
     public void serialize(DateTime datetime, JsonGenerator jgen, SerializerProvider sp) throws IOException,

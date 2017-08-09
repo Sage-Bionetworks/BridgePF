@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ReportDataDao;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 
@@ -51,7 +52,9 @@ public class DynamoReportDataDao implements ReportDataDao {
                         .withRangeKeyCondition("date", dateCondition);
         List<DynamoReportData> results = mapper.query(DynamoReportData.class, query);
 
-        return new DateRangeResourceList<DynamoReportData>(results, startDate, endDate);
+        return new DateRangeResourceList<DynamoReportData>(results)
+                .withRequestParam(ResourceList.START_DATE, startDate)
+                .withRequestParam(ResourceList.END_DATE, endDate);
     }
 
     @Override

@@ -82,7 +82,7 @@ public class NotificationTopicControllerTest {
         assertEquals(200, result.status());
 
         JsonNode node = getResultNode(result);
-        assertEquals(1, node.get("total").asInt());
+        assertEquals(1, node.get("items").size());
         assertEquals("ResourceList", node.get("type").asText());
 
         ResourceList<NotificationTopic> topics = getTopicList(result);
