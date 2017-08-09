@@ -66,7 +66,7 @@ public class ResourceList<T> {
     }
     @Deprecated
     public Integer getTotal() {
-        return items.size();
+        return (items.isEmpty()) ? null : items.size();
     }
     protected DateTime getDateTime(String fieldName) {
         String value = (String)requestParams.get(fieldName);

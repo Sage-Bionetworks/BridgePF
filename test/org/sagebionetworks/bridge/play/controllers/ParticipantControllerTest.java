@@ -98,10 +98,6 @@ public class ParticipantControllerTest {
     
     private static final String ACTIVITY_GUID = "activityGuid";
 
-    //private static final DateTime ENDS_ON = DateTime.now();
-    
-    //private static final DateTime STARTS_ON = ENDS_ON.minusWeeks(1);
-    
     private static final DateTime START_TIME = DateTime.now().minusHours(3);
     
     private static final DateTime END_TIME = DateTime.now();
