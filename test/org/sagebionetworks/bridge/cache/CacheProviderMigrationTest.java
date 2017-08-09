@@ -7,7 +7,6 @@ import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -31,6 +30,20 @@ import org.sagebionetworks.bridge.redis.JedisTransaction;
 @RunWith(MockitoJUnitRunner.class)
 public class CacheProviderMigrationTest {
 
+    private static final String USER_ID = "userId";
+
+    private static final String STUDY_ID = "studyId";
+
+    private static final String REQUEST_INFO_KEY = "userId:request-info";
+
+    private static final String STUDY_ID_KEY = "studyId:study";
+
+    private static final String SESSION_TOKEN = "sessionToken";
+
+    private static final String USER_ID_SESSION_KEY = "userId:session:user";
+
+    private static final String SESSION_TOKEN_KEY = "sessionToken:session";
+
     private BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
     
     private CacheProvider cacheProvider;
@@ -42,10 +55,15 @@ public class CacheProviderMigrationTest {
     private JedisOps newJedisOps;
     
     @Mock
-    private JedisTransaction transaction;
+    private JedisTransaction newTransaction;
+    
+    @Mock
+    private JedisTransaction oldTransaction;
     
     @Captor
     private ArgumentCaptor<String> stringCaptor;
+    
+    UserSession session;
     
     @Before
     public void before() {
@@ -54,11 +72,21 @@ public class CacheProviderMigrationTest {
         cacheProvider.setJedisOps(oldJedisOps);
         cacheProvider.setNewJedisOps(newJedisOps);
         cacheProvider.setSessionExpireInSeconds(10);
+        
+        when(newJedisOps.getTransaction()).thenReturn(newTransaction);    
+        doReturn(newTransaction).when(newTransaction).setex(any(), anyInt(), any());
+        doReturn(newTransaction).when(newTransaction).del(any());
+
+        when(oldJedisOps.getTransaction()).thenReturn(oldTransaction);    
+        doReturn(oldTransaction).when(oldTransaction).setex(any(), anyInt(), any());
+        doReturn(oldTransaction).when(oldTransaction).del(any());
+        
+        session = stubSession(USER_ID);
     }
     
     @Test
     public void updateRequestInfoEmptyCache() {
-        RequestInfo info = new RequestInfo.Builder().withUserId("userId").build();
+        RequestInfo info = new RequestInfo.Builder().withUserId(USER_ID).build();
         
         cacheProvider.updateRequestInfo(info);
         
@@ -70,7 +98,7 @@ public class CacheProviderMigrationTest {
     
     @Test
     public void updateRequestInfoOldCache() throws Exception {
-        RequestInfo info = new RequestInfo.Builder().withUserId("userId").build();
+        RequestInfo info = new RequestInfo.Builder().withUserId(USER_ID).build();
         
         RequestInfo old = new RequestInfo.Builder().withUserId("oldUserId").build();
         when(oldJedisOps.get(any())).thenReturn(MAPPER.writeValueAsString(old));
@@ -83,12 +111,12 @@ public class CacheProviderMigrationTest {
         verify(oldJedisOps, never()).set(any(), any());
         
         RequestInfo setInfo = MAPPER.readValue(stringCaptor.getValue(), RequestInfo.class);
-        assertEquals("userId", setInfo.getUserId());
+        assertEquals(USER_ID, setInfo.getUserId());
     }
     
     @Test
     public void updateRequestInfoNewCache() throws Exception {
-        RequestInfo info = new RequestInfo.Builder().withUserId("userId").build();
+        RequestInfo info = new RequestInfo.Builder().withUserId(USER_ID).build();
         
         RequestInfo old = new RequestInfo.Builder().withUserId("oldUserId").build();
         when(newJedisOps.get(any())).thenReturn(MAPPER.writeValueAsString(old));
@@ -101,78 +129,68 @@ public class CacheProviderMigrationTest {
         verify(oldJedisOps, never()).set(any(), any());
         
         RequestInfo setInfo = MAPPER.readValue(stringCaptor.getValue(), RequestInfo.class);
-        assertEquals("userId", setInfo.getUserId());
+        assertEquals(USER_ID, setInfo.getUserId());
     }
     
     @Test
     public void removeRequestInfo() {
-        cacheProvider.removeRequestInfo("userId");
+        cacheProvider.removeRequestInfo(USER_ID);
         
-        verify(newJedisOps).del("userId:request-info");
-        verify(oldJedisOps).del("userId:request-info");
+        verify(newJedisOps).del(REQUEST_INFO_KEY);
+        verify(oldJedisOps).del(REQUEST_INFO_KEY);
     }
     
     @Test
     public void getRequestInfoNoCache() throws Exception {
-        RequestInfo returned = cacheProvider.getRequestInfo("test");
+        RequestInfo returned = cacheProvider.getRequestInfo(USER_ID);
         assertNull(returned);
         
-        verify(oldJedisOps).get("test:request-info");
-        verify(newJedisOps).get("test:request-info");
+        verify(oldJedisOps).get(REQUEST_INFO_KEY);
+        verify(newJedisOps).get(REQUEST_INFO_KEY);
     }
 
     @Test
     public void getRequestInfoOldCache() throws Exception {
-        RequestInfo info = new RequestInfo.Builder().withUserId("userId").build();
-        when(oldJedisOps.get("userId:request-info")).thenReturn(MAPPER.writeValueAsString(info));
+        RequestInfo info = new RequestInfo.Builder().withUserId(USER_ID).build();
+        when(oldJedisOps.get(REQUEST_INFO_KEY)).thenReturn(MAPPER.writeValueAsString(info));
         
-        RequestInfo returned = cacheProvider.getRequestInfo("userId");
+        RequestInfo returned = cacheProvider.getRequestInfo(USER_ID);
         assertEquals(info, returned);
         
-        verify(newJedisOps).get("userId:request-info");
-        verify(oldJedisOps).get("userId:request-info");
+        verify(newJedisOps).get(REQUEST_INFO_KEY);
+        verify(oldJedisOps).get(REQUEST_INFO_KEY);
     }
     
     @Test
     public void getRequestInfoNewCache() throws Exception {
-        RequestInfo info = new RequestInfo.Builder().withUserId("userId").build();
-        when(newJedisOps.get("userId:request-info")).thenReturn(MAPPER.writeValueAsString(info));
+        RequestInfo info = new RequestInfo.Builder().withUserId(USER_ID).build();
+        when(newJedisOps.get(REQUEST_INFO_KEY)).thenReturn(MAPPER.writeValueAsString(info));
         
-        RequestInfo returned = cacheProvider.getRequestInfo("userId");
+        RequestInfo returned = cacheProvider.getRequestInfo(USER_ID);
         assertEquals(info, returned);
         
-        verify(newJedisOps).get("userId:request-info");
-        verify(oldJedisOps, never()).get("userId:request-info");
+        verify(newJedisOps).get(REQUEST_INFO_KEY);
+        verify(oldJedisOps, never()).get(REQUEST_INFO_KEY);
     }
     
     @Test
     public void setUserSession() throws Exception {
-        UserSession session = mockSessionAndTransaction(newJedisOps);
+        when(newJedisOps.ttl(USER_ID_SESSION_KEY)).thenReturn(20L);
         
         cacheProvider.setUserSession(session);
-        verify(transaction).setex("userId:session:user", 10, "sessionToken");
-        verify(transaction).setex(eq("sessionToken:session"), eq(10), stringCaptor.capture());
-        verify(transaction).exec();
+        
+        verify(newJedisOps).ttl(USER_ID_SESSION_KEY);
+        verify(newTransaction).setex(USER_ID_SESSION_KEY, 20, SESSION_TOKEN);
+        verify(newTransaction).setex(eq(SESSION_TOKEN_KEY), eq(20), stringCaptor.capture());
+        verify(newTransaction).exec();
         
         UserSession captured = MAPPER.readValue(stringCaptor.getValue(), UserSession.class);
-        assertEquals("userId", captured.getId());
+        assertEquals(USER_ID, captured.getId());
     }
             
-    private UserSession mockSessionAndTransaction(JedisOps thisJedisOps) {
-        UserSession session = stubSession("userId");
-        
-        when(thisJedisOps.getTransaction()).thenReturn(transaction);
-        doReturn(transaction).when(transaction).setex(any(), anyInt(), any());
-        
-        when(thisJedisOps.getTransaction()).thenReturn(transaction);
-        doReturn(transaction).when(transaction).del(any());
-        
-        return session;
-    }
-    
     private UserSession stubSession(String userId) {
         UserSession session = new UserSession();
-        session.setSessionToken("sessionToken");
+        session.setSessionToken(SESSION_TOKEN);
         session.setParticipant(new StudyParticipant.Builder()
                 .withId(userId)
                 .withHealthCode("healthCode").build());
@@ -181,157 +199,162 @@ public class CacheProviderMigrationTest {
 
     @Test
     public void getUserSessionNoCache() {
-        UserSession returned = cacheProvider.getUserSession("sessionToken");
+        UserSession returned = cacheProvider.getUserSession(SESSION_TOKEN);
         assertNull(returned);
         
-        verify(oldJedisOps).get("sessionToken:session");
-        verify(newJedisOps).get("sessionToken:session");
+        verify(oldJedisOps).get(SESSION_TOKEN_KEY);
+        verify(newJedisOps).get(SESSION_TOKEN_KEY);
     }
 
     @Test
     public void getUserSessionOldCache() throws Exception {
-        UserSession session = stubSession("userId");
-        when(oldJedisOps.get("sessionToken:session")).thenReturn(MAPPER.writeValueAsString(session));
+        UserSession session = stubSession(USER_ID);
+        when(oldJedisOps.get(SESSION_TOKEN_KEY)).thenReturn(MAPPER.writeValueAsString(session));
         
-        UserSession returned = cacheProvider.getUserSession("sessionToken");
-        assertEquals("userId", returned.getId());
+        UserSession returned = cacheProvider.getUserSession(SESSION_TOKEN);
+        assertEquals(USER_ID, returned.getId());
         
-        verify(newJedisOps).get("sessionToken:session");
-        verify(oldJedisOps).get("sessionToken:session");
+        verify(newJedisOps).get(SESSION_TOKEN_KEY);
+        verify(oldJedisOps).get(SESSION_TOKEN_KEY);
     }
     
     @Test
     public void getUserSessionNewCache() throws Exception {
-        UserSession session = stubSession("userId");
-        when(newJedisOps.get("sessionToken:session")).thenReturn(MAPPER.writeValueAsString(session));
+        UserSession session = stubSession(USER_ID);
+        when(newJedisOps.get(SESSION_TOKEN_KEY)).thenReturn(MAPPER.writeValueAsString(session));
         
-        UserSession returned = cacheProvider.getUserSession("sessionToken");
-        assertEquals("userId", returned.getId());
+        UserSession returned = cacheProvider.getUserSession(SESSION_TOKEN);
+        assertEquals(USER_ID, returned.getId());
         
-        verify(newJedisOps).get("sessionToken:session");
-        verify(oldJedisOps, never()).get("sessionToken:session");
+        verify(newJedisOps).get(SESSION_TOKEN_KEY);
+        verify(oldJedisOps, never()).get(SESSION_TOKEN_KEY);
     }
     
     @Test
     public void getUserSessionByUserIdNoCache() {
-        UserSession returned = cacheProvider.getUserSessionByUserId("userId");
+        UserSession returned = cacheProvider.getUserSessionByUserId(USER_ID);
         assertNull(returned);
         
-        verify(newJedisOps).get("userId:session:user");
-        verify(oldJedisOps).get("userId:session:user");
+        verify(newJedisOps).get(USER_ID_SESSION_KEY);
+        verify(oldJedisOps).get(USER_ID_SESSION_KEY);
     }
 
     @Test
     public void getUserSessionByUserIdOldCache() throws Exception {
-        UserSession session = stubSession("userId");
-        when(oldJedisOps.get("sessionToken:session")).thenReturn(MAPPER.writeValueAsString(session));
-        when(oldJedisOps.get("userId:session:user")).thenReturn("sessionToken");
+        UserSession session = stubSession(USER_ID);
+        when(oldJedisOps.get(SESSION_TOKEN_KEY)).thenReturn(MAPPER.writeValueAsString(session));
+        when(oldJedisOps.get(USER_ID_SESSION_KEY)).thenReturn(SESSION_TOKEN);
         
-        UserSession returned = cacheProvider.getUserSessionByUserId("userId");
-        assertEquals("userId", returned.getId());
+        UserSession returned = cacheProvider.getUserSessionByUserId(USER_ID);
+        assertEquals(USER_ID, returned.getId());
         
-        verify(newJedisOps).get("userId:session:user");
-        verify(oldJedisOps).get("userId:session:user");
+        verify(newJedisOps).get(USER_ID_SESSION_KEY);
+        verify(oldJedisOps).get(USER_ID_SESSION_KEY);
     }
 
     @Test
     public void getUserSessionByUserIdNewCache() throws Exception {
-        UserSession session = stubSession("userId");
-        when(newJedisOps.get("sessionToken:session")).thenReturn(MAPPER.writeValueAsString(session));
-        when(newJedisOps.get("userId:session:user")).thenReturn("sessionToken");
+        UserSession session = stubSession(USER_ID);
+        when(newJedisOps.get(SESSION_TOKEN_KEY)).thenReturn(MAPPER.writeValueAsString(session));
+        when(newJedisOps.get(USER_ID_SESSION_KEY)).thenReturn(SESSION_TOKEN);
 
-        UserSession returned = cacheProvider.getUserSessionByUserId("userId");
-        assertEquals("userId", returned.getId());
+        UserSession returned = cacheProvider.getUserSessionByUserId(USER_ID);
+        assertEquals(USER_ID, returned.getId());
         
-        verify(newJedisOps).get("userId:session:user");
-        verify(oldJedisOps, never()).get("userId:session:user");
+        verify(newJedisOps).get(USER_ID_SESSION_KEY);
+        verify(oldJedisOps, never()).get(USER_ID_SESSION_KEY);
     }
 
     @Test
     public void removeSession() {
-        mockSessionAndTransaction(newJedisOps);
-        UserSession session = mockSessionAndTransaction(oldJedisOps);
-        
         cacheProvider.removeSession(session);
         
-        verify(transaction, times(2)).del("sessionToken:session");
-        verify(transaction, times(2)).del("userId:session:user");
+        verify(newTransaction).del(SESSION_TOKEN_KEY);
+        verify(newTransaction).del(USER_ID_SESSION_KEY);
+        verify(oldTransaction).del(SESSION_TOKEN_KEY);
+        verify(oldTransaction).del(USER_ID_SESSION_KEY);
     }
 
     @Test
     public void removeSessionByUserId() {
-        mockSessionAndTransaction(newJedisOps);
-        mockSessionAndTransaction(oldJedisOps);
+        when(newJedisOps.get(USER_ID_SESSION_KEY)).thenReturn(SESSION_TOKEN);
+        when(oldJedisOps.get(USER_ID_SESSION_KEY)).thenReturn(SESSION_TOKEN);
         
-        when(newJedisOps.get("userId:session:user")).thenReturn("sessionToken");
+        cacheProvider.removeSessionByUserId(USER_ID);
         
-        cacheProvider.removeSessionByUserId("userId");
-        
-        verify(transaction, times(2)).del("sessionToken:session");
-        verify(transaction, times(2)).del("userId:session:user");
+        verify(newTransaction).del(SESSION_TOKEN_KEY);
+        verify(newTransaction).del(USER_ID_SESSION_KEY);
+        verify(oldTransaction).del(SESSION_TOKEN_KEY);
+        verify(oldTransaction).del(USER_ID_SESSION_KEY);
     }
 
     @Test
     public void setStudy() throws Exception {
         Study study = Study.create();
-        study.setIdentifier("studyId");
+        study.setIdentifier(STUDY_ID);
         String ser = MAPPER.writeValueAsString(study);
         
         when(newJedisOps.setex(any(), anyInt(), any())).thenReturn("OK");
         
         cacheProvider.setStudy(study);
         
-        verify(newJedisOps).setex("studyId:study", BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser);
-        verify(oldJedisOps, never()).setex("studyId:study", BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser);
+        verify(newJedisOps).setex(STUDY_ID_KEY, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser);
+        verify(oldJedisOps, never()).setex(STUDY_ID_KEY, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser);
     }
 
     @Test
     public void getStudyNoCache() {
-        cacheProvider.getStudy("studyId");
+        cacheProvider.getStudy(STUDY_ID);
         
-        verify(newJedisOps).get("studyId:study");
-        verify(oldJedisOps).get("studyId:study");
+        verify(newJedisOps).get(STUDY_ID_KEY);
+        verify(oldJedisOps).get(STUDY_ID_KEY);
+        
+        verify(newJedisOps, never()).expire(STUDY_ID_KEY, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
+        verify(oldJedisOps, never()).expire(STUDY_ID_KEY, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
     }
     
     @Test
     public void getStudyOldCache() throws Exception {
         Study study = Study.create();
-        study.setIdentifier("studyId");
+        study.setIdentifier(STUDY_ID);
         String ser = MAPPER.writeValueAsString(study);
         
-        when(oldJedisOps.get("studyId:study")).thenReturn(ser);
+        when(oldJedisOps.get(STUDY_ID_KEY)).thenReturn(ser);
         
-        Study returned = cacheProvider.getStudy("studyId");
+        Study returned = cacheProvider.getStudy(STUDY_ID);
         assertEquals(study, returned);
         
-        verify(newJedisOps).get("studyId:study");
-        verify(oldJedisOps).get("studyId:study");
+        verify(newJedisOps).get(STUDY_ID_KEY);
+        verify(oldJedisOps).get(STUDY_ID_KEY);
+        
+        verify(newJedisOps, never()).expire(STUDY_ID_KEY, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
+        verify(oldJedisOps).expire(STUDY_ID_KEY, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
     }
     
     @Test
     public void getStudyNewCache() throws Exception {
         Study study = Study.create();
-        study.setIdentifier("studyId");
+        study.setIdentifier(STUDY_ID);
         String ser = MAPPER.writeValueAsString(study);
         
-        when(newJedisOps.get("studyId:study")).thenReturn(ser);
+        when(newJedisOps.get(STUDY_ID_KEY)).thenReturn(ser);
         
-        Study returned = cacheProvider.getStudy("studyId");
+        Study returned = cacheProvider.getStudy(STUDY_ID);
         assertEquals(study, returned);
         
-        verify(newJedisOps).get("studyId:study");
-        verify(oldJedisOps, never()).get("studyId:study");
+        verify(newJedisOps).get(STUDY_ID_KEY);
+        verify(oldJedisOps, never()).get(STUDY_ID_KEY);
+
+        verify(newJedisOps).expire(STUDY_ID_KEY, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
+        verify(oldJedisOps, never()).expire(STUDY_ID_KEY, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
     }
 
     @Test
     public void removeStudy() {
-        mockSessionAndTransaction(newJedisOps);
-        mockSessionAndTransaction(oldJedisOps);
-
-        cacheProvider.removeStudy("studyId");
+        cacheProvider.removeStudy(STUDY_ID);
         
-        verify(newJedisOps).del("studyId:study");
-        verify(oldJedisOps).del("studyId:study");
+        verify(newJedisOps).del(STUDY_ID_KEY);
+        verify(oldJedisOps).del(STUDY_ID_KEY);
     }
 
     @Test
@@ -376,9 +399,6 @@ public class CacheProviderMigrationTest {
     
     @Test
     public void removeString() {
-        mockSessionAndTransaction(newJedisOps);
-        mockSessionAndTransaction(oldJedisOps);
-
         cacheProvider.removeString("key");
         
         verify(newJedisOps).del("key");

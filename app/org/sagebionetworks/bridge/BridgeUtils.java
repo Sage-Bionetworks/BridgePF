@@ -6,6 +6,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -347,6 +348,15 @@ public class BridgeUtils {
         }
         sb.append(".");
         return sb.toString();
+    }
+    
+    public static String extractPasswordFromURI(URI uri) {
+        boolean hasPassword = (uri.getUserInfo() != null && uri.getUserInfo().contains(":"));
+        
+        if (hasPassword) {
+            return uri.getUserInfo().split(":")[1];
+        }
+        return null;
     }
 
 }

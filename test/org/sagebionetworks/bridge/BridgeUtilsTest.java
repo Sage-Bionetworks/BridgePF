@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -329,6 +330,20 @@ public class BridgeUtilsTest {
         policy = new PasswordPolicy(2, false, false, false, false);
         description = BridgeUtils.passwordPolicyDescription(policy);
         assertEquals("Password must be 2 or more characters.", description);
+    }
+    
+    @Test
+    public void returnPasswordInURI() throws Exception {
+        URI uri = new URI("redis://rediscloud:thisisapassword@pub-redis-555.us-east-1-4.1.ec2.garantiadata.com:555");
+        String password = BridgeUtils.extractPasswordFromURI(uri);
+        assertEquals("thisisapassword", password);
+    }
+    
+    @Test
+    public void returnNullWhenNoPasswordInURI() throws Exception {
+        URI uri = new URI("redis://pub-redis-555.us-east-1-4.1.ec2.garantiadata.com:555");
+        String password = BridgeUtils.extractPasswordFromURI(uri);
+        assertNull(password);
     }
     
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.

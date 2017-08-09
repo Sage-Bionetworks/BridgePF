@@ -11,6 +11,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -22,6 +23,9 @@ import java.util.Map;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
@@ -46,6 +50,7 @@ import redis.clients.jedis.JedisPool;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+@RunWith(MockitoJUnitRunner.class)
 public class CacheProviderMockTest {
 
     private static final Encryptor ENCRYPTOR = new AesGcmEncryptor(BridgeConfigFactory.getConfig().getProperty("bridge.healthcode.redis.key"));
@@ -53,22 +58,28 @@ public class CacheProviderMockTest {
     private static final String SESSION_TOKEN = "sessionToken";
     private static final String ENCRYPTED_SESSION_TOKEN = "TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=";
     private static final String DECRYPTED_SESSION_TOKEN = "ccea2978-f5b9-4377-8194-f887a3e2a19b";
-    private JedisTransaction transaction;
+    
     private CacheProvider cacheProvider;
+    
+    @Mock
+    private JedisTransaction oldTransaction;
 
+    @Mock
+    private JedisTransaction newTransaction;
+    
+    @Mock
+    private JedisOps jedisOps;
+    
+    @Mock
+    private JedisOps newJedisOps;
+    
     @Before
     public void before() {
-        transaction = mock(JedisTransaction.class);
-        when(transaction.setex(any(String.class), anyInt(), any(String.class))).thenReturn(transaction);
-        when(transaction.expire(any(String.class), anyInt())).thenReturn(transaction);
-        when(transaction.del(any(String.class))).thenReturn(transaction);
-        when(transaction.exec()).thenReturn(Arrays.asList((Object)"OK", "OK"));
+        mockTransaction(oldTransaction);
+        mockTransaction(newTransaction);
         
-        JedisOps jedisOps = mock(JedisOps.class);
-        when(jedisOps.getTransaction()).thenReturn(transaction);
-        
-        JedisOps newJedisOps = mock(JedisOps.class);
-        when(newJedisOps.getTransaction()).thenReturn(transaction);
+        when(jedisOps.getTransaction()).thenReturn(oldTransaction);
+        when(newJedisOps.getTransaction()).thenReturn(newTransaction);
         
         String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
         when(jedisOps.get(userKey)).thenReturn(SESSION_TOKEN);
@@ -77,6 +88,13 @@ public class CacheProviderMockTest {
         cacheProvider.setJedisOps(jedisOps);
         cacheProvider.setNewJedisOps(newJedisOps);
         cacheProvider.setBridgeObjectMapper(BridgeObjectMapper.get());
+    }
+
+    private void mockTransaction(JedisTransaction trans) {
+        when(trans.setex(any(String.class), anyInt(), any(String.class))).thenReturn(trans);
+        when(trans.expire(any(String.class), anyInt())).thenReturn(trans);
+        when(trans.del(any(String.class))).thenReturn(trans);
+        when(trans.exec()).thenReturn(Arrays.asList((Object)"OK", "OK"));
     }
 
     @Test
@@ -92,9 +110,10 @@ public class CacheProviderMockTest {
 
         String sessionKey = RedisKey.SESSION.getRedisKey(SESSION_TOKEN);
         String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
-        verify(transaction, times(1)).setex(eq(sessionKey), anyInt(), anyString());
-        verify(transaction, times(1)).setex(eq(userKey), anyInt(), eq(SESSION_TOKEN));
-        verify(transaction, times(1)).exec();
+        
+        verify(newTransaction).setex(eq(sessionKey), anyInt(), anyString());
+        verify(newTransaction).setex(eq(userKey), anyInt(), eq(SESSION_TOKEN));
+        verify(newTransaction).exec();
     }
 
     @Test
@@ -114,9 +133,14 @@ public class CacheProviderMockTest {
         }
         String sessionKey = RedisKey.SESSION.getRedisKey(SESSION_TOKEN);
         String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
-        verify(transaction, times(0)).setex(eq(sessionKey), anyInt(), anyString());
-        verify(transaction, times(0)).setex(eq(userKey), anyInt(), eq(SESSION_TOKEN));
-        verify(transaction, times(0)).exec();
+        
+        verify(newTransaction, never()).setex(eq(sessionKey), anyInt(), anyString());
+        verify(newTransaction, never()).setex(eq(userKey), anyInt(), eq(SESSION_TOKEN));
+        verify(newTransaction, never()).exec();
+        
+        verify(oldTransaction, never()).setex(eq(sessionKey), anyInt(), anyString());
+        verify(oldTransaction, never()).setex(eq(userKey), anyInt(), eq(SESSION_TOKEN));
+        verify(oldTransaction, never()).exec();
     }
 
     @Test
@@ -132,9 +156,14 @@ public class CacheProviderMockTest {
         }
         String sessionKey = RedisKey.SESSION.getRedisKey(SESSION_TOKEN);
         String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
-        verify(transaction, times(0)).setex(eq(sessionKey), anyInt(), anyString());
-        verify(transaction, times(0)).setex(eq(userKey), anyInt(), eq(SESSION_TOKEN));
-        verify(transaction, times(0)).exec();
+        
+        verify(newTransaction, never()).setex(eq(sessionKey), anyInt(), anyString());
+        verify(newTransaction, never()).setex(eq(userKey), anyInt(), eq(SESSION_TOKEN));
+        verify(newTransaction, never()).exec();
+        
+        verify(oldTransaction, never()).setex(eq(sessionKey), anyInt(), anyString());
+        verify(oldTransaction, never()).setex(eq(userKey), anyInt(), eq(SESSION_TOKEN));
+        verify(oldTransaction, never()).exec();
     }
 
     @Test
@@ -154,9 +183,14 @@ public class CacheProviderMockTest {
         }
         String sessionKey = RedisKey.SESSION.getRedisKey(SESSION_TOKEN);
         String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
-        verify(transaction, times(0)).setex(eq(sessionKey), anyInt(), anyString());
-        verify(transaction, times(0)).setex(eq(userKey), anyInt(), eq(SESSION_TOKEN));
-        verify(transaction, times(0)).exec();
+        
+        verify(newTransaction, never()).setex(eq(sessionKey), anyInt(), anyString());
+        verify(newTransaction, never()).setex(eq(userKey), anyInt(), eq(SESSION_TOKEN));
+        verify(newTransaction, never()).exec();
+        
+        verify(oldTransaction, never()).setex(eq(sessionKey), anyInt(), anyString());
+        verify(oldTransaction, never()).setex(eq(userKey), anyInt(), eq(SESSION_TOKEN));
+        verify(oldTransaction, never()).exec();
     }
 
     @Test
@@ -177,9 +211,14 @@ public class CacheProviderMockTest {
         cacheProvider.getUserSession(SESSION_TOKEN);
         String sessionKey = RedisKey.SESSION.getRedisKey(SESSION_TOKEN);
         String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
-        verify(transaction, times(2)).del(sessionKey);
-        verify(transaction, times(2)).del(userKey);
-        verify(transaction, times(2)).exec();
+        
+        verify(newTransaction).del(sessionKey);
+        verify(newTransaction).del(userKey);
+        verify(newTransaction).exec();
+        
+        verify(oldTransaction).del(sessionKey);
+        verify(oldTransaction).del(userKey);
+        verify(oldTransaction).exec();
     }
 
     @Test
@@ -187,9 +226,10 @@ public class CacheProviderMockTest {
         cacheProvider.removeSessionByUserId(USER_ID);
         String sessionKey = RedisKey.SESSION.getRedisKey(SESSION_TOKEN);
         String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
-        verify(transaction, times(2)).del(sessionKey);
-        verify(transaction, times(2)).del(userKey);
-        verify(transaction, times(2)).exec();
+        
+        verify(oldTransaction).del(sessionKey);
+        verify(oldTransaction).del(userKey);
+        verify(oldTransaction).exec();
     }
 
     @Test
@@ -261,7 +301,7 @@ public class CacheProviderMockTest {
         
         String sessionKey = RedisKey.SESSION.getRedisKey("sessionToken");
         doReturn(sessionKey).when(jedisOps).get("sessionToken");
-        doReturn(transaction).when(jedisOps).getTransaction(sessionKey);
+        doReturn(newTransaction).when(jedisOps).getTransaction(sessionKey);
         doReturn(json).when(jedisOps).get(sessionKey);
         
         cacheProvider.setJedisOps(jedisOps);

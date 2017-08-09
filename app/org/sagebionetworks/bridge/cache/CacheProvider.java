@@ -208,12 +208,16 @@ public class CacheProvider {
     public void removeSessionByUserId(final String userId) {
         try {
             final String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
-            final String sessionToken = getWithFallback(userKey, false);
+            String sessionToken = oldJedisOps.get(userKey);
             if (sessionToken != null) {
                 final String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
                 try (JedisTransaction transaction = oldJedisOps.getTransaction()) {
                     transaction.del(sessionKey).del(userKey).exec();
                 }
+            }
+            sessionToken = newJedisOps.get(userKey);
+            if (sessionToken != null) {
+                final String sessionKey = RedisKey.SESSION.getRedisKey(sessionToken);
                 try (JedisTransaction transaction = newJedisOps.getTransaction()) {
                     transaction.del(sessionKey).del(userKey).exec();
                 }
