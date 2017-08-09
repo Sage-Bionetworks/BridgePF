@@ -14,6 +14,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConvertedJson;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.Sets;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
@@ -41,6 +42,7 @@ public final class DynamoStudy implements Study {
     private boolean active;
     private Set<String> profileAttributes;
     private Set<String> taskIdentifiers;
+    private Set<String> activityEventKeys;
     private Set<String> dataGroups;
     private PasswordPolicy passwordPolicy;
     private EmailTemplate verifyEmailTemplate;
@@ -60,6 +62,7 @@ public final class DynamoStudy implements Study {
     public DynamoStudy() {
         profileAttributes = new HashSet<>();
         taskIdentifiers = new HashSet<>();
+        activityEventKeys = new HashSet<>();
         dataGroups = new HashSet<>();
         minSupportedAppVersions = new HashMap<>();
         pushNotificationARNs = new HashMap<>();
@@ -221,7 +224,20 @@ public final class DynamoStudy implements Study {
     public void setTaskIdentifiers(Set<String> taskIdentifiers) {
         this.taskIdentifiers = (taskIdentifiers == null) ? new HashSet<>() : taskIdentifiers;
     }
-    
+
+    /** {@inheritDoc} */
+    @DynamoDBTypeConverted(converter = StringSetMarshaller.class)
+    @Override
+    public Set<String> getActivityEventKeys() {
+        return activityEventKeys;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setActivityEventKeys(Set<String> activityEventKeys) {
+        this.activityEventKeys = (activityEventKeys==null) ? new HashSet<>() : activityEventKeys;
+    }
+
     /** {@inheritDoc} */
     @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
     @Override
@@ -418,13 +434,13 @@ public final class DynamoStudy implements Study {
 
     @Override
     public int hashCode() {
-        return Objects.hash(identifier, minAgeOfConsent, name, sponsorName, supportEmail, technicalEmail,
-                consentNotificationEmail, version, profileAttributes, taskIdentifiers, dataGroups,
-                passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, accountExistsTemplate, active,
+        return Objects.hash(name, sponsorName, identifier, supportEmail, synapseDataAccessTeamId,
+                synapseProjectId, technicalEmail, usesCustomExportSchedule, consentNotificationEmail, minAgeOfConsent,
+                accountLimit, version, active, profileAttributes, taskIdentifiers, activityEventKeys, dataGroups,
+                passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, emailSignInTemplate, accountExistsTemplate,
                 strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
-                externalIdValidationEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
-                synapseDataAccessTeamId, synapseProjectId, usesCustomExportSchedule, pushNotificationARNs,
-                disableExport, emailSignInTemplate, emailSignInEnabled, accountLimit);
+                externalIdValidationEnabled, emailSignInEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
+                pushNotificationARNs, disableExport);
     }
 
     @Override
@@ -445,6 +461,7 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(version, other.version)
                 && Objects.equals(profileAttributes, other.profileAttributes)
                 && Objects.equals(taskIdentifiers, other.taskIdentifiers)
+                && Objects.equals(activityEventKeys, other.activityEventKeys)
                 && Objects.equals(dataGroups, other.dataGroups)
                 && Objects.equals(sponsorName, other.sponsorName)
                 && Objects.equals(synapseDataAccessTeamId, other.synapseDataAccessTeamId)
@@ -470,14 +487,14 @@ public final class DynamoStudy implements Study {
             "DynamoStudy [name=%s, active=%s, sponsorName=%s, identifier=%s, minAgeOfConsent=%s, "
                         + "supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, technicalEmail=%s, "
                         + "consentNotificationEmail=%s, version=%s, userProfileAttributes=%s, taskIdentifiers=%s, "
-                        + "dataGroups=%s, passwordPolicy=%s, verifyEmailTemplate=%s, resetPasswordTemplate=%s, "
-                        + "strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, emailVerificationEnabled=%s, "
-                        + "externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, minSupportedAppVersions=%s, "
-                        + "usesCustomExportSchedule=%s, pushNotificationARNs=%s, disableExport=%s, "
-                        + "emailSignInTemplate=%s, emailSignInEnabled=%s, accountLimit=%s, accountExistsTemplate=%s]",
+                        + "activityEventKeys=%s, dataGroups=%s, passwordPolicy=%s, verifyEmailTemplate=%s, "
+                        + "resetPasswordTemplate=%s, strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, "
+                        + "emailVerificationEnabled=%s, externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, "
+                        + "minSupportedAppVersions=%s, usesCustomExportSchedule=%s, pushNotificationARNs=%s, "
+                        + "disableExport=%s, emailSignInTemplate=%s, emailSignInEnabled=%s, accountLimit=%s]",
                 name, active, sponsorName, identifier, minAgeOfConsent, supportEmail,
                 synapseDataAccessTeamId, synapseProjectId, technicalEmail, consentNotificationEmail, version,
-                profileAttributes, taskIdentifiers, dataGroups, passwordPolicy, verifyEmailTemplate,
+                profileAttributes, taskIdentifiers, activityEventKeys, dataGroups, passwordPolicy, verifyEmailTemplate,
                 resetPasswordTemplate, strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
                 externalIdValidationEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
                 usesCustomExportSchedule, pushNotificationARNs, disableExport, emailSignInTemplate,

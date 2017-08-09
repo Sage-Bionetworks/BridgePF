@@ -1,7 +1,10 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.hamcrest.core.StringEndsWith.endsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -10,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Map;
 
+import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDateTime;
 import org.junit.Before;
@@ -18,35 +22,80 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent.Builder;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.mockito.Matchers;
 
 public class ActivityEventServiceTest {
 
-    private ActivityEventService service;
+    private ActivityEventService activityEventService;
+    private StudyService studyService;
     
     private ActivityEventDao activityEventDao;
     
     @Before
     public void before() {
-        service = new ActivityEventService();
-        
         activityEventDao = mock(ActivityEventDao.class);
-        service.setActivityEventDao(activityEventDao);
+        studyService = mock(StudyService.class);
+
+        activityEventService = new ActivityEventService(activityEventDao, studyService);
+    }
+
+    @Test
+    public void canPublishCustomEvent() throws Exception {
+        StudyIdentifier studyIdentifier = new StudyIdentifierImpl("id");
+        Study study = mock(Study.class);
+        when(study.getActivityEventKeys()).thenReturn(Sets.newHashSet("eventKey1", "eventKey2"));
+
+        studyService.getStudy(studyIdentifier);
+        when(studyService.getStudy(studyIdentifier)).thenReturn(study);
+
+        ArgumentCaptor<ActivityEvent> activityEventArgumentCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
+        doNothing().when(activityEventDao).publishEvent(activityEventArgumentCaptor.capture());
+
+        DateTime timestamp = DateTime.now();
+        activityEventService.publishCustomEvent(studyIdentifier, "healthCode", "eventKey1", timestamp);
+
+        ActivityEvent activityEvent = activityEventArgumentCaptor.getValue();
+
+        assertEquals("custom:eventKey1", activityEvent.getEventId());
+        assertEquals("healthCode", activityEvent.getHealthCode());
+        assertEquals(timestamp.getMillis(), activityEvent.getTimestamp().longValue());
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void cannotPublishUnknownCustomEvent() throws Exception {
+        StudyIdentifier studyIdentifier = new StudyIdentifierImpl("id");
+        Study study = mock(Study.class);
+        when(study.getActivityEventKeys()).thenReturn(Sets.newHashSet("eventKey1", "eventKey2"));
+
+        studyService.getStudy(studyIdentifier);
+        when(studyService.getStudy(studyIdentifier)).thenReturn(study);
+
+        try {
+            activityEventService.publishCustomEvent(studyIdentifier, "healthCode", "eventKey5", DateTime.now());
+        } catch (BadRequestException e) {
+            assertThat(e.getMessage(), endsWith("eventKey5"));
+            throw e;
+        }
     }
     
     @Test
     public void canPublishEvent() {
         ActivityEvent event = new Builder().withHealthCode("BBB")
             .withObjectType(ActivityEventObjectType.ENROLLMENT).withTimestamp(DateTime.now()).build();
-        
-        service.publishActivityEvent(event);
+
+        activityEventService.publishActivityEvent(event);
         
         verify(activityEventDao).publishEvent(eq(event));
         verifyNoMoreInteractions(activityEventDao);
@@ -59,8 +108,8 @@ public class ActivityEventServiceTest {
         Map<String,DateTime> map = Maps.newHashMap();
         map.put("enrollment", now);
         when(activityEventDao.getActivityEventMap("BBB")).thenReturn(map);
-        
-        Map<String,DateTime> results = service.getActivityEventMap("BBB");
+
+        Map<String, DateTime> results = activityEventService.getActivityEventMap("BBB");
         assertEquals(now, results.get("enrollment"));
         assertEquals(1, results.size());
         
@@ -70,7 +119,7 @@ public class ActivityEventServiceTest {
     
     @Test
     public void canDeleteActivityEvents() {
-        service.deleteActivityEvents("BBB");
+        activityEventService.deleteActivityEvents("BBB");
         
         verify(activityEventDao).deleteActivityEvents("BBB");
         verifyNoMoreInteractions(activityEventDao);
@@ -79,7 +128,7 @@ public class ActivityEventServiceTest {
     @Test
     public void badPublicDoesntCallDao() {
         try {
-            service.publishActivityEvent((ActivityEvent)null);    
+            activityEventService.publishActivityEvent((ActivityEvent) null);
             fail("Exception should have been thrown");
         } catch(NullPointerException e) {}
         verifyNoMoreInteractions(activityEventDao);
@@ -88,7 +137,7 @@ public class ActivityEventServiceTest {
     @Test
     public void badGetDoesntCallDao() {
         try {
-            service.getActivityEventMap(null);    
+            activityEventService.getActivityEventMap(null);
             fail("Exception should have been thrown");
         } catch(NullPointerException e) {}
         verifyNoMoreInteractions(activityEventDao);
@@ -97,7 +146,7 @@ public class ActivityEventServiceTest {
     @Test
     public void badDeleteDoesntCallDao() {
         try {
-            service.deleteActivityEvents(null);    
+            activityEventService.deleteActivityEvents(null);
             fail("Exception should have been thrown");
         } catch(NullPointerException e) {}
         verifyNoMoreInteractions(activityEventDao);
@@ -112,8 +161,8 @@ public class ActivityEventServiceTest {
                 .withName("A Name")
                 .withConsentCreatedOn(now.minusDays(10).getMillis())
                 .withSignedOn(now.getMillis()).build();
-        
-        service.publishEnrollmentEvent("AAA-BBB-CCC", signature);
+
+        activityEventService.publishEnrollmentEvent("AAA-BBB-CCC", signature);
         
         ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
         verify(activityEventDao).publishEvent(argument.capture());
@@ -132,8 +181,8 @@ public class ActivityEventServiceTest {
         answer.setAnsweredOn(now.getMillis());
         answer.setQuestionGuid("BBB-CCC-DDD");
         answer.setAnswers(Lists.newArrayList("belgium"));
-        
-        service.publishQuestionAnsweredEvent("healthCode", answer);
+
+        activityEventService.publishQuestionAnsweredEvent("healthCode", answer);
         
         ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
         verify(activityEventDao).publishEvent(argument.capture());
@@ -147,8 +196,8 @@ public class ActivityEventServiceTest {
     public void doesNotPublishActivityFinishedEventForOldActivity() {
         ScheduledActivity activity = ScheduledActivity.create();
         activity.setGuid("AAA");
-        
-        service.publishActivityFinishedEvent(activity);
+
+        activityEventService.publishActivityFinishedEvent(activity);
         verifyNoMoreInteractions(activityEventDao);
     }
     
@@ -163,9 +212,9 @@ public class ActivityEventServiceTest {
         schActivity.setStartedOn(DateTime.now().getMillis());
         schActivity.setFinishedOn(finishedOn);
         schActivity.setHealthCode("BBB");
-        
-        
-        service.publishActivityFinishedEvent(schActivity);
+
+
+        activityEventService.publishActivityFinishedEvent(schActivity);
         ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
         verify(activityEventDao).publishEvent(argument.capture());
 

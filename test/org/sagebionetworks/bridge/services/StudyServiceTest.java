@@ -111,6 +111,7 @@ public class StudyServiceTest {
         study = TestUtils.getValidStudy(StudyServiceTest.class);
         // verify this can be null, that's okay, and the flags are reset correctly on create
         study.setTaskIdentifiers(null);
+        study.setActivityEventKeys(null);
         study.setHealthCodeExportEnabled(true);
         study.setActive(false);
         study.setStrictUploadValidationEnabled(false);
@@ -140,6 +141,8 @@ public class StudyServiceTest {
         assertEquals(Sets.newHashSet("beta_users", "production_users", BridgeConstants.TEST_USER_GROUP),
                 newStudy.getDataGroups());
         assertEquals(0, newStudy.getTaskIdentifiers().size());
+        assertEquals(0, newStudy.getActivityEventKeys().size());
+
         // these should have been changed
         assertEquals("${studyName} link", newStudy.getEmailSignInTemplate().getSubject());
         assertEquals("Follow link ${token}", newStudy.getEmailSignInTemplate().getBody());

@@ -389,6 +389,7 @@ public class TestUtils {
         study.setSupportEmail("bridge-testing+support@sagebase.org");
         study.setUserProfileAttributes(Sets.newHashSet("a", "b"));
         study.setTaskIdentifiers(Sets.newHashSet("task1", "task2"));
+        study.setActivityEventKeys(Sets.newHashSet("event1", "event2"));
         study.setDataGroups(Sets.newHashSet("beta_users", "production_users"));
         study.setStrictUploadValidationEnabled(true);
         study.setHealthCodeExportEnabled(true);

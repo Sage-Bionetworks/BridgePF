@@ -93,7 +93,27 @@ public class StudyValidatorTest {
         study.setIdentifier("sage-pd");
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
     }
-    
+
+    @Test
+    public void acceptsEventKeysWithColons() {
+        study.setActivityEventKeys(Sets.newHashSet("a-1", "b2"));
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    }
+
+    @Test
+    public void rejectEventKeysWithColons() {
+        study.setActivityEventKeys(Sets.newHashSet("a-1", "b:2"));
+        assertCorrectMessage(study, "activityEventKey",
+                "activityEventKey must contain only lower-case letters and/or numbers with optional dashes");
+    }
+
+    @Test
+    public void cannotCreateIdentifierWithColons() {
+        study.setActivityEventKeys(Sets.newHashSet("a-1", "b:2"));
+        assertCorrectMessage(study, "activityEventKey",
+                "activityEventKey must contain only lower-case letters and/or numbers with optional dashes");
+    }
+
     @Test
     public void acceptsMultipleValidSupportEmailAddresses() {
         study.setSupportEmail("test@test.com,test2@test.com");

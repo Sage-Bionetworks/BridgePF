@@ -28,6 +28,7 @@ import play.mvc.BodyParser;
 import play.mvc.Result;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -346,5 +347,12 @@ public class ParticipantController extends BaseController {
         participantService.sendNotification(study, userId, message);
         
         return acceptedResult("Message has been sent to external notification service.");
+    }
+
+    public Result getActivityEvents(String userId) {
+        UserSession researcherSession = getAuthenticatedSession(Roles.RESEARCHER);
+        Study study = studyService.getStudy(researcherSession.getStudyIdentifier());
+
+        return okResult(participantService.getActivityEvents(study, userId));
     }
 }

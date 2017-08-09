@@ -4,7 +4,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
+import com.google.common.base.Splitter;
 import org.joda.time.DateTime;
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
@@ -38,6 +40,8 @@ public class Schedule implements BridgeEntity {
     public static final String TYPE_PROPERTY_NAME = "type";
     public static final String ACTIVITIES_PROPERTY = "activities";
     public static final String TIMES_PROPERTY = "times";
+
+    public static final Splitter EVENT_ID_SPLITTER = Splitter.on(Pattern.compile("\\s*,\\s*"));
    
     private String label;
     private ScheduleType scheduleType;

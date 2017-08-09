@@ -42,6 +42,7 @@ POST   /v3/participants/:userId/resendEmailVerification      @org.sagebionetwork
 POST   /v3/participants/:userId/consents/withdraw            @org.sagebionetworks.bridge.play.controllers.ParticipantController.withdrawFromAllConsents(userId: String)
 POST   /v3/participants/:userId/consents/:guid/resendConsent @org.sagebionetworks.bridge.play.controllers.ParticipantController.resendConsentAgreement(userId: String, guid: String)
 POST   /v3/participants/:userId/consents/:guid/withdraw      @org.sagebionetworks.bridge.play.controllers.ParticipantController.withdrawConsent(userId: String, guid: String)
+GET    /v3/participants/:userId/activityEvents               @org.sagebionetworks.bridge.play.controllers.ParticipantController.getActivityEvents(userId: String)
 
 # Shared Module
 POST   /v3/sharedmodules/:id/import                   @org.sagebionetworks.bridge.play.controllers.SharedModuleController.importModuleByIdLatestPublishedVersion(id: String)
@@ -160,11 +161,15 @@ GET    /v3/uploadschemas/:schemaId/recent          @org.sagebionetworks.bridge.p
 GET    /v3/uploadschemas/:schemaId/revisions/:rev  @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemaByIdAndRev(schemaId: String, rev: Int)
 
 # Schedule Plans
-GET    /v3/scheduleplans           @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.getSchedulePlans
-POST   /v3/scheduleplans           @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.createSchedulePlan
-GET    /v3/scheduleplans/:guid     @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.getSchedulePlan(guid: String)
-POST   /v3/scheduleplans/:guid     @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.updateSchedulePlan(guid: String)
-DELETE /v3/scheduleplans/:guid     @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.deleteSchedulePlan(guid: String)
+GET    /v3/scheduleplans                  @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.getSchedulePlans
+POST   /v3/scheduleplans                  @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.createSchedulePlan
+GET    /v3/scheduleplans/:guid            @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.getSchedulePlan(guid: String)
+POST   /v3/scheduleplans/:guid            @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.updateSchedulePlan(guid: String)
+DELETE /v3/scheduleplans/:guid            @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.deleteSchedulePlan(guid: String)
+
+# Activity Events
+GET    /v1/activityevents               @org.sagebionetworks.bridge.play.controllers.ActivityEventController.getSelfActivityEvents
+POST   /v1/activityevents              @org.sagebionetworks.bridge.play.controllers.ActivityEventController.createCustomActivityEvent
 
 # Notifications
 GET    /v3/notifications                      @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.getAllRegistrations

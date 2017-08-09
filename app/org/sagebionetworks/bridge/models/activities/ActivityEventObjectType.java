@@ -47,5 +47,9 @@ public enum ActivityEventObjectType {
      * 
      * @see org.sagebionetworks.bridge.dao.ActivityEventDao#getActivityEventMap 
      */
-    TWO_MONTHS_BEFORE_ENROLLMENT;
+    TWO_MONTHS_BEFORE_ENROLLMENT,
+    /**
+     * A custom event defined at the study level.
+     */
+    CUSTOM;
 }

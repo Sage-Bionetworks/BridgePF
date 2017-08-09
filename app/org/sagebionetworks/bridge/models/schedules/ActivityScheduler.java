@@ -119,7 +119,7 @@ public abstract class ActivityScheduler {
     protected DateTime getFirstEventDateTime(ScheduleContext context, String eventIdsString) {
         DateTime eventDateTime = null;
         if (eventIdsString != null) {
-            String[] eventIds = eventIdsString.trim().split("\\s*,\\s*");
+            Iterable<String> eventIds = Schedule.EVENT_ID_SPLITTER.split(eventIdsString.trim());
             for (String thisEventId : eventIds) {
                 if (context.getEvent(thisEventId) != null) {
                     eventDateTime = context.getEvent(thisEventId);

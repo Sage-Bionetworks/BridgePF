@@ -514,13 +514,19 @@ public class StudyService {
     private void checkViolationConstraints(Study originalStudy, Study study) {
         if (!study.getDataGroups().containsAll(originalStudy.getDataGroups())) {
             throw new ConstraintViolationException.Builder()
-                .withEntityKey(IDENTIFIER_PROPERTY, study.getIdentifier()).withEntityKey(TYPE_PROPERTY, STUDY_PROPERTY)
-                .withMessage("Data groups cannot be deleted.").build();
+                    .withEntityKey(IDENTIFIER_PROPERTY, study.getIdentifier()).withEntityKey(TYPE_PROPERTY, STUDY_PROPERTY)
+                    .withMessage("Data groups cannot be deleted.").build();
         }
         if (!study.getTaskIdentifiers().containsAll(originalStudy.getTaskIdentifiers())) {
             throw new ConstraintViolationException.Builder()
-                .withEntityKey(IDENTIFIER_PROPERTY, study.getIdentifier()).withEntityKey(TYPE_PROPERTY, STUDY_PROPERTY)
-                .withMessage("Task identifiers cannot be deleted.").build();
+                    .withEntityKey(IDENTIFIER_PROPERTY, study.getIdentifier()).withEntityKey(TYPE_PROPERTY, STUDY_PROPERTY)
+                    .withMessage("Task identifiers cannot be deleted.").build();
+        }
+        if (!study.getActivityEventKeys().containsAll(originalStudy.getActivityEventKeys())) {
+            throw new ConstraintViolationException.Builder()
+                    .withEntityKey(IDENTIFIER_PROPERTY, study.getIdentifier()).withEntityKey(TYPE_PROPERTY, STUDY_PROPERTY)
+                    .withMessage("Activity event keys cannot be deleted.").build();
+
         }
     }
     

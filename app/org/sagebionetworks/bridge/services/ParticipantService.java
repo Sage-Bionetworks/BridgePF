@@ -50,6 +50,7 @@ import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
+import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
@@ -88,6 +89,8 @@ public class ParticipantService {
     private NotificationsService notificationsService;
 
     private ScheduledActivityService scheduledActivityService;
+
+    private ActivityEventService activityEventService;
 
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
@@ -137,6 +140,11 @@ public class ParticipantService {
     @Autowired
     final void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
         this.scheduledActivityService = scheduledActivityService;
+    }
+
+    @Autowired
+    final void setActivityEventService(ActivityEventService activityEventService) {
+        this.activityEventService = activityEventService;
     }
 
     public StudyParticipant getParticipant(Study study, String id, boolean includeHistory) {
@@ -436,7 +444,12 @@ public class ParticipantService {
 
         notificationsService.sendNotificationToUser(study.getStudyIdentifier(), account.getHealthCode(), message);
     }
-    
+
+    public List<ActivityEvent> getActivityEvents(Study study, String userId) {
+        Account account = getAccountThrowingException(study, userId);
+
+        return activityEventService.getActivityEventList(account.getHealthCode());
+    }
     private CriteriaContext getCriteriaContextForParticipant(Study study, StudyParticipant participant) {
         RequestInfo info = cacheProvider.getRequestInfo(participant.getId());
         ClientInfo clientInfo = (info == null) ? null : info.getClientInfo();

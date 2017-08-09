@@ -35,6 +35,7 @@ public class DynamoStudyDaoTest {
 
     private final Set<String> USER_PROFILE_ATTRIBUTES = Sets.newHashSet("can-publish", "can-recontact");
     private final Set<String> TASK_IDENTIFIERS = Sets.newHashSet("task1", "task2");
+    private final Set<String> ACTIVITY_EVENT_KEYS = Sets.newHashSet("event1", "event2");
     private final Set<String> DATA_GROUPS = Sets.newHashSet("beta_users", "production_users");
 
     private Set<String> studyIdsToDelete;
@@ -88,6 +89,7 @@ public class DynamoStudyDaoTest {
         assertEquals(USER_PROFILE_ATTRIBUTES, study.getUserProfileAttributes());
         assertTrue(study.getUsesCustomExportSchedule());
         assertEquals(TASK_IDENTIFIERS, study.getTaskIdentifiers());
+        assertEquals(ACTIVITY_EVENT_KEYS, study.getActivityEventKeys());
         assertEquals(DATA_GROUPS, study.getDataGroups());
         assertEquals(androidARN, study.getPushNotificationARNs().get(OperatingSystem.ANDROID));
         assertEquals(iosARN, study.getPushNotificationARNs().get(OperatingSystem.IOS));
@@ -121,19 +123,23 @@ public class DynamoStudyDaoTest {
 
         // This triggers an error without the JSON serializer annotations because DDB doesn't support empty sets
         study.setTaskIdentifiers(Sets.newHashSet());
+        study.setActivityEventKeys(Sets.newHashSet());
         studyDao.updateStudy(study);
         
         // We get what we want here because it deserializes the empty array
         study = studyDao.getStudy(study.getIdentifier()); 
         assertEquals(0, study.getTaskIdentifiers().size());
-        
+        assertEquals(0, study.getActivityEventKeys().size());
+
         // These two are now equivalent insofar as they throw no error and the object can always present a non-null field
         study.setTaskIdentifiers(null);
+        study.setActivityEventKeys(null);
         studyDao.updateStudy(study);
         
         // We get what we want here because we set the field to an empty set in the constructor. It's never null.
         study = studyDao.getStudy(study.getIdentifier());
         assertEquals(0, study.getTaskIdentifiers().size());
+        assertEquals(0, study.getActivityEventKeys().size());
     }
 
     @Test

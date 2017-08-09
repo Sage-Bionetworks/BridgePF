@@ -190,4 +190,8 @@
     <bean id="NotificationTopicControllerProxied" parent="proxiedController">
         <property name="targetName" value="notificationTopicController"/>
     </bean>
+
+    <bean id="ActivityEventControllerProxied" parent="proxiedController">
+        <property name="targetName" value="activityEventController" />
+    </bean>
 </beans>
