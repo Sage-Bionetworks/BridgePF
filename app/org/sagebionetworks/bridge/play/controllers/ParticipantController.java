@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.ResourceList.START_TIME;
 import static org.sagebionetworks.bridge.models.ResourceList.END_TIME;
+import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.START_DATE;
 import static org.sagebionetworks.bridge.models.ResourceList.END_DATE;
 
@@ -236,18 +237,28 @@ public class ParticipantController extends BaseController {
     }
     
     public Result getActivityHistoryV2(String userId, String activityGuid, String scheduledOnStartString,
-            String scheduledOnEndString, String offsetBy, String pageSizeString) throws Exception {
+            String scheduledOnEndString, String offsetBy, String offsetKey, String pageSizeString) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        if (offsetKey == null) {
+            offsetKey = offsetBy;
+        }
         
         DateTime scheduledOnStart = getDateTimeOrDefault(scheduledOnStartString, null);
         DateTime scheduledOnEnd = getDateTimeOrDefault(scheduledOnEndString, null);
         int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
         
         ForwardCursorPagedResourceList<ScheduledActivity> page = participantService.getActivityHistory(
-                study, userId, activityGuid, scheduledOnStart, scheduledOnEnd, offsetBy, pageSize);
-        
-        return ok(ScheduledActivity.RESEARCHER_SCHEDULED_ACTIVITY_WRITER.writeValueAsString(page));
+                study, userId, activityGuid, scheduledOnStart, scheduledOnEnd, offsetKey, pageSize);
+
+        // If offsetBy was supplied, we return it as a top-level property of the list for backwards compatibility.
+        String json = ScheduledActivity.RESEARCHER_SCHEDULED_ACTIVITY_WRITER.writeValueAsString(page);
+        ObjectNode node = (ObjectNode)MAPPER.readTree(json);
+        if (offsetBy != null) {
+            node.put(OFFSET_BY, offsetBy);    
+        }
+        return ok(node);
     }
     
     public Result deleteActivities(String userId) throws Exception {
