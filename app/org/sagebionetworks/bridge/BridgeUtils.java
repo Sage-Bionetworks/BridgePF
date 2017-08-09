@@ -353,10 +353,7 @@ public class BridgeUtils {
     public static String extractPasswordFromURI(URI uri) {
         boolean hasPassword = (uri.getUserInfo() != null && uri.getUserInfo().contains(":"));
         
-        if (hasPassword) {
-            return uri.getUserInfo().split(":")[1];
-        }
-        return null;
+        return (hasPassword) ? uri.getUserInfo().split(":")[1] : null;
     }
 
 }
