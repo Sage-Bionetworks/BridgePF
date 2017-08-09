@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
@@ -24,12 +25,12 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
-import org.sagebionetworks.bridge.models.schedules.ScheduledActivityList;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
@@ -91,6 +92,7 @@ public class DynamoScheduledActivityDaoTest {
         activityDao.deleteActivitiesForUser(healthCode);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void getScheduledActivityHistoryV2() throws Exception {
         // Let's use an interesting time zone so we can verify it is being used.
@@ -115,7 +117,7 @@ public class DynamoScheduledActivityDaoTest {
         String activityGuid = extractActivityGuid();
         
         // Get the first page of 10 records
-        ScheduledActivityList history = activityDao.getActivityHistoryV2(
+        ForwardCursorPagedResourceList<ScheduledActivity> history = activityDao.getActivityHistoryV2(
                 healthCode, activityGuid, startDateTime, endDateTime, MSK, null, 10);
         assertEquals(10, history.getItems().size());
         history.getItems().stream().forEach(scheduledActivity -> assertEquals(MSK, scheduledActivity.getTimeZone()));
@@ -123,9 +125,23 @@ public class DynamoScheduledActivityDaoTest {
         Set<String> allTaskGuids = history.getItems().stream().map(ScheduledActivity::getGuid).collect(toSet());
 
         // Get second page of records
+        String nextPageOffsetKey = history.getNextPageOffsetKey();
         history = activityDao.getActivityHistoryV2(
-                healthCode, activityGuid, startDateTime, endDateTime, MSK, history.getOffsetBy(), 10);
+                healthCode, activityGuid, startDateTime, endDateTime, MSK, nextPageOffsetKey, 10);
         assertEquals(10, history.getItems().size());
+        
+        // Assert request params are all set (nextPageOffsetKey is now the offsetKey submitted in the request) 
+        assertNotEquals(nextPageOffsetKey, history.getNextPageOffsetKey());
+        assertEquals(nextPageOffsetKey, history.getRequestParams().get("offsetKey"));
+        assertEquals(10, history.getRequestParams().get("pageSize"));
+        assertEquals(startDateTime.toString(), history.getRequestParams().get("scheduledOnStart"));
+        assertEquals(endDateTime.toString(), history.getRequestParams().get("scheduledOnEnd"));
+
+        assertNotEquals(nextPageOffsetKey, history.getOffsetKey());
+        assertEquals((Integer)10, history.getPageSize());
+        assertTrue(startDateTime.isEqual(history.getScheduledOnStart()));
+        assertTrue(endDateTime.isEqual(history.getScheduledOnEnd()));
+        
         history.getItems().stream().forEach(scheduledActivity -> assertEquals(MSK, scheduledActivity.getTimeZone()));
 
         // Now add the GUIDS of the next ten records to the set
@@ -138,7 +154,7 @@ public class DynamoScheduledActivityDaoTest {
         history = activityDao.getActivityHistoryV2(
                 healthCode, activityGuid, startDateTime, startDateTime, MSK, null, 10);
         assertEquals(0, history.getItems().size());
-        assertNull(history.getOffsetBy());
+        assertNull(history.getNextPageOffsetKey());
     }
     
     @Test

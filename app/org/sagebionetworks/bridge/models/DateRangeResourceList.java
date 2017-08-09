@@ -7,30 +7,32 @@ import org.joda.time.LocalDate;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class DateRangeResourceList<T> {
+public class DateRangeResourceList<T> extends ResourceList<T> {
     
-    private final List<T> items;
-    private final LocalDate startDate;
-    private final LocalDate endDate;
-
     @JsonCreator
-    public DateRangeResourceList(@JsonProperty("items") List<T> items, @JsonProperty("startDate") LocalDate startDate,
-            @JsonProperty("endDate") LocalDate endDate) {
-        this.items = items;
-        this.startDate = startDate;
-        this.endDate = endDate;
+    public DateRangeResourceList(@JsonProperty(ITEMS) List<T> items) {
+        super(items);
     }
-    public List<T> getItems() {
-        return items;
-    }
-    public int getTotal() {
-        return items.size();
-    }
+    
+    @Deprecated
     public LocalDate getStartDate() {
-        return startDate;
+        return getLocalDate(START_DATE);
     }
+    @Deprecated
     public LocalDate getEndDate() {
-        return endDate;
+        return getLocalDate(END_DATE);
+    }
+    @Override
+    @Deprecated
+    public Integer getTotal() {
+        // This is necessary solely to keep current integration tests passing. 
+        // The total property is going away on everything except PagedResourceList.
+        Integer total = super.getTotal();
+        return (total == null) ? 0 : total;
+    }
+    public DateRangeResourceList<T> withRequestParam(String key, Object value) {
+        super.withRequestParam(key, value);
+        return this;
     }
     
 }

@@ -45,6 +45,7 @@ import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
@@ -164,9 +165,11 @@ public class DynamoUploadDao implements UploadDao {
         }
 
         int lastIndex = Math.min(pageSize, results.size());
-        return new ForwardCursorPagedResourceList<>(results.subList(0, lastIndex), nextOffsetKey, pageSize)
-                .withFilter("startTime", startTime.toString())
-                .withFilter("endTime", endTime.toString());
+        return new ForwardCursorPagedResourceList<>(results.subList(0, lastIndex), nextOffsetKey)
+                .withRequestParam(ResourceList.OFFSET_KEY, offsetKey)
+                .withRequestParam(ResourceList.PAGE_SIZE, pageSize)
+                .withRequestParam(ResourceList.START_TIME, startTime)
+                .withRequestParam(ResourceList.END_TIME, endTime);
     }
 
     /** {@inheritDoc} */
@@ -201,9 +204,11 @@ public class DynamoUploadDao implements UploadDao {
 
         String nextPageOffsetKey = (page.getLastEvaluatedKey() != null) ? page.getLastEvaluatedKey().get(UPLOAD_ID).getS() : null;
         
-        return new ForwardCursorPagedResourceList<>(uploadList, nextPageOffsetKey, pageSize)
-                .withFilter("startDate", startTime.toString())
-                .withFilter("endDate", endTime.toString());
+        return new ForwardCursorPagedResourceList<>(uploadList, nextPageOffsetKey)
+                .withRequestParam(ResourceList.OFFSET_KEY, offsetKey)
+                .withRequestParam(ResourceList.PAGE_SIZE, pageSize)
+                .withRequestParam(ResourceList.START_TIME, startTime)
+                .withRequestParam(ResourceList.END_TIME, endTime);
     }
 
     private DynamoDBQueryExpression<DynamoUpload2> createGetQuery(StudyIdentifier studyId, DateTime startTime, DateTime endTime,

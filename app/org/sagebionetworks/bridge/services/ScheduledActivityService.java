@@ -34,6 +34,7 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivity;
@@ -42,7 +43,6 @@ import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
-import org.sagebionetworks.bridge.models.schedules.ScheduledActivityList;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
@@ -120,7 +120,7 @@ public class ScheduledActivityService {
         this.surveyService = surveyService;
     }
 
-    public ScheduledActivityList getActivityHistory(String healthCode,
+    public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(String healthCode,
             String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, String offsetBy,
             int pageSize) {
         checkArgument(isNotBlank(healthCode));
@@ -237,7 +237,7 @@ public class ScheduledActivityService {
         
         Map<String,ScheduledActivity> dbMap = Maps.newHashMap();
         for (String activityGuid : activityGuids) {
-            ScheduledActivityList list = activityDao.getActivityHistoryV2(
+            ForwardCursorPagedResourceList<ScheduledActivity> list = activityDao.getActivityHistoryV2(
                     context.getCriteriaContext().getHealthCode(), activityGuid,
                     context.getStartsOn(), context.getEndsOn(), context.getStartsOn().getZone(), null,
                     API_MAXIMUM_PAGE_SIZE);

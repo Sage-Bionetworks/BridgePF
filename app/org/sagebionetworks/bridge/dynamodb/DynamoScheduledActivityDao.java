@@ -15,8 +15,9 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
-import org.sagebionetworks.bridge.models.schedules.ScheduledActivityList;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -38,10 +39,6 @@ import com.google.common.collect.Maps;
 @Component
 public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     
-    private static final String SCHEDULED_ON_START = "scheduledOnStart";
-
-    private static final String SCHEDULED_ON_END = "scheduledOnEnd";
-
     private static final String HEALTH_CODE = "healthCode";
 
     private static final String GUID = "guid";
@@ -56,7 +53,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     }
     
     @Override
-    public ScheduledActivityList getActivityHistoryV2(String healthCode,
+    public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistoryV2(String healthCode,
             String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, DateTimeZone timezone,
             String offsetBy, int pageSize) {
         checkNotNull(healthCode);
@@ -107,10 +104,11 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
             nextOffsetBy = queryResult.getLastEvaluatedKey().get(GUID).getS().split(":",2)[1];
         }
 
-        ScheduledActivityList result = new ScheduledActivityList(activities, nextOffsetBy, pageSize);
-        result.withFilter(SCHEDULED_ON_START, scheduledOnStart)
-                .withFilter(SCHEDULED_ON_END, scheduledOnEnd);
-        return result;
+        return new ForwardCursorPagedResourceList<ScheduledActivity>(activities, nextOffsetBy)
+                .withRequestParam(ResourceList.OFFSET_KEY, offsetBy)
+                .withRequestParam(ResourceList.PAGE_SIZE, pageSize)
+                .withRequestParam(ResourceList.SCHEDULED_ON_START, scheduledOnStart)
+                .withRequestParam(ResourceList.SCHEDULED_ON_END, scheduledOnEnd);
     }
     
     /** {@inheritDoc} */

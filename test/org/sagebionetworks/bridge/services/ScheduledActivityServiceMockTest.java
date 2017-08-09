@@ -49,6 +49,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -56,7 +57,6 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
-import org.sagebionetworks.bridge.models.schedules.ScheduledActivityList;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -405,7 +405,7 @@ public class ScheduledActivityServiceMockTest {
         
         when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(aaa,bbb));
         
-        ScheduledActivityList list = new ScheduledActivityList(createStartedActivities("BBB"+TIME_PORTION), null, 0);
+        ForwardCursorPagedResourceList<ScheduledActivity> list = new ForwardCursorPagedResourceList<>(createStartedActivities("BBB"+TIME_PORTION), null);
         when(activityDao.getActivityHistoryV2(HEALTH_CODE, "BBB", NOW, NOW, TIME_ZONE, null, API_MAXIMUM_PAGE_SIZE))
                 .thenReturn(list);        
         
@@ -484,7 +484,7 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> db = Lists.newArrayList(createExpiredActivities("AAA"+TIME_PORTION).get(0),
                 createFinishedActivities("BBB"+TIME_PORTION).get(0));
         when(activityDao.getActivityHistoryV2(HEALTH_CODE, "BBB", NOW, NOW, TIME_ZONE, null, API_MAXIMUM_PAGE_SIZE))
-                .thenReturn(new ScheduledActivityList(db, null, 0));
+                .thenReturn(new ForwardCursorPagedResourceList<>(db, null));
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivitiesV4(createScheduleContext(NOW).build());
         assertActivityGuids(returnedActivities, "AAA", "BBB", "CCC");
@@ -527,7 +527,7 @@ public class ScheduledActivityServiceMockTest {
         
         List<ScheduledActivity> db = createStartedActivities("AAA"+TIME_PORTION,"CCC"+TIME_PORTION);
         when(activityDao.getActivityHistoryV2(HEALTH_CODE, "BBB", NOW, NOW, TIME_ZONE, null, API_MAXIMUM_PAGE_SIZE))
-                .thenReturn(new ScheduledActivityList(db, null, 0));
+                .thenReturn(new ForwardCursorPagedResourceList<>(db, null));
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivitiesV4(createScheduleContext(NOW).build());
         assertActivityGuids(returnedActivities, "AAA", "BBB", "CCC");
@@ -1088,7 +1088,7 @@ public class ScheduledActivityServiceMockTest {
     }
     
     private void mockGetActivitiesV2(String activityGuid, List<ScheduledActivity> activities) {
-        ScheduledActivityList list = new ScheduledActivityList(activities, null, 0);
+        ForwardCursorPagedResourceList<ScheduledActivity> list = new ForwardCursorPagedResourceList<>(activities, null);
 
         when(activityDao.getActivityHistoryV2(eq(HEALTH_CODE), eq(activityGuid), any(), any(), 
                 any(), eq(null), eq(BridgeConstants.API_MAXIMUM_PAGE_SIZE))).thenReturn(list);
@@ -1131,19 +1131,6 @@ public class ScheduledActivityServiceMockTest {
         
         return activities.get(0).getScheduledOn().toString();
     }
-    
-    /*
-    private List<ScheduledActivity> merge2(List<ScheduledActivity> scheduled, List<ScheduledActivity> db, NewAndPersistedActivitiesMerger merger) {
-        Map<String, ScheduledActivity> dbMap = Maps.uniqueIndex(db, ScheduledActivity::getGuid);
-        
-        List<ScheduledActivity> saves = Lists.newArrayList();
-        for (int i=0; i < scheduled.size(); i++) {
-            ScheduledActivity activity = scheduled.get(i);
-            ScheduledActivity dbActivity = dbMap.get(activity.getGuid());
-            merger.mergeActivityLists(saves, scheduled, activity, dbActivity, i);
-        }
-        return saves;
-    }*/
 
     private List<ScheduledActivity> createNewActivities(String... guids) {
         return createActivities(false, false, false, guids);

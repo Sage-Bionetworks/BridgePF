@@ -198,7 +198,7 @@ public class ParticipantService {
     }
 
     public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize,
-            String emailFilter, DateTime startDate, DateTime endDate) {
+            String emailFilter, DateTime startTime, DateTime endTime) {
         checkNotNull(study);
         if (offsetBy < 0) {
             throw new BadRequestException("offsetBy cannot be less than 0");
@@ -207,10 +207,10 @@ public class ParticipantService {
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        if (startDate != null && endDate != null && startDate.getMillis() >= endDate.getMillis()) {
+        if (startTime != null && endTime != null && startTime.getMillis() >= endTime.getMillis()) {
             throw new BadRequestException(DATE_RANGE_ERROR);
         }
-        return accountDao.getPagedAccountSummaries(study, offsetBy, pageSize, emailFilter, startDate, endDate);
+        return accountDao.getPagedAccountSummaries(study, offsetBy, pageSize, emailFilter, startTime, endTime);
     }
 
     public void signUserOut(Study study, String email) {

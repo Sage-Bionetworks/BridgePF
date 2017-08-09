@@ -1,108 +1,69 @@
 package org.sagebionetworks.bridge.models;
 
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
-import java.util.Map;
-
-import javax.annotation.Nullable;
 
 import org.joda.time.DateTime;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
+import org.sagebionetworks.bridge.json.DateTimeSerializer;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
+ * This list represents one page of a larger list, for which we know the total number of items in the list 
+ * (not just the size of the page). Request parameters are specifically modeled for this form of paging 
+ * (offsetBy and total).
+ *  
  * Due to this issue: https://github.com/FasterXML/jackson-databind/issues/921 you cannot deserialize a list 
  * with a generic type and also use a builder. Not fixed as of Jackson v2.7.3. We're using a pattern here 
  * that you see in the AWS SDK of having "withFoo" methods on an object that set and return the updated object 
- * (not a new object as everything is final here except the filter map, and that's only accessed as an 
- * ImmutableMap).
+ * (not a new object as everything is final here except the request parameters map, and that's only accessed 
+ * as an ImmutableMap).
  */
-public class PagedResourceList<T> {
-
-    public static final String OFFSET_KEY_FILTER = "offsetKey";
+public class PagedResourceList<T> extends ResourceList<T> {
     
-    private final List<T> items;
-    /**
-     * Calls from a RDMS use an offset index; DynamoDB uses an offsetKey which is usually a string, and 
-     * added to the filer using the LAST_KEY_FILTER property. So offsetKey can be null when not in use.
-     */
-    private final @Nullable Integer offsetBy;
-    private final int pageSize;
-    private final int total;
-    private final Map<String,String> filters = Maps.newHashMap();
+    private final Integer total;
 
+    // This could have a nextPageOffsetBy, but it's trivial to calculate client-side
     @JsonCreator
     public PagedResourceList(
-            @JsonProperty("items") List<T> items, 
-            @JsonProperty("offsetBy") Integer offsetBy,
-            @JsonProperty("pageSize") int pageSize, 
-            @JsonProperty("total") int total) {
-        this.items = items;
-        this.offsetBy = offsetBy;
-        this.pageSize = pageSize;
+            @JsonProperty(ITEMS) List<T> items, 
+            @JsonProperty(TOTAL) Integer total) {
+        super(items);
+        checkNotNull(total);
         this.total = total;
     }
 
-    /**
-     * A convenience method for adding filters without having to construct an intermediate map of filters.
-     * e.g. PagedResourceList<T> page = new PagedResourceList<T>(....).withFilterValue("a","b");
-     */
-    public PagedResourceList<T> withFilter(String key, String value) {
-        if (isNotBlank(key) && isNotBlank(value)) {
-            filters.put(key, value);
-        }
-        return this;
+    @Deprecated
+    public String getEmailFilter() {
+        return (String)getRequestParams().get(EMAIL_FILTER);
     }
-    /**
-     * A convenience method for adding a date filter.
-     */
-    public PagedResourceList<T> withFilter(String key, DateTime value) {
-        if (isNotBlank(key) && value != null) {
-            filters.put(key, value.toString());
-        }
-        return this;
+    @Deprecated
+    @JsonSerialize(using = DateTimeSerializer.class)
+    public DateTime getStartTime() {
+        return getDateTime(START_TIME);
     }
-    /**
-     * Convenience method for adding the DDB key as a filter. The key must be returned to retrieve 
-     * the next page of DDB records.
-     */
-    public PagedResourceList<T> withOffsetKey(String offsetKey) {
-        return withFilter(OFFSET_KEY_FILTER, offsetKey);
+    @Deprecated
+    @JsonSerialize(using = DateTimeSerializer.class)
+    public DateTime getEndTime() {
+        return getDateTime(END_TIME);
     }
-    public List<T> getItems() {
-        return items;
-    }
-    public Integer getOffsetBy() {
-        return offsetBy;
-    }
-    public String getOffsetKey() {
-        return filters.get(OFFSET_KEY_FILTER);
-    }
+    @Deprecated
     public int getPageSize() {
-        return pageSize;
+        return (Integer)getRequestParams().get(PAGE_SIZE);
     }
-    public int getTotal() {
+    @Deprecated
+    public Integer getOffsetBy() {
+        return (Integer)getRequestParams().get(OFFSET_BY);
+    }
+    public Integer getTotal() {
         return total;
     }
-    @JsonAnyGetter
-    public Map<String, String> getFilters() {
-        return ImmutableMap.copyOf(filters);
-    }
-    @JsonAnySetter
-    private void setFilter(String key, String value) {
-        if (isNotBlank(key) && isNotBlank(value)) {
-            filters.put(key, value);    
-        }
-    }
-    @Override
-    public String toString() {
-        return "PagedResourceList [items=" + items + ", offsetBy=" + offsetBy + ", pageSize=" + pageSize + ", total="
-                + total + ", filters=" + filters + "]";
+    public PagedResourceList<T> withRequestParam(String key, Object value) {
+        super.withRequestParam(key, value);
+        return this;
     }
 }

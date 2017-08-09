@@ -85,7 +85,7 @@ public class UploadValidatorTest {
             ObjectNode node = JsonNodeFactory.instance.objectNode();
             node.put("name", this.getClass().getSimpleName());
             node.put("contentType", "text/plain");
-            node.put("contentLength", 11000000L);
+            node.put("contentLength", 21000000L);
             node.put("contentMd5", Base64.encodeBase64String(DigestUtils.md5(message)));
             UploadRequest uploadRequest = UploadRequest.fromJson(node);
             

@@ -34,6 +34,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -138,12 +139,13 @@ public class ReportControllerTest {
         ReportIndex index = ReportIndex.create();
         index.setIdentifier("fofo");
         ReportTypeResourceList<? extends ReportIndex> list = new ReportTypeResourceList<>(
-                Lists.newArrayList(index), ReportType.STUDY);
+                Lists.newArrayList(index)).withRequestParam(ResourceList.REPORT_TYPE, ReportType.STUDY);
         doReturn(list).when(mockReportService).getReportIndices(TEST_STUDY, ReportType.STUDY);
         
         index = ReportIndex.create();
         index.setIdentifier("fofo");
-        list = new ReportTypeResourceList<>(Lists.newArrayList(index), ReportType.PARTICIPANT);
+        list = new ReportTypeResourceList<>(Lists.newArrayList(index))
+                .withRequestParam(ResourceList.REPORT_TYPE, ReportType.PARTICIPANT);
         doReturn(list).when(mockReportService).getReportIndices(TEST_STUDY, ReportType.PARTICIPANT);
     }
     
@@ -374,9 +376,8 @@ public class ReportControllerTest {
         ReportTypeResourceList<ReportIndex> results = BridgeObjectMapper.get().readValue(
                 Helpers.contentAsString(result),
                 new TypeReference<ReportTypeResourceList<ReportIndex>>() {});
-        assertEquals(1, results.getTotal());
         assertEquals(1, results.getItems().size());
-        assertEquals(ReportType.STUDY, results.getReportType());
+        assertEquals("study", results.getRequestParams().get("reportType"));
         assertEquals("fofo", results.getItems().get(0).getIdentifier());
         
         verify(mockReportService).getReportIndices(TEST_STUDY, ReportType.STUDY);
@@ -390,9 +391,8 @@ public class ReportControllerTest {
         ReportTypeResourceList<ReportIndex> results = BridgeObjectMapper.get().readValue(
                 Helpers.contentAsString(result),
                 new TypeReference<ReportTypeResourceList<ReportIndex>>() {});
-        assertEquals(1, results.getTotal());
         assertEquals(1, results.getItems().size());
-        assertEquals(ReportType.PARTICIPANT, results.getReportType());
+        assertEquals("participant", results.getRequestParams().get("reportType"));
         assertEquals("fofo", results.getItems().get(0).getIdentifier());
         
         verify(mockReportService).getReportIndices(TEST_STUDY, ReportType.PARTICIPANT);
@@ -537,7 +537,7 @@ public class ReportControllerTest {
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals("2015-01-02", node.get("startDate").asText());
         assertEquals("2015-02-02", node.get("endDate").asText());
-        assertEquals(2, node.get("total").asInt());
+        assertEquals(2, node.get("items").size());
         assertEquals("DateRangeResourceList", node.get("type").asText());
         
         JsonNode child1 = node.get("items").get(0);
@@ -559,7 +559,10 @@ public class ReportControllerTest {
         List<ReportData> list = Lists.newArrayList();
         list.add(createReport(LocalDate.parse("2015-02-10"), "First", "Name"));
         list.add(createReport(LocalDate.parse("2015-02-12"), "Last", "Name"));
-        return new DateRangeResourceList<ReportData>(list, startDate, endDate);
+        
+        return new DateRangeResourceList<ReportData>(list)
+                .withRequestParam("startDate", startDate)
+                .withRequestParam("endDate", endDate);
     }
     
     private ReportData createReport(LocalDate date, String fieldValue1, String fieldValue2) {
