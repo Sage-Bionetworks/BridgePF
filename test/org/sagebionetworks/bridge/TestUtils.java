@@ -6,10 +6,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static play.test.Helpers.running;
-import static play.test.Helpers.testServer;
 
-import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -29,8 +26,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
 import org.springframework.validation.Validator;
-import play.Application;
-import play.inject.guice.GuiceApplicationBuilder;
 import play.mvc.Http;
 import play.mvc.Result;
 import play.test.Helpers;
@@ -67,9 +62,6 @@ import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.play.modules.BridgeProductionSpringContextModule;
-import org.sagebionetworks.bridge.play.modules.BridgeTestSpringContextModule;
-import org.sagebionetworks.bridge.runnable.FailableRunnable;
 import org.sagebionetworks.bridge.validators.Validate;
 
 public class TestUtils {
@@ -133,30 +125,6 @@ public class TestUtils {
         assertEquals(statusCode, result.status());
         assertEquals("application/json", result.contentType());
         assertEquals(message, resultMessage);
-    }
-
-    /**
-     * Wrapper to wrap Play's Helpers.running() and Helpers.testServer() by swapping out the Production module with the
-     * unit test one. Launches the test server on port 3333 and runs the arbitrary test code passed in as a
-     * FailableRunnable. FailableRunnables can throw any exception and can be used with Java 8 lambdas.
-     */
-    public static void runningTestServerWithSpring(FailableRunnable runnable) {
-        // in(new File(".") tells the app builder to use the project root directory as the server's root directory.
-        // Specifically, it lets the app builder know where to find conf/application.conf
-        // We also bind the unit test module and disable the Production module.
-        Application testApp = new GuiceApplicationBuilder().in(new File("."))
-                .bindings(new BridgeTestSpringContextModule()).disable(BridgeProductionSpringContextModule.class)
-                .build();
-
-        // Set up test server and execute.
-        running(testServer(3333, testApp), () -> {
-            try {
-                runnable.run();
-            } catch (Exception ex) {
-                // Wrap in a RuntimeException, since regular Runnables can't throw checked exceptions.
-                throw new RuntimeException(ex);
-            }
-        });
     }
 
     public static Map<SubpopulationGuid,ConsentStatus> toMap(ConsentStatus... statuses) {
