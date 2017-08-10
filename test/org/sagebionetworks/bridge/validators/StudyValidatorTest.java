@@ -103,8 +103,8 @@ public class StudyValidatorTest {
     @Test
     public void rejectEventKeysWithColons() {
         study.setActivityEventKeys(Sets.newHashSet("a-1", "b:2"));
-        assertCorrectMessage(study, "activityEventKey",
-                "activityEventKey must contain only lower-case letters and/or numbers with optional dashes");
+        assertCorrectMessage(study, "activityEventKeys",
+                "activityEventKeys must contain only lower-case letters and/or numbers with optional dashes");
     }
 
     @Test
