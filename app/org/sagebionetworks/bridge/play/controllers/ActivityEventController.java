@@ -4,32 +4,22 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEvent.ACTIVIT
 
 import java.util.List;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import play.mvc.Result;
 
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ActivityEventService;
-import org.sagebionetworks.bridge.services.ParticipantService;
-import org.sagebionetworks.bridge.services.StudyService;
 
 @Controller
 public class ActivityEventController extends BaseController {
     private ActivityEventService activityEventService;
-    private StudyService studyService;
-    private ParticipantService participantService;
 
     @Autowired
-    public ActivityEventController(ActivityEventService activityEventService, StudyService studyService,
-            ParticipantService participantService) {
+    public ActivityEventController(ActivityEventService activityEventService) {
         this.activityEventService = activityEventService;
-        this.studyService = studyService;
-        this.participantService = participantService;
     }
 
     public Result createCustomActivityEvent() {
