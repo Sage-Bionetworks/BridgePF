@@ -22,6 +22,11 @@ public class BridgeTestSpringConfig {
         return new InMemoryJedisOps();
     }
 
+    @Bean(name = "newJedisOps")
+    public JedisOps newJedisOps() {
+        return new InMemoryJedisOps();
+    }
+    
     @Bean(name = "jedisPool")
     public JedisPool jedisPool() {
         // Since we don't connect to a real host, pass in "localhost" as a dummy hostname
