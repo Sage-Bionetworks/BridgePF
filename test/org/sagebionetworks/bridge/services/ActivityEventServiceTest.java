@@ -34,7 +34,6 @@ import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.mockito.Matchers;
 
 public class ActivityEventServiceTest {
 

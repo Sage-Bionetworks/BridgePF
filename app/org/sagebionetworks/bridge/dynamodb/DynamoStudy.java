@@ -14,7 +14,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConvertedJson;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.collect.Sets;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
