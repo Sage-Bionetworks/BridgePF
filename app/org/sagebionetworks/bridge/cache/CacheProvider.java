@@ -174,7 +174,7 @@ public class CacheProvider {
                 throw new BridgeServiceException("Error parsing JSON for session " + sessionToken);
             }
         } catch (Throwable e) {
-            //promptToStartRedisIfLocal(e);
+            promptToStartRedisIfLocal(e);
             throw new BridgeServiceException(e);
         }
     }
