@@ -91,6 +91,10 @@
         <property name="targetName" value="compoundActivityDefinitionController"/>
     </bean>
 
+    <bean id="ExportControllerProxied" parent="proxiedController">
+        <property name="targetName" value="exportController"/>
+    </bean>
+
     <bean id="SharedModuleControllerProxied" parent="proxiedController">
         <property name="targetName" value="sharedModuleController"/>
     </bean>

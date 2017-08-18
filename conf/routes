@@ -23,6 +23,9 @@ GET    /v3/compoundactivitydefinitions/:taskId @org.sagebionetworks.bridge.play.
 DELETE /v3/compoundactivitydefinitions/:taskId @org.sagebionetworks.bridge.play.controllers.CompoundActivityDefinitionController.deleteCompoundActivityDefinition(taskId: String)
 POST   /v3/compoundactivitydefinitions/:taskId @org.sagebionetworks.bridge.play.controllers.CompoundActivityDefinitionController.updateCompoundActivityDefinition(taskId: String)
 
+# Export
+POST /v3/export/start @org.sagebionetworks.bridge.play.controllers.ExportController.startOnDemandExport
+
 # Participants Researcher APIs
 GET    /v3/participants                                      @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipants(offsetBy: String ?= null, pageSize: String ?= null, emailFilter: String ?= null, startDate: String ?= null, endDate: String ?= null, startTime: String ?= null, endTime: String ?= null)
 POST   /v3/participants                                      @org.sagebionetworks.bridge.play.controllers.ParticipantController.createParticipant

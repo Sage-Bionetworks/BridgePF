@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.cache;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.io.IOException;
 import java.util.List;
 
 import javax.annotation.Resource;
@@ -164,7 +165,14 @@ public class CacheProvider {
             if (ser == null) {
                 return null;
             }
-            return bridgeObjectMapper.readValue(ser, UserSession.class);
+            try {
+                return bridgeObjectMapper.readValue(ser, UserSession.class);
+            } catch (IOException ex) {
+                // Because StudyParticipant.Builder.withEncryptedHealthCode() can throw, and because of the way
+                // Jackson's BuilderBasedDeserializer, the error message actually contains the JSON. To prevent leaking
+                // personal identifying info, we should squelch the error message and replace it with our own.
+                throw new BridgeServiceException("Error parsing JSON for session " + sessionToken);
+            }
         } catch (Throwable e) {
             promptToStartRedisIfLocal(e);
             throw new BridgeServiceException(e);
@@ -173,7 +181,7 @@ public class CacheProvider {
 
     public UserSession getUserSessionByUserId(final String userId) {
         checkNotNull(userId);
-        String sessionToken = null;
+        String sessionToken;
         try {
             final String userKey = RedisKey.USER_SESSION.getRedisKey(userId);
             sessionToken = getWithFallback(userKey, false);
