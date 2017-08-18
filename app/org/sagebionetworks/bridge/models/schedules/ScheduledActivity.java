@@ -144,4 +144,8 @@ public interface ScheduledActivity extends BridgeEntity {
 
     void setPersistent(boolean persistent);
     
+    void setReferentGuid(String guid);
+    
+    String getReferentGuid();
+    
 }

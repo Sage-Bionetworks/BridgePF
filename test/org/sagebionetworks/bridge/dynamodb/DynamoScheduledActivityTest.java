@@ -111,6 +111,7 @@ public class DynamoScheduledActivityTest {
         schActivity.setGuid("AAA-BBB-CCC");
         schActivity.setHealthCode("FFF-GGG-HHH");
         schActivity.setPersistent(true);
+        schActivity.setReferentGuid("referentGuid");
         schActivity.setClientData(TestUtils.getClientData());
         
         BridgeObjectMapper mapper = BridgeObjectMapper.get();
@@ -124,6 +125,7 @@ public class DynamoScheduledActivityTest {
         assertEquals("ScheduledActivity", node.get("type").asText());
         assertTrue(node.get("persistent").asBoolean());
         assertNull(node.get("schedule"));
+        assertNull(node.get("referentGuid"));
         assertEquals(8, node.size());
         assertEquals(TestUtils.getClientData(), node.get("clientData"));
         
@@ -142,6 +144,7 @@ public class DynamoScheduledActivityTest {
         newActivity.setTimeZone(DateTimeZone.UTC);
         newActivity.setLocalScheduledOn(scheduledOn);
         newActivity.setLocalExpiresOn(expiresOn);
+        newActivity.setReferentGuid("referentGuid");
         
         // Also works without having to reset the timezone.
         assertEquals(schActivity, newActivity);
@@ -284,6 +287,7 @@ public class DynamoScheduledActivityTest {
         act.setActivity(TestUtils.getActivity1());
         act.setStartedOn(DateTime.parse("2015-10-10T08:08:08.000Z").getMillis());
         act.setFinishedOn(DateTime.parse("2015-12-05T08:08:08.000Z").getMillis());
+        act.setReferentGuid(TestUtils.getActivity1().getSurvey().getGuid()+":survey:2015-10-01T10:10:10.000");
         act.setPersistent(true);
         
         String json = ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(act);
@@ -297,6 +301,7 @@ public class DynamoScheduledActivityTest {
         assertEquals("ScheduledActivity", node.get("type").asText());
         assertEquals("2015-10-01T10:10:10.000-06:00", node.get("scheduledOn").asText());
         assertEquals("2015-10-01T14:10:10.000-06:00", node.get("expiresOn").asText());
+        assertNull(node.get("referentType"));
         // all the above, plus activity, and nothing else
         assertEquals(9, TestUtils.getFieldNamesSet(node).size());
 

@@ -22,10 +22,13 @@ import javax.annotation.Nonnull;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.joda.time.LocalDateTime;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 
@@ -284,6 +287,17 @@ public class BridgeUtils {
         }
     }
     
+    public static <E extends Enum<E>> E getEnumOrDefault(String value, Class<E> enumClass, E enumDefaultValue) {
+        try {
+            return Enum.valueOf(enumClass, value.toUpperCase());
+        } catch(Throwable t) {
+            if (enumDefaultValue != null) {
+                return enumDefaultValue;
+            }
+            throw new BadRequestException(value + " is not a valid " + enumClass.getSimpleName());
+        }
+    }
+    
     /**
      * Creates a new copy of the map, removing any entries that have a null value (particularly easy to do this in
      * JSON).
@@ -354,6 +368,31 @@ public class BridgeUtils {
         boolean hasPassword = (uri.getUserInfo() != null && uri.getUserInfo().contains(":"));
         
         return (hasPassword) ? uri.getUserInfo().split(":")[1] : null;
+    }
+    
+    public static String createReferentGuid(ActivityType type, String guid, String localDateTime) {
+        checkNotNull(type);
+        checkNotNull(guid);
+        checkNotNull(localDateTime);
+        return String.format("%s:%s:%s", guid , type.name().toLowerCase(), localDateTime);
+    }
+    
+    public static String createReferentGuid(Activity activity, LocalDateTime localDateTime) {
+        checkNotNull(activity);
+        checkNotNull(localDateTime);
+        
+        ActivityType type = activity.getActivityType();
+        String timestamp = localDateTime.toString();
+        
+        switch(type) {
+        case COMPOUND:
+            return createReferentGuid(type, activity.getCompoundActivity().getTaskIdentifier(), timestamp);
+        case SURVEY:
+            return createReferentGuid(type, activity.getSurvey().getGuid(), timestamp);
+        case TASK:
+            return createReferentGuid(type, activity.getTask().getIdentifier(), timestamp);
+        }
+        throw new BridgeServiceException("Invalid activityType specified");    
     }
 
 }

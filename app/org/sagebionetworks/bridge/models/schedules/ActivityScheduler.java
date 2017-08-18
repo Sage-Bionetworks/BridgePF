@@ -9,6 +9,8 @@ import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 import org.joda.time.LocalTime;
 
+import org.sagebionetworks.bridge.BridgeUtils;
+
 public abstract class ActivityScheduler {
     
     protected final Schedule schedule;
@@ -80,6 +82,7 @@ public abstract class ActivityScheduler {
                 schActivity.setLocalScheduledOn(localScheduledOn);
                 schActivity.setGuid(activity.getGuid() + ":" + localDate.toLocalDateTime(localTime));
                 schActivity.setPersistent(activity.isPersistentlyRescheduledBy(schedule));
+                schActivity.setReferentGuid(BridgeUtils.createReferentGuid(activity, localDate.toLocalDateTime(localTime)));
                 if (expiresOn != null) {
                     schActivity.setLocalExpiresOn(expiresOn);
                 }

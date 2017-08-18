@@ -18,6 +18,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
@@ -48,6 +49,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     private boolean persistent;
     private DateTimeZone timeZone;
     private JsonNode clientData;
+    private String referentGuid;
 
     @DynamoDBIgnore
     @JsonIgnore
@@ -215,11 +217,25 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     public void setPersistent(boolean persistent) {
         this.persistent = persistent;
     }
+    
+    @DynamoDBIndexRangeKey(attributeName = "referentGuid", globalSecondaryIndexName = "healthCode-referentGuid-index")
+    @DynamoDBAttribute
+    @JsonIgnore
+    @Override
+    public String getReferentGuid() {
+        return referentGuid;
+    }
+
+    @Override
+    public void setReferentGuid(String referentGuid) {
+        this.referentGuid = referentGuid;
+    }
+
 
     @Override
     public int hashCode() {
         return Objects.hash(activity, guid, localScheduledOn, localExpiresOn, startedOn, finishedOn,
-                healthCode, persistent, timeZone, schedulePlanGuid, clientData);
+                healthCode, persistent, timeZone, schedulePlanGuid, clientData, referentGuid);
     }
 
     @Override
@@ -238,7 +254,8 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
                 && Objects.equals(healthCode, other.healthCode) && Objects.equals(persistent, other.persistent)
                 && Objects.equals(timeZone, other.timeZone)
                 && Objects.equals(schedulePlanGuid, other.schedulePlanGuid)
-                && Objects.equals(clientData, other.clientData));
+                && Objects.equals(clientData, other.clientData)
+                && Objects.equals(referentGuid, other.referentGuid));
     }
 
     @Override
