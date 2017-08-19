@@ -11,7 +11,6 @@ import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.json.LocalDateToStringSerializer;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
@@ -56,6 +55,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
 
     /** @see #getCreatedOn */
     @JsonDeserialize(using = DateTimeToLongDeserializer.class)
+    @Override
     public void setCreatedOn(Long createdOn) {
         this.createdOn = createdOn;
     }
@@ -67,6 +67,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
 
     /** @see #getCreatedOnTimeZone */
+    @Override
     public void setCreatedOnTimeZone(String createdOnTimeZone) {
         this.createdOnTimeZone = createdOnTimeZone;
     }
@@ -79,6 +80,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
 
     /** @see #getData */
+    @Override
     public void setData(JsonNode data) {
         this.data = data;
     }
@@ -91,6 +93,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
 
     /** @see #getHealthCode */
+    @Override
     public void setHealthCode(String healthCode) {
         this.healthCode = healthCode;
     }
@@ -103,6 +106,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
 
     /** @see #getId */
+    @Override
     public void setId(String id) {
         this.id = id;
     }
@@ -115,6 +119,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
 
     /** @see #getMetadata */
+    @Override
     public void setMetadata(JsonNode metadata) {
         this.metadata = metadata;
     }
@@ -126,6 +131,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
 
     /** @see #getSchemaId */
+    @Override
     public void setSchemaId(String schemaId) {
         this.schemaId = schemaId;
     }
@@ -137,6 +143,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
 
     /** @see #getSchemaRevision */
+    @Override
     public void setSchemaRevision(int schemaRevision) {
         this.schemaRevision = schemaRevision;
     }
@@ -149,6 +156,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
 
     /** @see #getStudyId */
+    @Override
     public void setStudyId(String studyId) {
         this.studyId = studyId;
     }
@@ -164,6 +172,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
 
     /** @see #getUploadDate */
     @JsonDeserialize(using = LocalDateDeserializer.class)
+    @Override
     public void setUploadDate(LocalDate uploadDate) {
         this.uploadDate = uploadDate;
     }
@@ -175,6 +184,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
 
     /** @see #getUploadId */
+    @Override
     public void setUploadId(String uploadId) {
         this.uploadId = uploadId;
     }
@@ -189,6 +199,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
 
     /** @see #getUploadedOn */
     @JsonDeserialize(using = DateTimeToLongDeserializer.class)
+    @Override
     public void setUploadedOn(Long uploadedOn) {
         this.uploadedOn = uploadedOn;
     }
@@ -201,6 +212,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
 
     /** @see #getUserSharingScope */
+    @Override
     public void setUserSharingScope(ParticipantOption.SharingScope userSharingScope) {
         this.userSharingScope = userSharingScope;
     }
@@ -212,6 +224,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
 
     /** @see #getUserExternalId */
+    @Override
     public void setUserExternalId(String userExternalId) {
         this.userExternalId = userExternalId;
     }
@@ -223,6 +236,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     }
     
     /** @see #getUserDataGroups() */
+    @Override
     public void setUserDataGroups(Set<String> userDataGroups) {
         // DDB doesn't support empty sets, use null reference for empty set. This is also enforced by the builder.
         this.userDataGroups = (userDataGroups != null && !userDataGroups.isEmpty()) ? userDataGroups : null;
@@ -230,50 +244,27 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     
     /** {@inheritDoc} */
     @DynamoDBVersionAttribute
+    @Override
     public Long getVersion() {
         return version;
     }
 
     /** @see #getVersion */
+    @Override
     public void setVersion(Long version) {
         this.version = version;
     }
 
     /** {@inheritDoc} */
     @DynamoDBTypeConverted(converter=EnumMarshaller.class)
+    @Override
     public ExporterStatus getSynapseExporterStatus() {
         return synapseExporterStatus;
     }
 
     /** @see #getSynapseExporterStatus */
+    @Override
     public void setSynapseExporterStatus(ExporterStatus synapseExporterStatus) {
         this.synapseExporterStatus = synapseExporterStatus;
-    }
-
-    /** DynamoDB implementation of {@link org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder}. */
-    public static class Builder extends HealthDataRecordBuilder {
-        /** {@inheritDoc} */
-        @Override
-        protected HealthDataRecord buildUnvalidated() {
-            DynamoHealthDataRecord record = new DynamoHealthDataRecord();
-            record.setCreatedOn(getCreatedOn());
-            record.setCreatedOnTimeZone(getCreatedOnTimeZone());
-            record.setData(getData());
-            record.setHealthCode(getHealthCode());
-            record.setId(getId());
-            record.setMetadata(getMetadata());
-            record.setSchemaId(getSchemaId());
-            record.setSchemaRevision(getSchemaRevision());
-            record.setStudyId(getStudyId());
-            record.setUploadDate(getUploadDate());
-            record.setUploadId(getUploadId());
-            record.setUploadedOn(getUploadedOn());
-            record.setUserSharingScope(getUserSharingScope());
-            record.setUserExternalId(getUserExternalId());
-            record.setUserDataGroups(getUserDataGroups());
-            record.setVersion(getVersion());
-            record.setSynapseExporterStatus(getSynapseExporterStatus());
-            return record;
-        }
     }
 }

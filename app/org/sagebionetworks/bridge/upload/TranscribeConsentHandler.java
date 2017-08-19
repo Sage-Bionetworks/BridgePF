@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 
 @Component
@@ -39,8 +39,9 @@ public class TranscribeConsentHandler implements UploadValidationHandler {
         Set<String> userDataGroups = lookup.getStringSet(DATA_GROUPS);
 
         // write sharing scope to health data record
-        HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
-        recordBuilder.withUserSharingScope(userSharingScope).withUserExternalId(userExternalId)
-                .withUserDataGroups(userDataGroups);
+        HealthDataRecord record = context.getHealthDataRecord();
+        record.setUserSharingScope(userSharingScope);
+        record.setUserExternalId(userExternalId);
+        record.setUserDataGroups(userDataGroups);
     }
 }

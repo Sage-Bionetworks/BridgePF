@@ -12,10 +12,9 @@ import com.google.common.collect.ImmutableMap;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
 
@@ -30,7 +29,7 @@ public class UploadValidationContextTest {
         Map<String, byte[]> unzippedDataMap = ImmutableMap.of("nonJsonFile.txt", "test text".getBytes(Charsets.UTF_8));
         Map<String, JsonNode> jsonDataMap = ImmutableMap.<String, JsonNode>of("json.json",
                 BridgeObjectMapper.get().createObjectNode());
-        HealthDataRecordBuilder recordBuilder = new DynamoHealthDataRecord.Builder();
+        HealthDataRecord record = HealthDataRecord.create();
         Map<String, byte[]> attachmentMap = ImmutableMap.of("test-field", "test attachment".getBytes(Charsets.UTF_8));
 
         // create original
@@ -43,7 +42,7 @@ public class UploadValidationContextTest {
         original.setDecryptedData(decryptedData);
         original.setUnzippedDataMap(unzippedDataMap);
         original.setJsonDataMap(jsonDataMap);
-        original.setHealthDataRecordBuilder(recordBuilder);
+        original.setHealthDataRecord(record);
         original.setAttachmentsByFieldName(attachmentMap);
         original.setRecordId("test-record");
 
@@ -56,7 +55,7 @@ public class UploadValidationContextTest {
         assertSame(decryptedData, copy.getDecryptedData());
         assertSame(unzippedDataMap, copy.getUnzippedDataMap());
         assertSame(jsonDataMap, copy.getJsonDataMap());
-        assertSame(recordBuilder, copy.getHealthDataRecordBuilder());
+        assertSame(record, copy.getHealthDataRecord());
         assertSame(attachmentMap, copy.getAttachmentsByFieldName());
         assertEquals("test-record", copy.getRecordId());
 

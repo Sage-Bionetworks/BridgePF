@@ -22,11 +22,10 @@ import com.google.common.collect.ImmutableMap;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -103,9 +102,11 @@ public class StrictValidationHandlerTest {
         }
 
         // write JSON data to health data record builder
-        HealthDataRecordBuilder recordBuilder = new DynamoHealthDataRecord.Builder().withData(jsonDataNode)
-                .withSchemaId("test-schema").withSchemaRevision(1);
-        context.setHealthDataRecordBuilder(recordBuilder);
+        HealthDataRecord record = HealthDataRecord.create();
+        record.setData(jsonDataNode);
+        record.setSchemaId("test-schema");
+        record.setSchemaRevision(1);
+        context.setHealthDataRecord(record);
 
         if (shouldThrow) {
             // execute - Catch the exception and make sure the exception message contains our expected error messages.
@@ -224,7 +225,7 @@ public class StrictValidationHandlerTest {
         test(additionalFieldDefList, null, additionalJsonNode, null, false);
 
         // verify canonicalized value
-        JsonNode dataNode = context.getHealthDataRecordBuilder().getData();
+        JsonNode dataNode = context.getHealthDataRecord().getData();
         JsonNode intNode = dataNode.get("canonicalized int");
         assertTrue(intNode.isIntegralNumber());
         assertEquals(23, intNode.intValue());

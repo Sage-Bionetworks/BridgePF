@@ -6,7 +6,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 
 import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachment;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachmentBuilder;
 
 /** DynamoDB implementation of {@link org.sagebionetworks.bridge.models.healthdata.HealthDataAttachment}. */
 @DynamoThroughput(readCapacity=50, writeCapacity=25)
@@ -24,6 +23,7 @@ public class DynamoHealthDataAttachment implements HealthDataAttachment {
     }
 
     /** @see #getId */
+    @Override
     public void setId(String id) {
         this.id = id;
     }
@@ -36,30 +36,21 @@ public class DynamoHealthDataAttachment implements HealthDataAttachment {
     }
 
     /** @see #getRecordId */
+    @Override
     public void setRecordId(String recordId) {
         this.recordId = recordId;
     }
 
     /** {@inheritDoc} */
     @DynamoDBVersionAttribute
+    @Override
     public Long getVersion() {
         return version;
     }
 
     /** @see #getVersion */
+    @Override
     public void setVersion(Long version) {
         this.version = version;
-    }
-
-    /** DynamoDB implementation of {@link org.sagebionetworks.bridge.models.healthdata.HealthDataAttachmentBuilder}. */
-    public static class Builder extends HealthDataAttachmentBuilder {
-        @Override
-        protected HealthDataAttachment buildUnvalidated() {
-            DynamoHealthDataAttachment attachment = new DynamoHealthDataAttachment();
-            attachment.setId(getId());
-            attachment.setRecordId(getRecordId());
-            attachment.setVersion(getVersion());
-            return attachment;
-        }
     }
 }

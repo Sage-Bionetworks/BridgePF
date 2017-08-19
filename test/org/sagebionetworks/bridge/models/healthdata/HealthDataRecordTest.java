@@ -2,8 +2,8 @@ package org.sagebionetworks.bridge.models.healthdata;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
@@ -21,245 +21,169 @@ import org.springframework.validation.MapBindingResult;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dao.HealthDataDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.validators.HealthDataRecordValidator;
+import org.sagebionetworks.bridge.validators.Validate;
 
 @SuppressWarnings("unchecked")
 public class HealthDataRecordTest {
-    // We want to do as much testing as possible through the generic interface, so we have this DAO that we use just
-    // for getRecordBuilder().
-    private static final HealthDataDao DAO = new DynamoHealthDataDao();
-    
+    private static final long CREATED_ON_MILLIS = 1502498010000L;
+    private static final JsonNode DUMMY_DATA = BridgeObjectMapper.get().createObjectNode();
+    private static final JsonNode DUMMY_METADATA = BridgeObjectMapper.get().createObjectNode();
+    private static final LocalDate UPLOAD_DATE = LocalDate.parse("2017-08-11");
+
     @Test
-    public void testBuilder() {
+    public void normalCase() {
         // build
-        HealthDataRecord record = DAO.getRecordBuilder().withHealthCode("dummy healthcode")
-                .withSchemaId("dummy schema").withSchemaRevision(3).withStudyId("dummy study")
-                .withUserDataGroups(TestConstants.USER_DATA_GROUPS).build();
+        HealthDataRecord record = makeValidRecord();
 
         // validate
+        Validate.entityThrowingException(HealthDataRecordValidator.INSTANCE, record);
+
+        assertEquals(CREATED_ON_MILLIS, record.getCreatedOn().longValue());
+        assertSame(DUMMY_DATA, record.getData());
         assertEquals("dummy healthcode", record.getHealthCode());
         assertNull(record.getId());
+        assertSame(DUMMY_METADATA, record.getMetadata());
         assertEquals("dummy schema", record.getSchemaId());
         assertEquals(3, record.getSchemaRevision());
         assertEquals("dummy study", record.getStudyId());
+        assertEquals(UPLOAD_DATE, record.getUploadDate());
         assertEquals(TestConstants.USER_DATA_GROUPS, record.getUserDataGroups());
-
-        assertTrue(record.getData().isObject());
-        assertEquals(0, record.getData().size());
-
-        assertTrue(record.getMetadata().isObject());
-        assertEquals(0, record.getMetadata().size());
-
-        // for default date and time, just check they're not null, so we don't get weird clock skew errors
-        assertNotNull(record.getCreatedOn());
-        assertNotNull(record.getUploadDate());
+        assertEquals(ParticipantOption.SharingScope.NO_SHARING, record.getUserSharingScope());
     }
 
     @Test
     public void optionalValues() throws Exception {
         // optional values
-        JsonNode data = BridgeObjectMapper.get().readTree("{\"myData\":\"myDataValue\"}");
-        JsonNode metadata = BridgeObjectMapper.get().readTree("{\"myMetadata\":\"myMetaValue\"}");
-        long arbitraryTimestamp = 1424136378727L;
         long uploadedOn = 1462575525894L;
 
-        // arbitrarily 2015-02-12
-        LocalDate uploadDate = new LocalDate(2014, 2, 12);
-
         // build
-        HealthDataRecord record = DAO.getRecordBuilder().withData(data).withHealthCode("required healthcode")
-                .withId("optional record ID").withCreatedOn(arbitraryTimestamp).withCreatedOnTimeZone("+0900")
-                .withMetadata(metadata)
-                .withSchemaId("required schema").withSchemaRevision(3).withStudyId("required study")
-                .withSynapseExporterStatus(HealthDataRecord.ExporterStatus.NOT_EXPORTED)
-                .withUploadDate(uploadDate).withUploadId("optional upload ID").withUploadedOn(uploadedOn)
-                .withUserExternalId("optional external ID")
-                .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
-                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
-                .withVersion(42L).build();
+        HealthDataRecord record = makeValidRecord();
+        record.setId("optional record ID");
+        record.setCreatedOnTimeZone("+0900");
+        record.setSynapseExporterStatus(HealthDataRecord.ExporterStatus.NOT_EXPORTED);
+        record.setUploadId("optional upload ID");
+        record.setUploadedOn(uploadedOn);
+        record.setUserExternalId("optional external ID");
+        record.setVersion(42L);
 
         // validate
-        assertEquals("required healthcode", record.getHealthCode());
+        Validate.entityThrowingException(HealthDataRecordValidator.INSTANCE, record);
+
         assertEquals("optional record ID", record.getId());
-        assertEquals(arbitraryTimestamp, record.getCreatedOn().longValue());
         assertEquals("+0900", record.getCreatedOnTimeZone());
-        assertEquals("required schema", record.getSchemaId());
-        assertEquals(3, record.getSchemaRevision());
-        assertEquals("required study", record.getStudyId());
         assertEquals(HealthDataRecord.ExporterStatus.NOT_EXPORTED, record.getSynapseExporterStatus());
-        assertEquals("2014-02-12", record.getUploadDate().toString(ISODateTimeFormat.date()));
         assertEquals("optional upload ID", record.getUploadId());
         assertEquals(uploadedOn, record.getUploadedOn().longValue());
         assertEquals("optional external ID", record.getUserExternalId());
-        assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, record.getUserSharingScope());
-        assertEquals(TestConstants.USER_DATA_GROUPS, record.getUserDataGroups());
         assertEquals(42, record.getVersion().longValue());
-
-        assertEquals(1, record.getData().size());
-        assertEquals("myDataValue", record.getData().get("myData").asText());
-
-        assertEquals(1, record.getMetadata().size());
-        assertEquals("myMetaValue", record.getMetadata().get("myMetadata").asText());
-
-        // test copy constructor
-        HealthDataRecord copyRecord = DAO.getRecordBuilder().copyOf(record).build();
-        assertEquals("required healthcode", copyRecord.getHealthCode());
-        assertEquals("optional record ID", copyRecord.getId());
-        assertEquals(arbitraryTimestamp, copyRecord.getCreatedOn().longValue());
-        assertEquals("+0900", copyRecord.getCreatedOnTimeZone());
-        assertEquals("required schema", copyRecord.getSchemaId());
-        assertEquals(3, copyRecord.getSchemaRevision());
-        assertEquals("required study", copyRecord.getStudyId());
-        assertEquals(HealthDataRecord.ExporterStatus.NOT_EXPORTED, copyRecord.getSynapseExporterStatus());
-        assertEquals("2014-02-12", copyRecord.getUploadDate().toString(ISODateTimeFormat.date()));
-        assertEquals("optional upload ID", copyRecord.getUploadId());
-        assertEquals(uploadedOn, copyRecord.getUploadedOn().longValue());
-        assertEquals("optional external ID", copyRecord.getUserExternalId());
-        assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, copyRecord.getUserSharingScope());
-        assertEquals(TestConstants.USER_DATA_GROUPS, record.getUserDataGroups());
-        assertEquals(42, copyRecord.getVersion().longValue());
-
-        assertEquals(1, copyRecord.getData().size());
-        assertEquals("myDataValue", copyRecord.getData().get("myData").asText());
-
-        assertEquals(1, copyRecord.getMetadata().size());
-        assertEquals("myMetaValue", copyRecord.getMetadata().get("myMetadata").asText());
     }
     
     @Test
     public void emptyDataGroupSetConvertedToNull() {
-        HealthDataRecord record = DAO.getRecordBuilder().withUserDataGroups(new HashSet<>()).buildUnvalidated();
-        
+        HealthDataRecord record = makeValidRecord();
+        record.setUserDataGroups(new HashSet<>());
         assertNull(record.getUserDataGroups());
     }
 
     @Test(expected = InvalidEntityException.class)
     public void jsonNullData() throws Exception {
         JsonNode data = BridgeObjectMapper.get().readTree("null");
-        DAO.getRecordBuilder().withData(data).withHealthCode("valid healthcode").withSchemaId("valid schema")
-                .withSchemaRevision(3).withStudyId("valid study").build();
+        HealthDataRecord record = makeValidRecord();
+        record.setData(data);
+        Validate.entityThrowingException(HealthDataRecordValidator.INSTANCE, record);
     }
 
     @Test(expected = InvalidEntityException.class)
     public void dataIsNotMap() throws Exception {
         JsonNode data = BridgeObjectMapper.get().readTree("\"This is not a map.\"");
-        DAO.getRecordBuilder().withData(data).withHealthCode("valid healthcode").withSchemaId("valid schema")
-                .withSchemaRevision(3).withStudyId("valid study").build();
+        HealthDataRecord record = makeValidRecord();
+        record.setData(data);
+        Validate.entityThrowingException(HealthDataRecordValidator.INSTANCE, record);
     }
 
-    // branch coverage
-    // We create a DynamoHealthDataRecord directly, since the builder fills in defaults
-    @Test
+    @Test(expected = InvalidEntityException.class)
     public void validatorWithNullData() {
-        // build and overwrite data
-        DynamoHealthDataRecord record = (DynamoHealthDataRecord) DAO.getRecordBuilder()
-                .withHealthCode("valid healthcode").withSchemaId("valid schema").withSchemaRevision(3)
-                .withStudyId("valid study").build();
+        HealthDataRecord record = makeValidRecord();
         record.setData(null);
-
-        // validate
-        MapBindingResult errors = new MapBindingResult(new HashMap<>(), "HealthDataRecord");
-        HealthDataRecordValidator.INSTANCE.validate(record, errors);
-        assertTrue(errors.hasErrors());
+        Validate.entityThrowingException(HealthDataRecordValidator.INSTANCE, record);
     }
 
     @Test(expected = InvalidEntityException.class)
     public void nullHealthCode() {
-        DAO.getRecordBuilder().withHealthCode(null).withSchemaId("valid schema").withSchemaRevision(3)
-                .withStudyId("valid study").build();
+        HealthDataRecord record = makeValidRecord();
+        record.setHealthCode(null);
+        Validate.entityThrowingException(HealthDataRecordValidator.INSTANCE, record);
     }
 
     @Test(expected = InvalidEntityException.class)
     public void emptyHealthCode() {
-        DAO.getRecordBuilder().withHealthCode("").withSchemaId("valid schema").withSchemaRevision(3)
-                .withStudyId("valid study").build();
+        HealthDataRecord record = makeValidRecord();
+        record.setHealthCode("");
+        Validate.entityThrowingException(HealthDataRecordValidator.INSTANCE, record);
     }
 
     @Test(expected = InvalidEntityException.class)
     public void emptyId() {
-        DAO.getRecordBuilder().withHealthCode("valid healthcode").withId("").withSchemaId("valid schema")
-                .withSchemaRevision(3).withStudyId("valid study").build();
+        HealthDataRecord record = makeValidRecord();
+        record.setId("");
+        Validate.entityThrowingException(HealthDataRecordValidator.INSTANCE, record);
     }
 
-    // branch coverage
-    // We create a DynamoHealthDataRecord directly, since the builder fills in defaults
-    @Test
-    public void validatorWithNullMeasuredTime() {
-        // build and overwrite measuredTime
-        DynamoHealthDataRecord record = (DynamoHealthDataRecord) DAO.getRecordBuilder()
-                .withHealthCode("valid healthcode").withSchemaId("valid schema").withSchemaRevision(3)
-                .withStudyId("valid study").build();
+    @Test(expected = InvalidEntityException.class)
+    public void validatorWithNullCreatedOn() {
+        HealthDataRecord record = makeValidRecord();
         record.setCreatedOn(null);
-
-        // validate
-        MapBindingResult errors = new MapBindingResult(new HashMap<>(), "HealthDataRecord");
-        HealthDataRecordValidator.INSTANCE.validate(record, errors);
-        assertTrue(errors.hasErrors());
+        Validate.entityThrowingException(HealthDataRecordValidator.INSTANCE, record);
     }
 
     @Test(expected = InvalidEntityException.class)
     public void jsonNullMetadata() throws Exception {
         JsonNode metadata = BridgeObjectMapper.get().readTree("null");
-        DAO.getRecordBuilder().withMetadata(metadata).withHealthCode("valid healthcode").withSchemaId("valid schema")
-                .withSchemaRevision(3).withStudyId("valid study").build();
+        HealthDataRecord record = makeValidRecord();
+        record.setMetadata(metadata);
+        Validate.entityThrowingException(HealthDataRecordValidator.INSTANCE, record);
     }
 
     @Test(expected = InvalidEntityException.class)
     public void metadataIsNotMap() throws Exception {
         JsonNode metadata = BridgeObjectMapper.get().readTree("\"This is not a map.\"");
-        DAO.getRecordBuilder().withMetadata(metadata).withHealthCode("valid healthcode").withSchemaId("valid schema")
-                .withSchemaRevision(3).withStudyId("valid study").build();
+        HealthDataRecord record = makeValidRecord();
+        record.setMetadata(metadata);
+        Validate.entityThrowingException(HealthDataRecordValidator.INSTANCE, record);
     }
 
-    // branch coverage
-    // We create a DynamoHealthDataRecord directly, since the builder fills in defaults
-    @Test
+    @Test(expected = InvalidEntityException.class)
     public void validatorWithNullMetadata() {
-        // build and overwrite metadata
-        DynamoHealthDataRecord record = (DynamoHealthDataRecord) DAO.getRecordBuilder()
-                .withHealthCode("valid healthcode").withSchemaId("valid schema").withSchemaRevision(3)
-                .withStudyId("valid study").build();
+        HealthDataRecord record = makeValidRecord();
         record.setMetadata(null);
-
-        // validate
-        MapBindingResult errors = new MapBindingResult(new HashMap<>(), "HealthDataRecord");
-        HealthDataRecordValidator.INSTANCE.validate(record, errors);
-        assertTrue(errors.hasErrors());
+        Validate.entityThrowingException(HealthDataRecordValidator.INSTANCE, record);
     }
 
     @Test(expected = InvalidEntityException.class)
     public void nullSchemaId() {
-        DAO.getRecordBuilder().withHealthCode("valid healthcode").withSchemaId(null).withSchemaRevision(3)
-                .withStudyId("valid study").build();
+        HealthDataRecord record = makeValidRecord();
+        record.setSchemaId(null);
+        Validate.entityThrowingException(HealthDataRecordValidator.INSTANCE, record);
     }
 
     @Test(expected = InvalidEntityException.class)
     public void emptySchemaId() {
-        DAO.getRecordBuilder().withHealthCode("valid healthcode").withSchemaId("").withSchemaRevision(3)
-                .withStudyId("valid study").build();
+        HealthDataRecord record = makeValidRecord();
+        record.setSchemaId("");
+        Validate.entityThrowingException(HealthDataRecordValidator.INSTANCE, record);
     }
 
-    // branch coverage
-    // We create a DynamoHealthDataRecord directly, since the builder fills in defaults
-    @Test
+    @Test(expected = InvalidEntityException.class)
     public void validatorWithNullUploadDate() {
-        // build and overwrite metadata
-        DynamoHealthDataRecord record = (DynamoHealthDataRecord) DAO.getRecordBuilder()
-                .withHealthCode("valid healthcode").withSchemaId("valid schema").withSchemaRevision(3)
-                .withStudyId("valid study").build();
+        HealthDataRecord record = makeValidRecord();
         record.setUploadDate(null);
-
-        // validate
-        MapBindingResult errors = new MapBindingResult(new HashMap<>(), "HealthDataRecord");
-        HealthDataRecordValidator.INSTANCE.validate(record, errors);
-        assertTrue(errors.hasErrors());
+        Validate.entityThrowingException(HealthDataRecordValidator.INSTANCE, record);
     }
 
     // branch coverage
@@ -296,6 +220,21 @@ public class HealthDataRecordTest {
         MapBindingResult errors = new MapBindingResult(new HashMap<>(), "HealthDataRecord");
         HealthDataRecordValidator.INSTANCE.validate("This is not a HealthDataRecord", errors);
         assertTrue(errors.hasErrors());
+    }
+
+    private static HealthDataRecord makeValidRecord() {
+        HealthDataRecord record = HealthDataRecord.create();
+        record.setCreatedOn(CREATED_ON_MILLIS);
+        record.setData(DUMMY_DATA);
+        record.setHealthCode("dummy healthcode");
+        record.setMetadata(DUMMY_METADATA);
+        record.setSchemaId("dummy schema");
+        record.setSchemaRevision(3);
+        record.setStudyId("dummy study");
+        record.setUploadDate(UPLOAD_DATE);
+        record.setUserDataGroups(TestConstants.USER_DATA_GROUPS);
+        record.setUserSharingScope(ParticipantOption.SharingScope.NO_SHARING);
+        return record;
     }
 
     @Test

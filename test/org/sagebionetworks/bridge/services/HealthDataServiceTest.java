@@ -7,31 +7,34 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
+import org.joda.time.LocalDate;
 import org.junit.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.HealthDataDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
+import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest;
 
 public class HealthDataServiceTest {
-    // We want to do as much testing as possible through the generic interface, so we have this DAO that we use just
-    // for getRecordBuilder().
-    private static final HealthDataDao DAO = new DynamoHealthDataDao();
-
+    private static final Long TEST_CREATED_ON = 1427970429000L;
+    private static final JsonNode TEST_DATA = BridgeObjectMapper.get().createObjectNode();
     private static final String TEST_HEALTH_CODE = "valid healthcode";
-    private static final String TEST_SCHEMA_ID = "valid schema";
-    private static final String TEST_STUDY_ID = "valid study";
+    private static final JsonNode TEST_METADATA = BridgeObjectMapper.get().createObjectNode();
     private static final String TEST_RECORD_ID = "mock record ID";
     private static final String TEST_RECORD_ID_2 = "mock record ID 2";
-    private static final Long TEST_CREATED_ON = Long.parseLong("1427970429000");
+    private static final String TEST_SCHEMA_ID = "valid schema";
+    private static final int TEST_SCHEMA_REV = 3;
+
+    private static final String TEST_UPLOAD_DATE_STR = "2017-08-11";
+    private static final LocalDate TEST_UPLOAD_DATE = LocalDate.parse(TEST_UPLOAD_DATE_STR);
 
     @Test(expected = InvalidEntityException.class)
     public void createOrUpdateRecordNullRecord() {
@@ -40,32 +43,22 @@ public class HealthDataServiceTest {
 
     @Test(expected = InvalidEntityException.class)
     public void createOrUpdateRecordInvalidRecord() {
-        // build and overwrite data
-        DynamoHealthDataRecord record = (DynamoHealthDataRecord) DAO.getRecordBuilder()
-                .withHealthCode("valid healthcode").withSchemaId("valid schema").withSchemaRevision(3)
-                .withStudyId("valid study").build();
-        record.setData(null);
-
-        // execute
-        new HealthDataService().createOrUpdateRecord(record);
+        new HealthDataService().createOrUpdateRecord(HealthDataRecord.create());
     }
 
     @Test
     public void createOrUpdateRecordSuccess() {
-        // record
-        HealthDataRecord record = DAO.getRecordBuilder().withHealthCode("valid healthcode")
-                .withSchemaId("valid schema").withSchemaRevision(3).withStudyId("valid study").build();
-
         // mock dao
+        HealthDataRecord record = makeValidRecord();
         HealthDataDao mockDao = mock(HealthDataDao.class);
-        when(mockDao.createOrUpdateRecord(record)).thenReturn("mock record ID");
+        when(mockDao.createOrUpdateRecord(record)).thenReturn(TEST_RECORD_ID);
 
         HealthDataService svc = new HealthDataService();
         svc.setHealthDataDao(mockDao);
 
         // execute and validate
         String retVal = svc.createOrUpdateRecord(record);
-        assertEquals("mock record ID", retVal);
+        assertEquals(TEST_RECORD_ID, retVal);
     }
 
     @Test(expected = BadRequestException.class)
@@ -82,12 +75,12 @@ public class HealthDataServiceTest {
     public void deleteHealthRecodsForHealthCodeSuccess() {
         // mock dao
         HealthDataDao mockDao = mock(HealthDataDao.class);
-        when(mockDao.deleteRecordsForHealthCode("test health code")).thenReturn(37);
+        when(mockDao.deleteRecordsForHealthCode(TEST_HEALTH_CODE)).thenReturn(37);
         HealthDataService svc = new HealthDataService();
         svc.setHealthDataDao(mockDao);
 
         // execute and verify
-        int numDeleted = svc.deleteRecordsForHealthCode("test health code");
+        int numDeleted = svc.deleteRecordsForHealthCode(TEST_HEALTH_CODE);
         assertEquals(37, numDeleted);
     }
 
@@ -114,22 +107,27 @@ public class HealthDataServiceTest {
     @Test
     public void getRecordsForUploadDateSuccess() {
         // mock results
-        List<HealthDataRecord> mockRecordList = ImmutableList.of(
-                DAO.getRecordBuilder().withHealthCode("foo healthcode").withSchemaId("dummy schema")
-                        .withSchemaRevision(3).withStudyId("dummy study").build(),
-                DAO.getRecordBuilder().withHealthCode("bar healthcode").withSchemaId("dummy schema")
-                        .withSchemaRevision(3).withStudyId("dummy study").build(),
-                DAO.getRecordBuilder().withHealthCode("baz healthcode").withSchemaId("dummy schema")
-                        .withSchemaRevision(3).withStudyId("dummy study").build());
+        HealthDataRecord fooRecord = makeValidRecord();
+        fooRecord.setId("foo record");
+        fooRecord.setHealthCode("foo healthcode");
 
+        HealthDataRecord barRecord = makeValidRecord();
+        barRecord.setId("bar record");
+        barRecord.setHealthCode("bar healthcode");
+
+        HealthDataRecord bazRecord = makeValidRecord();
+        bazRecord.setId("baz record");
+        bazRecord.setHealthCode("baz healthcode");
+
+        List<HealthDataRecord> mockRecordList = ImmutableList.of(fooRecord, barRecord, bazRecord);
         HealthDataDao mockDao = mock(HealthDataDao.class);
-        when(mockDao.getRecordsForUploadDate("2014-02-12")).thenReturn(mockRecordList);
+        when(mockDao.getRecordsForUploadDate(TEST_UPLOAD_DATE_STR)).thenReturn(mockRecordList);
 
         HealthDataService svc = new HealthDataService();
         svc.setHealthDataDao(mockDao);
 
         // execute and validate
-        List<HealthDataRecord> recordList = svc.getRecordsForUploadDate("2014-02-12");
+        List<HealthDataRecord> recordList = svc.getRecordsForUploadDate(TEST_UPLOAD_DATE_STR);
         assertEquals(3, recordList.size());
         assertEquals("foo healthcode", recordList.get(0).getHealthCode());
         assertEquals("bar healthcode", recordList.get(1).getHealthCode());
@@ -146,7 +144,7 @@ public class HealthDataServiceTest {
     @Test(expected = InvalidEntityException.class)
     public void updateRecordsWithExporterStatusEmptyRecordIds() {
         RecordExportStatusRequest request = new RecordExportStatusRequest();
-        request.setRecordIds(Arrays.asList());
+        request.setRecordIds(ImmutableList.of());
         request.setSynapseExporterStatus(HealthDataRecord.ExporterStatus.SUCCEEDED);
         new HealthDataService().updateRecordsWithExporterStatus(request);
     }
@@ -154,7 +152,7 @@ public class HealthDataServiceTest {
     @Test(expected = InvalidEntityException.class)
     public void updateRecordsWithExporterStatusNullStatus() {
         RecordExportStatusRequest request = new RecordExportStatusRequest();
-        request.setRecordIds(Arrays.asList(TEST_RECORD_ID));
+        request.setRecordIds(ImmutableList.of(TEST_RECORD_ID));
         new HealthDataService().updateRecordsWithExporterStatus(request);
     }
 
@@ -172,15 +170,13 @@ public class HealthDataServiceTest {
 
     @Test
     public void updateRecordSuccess() throws Exception {
-
         // first create a mock record
         // record
-        HealthDataRecord record = DAO.getRecordBuilder().withHealthCode(TEST_HEALTH_CODE)
-                .withSchemaId(TEST_SCHEMA_ID).withSchemaRevision(3).withStudyId(TEST_STUDY_ID).build();
+        HealthDataRecord record = makeValidRecord();
+        record.setId(TEST_RECORD_ID);
 
-        HealthDataRecord record2 = DAO.getRecordBuilder().withHealthCode(TEST_HEALTH_CODE)
-                .withSchemaId(TEST_SCHEMA_ID).withSchemaRevision(3).withStudyId(TEST_STUDY_ID).build();
-
+        HealthDataRecord record2 = makeValidRecord();
+        record.setId(TEST_RECORD_ID_2);
 
         // mock dao
         HealthDataDao mockDao = mock(HealthDataDao.class);
@@ -214,7 +210,7 @@ public class HealthDataServiceTest {
 
     private RecordExportStatusRequest createMockRecordExportStatusRequest() throws Exception {
         RecordExportStatusRequest request = new RecordExportStatusRequest();
-        request.setRecordIds(Arrays.asList(TEST_RECORD_ID, TEST_RECORD_ID_2));
+        request.setRecordIds(ImmutableList.of(TEST_RECORD_ID, TEST_RECORD_ID_2));
         request.setSynapseExporterStatus(HealthDataRecord.ExporterStatus.SUCCEEDED);
 
         return request;
@@ -247,15 +243,8 @@ public class HealthDataServiceTest {
 
     @Test
     public void getRecordsByHealthcodeCreatedOnSchemaId() {
-        DynamoHealthDataRecord record = new DynamoHealthDataRecord();
-        record.setHealthCode(TEST_HEALTH_CODE);
-        record.setId("test ID");
-        record.setCreatedOn(TEST_CREATED_ON);
-        record.setSchemaId(TEST_SCHEMA_ID);
-
-        List<HealthDataRecord> mockResult = Arrays.asList(record);
-
         // mock dao
+        List<HealthDataRecord> mockResult = ImmutableList.of(makeValidRecord());
         HealthDataDao mockDao = mock(HealthDataDao.class);
         when(mockDao.getRecordsByHealthCodeCreatedOnSchemaId(TEST_HEALTH_CODE, TEST_CREATED_ON, TEST_SCHEMA_ID)).thenReturn(mockResult);
         HealthDataService svc = new HealthDataService();
@@ -264,5 +253,20 @@ public class HealthDataServiceTest {
         // execute and verify
         List<HealthDataRecord> retList = svc.getRecordsByHealthcodeCreatedOnSchemaId(TEST_HEALTH_CODE, TEST_CREATED_ON, TEST_SCHEMA_ID);
         assertEquals(mockResult, retList);
+    }
+
+    private static HealthDataRecord makeValidRecord() {
+        HealthDataRecord record = HealthDataRecord.create();
+        record.setCreatedOn(TEST_CREATED_ON);
+        record.setData(TEST_DATA);
+        record.setHealthCode(TEST_HEALTH_CODE);
+        record.setMetadata(TEST_METADATA);
+        record.setSchemaId(TEST_SCHEMA_ID);
+        record.setSchemaRevision(TEST_SCHEMA_REV);
+        record.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        record.setUploadDate(TEST_UPLOAD_DATE);
+        record.setUserDataGroups(TestConstants.USER_DATA_GROUPS);
+        record.setUserSharingScope(ParticipantOption.SharingScope.NO_SHARING);
+        return record;
     }
 }

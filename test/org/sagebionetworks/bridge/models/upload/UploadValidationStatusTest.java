@@ -17,14 +17,14 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.validation.MapBindingResult;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.validators.UploadValidationStatusValidator;
 
-@SuppressWarnings("unchecked")
+@SuppressWarnings({ "ConstantConditions", "unchecked" })
 public class UploadValidationStatusTest {
     @Test
     public void builder() {
@@ -38,7 +38,7 @@ public class UploadValidationStatusTest {
 
     @Test
     public void withOptionalValues() {
-        DynamoHealthDataRecord dummyRecord = new DynamoHealthDataRecord();
+        HealthDataRecord dummyRecord = HealthDataRecord.create();
 
         UploadValidationStatus status = new UploadValidationStatus.Builder().withId("happy-case-2")
                 .withMessageList(ImmutableList.of("foo", "bar", "baz")).withStatus(UploadStatus.VALIDATION_FAILED)
@@ -80,7 +80,7 @@ public class UploadValidationStatusTest {
         upload2.appendValidationMessages(Collections.singletonList("hasRecord"));
         upload2.setStatus(UploadStatus.SUCCEEDED);
 
-        DynamoHealthDataRecord dummyRecord = new DynamoHealthDataRecord();
+        HealthDataRecord dummyRecord = HealthDataRecord.create();
 
         // construct and validate
         UploadValidationStatus status = UploadValidationStatus.from(upload2, dummyRecord);

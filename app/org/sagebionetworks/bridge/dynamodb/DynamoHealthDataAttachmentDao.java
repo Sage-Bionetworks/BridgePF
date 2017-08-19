@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.HealthDataAttachmentDao;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachment;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachmentBuilder;
 
 /** DynamoDB implementation of {@link org.sagebionetworks.bridge.dao.HealthDataAttachmentDao}. */
 @Component
@@ -37,11 +36,5 @@ public class DynamoHealthDataAttachmentDao implements HealthDataAttachmentDao {
         // persist to DDB
         mapper.save(dynamoAttachment);
         return dynamoAttachment.getId();
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public HealthDataAttachmentBuilder getRecordBuilder() {
-        return new DynamoHealthDataAttachment.Builder();
     }
 }

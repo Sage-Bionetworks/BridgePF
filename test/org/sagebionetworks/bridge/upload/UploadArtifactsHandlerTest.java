@@ -21,13 +21,10 @@ import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataAttachment;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachment;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.services.HealthDataService;
 
@@ -50,7 +47,8 @@ public class UploadArtifactsHandlerTest {
                 "   \"json.json.int\":42\n" +
                 "}";
         JsonNode dataJson = BridgeObjectMapper.get().readTree(dataJsonText);
-        HealthDataRecord intermediateRecord = createValidRecordBuilder(dataJson).withId(TEST_RECORD_ID).build();
+        HealthDataRecord intermediateRecord = createValidRecord(dataJson);
+        intermediateRecord.setId(TEST_RECORD_ID);
 
         // mock health data service
         HealthDataService mockHealthDataService = mock(HealthDataService.class);
@@ -64,11 +62,6 @@ public class UploadArtifactsHandlerTest {
                 ATTACHMENT_ID_BAR, ATTACHMENT_ID_FOO);
 
         when(mockHealthDataService.getRecordById(TEST_RECORD_ID)).thenReturn(intermediateRecord);
-
-        when(mockHealthDataService.getAttachmentBuilder()).thenAnswer(
-                invocation -> new DynamoHealthDataAttachment.Builder());
-
-        when(mockHealthDataService.getRecordBuilder()).thenAnswer(invocation -> new DynamoHealthDataRecord.Builder());
 
         // mock S3 helper
         S3Helper mockS3Helper = mock(S3Helper.class);
@@ -87,7 +80,7 @@ public class UploadArtifactsHandlerTest {
 
         // Most important thing in the record builder is the data map. It's the same as the one we expect back in the
         // intermediate record
-        HealthDataRecordBuilder recordBuilder = createValidRecordBuilder(dataJson);
+        HealthDataRecord record = createValidRecord(dataJson);
 
         // only need upload ID from upload
         DynamoUpload2 upload = new DynamoUpload2();
@@ -95,10 +88,11 @@ public class UploadArtifactsHandlerTest {
 
         UploadValidationContext context = new UploadValidationContext();
         context.setAttachmentsByFieldName(attachmentMap);
-        context.setHealthDataRecordBuilder(recordBuilder);
+        context.setHealthDataRecord(record);
         context.setUpload(upload);
 
         // execute
+
         handler.handle(context);
 
         // validate result - create record
@@ -173,17 +167,24 @@ public class UploadArtifactsHandlerTest {
         assertTrue(context.getMessageList().isEmpty());
     }
 
-    // creates a record builder that has all the valid values filled in, with the data JsonNode specified
-    private static HealthDataRecordBuilder createValidRecordBuilder(JsonNode dataNode) {
+    // creates a record that has all the valid values filled in, with the data JsonNode specified
+    private static HealthDataRecord createValidRecord(JsonNode dataNode) {
         // none of these values matter (except data, which is specified), so just fill in whatever
         // All that matters is that the values are written to DDB.
-        return new DynamoHealthDataRecord.Builder().withCreatedOn(ARBITRARY_TIMESTAMP).withData(dataNode)
-                .withHealthCode("dummy-healthcode").withMetadata(BridgeObjectMapper.get().createObjectNode())
-                .withSchemaId("dummy-schema").withSchemaRevision(1).withStudyId("dummy-study")
-                .withUploadDate(LocalDate.parse("2015-11-18")).withUploadId(TEST_UPLOAD_ID)
-                .withUserExternalId("dummy-external-ID")
-                .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
-                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
-                .withVersion(42L);
+        HealthDataRecord record = HealthDataRecord.create();
+        record.setCreatedOn(ARBITRARY_TIMESTAMP);
+        record.setData(dataNode);
+        record.setHealthCode("dummy-healthcode");
+        record.setMetadata(BridgeObjectMapper.get().createObjectNode());
+        record.setSchemaId("dummy-schema");
+        record.setSchemaRevision(1);
+        record.setStudyId("dummy-study");
+        record.setUploadDate(LocalDate.parse("2015-11-18"));
+        record.setUploadId(TEST_UPLOAD_ID);
+        record.setUserExternalId("dummy-external-ID");
+        record.setUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS);
+        record.setUserDataGroups(TestConstants.USER_DATA_GROUPS);
+        record.setVersion(42L);
+        return record;
     }
 }

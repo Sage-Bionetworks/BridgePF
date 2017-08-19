@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
 
@@ -22,7 +22,7 @@ public class UploadValidationContext {
     private Map<String, byte[]> unzippedDataMap;
     private Map<String, JsonNode> jsonDataMap;
     private Integer appVersion;
-    private HealthDataRecordBuilder healthDataRecordBuilder;
+    private HealthDataRecord healthDataRecord;
     private Map<String, byte[]> attachmentsByFieldName;
     private String recordId;
 
@@ -129,17 +129,17 @@ public class UploadValidationContext {
     }
 
     /**
-     * Health Data Record Builder, used to build a health data record that will be written to the health data record
-     * table. This is initially created by IosSchemaValidationHandler, is further updated by the
+     * Health Data Record, created from the uploaded data.
+     * This is initially created by IosSchemaValidationHandler, is further updated by the
      * TranscribeConsentHandler, and is finalized and persisted by UploadArtifactsHandler.
      */
-    public HealthDataRecordBuilder getHealthDataRecordBuilder() {
-        return healthDataRecordBuilder;
+    public HealthDataRecord getHealthDataRecord() {
+        return healthDataRecord;
     }
 
-    /** @see #getHealthDataRecordBuilder */
-    public void setHealthDataRecordBuilder(HealthDataRecordBuilder healthDataRecordBuilder) {
-        this.healthDataRecordBuilder = healthDataRecordBuilder;
+    /** @see #getHealthDataRecord */
+    public void setHealthDataRecord(HealthDataRecord healthDataRecord) {
+        this.healthDataRecord = healthDataRecord;
     }
 
     /**
@@ -171,7 +171,7 @@ public class UploadValidationContext {
      * <p>
      * Makes a shallow copy of this object. The fields of the returned copy can be get and set without affecting the
      * original. However, the field value themselves are shared between the original and the copy. Most notably,
-     * modifying the unzippedDataMap (which is what ParseJsonHandler does) or the healthDataRecordBuilder (which is
+     * modifying the unzippedDataMap (which is what ParseJsonHandler does) or the healthDataRecord (which is
      * what TranscribeConsentHandler does) in the copy will affect the original, and vice versa.
      * </p>
      * <p>
@@ -193,7 +193,7 @@ public class UploadValidationContext {
         copy.unzippedDataMap = this.unzippedDataMap;
         copy.jsonDataMap = this.jsonDataMap;
         copy.appVersion = this.appVersion;
-        copy.healthDataRecordBuilder = this.healthDataRecordBuilder;
+        copy.healthDataRecord = this.healthDataRecord;
         copy.attachmentsByFieldName = this.attachmentsByFieldName;
         copy.recordId = this.recordId;
 
