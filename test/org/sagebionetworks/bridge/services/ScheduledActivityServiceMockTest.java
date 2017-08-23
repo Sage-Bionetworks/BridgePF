@@ -187,17 +187,14 @@ public class ScheduledActivityServiceMockTest {
         
         ArgumentCaptor<DateTime> startCaptor = ArgumentCaptor.forClass(DateTime.class);
         ArgumentCaptor<DateTime> endCaptor = ArgumentCaptor.forClass(DateTime.class);
-        ArgumentCaptor<DateTimeZone> zoneCaptor = ArgumentCaptor.forClass(DateTimeZone.class);
         
         ScheduledActivityService serviceSpy = Mockito.spy(service);
         when(serviceSpy.getDateTime()).thenReturn(DateTime.now(TIME_ZONE));
         
         serviceSpy.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, null, null, null, 40);
         verify(activityDao).getActivityHistoryV2(eq(HEALTH_CODE), eq(ACTIVITY_GUID), startCaptor.capture(),
-                endCaptor.capture(), zoneCaptor.capture(), eq(null), eq(40));
+                endCaptor.capture(), eq(null), eq(40));
         
-        DateTimeZone capturedZone = zoneCaptor.getValue();
-        assertEquals(TIME_ZONE.getOffset(NOW), capturedZone.getOffset(NOW));
         assertTrue(STARTS_ON.minusDays(MAX_DATE_RANGE_IN_DAYS / 2).isEqual(startCaptor.getValue()));
         assertTrue(STARTS_ON.plusDays(MAX_DATE_RANGE_IN_DAYS / 2).isEqual(endCaptor.getValue()));
         
@@ -406,7 +403,7 @@ public class ScheduledActivityServiceMockTest {
         when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(aaa,bbb));
         
         ForwardCursorPagedResourceList<ScheduledActivity> list = new ForwardCursorPagedResourceList<>(createStartedActivities("BBB"+TIME_PORTION), null);
-        when(activityDao.getActivityHistoryV2(HEALTH_CODE, "BBB", NOW, NOW, TIME_ZONE, null, API_MAXIMUM_PAGE_SIZE))
+        when(activityDao.getActivityHistoryV2(HEALTH_CODE, "BBB", NOW, NOW, null, API_MAXIMUM_PAGE_SIZE))
                 .thenReturn(list);        
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivitiesV4(createScheduleContext(NOW).build());
@@ -483,7 +480,7 @@ public class ScheduledActivityServiceMockTest {
         
         List<ScheduledActivity> db = Lists.newArrayList(createExpiredActivities("AAA"+TIME_PORTION).get(0),
                 createFinishedActivities("BBB"+TIME_PORTION).get(0));
-        when(activityDao.getActivityHistoryV2(HEALTH_CODE, "BBB", NOW, NOW, TIME_ZONE, null, API_MAXIMUM_PAGE_SIZE))
+        when(activityDao.getActivityHistoryV2(HEALTH_CODE, "BBB", NOW, NOW, null, API_MAXIMUM_PAGE_SIZE))
                 .thenReturn(new ForwardCursorPagedResourceList<>(db, null));
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivitiesV4(createScheduleContext(NOW).build());
@@ -526,7 +523,7 @@ public class ScheduledActivityServiceMockTest {
         when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(aaa,bbb,ccc));
         
         List<ScheduledActivity> db = createStartedActivities("AAA"+TIME_PORTION,"CCC"+TIME_PORTION);
-        when(activityDao.getActivityHistoryV2(HEALTH_CODE, "BBB", NOW, NOW, TIME_ZONE, null, API_MAXIMUM_PAGE_SIZE))
+        when(activityDao.getActivityHistoryV2(HEALTH_CODE, "BBB", NOW, NOW, null, API_MAXIMUM_PAGE_SIZE))
                 .thenReturn(new ForwardCursorPagedResourceList<>(db, null));
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivitiesV4(createScheduleContext(NOW).build());
@@ -631,7 +628,40 @@ public class ScheduledActivityServiceMockTest {
         executeComplexTestInTimeZone(3, DateTimeZone.forOffsetHours(8));
         executeComplexTestInTimeZone(23, DateTimeZone.forOffsetHours(8));
     }
+    
+    @Test
+    public void getActivityHistoryV3() throws Exception {
+        DateTimeZone timeZone = DateTimeZone.forOffsetHours(-4);
+        DateTime startsOn = DateTime.now(timeZone).minusDays(1);
+        DateTime endsOn = DateTime.now(timeZone).plusDays(1);
+        
+        service.getActivityHistory(HEALTH_CODE, ActivityType.SURVEY, "GUID", startsOn, endsOn, "offsetKey", 20);
+        
+        verify(activityDao).getActivityHistoryV3(HEALTH_CODE, ActivityType.SURVEY, "GUID", startsOn, endsOn,
+                "offsetKey", 20);
+    }
+    
+    // Verify in the next two tests that the v3 api is being validated the same way the v2 api is being validated.
+    // They share the same code path so it isn't necessary to test every validation.
+    
+    @Test(expected = BadRequestException.class)
+    public void getActivityHistoryV3ValidatesPageSize() {
+        DateTimeZone timeZone = DateTimeZone.forOffsetHours(-4);
+        DateTime startsOn = DateTime.now(timeZone).minusDays(1);
+        DateTime endsOn = DateTime.now(timeZone).plusDays(1);
+        
+        service.getActivityHistory(HEALTH_CODE, ActivityType.SURVEY, "GUID", startsOn, endsOn, "offsetKey", 20000);
+    }
 
+    @Test(expected = BadRequestException.class)
+    public void getActivityHistoryV3ValidatesDateRange() {
+        DateTimeZone timeZone = DateTimeZone.forOffsetHours(-4);
+        DateTime startsOn = DateTime.now(timeZone).minusDays(1);
+        DateTime endsOn = DateTime.now(timeZone).plusDays(1);
+        
+        service.getActivityHistory(HEALTH_CODE, ActivityType.SURVEY, "GUID", endsOn, startsOn, "offsetKey", 20);
+    }
+    
     private void assertActivityGuids(List<ScheduledActivity> activities, String... guids) {
         Set<String> activityGuids = activities.stream().map(ScheduledActivity::getGuid).collect(toSet());
 
@@ -965,7 +995,7 @@ public class ScheduledActivityServiceMockTest {
         assertTrue(activities.size() > 0);
         
         verify(activityDao, times(1)).getActivityHistoryV2(HEALTH_CODE, "AAA", context.getStartsOn(), context.getEndsOn(),
-                context.getStartsOn().getZone(), null, BridgeConstants.API_MAXIMUM_PAGE_SIZE);
+                null, BridgeConstants.API_MAXIMUM_PAGE_SIZE);
         
         verify(activityDao).saveActivities(scheduledActivityListCaptor.capture());
         List<ScheduledActivity> activitiesOnSave = scheduledActivityListCaptor.getValue();
@@ -1091,7 +1121,7 @@ public class ScheduledActivityServiceMockTest {
         ForwardCursorPagedResourceList<ScheduledActivity> list = new ForwardCursorPagedResourceList<>(activities, null);
 
         when(activityDao.getActivityHistoryV2(eq(HEALTH_CODE), eq(activityGuid), any(), any(), 
-                any(), eq(null), eq(BridgeConstants.API_MAXIMUM_PAGE_SIZE))).thenReturn(list);
+                eq(null), eq(BridgeConstants.API_MAXIMUM_PAGE_SIZE))).thenReturn(list);
     }
     
     private String firstTimeStampFor(int initialTZOffset, int requestTZOffset, Schedule schedule) {

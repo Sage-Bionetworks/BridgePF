@@ -43,6 +43,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
+import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -260,6 +261,22 @@ public class ParticipantController extends BaseController {
             node.put(OFFSET_BY, offsetBy);    
         }
         return ok(node);
+    }
+    
+    public Result getActivityHistoryV3(String userId, String activityTypeString, String referentGuid, String scheduledOnStartString,
+            String scheduledOnEndString, String offsetKey, String pageSizeString) throws Exception {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        ActivityType activityType = ActivityType.PLURALS.get(activityTypeString);
+        DateTime scheduledOnStart = getDateTimeOrDefault(scheduledOnStartString, null);
+        DateTime scheduledOnEnd = getDateTimeOrDefault(scheduledOnEndString, null);
+        int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> page = participantService.getActivityHistory(study, userId,
+                activityType, referentGuid, scheduledOnStart, scheduledOnEnd, offsetKey, pageSize);
+        
+        return ok(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(page));
     }
     
     public Result deleteActivities(String userId) throws Exception {

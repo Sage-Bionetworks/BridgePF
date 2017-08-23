@@ -65,6 +65,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
+import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -557,7 +558,7 @@ public class ParticipantControllerTest {
     
     @Test
     public void canGetActivityHistoryV2() throws Exception {
-        doReturn(createActivityResultsV2("200")).when(mockParticipantService).getActivityHistory(eq(study), eq(ID),
+        doReturn(createActivityResultsV2("200", 77)).when(mockParticipantService).getActivityHistory(eq(study), eq(ID),
                 eq(ACTIVITY_GUID), any(), any(), eq("200"), eq(77));
         
         Result result = controller.getActivityHistoryV2(ID, ACTIVITY_GUID, START_TIME.toString(), END_TIME.toString(),
@@ -574,7 +575,7 @@ public class ParticipantControllerTest {
         assertEquals("200", node.get("offsetBy").asText());
         
         assertEquals(1, page.getItems().size()); // have not mocked out these items, but the list is there.
-        assertEquals(1, page.getRequestParams().get("pageSize"));
+        assertEquals(77, page.getRequestParams().get("pageSize"));
         assertEquals("200", page.getRequestParams().get("offsetKey"));
         
         verify(mockParticipantService).getActivityHistory(eq(study), eq(ID), eq(ACTIVITY_GUID),
@@ -585,7 +586,7 @@ public class ParticipantControllerTest {
     
     @Test
     public void canGetActivityHistoryV2WithOffsetKey() throws Exception {
-        doReturn(createActivityResultsV2("200")).when(mockParticipantService).getActivityHistory(eq(study), eq(ID),
+        doReturn(createActivityResultsV2("200", 77)).when(mockParticipantService).getActivityHistory(eq(study), eq(ID),
                 eq(ACTIVITY_GUID), any(), any(), eq("200"), eq(77));
         
         Result result = controller.getActivityHistoryV2(ID, ACTIVITY_GUID, START_TIME.toString(), END_TIME.toString(),
@@ -599,7 +600,7 @@ public class ParticipantControllerTest {
         assertNull(activity.getHealthCode());
 
         assertEquals(1, page.getItems().size()); // have not mocked out these items, but the list is there.
-        assertEquals(1, page.getRequestParams().get("pageSize"));
+        assertEquals(77, page.getRequestParams().get("pageSize"));
         assertEquals("200", page.getRequestParams().get("offsetKey"));
         
         verify(mockParticipantService).getActivityHistory(eq(study), eq(ID), eq(ACTIVITY_GUID),
@@ -610,8 +611,8 @@ public class ParticipantControllerTest {
 
     @Test
     public void canGetActivityV2WithNullValues() throws Exception {
-        doReturn(createActivityResultsV2(null)).when(mockParticipantService).getActivityHistory(eq(study), eq(ID),
-                eq(ACTIVITY_GUID), any(), any(), eq(null), eq(API_DEFAULT_PAGE_SIZE));
+        doReturn(createActivityResultsV2(null, API_DEFAULT_PAGE_SIZE)).when(mockParticipantService).getActivityHistory(
+                eq(study), eq(ID), eq(ACTIVITY_GUID), any(), any(), eq(null), eq(API_DEFAULT_PAGE_SIZE));
         
         Result result = controller.getActivityHistoryV2(ID, ACTIVITY_GUID, null, null, null, null, null);
         assertEquals(200, result.status());
@@ -623,7 +624,7 @@ public class ParticipantControllerTest {
         assertNull(activity.getHealthCode());
         
         assertEquals(1, page.getItems().size()); // have not mocked out these items, but the list is there.
-        assertEquals(1, page.getRequestParams().get("pageSize"));
+        assertEquals(API_DEFAULT_PAGE_SIZE, page.getRequestParams().get("pageSize"));
         
         verify(mockParticipantService).getActivityHistory(eq(study), eq(ID), eq(ACTIVITY_GUID), eq(null), eq(null),
                 eq(null), eq(API_DEFAULT_PAGE_SIZE));
@@ -822,6 +823,30 @@ public class ParticipantControllerTest {
         assertEquals(ID, participantNode.get("id").textValue());
     }
     
+    @Test
+    public void getActivityHistoryV3() throws Exception {
+        doReturn(createActivityResultsV2("offsetKey", 15)).when(mockParticipantService).getActivityHistory(eq(study),
+                eq(ID), eq(ActivityType.SURVEY), eq("referentGuid"), any(), any(), eq("offsetKey"), eq(15));
+        
+        Result result = controller.getActivityHistoryV3(ID, "surveys", "referentGuid", START_TIME.toString(), END_TIME.toString(),
+                "offsetKey", "15");
+        assertEquals(200, result.status());
+
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        assertEquals(15, node.get("requestParams").get("pageSize").intValue());
+        assertEquals("offsetKey", node.get("requestParams").get("offsetKey").asText());
+        
+        // The fact this can be converted to a forward cursor object is ideal
+        ForwardCursorPagedResourceList<ScheduledActivity> page = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
+                FORWARD_CURSOR_PAGED_ACTIVITIES_REF);
+        assertEquals(15, (int)page.getRequestParams().get("pageSize"));
+        
+        verify(mockParticipantService).getActivityHistory(eq(study), eq(ID), eq(ActivityType.SURVEY),
+                eq("referentGuid"), startTimeCaptor.capture(), endTimeCaptor.capture(), eq("offsetKey"), eq(15));
+        assertEquals(START_TIME.toString(), startTimeCaptor.getValue().toString());
+        assertEquals(END_TIME.toString(), endTimeCaptor.getValue().toString());
+    }
+    
     @SuppressWarnings("deprecation")
     private <T> void verifyPagedResourceListParameters(Result result) throws Exception {
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
@@ -847,7 +872,7 @@ public class ParticipantControllerTest {
         assertEquals("foo", page.getRequestParams().get("emailFilter"));
     }
     
-    private ForwardCursorPagedResourceList<ScheduledActivity> createActivityResultsV2(String offsetKey) {
+    private ForwardCursorPagedResourceList<ScheduledActivity> createActivityResultsV2(String offsetKey, int pageSize) {
         List<ScheduledActivity> list = Lists.newArrayList();
         
         DynamoScheduledActivity activity = new DynamoScheduledActivity();
@@ -856,7 +881,7 @@ public class ParticipantControllerTest {
         activity.setSchedulePlanGuid("schedulePlanGuid");
         list.add(activity);
         
-        return new ForwardCursorPagedResourceList<>(list, null).withRequestParam("pageSize", list.size())
+        return new ForwardCursorPagedResourceList<>(list, null).withRequestParam("pageSize", pageSize)
                 .withRequestParam("offsetKey", offsetKey);
     }
     

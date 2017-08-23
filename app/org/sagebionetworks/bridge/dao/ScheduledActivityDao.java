@@ -6,16 +6,23 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 
 public interface ScheduledActivityDao {
     
     /**
-     * Get paged results of scheduled activities by an activity GUID.
+     * Get paged results of historical scheduled activities by an activity GUID.
      */
-    ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistoryV2(String healthCode,
-            String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, DateTimeZone timezone,
-            String offsetKey, int pageSize);
+    ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistoryV2(String healthCode, String activityGuid,
+            DateTime scheduledOnStart, DateTime scheduledOnEnd, String offsetKey, int pageSize);
+    
+    /**
+     * Get paged results of historical scheduled activities by a GUID constructed from the task, compound
+     * activity or survey that is referred to by the scheduled activity.
+     */
+    ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistoryV3(String healthCode, ActivityType activityType,
+            String referentGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, String offsetKey, int pageSize);
     
     /**
      * Load an individual activity.

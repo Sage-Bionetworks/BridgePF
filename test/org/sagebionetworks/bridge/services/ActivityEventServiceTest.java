@@ -47,7 +47,9 @@ public class ActivityEventServiceTest {
         activityEventDao = mock(ActivityEventDao.class);
         studyService = mock(StudyService.class);
 
-        activityEventService = new ActivityEventService(activityEventDao, studyService);
+        activityEventService = new ActivityEventService();
+        activityEventService.setActivityEventDao(activityEventDao);
+        activityEventService.setStudyService(studyService);
     }
 
     @Test

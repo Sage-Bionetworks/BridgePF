@@ -27,7 +27,7 @@ public interface ScheduledActivity extends BridgeEntity {
      */
     ObjectWriter SCHEDULED_ACTIVITY_WRITER = new BridgeObjectMapper().writer(
         new SimpleFilterProvider().addFilter("filter", 
-        SimpleBeanPropertyFilter.serializeAllExcept("healthCode", "schedulePlanGuid")));
+        SimpleBeanPropertyFilter.serializeAllExcept("healthCode", "schedulePlanGuid", "referentGuid")));
 
     /**
      * Researchers get the schedule plan GUID. 
@@ -40,6 +40,14 @@ public interface ScheduledActivity extends BridgeEntity {
         return new DynamoScheduledActivity();
     }
 
+    public static int compareByReferentGuidThenGuid(ScheduledActivity activity1, ScheduledActivity activity2) {
+        int result = activity1.getReferentGuid().compareTo(activity2.getReferentGuid());
+        if (result == 0) {
+            return activity1.getGuid().compareTo(activity2.getGuid());
+        }
+        return result;
+    }
+    
     // Sorts in temporal order, oldest to newest activity, labels alphabetically if at the same moment in time.
     Comparator<ScheduledActivity> SCHEDULED_ACTIVITY_COMPARATOR = new Comparator<ScheduledActivity>() {
         @Override

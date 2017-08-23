@@ -114,6 +114,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     }
 
     @DynamoDBHashKey
+    @DynamoDBIndexHashKey(attributeName="healthCode", globalSecondaryIndexName="healthCode-referentGuid-index")
     @Override
     public String getHealthCode() {
         return healthCode;
@@ -217,10 +218,9 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     public void setPersistent(boolean persistent) {
         this.persistent = persistent;
     }
-    
-    @DynamoDBIndexRangeKey(attributeName = "referentGuid", globalSecondaryIndexName = "healthCode-referentGuid-index")
+
     @DynamoDBAttribute
-    @JsonIgnore
+    @DynamoDBIndexRangeKey(attributeName = "referentGuid", globalSecondaryIndexName = "healthCode-referentGuid-index")
     @Override
     public String getReferentGuid() {
         return referentGuid;
@@ -261,8 +261,8 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     @Override
     public String toString() {
         return String.format(
-                "DynamoScheduledActivity [healthCode=%s, guid=%s, localScheduledOn=%s, localExpiresOn=%s, startedOn=%s, finishedOn=%s, persistent=%s, timeZone=%s, activity=%s, schedulePlanGuid=%s, clientData=%s]",
+                "DynamoScheduledActivity [healthCode=%s, guid=%s, localScheduledOn=%s, localExpiresOn=%s, startedOn=%s, finishedOn=%s, persistent=%s, timeZone=%s, activity=%s, schedulePlanGuid=%s, referentGuid=%s, clientData=%s]",
                 healthCode, guid, localScheduledOn, localExpiresOn, startedOn, finishedOn, persistent, timeZone,
-                activity, schedulePlanGuid, clientData);
+                activity, schedulePlanGuid, referentGuid, clientData);
     }
 }

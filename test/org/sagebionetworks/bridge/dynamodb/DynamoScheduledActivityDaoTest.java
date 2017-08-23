@@ -27,6 +27,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
@@ -49,6 +50,8 @@ import com.google.common.collect.Sets;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoScheduledActivityDaoTest {
     
+    private static final DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
+    
     @Resource
     DynamoScheduledActivityDao activityDao;
 
@@ -59,9 +62,11 @@ public class DynamoScheduledActivityDaoTest {
     
     private String healthCode;
     
+    private Study study;
+    
     @Before
     public void before() {
-        Study study = new DynamoStudy();
+        study = new DynamoStudy();
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
         study.setTaskIdentifiers(Sets.newHashSet("tapTest"));
         
@@ -96,18 +101,15 @@ public class DynamoScheduledActivityDaoTest {
     @Test
     public void getScheduledActivityHistoryV2() throws Exception {
         // Let's use an interesting time zone so we can verify it is being used.
-        DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
-        // Make a lot of tasks (30 days worth), enough to create a page
-        DateTime endsOn = DateTime.now(MSK).plus(Period.parse("P30D"));
-        DateTime startDateTime = DateTime.now().minusDays(20);
-        DateTime endDateTime = DateTime.now().plusDays(20);
+        DateTime startDateTime = DateTime.now(MSK).minusDays(20);
+        DateTime endDateTime = DateTime.now(MSK).plusDays(20);
         
         ScheduleContext context = new ScheduleContext.Builder()
             .withHealthCode(healthCode)
             .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withInitialTimeZone(MSK)
-            .withEndsOn(endsOn)
+            .withEndsOn(endDateTime)
             .withEvents(eventMap()).build();
         
         Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
@@ -118,7 +120,7 @@ public class DynamoScheduledActivityDaoTest {
         
         // Get the first page of 10 records
         ForwardCursorPagedResourceList<ScheduledActivity> history = activityDao.getActivityHistoryV2(
-                healthCode, activityGuid, startDateTime, endDateTime, MSK, null, 10);
+                healthCode, activityGuid, startDateTime, endDateTime, null, 10);
         assertEquals(10, history.getItems().size());
         history.getItems().stream().forEach(scheduledActivity -> assertEquals(MSK, scheduledActivity.getTimeZone()));
         
@@ -127,7 +129,7 @@ public class DynamoScheduledActivityDaoTest {
         // Get second page of records
         String nextPageOffsetKey = history.getNextPageOffsetKey();
         history = activityDao.getActivityHistoryV2(
-                healthCode, activityGuid, startDateTime, endDateTime, MSK, nextPageOffsetKey, 10);
+                healthCode, activityGuid, startDateTime, endDateTime, nextPageOffsetKey, 10);
         assertEquals(10, history.getItems().size());
         
         // Assert request params are all set (nextPageOffsetKey is now the offsetKey submitted in the request) 
@@ -152,9 +154,121 @@ public class DynamoScheduledActivityDaoTest {
         
         // Query for a time range that will produce no records
         history = activityDao.getActivityHistoryV2(
-                healthCode, activityGuid, startDateTime, startDateTime, MSK, null, 10);
+                healthCode, activityGuid, startDateTime, startDateTime, null, 10);
         assertEquals(0, history.getItems().size());
         assertNull(history.getNextPageOffsetKey());
+    }
+    
+    // Paging for this method can hit a situation where there are items with identical referentGuids. These 
+    // must page correctly, so this tests really pathological behavior by using small page sizes and many 
+    // identical schedules to create referentGuids that span across entire pages. In this (rare) situation, 
+    // we expand the page size of the initial index key search until we have all the referentGuids, and can 
+    // index into the correct item by its guid (the offsetKey) to page correctly. 
+    @Test
+    public void getScheduledActivityHistoryV3() throws Exception {
+        DateTime startDateTime = DateTime.now(MSK).minusDays(6);
+        DateTime endDateTime = DateTime.now(MSK).plusDays(7);
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withHealthCode(healthCode)
+            .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+            .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
+            .withInitialTimeZone(MSK)
+            .withEndsOn(endDateTime)
+            .withEvents(eventMap()).build();
+        
+        // Many identical schedules, creating more conflicting referentGuids than fit on one page
+        makeSchedulePlanWithSameActivity(context);
+        makeSchedulePlanWithSameActivity(context);
+        makeSchedulePlanWithSameActivity(context);
+        makeSchedulePlanWithSameActivity(context);
+        makeSchedulePlanWithSameActivity(context);
+        makeSchedulePlanWithSameActivity(context);
+        makeSchedulePlanWithSameActivity(context);
+        makeSchedulePlanWithSameActivity(context);
+        
+        String referentGuid = TestUtils.getActivity3().getTask().getIdentifier();
+        
+        Set<String> allTaskGuids = Sets.newHashSet();
+        
+        // Get the first page of 10 records
+        ForwardCursorPagedResourceList<ScheduledActivity> history = activityDao.getActivityHistoryV3(
+                healthCode, ActivityType.TASK, referentGuid, startDateTime, endDateTime, null, 5);
+        assertExpectedUniqueItemsReturned(allTaskGuids, history, 5);
+
+        // Get second page of records
+        String nextPageOffsetKey = history.getNextPageOffsetKey();
+        history = activityDao.getActivityHistoryV3(healthCode, ActivityType.TASK, referentGuid, startDateTime,
+                endDateTime, nextPageOffsetKey, 5);
+        assertExpectedUniqueItemsReturned(allTaskGuids, history, 5);
+        
+        // Verify nextPageOffsetKey and requestParams
+        assertNotEquals(nextPageOffsetKey, history.getNextPageOffsetKey());
+        assertEquals(nextPageOffsetKey, history.getRequestParams().get("offsetKey"));
+        assertEquals(5, history.getRequestParams().get("pageSize"));
+        assertEquals(startDateTime.toString(), history.getRequestParams().get("scheduledOnStart"));
+        assertEquals(endDateTime.toString(), history.getRequestParams().get("scheduledOnEnd"));
+        
+        // Get third page of records. These continue to return unique guids.
+        history = activityDao.getActivityHistoryV3(healthCode, ActivityType.TASK, referentGuid, startDateTime,
+                endDateTime, history.getNextPageOffsetKey(), 5);
+        assertExpectedUniqueItemsReturned(allTaskGuids, history, 5);
+        
+        // Get fourth page of records.
+        history = activityDao.getActivityHistoryV3(healthCode, ActivityType.TASK, referentGuid, startDateTime,
+                endDateTime, history.getNextPageOffsetKey(), 5);
+        assertExpectedUniqueItemsReturned(allTaskGuids, history, 5);
+        
+        // Get fifth page of records. We are definitely paging correctly because GUIDs continue to be unique
+        history = activityDao.getActivityHistoryV3(healthCode, ActivityType.TASK, referentGuid, startDateTime,
+                endDateTime, history.getNextPageOffsetKey(), 5);
+        assertExpectedUniqueItemsReturned(allTaskGuids, history, 5);
+        
+        // Query for a time range that will produce no records
+        history = activityDao.getActivityHistoryV3(healthCode, ActivityType.TASK, referentGuid, startDateTime,
+                startDateTime, null, 5);
+        assertEquals(0, history.getItems().size());
+        assertNull(history.getNextPageOffsetKey());
+    }
+    
+    private void assertExpectedUniqueItemsReturned(Set<String> allTaskGuids,
+            ForwardCursorPagedResourceList<ScheduledActivity> page, int count) {
+        int currentSize = allTaskGuids.size();
+        assertEquals(count, page.getItems().size());
+        allTaskGuids.addAll(page.getItems().stream().map(ScheduledActivity::getGuid).collect(toSet()));
+        assertEquals(currentSize + count, allTaskGuids.size());
+        // And just verify the timezone has been set too
+        page.getItems().stream().forEach(scheduledActivity -> assertEquals(MSK, scheduledActivity.getTimeZone()));
+    }
+    
+    private void makeSchedulePlanWithSameActivity(ScheduleContext context) {
+        // Same activity, different plan, shared time
+        Schedule schedule = new Schedule();
+        schedule.setLabel("A schedule");
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setInterval("P1D");
+        schedule.setExpires("PT6H");
+        schedule.addTimes("10:00");
+        schedule.addActivity(new Activity.Builder().withGuid(BridgeUtils.generateGuid()).withLabel("Activity3")
+                .withTask("tapTest").build());
+        SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
+        strategy.setSchedule(schedule);
+        SchedulePlan plan = new DynamoSchedulePlan();
+        plan.setLabel("Second schedule plan");
+        plan.setStudyKey(TEST_STUDY_IDENTIFIER);
+        plan.setStrategy(strategy);
+        plan = schedulePlanService.createSchedulePlan(study, plan);
+        
+        schedule = plan.getStrategy().getScheduleForUser(plan, context);
+        List<ScheduledActivity> activitiesToSchedule = schedule.getScheduler().getScheduledActivities(plan, context);
+        activityDao.saveActivities(activitiesToSchedule);
+        
+        //Pause, because GSIs are not consistent, we need to pause
+        try {
+            Thread.sleep(2);
+        } catch(InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
     
     @Test
