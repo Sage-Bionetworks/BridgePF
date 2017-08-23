@@ -24,13 +24,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.dao.HealthDataDao;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.Upload;
@@ -47,7 +45,7 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
  * Processes iOS data into health data records. This handler reads from
  * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getUnzippedDataMap} and
  * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getJsonDataMap} and writes to
- * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#setHealthDataRecordBuilder} and
+ * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#setHealthDataRecord} and
  * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#setAttachmentsByFieldName}.
  * </p>
  * <p>
@@ -92,19 +90,12 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
             .build();
 
     private Map<String, Map<String, Integer>> defaultSchemaRevisionMap;
-    private HealthDataDao healthDataDao;
     private SurveyService surveyService;
     private UploadSchemaService uploadSchemaService;
 
     @Resource(name = "defaultSchemaRevisionMap")
     public final void setDefaultSchemaRevisionMap(Map<String, Map<String, Integer>> defaultSchemaRevisionMap) {
         this.defaultSchemaRevisionMap = defaultSchemaRevisionMap;
-    }
-
-    /** Health Data DAO, used solely to get the record builder. This is configured by Spring. */
-    @Autowired
-    public final void setHealthDataDao(HealthDataDao healthDataDao) {
-        this.healthDataDao = healthDataDao;
     }
 
     /** Survey service, to get the survey if this upload is a survey. Configured by Spring. */
@@ -138,36 +129,36 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         String studyId = study.getIdentifier();
 
         // Add empty record builder and attachment map to the context. We'll fill these in as we need them.
-        HealthDataRecordBuilder recordBuilder = healthDataDao.getRecordBuilder();
-        context.setHealthDataRecordBuilder(recordBuilder);
+        HealthDataRecord record = HealthDataRecord.create();
+        context.setHealthDataRecord(record);
         Map<String, byte[]> attachmentMap = new HashMap<>();
         context.setAttachmentsByFieldName(attachmentMap);
 
         // health data records fields
-        recordBuilder.withHealthCode(upload.getHealthCode());
-        recordBuilder.withStudyId(studyId);
+        record.setHealthCode(upload.getHealthCode());
+        record.setStudyId(studyId);
         // TODO: If we globalize Bridge, we'll need to make this timezone configurable.
-        recordBuilder.withUploadDate(LocalDate.now(BridgeConstants.LOCAL_TIME_ZONE));
-        recordBuilder.withUploadId(uploadId);
-        recordBuilder.withUploadedOn(DateUtils.getCurrentMillisFromEpoch());
+        record.setUploadDate(LocalDate.now(BridgeConstants.LOCAL_TIME_ZONE));
+        record.setUploadId(uploadId);
+        record.setUploadedOn(DateUtils.getCurrentMillisFromEpoch());
 
         // create an empty object node in our record builder, which we'll fill in as we go
         ObjectNode dataMap = BridgeObjectMapper.get().createObjectNode();
-        recordBuilder.withData(dataMap);
+        record.setData(dataMap);
 
         // Use info.json verbatim is the metadata.
         JsonNode infoJson = getInfoJsonFile(context, uploadId, jsonDataMap);
-        recordBuilder.withMetadata(infoJson);
+        record.setMetadata(infoJson);
 
         // validate and normalize filenames
-        validateInfoJsonFileList(context, uploadId, jsonDataMap, unzippedDataMap, infoJson, recordBuilder);
+        validateInfoJsonFileList(context, uploadId, jsonDataMap, unzippedDataMap, infoJson, record);
         removeTimestampsFromFilenames(jsonDataMap);
         removeTimestampsFromFilenames(unzippedDataMap);
 
         // schema
         UploadSchema schema = getUploadSchema(study, infoJson);
-        recordBuilder.withSchemaId(schema.getSchemaId());
-        recordBuilder.withSchemaRevision(schema.getRevision());
+        record.setSchemaId(schema.getSchemaId());
+        record.setSchemaRevision(schema.getRevision());
 
         UploadSchemaType schemaType = schema.getSchemaType();
         if (schemaType == UploadSchemaType.IOS_SURVEY) {
@@ -268,7 +259,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
 
     private static void validateInfoJsonFileList(UploadValidationContext context, String uploadId,
             Map<String, JsonNode> jsonDataMap, Map<String, byte[]> unzippedDataMap, JsonNode infoJson,
-            HealthDataRecordBuilder recordBuilder) {
+            HealthDataRecord record) {
         // Make sure all files specified by info.json are accounted for.
         // Because ParseJsonHandler moves files from unzippedDataMap to jsonDataMap, there is no overlap between the
         // two maps.
@@ -336,11 +327,11 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         if (createdOn == null) {
             // Recover by using current time. Don't set a timezone, since it's indeterminate.
             context.addMessage(String.format("upload ID %s has no timestamps, using current time", uploadId));
-            recordBuilder.withCreatedOn(DateUtils.getCurrentMillisFromEpoch());
+            record.setCreatedOn(DateUtils.getCurrentMillisFromEpoch());
         } else {
             // Use createdOn and timezone as specified in the upload.
-            recordBuilder.withCreatedOn(createdOn.getMillis());
-            recordBuilder.withCreatedOnTimeZone(HealthDataRecord.TIME_ZONE_FORMATTER.print(createdOn));
+            record.setCreatedOn(createdOn.getMillis());
+            record.setCreatedOnTimeZone(HealthDataRecord.TIME_ZONE_FORMATTER.print(createdOn));
         }
     }
 

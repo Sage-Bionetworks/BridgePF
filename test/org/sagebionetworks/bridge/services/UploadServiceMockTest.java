@@ -28,7 +28,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.UploadDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -39,7 +38,7 @@ import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 
-@SuppressWarnings("unchecked")
+@SuppressWarnings({ "ConstantConditions", "unchecked" })
 @RunWith(MockitoJUnitRunner.class)
 public class UploadServiceMockTest {
     
@@ -142,7 +141,7 @@ public class UploadServiceMockTest {
         when(mockDao.getUpload("with-record-id")).thenReturn(mockUpload);
 
         // mock health data service
-        DynamoHealthDataRecord dummyRecord = new DynamoHealthDataRecord();
+        HealthDataRecord dummyRecord = HealthDataRecord.create();
         when(mockHealthDataService.getRecordById("test-record-id")).thenReturn(dummyRecord);
 
         // execute and validate
@@ -200,11 +199,11 @@ public class UploadServiceMockTest {
         // Mock getUploads/getUpload calls
         List<Upload> results = ImmutableList.of(mockUpload, mockFailedUpload, mockUploadWithNoRecord);
         
-        ForwardCursorPagedResourceList<Upload> pagedListWithoutOffsetKey = new ForwardCursorPagedResourceList<Upload>(results, null)
+        ForwardCursorPagedResourceList<Upload> pagedListWithoutOffsetKey = new ForwardCursorPagedResourceList<>(results, null)
                 .withRequestParam(ResourceList.PAGE_SIZE, API_MAXIMUM_PAGE_SIZE);
         doReturn(pagedListWithoutOffsetKey).when(mockDao).getUploads(eq("ABC"), any(DateTime.class), any(DateTime.class), eq(0), eq(null));
         
-        ForwardCursorPagedResourceList<Upload> pagedList = new ForwardCursorPagedResourceList<Upload>(results, MOCK_OFFSET_KEY)
+        ForwardCursorPagedResourceList<Upload> pagedList = new ForwardCursorPagedResourceList<>(results, MOCK_OFFSET_KEY)
             .withRequestParam(ResourceList.PAGE_SIZE, API_MAXIMUM_PAGE_SIZE);
         doReturn(pagedList).when(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
         doReturn(pagedList).when(mockDao).getStudyUploads(TestConstants.TEST_STUDY, START_TIME, END_TIME, API_DEFAULT_PAGE_SIZE, null);

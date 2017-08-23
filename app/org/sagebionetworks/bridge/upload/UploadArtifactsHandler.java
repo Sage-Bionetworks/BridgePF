@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachment;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.services.HealthDataService;
 
@@ -43,8 +42,7 @@ public class UploadArtifactsHandler implements UploadValidationHandler {
         String uploadId = context.getUpload().getUploadId();
 
         // step 1: upload health data record
-        HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
-        HealthDataRecord record = recordBuilder.build();
+        HealthDataRecord record = context.getHealthDataRecord();
         String recordId = healthDataService.createOrUpdateRecord(record);
         context.setRecordId(recordId);
 
@@ -57,8 +55,8 @@ public class UploadArtifactsHandler implements UploadValidationHandler {
                 byte[] data = oneAttachment.getValue();
 
                 // step 2a: upload attachments to metadata table
-                HealthDataAttachment attachmentMetadata = healthDataService.getAttachmentBuilder()
-                        .withRecordId(recordId).build();
+                HealthDataAttachment attachmentMetadata = HealthDataAttachment.create();
+                attachmentMetadata.setRecordId(recordId);
                 String attachmentId = healthDataService.createOrUpdateAttachment(attachmentMetadata);
                 attachmentIdsByFieldName.put(fieldName, attachmentId);
 
@@ -75,14 +73,12 @@ public class UploadArtifactsHandler implements UploadValidationHandler {
 
             // Get the record back from the health data table (as it might have added new fields, like a record ID and
             // a version.
-            HealthDataRecord downloadedRecord = healthDataService.getRecordById(recordId);
-            HealthDataRecordBuilder updatedRecordBuilder = healthDataService.getRecordBuilder().copyOf(
-                    downloadedRecord);
+            HealthDataRecord recordToUpdate = healthDataService.getRecordById(recordId);
 
             // For code hygiene, make a deep copy of the dataMap. This shouldn't be too expensive, since all the large
             // fields are shunted off into attachments.
             // IosSchemaValidationHandler guarantees getData() to return an ObjectNode.
-            ObjectNode downloadedDataMap = (ObjectNode) downloadedRecord.getData();
+            ObjectNode downloadedDataMap = (ObjectNode) recordToUpdate.getData();
             ObjectNode updatedDataMap = downloadedDataMap.deepCopy();
 
             // write attachment fields and IDs (foreign keys / S3 keys) to the updated data map
@@ -93,9 +89,8 @@ public class UploadArtifactsHandler implements UploadValidationHandler {
             }
 
             // Write the updated data map to the record. Write the record to the record table.
-            updatedRecordBuilder.withData(updatedDataMap);
-            HealthDataRecord updatedRecord = updatedRecordBuilder.build();
-            healthDataService.createOrUpdateRecord(updatedRecord);
+            recordToUpdate.setData(updatedDataMap);
+            healthDataService.createOrUpdateRecord(recordToUpdate);
         }
     }
 

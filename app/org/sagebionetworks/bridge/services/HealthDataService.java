@@ -4,9 +4,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
-import org.sagebionetworks.bridge.models.healthdata.*;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachment;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest;
 import org.sagebionetworks.bridge.validators.RecordExportStatusRequestValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -165,18 +166,6 @@ public class HealthDataService {
         return healthDataAttachmentDao.createOrUpdateAttachment(attachment);
     }
 
-    /* BUILDERS */
-
-    /** Returns a builder object, used for building attachments, for create or update. */
-    public HealthDataAttachmentBuilder getAttachmentBuilder() {
-        return healthDataAttachmentDao.getRecordBuilder();
-    }
-
-    /** Returns a builder object, used for building records, for create or update. */
-    public HealthDataRecordBuilder getRecordBuilder() {
-        return healthDataDao.getRecordBuilder();
-    }
-
     /**
      * returns received list of record Ids after updating
      * @param recordExportStatusRequest
@@ -195,7 +184,7 @@ public class HealthDataService {
         }
 
         List<String> updatedRecordIds = healthRecordIds.stream().map(id->{
-            DynamoHealthDataRecord record = (DynamoHealthDataRecord) getRecordById(id);
+            HealthDataRecord record = getRecordById(id);
             if (record == null) {
                 throw new NotFoundException("The record: " + id + " cannot be found in our database.");
             }

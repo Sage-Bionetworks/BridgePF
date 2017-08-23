@@ -16,7 +16,6 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.HealthDataDao;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import org.apache.commons.lang3.StringUtils;
@@ -95,12 +94,6 @@ public class DynamoHealthDataDao implements HealthDataDao {
     @Override
     public List<HealthDataRecord> getRecordsForUploadDate(@Nonnull String uploadDate) {
         return uploadDateIndex.query(HealthDataRecord.class, "uploadDate", uploadDate, null);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public HealthDataRecordBuilder getRecordBuilder() {
-        return new DynamoHealthDataRecord.Builder();
     }
 
     /** {@inheritDoc} */

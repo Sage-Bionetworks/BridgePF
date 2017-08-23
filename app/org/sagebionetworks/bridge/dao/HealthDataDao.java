@@ -4,7 +4,6 @@ import javax.annotation.Nonnull;
 import java.util.List;
 
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
 
 /** DAO for health data records. */
 public interface HealthDataDao {
@@ -46,12 +45,6 @@ public interface HealthDataDao {
      * @return list of all health records uploaded on that date
      */
     List<HealthDataRecord> getRecordsForUploadDate(@Nonnull String uploadDate);
-
-    /**
-     * Gets a builder instance, used for building prototype health data records. This is generally used by worker apps
-     * to unpack uploads.
-     */
-    HealthDataRecordBuilder getRecordBuilder();
 
     /**
      * Get a list of records with the same healthCode and schemaId that are within an hour of the createdOn. For

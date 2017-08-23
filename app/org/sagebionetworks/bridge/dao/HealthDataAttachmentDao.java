@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.dao;
 import javax.annotation.Nonnull;
 
 import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachment;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachmentBuilder;
 
 /** DAO for Health Data Record attachments. */
 public interface HealthDataAttachmentDao {
@@ -17,7 +16,4 @@ public interface HealthDataAttachmentDao {
      * @return ID of the created or updated attachment.
      */
     String createOrUpdateAttachment(@Nonnull HealthDataAttachment attachment);
-
-    /** Gets a builder instance, used for building prototype health data records for create or update. */
-    HealthDataAttachmentBuilder getRecordBuilder();
 }

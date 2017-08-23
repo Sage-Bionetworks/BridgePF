@@ -34,9 +34,6 @@ import org.mockito.ArgumentCaptor;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.UploadDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataAttachment;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
@@ -174,9 +171,6 @@ public class UploadHandlersEndToEndTest {
             iosSchemaValidationHandler.setSurveyService(mockSurveyService);
         }
 
-        // health data dao is only used for getBuilder(), so we can just create one without any depedencies
-        iosSchemaValidationHandler.setHealthDataDao(new DynamoHealthDataDao());
-
         // set up StrictValidationHandler
         StrictValidationHandler strictValidationHandler = new StrictValidationHandler();
         strictValidationHandler.setUploadSchemaService(mockUploadSchemaService);
@@ -198,15 +192,10 @@ public class UploadHandlersEndToEndTest {
 
         when(mockHealthDataService.createOrUpdateRecord(any(HealthDataRecord.class))).thenAnswer(invocation -> {
             // add record ID to record
-            HealthDataRecord submittedRecord = invocation.getArgumentAt(0, HealthDataRecord.class);
-            savedRecord = new DynamoHealthDataRecord.Builder().copyOf(submittedRecord).withId(RECORD_ID).build();
+            savedRecord = invocation.getArgumentAt(0, HealthDataRecord.class);
+            savedRecord.setId(RECORD_ID);
             return RECORD_ID;
         });
-
-        when(mockHealthDataService.getAttachmentBuilder()).thenAnswer(
-                invocation -> new DynamoHealthDataAttachment.Builder());
-
-        when(mockHealthDataService.getRecordBuilder()).thenAnswer(invocation -> new DynamoHealthDataRecord.Builder());
 
         when(mockHealthDataService.getRecordById(RECORD_ID)).thenAnswer(invocation -> savedRecord);
 

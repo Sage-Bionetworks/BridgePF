@@ -21,12 +21,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -202,9 +201,6 @@ public class IosSchemaValidationHandler2Test {
         handler = new IosSchemaValidationHandler2();
         handler.setUploadSchemaService(mockSchemaService);
         handler.setDefaultSchemaRevisionMap(DEFAULT_SCHEMA_REV_MAP);
-
-        // health data dao is only used for getBuilder(), so we can just create one without any depedencies
-        handler.setHealthDataDao(new DynamoHealthDataDao());
     }
 
     @After
@@ -331,14 +327,14 @@ public class IosSchemaValidationHandler2Test {
         // validate
         validateCommonProps(context);
 
-        HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
+        HealthDataRecord record = context.getHealthDataRecord();
         assertEquals(DateTime.parse("2015-04-02T03:27:09-07:00").getMillis(),
-                recordBuilder.getCreatedOn().longValue());
-        assertEquals("-0700", recordBuilder.getCreatedOnTimeZone());
-        assertEquals("test-survey", recordBuilder.getSchemaId());
-        assertEquals(1, recordBuilder.getSchemaRevision());
+                record.getCreatedOn().longValue());
+        assertEquals("-0700", record.getCreatedOnTimeZone());
+        assertEquals("test-survey", record.getSchemaId());
+        assertEquals(1, record.getSchemaRevision());
 
-        JsonNode dataNode = recordBuilder.getData();
+        JsonNode dataNode = record.getData();
         assertEquals(7, dataNode.size());
         assertEquals("foo answer", dataNode.get("foo").textValue());
         assertEquals(42, dataNode.get("bar").intValue());
@@ -434,14 +430,14 @@ public class IosSchemaValidationHandler2Test {
         // validate
         validateCommonProps(context);
 
-        HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
+        HealthDataRecord record = context.getHealthDataRecord();
         assertEquals(DateTime.parse("2015-08-22T03:27:09-07:00").getMillis(),
-                recordBuilder.getCreatedOn().longValue());
-        assertEquals("-0700", recordBuilder.getCreatedOnTimeZone());
-        assertEquals("test-survey", recordBuilder.getSchemaId());
-        assertEquals(1, recordBuilder.getSchemaRevision());
+                record.getCreatedOn().longValue());
+        assertEquals("-0700", record.getCreatedOnTimeZone());
+        assertEquals("test-survey", record.getSchemaId());
+        assertEquals(1, record.getSchemaRevision());
 
-        JsonNode dataNode = recordBuilder.getData();
+        JsonNode dataNode = record.getData();
         assertEquals(3, dataNode.size());
         assertEquals("foo answer from guid", dataNode.get("foo").textValue());
         assertEquals(47, dataNode.get("bar").intValue());
@@ -507,14 +503,14 @@ public class IosSchemaValidationHandler2Test {
         // validate
         validateCommonProps(context);
 
-        HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
+        HealthDataRecord record = context.getHealthDataRecord();
         assertEquals(DateTime.parse("2015-04-13T18:48:02-07:00").getMillis(),
-                recordBuilder.getCreatedOn().longValue());
-        assertEquals("-0700", recordBuilder.getCreatedOnTimeZone());
-        assertEquals("json-data", recordBuilder.getSchemaId());
-        assertEquals(1, recordBuilder.getSchemaRevision());
+                record.getCreatedOn().longValue());
+        assertEquals("-0700", record.getCreatedOnTimeZone());
+        assertEquals("json-data", record.getSchemaId());
+        assertEquals(1, record.getSchemaRevision());
 
-        JsonNode dataNode = recordBuilder.getData();
+        JsonNode dataNode = record.getData();
         assertEquals(4, dataNode.size());
         assertEquals("This is a string", dataNode.get("string.json.string").textValue());
         assertTrue(dataNode.get("string.json.intAsString").isTextual());
@@ -572,14 +568,14 @@ public class IosSchemaValidationHandler2Test {
         // validate
         validateCommonProps(context);
 
-        HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
+        HealthDataRecord record = context.getHealthDataRecord();
         assertEquals(DateTime.parse("2015-04-13T18:58:21-07:00").getMillis(),
-                recordBuilder.getCreatedOn().longValue());
-        assertEquals("-0700", recordBuilder.getCreatedOnTimeZone());
-        assertEquals("non-json-data", recordBuilder.getSchemaId());
-        assertEquals(1, recordBuilder.getSchemaRevision());
+                record.getCreatedOn().longValue());
+        assertEquals("-0700", record.getCreatedOnTimeZone());
+        assertEquals("non-json-data", record.getSchemaId());
+        assertEquals(1, record.getSchemaRevision());
 
-        JsonNode dataNode = recordBuilder.getData();
+        JsonNode dataNode = record.getData();
         assertEquals(0, dataNode.size());
 
         Map<String, byte[]> attachmentMap = context.getAttachmentsByFieldName();
@@ -646,14 +642,14 @@ public class IosSchemaValidationHandler2Test {
         // validate
         validateCommonProps(context);
 
-        HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
+        HealthDataRecord record = context.getHealthDataRecord();
         assertEquals(DateTime.parse("2015-04-22T18:39:44-07:00").getMillis(),
-                recordBuilder.getCreatedOn().longValue());
-        assertEquals("-0700", recordBuilder.getCreatedOnTimeZone());
-        assertEquals("mixed-data", recordBuilder.getSchemaId());
-        assertEquals(1, recordBuilder.getSchemaRevision());
+                record.getCreatedOn().longValue());
+        assertEquals("-0700", record.getCreatedOnTimeZone());
+        assertEquals("mixed-data", record.getSchemaId());
+        assertEquals(1, record.getSchemaRevision());
 
-        JsonNode dataNode = recordBuilder.getData();
+        JsonNode dataNode = record.getData();
         assertEquals(2, dataNode.size());
         assertEquals("This is a string", dataNode.get("field.json.string").textValue());
 
@@ -708,14 +704,14 @@ public class IosSchemaValidationHandler2Test {
         // validate
         validateCommonProps(context);
 
-        HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
+        HealthDataRecord record = context.getHealthDataRecord();
         assertEquals(DateTime.parse("2015-07-21T15:24:57-07:00").getMillis(),
-                recordBuilder.getCreatedOn().longValue());
-        assertEquals("-0700", recordBuilder.getCreatedOnTimeZone());
-        assertEquals("schema-rev-test", recordBuilder.getSchemaId());
-        assertEquals(2, recordBuilder.getSchemaRevision());
+                record.getCreatedOn().longValue());
+        assertEquals("-0700", record.getCreatedOnTimeZone());
+        assertEquals("schema-rev-test", record.getSchemaId());
+        assertEquals(2, record.getSchemaRevision());
 
-        JsonNode dataNode = recordBuilder.getData();
+        JsonNode dataNode = record.getData();
         assertEquals(1, dataNode.size());
         assertEquals("dummy field value", dataNode.get("dummy.json.field").textValue());
 
@@ -755,14 +751,14 @@ public class IosSchemaValidationHandler2Test {
         // validate
         validateCommonProps(context);
 
-        HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
+        HealthDataRecord record = context.getHealthDataRecord();
         assertEquals(DateTime.parse("2015-07-21T15:24:57-07:00").getMillis(),
-                recordBuilder.getCreatedOn().longValue());
-        assertEquals("-0700", recordBuilder.getCreatedOnTimeZone());
-        assertEquals("schema-rev-test", recordBuilder.getSchemaId());
-        assertEquals(3, recordBuilder.getSchemaRevision());
+                record.getCreatedOn().longValue());
+        assertEquals("-0700", record.getCreatedOnTimeZone());
+        assertEquals("schema-rev-test", record.getSchemaId());
+        assertEquals(3, record.getSchemaRevision());
 
-        JsonNode dataNode = recordBuilder.getData();
+        JsonNode dataNode = record.getData();
         assertEquals(1, dataNode.size());
         assertEquals("dummy field value", dataNode.get("dummy.json.field").textValue());
 
@@ -799,20 +795,20 @@ public class IosSchemaValidationHandler2Test {
         // validate
         validateCommonProps(context);
 
-        HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
-        assertEquals(MOCK_NOW.getMillis(), recordBuilder.getCreatedOn().longValue());
-        assertNull(recordBuilder.getCreatedOnTimeZone());
+        HealthDataRecord record = context.getHealthDataRecord();
+        assertEquals(MOCK_NOW.getMillis(), record.getCreatedOn().longValue());
+        assertNull(record.getCreatedOnTimeZone());
     }
 
     private static void validateCommonProps(UploadValidationContext ctx) {
-        HealthDataRecordBuilder recordBuilder = ctx.getHealthDataRecordBuilder();
-        assertEquals(TEST_HEALTHCODE, recordBuilder.getHealthCode());
-        assertEquals(TEST_STUDY_ID, recordBuilder.getStudyId());
-        assertEquals(MOCK_NOW.toLocalDate(), recordBuilder.getUploadDate());
-        assertEquals(TEST_UPLOAD_ID, recordBuilder.getUploadId());
-        assertEquals(MOCK_NOW.getMillis(), recordBuilder.getUploadedOn().longValue());
+        HealthDataRecord record = ctx.getHealthDataRecord();
+        assertEquals(TEST_HEALTHCODE, record.getHealthCode());
+        assertEquals(TEST_STUDY_ID, record.getStudyId());
+        assertEquals(MOCK_NOW.toLocalDate(), record.getUploadDate());
+        assertEquals(TEST_UPLOAD_ID, record.getUploadId());
+        assertEquals(MOCK_NOW.getMillis(), record.getUploadedOn().longValue());
 
         // Don't parse into the metadata. Just check that it exists and is an object node.
-        assertTrue(recordBuilder.getMetadata().isObject());
+        assertTrue(record.getMetadata().isObject());
     }
 }

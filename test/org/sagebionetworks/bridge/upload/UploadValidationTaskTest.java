@@ -30,8 +30,6 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.UploadDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDaoDdbTest;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -41,13 +39,13 @@ import org.sagebionetworks.bridge.services.HealthDataService;
 
 public class UploadValidationTaskTest {
     private static final long CREATED_ON = 1424136378727L;
-    private static final String HEALTH_CODE = TestUtils.randomName(DynamoHealthDataDaoDdbTest.class);
-    private static final String RECORD_ID = TestUtils.randomName(DynamoHealthDataDaoDdbTest.class);
-    private static final String RECORD_ID_2 = TestUtils.randomName(DynamoHealthDataDaoDdbTest.class);
-    private static final String RECORD_ID_3 = TestUtils.randomName(DynamoHealthDataDaoDdbTest.class);
+    private static final String HEALTH_CODE = TestUtils.randomName(UploadValidationTaskTest.class);
+    private static final String RECORD_ID = TestUtils.randomName(UploadValidationTaskTest.class);
+    private static final String RECORD_ID_2 = TestUtils.randomName(UploadValidationTaskTest.class);
+    private static final String RECORD_ID_3 = TestUtils.randomName(UploadValidationTaskTest.class);
     private static final String DATA_TEXT = "{\"data\":\"dummy value\"}";
     private static final String METADATA_TEXT = "{\"metadata\":\"dummy meta value\"}";
-    private static final String SCHEMA_ID = TestUtils.randomName(DynamoHealthDataDaoDdbTest.class);
+    private static final String SCHEMA_ID = TestUtils.randomName(UploadValidationTaskTest.class);
     private static final int SCHEMA_REV = 2;
     private static final LocalDate UPLOAD_DATE = LocalDate.parse("2016-05-06");
     private static final String UPLOAD_ID = "upload-id";
@@ -71,56 +69,9 @@ public class UploadValidationTaskTest {
 
     @Before
     public void setup() throws IOException {
-        testRecord = new DynamoHealthDataRecord.Builder()
-                .withCreatedOn(CREATED_ON)
-                .withHealthCode(HEALTH_CODE)
-                .withId(RECORD_ID)
-                .withSchemaId(SCHEMA_ID)
-                .withSchemaRevision(SCHEMA_REV)
-                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
-                .withUploadDate(UPLOAD_DATE)
-                .withUploadedOn(UPLOADED_ON)
-                .withUploadId(UPLOAD_ID)
-                .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
-                .withUserExternalId(USER_EXTERNAL_ID)
-                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
-                .withData(BridgeObjectMapper.get().readTree(DATA_TEXT))
-                .withMetadata(BridgeObjectMapper.get().readTree(METADATA_TEXT))
-                .build();
-
-        HealthDataRecord testRecordDupe = new DynamoHealthDataRecord.Builder()
-                .withCreatedOn(CREATED_ON)
-                .withHealthCode(HEALTH_CODE)
-                .withId(RECORD_ID_2)
-                .withSchemaId(SCHEMA_ID)
-                .withSchemaRevision(SCHEMA_REV)
-                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
-                .withUploadDate(UPLOAD_DATE)
-                .withUploadedOn(UPLOADED_ON)
-                .withUploadId(UPLOAD_ID)
-                .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
-                .withUserExternalId(USER_EXTERNAL_ID)
-                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
-                .withData(BridgeObjectMapper.get().readTree(DATA_TEXT))
-                .withMetadata(BridgeObjectMapper.get().readTree(METADATA_TEXT))
-                .build();
-
-        HealthDataRecord testRecordDupe2 = new DynamoHealthDataRecord.Builder()
-                .withCreatedOn(CREATED_ON)
-                .withHealthCode(HEALTH_CODE)
-                .withId(RECORD_ID_3)
-                .withSchemaId(SCHEMA_ID)
-                .withSchemaRevision(SCHEMA_REV)
-                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
-                .withUploadDate(UPLOAD_DATE)
-                .withUploadedOn(UPLOADED_ON)
-                .withUploadId(UPLOAD_ID)
-                .withUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS)
-                .withUserExternalId(USER_EXTERNAL_ID)
-                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
-                .withData(BridgeObjectMapper.get().readTree(DATA_TEXT))
-                .withMetadata(BridgeObjectMapper.get().readTree(METADATA_TEXT))
-                .build();
+        testRecord = makeRecordWithId(RECORD_ID);
+        HealthDataRecord testRecordDupe = makeRecordWithId(RECORD_ID_2);
+        HealthDataRecord testRecordDupe2 = makeRecordWithId(RECORD_ID_3);
 
         List<HealthDataRecord> testRecordDupeListNormal = ImmutableList.of(testRecord, testRecordDupe);
         testRecordDupeListMulti = ImmutableList.of(testRecord, testRecordDupe, testRecordDupe2);
@@ -442,5 +393,24 @@ public class UploadValidationTaskTest {
         public void handle(@Nonnull UploadValidationContext context) {
             context.setRecordId(recordId);
         }
+    }
+
+    private static HealthDataRecord makeRecordWithId(String recordId) throws IOException {
+        HealthDataRecord record = HealthDataRecord.create();
+        record.setCreatedOn(CREATED_ON);
+        record.setHealthCode(HEALTH_CODE);
+        record.setId(recordId);
+        record.setSchemaId(SCHEMA_ID);
+        record.setSchemaRevision(SCHEMA_REV);
+        record.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        record.setUploadDate(UPLOAD_DATE);
+        record.setUploadedOn(UPLOADED_ON);
+        record.setUploadId(UPLOAD_ID);
+        record.setUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS);
+        record.setUserExternalId(USER_EXTERNAL_ID);
+        record.setUserDataGroups(TestConstants.USER_DATA_GROUPS);
+        record.setData(BridgeObjectMapper.get().readTree(DATA_TEXT));
+        record.setMetadata(BridgeObjectMapper.get().readTree(METADATA_TEXT));
+        return record;
     }
 }

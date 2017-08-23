@@ -13,10 +13,9 @@ import com.google.common.collect.Sets;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.dao.ParticipantOption;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 
 public class TranscribeConsentHandlerTest {
@@ -36,13 +35,13 @@ public class TranscribeConsentHandlerTest {
             )
         );
         
-        HealthDataRecordBuilder recordBuilder = new DynamoHealthDataRecord.Builder();
-        HealthDataRecordBuilder outputRecordBuilder = setupContextAndRunHandler(recordBuilder, mockOptionsService);
+        HealthDataRecord record = HealthDataRecord.create();
+        HealthDataRecord outputRecord = setupContextAndRunHandler(record, mockOptionsService);
         
-        assertSame(recordBuilder, outputRecordBuilder);
-        assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, outputRecordBuilder.getUserSharingScope());
-        assertEquals(TEST_EXTERNAL_ID, outputRecordBuilder.getUserExternalId());
-        assertEquals(Sets.newHashSet("test-group1","test-group2"), outputRecordBuilder.getUserDataGroups());
+        assertSame(record, outputRecord);
+        assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, outputRecord.getUserSharingScope());
+        assertEquals(TEST_EXTERNAL_ID, outputRecord.getUserExternalId());
+        assertEquals(Sets.newHashSet("test-group1","test-group2"), outputRecord.getUserDataGroups());
     }
 
     @Test
@@ -51,13 +50,13 @@ public class TranscribeConsentHandlerTest {
         ParticipantOptionsService mockOptionsService = mock(ParticipantOptionsService.class);
         when(mockOptionsService.getOptions(TEST_HEALTHCODE)).thenReturn(new ParticipantOptionsLookup(Maps.newHashMap()));
 
-        HealthDataRecordBuilder recordBuilder = new DynamoHealthDataRecord.Builder();
-        HealthDataRecordBuilder outputRecordBuilder = setupContextAndRunHandler(recordBuilder, mockOptionsService);
-        
-        assertSame(recordBuilder, outputRecordBuilder);
-        assertEquals(ParticipantOption.SharingScope.NO_SHARING, outputRecordBuilder.getUserSharingScope());
-        assertNull(outputRecordBuilder.getUserExternalId());
-        assertNull(outputRecordBuilder.getUserDataGroups());
+        HealthDataRecord record = HealthDataRecord.create();
+        HealthDataRecord outputRecord = setupContextAndRunHandler(record, mockOptionsService);
+
+        assertSame(record, outputRecord);
+        assertEquals(ParticipantOption.SharingScope.NO_SHARING, outputRecord.getUserSharingScope());
+        assertNull(outputRecord.getUserExternalId());
+        assertNull(outputRecord.getUserDataGroups());
     }
 
     @Test
@@ -65,11 +64,11 @@ public class TranscribeConsentHandlerTest {
         ParticipantOptionsService mockOptionsService = mock(ParticipantOptionsService.class);
         when(mockOptionsService.getOptions(TEST_HEALTHCODE)).thenReturn(new ParticipantOptionsLookup(ImmutableMap.of(
                 ParticipantOption.DATA_GROUPS.name(), "")));
+
+        HealthDataRecord record = HealthDataRecord.create();
+        HealthDataRecord outputRecord = setupContextAndRunHandler(record, mockOptionsService);
         
-        HealthDataRecordBuilder recordBuilder = new DynamoHealthDataRecord.Builder();
-        HealthDataRecordBuilder outputRecordBuilder = setupContextAndRunHandler(recordBuilder, mockOptionsService);
-        
-        assertNull(outputRecordBuilder.getUserDataGroups());
+        assertNull(outputRecord.getUserDataGroups());
     }
     
     @Test
@@ -77,14 +76,14 @@ public class TranscribeConsentHandlerTest {
         ParticipantOptionsService mockOptionsService = mock(ParticipantOptionsService.class);
         when(mockOptionsService.getOptions(TEST_HEALTHCODE)).thenReturn(new ParticipantOptionsLookup(
                 ImmutableMap.of(ParticipantOption.DATA_GROUPS.name(), "group1")));
+
+        HealthDataRecord record = HealthDataRecord.create();
+        HealthDataRecord outputRecord = setupContextAndRunHandler(record, mockOptionsService);
         
-        HealthDataRecordBuilder recordBuilder = new DynamoHealthDataRecord.Builder();
-        HealthDataRecordBuilder outputRecordBuilder = setupContextAndRunHandler(recordBuilder, mockOptionsService);
-        
-        assertEquals(Sets.newHashSet("group1"), outputRecordBuilder.getUserDataGroups());
+        assertEquals(Sets.newHashSet("group1"), outputRecord.getUserDataGroups());
     }
     
-    private HealthDataRecordBuilder setupContextAndRunHandler(HealthDataRecordBuilder recordBuilder,
+    private HealthDataRecord setupContextAndRunHandler(HealthDataRecord record,
             ParticipantOptionsService optsService) {
         TranscribeConsentHandler handler = new TranscribeConsentHandler();
         handler.setOptionsService(optsService);
@@ -95,10 +94,10 @@ public class TranscribeConsentHandlerTest {
 
         UploadValidationContext context = new UploadValidationContext();
         context.setUpload(upload);
-        context.setHealthDataRecordBuilder(recordBuilder);
+        context.setHealthDataRecord(record);
 
         // execute
         handler.handle(context);
-        return context.getHealthDataRecordBuilder();
+        return context.getHealthDataRecord();
     }
 }

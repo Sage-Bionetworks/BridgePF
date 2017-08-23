@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordBuilder;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -32,13 +32,13 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
  * incoming data.
  * </p>
  * <p>
- * This handler also canonicalizes the values in {@link UploadValidationContext#getHealthDataRecordBuilder} in
- * {@link HealthDataRecordBuilder#getData()} and writes them back to the data map.
+ * This handler also canonicalizes the values in {@link UploadValidationContext#getHealthDataRecord} in
+ * {@link HealthDataRecord#getData()} and writes them back to the data map.
  * </p>
  * <p>
  * This handler won't make any other changes to the UploadValidationContext, but it will throw an UploadValidationException
  * if the record data fails validation. Specifically, it will read data from
- * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getHealthDataRecordBuilder} and
+ * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getHealthDataRecord} and
  * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getAttachmentsByFieldName}.
  * </p>
  * <p>
@@ -75,10 +75,10 @@ public class StrictValidationHandler implements UploadValidationHandler {
         StudyIdentifier studyIdentifier = context.getStudy();
 
         // get fields from record builder
-        HealthDataRecordBuilder recordBuilder = context.getHealthDataRecordBuilder();
-        JsonNode recordDataNode = recordBuilder.getData();
-        String schemaId = recordBuilder.getSchemaId();
-        int schemaRev = recordBuilder.getSchemaRevision();
+        HealthDataRecord record = context.getHealthDataRecord();
+        JsonNode recordDataNode = record.getData();
+        String schemaId = record.getSchemaId();
+        int schemaRev = record.getSchemaRevision();
 
         // get attachment field names
         Set<String> attachmentFieldNameSet = context.getAttachmentsByFieldName().keySet();
