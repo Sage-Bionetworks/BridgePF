@@ -42,6 +42,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import play.mvc.Result;
 import play.test.Helpers;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -845,6 +846,16 @@ public class ParticipantControllerTest {
                 eq("referentGuid"), startTimeCaptor.capture(), endTimeCaptor.capture(), eq("offsetKey"), eq(15));
         assertEquals(START_TIME.toString(), startTimeCaptor.getValue().toString());
         assertEquals(END_TIME.toString(), endTimeCaptor.getValue().toString());
+    }
+    
+    @Test
+    public void getActivityHistoryV3DefaultsToNulls() throws Exception {
+        controller.getActivityHistoryV3(ID, "badtypes", null, null, null, null, null);
+        
+        verify(mockParticipantService).getActivityHistory(eq(study), eq(ID), eq(null),
+                eq(null), startTimeCaptor.capture(), endTimeCaptor.capture(), eq(null), eq(BridgeConstants.API_DEFAULT_PAGE_SIZE));
+        assertNull(startTimeCaptor.getValue());
+        assertNull(endTimeCaptor.getValue());
     }
     
     @SuppressWarnings("deprecation")

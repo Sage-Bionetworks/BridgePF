@@ -642,7 +642,7 @@ public class ScheduledActivityServiceMockTest {
     }
     
     // Verify in the next two tests that the v3 api is being validated the same way the v2 api is being validated.
-    // They share the same code path so it isn't necessary to test every validation.
+    // They share the same code path so it isn't necessary to test every single validation.
     
     @Test(expected = BadRequestException.class)
     public void getActivityHistoryV3ValidatesPageSize() {

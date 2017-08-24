@@ -5,6 +5,7 @@ import java.util.Objects;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
+
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
@@ -222,6 +223,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     @DynamoDBAttribute
     @DynamoDBIndexRangeKey(attributeName = "referentGuid", globalSecondaryIndexName = "healthCode-referentGuid-index")
     @Override
+    @JsonIgnore
     public String getReferentGuid() {
         return referentGuid;
     }

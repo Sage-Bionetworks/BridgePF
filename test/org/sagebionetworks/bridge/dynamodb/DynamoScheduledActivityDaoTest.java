@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -51,6 +52,9 @@ import com.google.common.collect.Sets;
 public class DynamoScheduledActivityDaoTest {
     
     private static final DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
+    
+    private static final int SMALL_PAGE_SIZE = 5;
+    private static final int MID_PAGE_SIZE = 20;
     
     @Resource
     DynamoScheduledActivityDao activityDao;
@@ -160,12 +164,11 @@ public class DynamoScheduledActivityDaoTest {
     }
     
     // Paging for this method can hit a situation where there are items with identical referentGuids. These 
-    // must page correctly, so this tests really pathological behavior by using small page sizes and many 
-    // identical schedules to create referentGuids that span across entire pages. In this (rare) situation, 
-    // we expand the page size of the initial index key search until we have all the referentGuids, and can 
-    // index into the correct item by its guid (the offsetKey) to page correctly. 
+    // must page correctly, so this tests really pathological behavior where such runs of the same GUID 
+    // extend across multiple pages. You'd have to schedule the exact same task at the exact same time 
+    // over a hundred times to defeat the logic that pages this correctly.
     @Test
-    public void getScheduledActivityHistoryV3() throws Exception {
+    public void getScheduledActivityHistoryV3PathologicalPaging() throws Exception {
         DateTime startDateTime = DateTime.now(MSK).minusDays(6);
         DateTime endDateTime = DateTime.now(MSK).plusDays(7);
         
@@ -174,6 +177,7 @@ public class DynamoScheduledActivityDaoTest {
             .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withInitialTimeZone(MSK)
+            .withStartsOn(startDateTime)
             .withEndsOn(endDateTime)
             .withEvents(eventMap()).build();
         
@@ -191,16 +195,16 @@ public class DynamoScheduledActivityDaoTest {
         
         Set<String> allTaskGuids = Sets.newHashSet();
         
-        // Get the first page of 10 records
+        // Get the first page of records
         ForwardCursorPagedResourceList<ScheduledActivity> history = activityDao.getActivityHistoryV3(
-                healthCode, ActivityType.TASK, referentGuid, startDateTime, endDateTime, null, 5);
-        assertExpectedUniqueItemsReturned(allTaskGuids, history, 5);
+                healthCode, ActivityType.TASK, referentGuid, startDateTime, endDateTime, null, SMALL_PAGE_SIZE);
+        assertExpectedUniqueItemsReturned(allTaskGuids, history, SMALL_PAGE_SIZE);
 
         // Get second page of records
         String nextPageOffsetKey = history.getNextPageOffsetKey();
         history = activityDao.getActivityHistoryV3(healthCode, ActivityType.TASK, referentGuid, startDateTime,
-                endDateTime, nextPageOffsetKey, 5);
-        assertExpectedUniqueItemsReturned(allTaskGuids, history, 5);
+                endDateTime, nextPageOffsetKey, SMALL_PAGE_SIZE);
+        assertExpectedUniqueItemsReturned(allTaskGuids, history, SMALL_PAGE_SIZE);
         
         // Verify nextPageOffsetKey and requestParams
         assertNotEquals(nextPageOffsetKey, history.getNextPageOffsetKey());
@@ -211,24 +215,89 @@ public class DynamoScheduledActivityDaoTest {
         
         // Get third page of records. These continue to return unique guids.
         history = activityDao.getActivityHistoryV3(healthCode, ActivityType.TASK, referentGuid, startDateTime,
-                endDateTime, history.getNextPageOffsetKey(), 5);
-        assertExpectedUniqueItemsReturned(allTaskGuids, history, 5);
+                endDateTime, history.getNextPageOffsetKey(), SMALL_PAGE_SIZE);
+        assertExpectedUniqueItemsReturned(allTaskGuids, history, SMALL_PAGE_SIZE);
         
         // Get fourth page of records.
         history = activityDao.getActivityHistoryV3(healthCode, ActivityType.TASK, referentGuid, startDateTime,
-                endDateTime, history.getNextPageOffsetKey(), 5);
-        assertExpectedUniqueItemsReturned(allTaskGuids, history, 5);
+                endDateTime, history.getNextPageOffsetKey(), SMALL_PAGE_SIZE);
+        assertExpectedUniqueItemsReturned(allTaskGuids, history, SMALL_PAGE_SIZE);
         
         // Get fifth page of records. We are definitely paging correctly because GUIDs continue to be unique
         history = activityDao.getActivityHistoryV3(healthCode, ActivityType.TASK, referentGuid, startDateTime,
-                endDateTime, history.getNextPageOffsetKey(), 5);
-        assertExpectedUniqueItemsReturned(allTaskGuids, history, 5);
+                endDateTime, history.getNextPageOffsetKey(), SMALL_PAGE_SIZE);
+        assertExpectedUniqueItemsReturned(allTaskGuids, history, SMALL_PAGE_SIZE);
         
         // Query for a time range that will produce no records
         history = activityDao.getActivityHistoryV3(healthCode, ActivityType.TASK, referentGuid, startDateTime,
-                startDateTime, null, 5);
+                startDateTime, null, SMALL_PAGE_SIZE);
         assertEquals(0, history.getItems().size());
         assertNull(history.getNextPageOffsetKey());
+    }
+    
+    @Test
+    public void getScheduledActivityHistoryV3NormalPaging() {
+        DateTime startDateTime = DateTime.now(MSK).minusDays(20);
+        DateTime endDateTime = DateTime.now(MSK).plusDays(20);
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withHealthCode(healthCode)
+            .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+            .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
+            .withInitialTimeZone(MSK)
+            .withStartsOn(startDateTime)
+            .withEndsOn(endDateTime)
+            .withEvents(eventMap()).build();
+        
+        // Many identical schedules, creating more conflicting referentGuids than fit on one page
+        makeSchedulePlanWithSameActivity(context);
+        makeSchedulePlanWithSameActivity(context);
+        
+        String referentGuid = TestUtils.getActivity3().getTask().getIdentifier();
+        
+        Set<String> allTaskGuids = Sets.newHashSet();
+        
+        // Get the first page of records
+        ForwardCursorPagedResourceList<ScheduledActivity> history = activityDao.getActivityHistoryV3(
+                healthCode, ActivityType.TASK, referentGuid, startDateTime, endDateTime, null, MID_PAGE_SIZE);
+        assertExpectedUniqueItemsReturned(allTaskGuids, history, MID_PAGE_SIZE);
+
+        // Get second page of records
+        history = activityDao.getActivityHistoryV3(healthCode, ActivityType.TASK, referentGuid, startDateTime,
+                endDateTime, history.getNextPageOffsetKey(), MID_PAGE_SIZE);
+        assertExpectedUniqueItemsReturned(allTaskGuids, history, MID_PAGE_SIZE);
+        
+        // Get third page of records. These continue to return unique guids.
+        history = activityDao.getActivityHistoryV3(healthCode, ActivityType.TASK, referentGuid, startDateTime,
+                endDateTime, history.getNextPageOffsetKey(), MID_PAGE_SIZE);
+        assertExpectedUniqueItemsReturned(allTaskGuids, history, MID_PAGE_SIZE);
+    }
+
+    @Test
+    public void getScheduledActivityHistoryV3InvalidOffsetKey() {
+        DateTime startDateTime = DateTime.now(MSK).minusDays(20);
+        DateTime endDateTime = DateTime.now(MSK).plusDays(20);
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withHealthCode(healthCode)
+            .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+            .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
+            .withInitialTimeZone(MSK)
+            .withStartsOn(startDateTime)
+            .withEndsOn(endDateTime)
+            .withEvents(eventMap()).build();
+        
+        // Many identical schedules, creating more conflicting referentGuids than fit on one page
+        makeSchedulePlanWithSameActivity(context);
+        
+        String referentGuid = TestUtils.getActivity3().getTask().getIdentifier();
+        
+        try {
+            activityDao.getActivityHistoryV3(healthCode, ActivityType.TASK, referentGuid, startDateTime, endDateTime,
+                    "junkkey:2000-01-01T00:00:00.000", MID_PAGE_SIZE);
+        } catch(BridgeServiceException e) {
+            assertTrue(e.getMessage().startsWith("Invalid offsetKey (may exceed maximum seek for value range)"));
+        }
     }
     
     private void assertExpectedUniqueItemsReturned(Set<String> allTaskGuids,

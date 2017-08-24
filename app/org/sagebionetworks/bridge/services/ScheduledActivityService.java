@@ -127,13 +127,13 @@ public class ScheduledActivityService {
             int pageSize) {
         checkArgument(isNotBlank(healthCode));
 
-        // The activity type here does not matter, it's valid and no exception is thrown, that's all.
+        // ActivityType.SURVEY is a placeholder vald to pass validation, it's not used in this version of the API
         DateTime[] dateRange = validateHistoryParameters(ActivityType.SURVEY, pageSize, scheduledOnStart, scheduledOnEnd);
         scheduledOnStart = dateRange[0];
         scheduledOnEnd = dateRange[1];
         
-        return activityDao.getActivityHistoryV2(healthCode, activityGuid, scheduledOnStart, scheduledOnEnd,
-                offsetKey, pageSize);
+        return activityDao.getActivityHistoryV2(healthCode, activityGuid, scheduledOnStart, scheduledOnEnd, offsetKey,
+                pageSize);
     }
     
     public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(String healthCode, ActivityType activityType,

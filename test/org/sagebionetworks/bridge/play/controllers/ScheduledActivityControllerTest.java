@@ -144,6 +144,7 @@ public class ScheduledActivityControllerTest {
         schActivity.setGuid(BridgeUtils.generateGuid());
         schActivity.setLocalScheduledOn(LocalDateTime.now().minusDays(1));
         schActivity.setActivity(TestUtils.getActivity3());
+        schActivity.setReferentGuid("referentGuid");
         List<ScheduledActivity> list = Lists.newArrayList(schActivity);
         
         Map<String,String[]> headers = Maps.newHashMap();
@@ -381,6 +382,16 @@ public class ScheduledActivityControllerTest {
                 startsOnCaptor.capture(), endsOnCaptor.capture(), eq("offsetKey"), eq(20));
         assertEquals(STARTS_ON.toString(), startsOnCaptor.getValue().toString());
         assertEquals(ENDS_ON.toString(), endsOnCaptor.getValue().toString());
+    }
+    
+    @Test
+    public void getActivityHistoryV3SetsNullDefaults() throws Exception {
+        controller.getActivityHistoryV3("wrongtypes", null, null, null, null, null);
+        
+        verify(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE), eq(null), eq(null),
+                startsOnCaptor.capture(), endsOnCaptor.capture(), eq(null), eq(BridgeConstants.API_DEFAULT_PAGE_SIZE));
+        assertNull(startsOnCaptor.getValue());
+        assertNull(endsOnCaptor.getValue());
     }
     
     @Test

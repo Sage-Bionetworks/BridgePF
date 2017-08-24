@@ -14,6 +14,7 @@ import javax.annotation.Resource;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -43,13 +44,15 @@ import com.google.common.collect.Maps;
 
 @Component
 public class DynamoScheduledActivityDao implements ScheduledActivityDao {
-    
+
     private static final String HEALTH_CODE = "healthCode";
 
     private static final String GUID = "guid";
     
     private static final String REFERENT_GUID = "referentGuid";
 
+    private static final String INVALID_KEY_MSG = "Invalid offsetKey (may exceed maximum seek for value range): ";
+    
     static final String PAGE_SIZE_ERROR = "pageSize must be from 1-"+API_MAXIMUM_PAGE_SIZE+" records";
     
     private DynamoDBMapper mapper;
@@ -133,106 +136,115 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         checkNotNull(referentGuid);
         checkNotNull(scheduledOnStart);
         checkNotNull(scheduledOnEnd);
-        
-        if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
-            throw new BadRequestException(PAGE_SIZE_ERROR);
-        }
-        
-        int sizeWithIndicatorRecord = pageSize+1;
+
+        int pageSizeWithIndicator = pageSize+1;
         String start = BridgeUtils.createReferentGuid(activityType, referentGuid, scheduledOnStart.toLocalDateTime().toString());
         String end = BridgeUtils.createReferentGuid(activityType, referentGuid, scheduledOnEnd.toLocalDateTime().toString());
         
-        if (offsetKey != null){
-            String[] components = offsetKey.split(":", 2);
+        // GSIs don't support offset keys, but we can simulate by setting lower-bound range key to the page boundary
+        if (offsetKey != null) {
+            String[] components = offsetKey.split(":",2);
             start = BridgeUtils.createReferentGuid(activityType, referentGuid, components[1]);
         }
         RangeKeyCondition dateCondition = new RangeKeyCondition(REFERENT_GUID).between(start, end);
         
-        // Two schedules can generate the same referentGuids if they point to the same referent and schedule identical
-        // scheduldOn times. This means that the offsetKey must be the GUID, while the rangeKey is the referentGuid. We
-        // query with the rangeKey, increasing page size in the rare situation that a full page contains entirely items
-        // with the same referentGuid. Then we index into those results with the offsetKey, truncate to page size, and
-        // load these items fully from DynamoDB (with one more indicator record to determine the next page of records).
-        List<DynamoScheduledActivity> itemsToLoad = queryToEndOfReferentGuidRun(healthCode, offsetKey,
-                sizeWithIndicatorRecord, dateCondition);
-
-        List<ScheduledActivity> results = Lists.newArrayListWithCapacity(itemsToLoad.size());
+        List<DynamoScheduledActivity> itemsToLoad = query(healthCode, offsetKey, pageSizeWithIndicator,
+                dateCondition);
+        
+        // If there's an offsetKey, we need to verify it exists in the page set. In rare conditions where multiple schedules 
+        // schedule the same referent at the same time, the referentGuids will be identical and in theory, could even span 
+        // pages. We expand the record set to a point where the client would have to schedule the exact same task at the 
+        // exact same time many dozens of times before we would not be able to page correctly... at which point the client 
+        // has other issues.
+        if (offsetKey != null) {
+            if (!containsIndicatorRecord(itemsToLoad, pageSizeWithIndicator, offsetKey)) {
+                int largerPageSize = pageSizeWithIndicator + API_MAXIMUM_PAGE_SIZE;
+                itemsToLoad = query(healthCode, offsetKey, largerPageSize, dateCondition);
+            }
+            if (!containsIndicatorRecord(itemsToLoad, pageSizeWithIndicator, offsetKey)) {
+                throw new BridgeServiceException(INVALID_KEY_MSG + offsetKey);
+            }
+        }
+        
+        // Truncate from index of indicator record, to pageSizeWithIndicator number of records
+        itemsToLoad = truncateListToStartAtIndicatorRecord(itemsToLoad, offsetKey)
+                .subList(0, Math.min(itemsToLoad.size(), pageSizeWithIndicator));
+        
+        // Load the full items
         Map<String, List<Object>> resultMap = mapper.batchLoad(itemsToLoad);
-        for (List<Object> resultList : resultMap.values()) {
-            for (Object oneResult : resultList) {
-                ScheduledActivity activity = (ScheduledActivity)oneResult;
+        List<ScheduledActivity> results = Lists.newArrayListWithCapacity(itemsToLoad.size());
+        for (List<Object> list : resultMap.values()) {
+            for (Object oneResult : list) {
+                ScheduledActivity activity = (ScheduledActivity)oneResult;    
                 activity.setTimeZone(scheduledOnStart.getZone());
                 results.add(activity);
             }
         }
         results.sort(ScheduledActivity::compareByReferentGuidThenGuid);
         
+        // determine the offset key
         String nextPageOffsetKey = null;
-        if (results.size() > pageSize) {
+        if (results.size() == pageSizeWithIndicator) {
             nextPageOffsetKey = Iterables.getLast(results).getGuid();
         }
-
-        int lastIndex = Math.min(pageSize, results.size());
-        return new ForwardCursorPagedResourceList<ScheduledActivity>(results.subList(0, lastIndex), nextPageOffsetKey)
+        
+        results = results.subList(0, Math.min(results.size(),pageSize));
+        return new ForwardCursorPagedResourceList<ScheduledActivity>(results, nextPageOffsetKey)
                 .withRequestParam(ResourceList.OFFSET_KEY, offsetKey)
                 .withRequestParam(ResourceList.PAGE_SIZE, pageSize)
                 .withRequestParam(ResourceList.SCHEDULED_ON_START, scheduledOnStart)
                 .withRequestParam(ResourceList.SCHEDULED_ON_END, scheduledOnEnd);
     }
-
-    private List<DynamoScheduledActivity> queryToEndOfReferentGuidRun(String healthCode, String offsetKey,
-            int sizeWithIndicatorRecord, RangeKeyCondition dateCondition) {
+    
+    private List<DynamoScheduledActivity> query(String healthCode, String offsetKey, int querySize,
+            RangeKeyCondition dateCondition) {
         QuerySpec spec = new QuerySpec()
                 .withScanIndexForward(true)
                 .withHashKey(HEALTH_CODE, healthCode)
-                .withMaxPageSize(sizeWithIndicatorRecord)
+                .withMaxPageSize(querySize)
                 .withRangeKeyCondition(dateCondition);
         
         QueryOutcome outcome = referentIndex.query(spec);
         
         List<DynamoScheduledActivity> itemsToLoad = Lists.newArrayList();
         for (Item item : outcome.getItems()) {
-            // Presumably faster than using JSON conversion
-            DynamoScheduledActivity indexKeys = new DynamoScheduledActivity();
-            indexKeys.setGuid((String)item.asMap().get("guid"));
-            indexKeys.setReferentGuid((String)item.asMap().get("referentGuid"));
-            indexKeys.setHealthCode((String)item.asMap().get("healthCode"));
-            itemsToLoad.add(indexKeys); 
+            DynamoScheduledActivity keys = new DynamoScheduledActivity();
+            keys.setGuid(item.getString(GUID));
+            keys.setReferentGuid(item.getString(REFERENT_GUID));
+            keys.setHealthCode(item.getString(HEALTH_CODE));
+            itemsToLoad.add(keys); 
         }
-        
-        if (!itemsToLoad.isEmpty()) {
-            ScheduledActivity last = Iterables.getLast(itemsToLoad);
-            if (itemsToLoad.get(0).getReferentGuid().equals(last.getReferentGuid())) {
-                // Not good enough, query again with a larger page size. This should only happen
-                // in the case of some spectacular referentGuid collisions, see test for this behavior.
-                return queryToEndOfReferentGuidRun(healthCode, offsetKey,
-                        Math.round(sizeWithIndicatorRecord * 1.4f), dateCondition);
-            }
-        }
-        return seekToSublist(offsetKey, sizeWithIndicatorRecord, itemsToLoad);
+        itemsToLoad.sort(ScheduledActivity::compareByReferentGuidThenGuid);
+        return itemsToLoad;
     }
     
-    private List<DynamoScheduledActivity> seekToSublist(final String offsetKey, int sizeWithIndicatorRecord,
-            List<DynamoScheduledActivity> itemsToLoad) {
-
-        int offsetIndex = 0;
-        if (offsetKey != null) {
-            for (int i=0; i < itemsToLoad.size(); i++) {
-                if (itemsToLoad.get(i).getGuid().equals(offsetKey)) {
-                    offsetIndex = i;
-                    break;
+    /**
+     * Verify that the indicator record is in the list AND there are enough records to fulfill a page 
+     * (list size, minus the index of the indicator record, is still >= the desired pageSizeWithIndicator).
+     */
+    private boolean containsIndicatorRecord(List<? extends ScheduledActivity> activities, int pageSizeWithIndicator, String guid) {
+        int i = indexOfIndicator(activities, guid);
+        return i != -1 && ((activities.size()-i) >= pageSizeWithIndicator); // why this last clause?
+    }
+    
+    private List<DynamoScheduledActivity> truncateListToStartAtIndicatorRecord(List<DynamoScheduledActivity> activities, String guid) {
+        int indexOfIndicator = indexOfIndicator(activities, guid);
+        if (indexOfIndicator == -1) {
+            return activities;
+        }
+        return activities.subList(indexOfIndicator, activities.size());
+    }
+    
+    private int indexOfIndicator(List<? extends ScheduledActivity> activities, String guid) {
+        if (guid != null) {
+            for (int i=0; i < activities.size(); i++) {
+                if (activities.get(i).getGuid().equals(guid)) {
+                    return i;
                 }
             }
         }
-        int lastIndex = Math.min(offsetIndex+sizeWithIndicatorRecord, itemsToLoad.size());
-        return itemsToLoad.subList(offsetIndex, lastIndex);
+        return -1;
     }
-    
-    /*
-     * Getting the key, get the last one, count its index position (0 to N), add to key
-     * Retrieving, if there's an offset, add it to the page size, then index into the list by offset
-     * 
-     */
     
     /** {@inheritDoc} */
     @Override
