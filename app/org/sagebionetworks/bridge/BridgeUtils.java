@@ -287,17 +287,6 @@ public class BridgeUtils {
         }
     }
     
-    public static <E extends Enum<E>> E getEnumOrDefault(String value, Class<E> enumClass, E enumDefaultValue) {
-        try {
-            return Enum.valueOf(enumClass, value.toUpperCase());
-        } catch(Throwable t) {
-            if (enumDefaultValue != null) {
-                return enumDefaultValue;
-            }
-            throw new BadRequestException(value + " is not a valid " + enumClass.getSimpleName());
-        }
-    }
-    
     /**
      * Creates a new copy of the map, removing any entries that have a null value (particularly easy to do this in
      * JSON).

@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
-import static org.sagebionetworks.bridge.BridgeUtils.getEnumOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -269,7 +268,7 @@ public class ParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        ActivityType activityType = getEnumOrDefault(activityTypeString, ActivityType.class, null);
+        ActivityType activityType = ActivityType.fromPlural(activityTypeString);
         DateTime scheduledOnStart = getDateTimeOrDefault(scheduledOnStartString, null);
         DateTime scheduledOnEnd = getDateTimeOrDefault(scheduledOnEndString, null);
         int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);

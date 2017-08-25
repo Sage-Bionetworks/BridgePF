@@ -352,37 +352,8 @@ public class BridgeUtilsTest {
     }
     
     @Test
-    public void getEnumOrDefault() throws Exception {
-        ActivityType type = BridgeUtils.getEnumOrDefault("task", ActivityType.class, null);
-        assertEquals(ActivityType.TASK, type);
-    }
-    
-    @Test
-    public void getEnumOrDefaultUppercaseWorks() throws Exception {
-        ActivityType type = BridgeUtils.getEnumOrDefault("TASK", ActivityType.class, null);
-        assertEquals(ActivityType.TASK, type);
-    }
-    
-    @Test(expected = BadRequestException.class)
-    public void getEnumOrDefaultNull() throws Exception {
-        BridgeUtils.getEnumOrDefault(null, ActivityType.class, null);
-    }
-    
-    @Test(expected = BadRequestException.class)
-    public void getEnumOrDefaultBadString() throws Exception {
-        BridgeUtils.getEnumOrDefault("foo", ActivityType.class, null);
-    }
-    
-    @Test
-    public void getEnumOrDefaultUsesDefault() throws Exception {
-        ActivityType type = BridgeUtils.getEnumOrDefault("foo", ActivityType.class, ActivityType.SURVEY);
-        assertEquals(ActivityType.SURVEY, type);
-    }
-    
-    @Test
     public void createReferentGuid() {
         Activity activity = TestUtils.getActivity2();
-        
         
         String referent = BridgeUtils.createReferentGuid(activity, LOCAL_DATE_TIME);
         assertEquals("BBB:survey:2010-10-10T10:10:10.111", referent);

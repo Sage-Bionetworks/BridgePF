@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
-import static org.sagebionetworks.bridge.BridgeUtils.getEnumOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 
@@ -95,7 +94,7 @@ public class ScheduledActivityController extends BaseController {
             String scheduledOnEndString, String offsetKey, String pageSizeString) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         
-        ActivityType activityType = getEnumOrDefault(activityTypeString, ActivityType.class, null);
+        ActivityType activityType = ActivityType.fromPlural(activityTypeString);
         DateTime scheduledOnStart = getDateTimeOrDefault(scheduledOnStartString, null);
         DateTime scheduledOnEnd = getDateTimeOrDefault(scheduledOnEndString, null);
         int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
