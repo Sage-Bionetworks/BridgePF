@@ -82,7 +82,7 @@ public abstract class ActivityScheduler {
                 schActivity.setLocalScheduledOn(localScheduledOn);
                 schActivity.setGuid(activity.getGuid() + ":" + localDate.toLocalDateTime(localTime));
                 schActivity.setPersistent(activity.isPersistentlyRescheduledBy(schedule));
-                schActivity.setReferentGuid(BridgeUtils.createReferentGuid(activity, localDate.toLocalDateTime(localTime)));
+                schActivity.setReferentGuid(BridgeUtils.createReferentGuidIndex(activity, localDate.toLocalDateTime(localTime)));
                 if (expiresOn != null) {
                     schActivity.setLocalExpiresOn(expiresOn);
                 }

@@ -355,13 +355,13 @@ public class BridgeUtilsTest {
     public void createReferentGuid() {
         Activity activity = TestUtils.getActivity2();
         
-        String referent = BridgeUtils.createReferentGuid(activity, LOCAL_DATE_TIME);
+        String referent = BridgeUtils.createReferentGuidIndex(activity, LOCAL_DATE_TIME);
         assertEquals("BBB:survey:2010-10-10T10:10:10.111", referent);
     }
     
     @Test
     public void createReferentGuid2() {
-        String referent = BridgeUtils.createReferentGuid(ActivityType.TASK, "foo", LOCAL_DATE_TIME.toString());
+        String referent = BridgeUtils.createReferentGuidIndex(ActivityType.TASK, "foo", LOCAL_DATE_TIME.toString());
         assertEquals("foo:task:2010-10-10T10:10:10.111", referent);
     }
     

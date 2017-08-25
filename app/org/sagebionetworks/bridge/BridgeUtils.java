@@ -359,14 +359,14 @@ public class BridgeUtils {
         return (hasPassword) ? uri.getUserInfo().split(":")[1] : null;
     }
     
-    public static String createReferentGuid(ActivityType type, String guid, String localDateTime) {
+    public static String createReferentGuidIndex(ActivityType type, String guid, String localDateTime) {
         checkNotNull(type);
         checkNotNull(guid);
         checkNotNull(localDateTime);
         return String.format("%s:%s:%s", guid , type.name().toLowerCase(), localDateTime);
     }
     
-    public static String createReferentGuid(Activity activity, LocalDateTime localDateTime) {
+    public static String createReferentGuidIndex(Activity activity, LocalDateTime localDateTime) {
         checkNotNull(activity);
         checkNotNull(localDateTime);
         
@@ -375,11 +375,11 @@ public class BridgeUtils {
         
         switch(type) {
         case COMPOUND:
-            return createReferentGuid(type, activity.getCompoundActivity().getTaskIdentifier(), timestamp);
+            return createReferentGuidIndex(type, activity.getCompoundActivity().getTaskIdentifier(), timestamp);
         case SURVEY:
-            return createReferentGuid(type, activity.getSurvey().getGuid(), timestamp);
+            return createReferentGuidIndex(type, activity.getSurvey().getGuid(), timestamp);
         case TASK:
-            return createReferentGuid(type, activity.getTask().getIdentifier(), timestamp);
+            return createReferentGuidIndex(type, activity.getTask().getIdentifier(), timestamp);
         }
         throw new BridgeServiceException("Invalid activityType specified");    
     }

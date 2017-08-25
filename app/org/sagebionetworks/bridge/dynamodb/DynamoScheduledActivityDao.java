@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
-import static org.sagebionetworks.bridge.BridgeUtils.createReferentGuid;
+import static org.sagebionetworks.bridge.BridgeUtils.createReferentGuidIndex;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.ArrayList;
@@ -139,13 +139,13 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         checkNotNull(scheduledOnEnd);
 
         int pageSizeWithIndicator = pageSize+1;
-        String start = createReferentGuid(activityType, referentGuid, scheduledOnStart.toLocalDateTime().toString());
-        String end = createReferentGuid(activityType, referentGuid, scheduledOnEnd.toLocalDateTime().toString());
+        String start = createReferentGuidIndex(activityType, referentGuid, scheduledOnStart.toLocalDateTime().toString());
+        String end = createReferentGuidIndex(activityType, referentGuid, scheduledOnEnd.toLocalDateTime().toString());
         
         // GSIs don't support offset keys, but we can simulate by setting lower-bound range key to the page boundary
         if (offsetKey != null) {
             String[] components = offsetKey.split(":",2);
-            start = createReferentGuid(activityType, referentGuid, components[1]);
+            start = createReferentGuidIndex(activityType, referentGuid, components[1]);
         }
         RangeKeyCondition dateCondition = new RangeKeyCondition(REFERENT_GUID).between(start, end);
         
