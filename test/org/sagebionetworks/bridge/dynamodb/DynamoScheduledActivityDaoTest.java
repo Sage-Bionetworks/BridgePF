@@ -62,7 +62,7 @@ public class DynamoScheduledActivityDaoTest {
     @Resource
     SchedulePlanService schedulePlanService;
     
-    private SchedulePlan plan;
+    private List<String> schedulePlanGuids = Lists.newArrayList();
     
     private String healthCode;
     
@@ -73,37 +73,22 @@ public class DynamoScheduledActivityDaoTest {
         study = new DynamoStudy();
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
         study.setTaskIdentifiers(Sets.newHashSet("tapTest"));
-        
-        Schedule schedule = new Schedule();
-        schedule.setLabel("This is a schedule");
-        schedule.setScheduleType(ScheduleType.RECURRING);
-        schedule.setInterval("P1D");
-        schedule.setExpires("PT6H");
-        schedule.addTimes("10:00", "14:00");
-        schedule.addActivity(TestUtils.getActivity3());
-        
-        SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
-        strategy.setSchedule(schedule);
-        
-        plan = new DynamoSchedulePlan();
-        plan.setLabel("And this is a schedule plan");
-        plan.setStudyKey(TEST_STUDY_IDENTIFIER);
-        plan.setStrategy(strategy);
-        
-        plan = schedulePlanService.createSchedulePlan(study, plan);
 
         healthCode = BridgeUtils.generateGuid();
     }
     
     @After
     public void after() {
-        schedulePlanService.deleteSchedulePlan(TEST_STUDY, plan.getGuid());
+        for (String schedulePlanGuid : schedulePlanGuids) {
+            schedulePlanService.deleteSchedulePlan(TEST_STUDY, schedulePlanGuid);    
+        }
         activityDao.deleteActivitiesForUser(healthCode);
     }
 
     @SuppressWarnings("deprecation")
     @Test
     public void getScheduledActivityHistoryV2() throws Exception {
+        SchedulePlan plan = createSchedulePlan();
         // Let's use an interesting time zone so we can verify it is being used.
         DateTime startDateTime = DateTime.now(MSK).minusDays(20);
         DateTime endDateTime = DateTime.now(MSK).plusDays(20);
@@ -120,7 +105,7 @@ public class DynamoScheduledActivityDaoTest {
         List<ScheduledActivity> activitiesToSchedule = schedule.getScheduler().getScheduledActivities(plan, context);
         activityDao.saveActivities(activitiesToSchedule);
         
-        String activityGuid = extractActivityGuid();
+        String activityGuid = extractActivityGuid(plan);
         
         // Get the first page of 10 records
         ForwardCursorPagedResourceList<ScheduledActivity> history = activityDao.getActivityHistoryV2(
@@ -326,6 +311,7 @@ public class DynamoScheduledActivityDaoTest {
         plan.setStudyKey(TEST_STUDY_IDENTIFIER);
         plan.setStrategy(strategy);
         plan = schedulePlanService.createSchedulePlan(study, plan);
+        schedulePlanGuids.add(plan.getGuid());
         
         schedule = plan.getStrategy().getScheduleForUser(plan, context);
         List<ScheduledActivity> activitiesToSchedule = schedule.getScheduler().getScheduledActivities(plan, context);
@@ -333,7 +319,7 @@ public class DynamoScheduledActivityDaoTest {
         
         //Pause, because GSIs are not consistent, we need to pause
         try {
-            Thread.sleep(2);
+            Thread.sleep(1);
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -341,6 +327,8 @@ public class DynamoScheduledActivityDaoTest {
     
     @Test
     public void createUpdateDeleteActivities() throws Exception {
+        createSchedulePlan();
+        
         // Let's use an interesting time zone so we can verify it is being used.
         DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
         
@@ -408,6 +396,27 @@ public class DynamoScheduledActivityDaoTest {
         assertEquals("all activities deleted", 0, savedActivities.size());
     }
     
+    private SchedulePlan createSchedulePlan() {
+        Schedule schedule = new Schedule();
+        schedule.setLabel("This is a schedule");
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setInterval("P1D");
+        schedule.setExpires("PT6H");
+        schedule.addTimes("10:00", "14:00");
+        schedule.addActivity(TestUtils.getActivity3());
+        
+        SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
+        strategy.setSchedule(schedule);
+        
+        SchedulePlan plan = new DynamoSchedulePlan();
+        plan.setLabel("And this is a schedule plan");
+        plan.setStudyKey(TEST_STUDY_IDENTIFIER);
+        plan.setStrategy(strategy);
+        plan = schedulePlanService.createSchedulePlan(study, plan);
+        schedulePlanGuids.add(plan.getGuid());
+        return plan;
+    }
+    
     private Map<String,DateTime> eventMap() {
         Map<String,DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
@@ -440,7 +449,7 @@ public class DynamoScheduledActivityDaoTest {
         return plans;
     }
 
-    private String extractActivityGuid() {
+    private String extractActivityGuid(SchedulePlan plan) {
         SimpleScheduleStrategy strategy = (SimpleScheduleStrategy) plan.getStrategy();
         return strategy.getAllPossibleSchedules().get(0).getActivities().get(0).getGuid();
     }
