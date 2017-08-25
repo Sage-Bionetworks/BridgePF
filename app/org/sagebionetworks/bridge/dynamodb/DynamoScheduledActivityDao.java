@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeUtils.createReferentGuid;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.ArrayList;
@@ -138,13 +139,13 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         checkNotNull(scheduledOnEnd);
 
         int pageSizeWithIndicator = pageSize+1;
-        String start = BridgeUtils.createReferentGuid(activityType, referentGuid, scheduledOnStart.toLocalDateTime().toString());
-        String end = BridgeUtils.createReferentGuid(activityType, referentGuid, scheduledOnEnd.toLocalDateTime().toString());
+        String start = createReferentGuid(activityType, referentGuid, scheduledOnStart.toLocalDateTime().toString());
+        String end = createReferentGuid(activityType, referentGuid, scheduledOnEnd.toLocalDateTime().toString());
         
         // GSIs don't support offset keys, but we can simulate by setting lower-bound range key to the page boundary
         if (offsetKey != null) {
             String[] components = offsetKey.split(":",2);
-            start = BridgeUtils.createReferentGuid(activityType, referentGuid, components[1]);
+            start = createReferentGuid(activityType, referentGuid, components[1]);
         }
         RangeKeyCondition dateCondition = new RangeKeyCondition(REFERENT_GUID).between(start, end);
         
@@ -224,7 +225,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
      */
     private boolean containsIndicatorRecord(List<? extends ScheduledActivity> activities, int pageSizeWithIndicator, String guid) {
         int i = indexOfIndicator(activities, guid);
-        return i != -1 && ((activities.size()-i) >= pageSizeWithIndicator); // why this last clause?
+        return i != -1 && ((activities.size()-i) >= pageSizeWithIndicator);
     }
     
     private List<DynamoScheduledActivity> truncateListToStartAtIndicatorRecord(List<DynamoScheduledActivity> activities, String guid) {

@@ -249,7 +249,6 @@ public class DynamoScheduledActivityDaoTest {
             .withEndsOn(endDateTime)
             .withEvents(eventMap()).build();
         
-        // Many identical schedules, creating more conflicting referentGuids than fit on one page
         makeSchedulePlanWithSameActivity(context);
         makeSchedulePlanWithSameActivity(context);
         
