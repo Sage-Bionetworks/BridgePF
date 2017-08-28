@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -35,6 +36,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -94,6 +96,19 @@ public class DynamoScheduledActivityDaoMockTest {
         when(mapper.query((Class<DynamoScheduledActivity>) any(Class.class),
             (DynamoDBQueryExpression<DynamoScheduledActivity>) any(DynamoDBQueryExpression.class)))
             .thenReturn(queryResults);
+
+        List<DynamoScheduledActivity> dynamoActivities = Lists.newArrayListWithCapacity(activities.size());
+        for (ScheduledActivity activity : activities) {
+            dynamoActivities.add((DynamoScheduledActivity)activity);
+        }
+        
+        QueryResultPage<DynamoScheduledActivity> queryResultPage = (QueryResultPage<DynamoScheduledActivity>)mock(QueryResultPage.class);
+        when(queryResultPage.getResults()).thenReturn(dynamoActivities);
+        when(queryResultPage.getLastEvaluatedKey()).thenReturn(null);
+        
+        when(mapper.queryPage((Class<DynamoScheduledActivity>) any(Class.class),
+            (DynamoDBQueryExpression<DynamoScheduledActivity>) any(DynamoDBQueryExpression.class)))
+            .thenReturn(queryResultPage);
         
         // Mock a batch load of the activities
         Map<String,List<Object>> results = Maps.newHashMap();
@@ -182,23 +197,13 @@ public class DynamoScheduledActivityDaoMockTest {
     @Test
     public void canDeleteActivities() {
         mockMapperResults(Lists.newArrayList(new DynamoScheduledActivity(), new DynamoScheduledActivity()));
-
         ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
-        ArgumentCaptor<DynamoDBQueryExpression> queryArg = ArgumentCaptor.forClass(DynamoDBQueryExpression.class);
+        
         activityDao.deleteActivitiesForUser("AAA");
-
-        // This doesn't verify that the query was done with the "AAA" key
-        verify(mapper).query((Class<DynamoScheduledActivity>) any(Class.class),
-                        (DynamoDBQueryExpression<DynamoScheduledActivity>) queryArg.capture());
         
+        verify(mapper).queryPage(eq(DynamoScheduledActivity.class), any(DynamoDBQueryExpression.class));
         verify(mapper).batchDelete(argument.capture());
-        verifyNoMoreInteractions(mapper);
-
-        DynamoDBQueryExpression query = queryArg.getValue();
-        ScheduledActivity activity = (ScheduledActivity)query.getHashKeyValues();
-        assertEquals("AAA", activity.getHealthCode());
         
-        // Both activities were passed in to be deleted.
         assertEquals(2, argument.getValue().size());
     }
 

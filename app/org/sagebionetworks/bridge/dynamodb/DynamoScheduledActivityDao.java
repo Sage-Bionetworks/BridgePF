@@ -15,7 +15,6 @@ import javax.annotation.Resource;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -32,7 +31,6 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.QueryOutcome;
@@ -162,8 +160,8 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
                 int largerPageSize = pageSizeWithIndicator + API_MAXIMUM_PAGE_SIZE;
                 itemsToLoad = query(healthCode, offsetKey, largerPageSize, dateCondition);
             }
-            if (!containsIndicatorRecord(itemsToLoad, pageSizeWithIndicator, offsetKey)) {
-                throw new BridgeServiceException(INVALID_KEY_MSG + offsetKey);
+            if (indexOfIndicator(itemsToLoad, offsetKey) == -1) {
+                throw new BadRequestException(INVALID_KEY_MSG + offsetKey);
             }
         }
         
@@ -199,6 +197,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     
     private List<DynamoScheduledActivity> query(String healthCode, String offsetKey, int querySize,
             RangeKeyCondition dateCondition) {
+        
         QuerySpec spec = new QuerySpec()
                 .withScanIndexForward(true)
                 .withHashKey(HEALTH_CODE, healthCode)
@@ -213,7 +212,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
             keys.setGuid(item.getString(GUID));
             keys.setReferentGuid(item.getString(REFERENT_GUID));
             keys.setHealthCode(item.getString(HEALTH_CODE));
-            itemsToLoad.add(keys); 
+            itemsToLoad.add(keys);
         }
         itemsToLoad.sort(ScheduledActivity::compareByReferentGuidThenGuid);
         return itemsToLoad;
@@ -307,20 +306,21 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     public void deleteActivitiesForUser(String healthCode) {
         DynamoScheduledActivity hashKey = new DynamoScheduledActivity();
         hashKey.setHealthCode(healthCode);
-
-        DynamoDBQueryExpression<DynamoScheduledActivity> query = new DynamoDBQueryExpression<DynamoScheduledActivity>()
-                .withHashKeyValues(hashKey);
         
-        PaginatedQueryList<DynamoScheduledActivity> queryResults = mapper.query(DynamoScheduledActivity.class, query);
-        
-        // Confirmed that you have to transfer these activities to a list or the batchDelete does not work.
-        List<ScheduledActivity> activitiesToDelete = Lists.newArrayListWithCapacity(queryResults.size());
-        activitiesToDelete.addAll(queryResults);
-
-        if (!activitiesToDelete.isEmpty()) {
-            List<FailedBatch> failures = mapper.batchDelete(activitiesToDelete);
-            BridgeUtils.ifFailuresThrowException(failures);
-        }
+        Map<String,AttributeValue> lastKey = null;
+        do {
+            DynamoDBQueryExpression<DynamoScheduledActivity> query = new DynamoDBQueryExpression<DynamoScheduledActivity>()
+                    .withExclusiveStartKey(lastKey)
+                    .withHashKeyValues(hashKey);
+            
+            QueryResultPage<DynamoScheduledActivity> queryResults = mapper.queryPage(DynamoScheduledActivity.class, query);
+            List<DynamoScheduledActivity> activities = queryResults.getResults();
+            if (!activities.isEmpty()) {
+                List<FailedBatch> failures = mapper.batchDelete(activities);
+                BridgeUtils.ifFailuresThrowException(failures);
+            }
+            lastKey = queryResults.getLastEvaluatedKey();
+        } while(lastKey != null);        
     }
     
 }
