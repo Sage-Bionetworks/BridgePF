@@ -5,6 +5,7 @@ import java.util.Objects;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
+
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
@@ -18,6 +19,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
@@ -48,6 +50,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     private boolean persistent;
     private DateTimeZone timeZone;
     private JsonNode clientData;
+    private String referentGuid;
 
     @DynamoDBIgnore
     @JsonIgnore
@@ -112,6 +115,7 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
     }
 
     @DynamoDBHashKey
+    @DynamoDBIndexHashKey(attributeName="healthCode", globalSecondaryIndexName="healthCode-referentGuid-index")
     @Override
     public String getHealthCode() {
         return healthCode;
@@ -216,10 +220,24 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
         this.persistent = persistent;
     }
 
+    @DynamoDBAttribute
+    @DynamoDBIndexRangeKey(attributeName = "referentGuid", globalSecondaryIndexName = "healthCode-referentGuid-index")
+    @Override
+    @JsonIgnore
+    public String getReferentGuid() {
+        return referentGuid;
+    }
+
+    @Override
+    public void setReferentGuid(String referentGuid) {
+        this.referentGuid = referentGuid;
+    }
+
+
     @Override
     public int hashCode() {
         return Objects.hash(activity, guid, localScheduledOn, localExpiresOn, startedOn, finishedOn,
-                healthCode, persistent, timeZone, schedulePlanGuid, clientData);
+                healthCode, persistent, timeZone, schedulePlanGuid, clientData, referentGuid);
     }
 
     @Override
@@ -238,14 +256,15 @@ public final class DynamoScheduledActivity implements ScheduledActivity, BridgeE
                 && Objects.equals(healthCode, other.healthCode) && Objects.equals(persistent, other.persistent)
                 && Objects.equals(timeZone, other.timeZone)
                 && Objects.equals(schedulePlanGuid, other.schedulePlanGuid)
-                && Objects.equals(clientData, other.clientData));
+                && Objects.equals(clientData, other.clientData)
+                && Objects.equals(referentGuid, other.referentGuid));
     }
 
     @Override
     public String toString() {
         return String.format(
-                "DynamoScheduledActivity [healthCode=%s, guid=%s, localScheduledOn=%s, localExpiresOn=%s, startedOn=%s, finishedOn=%s, persistent=%s, timeZone=%s, activity=%s, schedulePlanGuid=%s, clientData=%s]",
+                "DynamoScheduledActivity [healthCode=%s, guid=%s, localScheduledOn=%s, localExpiresOn=%s, startedOn=%s, finishedOn=%s, persistent=%s, timeZone=%s, activity=%s, schedulePlanGuid=%s, referentGuid=%s, clientData=%s]",
                 healthCode, guid, localScheduledOn, localExpiresOn, startedOn, finishedOn, persistent, timeZone,
-                activity, schedulePlanGuid, clientData);
+                activity, schedulePlanGuid, referentGuid, clientData);
     }
 }

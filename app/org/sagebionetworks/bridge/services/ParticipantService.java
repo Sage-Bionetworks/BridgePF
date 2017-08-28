@@ -53,6 +53,7 @@ import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
+import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -336,6 +337,16 @@ public class ParticipantService {
 
         return scheduledActivityService.getActivityHistory(account.getHealthCode(), activityGuid, scheduledOnStart,
                 scheduledOnEnd, offsetKey, pageSize);
+    }
+    
+    public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(Study study, String userId,
+            ActivityType activityType, String referentGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd,
+            String offsetKey, int pageSize) {
+
+        Account account = getAccountThrowingException(study, userId);
+
+        return scheduledActivityService.getActivityHistory(account.getHealthCode(), activityType, referentGuid,
+                scheduledOnStart, scheduledOnEnd, offsetKey, pageSize);
     }
 
     public void deleteActivities(Study study, String userId) {

@@ -69,6 +69,8 @@ public class ScheduledActivityService {
     private static final String EITHER_BOTH_DATES_OR_NEITHER = "Only one date of a date range provided (both scheduledOnStart and scheduledOnEnd required)";
 
     private static final String AMBIGUOUS_TIMEZONE_ERROR = "scheduledOnStart and scheduledOnEnd must be in the same time zone";
+    
+    private static final String INVALID_TIME_RANGE = "scheduledOnStart later in time than scheduledOnEnd";
 
     private static final String ENROLLMENT = "enrollment";
 
@@ -124,8 +126,35 @@ public class ScheduledActivityService {
             String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, String offsetKey,
             int pageSize) {
         checkArgument(isNotBlank(healthCode));
-        checkArgument(isNotBlank(activityGuid));
 
+        // ActivityType.SURVEY is a placeholder vald to pass validation, it's not used in this version of the API
+        DateTime[] dateRange = validateHistoryParameters(ActivityType.SURVEY, pageSize, scheduledOnStart, scheduledOnEnd);
+        scheduledOnStart = dateRange[0];
+        scheduledOnEnd = dateRange[1];
+        
+        return activityDao.getActivityHistoryV2(healthCode, activityGuid, scheduledOnStart, scheduledOnEnd, offsetKey,
+                pageSize);
+    }
+    
+    public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(String healthCode, ActivityType activityType,
+            String referentGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, String offsetKey, int pageSize) {
+        checkArgument(isNotBlank(healthCode));
+        checkArgument(isNotBlank(referentGuid));
+        
+        DateTime[] dateRange = validateHistoryParameters(activityType, pageSize, scheduledOnStart, scheduledOnEnd);
+        scheduledOnStart = dateRange[0];
+        scheduledOnEnd = dateRange[1];
+
+        return activityDao.getActivityHistoryV3(healthCode, activityType, referentGuid, scheduledOnStart,
+                scheduledOnEnd, offsetKey, pageSize);
+    }
+    
+    protected DateTime[] validateHistoryParameters(ActivityType activityType, int pageSize, DateTime scheduledOnStart,
+            DateTime scheduledOnEnd) {
+
+        if (activityType == null) {
+            throw new BadRequestException("Invalid activity type: " + activityType);
+        }
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
@@ -139,14 +168,15 @@ public class ScheduledActivityService {
         if (scheduledOnStart == null || scheduledOnEnd == null) {
             throw new BadRequestException(EITHER_BOTH_DATES_OR_NEITHER);
         }
+        if (scheduledOnStart.isAfter(scheduledOnEnd)) {
+            throw new BadRequestException(INVALID_TIME_RANGE);
+        }
 
         DateTimeZone timezone = scheduledOnStart.getZone();
         if (!timezone.equals(scheduledOnEnd.getZone())) {
             throw new BadRequestException(AMBIGUOUS_TIMEZONE_ERROR);
         }
-
-        return activityDao.getActivityHistoryV2(
-                healthCode, activityGuid, scheduledOnStart, scheduledOnEnd, timezone, offsetKey, pageSize);
+        return new DateTime[] {scheduledOnStart, scheduledOnEnd};
     }
     
     // This needs to be exposed for tests because although we can fix a point of time for tests, we cannot
@@ -239,7 +269,7 @@ public class ScheduledActivityService {
         for (String activityGuid : activityGuids) {
             ForwardCursorPagedResourceList<ScheduledActivity> list = activityDao.getActivityHistoryV2(
                     context.getCriteriaContext().getHealthCode(), activityGuid,
-                    context.getStartsOn(), context.getEndsOn(), context.getStartsOn().getZone(), null,
+                    context.getStartsOn(), context.getEndsOn(), null,
                     API_MAXIMUM_PAGE_SIZE);
             if (list != null) {
                 for(ScheduledActivity activity : list.getItems()) {

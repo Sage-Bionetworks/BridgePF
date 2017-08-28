@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.services.ScheduledActivityService;
@@ -87,6 +88,22 @@ public class ScheduledActivityController extends BaseController {
             node.put(OFFSET_BY, offsetBy);    
         }
         return ok(node);
+    }
+    
+    public Result getActivityHistoryV3(String activityTypeString, String referentGuid, String scheduledOnStartString,
+            String scheduledOnEndString, String offsetKey, String pageSizeString) throws Exception {
+        UserSession session = getAuthenticatedAndConsentedSession();
+        
+        ActivityType activityType = ActivityType.fromPlural(activityTypeString);
+        DateTime scheduledOnStart = getDateTimeOrDefault(scheduledOnStartString, null);
+        DateTime scheduledOnEnd = getDateTimeOrDefault(scheduledOnEndString, null);
+        int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> page = scheduledActivityService.getActivityHistory(
+                session.getHealthCode(), activityType, referentGuid, scheduledOnStart, scheduledOnEnd, offsetKey,
+                pageSize);
+        
+        return ok(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(page));
     }
     
     public Result getScheduledActivitiesByDateRange(String startTimeString, String endTimeString) throws Exception {
