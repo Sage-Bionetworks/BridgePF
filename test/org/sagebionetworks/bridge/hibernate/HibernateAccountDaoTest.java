@@ -738,7 +738,7 @@ public class HibernateAccountDaoTest {
     }
 
     @Test
-    public void marshallSuccess() throws Exception {
+    public void marshallSuccess() {
         // create a fully populated GenericAccount
         GenericAccount genericAccount = new GenericAccount();
         genericAccount.setId(ACCOUNT_ID);
@@ -835,7 +835,7 @@ public class HibernateAccountDaoTest {
     }
 
     @Test
-    public void unmarshallSuccess() throws Exception {
+    public void unmarshallSuccess() {
         // create a fully populated HibernateAccount
         HibernateAccount hibernateAccount = new HibernateAccount();
         hibernateAccount.setId(ACCOUNT_ID);

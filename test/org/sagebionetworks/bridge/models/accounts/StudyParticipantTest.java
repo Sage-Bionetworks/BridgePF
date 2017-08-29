@@ -145,7 +145,7 @@ public class StudyParticipantTest {
     }
 
     @Test
-    public void canCopy() throws Exception {
+    public void canCopy() {
         StudyParticipant participant = makeParticipant().build();
         StudyParticipant copy = new StudyParticipant.Builder().copyOf(participant).build();
         
@@ -209,7 +209,7 @@ public class StudyParticipantTest {
         return builder.build();
     }
 
-    private StudyParticipant.Builder makeParticipant() throws Exception {
+    private StudyParticipant.Builder makeParticipant() {
         JsonNode clientData = TestUtils.getClientData();
         
         StudyParticipant.Builder builder = new StudyParticipant.Builder()
