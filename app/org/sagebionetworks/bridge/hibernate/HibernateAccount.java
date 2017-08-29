@@ -49,12 +49,12 @@ public class HibernateAccount {
     private int version;
     private String clientData;
 
-    HibernateAccount() {}
+    public HibernateAccount() {}
     
     /**
      * Constructor to load information for the AccountSummary object.
      */
-    HibernateAccount(Long createdOn, String studyId, String firstName, String lastName, String email, String id,
+    public HibernateAccount(Long createdOn, String studyId, String firstName, String lastName, String email, String id,
             AccountStatus status) {
         this.createdOn = createdOn;
         this.studyId = studyId;
