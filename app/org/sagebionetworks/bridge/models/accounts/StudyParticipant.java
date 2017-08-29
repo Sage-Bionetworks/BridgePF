@@ -19,6 +19,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
@@ -67,11 +68,13 @@ public final class StudyParticipant implements BridgeEntity {
     private final DateTime createdOn;
     private final String id;
     private final DateTimeZone timeZone;
+    private final JsonNode clientData;
     
     private StudyParticipant(String firstName, String lastName, String email, String externalId, String password,
             SharingScope sharingScope, Boolean notifyByEmail, Set<String> dataGroups, String healthCode,
             Map<String, String> attributes, Map<String, List<UserConsentHistory>> consentHistories, Set<Roles> roles,
-            LinkedHashSet<String> languages, AccountStatus status, DateTime createdOn, String id, DateTimeZone timeZone) {
+            LinkedHashSet<String> languages, AccountStatus status, DateTime createdOn, String id, DateTimeZone timeZone,
+            JsonNode clientData) {
         
         ImmutableMap.Builder<String, List<UserConsentHistory>> immutableConsentsBuilder = new ImmutableMap.Builder<>();
         if (consentHistories != null) {
@@ -100,6 +103,7 @@ public final class StudyParticipant implements BridgeEntity {
         this.createdOn = createdOn;
         this.id = id;
         this.timeZone = timeZone;
+        this.clientData = clientData;
     }
     
     public String getFirstName() {
@@ -156,12 +160,15 @@ public final class StudyParticipant implements BridgeEntity {
     public DateTimeZone getTimeZone() {
         return timeZone;
     }
+    public JsonNode getClientData() {
+        return clientData;
+    }
     
     @Override
     public int hashCode() {
         return Objects.hash(attributes, consentHistories, createdOn, dataGroups, email, 
                 externalId, firstName, healthCode, id, languages, lastName, notifyByEmail, 
-                password, roles, sharingScope, status, timeZone);
+                password, roles, sharingScope, status, timeZone, clientData);
     }
 
     @Override
@@ -179,7 +186,8 @@ public final class StudyParticipant implements BridgeEntity {
                 && Objects.equals(lastName, other.lastName) && Objects.equals(notifyByEmail, other.notifyByEmail)
                 && Objects.equals(password, other.password) && Objects.equals(roles, other.roles)
                 && Objects.equals(sharingScope, other.sharingScope) && Objects.equals(status, other.status)
-                && Objects.equals(timeZone, other.timeZone);
+                && Objects.equals(timeZone, other.timeZone)
+                && Objects.equals(clientData, other.clientData);
     }
 
     public static class Builder {
@@ -200,6 +208,7 @@ public final class StudyParticipant implements BridgeEntity {
         private DateTime createdOn;
         private String id;
         private DateTimeZone timeZone;
+        private JsonNode clientData;
         
         public Builder copyOf(StudyParticipant participant) {
             this.firstName = participant.getFirstName();
@@ -219,6 +228,7 @@ public final class StudyParticipant implements BridgeEntity {
             this.createdOn = participant.getCreatedOn();
             this.id = participant.getId();
             this.timeZone = participant.getTimeZone();
+            this.clientData = participant.getClientData();
             return this;
         }
         public Builder copyFieldsOf(StudyParticipant participant, Set<String> fieldNames) {
@@ -272,6 +282,9 @@ public final class StudyParticipant implements BridgeEntity {
             }
             if (fieldNames.contains("timeZone")) {
                 this.timeZone = participant.getTimeZone();    
+            }
+            if (fieldNames.contains("clientData")) {
+                this.clientData = participant.getClientData();
             }
             return this;
         }
@@ -357,11 +370,15 @@ public final class StudyParticipant implements BridgeEntity {
             this.timeZone = timeZone;
             return this;
         }
+        public Builder withClientData(JsonNode clientData) {
+            this.clientData = clientData;
+            return this;
+        }
         
         public StudyParticipant build() {
             return new StudyParticipant(firstName, lastName, email, externalId, password, sharingScope, notifyByEmail,
                     dataGroups, healthCode, attributes, consentHistories, roles,
-                    languages, status, createdOn, id, timeZone);
+                    languages, status, createdOn, id, timeZone, clientData);
         }
     }
 

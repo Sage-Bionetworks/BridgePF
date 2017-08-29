@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -41,6 +42,7 @@ public class GenericAccount implements Account {
     private Set<Roles> roleSet = ImmutableSet.of();
     private AccountStatus status;
     private StudyIdentifier studyId;
+    private JsonNode clientData;
     private int version;
 
     /** {@inheritDoc} */
@@ -236,6 +238,17 @@ public class GenericAccount implements Account {
     /** @see #getCreatedOn */
     public void setCreatedOn(DateTime createdOn) {
         this.createdOn = createdOn;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public JsonNode getClientData() {
+        return clientData;
+    }
+
+    /** @see #getCreatedOn */
+    public void setClientData(JsonNode clientData) {
+        this.clientData = clientData;
     }
 
     /** Version number, used by Hibernate to handle optimistic locking. */

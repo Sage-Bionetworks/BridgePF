@@ -127,7 +127,8 @@ public class ParticipantServiceTest {
             .withLanguages(USER_LANGUAGES)
             .withStatus(AccountStatus.DISABLED)
             .withExternalId(EXTERNAL_ID)
-            .withTimeZone(USER_TIME_ZONE).build();
+            .withTimeZone(USER_TIME_ZONE)
+            .withClientData(TestUtils.getClientData()).build();
     
     private static final DateTime START_DATE = DateTime.now();
     private static final DateTime END_DATE = START_DATE.plusDays(1);
@@ -261,6 +262,7 @@ public class ParticipantServiceTest {
         verify(account).setLastName(LAST_NAME);
         verify(account).setAttribute(PHONE, "123456789");
         verify(account).setRoles(USER_ROLES);
+        verify(account).setClientData(TestUtils.getClientData());
         // Not called on create
         verify(account, never()).setStatus(AccountStatus.DISABLED);
         
@@ -395,6 +397,7 @@ public class ParticipantServiceTest {
         List<ConsentSignature> sigs1 = Lists.newArrayList(new ConsentSignature.Builder()
                 .withName("Name 1").withBirthdate("1980-01-01").build());
         when(account.getConsentSignatureHistory(SubpopulationGuid.create("guid1"))).thenReturn(sigs1);
+        when(account.getClientData()).thenReturn(TestUtils.getClientData());
         
         when(subpopService.getSubpopulation(STUDY.getStudyIdentifier(), SubpopulationGuid.create("guid1"))).thenReturn(subpop1);
         when(subpopService.getSubpopulation(STUDY.getStudyIdentifier(), SubpopulationGuid.create("guid2"))).thenReturn(subpop2);
@@ -423,6 +426,7 @@ public class ParticipantServiceTest {
         assertEquals(createdOn, participant.getCreatedOn());
         assertEquals(USER_TIME_ZONE, participant.getTimeZone());
         assertEquals(USER_LANGUAGES, participant.getLanguages());
+        assertEquals(TestUtils.getClientData(), participant.getClientData());
         
         assertNull(participant.getAttributes().get("attr1"));
         assertEquals("anAttribute2", participant.getAttributes().get("attr2"));
@@ -491,6 +495,7 @@ public class ParticipantServiceTest {
         verify(account).setFirstName(FIRST_NAME);
         verify(account).setLastName(LAST_NAME);
         verify(account).setAttribute(PHONE, "123456789");
+        verify(account).setClientData(TestUtils.getClientData());
     }
     
     @Test(expected = InvalidEntityException.class)

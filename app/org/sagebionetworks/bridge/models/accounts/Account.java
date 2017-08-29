@@ -12,6 +12,8 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 /**
  * Encryption of account values is handled transparently by the account implementation. 
  * All values are set and retrieved in clear text.
@@ -80,4 +82,11 @@ public interface Account extends BridgeEntity {
     String getId();
     
     DateTime getCreatedOn();
+    
+    /**
+     * Arbitrary JsonNode data that can be persisted by the client application for a specific user. Like other account data, 
+     * this can include PII, and can be up to 16MB when serialized (however, we expect data of 1MB or less to be normal usage). 
+     */
+    JsonNode getClientData();
+    void setClientData(JsonNode clientData);
 }

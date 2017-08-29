@@ -30,6 +30,7 @@ import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -98,7 +99,7 @@ public class HibernateAccountDaoTest {
         dao.setAccountWorkflowService(mockAccountWorkflowService);
         dao.setHealthCodeService(mockHealthCodeService);
         dao.setHibernateHelper(mockHibernateHelper);
-
+        
         when(mockHealthCodeService.createMapping(TestConstants.TEST_STUDY)).thenReturn(new HealthIdImpl(HEALTH_ID,
                 HEALTH_CODE));
     }
@@ -668,9 +669,11 @@ public class HibernateAccountDaoTest {
         assertEquals("email2@example.com", accountSummaryList.get(1).getEmail());
 
         // verify hibernate calls
-        String expectedQueryString = "from HibernateAccount where studyId='" + TestConstants.TEST_STUDY_IDENTIFIER +
-                "'";
-        verify(mockHibernateHelper).queryGet(expectedQueryString, 10, 5, HibernateAccount.class);
+        String expectedQueryString = "from HibernateAccount where studyId='" + 
+                TestConstants.TEST_STUDY_IDENTIFIER + "'";
+        String expectedGetQueryString = HibernateAccountDao.ACCOUNT_SUMMARY_QUERY_PREFIX + expectedQueryString;
+        
+        verify(mockHibernateHelper).queryGet(expectedGetQueryString, 10, 5, HibernateAccount.class);
         verify(mockHibernateHelper).queryCount(expectedQueryString);
     }
 
@@ -698,10 +701,11 @@ public class HibernateAccountDaoTest {
         assertEquals(endDate.toString(), paramsMap.get("endTime"));
 
         // verify hibernate calls
-        String expectedQueryString = "from HibernateAccount where studyId='" + TestConstants.TEST_STUDY_IDENTIFIER +
-                "' and email like '%" + EMAIL + "%' and createdOn >= " + startDate.getMillis() + " and createdOn <= " +
-                endDate.getMillis();
-        verify(mockHibernateHelper).queryGet(expectedQueryString, 10, 5, HibernateAccount.class);
+        String expectedQueryString = "from HibernateAccount where studyId='" + 
+                TestConstants.TEST_STUDY_IDENTIFIER + "' and email like '%" + EMAIL + "%' and createdOn >= " + 
+                startDate.getMillis() + " and createdOn <= " + endDate.getMillis();
+        String expectedGetQueryString = HibernateAccountDao.ACCOUNT_SUMMARY_QUERY_PREFIX + expectedQueryString;
+        verify(mockHibernateHelper).queryGet(expectedGetQueryString, 10, 5, HibernateAccount.class);
         verify(mockHibernateHelper).queryCount(expectedQueryString);
     }
 
@@ -734,7 +738,7 @@ public class HibernateAccountDaoTest {
     }
 
     @Test
-    public void marshallSuccess() {
+    public void marshallSuccess() throws Exception {
         // create a fully populated GenericAccount
         GenericAccount genericAccount = new GenericAccount();
         genericAccount.setId(ACCOUNT_ID);
@@ -749,6 +753,7 @@ public class HibernateAccountDaoTest {
         genericAccount.setPasswordHash(DUMMY_PASSWORD_HASH);
         genericAccount.setRoles(EnumSet.of(Roles.DEVELOPER, Roles.TEST_USERS));
         genericAccount.setStatus(AccountStatus.ENABLED);
+        genericAccount.setClientData(TestUtils.getClientData());
         genericAccount.setVersion(VERSION);
 
         // populate attributes
@@ -791,6 +796,7 @@ public class HibernateAccountDaoTest {
         assertEquals(DUMMY_PASSWORD_HASH, hibernateAccount.getPasswordHash());
         assertEquals(EnumSet.of(Roles.DEVELOPER, Roles.TEST_USERS), hibernateAccount.getRoles());
         assertEquals(AccountStatus.ENABLED, hibernateAccount.getStatus());
+        assertEquals(TestUtils.getClientData().toString(), hibernateAccount.getClientData());
         assertEquals(VERSION, hibernateAccount.getVersion());
 
         // validate attributes
@@ -829,7 +835,7 @@ public class HibernateAccountDaoTest {
     }
 
     @Test
-    public void unmarshallSuccess() {
+    public void unmarshallSuccess() throws Exception {
         // create a fully populated HibernateAccount
         HibernateAccount hibernateAccount = new HibernateAccount();
         hibernateAccount.setId(ACCOUNT_ID);
@@ -844,6 +850,7 @@ public class HibernateAccountDaoTest {
         hibernateAccount.setPasswordHash(DUMMY_PASSWORD_HASH);
         hibernateAccount.setRoles(EnumSet.of(Roles.DEVELOPER, Roles.TEST_USERS));
         hibernateAccount.setStatus(AccountStatus.ENABLED);
+        hibernateAccount.setClientData(TestUtils.getClientData().toString());
         hibernateAccount.setVersion(VERSION);
 
         // populate attributes
@@ -903,6 +910,7 @@ public class HibernateAccountDaoTest {
         assertEquals(DUMMY_PASSWORD_HASH, genericAccount.getPasswordHash());
         assertEquals(EnumSet.of(Roles.DEVELOPER, Roles.TEST_USERS), genericAccount.getRoles());
         assertEquals(AccountStatus.ENABLED, genericAccount.getStatus());
+        assertEquals(TestUtils.getClientData(), genericAccount.getClientData());
         assertEquals(VERSION, genericAccount.getVersion());
 
         // createdOn is stored as a long, so just compare epoch milliseconds.

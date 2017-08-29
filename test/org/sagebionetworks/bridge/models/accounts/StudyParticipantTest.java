@@ -44,8 +44,9 @@ public class StudyParticipantTest {
             .put("C", "D").build();
     
     @Test
-    public void hashEquals() {
-        EqualsVerifier.forClass(StudyParticipant.class).allFieldsShouldBeUsed().verify();
+    public void hashEquals() throws Exception {
+        EqualsVerifier.forClass(StudyParticipant.class).allFieldsShouldBeUsed()
+                .withPrefabValues(JsonNode.class, TestUtils.getClientData(), TestUtils.getOtherClientData()).verify();
     }
     
     @Test
@@ -69,6 +70,11 @@ public class StudyParticipantTest {
         assertEquals(ACCOUNT_ID, node.get("id").asText());
         assertEquals("+04:00", node.get("timeZone").asText());
         assertEquals("StudyParticipant", node.get("type").asText());
+        
+        JsonNode clientData = node.get("clientData");
+        assertTrue(clientData.get("booleanFlag").booleanValue());
+        assertEquals("testString", clientData.get("stringValue").asText());
+        assertEquals(4, clientData.get("intValue").intValue());
 
         Set<String> roleNames = Sets.newHashSet(
                 Roles.ADMIN.name().toLowerCase(), Roles.WORKER.name().toLowerCase());
@@ -87,7 +93,7 @@ public class StudyParticipantTest {
 
         assertEquals("B", node.get("attributes").get("A").asText());
         assertEquals("D", node.get("attributes").get("C").asText());
-        assertEquals(18, node.size());
+        assertEquals(19, node.size());
         
         StudyParticipant deserParticipant = BridgeObjectMapper.get().readValue(node.toString(), StudyParticipant.class);
         assertEquals("firstName", deserParticipant.getFirstName());
@@ -139,7 +145,7 @@ public class StudyParticipantTest {
     }
 
     @Test
-    public void canCopy() {
+    public void canCopy() throws Exception {
         StudyParticipant participant = makeParticipant().build();
         StudyParticipant copy = new StudyParticipant.Builder().copyOf(participant).build();
         
@@ -157,6 +163,7 @@ public class StudyParticipantTest {
         assertEquals(CREATED_ON, copy.getCreatedOn());
         assertEquals(AccountStatus.ENABLED, copy.getStatus());
         assertEquals(ACCOUNT_ID, copy.getId());
+        assertEquals(TestUtils.getClientData(), copy.getClientData());
         
         // And they are equal in the Java sense
         assertEquals(copy, participant);
@@ -196,13 +203,15 @@ public class StudyParticipantTest {
         assertEquals("password", participant.getPassword());
     }    
 
-    private StudyParticipant createParticipantWithHealthCodes() {
+    private StudyParticipant createParticipantWithHealthCodes() throws Exception {
         StudyParticipant.Builder builder = makeParticipant();
         builder.withHealthCode(null).withEncryptedHealthCode(TestConstants.ENCRYPTED_HEALTH_CODE);
         return builder.build();
     }
 
-    private StudyParticipant.Builder makeParticipant() {
+    private StudyParticipant.Builder makeParticipant() throws Exception {
+        JsonNode clientData = TestUtils.getClientData();
+        
         StudyParticipant.Builder builder = new StudyParticipant.Builder()
                 .withFirstName("firstName")
                 .withLastName("lastName")
@@ -219,7 +228,8 @@ public class StudyParticipantTest {
                 .withCreatedOn(CREATED_ON)
                 .withId(ACCOUNT_ID)
                 .withStatus(AccountStatus.ENABLED)
-                .withTimeZone(TIME_ZONE);
+                .withTimeZone(TIME_ZONE)
+                .withClientData(clientData);
         
         Map<String,List<UserConsentHistory>> historiesMap = Maps.newHashMap();
         
