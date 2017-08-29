@@ -53,6 +53,11 @@ public class Metrics {
         json.put("end", DateUtils.getCurrentISODateTime());
     }
 
+    /** Record ID, used for synchronous health data submission API. */
+    public void setRecordId(String recordId) {
+        put("record_id", recordId);
+    }
+
     public void setRequestId(String requestId) {
         checkArgument(isNotBlank(requestId), "Request ID cannot be blank.");
         json.put("request_id", requestId);
@@ -94,20 +99,12 @@ public class Metrics {
         put("session_id", sessionId);
     }
 
-    public void setSpToken(String spToken) {
-        put("sp_token", spToken);
-    }
-
     public void setUploadId(String uploadId) {
         put("upload_id", uploadId);
     }
 
     public void setUploadSize(long uploadSize) {
         json.put("upload_size", uploadSize);
-    }
-
-    public void setSharingOption(String sharingOption) {
-        put("sharing_option", sharingOption);
     }
 
     private void put(final String field, final String value) {
