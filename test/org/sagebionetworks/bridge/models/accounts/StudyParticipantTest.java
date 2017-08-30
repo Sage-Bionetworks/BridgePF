@@ -199,10 +199,6 @@ public class StudyParticipantTest {
         assertCopyField("healthCode", (builder)-> verify(builder).withHealthCode(any()));
     }
     @Test
-    public void canCopyGetEncryptedHealthCode() {
-        assertCopyField("encryptedHealthCode", (builder)-> verify(builder).withEncryptedHealthCode(any()));
-    }
-    @Test
     public void canCopyGetAttributes() {
         assertCopyField("attributes", (builder)-> verify(builder).withAttributes(any()));
     }
@@ -239,17 +235,6 @@ public class StudyParticipantTest {
         assertCopyField("clientData", (builder)-> verify(builder).withClientData(any()));
     }
     
-    private void assertCopyField(String fieldName, Consumer<StudyParticipant.Builder> predicate) {
-        StudyParticipant participant = makeParticipant().build();
-        StudyParticipant.Builder builder = spy(StudyParticipant.Builder.class);
-        
-        builder.copyFieldsOf(participant, Sets.newHashSet(fieldName));
-        
-        verify(builder).copyFieldsOf(participant, Sets.newHashSet(fieldName));
-        predicate.accept(builder);
-        verifyNoMoreInteractions(builder);
-    }
-    
     @Test
     public void testNullResiliency() {
         // We don't remove nulls from the collections, at least not when reading them.
@@ -284,6 +269,17 @@ public class StudyParticipantTest {
         assertEquals("password", participant.getPassword());
     }    
 
+    private void assertCopyField(String fieldName, Consumer<StudyParticipant.Builder> predicate) {
+        StudyParticipant participant = makeParticipant().build();
+        StudyParticipant.Builder builder = spy(StudyParticipant.Builder.class);
+        Set<String> fieldsToCopy = Sets.newHashSet(fieldName);
+        
+        builder.copyFieldsOf(participant, fieldsToCopy);
+        verify(builder).copyFieldsOf(participant, fieldsToCopy);
+        predicate.accept(builder);
+        verifyNoMoreInteractions(builder);
+    }
+    
     private StudyParticipant createParticipantWithHealthCodes() throws Exception {
         StudyParticipant.Builder builder = makeParticipant();
         builder.withHealthCode(null).withEncryptedHealthCode(TestConstants.ENCRYPTED_HEALTH_CODE);
@@ -309,6 +305,7 @@ public class StudyParticipantTest {
                 .withCreatedOn(CREATED_ON)
                 .withId(ACCOUNT_ID)
                 .withStatus(AccountStatus.ENABLED)
+                .withClientData(clientData)
                 .withTimeZone(TIME_ZONE);
         
         Map<String,List<UserConsentHistory>> historiesMap = Maps.newHashMap();
