@@ -4,11 +4,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -170,6 +175,82 @@ public class StudyParticipantTest {
     }
     
     @Test
+    public void canCopyGetFirstName() {
+        assertCopyField("firstName", (builder)-> verify(builder).withFirstName(any()));
+    }
+    @Test
+    public void canCopyGetLastName() {
+        assertCopyField("lastName", (builder)-> verify(builder).withLastName(any()));
+    }
+    @Test
+    public void canCopyGetSharingScope() {
+        assertCopyField("sharingScope", (builder)-> verify(builder).withSharingScope(any()));
+    }
+    @Test
+    public void canCopyIsNotifyByEmail() {
+        assertCopyField("notifyByEmail", (builder)-> verify(builder).withNotifyByEmail(any()));
+    }
+    @Test
+    public void canCopyGetDataGroups() {
+        assertCopyField("dataGroups", (builder)-> verify(builder).withDataGroups(any()));
+    }
+    @Test
+    public void canCopyGetHealthCode() {
+        assertCopyField("healthCode", (builder)-> verify(builder).withHealthCode(any()));
+    }
+    @Test
+    public void canCopyGetEncryptedHealthCode() {
+        assertCopyField("encryptedHealthCode", (builder)-> verify(builder).withEncryptedHealthCode(any()));
+    }
+    @Test
+    public void canCopyGetAttributes() {
+        assertCopyField("attributes", (builder)-> verify(builder).withAttributes(any()));
+    }
+    @Test
+    public void canCopyGetConsentHistories() {
+        assertCopyField("consentHistories", (builder)-> verify(builder).withConsentHistories(any()));
+    }
+    @Test
+    public void canCopyGetRoles() {
+        assertCopyField("roles", (builder)-> verify(builder).withRoles(any()));
+    }
+    @Test
+    public void canCopyGetLanguages() {
+        assertCopyField("languages", (builder)-> verify(builder).withLanguages(any()));
+    }
+    @Test
+    public void canCopyGetStatus() {
+        assertCopyField("status", (builder)-> verify(builder).withStatus(any()));
+    }
+    @Test
+    public void canCopyGetCreatedOn() {
+        assertCopyField("createdOn", (builder)-> verify(builder).withCreatedOn(any()));
+    }
+    @Test
+    public void canCopyGetId() {
+        assertCopyField("id", (builder)-> verify(builder).withId(any()));
+    }
+    @Test
+    public void canCopyGetTimeZone() {
+        assertCopyField("timeZone", (builder)-> verify(builder).withTimeZone(any()));
+    }
+    @Test
+    public void canCopyGetClientData() {
+        assertCopyField("clientData", (builder)-> verify(builder).withClientData(any()));
+    }
+    
+    private void assertCopyField(String fieldName, Consumer<StudyParticipant.Builder> predicate) {
+        StudyParticipant participant = makeParticipant().build();
+        StudyParticipant.Builder builder = spy(StudyParticipant.Builder.class);
+        
+        builder.copyFieldsOf(participant, Sets.newHashSet(fieldName));
+        
+        verify(builder).copyFieldsOf(participant, Sets.newHashSet(fieldName));
+        predicate.accept(builder);
+        verifyNoMoreInteractions(builder);
+    }
+    
+    @Test
     public void testNullResiliency() {
         // We don't remove nulls from the collections, at least not when reading them.
         StudyParticipant participant = new StudyParticipant.Builder()
@@ -228,8 +309,7 @@ public class StudyParticipantTest {
                 .withCreatedOn(CREATED_ON)
                 .withId(ACCOUNT_ID)
                 .withStatus(AccountStatus.ENABLED)
-                .withTimeZone(TIME_ZONE)
-                .withClientData(clientData);
+                .withTimeZone(TIME_ZONE);
         
         Map<String,List<UserConsentHistory>> historiesMap = Maps.newHashMap();
         

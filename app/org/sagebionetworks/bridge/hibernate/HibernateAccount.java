@@ -49,10 +49,15 @@ public class HibernateAccount {
     private int version;
     private String clientData;
 
+    /**
+     * No args constructor, required and used by Hibernate for full object initialization.
+     */
     public HibernateAccount() {}
     
     /**
-     * Constructor to load information for the AccountSummary object.
+     * Constructor to load information for the AccountSummary object. Could not find a way to 
+     * construct this object with just the indicated fields using a select clause, without also 
+     * specifying a constructor.
      */
     public HibernateAccount(Long createdOn, String studyId, String firstName, String lastName, String email, String id,
             AccountStatus status) {

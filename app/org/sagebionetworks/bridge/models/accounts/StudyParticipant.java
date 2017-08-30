@@ -233,58 +233,58 @@ public final class StudyParticipant implements BridgeEntity {
         }
         public Builder copyFieldsOf(StudyParticipant participant, Set<String> fieldNames) {
             if (fieldNames.contains("firstName")) {
-                this.firstName = participant.getFirstName();    
+                withFirstName(participant.getFirstName());    
             }
             if (fieldNames.contains("lastName")) {
-                this.lastName = participant.getLastName();    
+                withLastName(participant.getLastName());    
             }
             if (fieldNames.contains("email")) {
-                this.email = participant.getEmail();
+                withEmail(participant.getEmail());
             }
             if (fieldNames.contains("externalId")) {
-                this.externalId = participant.getExternalId();    
+                withExternalId(participant.getExternalId());    
             }
             if (fieldNames.contains("password")) {
-                this.password = participant.getPassword();    
+                withPassword(participant.getPassword());    
             }
             if (fieldNames.contains("sharingScope")) {
-                this.sharingScope = participant.getSharingScope();
+                withSharingScope(participant.getSharingScope());
             }
             if (fieldNames.contains("notifyByEmail")) {
-                this.notifyByEmail = participant.isNotifyByEmail();    
+                withNotifyByEmail(participant.isNotifyByEmail());    
             }
             if (fieldNames.contains("healthCode")) {
-                this.healthCode = participant.getHealthCode();    
+                withHealthCode(participant.getHealthCode());    
             }
             if (fieldNames.contains("dataGroups")) {
-                this.dataGroups = participant.getDataGroups();    
+                withDataGroups(participant.getDataGroups());    
             }
             if (fieldNames.contains("attributes")) {
-                this.attributes = participant.getAttributes();    
+                withAttributes(participant.getAttributes());    
             }
             if (fieldNames.contains("consentHistories")) {
-                this.consentHistories = participant.getConsentHistories();    
+                withConsentHistories(participant.getConsentHistories());    
             }
             if (fieldNames.contains("roles")) {
-                this.roles = participant.getRoles();    
+                withRoles(participant.getRoles());    
             }
             if (fieldNames.contains("languages")) {
-                this.languages = participant.getLanguages();    
+                withLanguages(participant.getLanguages());    
             }
             if (fieldNames.contains("status")){
-                this.status = participant.getStatus();    
+                withStatus(participant.getStatus());    
             }
             if (fieldNames.contains("createdOn")) {
-                this.createdOn = participant.getCreatedOn();    
+                withCreatedOn(participant.getCreatedOn());    
             }
             if (fieldNames.contains("id")) {
-                this.id = participant.getId();    
+                withId(participant.getId());    
             }
             if (fieldNames.contains("timeZone")) {
-                this.timeZone = participant.getTimeZone();    
+                withTimeZone(participant.getTimeZone());    
             }
             if (fieldNames.contains("clientData")) {
-                this.clientData = participant.getClientData();
+                withClientData(participant.getClientData());
             }
             return this;
         }
@@ -327,7 +327,7 @@ public final class StudyParticipant implements BridgeEntity {
             return this;
         }
         public Builder withEncryptedHealthCode(String encHealthCode) {
-            this.healthCode = (encHealthCode == null) ? null : ENCRYPTOR.decrypt(encHealthCode);
+            withEncryptedHealthCode((encHealthCode == null) ? null : ENCRYPTOR.decrypt(encHealthCode));
             return this;
         }
         public Builder withAttributes(Map<String,String> attributes) {

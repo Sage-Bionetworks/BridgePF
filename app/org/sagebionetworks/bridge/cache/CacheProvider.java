@@ -8,7 +8,6 @@ import java.util.List;
 import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.RequestInfo;
@@ -326,10 +325,12 @@ public class CacheProvider {
     }
     
     private void promptToStartRedisIfLocal(Throwable e) {
+        throw new RuntimeException(e);
+        /*
         if (BridgeConfigFactory.getConfig().isLocal()) {
             throw new BridgeServiceException(
                     "Cannot find cache service, have you started a Redis server? (original message: "
                     + e.getMessage() + ")");
-        }
+        }*/
     }
 }
