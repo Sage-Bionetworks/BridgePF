@@ -22,10 +22,13 @@ import javax.annotation.Nonnull;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.joda.time.LocalDateTime;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 
@@ -354,6 +357,31 @@ public class BridgeUtils {
         boolean hasPassword = (uri.getUserInfo() != null && uri.getUserInfo().contains(":"));
         
         return (hasPassword) ? uri.getUserInfo().split(":")[1] : null;
+    }
+    
+    public static String createReferentGuidIndex(ActivityType type, String guid, String localDateTime) {
+        checkNotNull(type);
+        checkNotNull(guid);
+        checkNotNull(localDateTime);
+        return String.format("%s:%s:%s", guid , type.name().toLowerCase(), localDateTime);
+    }
+    
+    public static String createReferentGuidIndex(Activity activity, LocalDateTime localDateTime) {
+        checkNotNull(activity);
+        checkNotNull(localDateTime);
+        
+        ActivityType type = activity.getActivityType();
+        String timestamp = localDateTime.toString();
+        
+        switch(type) {
+        case COMPOUND:
+            return createReferentGuidIndex(type, activity.getCompoundActivity().getTaskIdentifier(), timestamp);
+        case SURVEY:
+            return createReferentGuidIndex(type, activity.getSurvey().getGuid(), timestamp);
+        case TASK:
+            return createReferentGuidIndex(type, activity.getTask().getIdentifier(), timestamp);
+        }
+        throw new BridgeServiceException("Invalid activityType specified");    
     }
 
 }

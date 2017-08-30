@@ -50,6 +50,7 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -143,6 +144,7 @@ public class ScheduledActivityControllerTest {
         schActivity.setGuid(BridgeUtils.generateGuid());
         schActivity.setLocalScheduledOn(LocalDateTime.now().minusDays(1));
         schActivity.setActivity(TestUtils.getActivity3());
+        schActivity.setReferentGuid("referentGuid");
         List<ScheduledActivity> list = Lists.newArrayList(schActivity);
         
         Map<String,String[]> headers = Maps.newHashMap();
@@ -360,6 +362,36 @@ public class ScheduledActivityControllerTest {
         ForwardCursorPagedResourceList<ScheduledActivity> list = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
                 new TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>>(){});
         assertNull(list.getItems().get(0).getHealthCode());
+    }
+    
+    @Test
+    public void getActivityHistoryV3() throws Exception {
+        doReturn(createActivityResultsV2(20, "offsetKey")).when(scheduledActivityService).getActivityHistory(
+                eq(HEALTH_CODE), eq(ActivityType.TASK), eq("referentGuid"), any(), any(), eq("offsetKey"), eq(20));
+        
+        Result result = controller.getActivityHistoryV3("tasks", "referentGuid", STARTS_ON.toString(),
+                ENDS_ON.toString(), "offsetKey", "20");
+        assertEquals(200, result.status());
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> page = BridgeObjectMapper.get()
+                .readValue(Helpers.contentAsString(result), FORWARD_CURSOR_PAGED_ACTIVITIES_REF);
+        assertEquals(20, (int)page.getRequestParams().get("pageSize"));
+        assertEquals("offsetKey", (String)page.getRequestParams().get("offsetKey"));
+        
+        verify(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE), eq(ActivityType.TASK), eq("referentGuid"),
+                startsOnCaptor.capture(), endsOnCaptor.capture(), eq("offsetKey"), eq(20));
+        assertEquals(STARTS_ON.toString(), startsOnCaptor.getValue().toString());
+        assertEquals(ENDS_ON.toString(), endsOnCaptor.getValue().toString());
+    }
+    
+    @Test
+    public void getActivityHistoryV3SetsNullDefaults() throws Exception {
+        controller.getActivityHistoryV3("wrongtypes", null, null, null, null, null);
+        
+        verify(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE), eq(null), eq(null),
+                startsOnCaptor.capture(), endsOnCaptor.capture(), eq(null), eq(BridgeConstants.API_DEFAULT_PAGE_SIZE));
+        assertNull(startsOnCaptor.getValue());
+        assertNull(endsOnCaptor.getValue());
     }
     
     @Test

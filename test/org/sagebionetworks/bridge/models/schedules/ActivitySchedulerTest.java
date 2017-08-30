@@ -112,6 +112,7 @@ public class ActivitySchedulerTest {
         assertNotNull(schActivity.getExpiresOn());
         assertEquals("healthCode", schActivity.getHealthCode());
         assertEquals(PST, schActivity.getTimeZone());
+        assertEquals("tapTest:task:2015-03-23T03:00:00.000", schActivity.getReferentGuid());
     }
     
     /**

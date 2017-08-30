@@ -411,6 +411,14 @@ public class BridgeSpringConfig {
         return DynamoIndexHelper
                 .create(DynamoScheduledActivity.class, "schedulePlanGuid-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
     }
+    
+    @Bean(name = "healthCodeReferentGuidIndex")
+    @Autowired
+    public DynamoIndexHelper healthCodeReferentGuidIndex(AmazonDynamoDBClient dynamoDBClient, DynamoUtils dynamoUtils,
+            DynamoNamingHelper dynamoNamingHelper) {
+        return DynamoIndexHelper.create(DynamoScheduledActivity.class, "healthCode-referentGuid-index", dynamoDBClient,
+                dynamoNamingHelper, dynamoUtils);
+    }
 
     @Bean(name = "uploadDdbMapper")
     @Autowired

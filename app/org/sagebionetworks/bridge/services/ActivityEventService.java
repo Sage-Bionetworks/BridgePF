@@ -30,11 +30,15 @@ public class ActivityEventService {
     private StudyService studyService;
 
     @Autowired
-    public ActivityEventService(ActivityEventDao activityEventDao, StudyService studyService) {
+    final void setActivityEventDao(ActivityEventDao activityEventDao) {
         this.activityEventDao = activityEventDao;
+    }
+    
+    @Autowired
+    final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
-
+    
     public void publishCustomEvent(StudyIdentifier studyId, String healthCode, String eventKey, DateTime timestamp) {
         checkNotNull(healthCode);
         checkNotNull(eventKey);

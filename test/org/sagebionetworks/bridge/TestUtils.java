@@ -302,8 +302,7 @@ public class TestUtils {
     }
     
     public static Activity getActivity3() {
-        return new Activity.Builder().withGuid(BridgeUtils.generateGuid()).withLabel("Activity3").withGuid("AAA")
-                .withTask("tapTest").build();
+        return new Activity.Builder().withLabel("Activity3").withGuid("AAA").withTask("tapTest").build();
     }
     
     public static SchedulePlan getSimpleSchedulePlan(StudyIdentifier studyId) {
