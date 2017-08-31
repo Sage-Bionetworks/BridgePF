@@ -179,8 +179,12 @@
         <property name="targetName" value="externalIdController"/>
     </bean>
     
-    <bean id="ReportControllerProxied" parent="proxiedController">
-        <property name="targetName" value="reportController"/>
+    <bean id="StudyReportControllerProxied" parent="proxiedController">
+        <property name="targetName" value="studyReportController"/>
+    </bean>
+
+    <bean id="ParticipantReportControllerProxied" parent="proxiedController">
+        <property name="targetName" value="participantReportController"/>
     </bean>
 
     <bean id="HealthDataControllerProxied" parent="proxiedController">

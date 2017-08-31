@@ -22,11 +22,13 @@ import javax.annotation.Nonnull;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -284,6 +286,18 @@ public class BridgeUtils {
             return DateTime.parse(value);
         } catch(Exception e) {
             throw new BadRequestException(value + " is not a DateTime value");
+        }
+    }
+    
+    public static LocalDate getLocalDateOrDefault(String value, LocalDate defaultValue) {
+        if (isBlank(value)) {
+            return defaultValue;
+        } else {
+            try {
+                return DateUtils.parseCalendarDate(value);
+            } catch (RuntimeException ex) {
+                throw new BadRequestException(value + " is not a LocalDate value");
+            }
         }
     }
     
