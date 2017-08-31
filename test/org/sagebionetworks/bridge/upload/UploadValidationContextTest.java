@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.upload;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 
 import java.util.Map;
@@ -19,6 +20,22 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
 
 public class UploadValidationContextTest {
+    private static final String HEALTH_CODE = "health-code";
+    private static final String UPLOAD_ID = "upload-id";
+
+    @Test
+    public void uploadId() {
+        // null upload returns null upload ID
+        UploadValidationContext context = new UploadValidationContext();
+        assertNull(context.getUploadId());
+
+        // non-null upload returns the ID of that upload
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(UPLOAD_ID);
+        context.setUpload(upload);
+        assertEquals(UPLOAD_ID, context.getUploadId());
+    }
+
     @Test
     public void shallowCopy() {
         // dummy objects to test against
@@ -34,6 +51,7 @@ public class UploadValidationContextTest {
 
         // create original
         UploadValidationContext original = new UploadValidationContext();
+        original.setHealthCode(HEALTH_CODE);
         original.setStudy(study);
         original.setUpload(upload);
         original.setSuccess(false);
@@ -48,6 +66,7 @@ public class UploadValidationContextTest {
 
         // copy and validate
         UploadValidationContext copy = original.shallowCopy();
+        assertEquals(HEALTH_CODE, copy.getHealthCode());
         assertSame(study, copy.getStudy());
         assertSame(upload, copy.getUpload());
         assertFalse(copy.getSuccess());

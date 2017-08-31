@@ -1,14 +1,38 @@
 package org.sagebionetworks.bridge.services;
 
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.StringUtils;
+
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachment;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
 import org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
+import org.sagebionetworks.bridge.models.upload.UploadFieldType;
+import org.sagebionetworks.bridge.models.upload.UploadSchema;
+import org.sagebionetworks.bridge.schema.SchemaUtils;
+import org.sagebionetworks.bridge.upload.StrictValidationHandler;
+import org.sagebionetworks.bridge.upload.TranscribeConsentHandler;
+import org.sagebionetworks.bridge.upload.UploadArtifactsHandler;
+import org.sagebionetworks.bridge.upload.UploadUtil;
+import org.sagebionetworks.bridge.upload.UploadValidationContext;
+import org.sagebionetworks.bridge.upload.UploadValidationException;
+import org.sagebionetworks.bridge.validators.HealthDataSubmissionValidator;
 import org.sagebionetworks.bridge.validators.RecordExportStatusRequestValidator;
+
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -27,20 +51,198 @@ import org.springframework.validation.Validator;
 public class HealthDataService {
     private HealthDataAttachmentDao healthDataAttachmentDao;
     private HealthDataDao healthDataDao;
+    private UploadSchemaService schemaService;
+
+    // Upload Validation Handlers, used by the synchronous Health Data Submission API
+    private StrictValidationHandler strictValidationHandler;
+    private TranscribeConsentHandler transcribeConsentHandler;
+    private UploadArtifactsHandler uploadArtifactsHandler;
 
     private final static int MAX_NUM_RECORD_IDS = 25;
     private static final Validator exporterStatusValidator = new RecordExportStatusRequestValidator();
 
     /** Health data attachment DAO. This is configured by Spring. */
     @Autowired
-    public void setHealthDataAttachmentDao(HealthDataAttachmentDao healthDataAttachmentDao) {
+    public final void setHealthDataAttachmentDao(HealthDataAttachmentDao healthDataAttachmentDao) {
         this.healthDataAttachmentDao = healthDataAttachmentDao;
     }
 
     /** Health data DAO. This is configured by Spring. */
     @Autowired
-    public void setHealthDataDao(HealthDataDao healthDataDao) {
+    public final void setHealthDataDao(HealthDataDao healthDataDao) {
         this.healthDataDao = healthDataDao;
+    }
+
+    /** Schema Service */
+    @Autowired
+    public final void setSchemaService(UploadSchemaService schemaService) {
+        this.schemaService = schemaService;
+    }
+
+    /** Strict Validation Handler, which canonicalizes health data and verifies required fields. */
+    @Autowired
+    public final void setStrictValidationHandler(StrictValidationHandler strictValidationHandler) {
+        this.strictValidationHandler = strictValidationHandler;
+    }
+
+    /**
+     * Transcribe Consent Handler, which should be called Transcribe Participant Options Handler. This transcribes
+     * external ID, data groups, and sharing scope into the health data record.
+     */
+    @Autowired
+    public final void setTranscribeConsentHandler(TranscribeConsentHandler transcribeConsentHandler) {
+        this.transcribeConsentHandler = transcribeConsentHandler;
+    }
+
+    /** Upload Artifacts Handler, which finalizes the record and attachments and uploads them to DDB and S3. */
+    @Autowired
+    public final void setUploadArtifactsHandler(UploadArtifactsHandler uploadArtifactsHandler) {
+        this.uploadArtifactsHandler = uploadArtifactsHandler;
+    }
+
+    /* HEALTH DATA SUBMISSION */
+
+    /**
+     * Synchronous health data API. Used to submit small health data payloads (such as survey responses) without
+     * incurring the overhead of creating a bunch of small files to upload to S3.
+     */
+    public HealthDataRecord submitHealthData(StudyIdentifier studyId, StudyParticipant participant,
+            HealthDataSubmission healthDataSubmission) throws JsonProcessingException {
+        // validate health data submission
+        if (healthDataSubmission == null) {
+            throw new InvalidEntityException("Health data submission cannot be null");
+        }
+        Validate.entityThrowingException(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission);
+
+        // sanitize field names in the data node
+        JsonNode sanitizedData = sanitizeFieldNames(healthDataSubmission.getData());
+
+        // Filter data fields and attachments based on schema fields.
+        UploadSchema schema = schemaService.getUploadSchemaByIdAndRev(studyId, healthDataSubmission.getSchemaId(),
+                healthDataSubmission.getSchemaRevision());
+        ObjectNode filteredData = BridgeObjectMapper.get().createObjectNode();
+        Map<String, byte[]> attachmentMap = new HashMap<>();
+        filterAttachments(schema, sanitizedData, filteredData, attachmentMap);
+
+        // construct health data record
+        HealthDataRecord record = makeRecordFromSubmission(studyId, participant, healthDataSubmission, filteredData);
+
+        // Construct UploadValidationContext for the remaining upload handlers. We don't need all the fields, just the
+        // ones that these handlers will be using.
+        UploadValidationContext uploadValidationContext = new UploadValidationContext();
+        uploadValidationContext.setAttachmentsByFieldName(attachmentMap);
+        uploadValidationContext.setHealthCode(participant.getHealthCode());
+        uploadValidationContext.setHealthDataRecord(record);
+        uploadValidationContext.setStudy(studyId);
+
+        // Strict Validation Handler. If this throws, this is an invalid upload (400).
+        try {
+            strictValidationHandler.handle(uploadValidationContext);
+        } catch (UploadValidationException ex) {
+            throw new BadRequestException(ex);
+        }
+
+        // Transcribe Consent and Upload Artifacts.
+        transcribeConsentHandler.handle(uploadValidationContext);
+        uploadArtifactsHandler.handle(uploadValidationContext);
+
+        // UploadArtifactsHandler doesn't return the record. It also may make potentially two writes to the record
+        // (depending on attachments). So we need to use the record ID to fetch the record again and return it.
+        return getRecordById(uploadValidationContext.getRecordId());
+    }
+
+    // Helper method, which sanitizes all field names in the given JsonNode, as per the rules specified in
+    // SchemaUtils.sanitizeFieldName().
+    private static JsonNode sanitizeFieldNames(JsonNode data) {
+        ObjectNode sanitizedData = BridgeObjectMapper.get().createObjectNode();
+        Iterator<Map.Entry<String, JsonNode>> dataFieldIter = data.fields();
+        while (dataFieldIter.hasNext()) {
+            Map.Entry<String, JsonNode> oneDataField = dataFieldIter.next();
+            String fieldName = oneDataField.getKey();
+            JsonNode fieldValue = oneDataField.getValue();
+            String sanitizedFieldName = SchemaUtils.sanitizeFieldName(fieldName);
+            sanitizedData.set(sanitizedFieldName, fieldValue);
+        }
+        return sanitizedData;
+    }
+
+    /**
+     * Helper method, which goes through the given schema, and splits the input data into field values and attachments.
+     * Fields that are not present in the schema are silently dropped.
+     *
+     * @param schema
+     *         schema with which to process this data
+     * @param inputData
+     *         data, with field names already sanitizied
+     * @param outputData
+     *         data, with attachment fields removed
+     * @param attachmentMap
+     *         map of attachment data
+     * @throws JsonProcessingException
+     *         if serializing attachment fails
+     */
+    private static void filterAttachments(UploadSchema schema, JsonNode inputData, ObjectNode outputData,
+            Map<String, byte[]> attachmentMap) throws JsonProcessingException {
+        for (UploadFieldDefinition oneFieldDef : schema.getFieldDefinitions()) {
+            String fieldName = oneFieldDef.getName();
+            JsonNode fieldValue = inputData.get(fieldName);
+
+            // Skip non-existent fields.
+            if (fieldValue == null || fieldValue.isNull()) {
+                continue;
+            }
+
+            // filter on fieldType
+            if (UploadFieldType.ATTACHMENT_TYPE_SET.contains(oneFieldDef.getType())) {
+                attachmentMap.put(fieldName, BridgeObjectMapper.get().writeValueAsBytes(fieldValue));
+            } else {
+                outputData.set(fieldName, fieldValue);
+            }
+        }
+    }
+
+    /**
+     * Helper method, which creates a health data record from the given health data submission.
+     *
+     * @param studyId
+     *         study this health data was submitted to
+     * @param participant
+     *         participant who submitted the data
+     * @param healthDataSubmission
+     *         the data submission
+     * @param filteredData
+     *         raw data, after being sanitized and filtered
+     * @return created health data record
+     */
+    private static HealthDataRecord makeRecordFromSubmission(StudyIdentifier studyId, StudyParticipant participant,
+            HealthDataSubmission healthDataSubmission, JsonNode filteredData) {
+        // from submission
+        HealthDataRecord record = HealthDataRecord.create();
+        record.setAppVersion(healthDataSubmission.getAppVersion());
+        record.setPhoneInfo(healthDataSubmission.getPhoneInfo());
+        record.setSchemaId(healthDataSubmission.getSchemaId());
+        record.setSchemaRevision(healthDataSubmission.getSchemaRevision());
+
+        // from elsewhere
+        record.setData(filteredData);
+        record.setHealthCode(participant.getHealthCode());
+        record.setStudyId(studyId.getIdentifier());
+        record.setUploadDate(DateUtils.getCurrentCalendarDateInLocalTime());
+        record.setUploadedOn(DateUtils.getCurrentMillisFromEpoch());
+
+        // For back-compat, add appVersion and phoneInfo into metadata.
+        ObjectNode metadata = BridgeObjectMapper.get().createObjectNode();
+        metadata.put(UploadUtil.FIELD_APP_VERSION, healthDataSubmission.getAppVersion());
+        metadata.put(UploadUtil.FIELD_PHONE_INFO, healthDataSubmission.getPhoneInfo());
+        record.setMetadata(metadata);
+
+        // Store createdOn time zone as a string offset (eg "-0700"). This is because Synapse doesn't support ISO
+        // timestamps.
+        DateTime createdOn = healthDataSubmission.getCreatedOn();
+        record.setCreatedOn(createdOn.getMillis());
+        record.setCreatedOnTimeZone(HealthDataRecord.TIME_ZONE_FORMATTER.print(createdOn));
+
+        return record;
     }
 
     /* HEALTH DATA RECORD APIs */

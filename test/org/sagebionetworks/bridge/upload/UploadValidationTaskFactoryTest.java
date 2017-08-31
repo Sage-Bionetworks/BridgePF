@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.upload;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 
 import java.util.Collections;
@@ -13,6 +14,8 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUploadDao;
 import org.sagebionetworks.bridge.services.HealthDataService;
 
 public class UploadValidationTaskFactoryTest {
+    private static final String HEALTH_CODE = "health-code";
+
     @Test
     public void test() {
         // test dao and handlers
@@ -29,9 +32,11 @@ public class UploadValidationTaskFactoryTest {
         // inputs
         DynamoStudy study = TestUtils.getValidStudy(UploadValidationTaskFactoryTest.class);
         DynamoUpload2 upload2 = new DynamoUpload2();
+        upload2.setHealthCode(HEALTH_CODE);
 
         // execute and validate
         UploadValidationTask task = taskFactory.newTask(study, upload2);
+        assertEquals(HEALTH_CODE, task.getContext().getHealthCode());
         assertSame(study, task.getContext().getStudy());
         assertSame(upload2, task.getContext().getUpload());
         assertSame(handlerList, task.getHandlerList());

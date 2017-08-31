@@ -39,7 +39,7 @@ public class UploadArtifactsHandler implements UploadValidationHandler {
 
     @Override
     public void handle(@Nonnull UploadValidationContext context) {
-        String uploadId = context.getUpload().getUploadId();
+        String uploadId = context.getUploadId();
 
         // step 1: upload health data record
         HealthDataRecord record = context.getHealthDataRecord();

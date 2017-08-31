@@ -13,7 +13,6 @@ import com.google.common.collect.Sets;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.dao.ParticipantOption;
-import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.services.ParticipantOptionsService;
@@ -88,12 +87,9 @@ public class TranscribeConsentHandlerTest {
         TranscribeConsentHandler handler = new TranscribeConsentHandler();
         handler.setOptionsService(optsService);
 
-        // set up context - handler expects Upload and RecordBuilder
-        DynamoUpload2 upload = new DynamoUpload2();
-        upload.setHealthCode(TEST_HEALTHCODE);
-
+        // set up context - handler expects Health Code and RecordBuilder
         UploadValidationContext context = new UploadValidationContext();
-        context.setUpload(upload);
+        context.setHealthCode(TEST_HEALTHCODE);
         context.setHealthDataRecord(record);
 
         // execute

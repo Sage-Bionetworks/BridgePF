@@ -33,6 +33,11 @@ import org.sagebionetworks.bridge.schema.SchemaUtils;
 public class UploadUtil {
     private static final Logger logger = LoggerFactory.getLogger(UploadUtil.class);
 
+    // Common field names
+    public static final String FIELD_APP_VERSION = "appVersion";
+    public static final String FIELD_PHONE_INFO = "phoneInfo";
+
+    // Regex patterns and strings for validation.
     private static final Pattern FIELD_NAME_MULTIPLE_SPECIAL_CHARS_PATTERN = Pattern.compile("[\\-\\._ ]{2,}");
     private static final Pattern FIELD_NAME_SPECIAL_CHARS_PATTERN = Pattern.compile("[\\-\\._ ]");
     private static final Pattern FIELD_NAME_VALID_CHARS_PATTERN = Pattern.compile("[a-zA-Z0-9\\-\\._ ]+");

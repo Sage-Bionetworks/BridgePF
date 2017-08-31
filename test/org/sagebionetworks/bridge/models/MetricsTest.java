@@ -5,23 +5,35 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.Test;
-import org.sagebionetworks.bridge.models.Metrics;
+
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 public class MetricsTest {
 
     @Test
-    public void test() {
+    public void test() throws Exception {
+        // Create Metrics.
         String requestId = "12345";
         Metrics metrics = new Metrics(requestId);
         assertNotNull(metrics);
+
+        // Validate cache key.
         assertEquals("12345:Metrics", metrics.getCacheKey());
         assertEquals("12345:Metrics", Metrics.getCacheKey(requestId));
+
+        // Apply setters.
+        metrics.setRecordId("test-record");
+
+        // Validate JSON.
         final String json = metrics.toJsonString();
         assertNotNull(json);
-        assertTrue(json.contains("\"version\":1"));
-        assertTrue(json.contains("\"start\":"));
-        assertTrue(json.contains("\"request_id\":\"12345\""));
+        JsonNode metricsNode = BridgeObjectMapper.get().readTree(json);
+        assertEquals("test-record", metricsNode.get("record_id").textValue());
+        assertEquals(requestId, metricsNode.get("request_id").textValue());
+        assertTrue(metricsNode.hasNonNull("start"));
+        assertEquals(1, metricsNode.get("version").intValue());
     }
 
     @Test

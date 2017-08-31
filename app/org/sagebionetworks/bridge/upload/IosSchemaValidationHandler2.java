@@ -146,8 +146,10 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         ObjectNode dataMap = BridgeObjectMapper.get().createObjectNode();
         record.setData(dataMap);
 
-        // Use info.json verbatim is the metadata.
+        // Use info.json verbatim is the metadata. Transcribe appVersion and phoneInfo from info.json into record.
         JsonNode infoJson = getInfoJsonFile(context, uploadId, jsonDataMap);
+        record.setAppVersion(JsonUtils.asText(infoJson, UploadUtil.FIELD_APP_VERSION));
+        record.setPhoneInfo(JsonUtils.asText(infoJson, UploadUtil.FIELD_PHONE_INFO));
         record.setMetadata(infoJson);
 
         // validate and normalize filenames
