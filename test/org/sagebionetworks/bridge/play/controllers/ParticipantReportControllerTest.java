@@ -38,6 +38,7 @@ import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.reports.ReportData;
+import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -169,6 +170,26 @@ public class ParticipantReportControllerTest {
         Result result = controller.getParticipantReportForSelf(REPORT_ID, START_DATE.toString(), END_DATE.toString());
         assertEquals(200, result.status());
         assertResult(result);
+    }
+    
+    @Test
+    public void saveParticipantDataForSelf() throws Exception {
+        setupContext();
+        
+        String json = TestUtils.createJson("{'date':'2015-02-12','data':{'field1':'Last','field2':'Name'}}");
+        TestUtils.mockPlayContextWithJson(json);
+        
+        Result result = controller.saveParticipantReportForSelf(REPORT_ID);
+        assertEquals(201, result.status());
+        
+        verify(mockReportService).saveParticipantReport(eq(session.getStudyIdentifier()), eq(REPORT_ID),
+                eq(HEALTH_CODE), reportDataCaptor.capture());
+        
+        ReportData reportData = reportDataCaptor.getValue();
+        assertEquals(LocalDate.parse("2015-02-12"), reportData.getDate());
+        assertEquals("Last", reportData.getData().get("field1").asText());
+        assertEquals("Name", reportData.getData().get("field2").asText());
+        assertNull(reportData.getKey());
     }
     
     @Test
