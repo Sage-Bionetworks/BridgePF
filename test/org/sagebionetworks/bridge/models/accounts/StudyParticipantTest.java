@@ -4,11 +4,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -44,8 +49,9 @@ public class StudyParticipantTest {
             .put("C", "D").build();
     
     @Test
-    public void hashEquals() {
-        EqualsVerifier.forClass(StudyParticipant.class).allFieldsShouldBeUsed().verify();
+    public void hashEquals() throws Exception {
+        EqualsVerifier.forClass(StudyParticipant.class).allFieldsShouldBeUsed()
+                .withPrefabValues(JsonNode.class, TestUtils.getClientData(), TestUtils.getOtherClientData()).verify();
     }
     
     @Test
@@ -69,6 +75,11 @@ public class StudyParticipantTest {
         assertEquals(ACCOUNT_ID, node.get("id").asText());
         assertEquals("+04:00", node.get("timeZone").asText());
         assertEquals("StudyParticipant", node.get("type").asText());
+        
+        JsonNode clientData = node.get("clientData");
+        assertTrue(clientData.get("booleanFlag").booleanValue());
+        assertEquals("testString", clientData.get("stringValue").asText());
+        assertEquals(4, clientData.get("intValue").intValue());
 
         Set<String> roleNames = Sets.newHashSet(
                 Roles.ADMIN.name().toLowerCase(), Roles.WORKER.name().toLowerCase());
@@ -87,7 +98,7 @@ public class StudyParticipantTest {
 
         assertEquals("B", node.get("attributes").get("A").asText());
         assertEquals("D", node.get("attributes").get("C").asText());
-        assertEquals(18, node.size());
+        assertEquals(19, node.size());
         
         StudyParticipant deserParticipant = BridgeObjectMapper.get().readValue(node.toString(), StudyParticipant.class);
         assertEquals("firstName", deserParticipant.getFirstName());
@@ -157,9 +168,71 @@ public class StudyParticipantTest {
         assertEquals(CREATED_ON, copy.getCreatedOn());
         assertEquals(AccountStatus.ENABLED, copy.getStatus());
         assertEquals(ACCOUNT_ID, copy.getId());
+        assertEquals(TestUtils.getClientData(), copy.getClientData());
         
         // And they are equal in the Java sense
         assertEquals(copy, participant);
+    }
+    
+    @Test
+    public void canCopyGetFirstName() {
+        assertCopyField("firstName", (builder)-> verify(builder).withFirstName(any()));
+    }
+    @Test
+    public void canCopyGetLastName() {
+        assertCopyField("lastName", (builder)-> verify(builder).withLastName(any()));
+    }
+    @Test
+    public void canCopyGetSharingScope() {
+        assertCopyField("sharingScope", (builder)-> verify(builder).withSharingScope(any()));
+    }
+    @Test
+    public void canCopyIsNotifyByEmail() {
+        assertCopyField("notifyByEmail", (builder)-> verify(builder).withNotifyByEmail(any()));
+    }
+    @Test
+    public void canCopyGetDataGroups() {
+        assertCopyField("dataGroups", (builder)-> verify(builder).withDataGroups(any()));
+    }
+    @Test
+    public void canCopyGetHealthCode() {
+        assertCopyField("healthCode", (builder)-> verify(builder).withHealthCode(any()));
+    }
+    @Test
+    public void canCopyGetAttributes() {
+        assertCopyField("attributes", (builder)-> verify(builder).withAttributes(any()));
+    }
+    @Test
+    public void canCopyGetConsentHistories() {
+        assertCopyField("consentHistories", (builder)-> verify(builder).withConsentHistories(any()));
+    }
+    @Test
+    public void canCopyGetRoles() {
+        assertCopyField("roles", (builder)-> verify(builder).withRoles(any()));
+    }
+    @Test
+    public void canCopyGetLanguages() {
+        assertCopyField("languages", (builder)-> verify(builder).withLanguages(any()));
+    }
+    @Test
+    public void canCopyGetStatus() {
+        assertCopyField("status", (builder)-> verify(builder).withStatus(any()));
+    }
+    @Test
+    public void canCopyGetCreatedOn() {
+        assertCopyField("createdOn", (builder)-> verify(builder).withCreatedOn(any()));
+    }
+    @Test
+    public void canCopyGetId() {
+        assertCopyField("id", (builder)-> verify(builder).withId(any()));
+    }
+    @Test
+    public void canCopyGetTimeZone() {
+        assertCopyField("timeZone", (builder)-> verify(builder).withTimeZone(any()));
+    }
+    @Test
+    public void canCopyGetClientData() {
+        assertCopyField("clientData", (builder)-> verify(builder).withClientData(any()));
     }
     
     @Test
@@ -196,13 +269,26 @@ public class StudyParticipantTest {
         assertEquals("password", participant.getPassword());
     }    
 
-    private StudyParticipant createParticipantWithHealthCodes() {
+    private void assertCopyField(String fieldName, Consumer<StudyParticipant.Builder> predicate) {
+        StudyParticipant participant = makeParticipant().build();
+        StudyParticipant.Builder builder = spy(StudyParticipant.Builder.class);
+        Set<String> fieldsToCopy = Sets.newHashSet(fieldName);
+        
+        builder.copyFieldsOf(participant, fieldsToCopy);
+        verify(builder).copyFieldsOf(participant, fieldsToCopy);
+        predicate.accept(builder);
+        verifyNoMoreInteractions(builder);
+    }
+    
+    private StudyParticipant createParticipantWithHealthCodes() throws Exception {
         StudyParticipant.Builder builder = makeParticipant();
         builder.withHealthCode(null).withEncryptedHealthCode(TestConstants.ENCRYPTED_HEALTH_CODE);
         return builder.build();
     }
 
     private StudyParticipant.Builder makeParticipant() {
+        JsonNode clientData = TestUtils.getClientData();
+        
         StudyParticipant.Builder builder = new StudyParticipant.Builder()
                 .withFirstName("firstName")
                 .withLastName("lastName")
@@ -219,6 +305,7 @@ public class StudyParticipantTest {
                 .withCreatedOn(CREATED_ON)
                 .withId(ACCOUNT_ID)
                 .withStatus(AccountStatus.ENABLED)
+                .withClientData(clientData)
                 .withTimeZone(TIME_ZONE);
         
         Map<String,List<UserConsentHistory>> historiesMap = Maps.newHashMap();

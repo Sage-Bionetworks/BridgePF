@@ -12,6 +12,7 @@ import java.util.Set;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 
 public class HibernateAccountTest {
     @Test
@@ -114,5 +115,19 @@ public class HibernateAccountTest {
         // Similarly, putting values to the set reflect through.
         gettedRoleSet2.add(Roles.RESEARCHER);
         assertEquals(EnumSet.of(Roles.RESEARCHER), account.getRoles());
+    }
+    
+    @Test
+    public void accountSummaryConstructor() {
+        HibernateAccount account = new HibernateAccount(new Long(123), "studyId", "firstName", "lastName", "email",
+                "id", AccountStatus.UNVERIFIED);
+
+        assertEquals(new Long(123), account.getCreatedOn());
+        assertEquals("studyId", account.getStudyId());
+        assertEquals("firstName", account.getFirstName());
+        assertEquals("lastName", account.getLastName());
+        assertEquals("email", account.getEmail());
+        assertEquals("id", account.getId());
+        assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
     }
 }
