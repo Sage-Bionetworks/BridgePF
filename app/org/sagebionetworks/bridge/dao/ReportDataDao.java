@@ -1,8 +1,10 @@
 package org.sagebionetworks.bridge.dao;
 
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 
@@ -20,6 +22,12 @@ public interface ReportDataDao {
      */
     DateRangeResourceList<? extends ReportData> getReportData(ReportDataKey key, LocalDate startDate, LocalDate endDate);
 
+    /**
+     * Get report data in a given date range, with paging.
+     */
+    ForwardCursorPagedResourceList<ReportData> getReportDataV4(ReportDataKey key, DateTime startTime, DateTime endTime,
+            String offsetKey, int pageSize);
+    
     /**
      * Writes a report data record to the backing store. 
      *

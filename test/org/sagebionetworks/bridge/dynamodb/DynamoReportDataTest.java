@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.junit.Test;
 
@@ -36,7 +37,7 @@ public class DynamoReportDataTest {
         objNode.put("c", 10);
         
         reportData.setKey(key.getKeyString());
-        reportData.setDate(DATE);
+        reportData.setLocalDate(DATE);
         reportData.setData(objNode);
         
         String json = MAPPER.writeValueAsString(reportData);
@@ -50,9 +51,26 @@ public class DynamoReportDataTest {
         
         ReportData deser = MAPPER.readValue(json, ReportData.class);
         assertNull(deser.getKey());
-        assertEquals(DATE, deser.getDate());
+        assertEquals(DATE, deser.getLocalDate());
         assertTrue(deser.getData().get("a").asBoolean());
         assertEquals("string", deser.getData().get("b").asText());
         assertEquals(10, deser.getData().get("c").asInt());
+    }
+    
+    @Test
+    public void canSetEitherLocalDateOrDateTime() throws Exception {
+        DateTime dateTime = DateTime.parse("2016-10-10T10:42:42.123-07:00");
+        LocalDate localDate = LocalDate.parse("2016-10-10");
+        
+        DynamoReportData report = new DynamoReportData();
+        report.setLocalDate(localDate);
+        assertEquals(localDate.toString(), report.getDate());
+        assertEquals(localDate, report.getLocalDate());
+        assertNull(report.getDateTime());
+        
+        report.setDateTime(dateTime);
+        assertEquals(dateTime.toString(), report.getDate());
+        assertEquals(dateTime, report.getDateTime());
+        assertNull(report.getLocalDate());
     }
 }

@@ -15,6 +15,7 @@ import java.util.Set;
 import com.google.common.collect.ImmutableMap;
 
 import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 import org.junit.Test;
 
@@ -365,6 +366,26 @@ public class BridgeUtilsTest {
         assertEquals("foo:task:2010-10-10T10:10:10.111", referent);
     }
     
+    @Test
+    public void getLocalDateWithValue() throws Exception {
+        LocalDate localDate = LocalDate.parse("2017-05-10");
+        LocalDate parsed = BridgeUtils.getLocalDateOrDefault(localDate.toString(), null);
+        
+        assertEquals(localDate, parsed);
+    }
+    
+    @Test
+    public void getLocalDateWithDefault() {
+        LocalDate localDate = LocalDate.parse("2017-05-10");
+        LocalDate parsed = BridgeUtils.getLocalDateOrDefault(null, localDate);
+        
+        assertEquals(localDate, parsed);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void getLocalDateWithError() {
+        BridgeUtils.getLocalDateOrDefault("2017-05-10T05:05:10.000Z", null);
+    }
     
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.
     private <T> void orderedSetsEqual(Set<T> first, Set<T> second) {
