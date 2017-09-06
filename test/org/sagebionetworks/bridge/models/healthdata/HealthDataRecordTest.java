@@ -31,9 +31,11 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 @SuppressWarnings("unchecked")
 public class HealthDataRecordTest {
+    private static final String APP_VERSION = "version 1.0.0, build 2";
     private static final long CREATED_ON_MILLIS = 1502498010000L;
     private static final JsonNode DUMMY_DATA = BridgeObjectMapper.get().createObjectNode();
     private static final JsonNode DUMMY_METADATA = BridgeObjectMapper.get().createObjectNode();
+    private static final String PHONE_INFO = "Unit Tests";
     private static final LocalDate UPLOAD_DATE = LocalDate.parse("2017-08-11");
 
     @Test
@@ -65,7 +67,9 @@ public class HealthDataRecordTest {
         // build
         HealthDataRecord record = makeValidRecord();
         record.setId("optional record ID");
+        record.setAppVersion(APP_VERSION);
         record.setCreatedOnTimeZone("+0900");
+        record.setPhoneInfo(PHONE_INFO);
         record.setSynapseExporterStatus(HealthDataRecord.ExporterStatus.NOT_EXPORTED);
         record.setUploadId("optional upload ID");
         record.setUploadedOn(uploadedOn);
@@ -76,7 +80,9 @@ public class HealthDataRecordTest {
         Validate.entityThrowingException(HealthDataRecordValidator.INSTANCE, record);
 
         assertEquals("optional record ID", record.getId());
+        assertEquals(APP_VERSION, record.getAppVersion());
         assertEquals("+0900", record.getCreatedOnTimeZone());
+        assertEquals(PHONE_INFO, record.getPhoneInfo());
         assertEquals(HealthDataRecord.ExporterStatus.NOT_EXPORTED, record.getSynapseExporterStatus());
         assertEquals("optional upload ID", record.getUploadId());
         assertEquals(uploadedOn, record.getUploadedOn().longValue());
@@ -244,12 +250,14 @@ public class HealthDataRecordTest {
 
         // start with JSON
         String jsonText = "{\n" +
+                "   \"appVersion\":\"" + APP_VERSION + "\",\n" +
                 "   \"createdOn\":\"2014-02-12T13:45-0800\",\n" +
                 "   \"createdOnTimeZone\":\"-0800\",\n" +
                 "   \"data\":{\"myData\":\"myDataValue\"},\n" +
                 "   \"healthCode\":\"json healthcode\",\n" +
                 "   \"id\":\"json record ID\",\n" +
                 "   \"metadata\":{\"myMetadata\":\"myMetaValue\"},\n" +
+                "   \"phoneInfo\":\"" + PHONE_INFO + "\",\n" +
                 "   \"schemaId\":\"json schema\",\n" +
                 "   \"schemaRevision\":3,\n" +
                 "   \"studyId\":\"json study\",\n" +
@@ -265,10 +273,12 @@ public class HealthDataRecordTest {
 
         // convert to POJO
         HealthDataRecord record = BridgeObjectMapper.get().readValue(jsonText, HealthDataRecord.class);
+        assertEquals(APP_VERSION, record.getAppVersion());
         assertEquals(measuredTimeMillis, record.getCreatedOn().longValue());
         assertEquals("-0800", record.getCreatedOnTimeZone());
         assertEquals("json healthcode", record.getHealthCode());
         assertEquals("json record ID", record.getId());
+        assertEquals(PHONE_INFO, record.getPhoneInfo());
         assertEquals("json schema", record.getSchemaId());
         assertEquals(3, record.getSchemaRevision());
         assertEquals("json study", record.getStudyId());
@@ -291,10 +301,12 @@ public class HealthDataRecordTest {
 
         // then convert to a map so we can validate the raw JSON
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(17, jsonMap.size());
+        assertEquals(19, jsonMap.size());
+        assertEquals(APP_VERSION, jsonMap.get("appVersion"));
         assertEquals("-0800", jsonMap.get("createdOnTimeZone"));
         assertEquals("json healthcode", jsonMap.get("healthCode"));
         assertEquals("json record ID", jsonMap.get("id"));
+        assertEquals(PHONE_INFO, jsonMap.get("phoneInfo"));
         assertEquals("json schema", jsonMap.get("schemaId"));
         assertEquals(3, jsonMap.get("schemaRevision"));
         assertEquals("json study", jsonMap.get("studyId"));
@@ -323,7 +335,7 @@ public class HealthDataRecordTest {
 
         // Convert back to map again. Only validate a few key fields are present and the filtered fields are absent.
         Map<String, Object> publicJsonMap = BridgeObjectMapper.get().readValue(publicJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(16, publicJsonMap.size());
+        assertEquals(18, publicJsonMap.size());
         assertFalse(publicJsonMap.containsKey("healthCode"));
         assertEquals("json record ID", publicJsonMap.get("id"));
     }

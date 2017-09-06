@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
@@ -25,6 +26,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -46,12 +48,17 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 /** Hibernate implementation of Account Dao. */
 @Component
 public class HibernateAccountDao implements AccountDao {
     
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
 
+    static final String ACCOUNT_SUMMARY_QUERY_PREFIX = "select new " + HibernateAccount.class.getCanonicalName() +
+            "(createdOn, studyId, firstName, lastName, email, id, status) ";
+    
     private AccountWorkflowService accountWorkflowService;
     private HealthCodeService healthCodeService;
     private HibernateHelper hibernateHelper;
@@ -346,9 +353,12 @@ public class HibernateAccountDao implements AccountDao {
             queryBuilder.append(endTime.getMillis());
         }
         String query = queryBuilder.toString();
+        
+        // Don't retrieve unused columns, clientData can be large
+        String getQuery = ACCOUNT_SUMMARY_QUERY_PREFIX + query;
 
         // Get page of accounts.
-        List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet(query, offsetBy, pageSize,
+        List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet(getQuery, offsetBy, pageSize,
                 HibernateAccount.class);
         List<AccountSummary> accountSummaryList = hibernateAccountList.stream()
                 .map(HibernateAccountDao::unmarshallAccountSummary).collect(Collectors.toList());
@@ -388,6 +398,12 @@ public class HibernateAccountDao implements AccountDao {
         hibernateAccount.setRoles(genericAccount.getRoles());
         hibernateAccount.setStatus(genericAccount.getStatus());
         hibernateAccount.setVersion(genericAccount.getVersion());
+        
+        if (genericAccount.getClientData() != null) {
+            hibernateAccount.setClientData(genericAccount.getClientData().toString());
+        } else {
+            hibernateAccount.setClientData(null);
+        }
 
         // Attributes that need parsing.
         if (genericAccount.getStudyIdentifier() != null) {
@@ -472,6 +488,15 @@ public class HibernateAccountDao implements AccountDao {
         account.setStatus(hibernateAccount.getStatus());
         account.setRoles(hibernateAccount.getRoles());
         account.setVersion(hibernateAccount.getVersion());
+        
+        if (hibernateAccount.getClientData() != null) {
+            try {
+                JsonNode clientData = BridgeObjectMapper.get().readTree(hibernateAccount.getClientData());
+                account.setClientData(clientData);
+            } catch (IOException e) {
+                throw new BridgeServiceException(e);
+            }
+        }
 
         // attributes that need parsing
         if (StringUtils.isNotBlank(hibernateAccount.getStudyId())) {

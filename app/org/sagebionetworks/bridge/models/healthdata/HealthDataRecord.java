@@ -37,6 +37,14 @@ public interface HealthDataRecord extends BridgeEntity {
     }
 
     /**
+     * App version, as reported by the app. Generally in the form "version 1.0.0, build 2". Must be 48 chars or less.
+     */
+    String getAppVersion();
+
+    /** @see #getAppVersion */
+    void setAppVersion(String appVersion);
+
+    /**
      * The timestamp at which this health data was created (recorded on the client), in milliseconds since 1970-01-01
      * (start of epoch).
      */
@@ -74,6 +82,12 @@ public interface HealthDataRecord extends BridgeEntity {
 
     /** @see #getMetadata */
     void setMetadata(JsonNode metadata);
+
+    /** Phone info, for example "iPhone9,3" or "iPhone 5c (GSM)". Must be 48 chars or less. */
+    String getPhoneInfo();
+
+    /** @see #getPhoneInfo */
+    void setPhoneInfo(String phoneInfo);
 
     /** Schema ID of the health data. */
     String getSchemaId();

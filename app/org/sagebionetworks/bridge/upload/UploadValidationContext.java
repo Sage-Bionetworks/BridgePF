@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableList;
 
 /** This class encapsulates data read and generated during the process of upload validation. */
 public class UploadValidationContext {
+    private String healthCode;
     private StudyIdentifier study;
     private Upload upload;
     private boolean success = true;
@@ -25,6 +26,16 @@ public class UploadValidationContext {
     private HealthDataRecord healthDataRecord;
     private Map<String, byte[]> attachmentsByFieldName;
     private String recordId;
+
+    /** Health code of the user contributing the health data. */
+    public String getHealthCode() {
+        return healthCode;
+    }
+
+    /** @see #getHealthCode */
+    public void setHealthCode(String healthCode) {
+        this.healthCode = healthCode;
+    }
 
     /**
      * This is the study that the upload lives in and is validated against. This is made available by the upload
@@ -50,6 +61,14 @@ public class UploadValidationContext {
     /** @see #getUpload */
     public void setUpload(Upload upload) {
         this.upload = upload;
+    }
+
+    /**
+     * Helper method which returns the upload ID. Returns null if there is no upload. This is generally used of the
+     * health data is created through the synchronous API instead of the upload API.
+     */
+    public String getUploadId() {
+        return upload != null ? upload.getUploadId() : null;
     }
 
     /**
@@ -185,6 +204,7 @@ public class UploadValidationContext {
      */
     public UploadValidationContext shallowCopy() {
         UploadValidationContext copy = new UploadValidationContext();
+        copy.healthCode = this.healthCode;
         copy.study = this.study;
         copy.upload = this.upload;
         copy.success = this.success;

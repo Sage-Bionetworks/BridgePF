@@ -47,6 +47,28 @@ public class HibernateAccount {
     private Set<Roles> roles;
     private AccountStatus status;
     private int version;
+    private String clientData;
+
+    /**
+     * No args constructor, required and used by Hibernate for full object initialization.
+     */
+    public HibernateAccount() {}
+    
+    /**
+     * Constructor to load information for the AccountSummary object. Could not find a way to 
+     * construct this object with just the indicated fields using a select clause, without also 
+     * specifying a constructor.
+     */
+    public HibernateAccount(Long createdOn, String studyId, String firstName, String lastName, String email, String id,
+            AccountStatus status) {
+        this.createdOn = createdOn;
+        this.studyId = studyId;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.id = id;
+        this.status = status;
+    }
 
     /**
      * Account ID, used as a unique identifier for the account that doesn't leak email address (which is personally
@@ -250,7 +272,18 @@ public class HibernateAccount {
     public void setStatus(AccountStatus status) {
         this.status = status;
     }
-
+    
+    /** @see #getClientData */
+    @Column(columnDefinition = "mediumtext", name = "clientData", nullable = true)
+    public String getClientData() {
+        return clientData;
+    }
+    
+    /** The serialized content of clientData JSON. */
+    public void setClientData(String clientData) {
+        this.clientData = clientData;
+    }
+    
     @Version
     /** Version number, used by Hibernate to handle optimistic locking. */
     public int getVersion() {

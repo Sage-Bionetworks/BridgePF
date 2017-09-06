@@ -52,6 +52,7 @@ public class UploadValidationTaskFactory {
     public UploadValidationTask newTask(@Nonnull StudyIdentifier study, @Nonnull Upload upload) {
         // context
         UploadValidationContext context = new UploadValidationContext();
+        context.setHealthCode(upload.getHealthCode());
         context.setStudy(study);
         context.setUpload(upload);
 

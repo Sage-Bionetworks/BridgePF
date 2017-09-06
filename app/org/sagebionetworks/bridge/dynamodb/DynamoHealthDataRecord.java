@@ -27,12 +27,14 @@ import com.fasterxml.jackson.datatype.joda.deser.LocalDateDeserializer;
 @DynamoDBTable(tableName = "HealthDataRecord3")
 @JsonFilter("filter")
 public class DynamoHealthDataRecord implements HealthDataRecord {
+    private String appVersion;
     private Long createdOn;
     private String createdOnTimeZone;
     private JsonNode data;
     private String healthCode;
     private String id;
     private JsonNode metadata;
+    private String phoneInfo;
     private String schemaId;
     private int schemaRevision;
     private String studyId;
@@ -44,6 +46,18 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private Set<String> userDataGroups;
     private Long version;
     private ExporterStatus synapseExporterStatus;
+
+    /** {@inheritDoc} */
+    @Override
+    public String getAppVersion() {
+        return appVersion;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setAppVersion(String appVersion) {
+        this.appVersion = appVersion;
+    }
 
     /** {@inheritDoc} */
     @DynamoDBIndexRangeKey(attributeName = "createdOn", globalSecondaryIndexName = "healthCode-createdOn-index")
@@ -122,6 +136,18 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     @Override
     public void setMetadata(JsonNode metadata) {
         this.metadata = metadata;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public String getPhoneInfo() {
+        return phoneInfo;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setPhoneInfo(String phoneInfo) {
+        this.phoneInfo = phoneInfo;
     }
 
     /** {@inheritDoc} */

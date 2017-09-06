@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -36,6 +37,8 @@ import org.sagebionetworks.bridge.services.SurveyService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 public class IosSchemaValidationHandler2Test {
+    private static final String APP_VERSION = "version 1.0.0, build 2";
+    private static final String PHONE_INFO = "Unit Tests";
     private static final String TEST_HEALTHCODE = "test-healthcode";
     private static final String TEST_STUDY_ID = "test-study";
     private static final String TEST_UPLOAD_DATE_STRING = "2015-04-13";
@@ -236,7 +239,7 @@ public class IosSchemaValidationHandler2Test {
                 "   }],\n" +
                 "   \"item\":\"test-survey\"\n" +
                 "}";
-        JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
+        JsonNode infoJsonNode = addAppVersionPhoneInfoToInfoJson(infoJsonText);
 
         String fooAnswerJsonText = "{\n" +
                 "   \"questionType\":0,\n" +
@@ -384,7 +387,7 @@ public class IosSchemaValidationHandler2Test {
                 "   \"surveyGuid\":\"test-guid\",\n" +
                 "   \"surveyCreatedOn\":\"2015-08-27T13:38:55-07:00\"\n" +
                 "}";
-        JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
+        JsonNode infoJsonNode = addAppVersionPhoneInfoToInfoJson(infoJsonText);
 
         String fooAnswerJsonText = "{\n" +
                 "   \"questionType\":0,\n" +
@@ -471,7 +474,7 @@ public class IosSchemaValidationHandler2Test {
                 "   }],\n" +
                 "   \"item\":\"json-data\"\n" +
                 "}";
-        JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
+        JsonNode infoJsonNode = addAppVersionPhoneInfoToInfoJson(infoJsonText);
 
         String stringJsonText = "{\n" +
                 "   \"string\":\"This is a string\",\n" +
@@ -547,7 +550,7 @@ public class IosSchemaValidationHandler2Test {
                 "   }],\n" +
                 "   \"item\":\"non-json-data\"\n" +
                 "}";
-        JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
+        JsonNode infoJsonNode = addAppVersionPhoneInfoToInfoJson(infoJsonText);
 
         String jsonJsonText = "{\n" +
                 "   \"field\":\"This is JSON data\"\n" +
@@ -610,7 +613,7 @@ public class IosSchemaValidationHandler2Test {
                 "   }],\n" +
                 "   \"item\":\"mixed-data\"\n" +
                 "}";
-        JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
+        JsonNode infoJsonNode = addAppVersionPhoneInfoToInfoJson(infoJsonText);
 
         String attachmentJsonText = "{\n" +
                 "   \"attachment\":\"This is an attachment\"\n" +
@@ -686,7 +689,7 @@ public class IosSchemaValidationHandler2Test {
                 "   }],\n" +
                 "   \"item\":\"schema-rev-test\"\n" +
                 "}";
-        JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
+        JsonNode infoJsonNode = addAppVersionPhoneInfoToInfoJson(infoJsonText);
 
         String dummyJsonText = "{\n" +
                 "   \"field\":\"dummy field value\"\n" +
@@ -733,7 +736,7 @@ public class IosSchemaValidationHandler2Test {
                 "   \"item\":\"schema-rev-test\",\n" +
                 "   \"schemaRevision\":3\n" +
                 "}";
-        JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
+        JsonNode infoJsonNode = addAppVersionPhoneInfoToInfoJson(infoJsonText);
 
         String dummyJsonText = "{\n" +
                 "   \"field\":\"dummy field value\"\n" +
@@ -781,7 +784,7 @@ public class IosSchemaValidationHandler2Test {
                 "   \"item\":\"simple-attachment-schema\",\n" +
                 "   \"schemaRevision\":1\n" +
                 "}";
-        JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
+        JsonNode infoJsonNode = addAppVersionPhoneInfoToInfoJson(infoJsonText);
 
         context.setJsonDataMap(ImmutableMap.of(
                 "info.json", infoJsonNode));
@@ -800,9 +803,18 @@ public class IosSchemaValidationHandler2Test {
         assertNull(record.getCreatedOnTimeZone());
     }
 
+    private static JsonNode addAppVersionPhoneInfoToInfoJson(String infoJsonText) throws Exception {
+        ObjectNode infoJsonNode = (ObjectNode) BridgeObjectMapper.get().readTree(infoJsonText);
+        infoJsonNode.put(UploadUtil.FIELD_APP_VERSION, APP_VERSION);
+        infoJsonNode.put(UploadUtil.FIELD_PHONE_INFO, PHONE_INFO);
+        return infoJsonNode;
+    }
+
     private static void validateCommonProps(UploadValidationContext ctx) {
         HealthDataRecord record = ctx.getHealthDataRecord();
+        assertEquals(APP_VERSION, record.getAppVersion());
         assertEquals(TEST_HEALTHCODE, record.getHealthCode());
+        assertEquals(PHONE_INFO, record.getPhoneInfo());
         assertEquals(TEST_STUDY_ID, record.getStudyId());
         assertEquals(MOCK_NOW.toLocalDate(), record.getUploadDate());
         assertEquals(TEST_UPLOAD_ID, record.getUploadId());

@@ -121,7 +121,7 @@ public class StrictValidationHandler implements UploadValidationHandler {
 
         // log warning
         String combinedErrorMessage = "Strict upload validation error in study " + context.getStudy().getIdentifier()
-                + ", schema " + schemaId + "-v" + schemaRev + ", upload " + context.getUpload().getUploadId() + ": " +
+                + ", schema " + schemaId + "-v" + schemaRev + ", upload " + context.getUploadId() + ": " +
                 ERROR_MESSAGE_JOINER.join(errorList);
         logger.warn(combinedErrorMessage);
 

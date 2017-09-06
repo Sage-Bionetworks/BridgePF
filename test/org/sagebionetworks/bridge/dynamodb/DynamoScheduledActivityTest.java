@@ -23,7 +23,6 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 
 public class DynamoScheduledActivityTest {
@@ -31,13 +30,7 @@ public class DynamoScheduledActivityTest {
     @Test
     public void equalsHashCode() throws Exception {
         EqualsVerifier.forClass(DynamoScheduledActivity.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed()
-                .withPrefabValues(JsonNode.class, TestUtils.getClientData(), getOtherClientData()).verify();
-    }
-
-    private JsonNode getOtherClientData() throws Exception {
-        JsonNode clientData = TestUtils.getClientData();
-        ((ObjectNode)clientData).put("newField", "newValue");
-        return clientData;
+                .withPrefabValues(JsonNode.class, TestUtils.getClientData(), TestUtils.getOtherClientData()).verify();
     }
     
     @Test
