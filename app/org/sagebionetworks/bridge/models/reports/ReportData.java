@@ -5,13 +5,14 @@ import org.joda.time.LocalDate;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoReportData;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @BridgeTypeName("ReportData")
 @JsonDeserialize(as=DynamoReportData.class)
-public interface ReportData {
+public interface ReportData extends BridgeEntity {
 
     static ReportData create() {
         return new DynamoReportData();
@@ -27,11 +28,13 @@ public interface ReportData {
     JsonNode getData();
     void setData(JsonNode data);
     
-    /** Local date for reports that use local dates as the range portion of their key. */ 
+    /** Local date for reports that use local dates as the range portion of their key. Either localDate 
+     * or dateTime must be provided, but never both. */ 
     LocalDate getLocalDate();
     void setLocalDate(LocalDate localDate);
     
-    /** DateTime for reports that use local dates as the range portion of their key. */ 
+    /** DateTime for reports that use specific dates and times as the range portion of their key. Either 
+     * localDate or dateTime must be provided, but never both. */ 
     DateTime getDateTime();
     void setDateTime(DateTime dateTime);
 }

@@ -18,7 +18,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 public class DynamoReportData implements ReportData {
 
     private String key;
-    private String date;
+    //private String date;
+    private LocalDate localDate;
+    private DateTime dateTime;
     private JsonNode data;
     
     @JsonIgnore
@@ -34,11 +36,22 @@ public class DynamoReportData implements ReportData {
     @DynamoDBRangeKey
     @Override
     public String getDate() {
-        return date;
+        if (localDate != null) {
+            return localDate.toString();
+        } else if (dateTime != null) {
+            return dateTime.toString();
+        }
+        return null;
     }
     @Override
     public void setDate(String date) {
-        this.date = date;
+        if (date != null) {
+            if (date.contains("T")) {
+                dateTime = DateTime.parse(date);
+            } else {
+                localDate = LocalDate.parse(date);
+            }
+        }
     }
     @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
     @Override
@@ -53,19 +66,19 @@ public class DynamoReportData implements ReportData {
     @DynamoDBIgnore
     @Override
     public LocalDate getLocalDate() {
-        return (date.contains("T")) ? null : DateUtils.parseCalendarDate(date);
+        return localDate;
     }
     @Override
     public void setLocalDate(LocalDate localDate) {
-        this.date = localDate.toString();
+        this.localDate = localDate;
     }
     @DynamoDBIgnore
     @Override
     public DateTime getDateTime() {
-        return (date.contains("T")) ? DateUtils.parseISODateTime(date) : null;
+        return dateTime;
     }
     @Override
     public void setDateTime(DateTime dateTime) {
-        this.date = dateTime.toString();
+        this.dateTime = dateTime;
     }
 }

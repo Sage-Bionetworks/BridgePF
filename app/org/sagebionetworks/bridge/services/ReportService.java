@@ -25,6 +25,8 @@ import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.validators.ReportDataValidator;
+import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
 public class ReportService {
@@ -148,14 +150,15 @@ public class ReportService {
 
     public void saveStudyReport(StudyIdentifier studyId, String identifier, ReportData reportData) {
         checkNotNull(reportData);
-        // ReportDataKey validates all other parameters to this method
-
+        
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(identifier)
                 .withStudyIdentifier(studyId)
                 .validateWithDate(reportData.getLocalDate()).build();
         reportData.setKey(key.getKeyString());
+        
+        Validate.entityThrowingException(ReportDataValidator.INSTANCE, reportData);
         
         reportDataDao.saveReportData(reportData);
         addToIndex(key);
@@ -164,7 +167,6 @@ public class ReportService {
     public void saveParticipantReport(StudyIdentifier studyId, String identifier, String healthCode,
             ReportData reportData) {
         checkNotNull(reportData);
-        // ReportDataKey validates all other parameters to this method
         
         ReportDataKey key = new ReportDataKey.Builder()
                 .withHealthCode(healthCode)
@@ -173,6 +175,8 @@ public class ReportService {
                 .withStudyIdentifier(studyId)
                 .validateWithDate(reportData.getLocalDate()).build();
         reportData.setKey(key.getKeyString());
+        
+        Validate.entityThrowingException(ReportDataValidator.INSTANCE, reportData);
         
         reportDataDao.saveReportData(reportData);
         addToIndex(key);        
