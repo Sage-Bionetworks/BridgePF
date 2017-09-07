@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class DynamoReportDataTest {
     
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
-    private static final LocalDate DATE = LocalDate.parse("2015-02-20");
+    private static final DateTime DATETIME = DateTime.parse("2015-02-20T16:32:12.123-05:00");
 
     @Test
     public void canSerialize() throws Exception {
@@ -37,14 +37,15 @@ public class DynamoReportDataTest {
         objNode.put("c", 10);
         
         reportData.setKey(key.getKeyString());
-        reportData.setLocalDate(DATE);
+        reportData.setDateTime(DATETIME);
         reportData.setData(objNode);
         
         String json = MAPPER.writeValueAsString(reportData);
         
         JsonNode node = MAPPER.readTree(json);
         assertNull(node.get("key"));
-        assertEquals(DATE.toString(), node.get("date").asText());
+        assertEquals(DATETIME.toString(), node.get("date").asText());
+        assertEquals(DATETIME.toString(), node.get("dateTime").asText());
         assertTrue(node.get("data").get("a").asBoolean());
         assertEquals("string", node.get("data").get("b").asText());
         assertEquals(10, node.get("data").get("c").asInt());
@@ -53,7 +54,8 @@ public class DynamoReportDataTest {
         
         ReportData deser = MAPPER.readValue(json, ReportData.class);
         assertNull(deser.getKey());
-        assertEquals(DATE, deser.getLocalDate());
+        assertEquals(DATETIME, deser.getDateTime());
+        assertEquals(DATETIME.toString(), deser.getDate());
         assertTrue(deser.getData().get("a").asBoolean());
         assertEquals("string", deser.getData().get("b").asText());
         assertEquals(10, deser.getData().get("c").asInt());

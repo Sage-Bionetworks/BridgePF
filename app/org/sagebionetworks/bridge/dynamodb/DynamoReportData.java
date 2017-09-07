@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
+import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 
@@ -13,6 +14,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @DynamoDBTable(tableName = "ReportData")
 public class DynamoReportData implements ReportData {
@@ -85,6 +87,7 @@ public class DynamoReportData implements ReportData {
         this.localDate = localDate;
     }
     @DynamoDBIgnore
+    @JsonSerialize(using = DateTimeSerializer.class)
     @Override
     public DateTime getDateTime() {
         return dateTime;
