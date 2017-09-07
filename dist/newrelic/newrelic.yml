@@ -93,7 +93,7 @@ common: &default_settings
     # by providing a comma separated list of status codes.
     # The default is to exclude 404s. If you want to override
     # this, you must provide any new value as an empty list is ignored.
-    ignore_status_codes: 400,401,403,404,409,410,412
+    ignore_status_codes: 400,401,403,404,409,410,412,423,429
 
   # Cross Application Tracing adds request and response headers to
   # external calls using supported HTTP libraries to provide better
