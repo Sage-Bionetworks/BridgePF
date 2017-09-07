@@ -61,9 +61,6 @@ import play.test.Helpers;
 @RunWith(MockitoJUnitRunner.class)
 public class ParticipantReportControllerTest {
     
-    private static final TypeReference<ForwardCursorPagedResourceList<ReportData>> PAGED_REPORT_REF = new TypeReference<ForwardCursorPagedResourceList<ReportData>>() {
-    };
-
     private static final String REPORT_ID = "foo";
 
     private static final String VALID_LANGUAGE_HEADER = "en-US";
@@ -196,7 +193,7 @@ public class ParticipantReportControllerTest {
         assertEquals(200, result.status());
         
         ForwardCursorPagedResourceList<ReportData> page = BridgeObjectMapper.get()
-                .readValue(Helpers.contentAsString(result), PAGED_REPORT_REF);
+                .readValue(Helpers.contentAsString(result), ReportData.PAGED_REPORT_DATA);
         
         assertEquals("nextPageOffsetKey", page.getNextPageOffsetKey());
         assertEquals(OFFSET_KEY, page.getRequestParams().get(ResourceList.OFFSET_KEY));
@@ -254,7 +251,7 @@ public class ParticipantReportControllerTest {
         assertEquals(200, result.status());
         
         ForwardCursorPagedResourceList<ReportData> page = BridgeObjectMapper.get()
-                .readValue(Helpers.contentAsString(result), PAGED_REPORT_REF);
+                .readValue(Helpers.contentAsString(result), ReportData.PAGED_REPORT_DATA);
         
         assertEquals("nextPageOffsetKey", page.getNextPageOffsetKey());
         assertEquals(OFFSET_KEY, page.getRequestParams().get(ResourceList.OFFSET_KEY));

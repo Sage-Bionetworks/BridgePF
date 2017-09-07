@@ -6,13 +6,18 @@ import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.dynamodb.DynamoReportData;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @BridgeTypeName("ReportData")
 @JsonDeserialize(as=DynamoReportData.class)
 public interface ReportData extends BridgeEntity {
+
+    static TypeReference<ForwardCursorPagedResourceList<ReportData>> PAGED_REPORT_DATA = new TypeReference<ForwardCursorPagedResourceList<ReportData>>() {
+    };
 
     static ReportData create() {
         return new DynamoReportData();

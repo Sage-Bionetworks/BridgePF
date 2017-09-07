@@ -17,9 +17,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 @DynamoDBTable(tableName = "ReportData")
 public class DynamoReportData implements ReportData {
 
-    private ReportDataKey reportDataKey;
     private String key;
     private LocalDate localDate;
+    // These values are held to make it easier to validate the report object
+    private ReportDataKey reportDataKey;
     private DateTime dateTime;
     private JsonNode data;
     
@@ -74,7 +75,6 @@ public class DynamoReportData implements ReportData {
     public void setData(JsonNode data) {
         this.data = data;
     }
-    
     @DynamoDBIgnore
     @Override
     public LocalDate getLocalDate() {

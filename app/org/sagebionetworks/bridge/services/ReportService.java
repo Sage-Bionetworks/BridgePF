@@ -20,6 +20,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.RangeTuple;
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
@@ -38,7 +39,7 @@ public class ReportService {
     
     private static final String EITHER_BOTH_DATES_OR_NEITHER = "Only one date of a date range provided (both startTime and endTime required)";
 
-    private static final String AMBIGUOUS_TIMEZONE_ERROR = "startTime and endTime must be in the same time zone";
+    private static final String AMBIGUOUS_TIMEZONE = "startTime and endTime must be in the same time zone";
     
     private static final String INVALID_TIME_RANGE = "startTime later in time than endTime";
     
@@ -64,9 +65,9 @@ public class ReportService {
     public DateRangeResourceList<? extends ReportData> getStudyReport(StudyIdentifier studyId, String identifier,
             LocalDate startDate, LocalDate endDate) {
         
-        LocalDate[] finalDates = validateLocalDateRange(startDate, endDate);
-        startDate = finalDates[0];
-        endDate = finalDates[1];
+        RangeTuple<LocalDate> finalDates = validateLocalDateRange(startDate, endDate);
+        startDate = finalDates.getStart();
+        endDate = finalDates.getEnd();
 
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
@@ -80,9 +81,9 @@ public class ReportService {
     public DateRangeResourceList<? extends ReportData> getParticipantReport(StudyIdentifier studyId, String identifier,
             String healthCode, LocalDate startDate, LocalDate endDate) {
         
-        LocalDate[] finalDates = validateLocalDateRange(startDate, endDate);
-        startDate = finalDates[0];
-        endDate = finalDates[1];
+        RangeTuple<LocalDate> finalDates = validateLocalDateRange(startDate, endDate);
+        startDate = finalDates.getStart();
+        endDate = finalDates.getEnd();
         
         ReportDataKey key = new ReportDataKey.Builder()
                 .withHealthCode(healthCode)
@@ -101,7 +102,7 @@ public class ReportService {
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
         }
-        DateTime[] finalTimes = validateDateTimeRange(startTime, endTime);
+        RangeTuple<DateTime> finalTimes = validateDateTimeRange(startTime, endTime);
         
         ReportDataKey key = new ReportDataKey.Builder()
                 .withHealthCode(healthCode)
@@ -110,7 +111,7 @@ public class ReportService {
                 .withStudyIdentifier(studyId).build();
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
-        return reportDataDao.getReportDataV4(key, finalTimes[0], finalTimes[1], offsetKey, pageSize);
+        return reportDataDao.getReportDataV4(key, finalTimes.getStart(), finalTimes.getEnd(), offsetKey, pageSize);
         
     }
     
@@ -121,7 +122,7 @@ public class ReportService {
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
         }
-        DateTime[] finalTimes = validateDateTimeRange(startTime, endTime);
+        RangeTuple<DateTime> finalTimes = validateDateTimeRange(startTime, endTime);
         
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
@@ -129,8 +130,7 @@ public class ReportService {
                 .withStudyIdentifier(studyId).build();
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
-        return reportDataDao.getReportDataV4(key, finalTimes[0], finalTimes[1], offsetKey, pageSize);
-        
+        return reportDataDao.getReportDataV4(key, finalTimes.getStart(), finalTimes.getEnd(), offsetKey, pageSize);
     }
     
     protected DateTime getDateTime() {
@@ -255,8 +255,8 @@ public class ReportService {
         reportIndexDao.addIndex(key);
     }
     
-    private DateTime[] validateDateTimeRange(DateTime startTime, DateTime endTime) {
-        // If nothing is provided, we will default to two weeks, going max days into future.
+    private RangeTuple<DateTime> validateDateTimeRange(DateTime startTime, DateTime endTime) {
+        // If nothing is provided, we will default to 13 days prior to today
         if (startTime == null && endTime == null) {
             DateTime now = getDateTime();
             startTime = now.minusDays(14);
@@ -270,12 +270,12 @@ public class ReportService {
         }
         DateTimeZone timezone = startTime.getZone();
         if (!timezone.equals(endTime.getZone())) {
-            throw new BadRequestException(AMBIGUOUS_TIMEZONE_ERROR);
+            throw new BadRequestException(AMBIGUOUS_TIMEZONE);
         }
-        return new DateTime[] {startTime, endTime};
+        return new RangeTuple<>(startTime, endTime);
     }
     
-    private LocalDate[] validateLocalDateRange(LocalDate startDate, LocalDate endDate) {
+    private RangeTuple<LocalDate> validateLocalDateRange(LocalDate startDate, LocalDate endDate) {
         if (startDate == null) {
             startDate = DateUtils.getCurrentCalendarDateInLocalTime().minusDays(1);
         }
@@ -290,6 +290,6 @@ public class ReportService {
             throw new BadRequestException("Date range cannot exceed " + MAX_RANGE_DAYS + " days, startDate=" +
                     startDate + ", endDate=" + endDate);
         }
-        return new LocalDate[] {startDate, endDate };
+        return new RangeTuple<>(startDate, endDate);
     }
 }

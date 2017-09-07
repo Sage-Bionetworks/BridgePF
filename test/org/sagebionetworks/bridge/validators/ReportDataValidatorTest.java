@@ -4,7 +4,6 @@ import static org.junit.Assert.assertTrue;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
-import org.junit.Before;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
@@ -16,12 +15,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 public class ReportDataValidatorTest {
     
-    private ReportDataValidator validator;
-
-    @Before
-    public void before() throws Exception {
-        validator = new ReportDataValidator();
-    }
+    private ReportDataValidator validator = ReportDataValidator.INSTANCE;
 
     @Test
     public void validWorks() {

@@ -62,9 +62,6 @@ public class StudyReportControllerTest {
     
     private static final TypeReference<DateRangeResourceList<? extends ReportData>> REPORT_REF = new TypeReference<DateRangeResourceList<? extends ReportData>>() {
     };
-
-    private static final TypeReference<ForwardCursorPagedResourceList<ReportData>> PAGED_REPORT_REF = new TypeReference<ForwardCursorPagedResourceList<ReportData>>() {
-    };
     
     private static final String REPORT_ID = "foo";
 
@@ -388,7 +385,7 @@ public class StudyReportControllerTest {
         assertEquals(200, result.status());
         
         ForwardCursorPagedResourceList<ReportData> page = BridgeObjectMapper.get()
-                .readValue(Helpers.contentAsString(result), PAGED_REPORT_REF);        
+                .readValue(Helpers.contentAsString(result), ReportData.PAGED_REPORT_DATA);        
         
         assertEquals("nextPageOffsetKey", page.getNextPageOffsetKey());
         assertEquals(OFFSET_KEY, page.getRequestParams().get(ResourceList.OFFSET_KEY));
@@ -421,7 +418,7 @@ public class StudyReportControllerTest {
         assertEquals(200, result.status());
         
         ForwardCursorPagedResourceList<ReportData> page = BridgeObjectMapper.get()
-                .readValue(Helpers.contentAsString(result), PAGED_REPORT_REF);        
+                .readValue(Helpers.contentAsString(result), ReportData.PAGED_REPORT_DATA);        
         
         assertEquals("nextPageOffsetKey", page.getNextPageOffsetKey());
         assertEquals(OFFSET_KEY, page.getRequestParams().get(ResourceList.OFFSET_KEY));

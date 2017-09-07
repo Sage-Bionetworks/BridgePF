@@ -23,7 +23,9 @@ public interface ReportDataDao {
     DateRangeResourceList<? extends ReportData> getReportData(ReportDataKey key, LocalDate startDate, LocalDate endDate);
 
     /**
-     * Get report data in a given date range, with paging.
+     * Get report data in a given date range, with paging. Since individual records in this API can 
+     * be returned with DateTime range keys, paging must be introduced over earlier versions of this 
+     * API.
      */
     ForwardCursorPagedResourceList<ReportData> getReportDataV4(ReportDataKey key, DateTime startTime, DateTime endTime,
             String offsetKey, int pageSize);
@@ -46,12 +48,8 @@ public interface ReportDataDao {
     void deleteReportData(ReportDataKey key);
     
     /**
-     * Delete a single record in a report. 
-     * 
-     * @param key
-     *         the key for this report
-     * @param date
-     *         the date of the report (LocalDate or DateTime)
+     * Delete a single record in a report. The date string value may be a LocalDate or 
+     * DateTime value expressed as a string 
      */
-    void deleteReportDataRecord(ReportDataKey key, String date);
+    void deleteReportDataRecord(ReportDataKey key, String dateValue);
 }

@@ -31,6 +31,7 @@ import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -63,9 +64,6 @@ public class ScheduledActivityService {
         return activity.getStatus() != ScheduledActivityStatus.DELETED;
     };
     
-    private static final String PAGE_SIZE_ERROR = "pageSize must be from " + API_MINIMUM_PAGE_SIZE + "-"
-            + API_MAXIMUM_PAGE_SIZE + " records";
-
     private static final String EITHER_BOTH_DATES_OR_NEITHER = "Only one date of a date range provided (both scheduledOnStart and scheduledOnEnd required)";
 
     private static final String AMBIGUOUS_TIMEZONE_ERROR = "scheduledOnStart and scheduledOnEnd must be in the same time zone";
@@ -156,7 +154,7 @@ public class ScheduledActivityService {
             throw new BadRequestException("Invalid activity type: " + activityType);
         }
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
-            throw new BadRequestException(PAGE_SIZE_ERROR);
+            throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
         }
         // If nothing is provided, we will default to two weeks, going max days into future.
         if (scheduledOnStart == null && scheduledOnEnd == null) {

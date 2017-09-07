@@ -48,6 +48,8 @@ public class DynamoReportDataTest {
         assertTrue(node.get("data").get("a").asBoolean());
         assertEquals("string", node.get("data").get("b").asText());
         assertEquals(10, node.get("data").get("c").asInt());
+        assertEquals("ReportData", node.get("type").asText());
+        assertEquals(4, node.size());
         
         ReportData deser = MAPPER.readValue(json, ReportData.class);
         assertNull(deser.getKey());

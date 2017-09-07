@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 public class ReportDataValidator implements Validator {
 
     public static final ReportDataValidator INSTANCE = new ReportDataValidator();
+    private ReportDataValidator() {}
     
     @Override
     public boolean supports(Class<?> clazz) {

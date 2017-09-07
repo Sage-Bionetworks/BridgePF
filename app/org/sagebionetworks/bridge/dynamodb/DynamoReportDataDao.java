@@ -62,7 +62,7 @@ public class DynamoReportDataDao implements ReportDataDao {
                 new DynamoDBQueryExpression<DynamoReportData>().withHashKeyValues(hashKey)
                         .withRangeKeyCondition("date", dateCondition);
         List<DynamoReportData> results = mapper.query(DynamoReportData.class, query);
-        
+
         return new DateRangeResourceList<DynamoReportData>(results)
                 .withRequestParam(START_DATE, startDate)
                 .withRequestParam(END_DATE, endDate);
@@ -75,7 +75,7 @@ public class DynamoReportDataDao implements ReportDataDao {
      * time zones.
      */
     @Override
-    public ForwardCursorPagedResourceList<ReportData> getReportDataV4(ReportDataKey key, final DateTime startTime,
+    public ForwardCursorPagedResourceList<ReportData> getReportDataV4(final ReportDataKey key, final DateTime startTime,
             final DateTime endTime, final String offsetKey, final int pageSize) {
         checkNotNull(key);
         checkNotNull(startTime);
@@ -87,6 +87,7 @@ public class DynamoReportDataDao implements ReportDataDao {
         
         AttributeValue start = new AttributeValue().withS(startTime.withZone(DateTimeZone.UTC).toString());
         AttributeValue end = new AttributeValue().withS(endTime.withZone(DateTimeZone.UTC).toString());
+        // The offsetKey should be in UTC
         if (offsetKey != null) {
             start = new AttributeValue().withS(offsetKey);
         }
@@ -154,9 +155,6 @@ public class DynamoReportDataDao implements ReportDataDao {
     
     @Override
     public void deleteReportDataRecord(ReportDataKey key, String date) {
-        checkNotNull(key);
-        checkNotNull(date);
-
         DynamoReportData hashKey = new DynamoReportData();
         hashKey.setKey(key.getKeyString());
         hashKey.setDate(date);
