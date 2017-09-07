@@ -164,10 +164,10 @@ public class DynamoReportDataDaoTest {
         dao.saveReportData(report2);
         assertEquals(2, dao.getReportData(reportDataKey, START_DATE, END_DATE).getItems().size());
         
-        dao.deleteReportDataRecord(reportDataKey, LocalDate.parse("2016-03-30"));
+        dao.deleteReportDataRecord(reportDataKey, "2016-03-30");
         assertEquals(1, dao.getReportData(reportDataKey, START_DATE, END_DATE).getItems().size());
         
-        dao.deleteReportDataRecord(reportDataKey, LocalDate.parse("2016-03-31"));
+        dao.deleteReportDataRecord(reportDataKey, "2016-03-31");
         assertEquals(0, dao.getReportData(reportDataKey, START_DATE, END_DATE).getItems().size());
     }
     

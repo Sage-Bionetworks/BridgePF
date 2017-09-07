@@ -204,11 +204,10 @@ public class ParticipantReportController extends BaseController {
     public Result deleteParticipantReportRecord(String userId, String identifier, String dateString) {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        LocalDate date = getLocalDateOrDefault(dateString, null);
         
         Account account = accountDao.getAccount(study, userId);
         
-        reportService.deleteParticipantReportRecord(session.getStudyIdentifier(), identifier, date, account.getHealthCode());
+        reportService.deleteParticipantReportRecord(session.getStudyIdentifier(), identifier, dateString, account.getHealthCode());
         
         return okResult("Report record deleted.");
     }

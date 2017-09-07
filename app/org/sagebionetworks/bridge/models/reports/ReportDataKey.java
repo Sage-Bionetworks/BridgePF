@@ -2,13 +2,8 @@ package org.sagebionetworks.bridge.models.reports;
 
 import java.util.Objects;
 
-import org.joda.time.LocalDate;
-import org.springframework.validation.Errors;
-
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.validators.ReportDataKeyValidator;
-import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -19,8 +14,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * required except healthCode, which is only required if the report type is PARTICIPANT.
  */
 public final class ReportDataKey implements BridgeEntity {
-    
-    private static final ReportDataKeyValidator VALIDATOR = new ReportDataKeyValidator();
     
     private final StudyIdentifier studyId;
     private final String identifier;
@@ -91,8 +84,6 @@ public final class ReportDataKey implements BridgeEntity {
         private String identifier;
         private String healthCode;
         private ReportType reportType;
-        private boolean validateDate = false;
-        private LocalDate date;
         
         public Builder withStudyIdentifier(StudyIdentifier studyId) {
             this.studyId = studyId;
@@ -110,23 +101,8 @@ public final class ReportDataKey implements BridgeEntity {
             this.reportType = reportType;
             return this;
         }
-        public Builder validateWithDate(LocalDate date) {
-            this.date = date;
-            this.validateDate = true;
-            return this;
-        }
         public ReportDataKey build() {
-            ReportDataKey key = new ReportDataKey(healthCode, identifier, studyId, reportType);
-            
-            Errors errors = Validate.getErrorsFor(key);
-            Validate.entity(VALIDATOR, errors, key);
-            if (validateDate && date == null) {
-                errors.rejectValue("date", "is required");
-            }
-            if (errors.hasErrors()) {
-                Validate.throwException(errors, key);
-            }
-            return key;
+            return new ReportDataKey(healthCode, identifier, studyId, reportType);
         }
     }
     

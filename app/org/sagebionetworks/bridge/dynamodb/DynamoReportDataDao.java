@@ -153,13 +153,13 @@ public class DynamoReportDataDao implements ReportDataDao {
     }
     
     @Override
-    public void deleteReportDataRecord(ReportDataKey key, LocalDate date) {
+    public void deleteReportDataRecord(ReportDataKey key, String date) {
         checkNotNull(key);
         checkNotNull(date);
 
         DynamoReportData hashKey = new DynamoReportData();
         hashKey.setKey(key.getKeyString());
-        hashKey.setLocalDate(date);
+        hashKey.setDate(date);
         
         DynamoReportData reportDataRecord = mapper.load(hashKey);
         if (reportDataRecord != null) {

@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
@@ -25,12 +26,15 @@ import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.validators.ReportDataKeyValidator;
 import org.sagebionetworks.bridge.validators.ReportDataValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
 public class ReportService {
     private static final int MAX_RANGE_DAYS = 45;
+    
+    private static final String RECORD_DATE_MISSING_MSG = "Date of report record is required";
     
     private static final String EITHER_BOTH_DATES_OR_NEITHER = "Only one date of a date range provided (both startTime and endTime required)";
 
@@ -59,33 +63,34 @@ public class ReportService {
     
     public DateRangeResourceList<? extends ReportData> getStudyReport(StudyIdentifier studyId, String identifier,
             LocalDate startDate, LocalDate endDate) {
-        // ReportDataKey validates all parameters to this method
         
-        startDate = defaultValueToMinusDays(startDate, 1);
-        endDate = defaultValueToMinusDays(endDate, 0);
-        validateDateRange(startDate, endDate);
+        LocalDate[] finalDates = validateLocalDateRange(startDate, endDate);
+        startDate = finalDates[0];
+        endDate = finalDates[1];
 
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(identifier)
                 .withStudyIdentifier(studyId).build();
+        Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         return reportDataDao.getReportData(key, startDate, endDate);
     }
     
     public DateRangeResourceList<? extends ReportData> getParticipantReport(StudyIdentifier studyId, String identifier,
             String healthCode, LocalDate startDate, LocalDate endDate) {
-        // ReportDataKey validates all parameters to this method
         
-        startDate = defaultValueToMinusDays(startDate, 1);
-        endDate = defaultValueToMinusDays(endDate, 0);
-        validateDateRange(startDate, endDate);
-
+        LocalDate[] finalDates = validateLocalDateRange(startDate, endDate);
+        startDate = finalDates[0];
+        endDate = finalDates[1];
+        
         ReportDataKey key = new ReportDataKey.Builder()
                 .withHealthCode(healthCode)
                 .withReportType(ReportType.PARTICIPANT)
                 .withIdentifier(identifier)
                 .withStudyIdentifier(studyId).build();
+        Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
+        
         return reportDataDao.getReportData(key, startDate, endDate);
     }
     
@@ -96,13 +101,15 @@ public class ReportService {
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
         }
-        DateTime[] finalTimes = validateDateRange(startTime, endTime);
+        DateTime[] finalTimes = validateDateTimeRange(startTime, endTime);
         
         ReportDataKey key = new ReportDataKey.Builder()
                 .withHealthCode(healthCode)
                 .withReportType(ReportType.PARTICIPANT)
                 .withIdentifier(identifier)
                 .withStudyIdentifier(studyId).build();
+        Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
+        
         return reportDataDao.getReportDataV4(key, finalTimes[0], finalTimes[1], offsetKey, pageSize);
         
     }
@@ -114,34 +121,16 @@ public class ReportService {
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
         }
-        DateTime[] finalTimes = validateDateRange(startTime, endTime);
+        DateTime[] finalTimes = validateDateTimeRange(startTime, endTime);
         
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(identifier)
                 .withStudyIdentifier(studyId).build();
+        Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
+        
         return reportDataDao.getReportDataV4(key, finalTimes[0], finalTimes[1], offsetKey, pageSize);
         
-    }
-    
-    private DateTime[] validateDateRange(DateTime startTime, DateTime endTime) {
-        // If nothing is provided, we will default to two weeks, going max days into future.
-        if (startTime == null && endTime == null) {
-            DateTime now = getDateTime();
-            startTime = now.minusDays(14);
-            endTime = now;
-        }
-        if (startTime == null || endTime == null) {
-            throw new BadRequestException(EITHER_BOTH_DATES_OR_NEITHER);
-        }
-        if (startTime.isAfter(endTime)) {
-            throw new BadRequestException(INVALID_TIME_RANGE);
-        }
-        DateTimeZone timezone = startTime.getZone();
-        if (!timezone.equals(endTime.getZone())) {
-            throw new BadRequestException(AMBIGUOUS_TIMEZONE_ERROR);
-        }
-        return new DateTime[] {startTime, endTime};
     }
     
     protected DateTime getDateTime() {
@@ -154,10 +143,8 @@ public class ReportService {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(identifier)
-                .withStudyIdentifier(studyId)
-                .validateWithDate(reportData.getLocalDate()).build();
-        reportData.setKey(key.getKeyString());
-        
+                .withStudyIdentifier(studyId).build();
+        reportData.setReportDataKey(key);
         Validate.entityThrowingException(ReportDataValidator.INSTANCE, reportData);
         
         reportDataDao.saveReportData(reportData);
@@ -172,10 +159,8 @@ public class ReportService {
                 .withHealthCode(healthCode)
                 .withReportType(ReportType.PARTICIPANT)
                 .withIdentifier(identifier)
-                .withStudyIdentifier(studyId)
-                .validateWithDate(reportData.getLocalDate()).build();
-        reportData.setKey(key.getKeyString());
-        
+                .withStudyIdentifier(studyId).build();
+        reportData.setReportDataKey(key);
         Validate.entityThrowingException(ReportDataValidator.INSTANCE, reportData);
         
         reportDataDao.saveReportData(reportData);
@@ -183,23 +168,26 @@ public class ReportService {
     }
     
     public void deleteStudyReport(StudyIdentifier studyId, String identifier) {
-        // ReportDataKey validates all parameters to this method
-
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(identifier)
                 .withStudyIdentifier(studyId).build();
+        Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         reportDataDao.deleteReportData(key);
         reportIndexDao.removeIndex(key);
     }
     
-    public void deleteStudyReportRecord(StudyIdentifier studyId, String identifier, LocalDate date) {
+    public void deleteStudyReportRecord(StudyIdentifier studyId, String identifier, String date) {
+        if (StringUtils.isBlank(date)) {
+            throw new BadRequestException(RECORD_DATE_MISSING_MSG);
+        }
+        
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(identifier)
-                .withStudyIdentifier(studyId)
-                .validateWithDate(date).build();
+                .withStudyIdentifier(studyId).build();
+        Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         reportDataDao.deleteReportDataRecord(key, date);
         
@@ -220,24 +208,27 @@ public class ReportService {
     }
     
     public void deleteParticipantReport(StudyIdentifier studyId, String identifier, String healthCode) {
-        // ReportDataKey validates all parameters to this method
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withHealthCode(healthCode)
+                .withReportType(ReportType.PARTICIPANT)
+                .withIdentifier(identifier)
+                .withStudyIdentifier(studyId).build();
+        Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
+        
+        reportDataDao.deleteReportData(key);
+    }
+    
+    public void deleteParticipantReportRecord(StudyIdentifier studyId, String identifier, String date, String healthCode) {
+        if (StringUtils.isBlank(date)) {
+            throw new BadRequestException(RECORD_DATE_MISSING_MSG);
+        }
         
         ReportDataKey key = new ReportDataKey.Builder()
                 .withHealthCode(healthCode)
                 .withReportType(ReportType.PARTICIPANT)
                 .withIdentifier(identifier)
                 .withStudyIdentifier(studyId).build();
-        
-        reportDataDao.deleteReportData(key);
-    }
-    
-    public void deleteParticipantReportRecord(StudyIdentifier studyId, String identifier, LocalDate date, String healthCode) {
-        ReportDataKey key = new ReportDataKey.Builder()
-                .withHealthCode(healthCode)
-                .withReportType(ReportType.PARTICIPANT)
-                .withIdentifier(identifier)
-                .withStudyIdentifier(studyId)
-                .validateWithDate(date).build();
+        Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         reportDataDao.deleteReportDataRecord(key, date);
     }
@@ -264,14 +255,33 @@ public class ReportService {
         reportIndexDao.addIndex(key);
     }
     
-    private LocalDate defaultValueToMinusDays(LocalDate submittedValue, int minusDays) {
-        if (submittedValue == null) {
-            return DateUtils.getCurrentCalendarDateInLocalTime().minusDays(minusDays);
+    private DateTime[] validateDateTimeRange(DateTime startTime, DateTime endTime) {
+        // If nothing is provided, we will default to two weeks, going max days into future.
+        if (startTime == null && endTime == null) {
+            DateTime now = getDateTime();
+            startTime = now.minusDays(14);
+            endTime = now;
         }
-        return submittedValue;
+        if (startTime == null || endTime == null) {
+            throw new BadRequestException(EITHER_BOTH_DATES_OR_NEITHER);
+        }
+        if (startTime.isAfter(endTime)) {
+            throw new BadRequestException(INVALID_TIME_RANGE);
+        }
+        DateTimeZone timezone = startTime.getZone();
+        if (!timezone.equals(endTime.getZone())) {
+            throw new BadRequestException(AMBIGUOUS_TIMEZONE_ERROR);
+        }
+        return new DateTime[] {startTime, endTime};
     }
     
-    private void validateDateRange(LocalDate startDate, LocalDate endDate) {
+    private LocalDate[] validateLocalDateRange(LocalDate startDate, LocalDate endDate) {
+        if (startDate == null) {
+            startDate = DateUtils.getCurrentCalendarDateInLocalTime().minusDays(1);
+        }
+        if (endDate == null) {
+            endDate = DateUtils.getCurrentCalendarDateInLocalTime();
+        }
         if (startDate.isAfter(endDate)) {
             throw new BadRequestException("Start date " + startDate + " can't be after end date " + endDate);
         }
@@ -279,6 +289,7 @@ public class ReportService {
         if (dateRange.getDays() > MAX_RANGE_DAYS) {
             throw new BadRequestException("Date range cannot exceed " + MAX_RANGE_DAYS + " days, startDate=" +
                     startDate + ", endDate=" + endDate);
-        }    
+        }
+        return new LocalDate[] {startDate, endDate };
     }
 }

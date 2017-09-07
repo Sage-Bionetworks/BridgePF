@@ -370,7 +370,7 @@ public class ParticipantReportControllerTest {
         TestUtils.assertResult(result, 200, "Report record deleted.");
         
         verify(mockReportService).deleteParticipantReportRecord(session.getStudyIdentifier(), REPORT_ID,
-                LocalDate.parse("2014-05-10"), OTHER_PARTICIPANT_HEALTH_CODE);
+                "2014-05-10", OTHER_PARTICIPANT_HEALTH_CODE);
     }
     
     @Test(expected = UnauthorizedException.class)

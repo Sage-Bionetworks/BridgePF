@@ -68,6 +68,7 @@ public class DynamoReportDataTest {
         assertEquals(localDate, report.getLocalDate());
         assertNull(report.getDateTime());
         
+        report = new DynamoReportData();
         report.setDateTime(dateTime);
         assertEquals(dateTime.toString(), report.getDate());
         assertEquals(dateTime, report.getDateTime());

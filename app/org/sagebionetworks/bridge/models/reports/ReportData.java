@@ -18,6 +18,9 @@ public interface ReportData extends BridgeEntity {
         return new DynamoReportData();
     }
     
+    ReportDataKey getReportDataKey();
+    void setReportDataKey(ReportDataKey key);
+    
     String getKey();
     void setKey(String key);
     

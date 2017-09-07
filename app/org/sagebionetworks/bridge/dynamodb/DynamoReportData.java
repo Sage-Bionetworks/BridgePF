@@ -3,8 +3,8 @@ package org.sagebionetworks.bridge.dynamodb;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
-import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.reports.ReportData;
+import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
@@ -17,16 +17,28 @@ import com.fasterxml.jackson.databind.JsonNode;
 @DynamoDBTable(tableName = "ReportData")
 public class DynamoReportData implements ReportData {
 
+    private ReportDataKey reportDataKey;
     private String key;
-    //private String date;
     private LocalDate localDate;
     private DateTime dateTime;
     private JsonNode data;
     
     @JsonIgnore
+    @DynamoDBIgnore
+    public ReportDataKey getReportDataKey() {
+        return reportDataKey;
+    }
+    public void setReportDataKey(ReportDataKey reportDataKey) {
+        this.reportDataKey = reportDataKey;
+    }
+    @JsonIgnore
     @DynamoDBHashKey
     @Override
     public String getKey() {
+        // Transfer to the property that is persisted when it is requested.
+        if (reportDataKey != null) {
+            key = reportDataKey.getKeyString();
+        }
         return key;
     }
     @Override

@@ -11,6 +11,8 @@ import org.sagebionetworks.bridge.models.reports.ReportType;
 
 public class ReportDataKeyValidator implements Validator {
 
+    public static final ReportDataKeyValidator INSTANCE = new ReportDataKeyValidator(); 
+    
     @Override
     public boolean supports(Class<?> clazz) {
         return ReportDataKey.class.isAssignableFrom(clazz);

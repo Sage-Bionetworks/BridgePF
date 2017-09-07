@@ -51,7 +51,7 @@ public interface ReportDataDao {
      * @param key
      *         the key for this report
      * @param date
-     *         the date of the report
+     *         the date of the report (LocalDate or DateTime)
      */
-    void deleteReportDataRecord(ReportDataKey key, LocalDate date);
+    void deleteReportDataRecord(ReportDataKey key, String date);
 }

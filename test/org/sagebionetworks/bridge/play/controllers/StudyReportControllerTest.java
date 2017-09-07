@@ -288,8 +288,7 @@ public class StudyReportControllerTest {
         Result result = controller.deleteStudyReportRecord(REPORT_ID, "2014-05-10");
         TestUtils.assertResult(result, 200, "Report record deleted.");
         
-        verify(mockReportService).deleteStudyReportRecord(session.getStudyIdentifier(), REPORT_ID,
-                LocalDate.parse("2014-05-10"));
+        verify(mockReportService).deleteStudyReportRecord(session.getStudyIdentifier(), REPORT_ID, "2014-05-10");
     }
     
     @Test(expected = UnauthorizedException.class)

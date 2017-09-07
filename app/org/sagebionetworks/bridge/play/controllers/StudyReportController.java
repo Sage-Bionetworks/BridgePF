@@ -184,9 +184,8 @@ public class StudyReportController extends BaseController {
      */
     public Result deleteStudyReportRecord(String identifier, String dateString) {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
-        LocalDate date = getLocalDateOrDefault(dateString, null);
         
-        reportService.deleteStudyReportRecord(session.getStudyIdentifier(), identifier, date);
+        reportService.deleteStudyReportRecord(session.getStudyIdentifier(), identifier, dateString);
         
         return okResult("Report record deleted.");
     }
