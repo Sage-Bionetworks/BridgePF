@@ -22,6 +22,8 @@ public class HealthDataSubmissionValidatorTest {
     private static final String PHONE_INFO = "Unit Tests";
     private static final String SCHEMA_ID = "test-schema";
     private static final int SCHEMA_REV = 3;
+    private static final DateTime SURVEY_CREATED_ON = DateTime.parse("2017-09-07T15:02:56.756+0900");
+    private static final String SURVEY_GUID = "test-survey-guid";
 
     // branch coverage
     @Test
@@ -54,54 +56,60 @@ public class HealthDataSubmissionValidatorTest {
     }
 
     @Test
-    public void validateHappyCase() {
-        HealthDataSubmission healthDataSubmission = makeValidBuilder().build();
+    public void validateSchemaCase() {
+        HealthDataSubmission healthDataSubmission = makeValidBuilderWithSchema().build();
+        Validate.entityThrowingException(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission);
+    }
+
+    @Test
+    public void validateSurveyCase() {
+        HealthDataSubmission healthDataSubmission = makeValidBuilderWithSurvey().build();
         Validate.entityThrowingException(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission);
     }
 
     @Test
     public void nullAppVersion() {
-        HealthDataSubmission healthDataSubmission = makeValidBuilder().withAppVersion(null).build();
+        HealthDataSubmission healthDataSubmission = makeValidBuilderWithSchema().withAppVersion(null).build();
         assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "appVersion",
                 "is required");
     }
 
     @Test
     public void emptyAppVersion() {
-        HealthDataSubmission healthDataSubmission = makeValidBuilder().withAppVersion("").build();
+        HealthDataSubmission healthDataSubmission = makeValidBuilderWithSchema().withAppVersion("").build();
         assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "appVersion",
                 "is required");
     }
 
     @Test
     public void blankAppVersion() {
-        HealthDataSubmission healthDataSubmission = makeValidBuilder().withAppVersion("   ").build();
+        HealthDataSubmission healthDataSubmission = makeValidBuilderWithSchema().withAppVersion("   ").build();
         assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "appVersion",
                 "is required");
     }
 
     @Test
     public void nullCreatedOn() {
-        HealthDataSubmission healthDataSubmission = makeValidBuilder().withCreatedOn(null).build();
+        HealthDataSubmission healthDataSubmission = makeValidBuilderWithSchema().withCreatedOn(null).build();
         assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "createdOn",
                 "is required");
     }
 
     @Test
     public void dataJavaNull() {
-        HealthDataSubmission healthDataSubmission = makeValidBuilder().withData(null).build();
+        HealthDataSubmission healthDataSubmission = makeValidBuilderWithSchema().withData(null).build();
         assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "data", "is required");
     }
 
     @Test
     public void dataJsonNull() {
-        HealthDataSubmission healthDataSubmission = makeValidBuilder().withData(NullNode.getInstance()).build();
+        HealthDataSubmission healthDataSubmission = makeValidBuilderWithSchema().withData(NullNode.getInstance()).build();
         assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "data", "is required");
     }
 
     @Test
     public void dataArrayNode() {
-        HealthDataSubmission healthDataSubmission = makeValidBuilder()
+        HealthDataSubmission healthDataSubmission = makeValidBuilderWithSchema()
                 .withData(BridgeObjectMapper.get().createArrayNode()).build();
         assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "data",
                 "must be an object node");
@@ -109,71 +117,94 @@ public class HealthDataSubmissionValidatorTest {
 
     @Test
     public void nullPhoneInfo() {
-        HealthDataSubmission healthDataSubmission = makeValidBuilder().withPhoneInfo(null).build();
+        HealthDataSubmission healthDataSubmission = makeValidBuilderWithSchema().withPhoneInfo(null).build();
         assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "phoneInfo",
                 "is required");
     }
 
     @Test
     public void emptyPhoneInfo() {
-        HealthDataSubmission healthDataSubmission = makeValidBuilder().withPhoneInfo("").build();
+        HealthDataSubmission healthDataSubmission = makeValidBuilderWithSchema().withPhoneInfo("").build();
         assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "phoneInfo",
                 "is required");
     }
 
     @Test
     public void blankPhoneInfo() {
-        HealthDataSubmission healthDataSubmission = makeValidBuilder().withPhoneInfo("   ").build();
+        HealthDataSubmission healthDataSubmission = makeValidBuilderWithSchema().withPhoneInfo("   ").build();
         assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "phoneInfo",
                 "is required");
     }
 
     @Test
-    public void nullSchemaId() {
-        HealthDataSubmission healthDataSubmission = makeValidBuilder().withSchemaId(null).build();
-        assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "schemaId",
-                "is required");
+    public void neitherSchemaNorSurvey() {
+        HealthDataSubmission healthDataSubmission = makeValidBuilderWithoutSchemaOrSurvey().build();
+        assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "healthDataSubmission",
+                "must have either schemaId/Revision or surveyGuid/CreatedOn but not both");
+    }
+
+    @Test
+    public void bothSchemaAndSurvey() {
+        HealthDataSubmission healthDataSubmission = makeValidBuilderWithoutSchemaOrSurvey().withSchemaId(SCHEMA_ID)
+                .withSchemaRevision(SCHEMA_REV).withSurveyGuid(SURVEY_GUID).withSurveyCreatedOn(SURVEY_CREATED_ON)
+                .build();
+        assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "healthDataSubmission",
+                "must have either schemaId/Revision or surveyGuid/CreatedOn but not both");
     }
 
     @Test
     public void emptySchemaId() {
-        HealthDataSubmission healthDataSubmission = makeValidBuilder().withSchemaId("").build();
+        HealthDataSubmission healthDataSubmission = makeValidBuilderWithSchema().withSchemaId("").build();
         assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "schemaId",
-                "is required");
+                "can't be empty or blank");
     }
 
     @Test
     public void blankSchemaId() {
-        HealthDataSubmission healthDataSubmission = makeValidBuilder().withSchemaId("   ").build();
+        HealthDataSubmission healthDataSubmission = makeValidBuilderWithSchema().withSchemaId("   ").build();
         assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "schemaId",
-                "is required");
+                "can't be empty or blank");
     }
 
     @Test
     public void zeroSchemaRev() {
-        HealthDataSubmission healthDataSubmission = makeValidBuilder().withSchemaRevision(0).build();
+        HealthDataSubmission healthDataSubmission = makeValidBuilderWithSchema().withSchemaRevision(0).build();
         assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "schemaRevision",
-                "must be positive");
+                "can't be zero or negative");
     }
 
     @Test
     public void negativeSchemaRev() {
-        HealthDataSubmission healthDataSubmission = makeValidBuilder().withSchemaRevision(-1).build();
+        HealthDataSubmission healthDataSubmission = makeValidBuilderWithSchema().withSchemaRevision(-1).build();
         assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "schemaRevision",
-                "must be positive");
+                "can't be zero or negative");
     }
 
-    // special case - unspecified schema rev will fail validation
     @Test
-    public void unspecitiedSchemaRev() {
-        HealthDataSubmission healthDataSubmission = new HealthDataSubmission.Builder().withAppVersion(APP_VERSION)
-                .withCreatedOn(CREATED_ON).withData(DATA).withPhoneInfo(PHONE_INFO).withSchemaId(SCHEMA_ID).build();
-        assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "schemaRevision",
-                "must be positive");
+    public void emptySurveyGuid() {
+        HealthDataSubmission healthDataSubmission = makeValidBuilderWithSurvey().withSurveyGuid("").build();
+        assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "surveyGuid",
+                "can't be empty or blank");
     }
 
-    private static HealthDataSubmission.Builder makeValidBuilder() {
+    @Test
+    public void blankSurveyGuid() {
+        HealthDataSubmission healthDataSubmission = makeValidBuilderWithSurvey().withSurveyGuid("   ").build();
+        assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "surveyGuid",
+                "can't be empty or blank");
+    }
+
+    private static HealthDataSubmission.Builder makeValidBuilderWithSchema() {
+        return makeValidBuilderWithoutSchemaOrSurvey().withSchemaId(SCHEMA_ID).withSchemaRevision(SCHEMA_REV);
+    }
+
+    private static HealthDataSubmission.Builder makeValidBuilderWithSurvey() {
+        return makeValidBuilderWithoutSchemaOrSurvey().withSurveyGuid(SURVEY_GUID)
+                .withSurveyCreatedOn(SURVEY_CREATED_ON);
+    }
+
+    private static HealthDataSubmission.Builder makeValidBuilderWithoutSchemaOrSurvey() {
         return new HealthDataSubmission.Builder().withAppVersion(APP_VERSION).withCreatedOn(CREATED_ON).withData(DATA)
-                .withPhoneInfo(PHONE_INFO).withSchemaId(SCHEMA_ID).withSchemaRevision(SCHEMA_REV);
+                .withPhoneInfo(PHONE_INFO);
     }
 }

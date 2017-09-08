@@ -11,14 +11,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.StringUtils;
 
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachment;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
 import org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -51,6 +54,7 @@ import org.springframework.validation.Validator;
 public class HealthDataService {
     private HealthDataAttachmentDao healthDataAttachmentDao;
     private HealthDataDao healthDataDao;
+    private SurveyService surveyService;
     private UploadSchemaService schemaService;
 
     // Upload Validation Handlers, used by the synchronous Health Data Submission API
@@ -71,6 +75,12 @@ public class HealthDataService {
     @Autowired
     public final void setHealthDataDao(HealthDataDao healthDataDao) {
         this.healthDataDao = healthDataDao;
+    }
+
+    /** Survey service, if we're submitting a survey response. */
+    @Autowired
+    public final void setSurveyService(SurveyService surveyService) {
+        this.surveyService = surveyService;
     }
 
     /** Schema Service */
@@ -117,15 +127,16 @@ public class HealthDataService {
         // sanitize field names in the data node
         JsonNode sanitizedData = sanitizeFieldNames(healthDataSubmission.getData());
 
+        // get schema
+        UploadSchema schema = getSchemaForSubmission(studyId, healthDataSubmission);
+
         // Filter data fields and attachments based on schema fields.
-        UploadSchema schema = schemaService.getUploadSchemaByIdAndRev(studyId, healthDataSubmission.getSchemaId(),
-                healthDataSubmission.getSchemaRevision());
         ObjectNode filteredData = BridgeObjectMapper.get().createObjectNode();
         Map<String, byte[]> attachmentMap = new HashMap<>();
         filterAttachments(schema, sanitizedData, filteredData, attachmentMap);
 
         // construct health data record
-        HealthDataRecord record = makeRecordFromSubmission(studyId, participant, healthDataSubmission, filteredData);
+        HealthDataRecord record = makeRecordFromSubmission(studyId, participant, schema, healthDataSubmission, filteredData);
 
         // Construct UploadValidationContext for the remaining upload handlers. We don't need all the fields, just the
         // ones that these handlers will be using.
@@ -164,6 +175,32 @@ public class HealthDataService {
             sanitizedData.set(sanitizedFieldName, fieldValue);
         }
         return sanitizedData;
+    }
+
+    // Helper method which encapsulates getting the schema, either by schemaId/Revision or by surveyGuid/CreatedOn.
+    private UploadSchema getSchemaForSubmission(StudyIdentifier studyId, HealthDataSubmission healthDataSubmission) {
+        if (healthDataSubmission.getSchemaId() != null) {
+            return schemaService.getUploadSchemaByIdAndRev(studyId, healthDataSubmission.getSchemaId(),
+                    healthDataSubmission.getSchemaRevision());
+        } else {
+            // surveyCreatedOn is a timestamp. SurveyService takes long epoch millis. Convert.
+            long surveyCreatedOnMillis = healthDataSubmission.getSurveyCreatedOn().getMillis();
+
+            // Get survey. We use the survey identifier as the schema ID and the schema revision. Both of these must be
+            // specified.
+            String surveyGuid = healthDataSubmission.getSurveyGuid();
+            Survey survey = surveyService.getSurvey(new GuidCreatedOnVersionHolderImpl(surveyGuid,
+                    surveyCreatedOnMillis));
+            String schemaId = survey.getIdentifier();
+            Integer schemaRev = survey.getSchemaRevision();
+            if (StringUtils.isBlank(schemaId) || schemaRev == null) {
+                throw new EntityNotFoundException(UploadSchema.class, "Schema not found for survey " + surveyGuid +
+                        ":" + surveyCreatedOnMillis);
+            }
+
+            // Get the schema with the schema ID and rev.
+            return schemaService.getUploadSchemaByIdAndRev(studyId, schemaId, schemaRev);
+        }
     }
 
     /**
@@ -208,6 +245,8 @@ public class HealthDataService {
      *         study this health data was submitted to
      * @param participant
      *         participant who submitted the data
+     * @param schema
+     *         the schema this data is submitted for
      * @param healthDataSubmission
      *         the data submission
      * @param filteredData
@@ -215,17 +254,17 @@ public class HealthDataService {
      * @return created health data record
      */
     private static HealthDataRecord makeRecordFromSubmission(StudyIdentifier studyId, StudyParticipant participant,
-            HealthDataSubmission healthDataSubmission, JsonNode filteredData) {
+            UploadSchema schema, HealthDataSubmission healthDataSubmission, JsonNode filteredData) {
         // from submission
         HealthDataRecord record = HealthDataRecord.create();
         record.setAppVersion(healthDataSubmission.getAppVersion());
         record.setPhoneInfo(healthDataSubmission.getPhoneInfo());
-        record.setSchemaId(healthDataSubmission.getSchemaId());
-        record.setSchemaRevision(healthDataSubmission.getSchemaRevision());
 
         // from elsewhere
         record.setData(filteredData);
         record.setHealthCode(participant.getHealthCode());
+        record.setSchemaId(schema.getSchemaId());
+        record.setSchemaRevision(schema.getRevision());
         record.setStudyId(studyId.getIdentifier());
         record.setUploadDate(DateUtils.getCurrentCalendarDateInLocalTime());
         record.setUploadedOn(DateUtils.getCurrentMillisFromEpoch());

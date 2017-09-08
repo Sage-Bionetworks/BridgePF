@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
@@ -51,14 +52,39 @@ public class HealthDataSubmissionValidator implements Validator {
                 errors.rejectValue("phoneInfo", "is required");
             }
 
+            // HealthDataSubmission must have schemaId/Revision or surveyGuid/CreatedOn.
+            int sources = 0;
+
+            String schemaId = healthDataSubmission.getSchemaId();
+            Integer schemaRev = healthDataSubmission.getSchemaRevision();
+            if (schemaId != null && schemaRev != null) {
+                sources++;
+            }
+
+            String surveyGuid = healthDataSubmission.getSurveyGuid();
+            DateTime surveyCreatedOn = healthDataSubmission.getSurveyCreatedOn();
+            if (surveyGuid != null && surveyCreatedOn != null) {
+                sources++;
+            }
+
+            if (sources != 1) {
+                errors.rejectValue("healthDataSubmission", "must have either schemaId/Revision or " +
+                        "surveyGuid/CreatedOn but not both");
+            }
+
             // schemaId
-            if (StringUtils.isBlank(healthDataSubmission.getSchemaId())) {
-                errors.rejectValue("schemaId", "is required");
+            if (schemaId != null && StringUtils.isBlank(schemaId)) {
+                errors.rejectValue("schemaId", "can't be empty or blank");
             }
 
             // schemaRevision - must be positive
-            if (healthDataSubmission.getSchemaRevision() <= 0) {
-                errors.rejectValue("schemaRevision", "must be positive");
+            if (schemaRev != null && schemaRev <= 0) {
+                errors.rejectValue("schemaRevision", "can't be zero or negative");
+            }
+
+            // surveyGuid
+            if (surveyGuid != null && StringUtils.isBlank(surveyGuid)) {
+                errors.rejectValue("surveyGuid", "can't be empty or blank");
             }
         }
     }
