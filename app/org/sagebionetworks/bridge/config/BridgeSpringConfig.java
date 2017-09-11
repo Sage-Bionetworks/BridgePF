@@ -507,14 +507,14 @@ public class BridgeSpringConfig {
         props.put("hibernate.connection.password", config.get("hibernate.connection.password"));
         props.put("hibernate.connection.username", config.get("hibernate.connection.username"));
 
-        // Append SSL props to URL if needed
-        boolean useSsl = Boolean.valueOf(config.get("hibernate.connection.useSSL"));
+        
         String url = config.get("hibernate.connection.url");
-        if (useSsl) {
-            url = url + "?requireSSL=true&useSSL=true&verifyServerCertificate=true";
-        } else {
-            url = url + "?requireSSL=false&useSSL=false&verifyServerCertificate=false";
-        }
+        
+        // Append SSL props to URL
+        boolean useSsl = Boolean.valueOf(config.get("hibernate.connection.useSSL"));
+        url += "?requireSSL="+useSsl+"&useSSL="+useSsl+"&verifyServerCertificate="+useSsl;
+        
+        System.out.println(url);
         props.put("hibernate.connection.url", url);
 
         StandardServiceRegistry reg = new StandardServiceRegistryBuilder().applySettings(props).build();
