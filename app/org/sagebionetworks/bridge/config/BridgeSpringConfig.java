@@ -514,7 +514,6 @@ public class BridgeSpringConfig {
         boolean useSsl = Boolean.valueOf(config.get("hibernate.connection.useSSL"));
         url += "?requireSSL="+useSsl+"&useSSL="+useSsl+"&verifyServerCertificate="+useSsl;
         
-        System.out.println(url);
         props.put("hibernate.connection.url", url);
 
         StandardServiceRegistry reg = new StandardServiceRegistryBuilder().applySettings(props).build();
