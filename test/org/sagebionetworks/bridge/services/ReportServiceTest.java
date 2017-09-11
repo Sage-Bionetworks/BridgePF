@@ -13,6 +13,7 @@ import java.util.List;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,9 +21,10 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-
+import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.ReportDataDao;
 import org.sagebionetworks.bridge.dao.ReportIndexDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -52,6 +54,14 @@ public class ReportServiceTest {
     
     private static final LocalDate DATE = LocalDate.parse("2015-02-01");
     
+    private static final DateTime START_TIME = DateTime.parse("2015-01-02T10:00:00.000-05:00");
+    
+    private static final DateTime END_TIME = DateTime.parse("2015-02-02T17:10:00.000-05:00");
+    
+    private static final String OFFSET_KEY = "offsetKey";
+    
+    private static final int PAGE_SIZE = 75;
+    
     private static final ReportDataKey STUDY_REPORT_DATA_KEY = new ReportDataKey.Builder()
             .withReportType(ReportType.STUDY).withStudyIdentifier(TEST_STUDY).withIdentifier(IDENTIFIER).build();
     
@@ -76,6 +86,16 @@ public class ReportServiceTest {
     @Captor
     ArgumentCaptor<ReportDataKey> reportDataKeyCaptor;
     
+    @Captor
+    ArgumentCaptor<DateTime> startTimeCaptor;
+    
+    @Captor
+    ArgumentCaptor<DateTime> endTimeCaptor;
+
+    @Captor
+    private ArgumentCaptor<LocalDate> localDateCaptor;
+    
+    @Spy
     ReportService service;
     
     DateRangeResourceList<? extends ReportData> results;
@@ -84,7 +104,6 @@ public class ReportServiceTest {
     
     @Before
     public void before() throws Exception {
-        service = new ReportService();
         service.setReportDataDao(mockReportDataDao);
         service.setReportIndexDao(mockReportIndexDao);
 
@@ -108,7 +127,7 @@ public class ReportServiceTest {
         ReportData report = ReportData.create();
         report.setKey(IDENTIFIER +":" + TEST_STUDY.getIdentifier());
         report.setData(node);
-        report.setDate(date);
+        report.setLocalDate(date);
         return report;
     }
     
@@ -128,7 +147,7 @@ public class ReportServiceTest {
     }
     
     @Test
-    public void getStudyReportData() {
+    public void getStudyReport() {
         doReturn(results).when(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, START_DATE, END_DATE);
         
         DateRangeResourceList<? extends ReportData> retrieved = service.getStudyReport(
@@ -137,9 +156,6 @@ public class ReportServiceTest {
         verify(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, START_DATE, END_DATE);
         assertEquals(results, retrieved);
     }
-
-    @Captor
-    private ArgumentCaptor<LocalDate> localDateCaptor;
     
     @Test
     public void getStudyReportDataNoDates() {
@@ -164,7 +180,7 @@ public class ReportServiceTest {
     }
     
     @Test
-    public void getParticipantReportData() {
+    public void getParticipantReport() {
         doReturn(results).when(mockReportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, START_DATE, END_DATE);
         
         DateRangeResourceList<? extends ReportData> retrieved = service.getParticipantReport(
@@ -197,7 +213,7 @@ public class ReportServiceTest {
     }
     
     @Test
-    public void saveStudyReportData() {
+    public void saveStudyReport() {
         ReportData someData = createReport(LocalDate.parse("2015-02-10"), "First", "Name");
         service.saveStudyReport(TEST_STUDY, IDENTIFIER, someData);
         
@@ -205,7 +221,7 @@ public class ReportServiceTest {
         ReportData retrieved = reportDataCaptor.getValue();
         assertEquals(someData, retrieved);
         assertEquals(STUDY_REPORT_DATA_KEY.getKeyString(), retrieved.getKey());
-        assertEquals(LocalDate.parse("2015-02-10"), retrieved.getDate());
+        assertEquals("2015-02-10", retrieved.getDate());
         assertEquals("First", retrieved.getData().get("field1").asText());
         assertEquals("Name", retrieved.getData().get("field2").asText());
         
@@ -216,7 +232,7 @@ public class ReportServiceTest {
     }
     
     @Test
-    public void saveParticipantReportData() throws Exception {
+    public void saveParticipantReport() throws Exception {
         ReportData someData = createReport(LocalDate.parse("2015-02-10"), "First", "Name");
         service.saveParticipantReport(TEST_STUDY, IDENTIFIER, HEALTH_CODE, someData);
 
@@ -224,7 +240,7 @@ public class ReportServiceTest {
         ReportData retrieved = reportDataCaptor.getValue();
         assertEquals(someData, retrieved);
         assertEquals(PARTICIPANT_REPORT_DATA_KEY.getKeyString(), retrieved.getKey());
-        assertEquals(LocalDate.parse("2015-02-10"), retrieved.getDate());
+        assertEquals("2015-02-10", retrieved.getDate());
         assertEquals("First", retrieved.getData().get("field1").asText());
         assertEquals("Name", retrieved.getData().get("field2").asText());
         
@@ -251,9 +267,8 @@ public class ReportServiceTest {
         verifyNoMoreInteractions(mockReportIndexDao);
     }
     
-    
     @Test
-    public void deleteParticipantIndex() {
+    public void deleteParticipantReportIndex() {
         service.deleteParticipantReportIndex(TEST_STUDY, IDENTIFIER);
         
         verify(mockReportIndexDao).removeIndex(reportDataKeyCaptor.capture());
@@ -272,9 +287,9 @@ public class ReportServiceTest {
         
         DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-05-05").getMillis());
         try {
-            service.deleteStudyReportRecord(TEST_STUDY, IDENTIFIER, DATE);
+            service.deleteStudyReportRecord(TEST_STUDY, IDENTIFIER, DATE.toString());
             
-            verify(mockReportDataDao).deleteReportDataRecord(STUDY_REPORT_DATA_KEY, DATE);
+            verify(mockReportDataDao).deleteReportDataRecord(STUDY_REPORT_DATA_KEY, DATE.toString());
             verify(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, startDate, endDate);
             verifyNoMoreInteractions(mockReportIndexDao);
         } finally {
@@ -293,14 +308,31 @@ public class ReportServiceTest {
         
         DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-05-05").getMillis());
         try {
-            service.deleteStudyReportRecord(TEST_STUDY, IDENTIFIER, DATE);
+            service.deleteStudyReportRecord(TEST_STUDY, IDENTIFIER, DATE.toString());
             
-            verify(mockReportDataDao).deleteReportDataRecord(STUDY_REPORT_DATA_KEY, DATE);
+            verify(mockReportDataDao).deleteReportDataRecord(STUDY_REPORT_DATA_KEY, DATE.toString());
             verify(mockReportDataDao).getReportData(STUDY_REPORT_DATA_KEY, startDate, endDate);
             verify(mockReportIndexDao).removeIndex(STUDY_REPORT_DATA_KEY);
         } finally {
             DateTimeUtils.setCurrentMillisSystem();
         }
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void deleteStudyReportRecordValidatesDate() {
+        service.deleteStudyReportRecord(TEST_STUDY, IDENTIFIER, "");
+    }
+    
+    @Test
+    public void deleteStudyReportRecordValidatesIdentifier() {
+        invalid(() -> service.deleteStudyReportRecord(TEST_STUDY, null, START_DATE.toString()),
+                "identifier", "cannot be missing or blank");        
+    }
+    
+    @Test
+    public void deleteStudyReportRecordValidatesStudyId() {
+        invalid(() -> service.deleteStudyReportRecord(null, IDENTIFIER, START_DATE.toString()),
+                "studyId", "is required");        
     }
     
     @Test
@@ -311,12 +343,17 @@ public class ReportServiceTest {
         
         DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-05-05").getMillis());
         try {
-            service.deleteParticipantReportRecord(TEST_STUDY, IDENTIFIER, DATE, HEALTH_CODE);
+            service.deleteParticipantReportRecord(TEST_STUDY, IDENTIFIER, DATE.toString(), HEALTH_CODE);
 
-            verify(mockReportDataDao).deleteReportDataRecord(PARTICIPANT_REPORT_DATA_KEY, DATE);
+            verify(mockReportDataDao).deleteReportDataRecord(PARTICIPANT_REPORT_DATA_KEY, DATE.toString());
         } finally {
             DateTimeUtils.setCurrentMillisSystem();
         }
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void deleteParticipantReportRecordValidatesDate() {
+        service.deleteParticipantReportRecord(TEST_STUDY, IDENTIFIER, "", HEALTH_CODE);
     }
     
     // The following are date range tests from the original MPowerVisualizationService, they should work with this
@@ -491,7 +528,7 @@ public class ReportServiceTest {
     }
     
     @Test
-    public void updateIndex() {
+    public void updateReportIndex() {
         ReportIndex index = ReportIndex.create();
         index.setIdentifier(IDENTIFIER);
         indices = new ReportTypeResourceList<>(Lists.newArrayList(index)).withRequestParam(ResourceList.REPORT_TYPE, ReportType.STUDY);
@@ -532,6 +569,82 @@ public class ReportServiceTest {
         ReportIndex captured = reportIndexCaptor.getValue();
         assertEquals(IDENTIFIER, captured.getIdentifier());
         assertFalse(captured.isPublic());
+    }
+    
+    @Test
+    public void getParticipantReportV4() throws Exception {
+        service.getParticipantReportV4(TEST_STUDY, IDENTIFIER, HEALTH_CODE, START_TIME, END_TIME, OFFSET_KEY, PAGE_SIZE);
+
+        verify(mockReportDataDao).getReportDataV4(reportDataKeyCaptor.capture(), eq(START_TIME), eq(END_TIME),
+                eq(OFFSET_KEY), eq(PAGE_SIZE));
+        
+        ReportDataKey key = reportDataKeyCaptor.getValue();
+        assertEquals(HEALTH_CODE, key.getHealthCode());
+        assertEquals(TEST_STUDY, key.getStudyId());
+        assertEquals(ReportType.PARTICIPANT, key.getReportType());
+        assertEquals(IDENTIFIER, key.getIdentifier());
+    }
+    
+    @Test
+    public void getStudyReportV4() throws Exception {
+        service.getStudyReportV4(TEST_STUDY, IDENTIFIER, START_TIME, END_TIME, OFFSET_KEY, PAGE_SIZE);
+        
+        verify(mockReportDataDao).getReportDataV4(reportDataKeyCaptor.capture(), eq(START_TIME), eq(END_TIME),
+                eq(OFFSET_KEY), eq(PAGE_SIZE));
+        
+        ReportDataKey key = reportDataKeyCaptor.getValue();
+        assertEquals(TEST_STUDY, key.getStudyId());
+        assertEquals(ReportType.STUDY, key.getReportType());
+        assertEquals(IDENTIFIER, key.getIdentifier());
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void verifiesPageSizeTooSmallV4() throws Exception {
+        service.getStudyReportV4(TEST_STUDY, IDENTIFIER, START_TIME, END_TIME, OFFSET_KEY,
+                BridgeConstants.API_MINIMUM_PAGE_SIZE - 1);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void verifiesPageSizeTooLargeV4() throws Exception {
+        service.getStudyReportV4(TEST_STUDY, IDENTIFIER, START_TIME, END_TIME, OFFSET_KEY,
+                BridgeConstants.API_MAXIMUM_PAGE_SIZE + 1);
+    }
+    
+    @Test
+    public void defaultsDateRangeV4() throws Exception {
+        DateTime now = DateTime.parse("2017-05-30T20:00:00.000Z");
+        doReturn(now).when(service).getDateTime();
+        
+        service.getStudyReportV4(TEST_STUDY, IDENTIFIER, null, null, OFFSET_KEY, PAGE_SIZE);
+        
+        verify(mockReportDataDao).getReportDataV4(reportDataKeyCaptor.capture(), startTimeCaptor.capture(),
+                endTimeCaptor.capture(), eq(OFFSET_KEY), eq(PAGE_SIZE));
+        
+        DateTime startTime = startTimeCaptor.getValue();
+        DateTime endTime = endTimeCaptor.getValue();
+        assertEquals(now.minusDays(14).toString(), startTime.toString());
+        assertEquals(now.toString(), endTime.toString());
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void verifiesStartTimeMissingV4() throws Exception {
+        service.getStudyReportV4(TEST_STUDY, IDENTIFIER, null, END_TIME, OFFSET_KEY, PAGE_SIZE);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void verifiesEndTimeMissingV4() throws Exception {
+        service.getStudyReportV4(TEST_STUDY, IDENTIFIER, START_TIME, null, OFFSET_KEY, PAGE_SIZE);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void verifiesStartTimeAfterEndTimeV4() throws Exception {
+        service.getStudyReportV4(TEST_STUDY, IDENTIFIER, END_TIME, START_TIME, OFFSET_KEY, PAGE_SIZE);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void verifiesTimeZonesIdenticalV4() throws Exception {
+        DateTimeZone zone = DateTimeZone.forOffsetHours(4);
+        service.getStudyReportV4(TEST_STUDY, IDENTIFIER, END_TIME, START_TIME.withZone(zone), OFFSET_KEY, PAGE_SIZE);
     }
     
     private void invalid(Runnable runnable, String fieldName, String message) {

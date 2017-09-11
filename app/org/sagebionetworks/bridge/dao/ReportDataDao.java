@@ -1,8 +1,10 @@
 package org.sagebionetworks.bridge.dao;
 
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 
@@ -21,6 +23,14 @@ public interface ReportDataDao {
     DateRangeResourceList<? extends ReportData> getReportData(ReportDataKey key, LocalDate startDate, LocalDate endDate);
 
     /**
+     * Get report data in a given date range, with paging. Since individual records in this API can 
+     * be returned with DateTime range keys, paging must be introduced over earlier versions of this 
+     * API.
+     */
+    ForwardCursorPagedResourceList<ReportData> getReportDataV4(ReportDataKey key, DateTime startTime, DateTime endTime,
+            String offsetKey, int pageSize);
+    
+    /**
      * Writes a report data record to the backing store. 
      *
      * @param reportData
@@ -38,12 +48,8 @@ public interface ReportDataDao {
     void deleteReportData(ReportDataKey key);
     
     /**
-     * Delete a single record in a report. 
-     * 
-     * @param key
-     *         the key for this report
-     * @param date
-     *         the date of the report
+     * Delete a single record in a report. The date string value may be a LocalDate or 
+     * DateTime value expressed as a string 
      */
-    void deleteReportDataRecord(ReportDataKey key, LocalDate date);
+    void deleteReportDataRecord(ReportDataKey key, String dateValue);
 }

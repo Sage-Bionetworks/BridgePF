@@ -4,14 +4,19 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.BridgeUtils.getLocalDateOrDefault;
+import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
+import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.reports.ReportData;
@@ -97,6 +102,43 @@ public class StudyReportController extends BaseController {
     }
     
     /**
+     * Any authenticated user can get study reports, as some might be internal/administrative and some might 
+     * be intended for end users, and these do not expose user-specific information.
+     */
+    public Result getStudyReportV4(String identifier, String startTimeString, String endTimeString, String offsetKey,
+            String pageSizeString) {
+        UserSession session = getAuthenticatedSession();
+        
+        DateTime startTime = getDateTimeOrDefault(startTimeString, null);
+        DateTime endTime = getDateTimeOrDefault(endTimeString, null);
+        int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        
+        ForwardCursorPagedResourceList<ReportData> results = reportService
+                .getStudyReportV4(session.getStudyIdentifier(), identifier, startTime, endTime, offsetKey, pageSize);
+        
+        return okResult(results);
+    }
+    
+    /**
+     * Get a study report *if* it is marked public, as this call does not require the user to be authenticated.
+     */
+    public Result getPublicStudyReportV4(String studyIdString, String identifier, String startTimeString,
+            String endTimeString, String offsetKey, String pageSizeString) {
+        StudyIdentifier studyId = new StudyIdentifierImpl(studyIdString);
+
+        verifyIndex(studyId, identifier);
+
+        DateTime startTime = getDateTimeOrDefault(startTimeString, null);
+        DateTime endTime = getDateTimeOrDefault(endTimeString, null);
+        int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        
+        ForwardCursorPagedResourceList<ReportData> results = reportService.getStudyReportV4(studyId, identifier,
+                startTime, endTime, offsetKey, pageSize);
+        
+        return okResult(results);
+    }    
+    
+    /**
      * Report study data can be saved by developers or by worker processes.
      */
     public Result saveStudyReport(String identifier) throws Exception {
@@ -142,9 +184,8 @@ public class StudyReportController extends BaseController {
      */
     public Result deleteStudyReportRecord(String identifier, String dateString) {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
-        LocalDate date = getLocalDateOrDefault(dateString, null);
         
-        reportService.deleteStudyReportRecord(session.getStudyIdentifier(), identifier, date);
+        reportService.deleteStudyReportRecord(session.getStudyIdentifier(), identifier, dateString);
         
         return okResult("Report record deleted.");
     }

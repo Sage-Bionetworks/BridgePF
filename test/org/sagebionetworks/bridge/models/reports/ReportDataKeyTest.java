@@ -4,10 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
-import org.joda.time.LocalDate;
 import org.junit.Test;
 
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -34,23 +32,10 @@ public class ReportDataKeyTest {
     }
     
     @Test
-    public void canIncludeDateValidation() {
-        try {
-            // This is tested in tests for the validator, but date is actually validated in the 
-            // build method.
-            new ReportDataKey.Builder().validateWithDate(null).build();
-        } catch(InvalidEntityException e) {
-            assertEquals("date is required", e.getErrors().get("date").get(0));
-            // integrated alongside Validator errors
-            assertEquals("identifier cannot be missing or blank", e.getErrors().get("identifier").get(0));
-        }
-    }
-    
-    @Test
     public void constructStudyKey() {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY).withStudyIdentifier(TEST_STUDY)
-                .withIdentifier("report").validateWithDate(LocalDate.parse("2012-02-02")).build();
+                .withIdentifier("report").build();
         
         // This was constructed, the date is valid. It's not part of the key, it's validated in the builder
         // so validation errors are combined with key validation errors.
@@ -75,6 +60,8 @@ public class ReportDataKeyTest {
     
     @Test
     public void canSerialize() throws Exception {
+        // NOTE: Although we use @JsonIgnore annotations, we never serialize this value and return it via the API,
+        // so arguably none of this is necessary.
         ReportDataKey key = new ReportDataKey.Builder().withHealthCode("healthCode").withStudyIdentifier(TEST_STUDY)
                 .withReportType(ReportType.PARTICIPANT).withIdentifier("report").build();
         

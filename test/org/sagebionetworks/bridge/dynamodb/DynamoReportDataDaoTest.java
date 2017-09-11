@@ -3,6 +3,9 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
+import java.util.Set;
+
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.junit.After;
 import org.junit.Before;
@@ -14,12 +17,14 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Sets;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -88,6 +93,67 @@ public class DynamoReportDataDaoTest {
         results = dao.getReportData(reportDataKey, START_DATE, END_DATE);
         assertResourceList(results, 0);
     }
+    
+    @Test
+    public void canRetrievePagedRecordsWithDateTime() throws Exception {
+        String dateString = "2017-02-%02dT04:00:00.000Z";
+        for (int i=2; i <= 19; i++) {
+            DateTime dateTime = DateTime.parse(String.format(dateString, i));
+            ReportData report = createReport(dateTime, "a", "b");
+            dao.saveReportData(report);
+        }
+        DateTime startTime = DateTime.parse("2017-02-02T04:00:00.000Z");
+        DateTime endTime = DateTime.parse("2017-02-19T04:00:00.000Z");
+        
+        Set<String> keys = Sets.newHashSet();
+        
+        ForwardCursorPagedResourceList<ReportData> paged = dao.getReportDataV4(reportDataKey, startTime, endTime, null, 5);
+        for (ReportData data : paged.getItems()) {
+            keys.add(data.getDate());
+        }
+        assertEquals(5, keys.size());
+        assertEquals("2017-02-02T04:00:00.000Z", paged.getItems().get(0).getDate());
+        
+        paged = dao.getReportDataV4(reportDataKey, startTime, endTime, paged.getNextPageOffsetKey(), 5);
+        for (ReportData data : paged.getItems()) {
+            keys.add(data.getDate());
+        }
+        assertEquals(10, keys.size());
+        
+        paged = dao.getReportDataV4(reportDataKey, startTime, endTime, paged.getNextPageOffsetKey(), 5);
+        for (ReportData data : paged.getItems()) {
+            keys.add(data.getDate());
+        }
+        assertEquals(15, keys.size());
+        
+        paged = dao.getReportDataV4(reportDataKey, startTime, endTime, paged.getNextPageOffsetKey(), 5);
+        for (ReportData data : paged.getItems()) {
+            keys.add(data.getDate());
+        }
+        assertEquals(18, keys.size());
+        keys.clear();
+        
+        // Now, while we have these records, let's change the timezone and verify that works.
+        startTime = DateTime.parse("2017-02-02T04:00:00.000-07:00");
+        endTime = DateTime.parse("2017-02-19T04:00:00.000-07:00");
+        
+        // Should be missing the last record
+        paged = dao.getReportDataV4(reportDataKey, startTime, endTime, null, 100);
+        for (ReportData data : paged.getItems()) {
+            keys.add(data.getDate());
+        }
+        
+        assertEquals(17, keys.size());
+        assertEquals("2017-02-02T21:00:00.000-07:00", paged.getItems().get(0).getDate());
+        
+        // We can use the other API to get these records, it's implicitly UTC because what else could it be
+        LocalDate startDate = LocalDate.parse("2017-02-02");
+        LocalDate endDate = LocalDate.parse("2017-02-19");
+        
+        DateRangeResourceList<? extends ReportData> anotherPage = dao.getReportData(reportDataKey, startDate, endDate);
+        // It's 17 because "2017-02-19" comes before "2017-02-19T04:00:00.000Z" alphabetically (moral: don't mix the two types)
+        assertEquals(17, anotherPage.getItems().size());
+    }
 
     @Test
     public void canDeleteSingleStudyRecords() {
@@ -98,10 +164,10 @@ public class DynamoReportDataDaoTest {
         dao.saveReportData(report2);
         assertEquals(2, dao.getReportData(reportDataKey, START_DATE, END_DATE).getItems().size());
         
-        dao.deleteReportDataRecord(reportDataKey, LocalDate.parse("2016-03-30"));
+        dao.deleteReportDataRecord(reportDataKey, "2016-03-30");
         assertEquals(1, dao.getReportData(reportDataKey, START_DATE, END_DATE).getItems().size());
         
-        dao.deleteReportDataRecord(reportDataKey, LocalDate.parse("2016-03-31"));
+        dao.deleteReportDataRecord(reportDataKey, "2016-03-31");
         assertEquals(0, dao.getReportData(reportDataKey, START_DATE, END_DATE).getItems().size());
     }
     
@@ -112,7 +178,18 @@ public class DynamoReportDataDaoTest {
         ReportData report = ReportData.create();
         report.setKey(reportDataKey.getKeyString());
         report.setData(node);
-        report.setDate(date);
+        report.setLocalDate(date);
+        return report;
+    }
+    
+    private ReportData createReport(DateTime date, String fieldValue1, String fieldValue2) {
+        ObjectNode node = JsonNodeFactory.instance.objectNode();
+        node.put("field1", fieldValue1);
+        node.put("field2", fieldValue2);
+        ReportData report = ReportData.create();
+        report.setKey(reportDataKey.getKeyString());
+        report.setData(node);
+        report.setDateTime(date);
         return report;
     }
     

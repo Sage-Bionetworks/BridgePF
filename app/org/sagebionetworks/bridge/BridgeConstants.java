@@ -86,6 +86,8 @@ public class BridgeConstants {
     
     public static final int API_MAXIMUM_PAGE_SIZE = 100;
     
+    public static final String PAGE_SIZE_ERROR = "pageSize must be from "+API_MAXIMUM_PAGE_SIZE+"-"+API_MAXIMUM_PAGE_SIZE+" records";
+    
     public static final String TEST_USER_GROUP = "test_user";
     
     public static final Set<Roles> NO_CALLER_ROLES = ImmutableSet.of();

@@ -67,8 +67,6 @@ import org.sagebionetworks.bridge.validators.Validate;
 public class ParticipantService {
     private static Logger LOG = LoggerFactory.getLogger(ParticipantService.class);
 
-    private static final String PAGE_SIZE_ERROR = "pageSize must be from " + API_MINIMUM_PAGE_SIZE + "-"
-            + API_MAXIMUM_PAGE_SIZE + " records";
     private static final String DATE_RANGE_ERROR = "startDate should be before endDate";
 
     private AccountDao accountDao;
@@ -215,7 +213,7 @@ public class ParticipantService {
         }
         // Just set a sane upper limit on this.
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
-            throw new BadRequestException(PAGE_SIZE_ERROR);
+            throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
         }
         if (startTime != null && endTime != null && startTime.getMillis() >= endTime.getMillis()) {
             throw new BadRequestException(DATE_RANGE_ERROR);

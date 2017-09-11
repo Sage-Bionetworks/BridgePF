@@ -13,6 +13,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import java.util.List;
 import java.util.Map;
 
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,6 +31,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -60,7 +62,7 @@ public class StudyReportControllerTest {
     
     private static final TypeReference<DateRangeResourceList<? extends ReportData>> REPORT_REF = new TypeReference<DateRangeResourceList<? extends ReportData>>() {
     };
-
+    
     private static final String REPORT_ID = "foo";
 
     private static final String VALID_LANGUAGE_HEADER = "en-US";
@@ -76,6 +78,15 @@ public class StudyReportControllerTest {
     private static final LocalDate START_DATE = LocalDate.parse("2015-01-02");
     
     private static final LocalDate END_DATE = LocalDate.parse("2015-02-02");
+    
+    private static final DateTime START_TIME = DateTime.parse("2015-01-02T08:32:50.000-07:00");
+    
+    private static final DateTime END_TIME = DateTime.parse("2015-02-02T15:00:32.123-07:00");
+    
+    private static final String OFFSET_KEY = "offsetKey";
+    
+    private static final String PAGE_SIZE = "20";
+    
     
     @Mock
     ReportService mockReportService;
@@ -97,6 +108,8 @@ public class StudyReportControllerTest {
     
     @Captor
     ArgumentCaptor<ReportIndex> reportDataIndex;
+    
+    ForwardCursorPagedResourceList<ReportData> page;
     
     StudyReportController controller;
     
@@ -147,6 +160,13 @@ public class StudyReportControllerTest {
         list = new ReportTypeResourceList<>(Lists.newArrayList(index))
                 .withRequestParam(ResourceList.REPORT_TYPE, ReportType.PARTICIPANT);
         doReturn(list).when(mockReportService).getReportIndices(TEST_STUDY, ReportType.PARTICIPANT);
+        
+        List<ReportData> reportList = Lists.newArrayList();
+        page = new ForwardCursorPagedResourceList<ReportData>(reportList, "nextPageOffsetKey")
+                .withRequestParam(ResourceList.OFFSET_KEY, OFFSET_KEY)
+                .withRequestParam(ResourceList.PAGE_SIZE, Integer.parseInt(PAGE_SIZE))
+                .withRequestParam(ResourceList.START_TIME, START_TIME)
+                .withRequestParam(ResourceList.END_TIME, END_TIME);
     }
     
     private void setupContext() throws Exception {
@@ -265,8 +285,7 @@ public class StudyReportControllerTest {
         Result result = controller.deleteStudyReportRecord(REPORT_ID, "2014-05-10");
         TestUtils.assertResult(result, 200, "Report record deleted.");
         
-        verify(mockReportService).deleteStudyReportRecord(session.getStudyIdentifier(), REPORT_ID,
-                LocalDate.parse("2014-05-10"));
+        verify(mockReportService).deleteStudyReportRecord(session.getStudyIdentifier(), REPORT_ID, "2014-05-10");
     }
     
     @Test(expected = UnauthorizedException.class)
@@ -330,7 +349,7 @@ public class StudyReportControllerTest {
                 .withReportType(ReportType.STUDY)
                 .withStudyIdentifier(TEST_STUDY).build();
         
-        ReportIndex index = ReportIndex.create();//reportService.getReportIndex(key);
+        ReportIndex index = ReportIndex.create();
         index.setPublic(false);
         index.setKey(key.getIndexKeyString());
         index.setIdentifier(REPORT_ID);
@@ -341,6 +360,71 @@ public class StudyReportControllerTest {
                 REPORT_ID, START_DATE, END_DATE);
         
         controller.getPublicStudyReport(TEST_STUDY.getIdentifier(), REPORT_ID, START_DATE.toString(), END_DATE.toString());
+    }
+    
+    @Test
+    public void getStudyReportV4() throws Exception {
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withIdentifier(REPORT_ID)
+                .withReportType(ReportType.STUDY)
+                .withStudyIdentifier(TEST_STUDY).build();
+        
+        ReportIndex index = ReportIndex.create();
+        index.setPublic(false);
+        index.setKey(key.getIndexKeyString());
+        index.setIdentifier(REPORT_ID);
+        
+        doReturn(page).when(mockReportService).getStudyReportV4(session.getStudyIdentifier(), REPORT_ID, START_TIME,
+                END_TIME, OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
+        doReturn(index).when(mockReportService).getReportIndex(key);
+        
+        Result result = controller.getStudyReportV4(REPORT_ID, START_TIME.toString(), END_TIME.toString(), OFFSET_KEY, PAGE_SIZE);
+        
+        verify(mockReportService).getStudyReportV4(TEST_STUDY, REPORT_ID, START_TIME, END_TIME,
+                OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
+        assertEquals(200, result.status());
+        
+        ForwardCursorPagedResourceList<ReportData> page = BridgeObjectMapper.get()
+                .readValue(Helpers.contentAsString(result), ReportData.PAGED_REPORT_DATA);        
+        
+        assertEquals("nextPageOffsetKey", page.getNextPageOffsetKey());
+        assertEquals(OFFSET_KEY, page.getRequestParams().get(ResourceList.OFFSET_KEY));
+        assertEquals(Integer.parseInt(PAGE_SIZE), page.getRequestParams().get(ResourceList.PAGE_SIZE));
+        assertEquals(START_TIME.toString(), page.getRequestParams().get(ResourceList.START_TIME));
+        assertEquals(END_TIME.toString(), page.getRequestParams().get(ResourceList.END_TIME));
+    }
+    
+    @Test
+    public void getPublicStudyReportV4() throws Exception {
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withIdentifier(REPORT_ID)
+                .withReportType(ReportType.STUDY)
+                .withStudyIdentifier(TEST_STUDY).build();
+        
+        ReportIndex index = ReportIndex.create();
+        index.setPublic(true);
+        index.setKey(key.getIndexKeyString());
+        index.setIdentifier(REPORT_ID);
+        
+        doReturn(page).when(mockReportService).getStudyReportV4(TEST_STUDY, REPORT_ID, START_TIME,
+                END_TIME, OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
+        doReturn(index).when(mockReportService).getReportIndex(key);
+        
+        Result result = controller.getPublicStudyReportV4(TEST_STUDY.getIdentifier(), REPORT_ID, START_TIME.toString(),
+                END_TIME.toString(), OFFSET_KEY, PAGE_SIZE);
+        
+        verify(mockReportService).getStudyReportV4(TEST_STUDY, REPORT_ID, START_TIME, END_TIME,
+                OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
+        assertEquals(200, result.status());
+        
+        ForwardCursorPagedResourceList<ReportData> page = BridgeObjectMapper.get()
+                .readValue(Helpers.contentAsString(result), ReportData.PAGED_REPORT_DATA);        
+        
+        assertEquals("nextPageOffsetKey", page.getNextPageOffsetKey());
+        assertEquals(OFFSET_KEY, page.getRequestParams().get(ResourceList.OFFSET_KEY));
+        assertEquals(Integer.parseInt(PAGE_SIZE), page.getRequestParams().get(ResourceList.PAGE_SIZE));
+        assertEquals(START_TIME.toString(), page.getRequestParams().get(ResourceList.START_TIME));
+        assertEquals(END_TIME.toString(), page.getRequestParams().get(ResourceList.END_TIME));
     }
     
     private void assertResult(Result result) throws Exception {
@@ -381,7 +465,7 @@ public class StudyReportControllerTest {
         node.put("field2", fieldValue2);
         ReportData report = ReportData.create();
         report.setKey("foo:" + TEST_STUDY.getIdentifier());
-        report.setDate(date);
+        report.setLocalDate(date);
         report.setData(node);
         return report;
     }

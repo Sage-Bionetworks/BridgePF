@@ -14,6 +14,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import java.util.List;
 import java.util.Map;
 
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,6 +32,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -38,7 +40,6 @@ import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.reports.ReportData;
-import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -59,7 +60,7 @@ import play.test.Helpers;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ParticipantReportControllerTest {
-
+    
     private static final String REPORT_ID = "foo";
 
     private static final String VALID_LANGUAGE_HEADER = "en-US";
@@ -75,6 +76,14 @@ public class ParticipantReportControllerTest {
     private static final LocalDate START_DATE = LocalDate.parse("2015-01-02");
     
     private static final LocalDate END_DATE = LocalDate.parse("2015-02-02");
+
+    private static final DateTime START_TIME = DateTime.parse("2015-01-02T08:32:50.000-07:00");
+    
+    private static final DateTime END_TIME = DateTime.parse("2015-02-02T15:00:32.123-07:00");
+    
+    private static final String OFFSET_KEY = "offsetKey";
+    
+    private static final String PAGE_SIZE = "20";
     
     @Mock
     ReportService mockReportService;
@@ -173,6 +182,27 @@ public class ParticipantReportControllerTest {
     }
     
     @Test
+    public void getParticipantReportDataForSelfV4() throws Exception {
+        setupContext();
+        
+        doReturn(makePagedResults()).when(mockReportService).getParticipantReportV4(session.getStudyIdentifier(),
+                REPORT_ID, HEALTH_CODE, START_TIME, END_TIME, OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
+        
+        Result result = controller.getParticipantReportForSelfV4(REPORT_ID, START_TIME.toString(), END_TIME.toString(),
+                OFFSET_KEY, PAGE_SIZE);
+        assertEquals(200, result.status());
+        
+        ForwardCursorPagedResourceList<ReportData> page = BridgeObjectMapper.get()
+                .readValue(Helpers.contentAsString(result), ReportData.PAGED_REPORT_DATA);
+        
+        assertEquals("nextPageOffsetKey", page.getNextPageOffsetKey());
+        assertEquals(OFFSET_KEY, page.getRequestParams().get(ResourceList.OFFSET_KEY));
+        assertEquals(Integer.parseInt(PAGE_SIZE), page.getRequestParams().get(ResourceList.PAGE_SIZE));
+        assertEquals(START_TIME.toString(), page.getRequestParams().get(ResourceList.START_TIME));
+        assertEquals(END_TIME.toString(), page.getRequestParams().get(ResourceList.END_TIME));
+    }
+    
+    @Test
     public void saveParticipantDataForSelf() throws Exception {
         setupContext();
         
@@ -186,7 +216,7 @@ public class ParticipantReportControllerTest {
                 eq(HEALTH_CODE), reportDataCaptor.capture());
         
         ReportData reportData = reportDataCaptor.getValue();
-        assertEquals(LocalDate.parse("2015-02-12"), reportData.getDate());
+        assertEquals("2015-02-12", reportData.getDate());
         assertEquals("Last", reportData.getData().get("field1").asText());
         assertEquals("Name", reportData.getData().get("field2").asText());
         assertNull(reportData.getKey());
@@ -204,6 +234,32 @@ public class ParticipantReportControllerTest {
         assertResult(result);
     }
 
+    @Test
+    public void getParticipantReportDataV4() throws Exception {
+        setupContext();
+        StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
+                .withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
+        session.setParticipant(participant);
+        
+        doReturn(mockAccount).when(mockAccountDao).getAccount(any(Study.class), eq(OTHER_PARTICIPANT_ID));
+        
+        doReturn(makePagedResults()).when(mockReportService).getParticipantReportV4(session.getStudyIdentifier(),
+                REPORT_ID, HEALTH_CODE, START_TIME, END_TIME, OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
+        
+        Result result = controller.getParticipantReportV4(OTHER_PARTICIPANT_ID, REPORT_ID, START_TIME.toString(),
+                END_TIME.toString(), OFFSET_KEY, PAGE_SIZE);
+        assertEquals(200, result.status());
+        
+        ForwardCursorPagedResourceList<ReportData> page = BridgeObjectMapper.get()
+                .readValue(Helpers.contentAsString(result), ReportData.PAGED_REPORT_DATA);
+        
+        assertEquals("nextPageOffsetKey", page.getNextPageOffsetKey());
+        assertEquals(OFFSET_KEY, page.getRequestParams().get(ResourceList.OFFSET_KEY));
+        assertEquals(Integer.parseInt(PAGE_SIZE), page.getRequestParams().get(ResourceList.PAGE_SIZE));
+        assertEquals(START_TIME.toString(), page.getRequestParams().get(ResourceList.START_TIME));
+        assertEquals(END_TIME.toString(), page.getRequestParams().get(ResourceList.END_TIME));
+    }
+    
     @Test
     public void getParticipantReportDataAsResearcher() throws Exception {
         // No consents so user is not consented, but is a researcher and can also see these reports
@@ -311,7 +367,7 @@ public class ParticipantReportControllerTest {
         TestUtils.assertResult(result, 200, "Report record deleted.");
         
         verify(mockReportService).deleteParticipantReportRecord(session.getStudyIdentifier(), REPORT_ID,
-                LocalDate.parse("2014-05-10"), OTHER_PARTICIPANT_HEALTH_CODE);
+                "2014-05-10", OTHER_PARTICIPANT_HEALTH_CODE);
     }
     
     @Test(expected = UnauthorizedException.class)
@@ -360,6 +416,17 @@ public class ParticipantReportControllerTest {
         assertEquals("Name", child2Data.get("field2").asText());
     }
     
+    private ForwardCursorPagedResourceList<ReportData> makePagedResults() {
+        List<ReportData> list = Lists.newArrayList();
+        list.add(createReport(DateTime.parse("2015-02-10T00:00:00.000Z"), "First", "Name"));
+        list.add(createReport(DateTime.parse("2015-02-12T00:00:00.000Z"), "Last", "Name"));
+        return new ForwardCursorPagedResourceList<ReportData>(list, "nextPageOffsetKey")
+            .withRequestParam(ResourceList.OFFSET_KEY, OFFSET_KEY)
+            .withRequestParam(ResourceList.PAGE_SIZE, Integer.parseInt(PAGE_SIZE))
+            .withRequestParam(ResourceList.START_TIME, START_TIME)
+            .withRequestParam(ResourceList.END_TIME, END_TIME);
+    }
+    
     private DateRangeResourceList<ReportData> makeResults(LocalDate startDate, LocalDate endDate){
         List<ReportData> list = Lists.newArrayList();
         list.add(createReport(LocalDate.parse("2015-02-10"), "First", "Name"));
@@ -376,9 +443,19 @@ public class ParticipantReportControllerTest {
         node.put("field2", fieldValue2);
         ReportData report = ReportData.create();
         report.setKey("foo:" + TEST_STUDY.getIdentifier());
-        report.setDate(date);
+        report.setLocalDate(date);
         report.setData(node);
         return report;
     }
     
+    private ReportData createReport(DateTime date, String fieldValue1, String fieldValue2) {
+        ObjectNode node = JsonNodeFactory.instance.objectNode();
+        node.put("field1", fieldValue1);
+        node.put("field2", fieldValue2);
+        ReportData report = ReportData.create();
+        report.setKey("foo:" + TEST_STUDY.getIdentifier());
+        report.setDateTime(date);
+        report.setData(node);
+        return report;
+    }
 }

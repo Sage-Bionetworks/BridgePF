@@ -12,6 +12,7 @@ import java.util.Map;
 
 import javax.annotation.Resource;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -52,8 +53,6 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
 
     private static final String INVALID_KEY_MSG = "Invalid offsetKey (may exceed maximum seek for value range): ";
     
-    static final String PAGE_SIZE_ERROR = "pageSize must be from 1-"+API_MAXIMUM_PAGE_SIZE+" records";
-    
     private DynamoDBMapper mapper;
     
     private DynamoIndexHelper referentIndex;
@@ -77,7 +76,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         checkNotNull(activityGuid);
         
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
-            throw new BadRequestException(PAGE_SIZE_ERROR);
+            throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
         }
         
         DynamoScheduledActivity hashKey = new DynamoScheduledActivity();

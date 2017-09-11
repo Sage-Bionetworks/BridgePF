@@ -4,15 +4,20 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
+import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getLocalDateOrDefault;
 
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -65,6 +70,21 @@ public class ParticipantReportController extends BaseController {
         return okResult(results);
     }
     
+    public Result getParticipantReportForSelfV4(String identifier, String startTimeString, String endTimeString,
+            String offsetKey, String pageSizeString) {
+        UserSession session = getAuthenticatedSession();
+
+        DateTime startTime = getDateTimeOrDefault(startTimeString, null);
+        DateTime endTime = getDateTimeOrDefault(endTimeString, null);
+        int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        
+        ForwardCursorPagedResourceList<ReportData> results = reportService.getParticipantReportV4(
+                session.getStudyIdentifier(), identifier, session.getHealthCode(), startTime, endTime, offsetKey,
+                pageSize);
+        
+        return okResult(results);
+    }
+    
     public Result saveParticipantReportForSelf(String identifier) {
         UserSession session = getAuthenticatedSession();
         
@@ -101,6 +121,24 @@ public class ParticipantReportController extends BaseController {
                 session.getStudyIdentifier(), identifier, account.getHealthCode(), startDate, endDate);
         
         return okResult(results);
+    }
+    
+    public Result getParticipantReportV4(String userId, String identifier, String startTimeString, String endTimeString,
+            String offsetKey, String pageSizeString) {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        DateTime startTime = getDateTimeOrDefault(startTimeString, null);
+        DateTime endTime = getDateTimeOrDefault(endTimeString, null);
+        int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        
+        Account account = accountDao.getAccount(study, userId);
+        
+        ForwardCursorPagedResourceList<ReportData> page = reportService.getParticipantReportV4(
+                session.getStudyIdentifier(), identifier, account.getHealthCode(), startTime, endTime, offsetKey,
+                pageSize);
+        
+        return okResult(page);
     }
     
     /**
@@ -166,11 +204,10 @@ public class ParticipantReportController extends BaseController {
     public Result deleteParticipantReportRecord(String userId, String identifier, String dateString) {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        LocalDate date = getLocalDateOrDefault(dateString, null);
         
         Account account = accountDao.getAccount(study, userId);
         
-        reportService.deleteParticipantReportRecord(session.getStudyIdentifier(), identifier, date, account.getHealthCode());
+        reportService.deleteParticipantReportRecord(session.getStudyIdentifier(), identifier, dateString, account.getHealthCode());
         
         return okResult("Report record deleted.");
     }
