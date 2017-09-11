@@ -16,16 +16,23 @@ public class HealthDataSubmissionTest {
     private static final String PHONE_INFO = "Unit Tests";
     private static final String SCHEMA_ID = "test-schema";
     private static final int SCHEMA_REV = 3;
+    private static final String SURVEY_CREATED_ON_STR = "2017-09-07T15:02:56.756+0900";
+    private static final DateTime SURVEY_CREATED_ON = DateTime.parse(SURVEY_CREATED_ON_STR);
+    private static final String SURVEY_GUID = "test-survey-guid";
 
     @Test
     public void serialization() throws Exception {
         // start with JSON
+        // Note: This is technically not valid, since you can't specify both schema and survey. It will suffice for our
+        // tests though.
         String jsonText = "{\n" +
                 "   \"appVersion\":\"" + APP_VERSION + "\",\n" +
                 "   \"createdOn\":\"" + CREATED_ON_STR + "\",\n" +
                 "   \"phoneInfo\":\"" + PHONE_INFO + "\",\n" +
                 "   \"schemaId\":\"" + SCHEMA_ID + "\",\n" +
                 "   \"schemaRevision\":" + SCHEMA_REV + ",\n" +
+                "   \"surveyCreatedOn\":\"" + SURVEY_CREATED_ON_STR + "\",\n" +
+                "   \"surveyGuid\":\"" + SURVEY_GUID + "\",\n" +
                 "   \"data\":{\n" +
                 "       \"foo\":\"foo-value\",\n" +
                 "       \"bar\":42\n" +
@@ -39,7 +46,9 @@ public class HealthDataSubmissionTest {
         assertDatesWithTimeZoneEqual(CREATED_ON, healthDataSubmission.getCreatedOn());
         assertEquals(PHONE_INFO, healthDataSubmission.getPhoneInfo());
         assertEquals(SCHEMA_ID, healthDataSubmission.getSchemaId());
-        assertEquals(SCHEMA_REV, healthDataSubmission.getSchemaRevision());
+        assertEquals(SCHEMA_REV, healthDataSubmission.getSchemaRevision().intValue());
+        assertDatesWithTimeZoneEqual(SURVEY_CREATED_ON, healthDataSubmission.getSurveyCreatedOn());
+        assertEquals(SURVEY_GUID, healthDataSubmission.getSurveyGuid());
 
         JsonNode pojoData = healthDataSubmission.getData();
         assertEquals(2, pojoData.size());
@@ -48,13 +57,15 @@ public class HealthDataSubmissionTest {
 
         // convert back to JSON
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(healthDataSubmission, JsonNode.class);
-        assertEquals(7, jsonNode.size());
+        assertEquals(9, jsonNode.size());
         assertEquals(APP_VERSION, jsonNode.get("appVersion").textValue());
         assertDatesWithTimeZoneEqual(CREATED_ON, DateTime.parse(jsonNode.get("createdOn").textValue()));
         assertEquals(pojoData, jsonNode.get("data"));
         assertEquals(PHONE_INFO, jsonNode.get("phoneInfo").textValue());
         assertEquals(SCHEMA_ID, jsonNode.get("schemaId").textValue());
         assertEquals(SCHEMA_REV, jsonNode.get("schemaRevision").intValue());
+        assertDatesWithTimeZoneEqual(SURVEY_CREATED_ON, DateTime.parse(jsonNode.get("surveyCreatedOn").textValue()));
+        assertEquals(SURVEY_GUID, jsonNode.get("surveyGuid").textValue());
         assertEquals("HealthDataSubmission", jsonNode.get("type").textValue());
     }
 }

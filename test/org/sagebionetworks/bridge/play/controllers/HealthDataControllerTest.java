@@ -142,7 +142,7 @@ public class HealthDataControllerTest {
         assertEquals(CREATED_ON, submission.getCreatedOn());
         assertEquals(PHONE_INFO, submission.getPhoneInfo());
         assertEquals(SCHEMA_ID, submission.getSchemaId());
-        assertEquals(SCHEMA_REV, submission.getSchemaRevision());
+        assertEquals(SCHEMA_REV, submission.getSchemaRevision().intValue());
 
         JsonNode data = submission.getData();
         assertEquals(2, data.size());

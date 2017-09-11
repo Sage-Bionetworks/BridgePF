@@ -27,11 +27,14 @@ import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
+import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -50,6 +53,9 @@ public class HealthDataServiceSubmitHealthDataTest {
     private static final String RECORD_ID = "test-record";
     private static final String SCHEMA_ID = "test-schema";
     private static final int SCHEMA_REV = 3;
+    private static final DateTime SURVEY_CREATED_ON = DateTime.parse("2017-09-07T15:02:56.756+0900");
+    private static final long SURVEY_CREATED_ON_MILLIS = SURVEY_CREATED_ON.getMillis();
+    private static final String SURVEY_GUID = "test-survey-guid";
 
     private static final DateTime CREATED_ON = DateTime.parse("2017-08-24T14:38:57.340+0900");
     private static final long CREATED_ON_MILLIS = CREATED_ON.getMillis();
@@ -78,12 +84,12 @@ public class HealthDataServiceSubmitHealthDataTest {
 
     @Test(expected = InvalidEntityException.class)
     public void invalidSubmission() throws Exception {
-        HealthDataSubmission submission = makeValidBuilder().withData(null).build();
+        HealthDataSubmission submission = makeValidBuilderWithSchema().withData(null).build();
         new HealthDataService().submitHealthData(TestConstants.TEST_STUDY, PARTICIPANT, submission);
     }
 
     @Test
-    public void submitHealthData() throws Exception {
+    public void submitHealthDataBySchema() throws Exception {
         // mock schema service
         List<UploadFieldDefinition> fieldDefList = ImmutableList.of(
                 new UploadFieldDefinition.Builder().withName("sanitize____this").withType(UploadFieldType.STRING)
@@ -138,7 +144,7 @@ public class HealthDataServiceSubmitHealthDataTest {
         inputData.put("normal-field", "normal field value");
         inputData.put("non-schema-field", "this is not in the schema");
 
-        HealthDataSubmission submission = makeValidBuilder().withData(inputData).build();
+        HealthDataSubmission submission = makeValidBuilderWithSchema().withData(inputData).build();
 
         // execute
         HealthDataRecord svcOutputRecord = svc.submitHealthData(TestConstants.TEST_STUDY, PARTICIPANT, submission);
@@ -191,6 +197,108 @@ public class HealthDataServiceSubmitHealthDataTest {
         verify(mockUploadArtifactsHandler).handle(context);
     }
 
+    @Test
+    public void submitHealthDataBySurvey() throws Exception {
+        // mock schema service
+        List<UploadFieldDefinition> fieldDefList = ImmutableList.of(new UploadFieldDefinition.Builder()
+                .withName("answer-me").withType(UploadFieldType.SINGLE_CHOICE).build());
+
+        UploadSchema schema = UploadSchema.create();
+        schema.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        schema.setSchemaId(SCHEMA_ID);
+        schema.setRevision(SCHEMA_REV);
+        schema.setFieldDefinitions(fieldDefList);
+
+        UploadSchemaService mockSchemaService = mock(UploadSchemaService.class);
+        when(mockSchemaService.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(
+                schema);
+
+        // mock survey service
+        Survey survey = Survey.create();
+        survey.setGuid(SURVEY_GUID);
+        survey.setCreatedOn(SURVEY_CREATED_ON_MILLIS);
+        survey.setIdentifier(SCHEMA_ID);
+        survey.setSchemaRevision(SCHEMA_REV);
+
+        SurveyService mockSurveyService = mock(SurveyService.class);
+        when(mockSurveyService.getSurvey(new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS)))
+                .thenReturn(survey);
+
+        // mock handlers
+        StrictValidationHandler mockStrictValidationHandler = mock(StrictValidationHandler.class);
+        TranscribeConsentHandler mockTranscribeConsentHandler = mock(TranscribeConsentHandler.class);
+        UploadArtifactsHandler mockUploadArtifactsHandler = mock(UploadArtifactsHandler.class);
+
+        // UploadArtifactsHandler needs to write record ID back into the context.
+        doAnswer(invocation -> {
+            UploadValidationContext context = invocation.getArgumentAt(0, UploadValidationContext.class);
+            context.setRecordId(RECORD_ID);
+            return null;
+        }).when(mockUploadArtifactsHandler).handle(any());
+
+        // set up service
+        HealthDataService svc = spy(new HealthDataService());
+        svc.setSchemaService(mockSchemaService);
+        svc.setSurveyService(mockSurveyService);
+        svc.setStrictValidationHandler(mockStrictValidationHandler);
+        svc.setTranscribeConsentHandler(mockTranscribeConsentHandler);
+        svc.setUploadArtifactsHandler(mockUploadArtifactsHandler);
+
+        // Spy getRecordById(). This decouples the submitHealthData implementation from the getRecord implementation.
+        // At this point, we only care about data flow. Don't worry about the actual content.
+        HealthDataRecord internalRecord = HealthDataRecord.create();
+        doReturn(internalRecord).when(svc).getRecordById(RECORD_ID);
+
+        // setup input
+        ObjectNode inputData = BridgeObjectMapper.get().createObjectNode();
+        inputData.put("answer-me", "C");
+        HealthDataSubmission submission = makeValidBuilderWithSurvey().withData(inputData).build();
+
+        // execute
+        svc.submitHealthData(TestConstants.TEST_STUDY, PARTICIPANT, submission);
+
+        // Verify that the we wrote the correct schemaId/Rev to the record. (Everything else is already tested in a
+        // previous test case.)
+        ArgumentCaptor<UploadValidationContext> contextCaptor = ArgumentCaptor.forClass(UploadValidationContext.class);
+        verify(mockStrictValidationHandler).handle(contextCaptor.capture());
+
+        HealthDataRecord contextRecord = contextCaptor.getValue().getHealthDataRecord();
+        assertEquals(SCHEMA_ID, contextRecord.getSchemaId());
+        assertEquals(SCHEMA_REV, contextRecord.getSchemaRevision());
+
+        // validate that our record was parsed correctly
+        JsonNode recordData = contextRecord.getData();
+        assertEquals(1, recordData.size());
+        assertEquals("C", recordData.get("answer-me").textValue());
+
+        // validate we did in fact call SurveyService
+        verify(mockSurveyService).getSurvey(new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS));
+    }
+
+    @Test(expected = EntityNotFoundException.class)
+    public void surveyWithoutSchema() throws Exception {
+        // mock survey service
+        Survey survey = Survey.create();
+        survey.setGuid(SURVEY_GUID);
+        survey.setCreatedOn(SURVEY_CREATED_ON_MILLIS);
+
+        SurveyService mockSurveyService = mock(SurveyService.class);
+        when(mockSurveyService.getSurvey(new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS)))
+                .thenReturn(survey);
+
+        // set up service
+        HealthDataService svc = new HealthDataService();
+        svc.setSurveyService(mockSurveyService);
+
+        // setup input
+        ObjectNode inputData = BridgeObjectMapper.get().createObjectNode();
+        inputData.put("answer-me", "C");
+        HealthDataSubmission submission = makeValidBuilderWithSurvey().withData(inputData).build();
+
+        // execute
+        svc.submitHealthData(TestConstants.TEST_STUDY, PARTICIPANT, submission);
+    }
+
     @Test(expected = BadRequestException.class)
     public void strictValidationThrows() throws Exception {
         // mock schema service
@@ -220,14 +328,23 @@ public class HealthDataServiceSubmitHealthDataTest {
         // setup input
         ObjectNode inputData = BridgeObjectMapper.get().createObjectNode();
         inputData.put("simple-field", "not an int");
-        HealthDataSubmission submission = makeValidBuilder().withData(inputData).build();
+        HealthDataSubmission submission = makeValidBuilderWithSchema().withData(inputData).build();
 
         // execute - This throws.
         svc.submitHealthData(TestConstants.TEST_STUDY, PARTICIPANT, submission);
     }
 
-    private static HealthDataSubmission.Builder makeValidBuilder() {
+    private static HealthDataSubmission.Builder makeValidBuilderWithSchema() {
+        return makeValidBuilderWithoutSchemaOrSurvey().withSchemaId(SCHEMA_ID).withSchemaRevision(SCHEMA_REV);
+    }
+
+    private static HealthDataSubmission.Builder makeValidBuilderWithSurvey() {
+        return makeValidBuilderWithoutSchemaOrSurvey().withSurveyGuid(SURVEY_GUID)
+                .withSurveyCreatedOn(SURVEY_CREATED_ON);
+    }
+
+    private static HealthDataSubmission.Builder makeValidBuilderWithoutSchemaOrSurvey() {
         return new HealthDataSubmission.Builder().withAppVersion(APP_VERSION).withCreatedOn(CREATED_ON).withData(DATA)
-                .withPhoneInfo(PHONE_INFO).withSchemaId(SCHEMA_ID).withSchemaRevision(SCHEMA_REV);
+                .withPhoneInfo(PHONE_INFO);
     }
 }

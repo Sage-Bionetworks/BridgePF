@@ -17,17 +17,21 @@ public class HealthDataSubmission implements BridgeEntity {
     private final JsonNode data;
     private final String phoneInfo;
     private final String schemaId;
-    private final int schemaRevision;
+    private final Integer schemaRevision;
+    private final DateTime surveyCreatedOn;
+    private final String surveyGuid;
 
     /** Private constructor. To construct, use builder. */
     private HealthDataSubmission(String appVersion, DateTime createdOn, JsonNode data, String phoneInfo,
-            String schemaId, int schemaRevision) {
+            String schemaId, Integer schemaRevision, DateTime surveyCreatedOn, String surveyGuid) {
         this.appVersion = appVersion;
         this.createdOn = createdOn;
         this.data = data;
         this.phoneInfo = phoneInfo;
         this.schemaId = schemaId;
         this.schemaRevision = schemaRevision;
+        this.surveyCreatedOn = surveyCreatedOn;
+        this.surveyGuid = surveyGuid;
     }
 
     /**
@@ -59,8 +63,19 @@ public class HealthDataSubmission implements BridgeEntity {
     }
 
     /** Schema revision with which to process this health data. */
-    public int getSchemaRevision() {
+    public Integer getSchemaRevision() {
         return schemaRevision;
+    }
+
+    /** If the health data is a survey response, this is the createdOn timestamp that specifies the survey version. */
+    @JsonSerialize(using = DateTimeSerializer.class)
+    public DateTime getSurveyCreatedOn() {
+        return surveyCreatedOn;
+    }
+
+    /** If the health data is a survey response, this is the GUID that specifies the survey. */
+    public String getSurveyGuid() {
+        return surveyGuid;
     }
 
     /** Builder for health data submission. */
@@ -70,7 +85,9 @@ public class HealthDataSubmission implements BridgeEntity {
         private JsonNode data;
         private String phoneInfo;
         private String schemaId;
-        private int schemaRevision;
+        private Integer schemaRevision;
+        private DateTime surveyCreatedOn;
+        private String surveyGuid;
 
         /** @see HealthDataSubmission#getAppVersion */
         public Builder withAppVersion(String appVersion) {
@@ -104,8 +121,21 @@ public class HealthDataSubmission implements BridgeEntity {
         }
 
         /** @see HealthDataSubmission#getSchemaRevision */
-        public Builder withSchemaRevision(int schemaRevision) {
+        public Builder withSchemaRevision(Integer schemaRevision) {
             this.schemaRevision = schemaRevision;
+            return this;
+        }
+
+        /** @see HealthDataSubmission#getSurveyCreatedOn */
+        @JsonDeserialize(using = DateTimeDeserializer.class)
+        public Builder withSurveyCreatedOn(DateTime surveyCreatedOn) {
+            this.surveyCreatedOn = surveyCreatedOn;
+            return this;
+        }
+
+        /** @see HealthDataSubmission#getSurveyGuid */
+        public Builder withSurveyGuid(String surveyGuid) {
+            this.surveyGuid = surveyGuid;
             return this;
         }
 
@@ -114,7 +144,8 @@ public class HealthDataSubmission implements BridgeEntity {
          * HealthDataSubmissionValidator.
          */
         public HealthDataSubmission build() {
-            return new HealthDataSubmission(appVersion, createdOn, data, phoneInfo, schemaId, schemaRevision);
+            return new HealthDataSubmission(appVersion, createdOn, data, phoneInfo, schemaId, schemaRevision,
+                    surveyCreatedOn, surveyGuid);
         }
     }
 }
