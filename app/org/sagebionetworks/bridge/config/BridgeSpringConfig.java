@@ -512,6 +512,8 @@ public class BridgeSpringConfig {
         String url = config.get("hibernate.connection.url");
         if (useSsl) {
             url = url + "?requireSSL=true&useSSL=true&verifyServerCertificate=true";
+        }else {
+        		url = url + "?requireSSL=false&useSSL=false&verifyServerCertificate=false";
         }
         props.put("hibernate.connection.url", url);
 
