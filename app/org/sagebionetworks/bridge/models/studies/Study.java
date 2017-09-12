@@ -61,7 +61,27 @@ public interface Study extends BridgeEntity, StudyIdentifier {
      */
     Long getVersion();
     void setVersion(Long version);
-    
+
+    /**
+     * <p>
+     * True if the Bridge Exporter should include the studyId prefix in the "originalTable" field in the appVersion
+     * (now "Health Data Summary") table in Synapse. This exists primarily because we want to remove redundant prefixes
+     * from the Synapse tables (to improve reporting), but we don't want to break existing studies or partition
+     * existing data.
+     * </p>
+     * <p>
+     * The setting is "reversed" so we don't have to backfill a bunch of old studies.
+     * </p>
+     * <p>
+     * This is a "hidden" setting, primarily to support back-compat for old studies. New studies should be created with
+     * this flag set to true, and only admins can change the flag.
+     * </p>
+     */
+    boolean getExcludeStudyIdInExport();
+
+    /** @see #getExcludeStudyIdInExport */
+    void setExcludeStudyIdInExport(boolean excludeStudyIdInExport);
+
     /**
      * User must confirm that they are at least this many years old in order to
      * participate in the study. 
