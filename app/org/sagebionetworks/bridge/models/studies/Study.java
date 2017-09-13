@@ -63,6 +63,13 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     void setVersion(Long version);
 
     /**
+     * User must confirm that they are at least this many years old in order to
+     * participate in the study. 
+     */
+    int getMinAgeOfConsent();
+    void setMinAgeOfConsent(int minAge);
+
+    /**
      * <p>
      * True if the Bridge Exporter should include the studyId prefix in the "originalTable" field in the appVersion
      * (now "Health Data Summary") table in Synapse. This exists primarily because we want to remove redundant prefixes
@@ -77,18 +84,11 @@ public interface Study extends BridgeEntity, StudyIdentifier {
      * this flag set to true, and only admins can change the flag.
      * </p>
      */
-    boolean getExcludeStudyIdInExport();
+    boolean isStudyIdExcludedInExport();
 
-    /** @see #getExcludeStudyIdInExport */
-    void setExcludeStudyIdInExport(boolean excludeStudyIdInExport);
+    /** @see #isStudyIdExcludedInExport */
+    void setStudyIdExcludedInExport(boolean studyIdExcludedInExport);
 
-    /**
-     * User must confirm that they are at least this many years old in order to
-     * participate in the study. 
-     */
-    int getMinAgeOfConsent();
-    void setMinAgeOfConsent(int minAge);
-    
     /**
      * The email address that will be given to study participants and other end user for all support 
      * requests and queries (technical, study-related, etc.). This can be a comma-separated list of 

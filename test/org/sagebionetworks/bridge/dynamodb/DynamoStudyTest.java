@@ -47,7 +47,7 @@ public class DynamoStudyTest {
         final JsonNode node = BridgeObjectMapper.get().readTree(json);
         
         assertEqualsAndNotNull(study.getConsentNotificationEmail(), node.get("consentNotificationEmail").asText());
-        assertTrue(node.get("excludeStudyIdInExport").booleanValue());
+        assertTrue(node.get("studyIdExcludedInExport").booleanValue());
         assertEqualsAndNotNull(study.getSupportEmail(), node.get("supportEmail").asText());
         assertEqualsAndNotNull(study.getSynapseDataAccessTeamId(), node.get("synapseDataAccessTeamId").longValue());
         assertEqualsAndNotNull(study.getSynapseProjectId(), node.get("synapseProjectId").textValue());

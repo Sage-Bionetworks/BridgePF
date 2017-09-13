@@ -317,8 +317,8 @@ public class StudyService {
         }
 
         study.setActive(true);
-        study.setExcludeStudyIdInExport(true);
         study.setStrictUploadValidationEnabled(true);
+        study.setStudyIdExcludedInExport(true);
         study.getDataGroups().add(BridgeConstants.TEST_USER_GROUP);
         setDefaultsIfAbsent(study);
         sanitizeHTML(study);
@@ -436,7 +436,6 @@ public class StudyService {
             if (!originalStudy.isActive()) {
                 throw new EntityNotFoundException(Study.class, "Study '"+ study.getIdentifier() +"' not found.");
             }
-            study.setExcludeStudyIdInExport(originalStudy.getExcludeStudyIdInExport());
             study.setHealthCodeExportEnabled(originalStudy.isHealthCodeExportEnabled());
             study.setEmailVerificationEnabled(originalStudy.isEmailVerificationEnabled());
             study.setExternalIdValidationEnabled(originalStudy.isExternalIdValidationEnabled());
@@ -444,6 +443,7 @@ public class StudyService {
             study.setEmailSignInEnabled(originalStudy.isEmailSignInEnabled());
             study.setAccountLimit(originalStudy.getAccountLimit());
             study.setStrictUploadValidationEnabled(originalStudy.isStrictUploadValidationEnabled());
+            study.setStudyIdExcludedInExport(originalStudy.isStudyIdExcludedInExport());
         }
 
         // prevent anyone changing active to false -- it should be done by deactivateStudy() method
