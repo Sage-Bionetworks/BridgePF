@@ -374,6 +374,7 @@ public class TestUtils {
         DynamoStudy study = new DynamoStudy();
         study.setName("Test Study ["+clazz.getSimpleName()+"]");
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        study.setStudyIdExcludedInExport(true);
         study.setVerifyEmailTemplate(new EmailTemplate("verifyEmail subject", "body with ${url}", MimeType.TEXT));
         study.setResetPasswordTemplate(new EmailTemplate("resetPassword subject", "body with ${url}", MimeType.TEXT));
         study.setEmailSignInTemplate(new EmailTemplate("${studyName} link", "Follow link ${token}", MimeType.TEXT));

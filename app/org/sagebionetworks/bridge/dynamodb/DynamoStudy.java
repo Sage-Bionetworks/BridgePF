@@ -29,6 +29,7 @@ public final class DynamoStudy implements Study {
     private String name;
     private String sponsorName;
     private String identifier;
+    private boolean studyIdExcludedInExport;
     private String supportEmail;
     private Long synapseDataAccessTeamId;
     private String synapseProjectId;
@@ -129,6 +130,18 @@ public final class DynamoStudy implements Study {
     @Override
     public void setMinAgeOfConsent(int minAge) {
         this.minAgeOfConsent = minAge;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean isStudyIdExcludedInExport() {
+        return studyIdExcludedInExport;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setStudyIdExcludedInExport(boolean studyIdExcludedInExport) {
+        this.studyIdExcludedInExport = studyIdExcludedInExport;
     }
 
     /** {@inheritDoc} */
@@ -433,7 +446,7 @@ public final class DynamoStudy implements Study {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, sponsorName, identifier, supportEmail, synapseDataAccessTeamId,
+        return Objects.hash(name, sponsorName, identifier, studyIdExcludedInExport, supportEmail, synapseDataAccessTeamId,
                 synapseProjectId, technicalEmail, usesCustomExportSchedule, consentNotificationEmail, minAgeOfConsent,
                 accountLimit, version, active, profileAttributes, taskIdentifiers, activityEventKeys, dataGroups,
                 passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, emailSignInTemplate, accountExistsTemplate,
@@ -450,7 +463,9 @@ public final class DynamoStudy implements Study {
             return false;
         DynamoStudy other = (DynamoStudy) obj;
 
-        return (Objects.equals(identifier, other.identifier) && Objects.equals(supportEmail, other.supportEmail)
+        return (Objects.equals(identifier, other.identifier)
+                && Objects.equals(studyIdExcludedInExport, other.studyIdExcludedInExport)
+                && Objects.equals(supportEmail, other.supportEmail)
                 && Objects.equals(minAgeOfConsent, other.minAgeOfConsent) && Objects.equals(name, other.name)
                 && Objects.equals(passwordPolicy, other.passwordPolicy) && Objects.equals(active, other.active))
                 && Objects.equals(verifyEmailTemplate, other.verifyEmailTemplate)
@@ -483,7 +498,7 @@ public final class DynamoStudy implements Study {
     @Override
     public String toString() {
         return String.format(
-            "DynamoStudy [name=%s, active=%s, sponsorName=%s, identifier=%s, minAgeOfConsent=%s, "
+            "DynamoStudy [name=%s, active=%s, sponsorName=%s, identifier=%s, minAgeOfConsent=%s, studyIdExcludedInExport=%b, "
                         + "supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, technicalEmail=%s, "
                         + "consentNotificationEmail=%s, version=%s, userProfileAttributes=%s, taskIdentifiers=%s, "
                         + "activityEventKeys=%s, dataGroups=%s, passwordPolicy=%s, verifyEmailTemplate=%s, "
@@ -491,12 +506,12 @@ public final class DynamoStudy implements Study {
                         + "emailVerificationEnabled=%s, externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, "
                         + "minSupportedAppVersions=%s, usesCustomExportSchedule=%s, pushNotificationARNs=%s, "
                         + "disableExport=%s, emailSignInTemplate=%s, emailSignInEnabled=%s, accountLimit=%s]",
-                name, active, sponsorName, identifier, minAgeOfConsent, supportEmail,
+                name, active, sponsorName, identifier, minAgeOfConsent, studyIdExcludedInExport, supportEmail,
                 synapseDataAccessTeamId, synapseProjectId, technicalEmail, consentNotificationEmail, version,
                 profileAttributes, taskIdentifiers, activityEventKeys, dataGroups, passwordPolicy, verifyEmailTemplate,
                 resetPasswordTemplate, strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
                 externalIdValidationEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
                 usesCustomExportSchedule, pushNotificationARNs, disableExport, emailSignInTemplate,
-                emailSignInEnabled, accountLimit, accountExistsTemplate);
+                emailSignInEnabled, accountLimit);
     }
 }
