@@ -25,11 +25,13 @@ import com.google.common.collect.Maps;
 
 public class IntervalActivitySchedulerTest {
 
+    private static final DateTime NOW = DateTime.parse("2015-03-26T14:40:00-07:00");
+    private static final DateTimeZone PST = DateTimeZone.forOffsetHours(-7);
+    private static DateTime ENROLLMENT = DateTime.parse("2015-03-23T10:00:00Z");
+    
     private Map<String, DateTime> events;
     private List<ScheduledActivity> scheduledActivities;
     private SchedulePlan plan = new DynamoSchedulePlan();
-    
-    private DateTime ENROLLMENT = DateTime.parse("2015-03-23T10:00:00Z");
     
     @Before
     public void before() {
@@ -43,8 +45,77 @@ public class IntervalActivitySchedulerTest {
     }
     
     @After
-    public void aftter() {
+    public void after() {
         DateTimeUtils.setCurrentMillisSystem();
+    }
+    
+    @Test
+    public void canSpecifyASequence() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(RECURRING);
+        schedule.setInterval("P1D");
+        schedule.addTimes("14:00");
+        schedule.setSequencePeriod("P3D");
+        schedule.addActivity(TestUtils.getActivity3());
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withInitialTimeZone(PST)
+            .withEndsOn(NOW.plusWeeks(2))
+            .withEvents(events).build();
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
+        
+        // three days of activities from enrollment
+        assertDates(scheduledActivities, PST, "2015-03-23 14:00", "2015-03-24 14:00", "2015-03-25 14:00");
+        
+        // delay one day, then one day period, you get two (the first and the second which is in the day
+        schedule.setSequencePeriod("P1D");
+        schedule.setInterval("P1D");
+        schedule.setDelay("P1D");
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
+        assertDates(scheduledActivities, PST, "2015-03-24 14:00");
+    }
+    
+    @Test
+    public void sequenceCanBeOverriddenByMinCount() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(RECURRING);
+        schedule.addTimes("14:00");
+        schedule.setSequencePeriod("P1D");
+        schedule.setInterval("P1D");
+        schedule.addActivity(TestUtils.getActivity3());
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withInitialTimeZone(PST)
+            .withEndsOn(NOW.plusWeeks(2))
+            .withMinimumPerSchedule(3)
+            .withEvents(events).build();
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
+        
+        // Should be one given sequencePeriod = P1D, but we've asked for 3
+        assertDates(scheduledActivities, PST, "2015-03-23 14:00", "2015-03-24 14:00", "2015-03-25 14:00");
+    }
+    
+    @Test
+    public void sequenceWithTwoTimesProducesDoubleTheActivities() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(RECURRING);
+        schedule.addTimes("08:00", "14:00");
+        schedule.setSequencePeriod("P3D");
+        schedule.setInterval("P1D");
+        schedule.addActivity(TestUtils.getActivity3());
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withInitialTimeZone(PST)
+            .withEndsOn(NOW.plusWeeks(2))
+            .withEvents(events).build();
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
+        
+        // We've asked for a period of 3 days, we get 6 tasks, 2 for each day on the two times.
+        assertDates(scheduledActivities, PST, "2015-03-23 08:00", "2015-03-23 14:00", "2015-03-24 08:00",
+                "2015-03-24 14:00", "2015-03-25 08:00", "2015-03-25 14:00");
     }
     
     @Test

@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 public abstract class ActivityScheduler {
     
     protected final Schedule schedule;
+    protected DateTime sequenceEndsOn;
     
     ActivityScheduler(Schedule schedule) {
         this.schedule = schedule;
@@ -39,6 +40,11 @@ public abstract class ActivityScheduler {
         if (schedule.getDelay() != null) {
             eventTime = eventTime.plus(schedule.getDelay());
         }
+        // Sequence period is measured from the first timestamp plus the delay, to the end of the period.
+        if (schedule.getSequencePeriod() != null) {
+            sequenceEndsOn = eventTime.plus(schedule.getSequencePeriod());
+        }
+        
         return eventTime;
     }
     
@@ -140,6 +146,9 @@ public abstract class ActivityScheduler {
     protected boolean shouldContinueScheduling(ScheduleContext context, DateTime scheduledTime,
             List<ScheduledActivity> scheduledActivities) {
 
+        if (scheduledOnAfterSequencePeriod(context, scheduledTime, scheduledActivities.size())) {
+            return false;
+        }
         if (scheduledOnAfterEndsOnNoMinimumCount(context, scheduledTime)) {
             return false;
         }
@@ -150,6 +159,14 @@ public abstract class ActivityScheduler {
                 hasNotMetMinimumCount(context, scheduledActivities.size());
         
         return boundaryNotMet;
+    }
+    
+    private boolean scheduledOnAfterSequencePeriod(ScheduleContext context, DateTime scheduledTime, int currentCount) {
+        // Don't know why you'd specify a sequence, then force N number of activities to be returned, but the 
+        // minimum activities setting is part of the public API and it would be unexpected if it didn't work.
+        
+        boolean minMet = context.getMinimumPerSchedule() == 0 || currentCount >= context.getMinimumPerSchedule();
+        return sequenceEndsOn != null && !scheduledTime.isBefore(sequenceEndsOn) && minMet;
     }
     
     private boolean scheduledOnAfterEndsOnNoMinimumCount(ScheduleContext context, DateTime scheduledTime) {

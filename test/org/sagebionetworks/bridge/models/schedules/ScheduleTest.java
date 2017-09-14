@@ -36,9 +36,10 @@ public class ScheduleTest {
         schedule.setExpires(Period.parse("P2D"));
         schedule.setStartsOn(DateTime.parse("2015-02-02T10:10:10.000Z"));
         schedule.setEndsOn(DateTime.parse("2015-01-01T10:10:10.000Z"));
-        schedule.setEventId("eventId");
+        schedule.setEventId(Schedule.EVENT_ID_PROPERTY);
         schedule.setInterval(Period.parse("P3D"));
-        schedule.setLabel("label");
+        schedule.setSequencePeriod(Period.parse("P3W"));
+        schedule.setLabel(Schedule.LABEL_PROPERTY);
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setTimes(Lists.newArrayList(LocalTime.parse("10:10"), LocalTime.parse("14:00")));
         
@@ -46,16 +47,17 @@ public class ScheduleTest {
         String string = mapper.writeValueAsString(schedule);
 
         JsonNode node = mapper.readTree(string);
-        assertEquals("label", node.get("label").asText());
-        assertEquals("recurring", node.get("scheduleType").asText());
-        assertEquals("eventId", node.get("eventId").asText());
-        assertEquals("0 0 8 ? * TUE *", node.get("cronTrigger").asText());
-        assertEquals("P1D", node.get("delay").asText());
-        assertEquals("P3D", node.get("interval").asText());
-        assertEquals("P2D", node.get("expires").asText());
-        assertEquals("2015-02-02T10:10:10.000Z", node.get("startsOn").asText());
-        assertEquals("2015-01-01T10:10:10.000Z", node.get("endsOn").asText());
-        assertFalse(node.get("persistent").asBoolean());
+        assertEquals("label", node.get(Schedule.LABEL_PROPERTY).asText());
+        assertEquals("recurring", node.get(Schedule.SCHEDULE_TYPE_PROPERTY).asText());
+        assertEquals("eventId", node.get(Schedule.EVENT_ID_PROPERTY).asText());
+        assertEquals("0 0 8 ? * TUE *", node.get(Schedule.CRON_TRIGGER_PROPERTY).asText());
+        assertEquals("P1D", node.get(Schedule.DELAY_PROPERTY).asText());
+        assertEquals("P3D", node.get(Schedule.INTERVAL_PROPERTY).asText());
+        assertEquals("P2D", node.get(Schedule.EXPIRES_PROPERTY).asText());
+        assertEquals("P3W", node.get(Schedule.SEQUENCE_PERIOD_PROPERTY).asText());
+        assertEquals("2015-02-02T10:10:10.000Z", node.get(Schedule.STARTS_ON_PROPERTY).asText());
+        assertEquals("2015-01-01T10:10:10.000Z", node.get(Schedule.ENDS_ON_PROPERTY).asText());
+        assertFalse(node.get(Schedule.PERSISTENT_PROPERTY).asBoolean());
         assertEquals("Schedule", node.get("type").asText());
 
         ArrayNode times = (ArrayNode)node.get("times");
@@ -98,6 +100,7 @@ public class ScheduleTest {
         schedule.setStartsOn("2015-02-02T10:10:10.000Z");
         schedule.setExpires("P1D");
         schedule.setInterval("P1D");
+        schedule.setSequencePeriod("P1D");
         schedule.addTimes("10:10");
         schedule.addTimes("12:10");
         
@@ -106,6 +109,7 @@ public class ScheduleTest {
         assertEquals(date, schedule.getStartsOn());
         assertEquals(period, schedule.getExpires());
         assertEquals(period, schedule.getInterval());
+        assertEquals(period, schedule.getSequencePeriod());
         assertEquals(Lists.newArrayList(LocalTime.parse("10:10"), LocalTime.parse("12:10")), schedule.getTimes());
     }
     

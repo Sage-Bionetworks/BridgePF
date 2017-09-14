@@ -83,7 +83,18 @@ public class ScheduleValidator implements Validator {
         if (timesNotOrderedChronologically(schedule)) {
             errors.rejectValue(Schedule.ENDS_ON_PROPERTY, "should be at least an hour after the startsOn time");
         }
+        if (iterationPeriodForNonRecurringSchedule(schedule)) {
+            errors.rejectValue(Schedule.SEQUENCE_PERIOD_PROPERTY, "cannot be set unless schedule is recurring");
+        }
         validateActivities(schedule, errors);
+    }
+    
+    /**
+     * Iteration period is specifically intended to limit the production of activities from recurring schedules 
+     * (whether interval based or cron based). It is an error to include it in other schedule types.
+     */
+    private boolean iterationPeriodForNonRecurringSchedule(Schedule schedule) {
+        return (schedule.getSequencePeriod() != null && schedule.getScheduleType() != ScheduleType.RECURRING);
     }
     
     /**
