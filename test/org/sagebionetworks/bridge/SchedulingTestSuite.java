@@ -17,8 +17,8 @@ import org.sagebionetworks.bridge.services.ScheduledActivityServiceRecurringTest
  * These are run as part of the entire test suite, but when working on the scheduling, it is useful
  * to be able to run these tests separately. 
  */
-@RunWith(Suite.class)
 @Ignore
+@RunWith(Suite.class)
 @Suite.SuiteClasses({
     ScheduledActivityServiceDuplicateTest.class,
     ScheduledActivityServiceMockTest.class,
