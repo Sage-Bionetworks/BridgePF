@@ -232,11 +232,10 @@ public class Schedule implements BridgeEntity {
         Schedule other = (Schedule) obj;
         return (Objects.equals(activities, other.activities) && Objects.equals(cronTrigger, other.cronTrigger)
                 && Objects.equals(endsOn, other.endsOn) && Objects.equals(expires, other.expires)
-                && Objects.equals(sequencePeriod, other.sequencePeriod)
-                && Objects.equals(label, other.label) && Objects.equals(scheduleType, other.scheduleType) 
-                && Objects.equals(startsOn, other.startsOn) && Objects.equals(eventId, other.eventId) 
-                && Objects.equals(interval, other.interval) && Objects.equals(times, other.times)
-                && Objects.equals(delay, other.delay));
+                && Objects.equals(sequencePeriod, other.sequencePeriod) && Objects.equals(label, other.label)
+                && Objects.equals(scheduleType, other.scheduleType) && Objects.equals(startsOn, other.startsOn)
+                && Objects.equals(eventId, other.eventId) && Objects.equals(interval, other.interval)
+                && Objects.equals(times, other.times) && Objects.equals(delay, other.delay));
     }
     @Override
     public String toString() {
