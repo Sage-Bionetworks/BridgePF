@@ -492,6 +492,10 @@ public class TestUtils {
         return BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
     }
     
+    public static <T> T getResponsePayload(Result result, Class<T> clazz) throws Exception {
+        return BridgeObjectMapper.get().readValue(Helpers.contentAsString(result), clazz);
+    }
+    
     public static Criteria createCriteria(Integer minAppVersion, Integer maxAppVersion, Set<String> allOfGroups, Set<String> noneOfGroups) {
         DynamoCriteria crit = new DynamoCriteria();
         crit.setMinAppVersion(OperatingSystem.IOS, minAppVersion);

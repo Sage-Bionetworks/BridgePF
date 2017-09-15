@@ -210,6 +210,14 @@ POST   /v3/topics/:guid                  @org.sagebionetworks.bridge.play.contro
 DELETE /v3/topics/:guid                  @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.deleteTopic(guid: String)
 POST   /v3/topics/:guid/sendNotification @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.sendNotification(guid: String)
 
+# AppConfigs
+GET    /v3/appconfigs        @org.sagebionetworks.bridge.play.controllers.AppConfigController.getAppConfigs
+GET    /v3/appconfigs/self   @org.sagebionetworks.bridge.play.controllers.AppConfigController.getSelfAppConfig
+GET    /v3/appconfigs/:guid  @org.sagebionetworks.bridge.play.controllers.AppConfigController.getAppConfig(guid: String)
+POST   /v3/appconfigs        @org.sagebionetworks.bridge.play.controllers.AppConfigController.createAppConfig
+POST   /v3/appconfigs/:guid  @org.sagebionetworks.bridge.play.controllers.AppConfigController.updateAppConfig(guid: String)
+DELETE /v3/appconfigs/:guid  @org.sagebionetworks.bridge.play.controllers.AppConfigController.deleteAppConfig(guid: String)
+
 # Bridge Exporter
 POST /v3/recordexportstatuses      @org.sagebionetworks.bridge.play.controllers.HealthDataController.updateRecordsStatus
 POST /v3/recordExportStatuses      @org.sagebionetworks.bridge.play.controllers.HealthDataController.updateRecordsStatus

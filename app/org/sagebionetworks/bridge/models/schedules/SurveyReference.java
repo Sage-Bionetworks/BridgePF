@@ -5,10 +5,12 @@ import java.util.Objects;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * This is a "soft" reference to a survey that does not need to include a createdOn timestamp. 
@@ -37,6 +39,7 @@ public final class SurveyReference {
     public String getGuid() {
         return guid;
     }
+    @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getCreatedOn() {
         return createdOn;
     }
