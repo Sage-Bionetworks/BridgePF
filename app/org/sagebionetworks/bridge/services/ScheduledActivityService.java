@@ -28,12 +28,15 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -55,6 +58,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
 public class ScheduledActivityService {
+    private static final Logger LOG = LoggerFactory.getLogger(ScheduledActivityService.class);
 
     static final Predicate<ScheduledActivity> V3_FILTER = activity -> {
         return ScheduledActivityStatus.VISIBLE_STATUSES.contains(activity.getStatus());
@@ -400,7 +404,7 @@ public class ScheduledActivityService {
                         schemaCache, surveyCache, compoundActivity);
 
                 // If resolution changed the compound activity, generate a new activity instance that contains it.
-                if (!resolvedCompoundActivity.equals(compoundActivity)) {
+                if (resolvedCompoundActivity != null && !resolvedCompoundActivity.equals(compoundActivity)) {
                     resolvedActivity = new Activity.Builder().withActivity(activity)
                             .withCompoundActivity(resolvedCompoundActivity).build();
                 }
@@ -408,7 +412,7 @@ public class ScheduledActivityService {
                 SurveyReference surveyRef = activity.getSurvey();
                 SurveyReference resolvedSurveyRef = resolveSurvey(context, surveyCache, surveyRef);
 
-                if (!resolvedSurveyRef.equals(surveyRef)) {
+                if (resolvedSurveyRef != null && !resolvedSurveyRef.equals(surveyRef)) {
                     resolvedActivity = new Activity.Builder().withActivity(activity).withSurvey(resolvedSurveyRef)
                             .build();
                 }
@@ -419,7 +423,7 @@ public class ScheduledActivityService {
                 if (schemaRef != null) {
                     SchemaReference resolvedSchemaRef = resolveSchema(context, schemaCache, schemaRef);
 
-                    if (!resolvedSchemaRef.equals(schemaRef)) {
+                    if (resolvedSchemaRef != null && !resolvedSchemaRef.equals(schemaRef)) {
                         TaskReference resolvedTaskRef = new TaskReference(taskRef.getIdentifier(), resolvedSchemaRef);
                         resolvedActivity = new Activity.Builder().withActivity(activity).withTask(resolvedTaskRef)
                                 .build();
@@ -444,8 +448,14 @@ public class ScheduledActivityService {
         if (resolvedCompoundActivity == null) {
             if (compoundActivity.isReference()) {
                 // Compound activity has no schemas or surveys defined. Resolve it with its definition.
-                CompoundActivityDefinition compoundActivityDef = compoundActivityDefinitionService
-                        .getCompoundActivityDefinition(context.getStudyIdentifier(), taskId);
+                CompoundActivityDefinition compoundActivityDef;
+                try {
+                    compoundActivityDef = compoundActivityDefinitionService.getCompoundActivityDefinition(
+                            context.getStudyIdentifier(), taskId);
+                } catch (EntityNotFoundException ex) {
+                    LOG.error("Schedule references non-existent compound activity " + taskId);
+                    return null;
+                }
                 resolvedCompoundActivity = compoundActivityDef.getCompoundActivity();
             } else {
                 // Compound activity has schemas and surveys defined. Use the schemas and surveys from the lists, but
@@ -512,8 +522,14 @@ public class ScheduledActivityService {
         String schemaId = schemaRef.getId();
         SchemaReference resolvedSchemaRef = schemaCache.get(schemaId);
         if (resolvedSchemaRef == null) {
-            UploadSchema schema = schemaService.getLatestUploadSchemaRevisionForAppVersion(
-                    context.getStudyIdentifier(), schemaId, context.getClientInfo());
+            UploadSchema schema;
+            try {
+                schema = schemaService.getLatestUploadSchemaRevisionForAppVersion(context.getStudyIdentifier(),
+                        schemaId, context.getClientInfo());
+            } catch (EntityNotFoundException ex) {
+                LOG.error("Schedule references non-existent schema " + schemaId);
+                return null;
+            }
             resolvedSchemaRef = new SchemaReference(schemaId, schema.getRevision());
             schemaCache.put(schemaId, resolvedSchemaRef);
         }
@@ -530,8 +546,13 @@ public class ScheduledActivityService {
         String surveyGuid = surveyRef.getGuid();
         SurveyReference resolvedSurveyRef = surveyCache.get(surveyGuid);
         if (resolvedSurveyRef == null) {
-            Survey survey = surveyService.getSurveyMostRecentlyPublishedVersion(context.getStudyIdentifier(),
-                    surveyGuid);
+            Survey survey;
+            try {
+                survey = surveyService.getSurveyMostRecentlyPublishedVersion(context.getStudyIdentifier(), surveyGuid);
+            } catch (EntityNotFoundException ex) {
+                LOG.error("Schedule references non-existent survey " + surveyGuid);
+                return null;
+            }
             resolvedSurveyRef = new SurveyReference(survey.getIdentifier(), surveyGuid,
                     new DateTime(survey.getCreatedOn()));
             surveyCache.put(surveyGuid, resolvedSurveyRef);
