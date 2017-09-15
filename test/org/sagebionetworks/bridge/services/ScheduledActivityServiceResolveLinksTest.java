@@ -243,6 +243,44 @@ public class ScheduledActivityServiceResolveLinksTest {
         verify(mockSurveyService, never()).getSurveyMostRecentlyPublishedVersion(any(), any());
     }
 
+    @Test
+    public void resolveCompoundActivityWithListOf404s() {
+        // Create a compound activity reference (has an ID but no schema or survey lists).
+        // Create a compound activity that has a list of unresolved schema and survey references.
+        CompoundActivity inputCompoundActivity = new CompoundActivity.Builder()
+                .withTaskIdentifier(COMPOUND_ACTIVITY_REF_TASK_ID)
+                .withSchemaList(ImmutableList.of(new SchemaReference(SCHEMA_ID, null)))
+                .withSurveyList(ImmutableList.of(new SurveyReference(SURVEY_ID, SURVEY_GUID, null)))
+                .build();
+        Activity activity = new Activity.Builder().withCompoundActivity(inputCompoundActivity).build();
+        setupSchedulePlanServiceWithActivity(activity);
+
+        // Mock schema and survey services to throw.
+        when(mockSchemaService.getLatestUploadSchemaRevisionForAppVersion(TestConstants.TEST_STUDY, SCHEMA_ID,
+                ClientInfo.UNKNOWN_CLIENT)).thenThrow(EntityNotFoundException.class);
+        when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(TestConstants.TEST_STUDY, SURVEY_GUID))
+                .thenThrow(EntityNotFoundException.class);
+
+        // Execute and validate. We have 2 activities (because of how the test is set up), and the activities have
+        // empty schema and survey lists because we remove the ones that throw 404.
+        List<ScheduledActivity> scheduledActivityList = scheduledActivityService.scheduleActivitiesForPlans(
+                SCHEDULE_CONTEXT);
+        verifyActivityListSizeAndLabels(scheduledActivityList);
+        for (ScheduledActivity oneScheduledActivity : scheduledActivityList) {
+            CompoundActivity compoundActivity = oneScheduledActivity.getActivity().getCompoundActivity();
+            assertEquals(COMPOUND_ACTIVITY_REF_TASK_ID, compoundActivity.getTaskIdentifier());
+            assertTrue(compoundActivity.getSchemaList().isEmpty());
+            assertTrue(compoundActivity.getSurveyList().isEmpty());
+        }
+
+        // Validate backends - Note that even though resolveSchema() and resolveSurvey() don't cache exceptions,
+        // resolveCompoundActivity does cache the resulting compound activity with unresolved references. So
+        // schemaService and surveyService still only get called once.
+        verify(mockCompoundActivityDefinitionService, never()).getCompoundActivityDefinition(any(), any());
+        verify(mockSchemaService, times(1)).getLatestUploadSchemaRevisionForAppVersion(any(), any(), any());
+        verify(mockSurveyService, times(1)).getSurveyMostRecentlyPublishedVersion(any(), any());
+    }
+
     private static void verifyCompoundActivities(List<ScheduledActivity> scheduledActivityList) {
         verifyActivityListSizeAndLabels(scheduledActivityList);
         for (ScheduledActivity oneScheduledActivity : scheduledActivityList) {

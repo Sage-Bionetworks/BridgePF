@@ -478,15 +478,12 @@ public class ScheduledActivityService {
             CompoundActivity compoundActivity) {
         // Resolve schemas.
         // Lists in CompoundActivity are always non-null, so we don't need to null-check.
-        boolean isModified = false;
         List<SchemaReference> schemaList = new ArrayList<>();
         for (SchemaReference oneSchemaRef : compoundActivity.getSchemaList()) {
             SchemaReference resolvedSchemaRef = resolveSchema(context, schemaCache, oneSchemaRef);
-            schemaList.add(resolvedSchemaRef);
 
-            if (!resolvedSchemaRef.equals(oneSchemaRef)) {
-                // Only mark the compound activity as dirty if resolution actually changed the schema.
-                isModified = true;
+            if (resolvedSchemaRef != null) {
+                schemaList.add(resolvedSchemaRef);
             }
         }
 
@@ -494,21 +491,16 @@ public class ScheduledActivityService {
         List<SurveyReference> surveyList = new ArrayList<>();
         for (SurveyReference oneSurveyRef : compoundActivity.getSurveyList()) {
             SurveyReference resolvedSurveyRef = resolveSurvey(context, surveyCache, oneSurveyRef);
-            surveyList.add(resolvedSurveyRef);
 
-            if (!resolvedSurveyRef.equals(oneSurveyRef)) {
-                isModified = true;
+            if (resolvedSurveyRef != null) {
+                surveyList.add(resolvedSurveyRef);
             }
         }
 
-        if (!isModified) {
-            // Resolution didn't change any of our schema and survey refs. Just return the compound activity as is.
-            return compoundActivity;
-        } else {
-            // We need to make a new compound activity with the resolved schemas and surveys.
-            return new CompoundActivity.Builder().copyOf(compoundActivity).withSchemaList(schemaList)
-                    .withSurveyList(surveyList).build();
-        }
+        // Make a new compound activity with the resolved schemas and surveys. This is cached in
+        // resolveCompoundActivities(), so this is okay.
+        return new CompoundActivity.Builder().copyOf(compoundActivity).withSchemaList(schemaList)
+                .withSurveyList(surveyList).build();
     }
 
     // Helper method to resolve a schema ref to the latest revision for the client.
