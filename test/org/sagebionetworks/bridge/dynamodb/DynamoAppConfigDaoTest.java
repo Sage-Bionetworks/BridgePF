@@ -83,6 +83,14 @@ public class DynamoAppConfigDaoTest {
         assertEquals(clientData.toString(), saved.getClientData().toString());
         assertEquals(criteria, saved.getCriteria());
         
+        // get the config, verify it
+        AppConfig retrieved = dao.getAppConfig(STUDY_ID, saved.getGuid());
+        assertEquals(SchemaReference.class, retrieved.getSchemaReferences().get(0).getClass());
+        assertEquals(SurveyReference.class, retrieved.getSurveyReferences().get(0).getClass());
+        
+        assertEquals(config.getSchemaReferences(), retrieved.getSchemaReferences());
+        assertEquals(config.getSurveyReferences(), retrieved.getSurveyReferences());
+        
         // update a changed version of the record
         String existingGuid = saved.getGuid();
         Long existingVersion = saved.getVersion();

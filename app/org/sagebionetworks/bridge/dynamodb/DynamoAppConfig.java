@@ -15,7 +15,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConvertedJson;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -79,7 +78,7 @@ public class DynamoAppConfig implements AppConfig {
         this.clientData = clientData;
     }
     
-    @DynamoDBTypeConvertedJson
+    @DynamoDBTypeConverted(converter=SurveyReferenceListMarshaller.class)
     @Override
     public List<SurveyReference> getSurveyReferences() {
         if (surveyReferences == null) {
@@ -93,7 +92,7 @@ public class DynamoAppConfig implements AppConfig {
         this.surveyReferences = references; 
     }
 
-    @DynamoDBTypeConvertedJson
+    @DynamoDBTypeConverted(converter=SchemaReferenceListMarshaller.class)
     @Override
     public List<SchemaReference> getSchemaReferences() {
         if (schemaReferences == null) {

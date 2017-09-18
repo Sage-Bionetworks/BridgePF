@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
 import java.util.List;
@@ -9,6 +10,7 @@ import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.services.AppConfigService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import play.mvc.Result;
@@ -18,6 +20,7 @@ public class AppConfigController extends BaseController {
 
     private AppConfigService appConfigService;
     
+    @Autowired
     final void setAppConfigService(AppConfigService appConfigService) {
         this.appConfigService = appConfigService;
     }
@@ -70,7 +73,7 @@ public class AppConfigController extends BaseController {
     }
     
     public Result deleteAppConfig(String guid) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(ADMIN);
         
         appConfigService.deleteAppConfig(session.getStudyIdentifier(), guid);
         

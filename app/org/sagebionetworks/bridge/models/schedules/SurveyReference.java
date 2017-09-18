@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.schedules;
 import java.util.Objects;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.format.ISODateTimeFormat;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
@@ -30,7 +31,7 @@ public final class SurveyReference {
                     @JsonProperty("createdOn") DateTime createdOn) {
         this.identifier = identifier;
         this.guid = guid;
-        this.createdOn = (createdOn == null) ? null : createdOn;
+        this.createdOn = (createdOn == null) ? null : createdOn.withZone(DateTimeZone.UTC);
     }
 
     public String getIdentifier() {
