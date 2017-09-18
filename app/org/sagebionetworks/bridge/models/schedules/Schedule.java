@@ -40,6 +40,8 @@ public class Schedule implements BridgeEntity {
     public static final String TYPE_PROPERTY_NAME = "type";
     public static final String ACTIVITIES_PROPERTY = "activities";
     public static final String TIMES_PROPERTY = "times";
+    public static final String SEQUENCE_PERIOD_PROPERTY = "sequencePeriod";
+    public static final String PERSISTENT_PROPERTY = "persistent";
 
     public static final Splitter EVENT_ID_SPLITTER = Splitter.on(Pattern.compile("\\s*,\\s*"));
    
@@ -49,6 +51,7 @@ public class Schedule implements BridgeEntity {
     private Period delay;
     private Period interval;
     private Period expires;
+    private Period sequencePeriod;
     private String cronTrigger;
     private DateTime startsOn;
     private DateTime endsOn;
@@ -129,6 +132,15 @@ public class Schedule implements BridgeEntity {
     public void setExpires(Period expires) {
         this.expires = expires;
     }
+    public Period getSequencePeriod() {
+        return sequencePeriod;
+    }
+    public void setSequencePeriod(Period sequencePeriod) {
+        this.sequencePeriod = sequencePeriod;
+    }
+    public void setSequencePeriod(String sequencePeriod) {
+        setSequencePeriod(Period.parse(sequencePeriod));
+    }
     public void setExpires(String expires) {
         setExpires(Period.parse(expires));
     }
@@ -206,7 +218,7 @@ public class Schedule implements BridgeEntity {
     }
     @Override
     public final int hashCode() {
-        return Objects.hash(activities, cronTrigger, endsOn, expires, delay, interval, label, 
+        return Objects.hash(activities, cronTrigger, endsOn, expires, sequencePeriod, delay, interval, label,
                 scheduleType, startsOn, eventId, times);
     }
     @Override
@@ -220,14 +232,14 @@ public class Schedule implements BridgeEntity {
         Schedule other = (Schedule) obj;
         return (Objects.equals(activities, other.activities) && Objects.equals(cronTrigger, other.cronTrigger)
                 && Objects.equals(endsOn, other.endsOn) && Objects.equals(expires, other.expires)
-                && Objects.equals(label, other.label) && Objects.equals(scheduleType, other.scheduleType) 
-                && Objects.equals(startsOn, other.startsOn) && Objects.equals(eventId, other.eventId) 
-                && Objects.equals(interval, other.interval) && Objects.equals(times, other.times)
-                && Objects.equals(delay, other.delay));
+                && Objects.equals(sequencePeriod, other.sequencePeriod) && Objects.equals(label, other.label)
+                && Objects.equals(scheduleType, other.scheduleType) && Objects.equals(startsOn, other.startsOn)
+                && Objects.equals(eventId, other.eventId) && Objects.equals(interval, other.interval)
+                && Objects.equals(times, other.times) && Objects.equals(delay, other.delay));
     }
     @Override
     public String toString() {
-        return String.format("Schedule [label=%s, scheduleType=%s, cronTrigger=%s, startsOn=%s, endsOn=%s, delay=%s, expires=%s, interval=%s, times=%s, eventId=%s, activities=%s]", 
-            label, scheduleType, cronTrigger, startsOn, endsOn, delay, expires, interval, times, eventId, activities);
+        return String.format("Schedule [label=%s, scheduleType=%s, cronTrigger=%s, startsOn=%s, endsOn=%s, delay=%s, expires=%s, sequencePeriod=%s, interval=%s, times=%s, eventId=%s, activities=%s]", 
+            label, scheduleType, cronTrigger, startsOn, endsOn, delay, expires, sequencePeriod, interval, times, eventId, activities);
     }
 }    
