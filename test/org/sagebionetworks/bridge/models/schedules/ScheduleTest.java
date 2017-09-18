@@ -47,31 +47,31 @@ public class ScheduleTest {
         String string = mapper.writeValueAsString(schedule);
 
         JsonNode node = mapper.readTree(string);
-        assertEquals("label", node.get(Schedule.LABEL_PROPERTY).asText());
-        assertEquals("recurring", node.get(Schedule.SCHEDULE_TYPE_PROPERTY).asText());
-        assertEquals("eventId", node.get(Schedule.EVENT_ID_PROPERTY).asText());
-        assertEquals("0 0 8 ? * TUE *", node.get(Schedule.CRON_TRIGGER_PROPERTY).asText());
-        assertEquals("P1D", node.get(Schedule.DELAY_PROPERTY).asText());
-        assertEquals("P3D", node.get(Schedule.INTERVAL_PROPERTY).asText());
-        assertEquals("P2D", node.get(Schedule.EXPIRES_PROPERTY).asText());
-        assertEquals("P3W", node.get(Schedule.SEQUENCE_PERIOD_PROPERTY).asText());
-        assertEquals("2015-02-02T10:10:10.000Z", node.get(Schedule.STARTS_ON_PROPERTY).asText());
-        assertEquals("2015-01-01T10:10:10.000Z", node.get(Schedule.ENDS_ON_PROPERTY).asText());
-        assertFalse(node.get(Schedule.PERSISTENT_PROPERTY).asBoolean());
-        assertEquals("Schedule", node.get("type").asText());
+        assertEquals("label", node.get(Schedule.LABEL_PROPERTY).textValue());
+        assertEquals("recurring", node.get(Schedule.SCHEDULE_TYPE_PROPERTY).textValue());
+        assertEquals("eventId", node.get(Schedule.EVENT_ID_PROPERTY).textValue());
+        assertEquals("0 0 8 ? * TUE *", node.get(Schedule.CRON_TRIGGER_PROPERTY).textValue());
+        assertEquals("P1D", node.get(Schedule.DELAY_PROPERTY).textValue());
+        assertEquals("P3D", node.get(Schedule.INTERVAL_PROPERTY).textValue());
+        assertEquals("P2D", node.get(Schedule.EXPIRES_PROPERTY).textValue());
+        assertEquals("P3W", node.get(Schedule.SEQUENCE_PERIOD_PROPERTY).textValue());
+        assertEquals("2015-02-02T10:10:10.000Z", node.get(Schedule.STARTS_ON_PROPERTY).textValue());
+        assertEquals("2015-01-01T10:10:10.000Z", node.get(Schedule.ENDS_ON_PROPERTY).textValue());
+        assertFalse(node.get(Schedule.PERSISTENT_PROPERTY).booleanValue());
+        assertEquals("Schedule", node.get("type").textValue());
 
         ArrayNode times = (ArrayNode)node.get("times");
-        assertEquals("10:10:00.000", times.get(0).asText());
-        assertEquals("14:00:00.000", times.get(1).asText());
+        assertEquals("10:10:00.000", times.get(0).textValue());
+        assertEquals("14:00:00.000", times.get(1).textValue());
         
         JsonNode actNode = node.get("activities").get(0);
-        assertEquals("label", actNode.get("label").asText());
-        assertEquals("task", actNode.get("activityType").asText());
-        assertEquals("Activity", actNode.get("type").asText());
+        assertEquals("label", actNode.get("label").textValue());
+        assertEquals("task", actNode.get("activityType").textValue());
+        assertEquals("Activity", actNode.get("type").textValue());
 
         JsonNode taskNode = actNode.get("task");
-        assertEquals("ref", taskNode.get("identifier").asText());
-        assertEquals("TaskReference", taskNode.get("type").asText());
+        assertEquals("ref", taskNode.get("identifier").textValue());
+        assertEquals("TaskReference", taskNode.get("type").textValue());
         
         schedule = mapper.readValue(string, Schedule.class);
         assertEquals("0 0 8 ? * TUE *", schedule.getCronTrigger());
@@ -85,6 +85,7 @@ public class ScheduleTest {
         assertEquals("2015-01-01T10:10:10.000Z", schedule.getEndsOn().toString());
         assertEquals("10:10:00.000", schedule.getTimes().get(0).toString());
         assertEquals("14:00:00.000", schedule.getTimes().get(1).toString());
+        assertEquals("P3W", schedule.getSequencePeriod().toString());
         activity = schedule.getActivities().get(0);
         assertEquals("label", activity.getLabel());
         assertEquals("ref", activity.getTask().getIdentifier());

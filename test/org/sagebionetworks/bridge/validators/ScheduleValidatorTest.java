@@ -41,7 +41,7 @@ public class ScheduleValidatorTest {
     }
     
     @Test
-    public void dPeriodSameAsIntervalOK() {
+    public void sequencePeriodSameAsIntervalOK() {
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.addActivity(TestUtils.getActivity3());

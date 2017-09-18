@@ -164,9 +164,11 @@ public abstract class ActivityScheduler {
     private boolean scheduledOnAfterSequencePeriod(ScheduleContext context, DateTime scheduledTime, int currentCount) {
         // Don't know why you'd specify a sequence, then force N number of activities to be returned, but the 
         // minimum activities setting is part of the public API and it would be unexpected if it didn't work.
-        
+        /*
         boolean minMet = context.getMinimumPerSchedule() == 0 || currentCount >= context.getMinimumPerSchedule();
         return sequenceEndsOn != null && !scheduledTime.isBefore(sequenceEndsOn) && minMet;
+        */
+        return sequenceEndsOn != null && !scheduledTime.isBefore(sequenceEndsOn);
     }
     
     private boolean scheduledOnAfterEndsOnNoMinimumCount(ScheduleContext context, DateTime scheduledTime) {
