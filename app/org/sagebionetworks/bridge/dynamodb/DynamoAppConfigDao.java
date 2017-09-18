@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -90,6 +91,10 @@ public class DynamoAppConfigDao implements AppConfigDao {
     
     public AppConfig updateAppConfig(AppConfig appConfig) {
         checkNotNull(appConfig);
+        
+        // Throw a 404 if the GUID is not valid.
+        StudyIdentifier studyId = new StudyIdentifierImpl(appConfig.getStudyId());
+        getAppConfig(studyId, appConfig.getGuid());
         
         Criteria criteria = persistCriteria(appConfig);
         appConfig.setCriteria(criteria);
