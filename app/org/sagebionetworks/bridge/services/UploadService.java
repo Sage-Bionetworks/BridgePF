@@ -17,10 +17,10 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.Resource;
 
-import com.amazonaws.AmazonClientException;
 import com.amazonaws.HttpMethod;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.base.Strings;
@@ -37,6 +37,7 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dao.UploadDedupeDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
@@ -344,8 +345,13 @@ public class UploadService {
         ObjectMetadata obj;
         try {
             obj = s3Client.getObjectMetadata(uploadBucket, objectId);
-        } catch (AmazonClientException ex) {
-            throw new NotFoundException(ex);
+        } catch (AmazonS3Exception ex) {
+            if (ex.getStatusCode() == 404) {
+                throw new NotFoundException(ex);
+            } else {
+                // Only S3 404s are mapped to 404s. Everything else is an internal server error.
+                throw new BridgeServiceException(ex);
+            }
         }
         String sse = obj.getSSEAlgorithm();
         if (!AES_256_SERVER_SIDE_ENCRYPTION.equals(sse)) {

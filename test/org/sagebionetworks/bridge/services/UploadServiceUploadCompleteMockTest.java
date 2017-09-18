@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -11,8 +12,8 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.models.upload.UploadCompletionClient.APP;
 
-import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.collect.ImmutableList;
 import org.junit.Before;
@@ -22,6 +23,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -99,7 +101,9 @@ public class UploadServiceUploadCompleteMockTest {
         upload.setStatus(UploadStatus.REQUESTED);
 
         // mock S3
-        when(mockS3Client.getObjectMetadata(TEST_BUCKET, TEST_UPLOAD_ID)).thenThrow(AmazonClientException.class);
+        AmazonS3Exception s3Ex = new AmazonS3Exception("not found");
+        s3Ex.setStatusCode(404);
+        when(mockS3Client.getObjectMetadata(TEST_BUCKET, TEST_UPLOAD_ID)).thenThrow(s3Ex);
 
         // execute
         try {
@@ -107,6 +111,31 @@ public class UploadServiceUploadCompleteMockTest {
             fail("expected exception");
         } catch (NotFoundException ex) {
             // expected exception
+        }
+
+        // Verify upload DAO and validation aren't called.
+        verifyZeroInteractions(mockUploadDao, mockUploadValidationService);
+    }
+
+    @Test
+    public void s3InternalError() {
+        // set up input
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(TEST_UPLOAD_ID);
+        upload.setStatus(UploadStatus.REQUESTED);
+
+        // mock S3
+        AmazonS3Exception s3Ex = new AmazonS3Exception("internal server error");
+        s3Ex.setStatusCode(500);
+        when(mockS3Client.getObjectMetadata(TEST_BUCKET, TEST_UPLOAD_ID)).thenThrow(s3Ex);
+
+        // execute
+        try {
+            svc.uploadComplete(TEST_STUDY, APP, upload);
+            fail("expected exception");
+        } catch (BridgeServiceException ex) {
+            // expected exception
+            assertFalse(ex instanceof NotFoundException);
         }
 
         // Verify upload DAO and validation aren't called.
