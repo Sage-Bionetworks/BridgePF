@@ -30,11 +30,13 @@ import com.google.common.collect.Maps;
  */
 public class CronActivitySchedulerTest {
     
+    private static final DateTime NOW = DateTime.parse("2015-03-26T14:40:00-07:00");
+    private static final DateTimeZone PST = DateTimeZone.forOffsetHours(-7);
+    private static DateTime ENROLLMENT = DateTime.parse("2015-03-23T10:00:00Z");
+    
     private Map<String, DateTime> events;
     private List<ScheduledActivity> scheduledActivities;
     private SchedulePlan plan = new DynamoSchedulePlan();
-    
-    private DateTime ENROLLMENT = DateTime.parse("2015-03-23T10:00:00Z");
     
     @Before
     public void before() {
@@ -45,6 +47,76 @@ public class CronActivitySchedulerTest {
         events.put("enrollment", ENROLLMENT);
         events.put("two_weeks_before_enrollment", ENROLLMENT.minusWeeks(2));
         events.put("two_months_before_enrollment", ENROLLMENT.minusMonths(2));
+    }
+    
+    @Test
+    public void canSpecifyASequence() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(RECURRING);
+        schedule.setCronTrigger("0 0 14 1/1 * ? *");
+        schedule.addTimes("14:00");
+        schedule.setSequencePeriod("P3D");
+        schedule.addActivity(TestUtils.getActivity3());
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withInitialTimeZone(PST)
+            .withEndsOn(NOW.plusWeeks(2))
+            .withEvents(events).build();
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
+        
+        // three days of activities from enrollment
+        assertDates(scheduledActivities, PST, "2015-03-23 14:00", "2015-03-24 14:00", "2015-03-25 14:00");
+        
+        // delay one day, then one day period, you get two (the first and the second which is in the day
+        schedule.setSequencePeriod("P1D");
+        schedule.setInterval("P1D");
+        schedule.setDelay("P1D");
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
+        assertDates(scheduledActivities, PST, "2015-03-24 14:00");
+    }
+    
+    @Test
+    public void sequenceCanBeOverriddenByMinCount() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(RECURRING);
+        schedule.addTimes("14:00");
+        schedule.setSequencePeriod("P6D");
+        schedule.setCronTrigger("0 0 14 1/1 * ? *");
+        schedule.addActivity(TestUtils.getActivity3());
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withInitialTimeZone(PST)
+            .withEndsOn(NOW.plusDays(4))
+            .withMinimumPerSchedule(8)
+            .withEvents(events).build();
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
+        
+        // Period is 6 days, you ask for 4 days ahead, but insist on 8 tasks. You should get back
+        // 6 tasks... all the tasks in the period. But not 8 activities.
+        assertDates(scheduledActivities, PST, "2015-03-23 14:00", "2015-03-24 14:00", "2015-03-25 14:00",
+                "2015-03-26 14:00", "2015-03-27 14:00", "2015-03-28 14:00");
+    }
+     
+    @Test
+    public void sequenceShorterThanDaysAhead() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(RECURRING);
+        schedule.addTimes("14:00");
+        schedule.setSequencePeriod("P2D");
+        schedule.setCronTrigger("0 0 14 1/1 * ? *");
+        schedule.addActivity(TestUtils.getActivity3());
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY)
+            .withInitialTimeZone(PST)
+            .withEndsOn(NOW.plusDays(4))
+            .withEvents(events).build();
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
+        
+        // 2 activities
+        assertDates(scheduledActivities, PST, "2015-03-23 14:00", "2015-03-24 14:00");
     }
     
     @Test

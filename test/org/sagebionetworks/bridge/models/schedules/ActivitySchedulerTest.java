@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asDT
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asLong;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.assertDates;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
+import static org.sagebionetworks.bridge.models.schedules.ScheduleType.RECURRING;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.List;

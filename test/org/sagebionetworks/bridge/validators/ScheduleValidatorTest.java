@@ -32,6 +32,41 @@ public class ScheduleValidatorTest {
     }
     
     @Test
+    public void sequencePeriodForOnetimeSchedule() {
+        Schedule schedule = new Schedule();
+        schedule.setSequencePeriod("P3D");
+        schedule.setScheduleType(ScheduleType.ONCE);
+        
+        assertValidatorMessage(validator, schedule, Schedule.SEQUENCE_PERIOD_PROPERTY, "cannot be set unless schedule is recurring");
+    }
+    
+    @Test
+    public void sequencePeriodSameAsIntervalOK() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.addActivity(TestUtils.getActivity3());
+        schedule.setSequencePeriod("P3D");
+        schedule.addTimes("10:00");
+        schedule.setExpires("P3D");
+        schedule.setInterval("P3D");
+        
+        Validate.entityThrowingException(validator, schedule);
+    }
+    
+    @Test
+    public void iterationPeriodLongerThanIntervalOK() {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.addActivity(TestUtils.getActivity3());
+        schedule.setSequencePeriod("P3W");
+        schedule.addTimes("10:00");
+        schedule.setExpires("P3D");
+        schedule.setInterval("P3D");
+        
+        Validate.entityThrowingException(validator, schedule);
+    }
+    
+    @Test
     public void cannotAddDuplicateTimesToSchedule() {
         Schedule schedule = new Schedule();
         schedule.addTimes(LocalTime.parse("10:00:00.000"), LocalTime.parse("10:00:00.000"));

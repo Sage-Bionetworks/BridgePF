@@ -30,6 +30,7 @@ import org.joda.time.DateTimeZone;
 import org.junit.After;
 import org.joda.time.Period;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -598,7 +599,7 @@ public class ScheduledActivityServiceMockTest {
     }
     
     @Test
-    public void orderActivitieFiltersAndSorts() {
+    public void orderActivitiesFiltersAndSorts() {
         DateTime time1 = DateTime.parse("2014-10-01T00:00:00.000Z");
         DateTime time2 = DateTime.parse("2014-10-02T00:00:00.000Z");
         DateTime time3 = DateTime.parse("2014-10-03T00:00:00.000Z");
