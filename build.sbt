@@ -21,11 +21,11 @@ libraryDependencies ++= Seq(
   "org.sagebionetworks" % "bridge-base" % "2.7.6",
   "org.sagebionetworks" % "synapseJavaClient" % "161.0-4-g843de2c",
   // AWS
-  "com.amazonaws" % "aws-java-sdk-s3" % "1.10.20",
-  "com.amazonaws" % "aws-java-sdk-sqs" % "1.10.20",
-  "com.amazonaws" % "aws-java-sdk-sts" % "1.10.20",
-  "com.amazonaws" % "aws-java-sdk-dynamodb" % "1.10.20",
-  "com.amazonaws" % "aws-java-sdk-ses" % "1.10.20",
+  "com.amazonaws" % "aws-java-sdk-s3" % "1.11.198",
+  "com.amazonaws" % "aws-java-sdk-sqs" % "1.11.198",
+  "com.amazonaws" % "aws-java-sdk-sts" % "1.11.198",
+  "com.amazonaws" % "aws-java-sdk-dynamodb" % "1.11.198",
+  "com.amazonaws" % "aws-java-sdk-ses" % "1.11.198",
   
   // New Relic
   "com.newrelic.agent.java" % "newrelic-agent" % "3.32.0",
