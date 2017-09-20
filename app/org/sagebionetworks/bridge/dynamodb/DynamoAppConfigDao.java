@@ -39,6 +39,8 @@ public class DynamoAppConfigDao implements AppConfigDao {
     }
     
     public List<AppConfig> getAppConfigs(StudyIdentifier studyId) {
+        checkNotNull(studyId);
+        
         DynamoAppConfig key = new DynamoAppConfig();
         key.setStudyId(studyId.getIdentifier());
 
@@ -56,6 +58,9 @@ public class DynamoAppConfigDao implements AppConfigDao {
     }
     
     public AppConfig getAppConfig(StudyIdentifier studyId, String guid) {
+        checkNotNull(studyId);
+        checkNotNull(guid);
+        
         DynamoAppConfig key = new DynamoAppConfig();
         key.setStudyId(studyId.getIdentifier());
         key.setGuid(guid);
@@ -91,12 +96,17 @@ public class DynamoAppConfigDao implements AppConfigDao {
     }
     
     public void deleteAppConfig(StudyIdentifier studyId, String guid) {
+        checkNotNull(studyId);
+        checkNotNull(guid);
+        
         AppConfig appConfig = getAppConfig(studyId, guid);
         mapper.delete(appConfig);
         criteriaDao.deleteCriteria(appConfig.getCriteria().getKey());
     }
     
     public void deleteAllAppConfigs(StudyIdentifier studyId) {
+        checkNotNull(studyId);
+        
         List<AppConfig> appConfigs = getAppConfigs(studyId);
         if (!appConfigs.isEmpty()) {
             for (AppConfig oneAppConfig: appConfigs) {

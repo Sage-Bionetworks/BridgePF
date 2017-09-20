@@ -50,12 +50,12 @@ public class DynamoAppConfig implements AppConfig {
     public void setStudyId(String studyId) {
         this.studyId = studyId;
     }
-
     
     @Override
     public String getLabel() {
         return label;
     }
+    
     @Override
     public void setLabel(String label) {
         this.label = label;
@@ -66,6 +66,7 @@ public class DynamoAppConfig implements AppConfig {
     public long getCreatedOn() {
         return createdOn;
     }
+    
     @JsonDeserialize(using = DateTimeToLongDeserializer.class)
     @Override
     public void setCreatedOn(long createdOn) {
@@ -77,6 +78,7 @@ public class DynamoAppConfig implements AppConfig {
     public long getModifiedOn() {
         return modifiedOn;
     }
+    
     @JsonDeserialize(using = DateTimeToLongDeserializer.class)
     @Override
     public void setModifiedOn(long modifiedOn) {
@@ -118,7 +120,7 @@ public class DynamoAppConfig implements AppConfig {
         this.clientData = clientData;
     }
     
-    @DynamoDBTypeConverted(converter=SurveyReferenceListMarshaller.class)
+    @DynamoDBTypeConverted(converter=DynamoCompoundActivityDefinition.SurveyReferenceListMarshaller.class)
     @Override
     public List<SurveyReference> getSurveyReferences() {
         if (surveyReferences == null) {
@@ -132,7 +134,7 @@ public class DynamoAppConfig implements AppConfig {
         this.surveyReferences = references; 
     }
 
-    @DynamoDBTypeConverted(converter=SchemaReferenceListMarshaller.class)
+    @DynamoDBTypeConverted(converter=DynamoCompoundActivityDefinition.SchemaReferenceListMarshaller.class)
     @Override
     public List<SchemaReference> getSchemaReferences() {
         if (schemaReferences == null) {
@@ -157,8 +159,6 @@ public class DynamoAppConfig implements AppConfig {
         this.version = version;
     }
 
-    // These are implemented mostly to make tests easier to write and read.
-    
     @Override
     public int hashCode() {
         return Objects.hash(clientData, createdOn, criteria, guid, label, modifiedOn, schemaReferences, studyId,

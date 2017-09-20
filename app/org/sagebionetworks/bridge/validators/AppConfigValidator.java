@@ -6,6 +6,8 @@ import java.util.Set;
 
 import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
+import org.sagebionetworks.bridge.models.schedules.SchemaReference;
+import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
@@ -41,6 +43,26 @@ public class AppConfigValidator implements Validator {
             errors.rejectValue("criteria", "are required");
         } else {
             CriteriaUtils.validate(appConfig.getCriteria(), dataGroups, errors);    
+        }
+        if (appConfig.getSchemaReferences() != null) {
+            for (int i=0; i < appConfig.getSchemaReferences().size(); i++) {
+                SchemaReference ref = appConfig.getSchemaReferences().get(i);
+                if (ref.getRevision() == null) {
+                    errors.pushNestedPath("schemaReferences["+i+"]");
+                    errors.rejectValue("revision", "is required");
+                    errors.popNestedPath();
+                }
+            }
+        }
+        if (appConfig.getSurveyReferences() != null) {
+            for (int i=0; i < appConfig.getSurveyReferences().size(); i++) {
+                SurveyReference ref = appConfig.getSurveyReferences().get(i);
+                if (ref.getCreatedOn() == null) {
+                    errors.pushNestedPath("surveyReferences["+i+"]");
+                    errors.rejectValue("createdOn", "is required");
+                    errors.popNestedPath();
+                }
+            }
         }
     }
 }

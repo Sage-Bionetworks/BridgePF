@@ -43,7 +43,6 @@ public class DynamoAppConfigTest {
     
     private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl(TestUtils.randomName(DynamoAppConfigDaoTest.class));
     
-    
     @Test
     public void hashCodeEquals() {
         EqualsVerifier.forClass(DynamoCriteria.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed()

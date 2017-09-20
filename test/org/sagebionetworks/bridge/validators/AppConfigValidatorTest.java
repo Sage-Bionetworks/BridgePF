@@ -5,6 +5,8 @@ import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import org.junit.Test;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
+import org.sagebionetworks.bridge.models.schedules.SchemaReference;
+import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 
 import com.google.common.collect.Sets;
 
@@ -45,6 +47,24 @@ public class AppConfigValidatorTest {
         AppConfig appConfig = AppConfig.create();
         
         assertValidatorMessage(NEW_VALIDATOR, appConfig, "criteria", "are required");
+    }
+    
+    @Test
+    public void surveyReferencesHaveCreatedOnTimestamps() { 
+        AppConfig appConfig = AppConfig.create();
+        SurveyReference surveyRef = new SurveyReference("identifier","guid",null);
+        appConfig.getSurveyReferences().add(surveyRef);
+        
+        assertValidatorMessage(NEW_VALIDATOR, appConfig, "surveyReferences[0].createdOn", "is required");
+    }
+    
+    @Test
+    public void schemaReferencesHaveRevision() { 
+        AppConfig appConfig = AppConfig.create();
+        SchemaReference schemaRef = new SchemaReference("guid",null);
+        appConfig.getSchemaReferences().add(schemaRef);
+        
+        assertValidatorMessage(NEW_VALIDATOR, appConfig, "schemaReferences[0].revision", "is required");
     }
     
     @Test
