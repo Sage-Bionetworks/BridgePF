@@ -108,9 +108,9 @@ public class StudyController extends BaseController {
     }
 
     public Result getStudy(String identifier) throws Exception {
-        getAuthenticatedSession(ADMIN);
+        getAuthenticatedSession(ADMIN, WORKER);
 
-        // since only admin can call this method, we need to return all studies including deactivated ones
+        // since only admin and worker can call this method, we need to return all studies including deactivated ones
         Study study = studyService.getStudy(identifier, true);
         return okResult(study);
     }
