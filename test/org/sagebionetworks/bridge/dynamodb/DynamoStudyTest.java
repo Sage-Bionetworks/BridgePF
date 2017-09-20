@@ -6,6 +6,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,7 +34,26 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldType;
  * but filtered in the API to exclude read-only studies when exposed to researchers.
  */
 public class DynamoStudyTest {
-    
+    @Test
+    public void uploadMetadataFieldDefListIsNeverNull() {
+        // make field for test
+        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
+        fieldDefList.add(new UploadFieldDefinition.Builder().withName("test-field")
+                .withType(UploadFieldType.ATTACHMENT_V2).build());
+
+        // starts as empty
+        Study study = new DynamoStudy();
+        assertTrue(study.getUploadMetadataFieldDefinitions().isEmpty());
+
+        // set value works
+        study.setUploadMetadataFieldDefinitions(fieldDefList);
+        assertEquals(fieldDefList, study.getUploadMetadataFieldDefinitions());
+
+        // set to null makes it empty again
+        study.setUploadMetadataFieldDefinitions(null);
+        assertTrue(study.getUploadMetadataFieldDefinitions().isEmpty());
+    }
+
     @Test
     public void equalsHashCode() {
         // studyIdentifier is derived from the identifier

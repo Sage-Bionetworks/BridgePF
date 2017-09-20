@@ -468,6 +468,7 @@ public class StudyService {
 
         // Only admins can delete or modify upload metadata fields. Check this after validation, so we don't have to
         // deal with duplicates.
+        // Anyone (admin or developer) can add or re-order fields.
         if (!isAdminUpdate) {
             checkUploadMetadataConstraints(originalStudy, study);
         }
@@ -491,23 +492,16 @@ public class StudyService {
     // Helper method to check if we deleted or modified an upload metadata fields. Only admins can delete or modify
     // upload metadata fields.
     private static void checkUploadMetadataConstraints(Study oldStudy, Study newStudy) {
-        // Shortcut: if oldStudy.uploadMetadataFieldDefinitions is blank, we can skip. Adding fields is always okay.
-        if (oldStudy.getUploadMetadataFieldDefinitions() == null || oldStudy.getUploadMetadataFieldDefinitions()
-                .isEmpty()) {
+        // Shortcut: if oldStudy.uploadMetadataFieldDefinitions is empty, we can skip. Adding fields is always okay.
+        if (oldStudy.getUploadMetadataFieldDefinitions().isEmpty()) {
             return;
         }
 
         // Field defs are in lists because we care about the order, but for this computation, we want maps.
         Map<String, UploadFieldDefinition> oldFieldMap = Maps.uniqueIndex(oldStudy.getUploadMetadataFieldDefinitions(),
                 UploadFieldDefinition::getName);
-
-        Map<String, UploadFieldDefinition> newFieldMap;
-        if (newStudy.getUploadMetadataFieldDefinitions() != null) {
-            newFieldMap = Maps.uniqueIndex(newStudy.getUploadMetadataFieldDefinitions(),
-                    UploadFieldDefinition::getName);
-        } else {
-            newFieldMap = ImmutableMap.of();
-        }
+        Map<String, UploadFieldDefinition> newFieldMap = Maps.uniqueIndex(newStudy.getUploadMetadataFieldDefinitions(),
+                UploadFieldDefinition::getName);
 
         // Determine if any fields were deleted (old minus new)
         Set<String> oldFieldNameSet = oldFieldMap.keySet();

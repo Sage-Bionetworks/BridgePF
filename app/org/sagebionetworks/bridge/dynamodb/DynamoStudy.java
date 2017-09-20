@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -63,6 +64,7 @@ public final class DynamoStudy implements Study {
     private boolean disableExport;
 
     public DynamoStudy() {
+        uploadMetadataFieldDefinitions = new ArrayList<>();
         profileAttributes = new HashSet<>();
         taskIdentifiers = new HashSet<>();
         activityEventKeys = new HashSet<>();
@@ -215,7 +217,8 @@ public final class DynamoStudy implements Study {
     /** {@inheritDoc} */
     @Override
     public void setUploadMetadataFieldDefinitions(List<UploadFieldDefinition> uploadMetadataFieldDefinitions) {
-        this.uploadMetadataFieldDefinitions = uploadMetadataFieldDefinitions;
+        this.uploadMetadataFieldDefinitions = (uploadMetadataFieldDefinitions == null) ? new ArrayList<>() :
+                uploadMetadataFieldDefinitions;
     }
 
     /** {@inheritDoc} */

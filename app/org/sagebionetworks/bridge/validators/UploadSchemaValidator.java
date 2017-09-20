@@ -84,7 +84,7 @@ public class UploadSchemaValidator implements Validator {
 
             // fieldDefinitions
             List<UploadFieldDefinition> fieldDefList = uploadSchema.getFieldDefinitions();
-            if (fieldDefList == null || fieldDefList.isEmpty()) {
+            if (fieldDefList.isEmpty()) {
                 errors.rejectValue("fieldDefinitions", "requires at least one definition");
             } else {
                 UploadFieldDefinitionListValidator.INSTANCE.validate(fieldDefList, errors, "fieldDefinitions");

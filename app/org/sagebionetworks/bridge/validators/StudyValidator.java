@@ -81,7 +81,7 @@ public class StudyValidator implements Validator {
 
         // uploadMetadatafieldDefinitions
         List<UploadFieldDefinition> uploadMetadataFieldDefList = study.getUploadMetadataFieldDefinitions();
-        if (uploadMetadataFieldDefList != null && !uploadMetadataFieldDefList.isEmpty()) {
+        if (!uploadMetadataFieldDefList.isEmpty()) {
             UploadFieldDefinitionListValidator.INSTANCE.validate(study.getUploadMetadataFieldDefinitions(), errors,
                     "uploadMetadataFieldDefinitions");
         }
