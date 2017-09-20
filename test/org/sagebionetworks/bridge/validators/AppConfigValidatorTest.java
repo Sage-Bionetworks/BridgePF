@@ -10,20 +10,41 @@ import com.google.common.collect.Sets;
 
 public class AppConfigValidatorTest {
 
-    private static final AppConfigValidator VALIDATOR = new AppConfigValidator(Sets.newHashSet("foo","bar"));
+    private static final AppConfigValidator NEW_VALIDATOR = new AppConfigValidator(Sets.newHashSet("foo","bar"), true);
+    private static final AppConfigValidator UPDATE_VALIDATOR = new AppConfigValidator(Sets.newHashSet("foo","bar"), false);
+    
+    @Test
+    public void guidRequired() {
+        AppConfig appConfig = AppConfig.create();
+        assertValidatorMessage(UPDATE_VALIDATOR, appConfig, "label", "is required");
+        
+        appConfig.setLabel("");
+        assertValidatorMessage(UPDATE_VALIDATOR, appConfig, "label", "is required");
+    }
+    
+    @Test
+    public void labelRequired() {
+        AppConfig appConfig = AppConfig.create();
+        assertValidatorMessage(NEW_VALIDATOR, appConfig, "label", "is required");
+        
+        appConfig.setLabel("");
+        assertValidatorMessage(NEW_VALIDATOR, appConfig, "label", "is required");
+    }
     
     @Test
     public void studyIdRequired() {
         AppConfig appConfig = AppConfig.create();
+        assertValidatorMessage(NEW_VALIDATOR, appConfig, "studyId", "is required");
         
-        assertValidatorMessage(VALIDATOR, appConfig, "studyId", "is required");
+        appConfig.setStudyId("");
+        assertValidatorMessage(NEW_VALIDATOR, appConfig, "studyId", "is required");
     }
     
     @Test
     public void criteriaAreRequired() {
         AppConfig appConfig = AppConfig.create();
         
-        assertValidatorMessage(VALIDATOR, appConfig, "criteria", "are required");
+        assertValidatorMessage(NEW_VALIDATOR, appConfig, "criteria", "are required");
     }
     
     @Test
@@ -35,6 +56,6 @@ public class AppConfigValidatorTest {
         appConfig.setStudyId("test-study");
         appConfig.setCriteria(criteria);
         
-        assertValidatorMessage(VALIDATOR, appConfig, "noneOfGroups", "'bad-group' is not in enumeration: bar, foo");
+        assertValidatorMessage(NEW_VALIDATOR, appConfig, "noneOfGroups", "'bad-group' is not in enumeration: bar, foo");
     }
 }

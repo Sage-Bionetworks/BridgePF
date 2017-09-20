@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
@@ -8,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 
+import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,6 +17,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AppConfigDao;
@@ -35,6 +38,7 @@ public class AppConfigServiceTest {
     
     private static final List<AppConfig>  RESULTS = Lists.newArrayList();
     private static final String  GUID = BridgeUtils.generateGuid();
+    private static final DateTime TIMESTAMP = DateTime.now();
     
     @Mock
     private AppConfigDao mockDao;
@@ -44,21 +48,29 @@ public class AppConfigServiceTest {
     
     @Captor
     private ArgumentCaptor<AppConfig> appConfigCaptor;
+    
+    @Spy
+    private AppConfigService service;
 
     private Study study;
     
-    private AppConfig appConfig;
-    
-    private AppConfigService service;
-    
     @Before
     public void before() {
-        service = new AppConfigService();
         service.setAppConfigDao(mockDao);
         service.setStudyService(mockStudyService);
         
-        appConfig = AppConfig.create();
-        appConfig.setCriteria(Criteria.create());
+        when(service.getCurrentTimestamp()).thenReturn(TIMESTAMP.getMillis());
+        when(service.getGUID()).thenReturn(GUID);
+        
+        AppConfig savedAppConfig = AppConfig.create();
+        savedAppConfig.setLabel("AppConfig");
+        savedAppConfig.setGuid(GUID);
+        savedAppConfig.setStudyId(TEST_STUDY.getIdentifier());
+        savedAppConfig.setCriteria(Criteria.create());
+        savedAppConfig.setCreatedOn(TIMESTAMP.getMillis());
+        savedAppConfig.setModifiedOn(TIMESTAMP.getMillis());
+        when(mockDao.getAppConfig(TEST_STUDY, GUID)).thenReturn(savedAppConfig);
+        when(mockDao.updateAppConfig(any())).thenReturn(savedAppConfig);
         
         study = Study.create();
         study.setIdentifier(TEST_STUDY.getIdentifier());
@@ -75,6 +87,7 @@ public class AppConfigServiceTest {
         criteria1.setMaxAppVersion(OperatingSystem.ANDROID, 6);
         
         AppConfig appConfig1 = AppConfig.create();
+        appConfig1.setLabel("AppConfig1");
         appConfig1.setCriteria(criteria1);
         RESULTS.add(appConfig1);
         
@@ -83,11 +96,19 @@ public class AppConfigServiceTest {
         criteria2.setMaxAppVersion(OperatingSystem.ANDROID, 20);
         
         AppConfig appConfig2 = AppConfig.create();
+        appConfig2.setLabel("AppConfig2");
         appConfig2.setCriteria(criteria2);
         RESULTS.add(appConfig2);
         
         when(mockDao.getAppConfigs(TEST_STUDY)).thenReturn(RESULTS);
         return appConfig2;
+    }
+    
+    private AppConfig setupAppConfig() {
+        AppConfig config = AppConfig.create();
+        config.setLabel("AppConfig");
+        config.setCriteria(Criteria.create());
+        return config;
     }
     
     @Test
@@ -102,10 +123,8 @@ public class AppConfigServiceTest {
     
     @Test
     public void getAppConfig() {
-        when(mockDao.getAppConfig(TEST_STUDY, GUID)).thenReturn(appConfig);
-        
         AppConfig returnValue = service.getAppConfig(TEST_STUDY, GUID);
-        assertEquals(appConfig, returnValue);
+        assertNotNull(returnValue);
         
         verify(mockDao).getAppConfig(TEST_STUDY, GUID);
     }
@@ -145,27 +164,39 @@ public class AppConfigServiceTest {
     @Test
     public void createAppConfig() {
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
-        when(mockDao.createAppConfig(any())).thenReturn(appConfig);
         
-        AppConfig returnValue = service.createAppConfig(TEST_STUDY, appConfig);
+        AppConfig newConfig = setupAppConfig();
+        
+        AppConfig returnValue = service.createAppConfig(TEST_STUDY, newConfig);
+        assertEquals(TIMESTAMP.getMillis(), returnValue.getCreatedOn());
+        assertEquals(TIMESTAMP.getMillis(), returnValue.getModifiedOn());
+        assertEquals(GUID, returnValue.getGuid());
         
         verify(mockDao).createAppConfig(appConfigCaptor.capture());
-        assertEquals(appConfig, appConfigCaptor.getValue());
         
-        assertEquals(returnValue, appConfig);
+        AppConfig captured = appConfigCaptor.getValue();
+        assertEquals(TIMESTAMP.getMillis(), captured.getCreatedOn());
+        assertEquals(TIMESTAMP.getMillis(), captured.getModifiedOn());
+        assertEquals(GUID, captured.getGuid());
     }
     
     @Test
     public void updateAppConfig() {
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
-        when(mockDao.updateAppConfig(any())).thenReturn(appConfig);
+
+        AppConfig oldConfig = setupAppConfig();
+        oldConfig.setCreatedOn(0);
+        oldConfig.setModifiedOn(0);
+        oldConfig.setGuid(GUID);
+        AppConfig returnValue = service.updateAppConfig(TEST_STUDY, oldConfig);
         
-        AppConfig returnValue = service.updateAppConfig(TEST_STUDY, appConfig);
+        assertEquals(TIMESTAMP.getMillis(), returnValue.getCreatedOn());
+        assertEquals(TIMESTAMP.getMillis(), returnValue.getModifiedOn());
         
         verify(mockDao).updateAppConfig(appConfigCaptor.capture());
-        assertEquals(appConfig, appConfigCaptor.getValue());
+        assertEquals(oldConfig, appConfigCaptor.getValue());
         
-        assertEquals(returnValue, appConfig);
+        assertEquals(returnValue, oldConfig);
     }
     
     @Test(expected = InvalidEntityException.class)
@@ -179,7 +210,8 @@ public class AppConfigServiceTest {
     public void updateAppConfigValidates() {
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
         
-        service.updateAppConfig(TEST_STUDY, AppConfig.create());
+        AppConfig oldConfig = setupAppConfig();
+        service.updateAppConfig(TEST_STUDY, oldConfig);
     }
     
     @Test

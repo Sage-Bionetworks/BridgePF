@@ -2,8 +2,11 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
@@ -18,14 +21,19 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @DynamoDBTable(tableName = "AppConfig")
 @BridgeTypeName("AppConfig")
 public class DynamoAppConfig implements AppConfig {
 
     private String studyId;
+    private String label;
     private String guid;
     private Criteria criteria;
+    private long createdOn;
+    private long modifiedOn;
     private JsonNode clientData;
     private List<SurveyReference> surveyReferences;
     private List<SchemaReference> schemaReferences;
@@ -43,6 +51,38 @@ public class DynamoAppConfig implements AppConfig {
         this.studyId = studyId;
     }
 
+    
+    @Override
+    public String getLabel() {
+        return label;
+    }
+    @Override
+    public void setLabel(String label) {
+        this.label = label;
+    }
+    
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
+    @Override
+    public long getCreatedOn() {
+        return createdOn;
+    }
+    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
+    @Override
+    public void setCreatedOn(long createdOn) {
+        this.createdOn = createdOn;
+    }
+    
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
+    @Override
+    public long getModifiedOn() {
+        return modifiedOn;
+    }
+    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
+    @Override
+    public void setModifiedOn(long modifiedOn) {
+        this.modifiedOn = modifiedOn;
+    }
+    
     @DynamoDBRangeKey
     @Override
     public String getGuid() {
@@ -117,4 +157,34 @@ public class DynamoAppConfig implements AppConfig {
         this.version = version;
     }
 
+    // These are implemented mostly to make tests easier to write and read.
+    
+    @Override
+    public int hashCode() {
+        return Objects.hash(clientData, createdOn, criteria, guid, label, modifiedOn, schemaReferences, studyId,
+                surveyReferences, version);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+        DynamoAppConfig other = (DynamoAppConfig) obj;
+        return Objects.equals(clientData, other.clientData) && Objects.equals(createdOn, other.createdOn)
+                && Objects.equals(criteria, other.criteria) && Objects.equals(guid, other.guid)
+                && Objects.equals(label, other.label) && Objects.equals(modifiedOn, other.modifiedOn)
+                && Objects.equals(schemaReferences, other.schemaReferences)
+                && Objects.equals(surveyReferences, other.surveyReferences) && Objects.equals(studyId, other.studyId)
+                && Objects.equals(version, other.version);
+    }
+
+    @Override
+    public String toString() {
+        return "DynamoAppConfig [studyId=" + studyId + ", label=" + label + ", guid=" + guid + ", criteria=" + criteria
+                + ", createdOn=" + createdOn + ", modifiedOn=" + modifiedOn + ", clientData=" + clientData
+                + ", surveyReferences=" + surveyReferences + ", schemaReferences=" + schemaReferences + ", version="
+                + version + "]";
+    }
 }

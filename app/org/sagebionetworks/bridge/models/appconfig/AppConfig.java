@@ -21,6 +21,15 @@ public interface AppConfig extends BridgeEntity {
     String getStudyId();
     void setStudyId(String studyId);
     
+    String getLabel();
+    void setLabel(String label);
+    
+    long getCreatedOn();
+    void setCreatedOn(long createdOn);
+    
+    long getModifiedOn();
+    void setModifiedOn(long modifiedOn);
+    
     String getGuid();
     void setGuid(String guid);
     

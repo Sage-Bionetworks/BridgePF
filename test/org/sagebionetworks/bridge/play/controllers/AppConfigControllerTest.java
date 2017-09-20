@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.assertResult;
@@ -67,6 +68,7 @@ public class AppConfigControllerTest {
                 .withRoles(Sets.newHashSet(DEVELOPER))
                 .withHealthCode("healthCode")
                 .build());
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
     }

@@ -13,7 +13,6 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -73,28 +72,16 @@ public class DynamoAppConfigDao implements AppConfigDao {
     public AppConfig createAppConfig(AppConfig appConfig) {
         checkNotNull(appConfig);
         
-        DynamoAppConfig newAppConfig = new DynamoAppConfig();
-        newAppConfig.setStudyId(appConfig.getStudyId());
-        newAppConfig.setCriteria(appConfig.getCriteria());
-        newAppConfig.setClientData(appConfig.getClientData());
-        newAppConfig.setSurveyReferences(appConfig.getSurveyReferences());
-        newAppConfig.setSchemaReferences(appConfig.getSchemaReferences());
-        newAppConfig.setGuid(BridgeUtils.generateGuid());
-        
-        Criteria criteria = persistCriteria(newAppConfig);
+        Criteria criteria = persistCriteria(appConfig);
         appConfig.setCriteria(criteria);
         
-        mapper.save(newAppConfig);
+        mapper.save(appConfig);
         
-        return newAppConfig;
+        return appConfig;
     }
     
     public AppConfig updateAppConfig(AppConfig appConfig) {
         checkNotNull(appConfig);
-        
-        // Throw a 404 if the GUID is not valid.
-        StudyIdentifier studyId = new StudyIdentifierImpl(appConfig.getStudyId());
-        getAppConfig(studyId, appConfig.getGuid());
         
         Criteria criteria = persistCriteria(appConfig);
         appConfig.setCriteria(criteria);

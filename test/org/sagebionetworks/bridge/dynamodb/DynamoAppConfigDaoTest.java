@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -56,9 +55,8 @@ public class DynamoAppConfigDaoTest {
         dao.deleteAllAppConfigs(STUDY_ID);
         assertTrue(dao.getAppConfigs(STUDY_ID).isEmpty());
     }    
-    
-    @Test
-    public void crudAppConfig() {
+
+    private AppConfig createAppConfig() { 
         Criteria criteria;
         criteria = TestUtils.createCriteria(2, 8, SET_A, SET_B);
         criteria.setMinAppVersion(ANDROID, 10);
@@ -68,44 +66,40 @@ public class DynamoAppConfigDaoTest {
         JsonNode clientData = TestUtils.getClientData();
         
         AppConfig config = AppConfig.create();
+        config.setGuid(BridgeUtils.generateGuid());
         config.setCriteria(criteria);
         config.setSurveyReferences(SURVEY_REFS);
         config.setSchemaReferences(SCHEMA_REFS);
         config.setClientData(clientData);
         config.setStudyId(STUDY_ID.getIdentifier());
+        return config;
+    }
+    
+    @Test
+    public void crudAppConfig() {
+        AppConfig config = createAppConfig();
         
         // save new app config
         AppConfig saved = dao.createAppConfig(config);
-        assertNotNull(saved.getGuid());
-        assertNotNull(saved.getVersion());
-        assertEquals(SURVEY_REFS, saved.getSurveyReferences());
-        assertEquals(SCHEMA_REFS, saved.getSchemaReferences());
-        assertEquals(clientData.toString(), saved.getClientData().toString());
-        assertEquals(criteria, saved.getCriteria());
+        assertEquals(config, saved);
         
         // get the config, verify it
         AppConfig retrieved = dao.getAppConfig(STUDY_ID, saved.getGuid());
-        assertEquals(SchemaReference.class, retrieved.getSchemaReferences().get(0).getClass());
-        assertEquals(SurveyReference.class, retrieved.getSurveyReferences().get(0).getClass());
-        
-        assertEquals(config.getSchemaReferences(), retrieved.getSchemaReferences());
-        assertEquals(config.getSurveyReferences(), retrieved.getSurveyReferences());
+        assertEquals(retrieved, config);
         
         // update a changed version of the record
-        String existingGuid = saved.getGuid();
-        Long existingVersion = saved.getVersion();
-        saved.setSchemaReferences(null);
-        saved.setSurveyReferences(null);
+        retrieved.setSchemaReferences(null);
+        retrieved.setSurveyReferences(null);
         
-        AppConfig updated = dao.updateAppConfig(saved);
-        assertEquals(existingGuid, updated.getGuid());
-        assertNotEquals(existingVersion, updated.getVersion());
-        assertTrue(updated.getSurveyReferences().isEmpty());
-        assertTrue(updated.getSchemaReferences().isEmpty());
+        AppConfig updated = dao.updateAppConfig(retrieved);
+        retrieved = dao.getAppConfig(STUDY_ID, saved.getGuid());
+        assertTrue(retrieved.getSurveyReferences().isEmpty());
+        assertTrue(retrieved.getSchemaReferences().isEmpty());
         
         // make a copy.
+        saved.setGuid(BridgeUtils.generateGuid());
+        saved.setVersion(null);
         AppConfig copy = dao.createAppConfig(saved);
-        assertNotEquals(saved.getGuid(), copy.getGuid());
         
         // retrieve list of 2 records
         List<AppConfig> lists = dao.getAppConfigs(STUDY_ID);

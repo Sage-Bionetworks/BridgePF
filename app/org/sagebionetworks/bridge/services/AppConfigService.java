@@ -6,9 +6,12 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AppConfigDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoAppConfig;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
@@ -36,6 +39,16 @@ public class AppConfigService {
     @Autowired
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
+    }
+    
+    // In order to mock this value;
+    protected long getCurrentTimestamp() {
+        return DateUtils.getCurrentMillisFromEpoch(); 
+    }
+    
+    // In order to mock this value;
+    protected String getGUID() {
+        return BridgeUtils.generateGuid();
     }
     
     public List<AppConfig> getAppConfigs(StudyIdentifier studyId) {
@@ -77,10 +90,25 @@ public class AppConfigService {
         appConfig.setStudyId(studyId.getIdentifier());
         
         Study study = studyService.getStudy(studyId);
-        Validator validator = new AppConfigValidator(study.getDataGroups());
+        Validator validator = new AppConfigValidator(study.getDataGroups(), true);
         Validate.entityThrowingException(validator, appConfig);
         
-        return appConfigDao.createAppConfig(appConfig);
+        long timestamp = getCurrentTimestamp();
+
+        DynamoAppConfig newAppConfig = new DynamoAppConfig();
+        newAppConfig.setLabel(appConfig.getLabel());
+        newAppConfig.setStudyId(appConfig.getStudyId());
+        newAppConfig.setCriteria(appConfig.getCriteria());
+        newAppConfig.setClientData(appConfig.getClientData());
+        newAppConfig.setSurveyReferences(appConfig.getSurveyReferences());
+        newAppConfig.setSchemaReferences(appConfig.getSchemaReferences());
+        newAppConfig.setCreatedOn(timestamp);
+        newAppConfig.setModifiedOn(timestamp);
+        newAppConfig.setGuid(getGUID());
+        
+        appConfigDao.createAppConfig(newAppConfig);
+        newAppConfig.setVersion(newAppConfig.getVersion());
+        return newAppConfig;
     }
     
     public AppConfig updateAppConfig(StudyIdentifier studyId, AppConfig appConfig) {
@@ -90,8 +118,13 @@ public class AppConfigService {
         appConfig.setStudyId(studyId.getIdentifier());
         
         Study study = studyService.getStudy(studyId);
-        Validator validator = new AppConfigValidator(study.getDataGroups());
+        Validator validator = new AppConfigValidator(study.getDataGroups(), false);
         Validate.entityThrowingException(validator, appConfig);
+        
+        // Throw a 404 if the GUID is not valid.
+        AppConfig persistedConfig = appConfigDao.getAppConfig(studyId, appConfig.getGuid());
+        appConfig.setCreatedOn(persistedConfig.getCreatedOn());
+        appConfig.setModifiedOn(getCurrentTimestamp());
         
         return appConfigDao.updateAppConfig(appConfig);
     }
