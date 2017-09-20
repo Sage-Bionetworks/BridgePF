@@ -259,6 +259,7 @@ public class HealthDataService {
         HealthDataRecord record = HealthDataRecord.create();
         record.setAppVersion(healthDataSubmission.getAppVersion());
         record.setPhoneInfo(healthDataSubmission.getPhoneInfo());
+        record.setUserMetadata(healthDataSubmission.getMetadata());
 
         // from elsewhere
         record.setData(filteredData);

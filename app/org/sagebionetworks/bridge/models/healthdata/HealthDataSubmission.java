@@ -15,6 +15,7 @@ public class HealthDataSubmission implements BridgeEntity {
     private final String appVersion;
     private final DateTime createdOn;
     private final JsonNode data;
+    private final JsonNode metadata;
     private final String phoneInfo;
     private final String schemaId;
     private final Integer schemaRevision;
@@ -22,11 +23,12 @@ public class HealthDataSubmission implements BridgeEntity {
     private final String surveyGuid;
 
     /** Private constructor. To construct, use builder. */
-    private HealthDataSubmission(String appVersion, DateTime createdOn, JsonNode data, String phoneInfo,
+    private HealthDataSubmission(String appVersion, DateTime createdOn, JsonNode data, JsonNode metadata, String phoneInfo,
             String schemaId, Integer schemaRevision, DateTime surveyCreatedOn, String surveyGuid) {
         this.appVersion = appVersion;
         this.createdOn = createdOn;
         this.data = data;
+        this.metadata = metadata;
         this.phoneInfo = phoneInfo;
         this.schemaId = schemaId;
         this.schemaRevision = schemaRevision;
@@ -50,6 +52,14 @@ public class HealthDataSubmission implements BridgeEntity {
     /** Health data, as key-value pairs corresponding to the schema fields. */
     public JsonNode getData() {
         return data;
+    }
+
+    /**
+     * Metadata fields for this record, as submitted by the app. This corresponds with the
+     * uploadMetadataFieldDefinitions configured in the study.
+     */
+    public JsonNode getMetadata() {
+        return metadata;
     }
 
     /** Phone info, for example "iPhone9,3" or "iPhone 5c (GSM)". Must be 48 chars or less. */
@@ -83,6 +93,7 @@ public class HealthDataSubmission implements BridgeEntity {
         private String appVersion;
         private DateTime createdOn;
         private JsonNode data;
+        private JsonNode metadata;
         private String phoneInfo;
         private String schemaId;
         private Integer schemaRevision;
@@ -105,6 +116,12 @@ public class HealthDataSubmission implements BridgeEntity {
         /** @see HealthDataSubmission#getData */
         public Builder withData(JsonNode data) {
             this.data = data;
+            return this;
+        }
+
+        /** @see HealthDataSubmission#getMetadata */
+        public Builder withMetadata(JsonNode metadata) {
+            this.metadata = metadata;
             return this;
         }
 
@@ -144,7 +161,7 @@ public class HealthDataSubmission implements BridgeEntity {
          * HealthDataSubmissionValidator.
          */
         public HealthDataSubmission build() {
-            return new HealthDataSubmission(appVersion, createdOn, data, phoneInfo, schemaId, schemaRevision,
+            return new HealthDataSubmission(appVersion, createdOn, data, metadata, phoneInfo, schemaId, schemaRevision,
                     surveyCreatedOn, surveyGuid);
         }
     }

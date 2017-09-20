@@ -10,13 +10,19 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
@@ -39,6 +45,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
@@ -56,6 +63,7 @@ import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -458,6 +466,12 @@ public class StudyService {
 
         Validate.entityThrowingException(validator, study);
 
+        // Only admins can delete or modify upload metadata fields. Check this after validation, so we don't have to
+        // deal with duplicates.
+        if (!isAdminUpdate) {
+            checkUploadMetadataConstraints(originalStudy, study);
+        }
+
         // When the version is out of sync in the cache, then an exception is thrown and the study 
         // is not updated in the cache. At least we can delete the study before this, so the next 
         // time it should succeed. Have not figured out why they get out of sync.
@@ -472,6 +486,50 @@ public class StudyService {
         cacheProvider.setStudy(updatedStudy);
         
         return updatedStudy;
+    }
+
+    // Helper method to check if we deleted or modified an upload metadata fields. Only admins can delete or modify
+    // upload metadata fields.
+    private static void checkUploadMetadataConstraints(Study oldStudy, Study newStudy) {
+        // Shortcut: if oldStudy.uploadMetadataFieldDefinitions is blank, we can skip. Adding fields is always okay.
+        if (oldStudy.getUploadMetadataFieldDefinitions() == null || oldStudy.getUploadMetadataFieldDefinitions()
+                .isEmpty()) {
+            return;
+        }
+
+        // Field defs are in lists because we care about the order, but for this computation, we want maps.
+        Map<String, UploadFieldDefinition> oldFieldMap = Maps.uniqueIndex(oldStudy.getUploadMetadataFieldDefinitions(),
+                UploadFieldDefinition::getName);
+
+        Map<String, UploadFieldDefinition> newFieldMap;
+        if (newStudy.getUploadMetadataFieldDefinitions() != null) {
+            newFieldMap = Maps.uniqueIndex(newStudy.getUploadMetadataFieldDefinitions(),
+                    UploadFieldDefinition::getName);
+        } else {
+            newFieldMap = ImmutableMap.of();
+        }
+
+        // Determine if any fields were deleted (old minus new)
+        Set<String> oldFieldNameSet = oldFieldMap.keySet();
+        Set<String> newFieldNameSet = newFieldMap.keySet();
+        Set<String> removedFieldNameSet = Sets.difference(oldFieldNameSet, newFieldNameSet);
+
+        // Determine if any fields were changed. First find the overlap (intersection), then for each field name,
+        // compare the old field with the new field.
+        Set<String> overlapFieldNameSet = Sets.intersection(oldFieldNameSet, newFieldNameSet);
+        Set<String> modifiedFieldNameSet = overlapFieldNameSet.stream()
+                .filter(fieldName -> !Objects.equals(oldFieldMap.get(fieldName), newFieldMap.get(fieldName)))
+                .collect(Collectors.toSet());
+
+        // Use a TreeSet, so we can generate a message in a predictable order.
+        Set<String> changedFieldSet = new TreeSet<>();
+        changedFieldSet.addAll(removedFieldNameSet);
+        changedFieldSet.addAll(modifiedFieldNameSet);
+
+        if (!changedFieldSet.isEmpty()) {
+            throw new UnauthorizedException("Non-admins cannot delete or modify upload metadata fields; " +
+                    "affected fields: " + BridgeUtils.COMMA_SPACE_JOINER.join(changedFieldSet));
+        }
     }
 
     public void deleteStudy(String identifier, boolean physical) {
