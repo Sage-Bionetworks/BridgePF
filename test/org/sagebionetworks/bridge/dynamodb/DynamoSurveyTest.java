@@ -29,7 +29,6 @@ import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 
-@SuppressWarnings("unchecked")
 public class DynamoSurveyTest {
     private static final String MODULE_ID = "test-survey-module";
     private static final int MODULE_VERSION = 3;
