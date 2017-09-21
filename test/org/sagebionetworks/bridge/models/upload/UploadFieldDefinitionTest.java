@@ -70,6 +70,20 @@ public class UploadFieldDefinitionTest {
     }
 
     @Test
+    public void testMultiChoiceAnswerListNull() {
+        // Fields that are not multi_choice usually won't specify this, but we expect it to be, by default, an empty
+        // list instead of a null list.
+        UploadFieldDefinition fieldDef1 = new UploadFieldDefinition.Builder().withName("test-field")
+                .withType(UploadFieldType.INT).build();
+        assertTrue(fieldDef1.getMultiChoiceAnswerList().isEmpty());
+
+        // Explicitly set it to null, and it still comes up as an empty list.
+        UploadFieldDefinition fieldDef2 = new UploadFieldDefinition.Builder().withName("test-field")
+                .withType(UploadFieldType.INT).withMultiChoiceAnswerList((List<String>) null).build();
+        assertTrue(fieldDef2.getMultiChoiceAnswerList().isEmpty());
+    }
+
+    @Test
     public void testOptionalFields() {
         List<String> multiChoiceAnswerList = ImmutableList.of("foo", "bar", "baz");
 
