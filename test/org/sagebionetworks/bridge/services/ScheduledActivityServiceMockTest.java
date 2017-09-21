@@ -30,7 +30,6 @@ import org.joda.time.DateTimeZone;
 import org.junit.After;
 import org.joda.time.Period;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;

@@ -14,12 +14,13 @@ import javax.mail.util.ByteArrayDataSource;
 import com.google.common.net.MediaType;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 
@@ -32,7 +33,7 @@ import com.lowagie.text.DocumentException;
 
 public class ConsentEmailProvider extends MimeTypeEmailProvider {
 
-    private static final DateTimeFormatter FORMATTER = DateTimeFormat.forPattern("MMMM d, yyyy");
+    public static final DateTimeFormatter FORMATTER = DateTimeFormat.forPattern("MMMM d, yyyy (z)");
     private static final String CONSENT_EMAIL_SUBJECT = "Consent Agreement for %s";
     private static final String HEADER_CONTENT_DISPOSITION_CONSENT_VALUE = "inline";
     private static final String HEADER_CONTENT_ID_CONSENT_VALUE = "<consentSignature>";
@@ -46,10 +47,13 @@ public class ConsentEmailProvider extends MimeTypeEmailProvider {
     private SharingScope sharingScope;
     private String consentAgreementHTML;
     private String consentTemplate;
+    private DateTimeZone userTimeZone;
 
-    public ConsentEmailProvider(Study study, String userEmail, ConsentSignature consentSignature,
-            SharingScope sharingScope, String consentAgreementHTML, String consentTemplate) {
+    public ConsentEmailProvider(Study study, DateTimeZone userTimeZone, String userEmail,
+            ConsentSignature consentSignature, SharingScope sharingScope, String consentAgreementHTML,
+            String consentTemplate) {
         super(study);
+        this.userTimeZone = (userTimeZone != null) ? userTimeZone : DateTimeZone.UTC;
         this.userEmail = userEmail;
         this.consentSignature = consentSignature;
         this.sharingScope = sharingScope;
@@ -124,7 +128,9 @@ public class ConsentEmailProvider extends MimeTypeEmailProvider {
      * runtime. Here we branch based on the detection of a complete HTML document and do either one or the other.
      */
     private String createSignedDocument() {
-        String signingDate = FORMATTER.print(DateUtils.getCurrentMillisFromEpoch());
+        //String signingDate = new DateTime(consentSignature.getSignedOn()).withZone(userTimeZone).toString();
+        DateTime localSignedOn = new DateTime(consentSignature.getSignedOn()).withZone(userTimeZone);
+        String signingDate = FORMATTER.print(localSignedOn);
         String sharingLabel = (sharingScope == null) ? "" : sharingScope.getLabel();
 
         // User's name may contain HTML. Clean it up
