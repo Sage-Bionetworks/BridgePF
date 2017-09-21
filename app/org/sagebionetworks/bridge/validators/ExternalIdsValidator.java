@@ -43,7 +43,6 @@ public class ExternalIdsValidator implements Validator {
         return ExternalIdList.class.isAssignableFrom(clazz);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public void validate(Object object, Errors errors) {
         ExternalIdList identifiers = (ExternalIdList) object;

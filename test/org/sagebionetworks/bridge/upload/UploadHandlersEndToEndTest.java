@@ -57,7 +57,6 @@ import org.sagebionetworks.bridge.services.UploadArchiveService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 import org.sagebionetworks.bridge.util.Zipper;
 
-@SuppressWarnings({ "rawtypes", "unchecked" })
 public class UploadHandlersEndToEndTest {
     private static final String ATTACHMENT_ID_PREFIX = "attachment-";
     private static final Set<String> DATA_GROUP_SET = ImmutableSet.of("parkinson", "test_user");

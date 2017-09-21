@@ -30,7 +30,6 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
-@SuppressWarnings("unchecked")
 public class UploadServiceUploadCompleteMockTest {
     private static final String DUPE_UPLOAD_ID = "original-upload-id";
     private static final String TEST_BUCKET = "test-bucket";
