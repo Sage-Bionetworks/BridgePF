@@ -41,6 +41,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private LocalDate uploadDate;
     private String uploadId;
     private Long uploadedOn;
+    private JsonNode userMetadata;
     private ParticipantOption.SharingScope userSharingScope;
     private String userExternalId;
     private Set<String> userDataGroups;
@@ -228,6 +229,19 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     @Override
     public void setUploadedOn(Long uploadedOn) {
         this.uploadedOn = uploadedOn;
+    }
+
+    /** {@inheritDoc} */
+    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
+    @Override
+    public JsonNode getUserMetadata() {
+        return userMetadata;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setUserMetadata(JsonNode userMetadata) {
+        this.userMetadata = userMetadata;
     }
 
     /** {@inheritDoc} */

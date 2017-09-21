@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import java.util.HashMap;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import org.joda.time.DateTime;
 import org.junit.Test;
@@ -112,6 +113,14 @@ public class HealthDataSubmissionValidatorTest {
         HealthDataSubmission healthDataSubmission = makeValidBuilderWithSchema()
                 .withData(BridgeObjectMapper.get().createArrayNode()).build();
         assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "data",
+                "must be an object node");
+    }
+
+    @Test
+    public void metadataWrongType() {
+        HealthDataSubmission healthDataSubmission = makeValidBuilderWithSchema().withMetadata(IntNode.valueOf(42))
+                .build();
+        assertValidatorMessage(HealthDataSubmissionValidator.INSTANCE, healthDataSubmission, "metadata",
                 "must be an object node");
     }
 

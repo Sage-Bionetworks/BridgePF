@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -21,6 +23,7 @@ import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 
 @DynamoDBTable(tableName = "Study")
 @BridgeTypeName("Study")
@@ -35,6 +38,7 @@ public final class DynamoStudy implements Study {
     private String synapseProjectId;
     private String technicalEmail;
     private boolean usesCustomExportSchedule;
+    private List<UploadFieldDefinition> uploadMetadataFieldDefinitions;
     private String consentNotificationEmail;
     private int minAgeOfConsent;
     private int accountLimit;
@@ -60,6 +64,7 @@ public final class DynamoStudy implements Study {
     private boolean disableExport;
 
     public DynamoStudy() {
+        uploadMetadataFieldDefinitions = new ArrayList<>();
         profileAttributes = new HashSet<>();
         taskIdentifiers = new HashSet<>();
         activityEventKeys = new HashSet<>();
@@ -200,6 +205,20 @@ public final class DynamoStudy implements Study {
     @Override
     public void setUsesCustomExportSchedule(boolean usesCustomExportSchedule) {
         this.usesCustomExportSchedule = usesCustomExportSchedule;
+    }
+
+    /** {@inheritDoc} */
+    @DynamoDBTypeConverted(converter = DynamoUploadSchema.FieldDefinitionListMarshaller.class)
+    @Override
+    public List<UploadFieldDefinition> getUploadMetadataFieldDefinitions() {
+        return uploadMetadataFieldDefinitions;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setUploadMetadataFieldDefinitions(List<UploadFieldDefinition> uploadMetadataFieldDefinitions) {
+        this.uploadMetadataFieldDefinitions = (uploadMetadataFieldDefinitions == null) ? new ArrayList<>() :
+                uploadMetadataFieldDefinitions;
     }
 
     /** {@inheritDoc} */
@@ -447,7 +466,8 @@ public final class DynamoStudy implements Study {
     @Override
     public int hashCode() {
         return Objects.hash(name, sponsorName, identifier, studyIdExcludedInExport, supportEmail, synapseDataAccessTeamId,
-                synapseProjectId, technicalEmail, usesCustomExportSchedule, consentNotificationEmail, minAgeOfConsent,
+                synapseProjectId, technicalEmail, usesCustomExportSchedule, uploadMetadataFieldDefinitions,
+                consentNotificationEmail, minAgeOfConsent,
                 accountLimit, version, active, profileAttributes, taskIdentifiers, activityEventKeys, dataGroups,
                 passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, emailSignInTemplate, accountExistsTemplate,
                 strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
@@ -466,6 +486,7 @@ public final class DynamoStudy implements Study {
         return (Objects.equals(identifier, other.identifier)
                 && Objects.equals(studyIdExcludedInExport, other.studyIdExcludedInExport)
                 && Objects.equals(supportEmail, other.supportEmail)
+                && Objects.equals(uploadMetadataFieldDefinitions, other.uploadMetadataFieldDefinitions)
                 && Objects.equals(minAgeOfConsent, other.minAgeOfConsent) && Objects.equals(name, other.name)
                 && Objects.equals(passwordPolicy, other.passwordPolicy) && Objects.equals(active, other.active))
                 && Objects.equals(verifyEmailTemplate, other.verifyEmailTemplate)

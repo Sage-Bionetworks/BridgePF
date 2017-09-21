@@ -144,7 +144,11 @@ public class HealthDataServiceSubmitHealthDataTest {
         inputData.put("normal-field", "normal field value");
         inputData.put("non-schema-field", "this is not in the schema");
 
-        HealthDataSubmission submission = makeValidBuilderWithSchema().withData(inputData).build();
+        ObjectNode inputMetadata = BridgeObjectMapper.get().createObjectNode();
+        inputMetadata.put("sample-metadata-key", "sample-metadata-value");
+
+        HealthDataSubmission submission = makeValidBuilderWithSchema().withData(inputData).withMetadata(inputMetadata)
+                .build();
 
         // execute
         HealthDataRecord svcOutputRecord = svc.submitHealthData(TestConstants.TEST_STUDY, PARTICIPANT, submission);
@@ -191,6 +195,11 @@ public class HealthDataServiceSubmitHealthDataTest {
         assertEquals(2, metadata.size());
         assertEquals(APP_VERSION, metadata.get(UploadUtil.FIELD_APP_VERSION).textValue());
         assertEquals(PHONE_INFO, metadata.get(UploadUtil.FIELD_PHONE_INFO).textValue());
+
+        // validate client-submitted metadata (userMetadata)
+        JsonNode userMetadata = contextRecord.getUserMetadata();
+        assertEquals(1, userMetadata.size());
+        assertEquals("sample-metadata-value", userMetadata.get("sample-metadata-key").textValue());
 
         // validate the other handlers are called
         verify(mockTranscribeConsentHandler).handle(context);

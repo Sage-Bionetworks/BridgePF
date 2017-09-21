@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -84,20 +84,6 @@ public class UploadSchemaValidatorTest {
         schema.setFieldDefinitions(fieldDefList);
 
         // validate
-        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
-    }
-
-    @Test(expected = InvalidEntityException.class)
-    public void validateNullFieldDefList() {
-        UploadSchema schema = makeValidSchema();
-        schema.setFieldDefinitions(null);
-        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
-    }
-
-    @Test(expected = InvalidEntityException.class)
-    public void validateEmptyFieldDefList() {
-        UploadSchema schema = makeValidSchema();
-        schema.setFieldDefinitions(ImmutableList.of());
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
@@ -221,149 +207,29 @@ public class UploadSchemaValidatorTest {
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
-    @Test(expected = InvalidEntityException.class)
-    public void nullFieldName() {
-        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName(null)
-                .withType(UploadFieldType.BOOLEAN).build();
-        UploadSchema schema = makeSchemaWithField(fieldDef);
-        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
-    }
-
-    @Test(expected = InvalidEntityException.class)
-    public void emptyFieldName() {
-        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("")
-                .withType(UploadFieldType.BOOLEAN).build();
-        UploadSchema schema = makeSchemaWithField(fieldDef);
-        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
-    }
-
-    @Test(expected = InvalidEntityException.class)
-    public void blankFieldName() {
-        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("   ")
-                .withType(UploadFieldType.BOOLEAN).build();
-        UploadSchema schema = makeSchemaWithField(fieldDef);
-        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
-    }
-
-    @Test(expected = InvalidEntityException.class)
-    public void invalidFieldName() {
-        // The specifics of what is an invalid field name is covered in UploadUtilTest. This tests that the validator
-        // validates invalid field names.
-        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("**invalid$field^name##")
-                .withType(UploadFieldType.BOOLEAN).build();
-        UploadSchema schema = makeSchemaWithField(fieldDef);
-        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
-    }
-
     @Test
-    public void keywordsAreValidChoiceValues() {
-        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("multi-choice-q")
-                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("true", "false", "select", "where")
-                .build();
-        UploadSchema schema = makeSchemaWithField(fieldDef);
-        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
-    }
-
-    @Test(expected = InvalidEntityException.class)
-    public void invalidMultiChoiceAnswer() {
-        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("multi-choice-q")
-                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("!invalid@choice%").build();
-        UploadSchema schema = makeSchemaWithField(fieldDef);
-        Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
-    }
-
-    @Test
-    public void validateUnboundedMaxLength() {
-        // valid test cases
-        // { unboundedText, maxLength }
-        Object[][] testCases = {
-                { null, null },
-                { null, 24 },
-                { false, null },
-                { false, 24 },
-                { true, null },
-        };
-
-        for (Object[] oneTestCase : testCases) {
-            UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("field")
-                    .withType(UploadFieldType.STRING).withUnboundedText((Boolean) oneTestCase[0])
-                    .withMaxLength((Integer) oneTestCase[1]).build();
-            UploadSchema schema = makeSchemaWithField(fieldDef);
-            Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
-        }
-
-        // The only invalid test case is when unboundedText=true and maxLength is not null
-        {
-            UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName("field")
-                    .withType(UploadFieldType.STRING).withUnboundedText(true).withMaxLength(24).build();
-            UploadSchema schema = makeSchemaWithField(fieldDef);
-
-            try {
-                Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
-                fail("expected exception");
-            } catch (InvalidEntityException ex) {
-                assertTrue(ex.getMessage().contains("cannot specify unboundedText=true with a maxLength"));
-            }
-        }
-    }
-
-    @Test
-    public void duplicateFieldName() {
-        // set up schema to validate
+    public void nullFieldDefList() {
         UploadSchema schema = makeValidSchema();
+        schema.setFieldDefinitions(null);
+        assertValidatorMessage(UploadSchemaValidator.INSTANCE, schema, "fieldDefinitions",
+                "requires at least one definition");
+    }
 
-        // test field def list
-        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
-        fieldDefList.add(new UploadFieldDefinition.Builder().withName("foo-field")
-                .withType(UploadFieldType.STRING).build());
-        fieldDefList.add(new UploadFieldDefinition.Builder().withName("foo-field")
+    @Test
+    public void emptyFieldDefList() {
+        UploadSchema schema = makeValidSchema();
+        schema.setFieldDefinitions(ImmutableList.of());
+        assertValidatorMessage(UploadSchemaValidator.INSTANCE, schema, "fieldDefinitions",
+                "requires at least one definition");
+    }
+
+    @Test
+    public void invalidFieldDef() {
+        // This is tested in-depth in UploadFieldDefinitionListValidatorTest. Just test that we catch a non-trivial
+        // error here.
+        UploadSchema schema = makeSchemaWithField(new UploadFieldDefinition.Builder().withName(null)
                 .withType(UploadFieldType.INT).build());
-        fieldDefList.add(new UploadFieldDefinition.Builder().withName("bar")
-                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList("bar", "other")
-                .withAllowOtherChoices(true).build());
-        fieldDefList.add(new UploadFieldDefinition.Builder().withName("bar.bar").withType(UploadFieldType.STRING)
-                .build());
-        fieldDefList.add(new UploadFieldDefinition.Builder().withName("baz").withType(UploadFieldType.TIMESTAMP)
-                .build());
-        fieldDefList.add(new UploadFieldDefinition.Builder().withName("baz.timezone")
-                .withType(UploadFieldType.STRING).build());
-        schema.setFieldDefinitions(fieldDefList);
-
-        // validate
-        Exception thrownEx = null;
-        try {
-            Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
-            fail("expected exception");
-        } catch (InvalidEntityException ex) {
-            thrownEx = ex;
-        }
-        assertTrue(thrownEx.getMessage().contains("conflict in field names or sub-field names: bar.bar, "
-                + "bar.other, baz.timezone, foo-field"));
-    }
-
-    @Test
-    public void multiChoiceWithNoAnswerList() {
-        // set up schema to validate
-        UploadSchema schema = makeValidSchema();
-
-        // test field def list
-        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
-        fieldDefList.add(new UploadFieldDefinition.Builder().withName("multi-choice-null")
-                .withType(UploadFieldType.MULTI_CHOICE).build());
-        fieldDefList.add(new UploadFieldDefinition.Builder().withName("multi-choice-empty")
-                .withType(UploadFieldType.MULTI_CHOICE).withMultiChoiceAnswerList().build());
-        schema.setFieldDefinitions(fieldDefList);
-
-        // validate
-        Exception thrownEx = null;
-        try {
-            Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
-            fail("expected exception");
-        } catch (InvalidEntityException ex) {
-            thrownEx = ex;
-        }
-        assertTrue(thrownEx.getMessage().contains("must be specified for MULTI_CHOICE field multi-choice-null"));
-        assertTrue(thrownEx.getMessage().contains("must be specified for MULTI_CHOICE field multi-choice-empty"));
+        assertValidatorMessage(UploadSchemaValidator.INSTANCE, schema, "fieldDefinitions[0].name", "is required");
     }
 
     // Helper to make a valid schema

@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
@@ -15,6 +16,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 
 import com.google.common.collect.Sets;
 
@@ -76,6 +78,14 @@ public class StudyValidator implements Validator {
         if (StringUtils.isBlank(study.getTechnicalEmail())) {
             errors.rejectValue("technicalEmail", "is required");
         }
+
+        // uploadMetadatafieldDefinitions
+        List<UploadFieldDefinition> uploadMetadataFieldDefList = study.getUploadMetadataFieldDefinitions();
+        if (!uploadMetadataFieldDefList.isEmpty()) {
+            UploadFieldDefinitionListValidator.INSTANCE.validate(study.getUploadMetadataFieldDefinitions(), errors,
+                    "uploadMetadataFieldDefinitions");
+        }
+
         if (StringUtils.isBlank(study.getConsentNotificationEmail())) {
             errors.rejectValue("consentNotificationEmail", "is required");
         }

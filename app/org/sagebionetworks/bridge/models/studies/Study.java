@@ -1,11 +1,13 @@
 package org.sagebionetworks.bridge.models.studies;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -135,6 +137,21 @@ public interface Study extends BridgeEntity, StudyIdentifier {
 
     /** @see #getUsesCustomExportSchedule */
     void setUsesCustomExportSchedule(boolean usesCustomExportSchedule);
+
+    /**
+     * <p>
+     * Metadata fields can be configured for any study. This metadata will be implicitly added to every schema and
+     * automatically added to every Synapse table.
+     * </p>
+     * <p>
+     * All metadata field definitions are implicitly optional. The "required" field in metadata field definitions is
+     * ignored.
+     * </p>
+     */
+    List<UploadFieldDefinition> getUploadMetadataFieldDefinitions();
+
+    /** @see #getUploadMetadataFieldDefinitions */
+    void setUploadMetadataFieldDefinitions(List<UploadFieldDefinition> uploadMetadataFieldDefinitions);
 
     /**
      * Copies of all consent agreements, as well as rosters of all participants in a study, or any 
@@ -272,7 +289,7 @@ public interface Study extends BridgeEntity, StudyIdentifier {
      */
     Map<String, Integer> getMinSupportedAppVersions();
 	
-	/** @see #getMinSupportedVersion(); */
+	/** @see #getMinSupportedAppVersions(); */
     void setMinSupportedAppVersions(Map<String, Integer> map);
     
     /**

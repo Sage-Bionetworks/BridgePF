@@ -10,7 +10,7 @@ import org.springframework.validation.Validator;
 /** Validator for {@link org.sagebionetworks.bridge.models.healthdata.HealthDataRecord}. */
 public class HealthDataRecordValidator implements Validator {
     /** Singleton instance of this validator. */
-    public static HealthDataRecordValidator INSTANCE = new HealthDataRecordValidator();
+    public static final HealthDataRecordValidator INSTANCE = new HealthDataRecordValidator();
 
     /** {@inheritDoc} */
     @Override
@@ -104,6 +104,12 @@ public class HealthDataRecordValidator implements Validator {
             // upload date is non-null
             if (record.getUploadDate() == null) {
                 errors.rejectValue("uploadDate", Validate.CANNOT_BE_NULL);
+            }
+
+            // userMetadata is optional, but if specified, it must be an object node.
+            JsonNode userMetadata = record.getUserMetadata();
+            if (userMetadata != null && !userMetadata.isObject()) {
+                errors.rejectValue("userMetadata", "must be an object node");
             }
 
             // user sharing scope is non-null

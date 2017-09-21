@@ -36,6 +36,9 @@ public class HealthDataSubmissionTest {
                 "   \"data\":{\n" +
                 "       \"foo\":\"foo-value\",\n" +
                 "       \"bar\":42\n" +
+                "   },\n" +
+                "   \"metadata\":{\n" +
+                "       \"sample-metadata-key\":\"sample-metadata-value\"\n" +
                 "   }\n" +
                 "}";
 
@@ -55,12 +58,17 @@ public class HealthDataSubmissionTest {
         assertEquals("foo-value", pojoData.get("foo").textValue());
         assertEquals(42, pojoData.get("bar").intValue());
 
+        JsonNode pojoMetadata = healthDataSubmission.getMetadata();
+        assertEquals(1, pojoMetadata.size());
+        assertEquals("sample-metadata-value", pojoMetadata.get("sample-metadata-key").textValue());
+
         // convert back to JSON
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(healthDataSubmission, JsonNode.class);
-        assertEquals(9, jsonNode.size());
+        assertEquals(10, jsonNode.size());
         assertEquals(APP_VERSION, jsonNode.get("appVersion").textValue());
         assertDatesWithTimeZoneEqual(CREATED_ON, DateTime.parse(jsonNode.get("createdOn").textValue()));
         assertEquals(pojoData, jsonNode.get("data"));
+        assertEquals(pojoMetadata, jsonNode.get("metadata"));
         assertEquals(PHONE_INFO, jsonNode.get("phoneInfo").textValue());
         assertEquals(SCHEMA_ID, jsonNode.get("schemaId").textValue());
         assertEquals(SCHEMA_REV, jsonNode.get("schemaRevision").intValue());

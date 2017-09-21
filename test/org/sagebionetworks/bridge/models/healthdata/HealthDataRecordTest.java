@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,6 +13,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import com.fasterxml.jackson.databind.node.IntNode;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
@@ -35,6 +37,7 @@ public class HealthDataRecordTest {
     private static final long CREATED_ON_MILLIS = 1502498010000L;
     private static final JsonNode DUMMY_DATA = BridgeObjectMapper.get().createObjectNode();
     private static final JsonNode DUMMY_METADATA = BridgeObjectMapper.get().createObjectNode();
+    private static final JsonNode DUMMY_USER_METADATA = BridgeObjectMapper.get().createObjectNode();
     private static final String PHONE_INFO = "Unit Tests";
     private static final LocalDate UPLOAD_DATE = LocalDate.parse("2017-08-11");
 
@@ -74,6 +77,7 @@ public class HealthDataRecordTest {
         record.setUploadId("optional upload ID");
         record.setUploadedOn(uploadedOn);
         record.setUserExternalId("optional external ID");
+        record.setUserMetadata(DUMMY_USER_METADATA);
         record.setVersion(42L);
 
         // validate
@@ -87,6 +91,7 @@ public class HealthDataRecordTest {
         assertEquals("optional upload ID", record.getUploadId());
         assertEquals(uploadedOn, record.getUploadedOn().longValue());
         assertEquals("optional external ID", record.getUserExternalId());
+        assertSame(DUMMY_USER_METADATA, record.getUserMetadata());
         assertEquals(42, record.getVersion().longValue());
     }
     
@@ -192,6 +197,13 @@ public class HealthDataRecordTest {
         Validate.entityThrowingException(HealthDataRecordValidator.INSTANCE, record);
     }
 
+    @Test
+    public void validateUserMetadataNotAnObject() {
+        HealthDataRecord record = makeValidRecord();
+        record.setUserMetadata(IntNode.valueOf(42));
+        assertValidatorMessage(HealthDataRecordValidator.INSTANCE, record, "userMetadata", "must be an object node");
+    }
+
     // branch coverage
     @Test
     public void validatorSupportsClass() {
@@ -265,6 +277,7 @@ public class HealthDataRecordTest {
                 "   \"uploadDate\":\"2014-02-12\",\n" +
                 "   \"uploadId\":\"json upload\",\n" +
                 "   \"uploadedOn\":\"" + uploadedOnStr + "\",\n" +
+                "   \"userMetadata\":{\"userMetadata\":\"userMetaValue\"},\n" +
                 "   \"userSharingScope\":\"all_qualified_researchers\",\n" +
                 "   \"userExternalId\":\"ABC-123-XYZ\",\n" +
                 "   \"version\":42\n" +
@@ -291,17 +304,20 @@ public class HealthDataRecordTest {
         assertEquals(42, record.getVersion().longValue());
 
         assertEquals(1, record.getData().size());
-        assertEquals("myDataValue", record.getData().get("myData").asText());
+        assertEquals("myDataValue", record.getData().get("myData").textValue());
 
         assertEquals(1, record.getMetadata().size());
-        assertEquals("myMetaValue", record.getMetadata().get("myMetadata").asText());
+        assertEquals("myMetaValue", record.getMetadata().get("myMetadata").textValue());
+
+        assertEquals(1, record.getUserMetadata().size());
+        assertEquals("userMetaValue", record.getUserMetadata().get("userMetadata").textValue());
 
         // convert back to JSON
         String convertedJson = BridgeObjectMapper.get().writeValueAsString(record);
 
         // then convert to a map so we can validate the raw JSON
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(19, jsonMap.size());
+        assertEquals(20, jsonMap.size());
         assertEquals(APP_VERSION, jsonMap.get("appVersion"));
         assertEquals("-0800", jsonMap.get("createdOnTimeZone"));
         assertEquals("json healthcode", jsonMap.get("healthCode"));
@@ -330,12 +346,16 @@ public class HealthDataRecordTest {
         assertEquals(1, metadata.size());
         assertEquals("myMetaValue", metadata.get("myMetadata"));
 
+        Map<String, String> userMetadata = (Map<String, String>) jsonMap.get("userMetadata");
+        assertEquals(1, userMetadata.size());
+        assertEquals("userMetaValue", userMetadata.get("userMetadata"));
+
         // convert back to JSON with PUBLIC_RECORD_WRITER
         String publicJson = HealthDataRecord.PUBLIC_RECORD_WRITER.writeValueAsString(record);
 
         // Convert back to map again. Only validate a few key fields are present and the filtered fields are absent.
         Map<String, Object> publicJsonMap = BridgeObjectMapper.get().readValue(publicJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(18, publicJsonMap.size());
+        assertEquals(19, publicJsonMap.size());
         assertFalse(publicJsonMap.containsKey("healthCode"));
         assertEquals("json record ID", publicJsonMap.get("id"));
     }
