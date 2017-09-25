@@ -356,22 +356,17 @@ public class UploadUtil {
             return false;
         }
 
+        // Note: multiChoiceAnswerList can never be null.
         List<String> oldMultiChoiceAnswerList = oldFieldDef.getMultiChoiceAnswerList();
         List<String> newMultiChoiceAnswerList = newFieldDef.getMultiChoiceAnswerList();
-        if (oldMultiChoiceAnswerList != null && newMultiChoiceAnswerList != null) {
-            // Choices might have been re-ordered, so convert to sets so we can determine the choices that have been
-            // added, deleted, or retained.
-            Set<String> oldMultiChoiceAnswerSet = new HashSet<>(oldMultiChoiceAnswerList);
-            Set<String> newMultiChoiceAnswerSet = new HashSet<>(newMultiChoiceAnswerList);
+        // Choices might have been re-ordered, so convert to sets so we can determine the choices that have been
+        // added, deleted, or retained.
+        Set<String> oldMultiChoiceAnswerSet = new HashSet<>(oldMultiChoiceAnswerList);
+        Set<String> newMultiChoiceAnswerSet = new HashSet<>(newMultiChoiceAnswerList);
 
-            // Adding choices is okay. Deleting choices is not. (Renaming is deleting one choice and adding another.)
-            Set<String> deletedChoiceSet = Sets.difference(oldMultiChoiceAnswerSet, newMultiChoiceAnswerSet);
-            if (!deletedChoiceSet.isEmpty()) {
-                return false;
-            }
-        } else if (oldMultiChoiceAnswerList != null || newMultiChoiceAnswerList != null) {
-            // This should never happen, but if we add or remove a multi-choice answer list, we should flag the field
-            // defs as incompatible.
+        // Adding choices is okay. Deleting choices is not. (Renaming is deleting one choice and adding another.)
+        Set<String> deletedChoiceSet = Sets.difference(oldMultiChoiceAnswerSet, newMultiChoiceAnswerSet);
+        if (!deletedChoiceSet.isEmpty()) {
             return false;
         }
 
