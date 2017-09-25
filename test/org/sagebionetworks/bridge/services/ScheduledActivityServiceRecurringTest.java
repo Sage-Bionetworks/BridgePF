@@ -42,7 +42,9 @@ public class ScheduledActivityServiceRecurringTest {
     private static final DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
     private static final DateTimeZone PST = DateTimeZone.forOffsetHours(-7);
     private static final DateTimeZone EST = DateTimeZone.forOffsetHours(-3);
-    private static final DateTime NOW = DateTime.parse("2017-09-23T03:39:57.779-03:00");
+    // keep this a year in the future or the test will eventually fail.
+    private static final DateTime NOW = DateTime
+            .parse(DateTime.now().plusYears(1).getYear() + "-09-23T03:39:57.779-03:00");
 
     @Resource
     private ScheduledActivityService service;
