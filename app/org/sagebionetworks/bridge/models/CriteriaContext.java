@@ -87,9 +87,8 @@ public final class CriteriaContext {
 
     @Override
     public String toString() {
-        return "CriteriaContext [studyId=" + studyId + ", healthCode=" + healthCode + ", userId=" + userId 
-                + ", clientInfo=" + clientInfo + ", userDataGroups=" + userDataGroups + ", languages=" 
-                + languages + "]";
+        return "CriteriaContext [studyId=" + studyId + ", userId=" + userId + ", clientInfo=" + clientInfo
+                + ", userDataGroups=" + userDataGroups + ", languages=" + languages + "]";
     }
 
     public static class Builder {

@@ -21,7 +21,6 @@ import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AppConfigDao;
-import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.ClientInfo;
@@ -39,6 +38,8 @@ public class AppConfigServiceTest {
     private static final List<AppConfig>  RESULTS = Lists.newArrayList();
     private static final String  GUID = BridgeUtils.generateGuid();
     private static final DateTime TIMESTAMP = DateTime.now();
+    private static final long EARLIER_TIMESTAMP = DateTime.now().minusDays(1).getMillis();
+    private static final long LATER_TIMESTAMP = DateTime.now().getMillis();
     
     @Mock
     private AppConfigDao mockDao;
@@ -89,6 +90,7 @@ public class AppConfigServiceTest {
         AppConfig appConfig1 = AppConfig.create();
         appConfig1.setLabel("AppConfig1");
         appConfig1.setCriteria(criteria1);
+        appConfig1.setCreatedOn(LATER_TIMESTAMP);
         RESULTS.add(appConfig1);
         
         Criteria criteria2 = Criteria.create();
@@ -98,6 +100,7 @@ public class AppConfigServiceTest {
         AppConfig appConfig2 = AppConfig.create();
         appConfig2.setLabel("AppConfig2");
         appConfig2.setCriteria(criteria2);
+        appConfig2.setCreatedOn(EARLIER_TIMESTAMP);
         RESULTS.add(appConfig2);
         
         when(mockDao.getAppConfigs(TEST_STUDY)).thenReturn(RESULTS);
@@ -151,14 +154,15 @@ public class AppConfigServiceTest {
         service.getAppConfigForUser(context);
     }
 
-    @Test(expected = ConstraintViolationException.class)
-    public void getAppConfigForUserThrowsConstraintViolation() {
+    @Test
+    public void getAppConfigForUserReturnsOldestVersion() {
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("iPhone/6 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
                 .withStudyIdentifier(TEST_STUDY).build();
         
         setupConfigsForUser();
-        service.getAppConfigForUser(context);
+        AppConfig appConfig = service.getAppConfigForUser(context);
+        assertEquals(EARLIER_TIMESTAMP, appConfig.getCreatedOn());
     }
     
     @Test
@@ -195,7 +199,7 @@ public class AppConfigServiceTest {
         
         verify(mockDao).updateAppConfig(appConfigCaptor.capture());
         assertEquals(oldConfig, appConfigCaptor.getValue());
-        
+
         assertEquals(returnValue, oldConfig);
     }
     

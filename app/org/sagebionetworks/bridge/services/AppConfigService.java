@@ -4,12 +4,12 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import java.util.Comparator;
 import java.util.List;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AppConfigDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoAppConfig;
-import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -20,13 +20,16 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.validators.AppConfigValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
 @Component
 public class AppConfigService {
-
+    private static final Logger LOG = LoggerFactory.getLogger(AppConfigService.class);
+    
     private AppConfigDao appConfigDao;
     
     private StudyService studyService;
@@ -69,16 +72,20 @@ public class AppConfigService {
 
         List<AppConfig> appConfigs = getAppConfigs(context.getStudyIdentifier());
 
-        // return one or null. 
         List<AppConfig> matches = appConfigs.stream().filter(oneAppConfig -> {
             return CriteriaUtils.matchCriteria(context, oneAppConfig.getCriteria());
-        }).collect(BridgeCollectors.toImmutableList());
-        
+        }).sorted(Comparator.comparingLong(AppConfig::getCreatedOn))
+          .collect(BridgeCollectors.toImmutableList());
+
+        // Should have matched one and only one app config.
+        // The goal of the following code is not to introduce production exceptions when changing app configs.
         if (matches.isEmpty()) {
+            // If there are no matches, return the "default" app config (TBD: for now, throw exception)
             throw new EntityNotFoundException(AppConfig.class);
         } else if (matches.size() != 1) {
-            throw new ConstraintViolationException.Builder()
-                .withMessage("App request matches multiple configurations").build();
+            // If there is more than one match, return the one created first, but log an error
+            LOG.error("CriteriaContext matches more than one app config: criteriaContext=" + context + ", appConfigs="+matches);
+            return matches.get(0);
         }
         return matches.get(0);
     }
