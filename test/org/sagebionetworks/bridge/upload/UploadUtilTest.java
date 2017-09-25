@@ -447,7 +447,7 @@ public class UploadUtilTest {
         // { oldList, newList, expected }
         Object[][] testCases = {
                 { null, null, true },
-                { null, ImmutableList.of("foo", "bar"), false },
+                { null, ImmutableList.of("foo", "bar"), true },
                 { ImmutableList.of("foo", "bar"), null, false },
                 { ImmutableList.of("foo", "bar"), ImmutableList.of("foo", "bar"), true },
                 { ImmutableList.of("foo", "bar"), ImmutableList.of("foo"), false },
