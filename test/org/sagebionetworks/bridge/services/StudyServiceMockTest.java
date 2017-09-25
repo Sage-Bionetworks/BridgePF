@@ -56,6 +56,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -64,6 +65,8 @@ import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
+import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
+import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -289,6 +292,123 @@ public class StudyServiceMockTest {
         service.updateStudy(study, false);
 
         verify(studyDao, never()).updateStudy(any());
+    }
+
+    @Test
+    public void updateUploadMetadataOldStudyHasNoFields() {
+        // old study
+        Study oldStudy = getTestStudy();
+        oldStudy.setUploadMetadataFieldDefinitions(null);
+        when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(oldStudy);
+
+        // new study
+        Study newStudy = getTestStudy();
+        newStudy.setUploadMetadataFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder()
+                .withName("test-field").withType(UploadFieldType.INT).build()));
+
+        // execute - no exception
+        service.updateStudy(newStudy, false);
+    }
+
+    @Test
+    public void updateUploadMetadataNewStudyHasNoFields() {
+        // old study
+        Study oldStudy = getTestStudy();
+        oldStudy.setUploadMetadataFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder()
+                .withName("test-field").withType(UploadFieldType.INT).build()));
+        when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(oldStudy);
+
+        // new study
+        Study newStudy = getTestStudy();
+        newStudy.setUploadMetadataFieldDefinitions(null);
+
+        // execute - expect exception
+        try {
+            service.updateStudy(newStudy, false);
+            fail("expected exception");
+        } catch (UnauthorizedException ex) {
+            assertEquals("Non-admins cannot delete or modify upload metadata fields; affected fields: test-field",
+                    ex.getMessage());
+        }
+    }
+
+    @Test
+    public void updateUploadMetadataCanAddAndReorderFields() {
+        // make fields for test
+        UploadFieldDefinition reorderedField1 = new UploadFieldDefinition.Builder().withName("reoredered-field-1")
+                .withType(UploadFieldType.INT).build();
+        UploadFieldDefinition reorderedField2 = new UploadFieldDefinition.Builder().withName("reoredered-field-2")
+                .withType(UploadFieldType.BOOLEAN).build();
+        UploadFieldDefinition addedField = new UploadFieldDefinition.Builder().withName("added-field")
+                .withType(UploadFieldType.TIMESTAMP).build();
+
+        // old study
+        Study oldStudy = getTestStudy();
+        oldStudy.setUploadMetadataFieldDefinitions(ImmutableList.of(reorderedField1, reorderedField2));
+        when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(oldStudy);
+
+        // new study
+        Study newStudy = getTestStudy();
+        newStudy.setUploadMetadataFieldDefinitions(ImmutableList.of(reorderedField2, reorderedField1, addedField));
+
+        // execute - no exception
+        service.updateStudy(newStudy, false);
+    }
+
+    @Test
+    public void nonAdminCantDeleteOrModifyFields() {
+        // make fields for test
+        UploadFieldDefinition goodField = new UploadFieldDefinition.Builder().withName("good-field")
+                .withType(UploadFieldType.ATTACHMENT_V2).build();
+        UploadFieldDefinition deletedField = new UploadFieldDefinition.Builder().withName("deleted-field")
+                .withType(UploadFieldType.INLINE_JSON_BLOB).build();
+        UploadFieldDefinition modifiedFieldOld = new UploadFieldDefinition.Builder().withName("modified-field")
+                .withType(UploadFieldType.STRING).withMaxLength(1000).build();
+        UploadFieldDefinition modifiedlFieldNew = new UploadFieldDefinition.Builder().withName("modified-field")
+                .withType(UploadFieldType.STRING).withUnboundedText(true).build();
+
+        // old study
+        Study oldStudy = getTestStudy();
+        oldStudy.setUploadMetadataFieldDefinitions(ImmutableList.of(goodField, deletedField, modifiedFieldOld));
+        when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(oldStudy);
+
+        // new study
+        Study newStudy = getTestStudy();
+        newStudy.setUploadMetadataFieldDefinitions(ImmutableList.of(goodField, modifiedlFieldNew));
+
+        // execute - expect exception
+        try {
+            service.updateStudy(newStudy, false);
+            fail("expected exception");
+        } catch (UnauthorizedException ex) {
+            assertEquals("Non-admins cannot delete or modify upload metadata fields; affected fields: " +
+                    "deleted-field, modified-field", ex.getMessage());
+        }
+    }
+
+    @Test
+    public void adminCanDeleteOrModifyFields() {
+        // make fields for test
+        UploadFieldDefinition goodField = new UploadFieldDefinition.Builder().withName("good-field")
+                .withType(UploadFieldType.ATTACHMENT_V2).build();
+        UploadFieldDefinition deletedField = new UploadFieldDefinition.Builder().withName("deleted-field")
+                .withType(UploadFieldType.INLINE_JSON_BLOB).build();
+        UploadFieldDefinition modifiedFieldOld = new UploadFieldDefinition.Builder().withName("modified-field")
+                .withType(UploadFieldType.STRING).withMaxLength(1000).build();
+        UploadFieldDefinition modifiedlFieldNew = new UploadFieldDefinition.Builder().withName("modified-field")
+                .withType(UploadFieldType.STRING).withUnboundedText(true).build();
+
+        // old study
+        Study oldStudy = getTestStudy();
+        oldStudy.setUploadMetadataFieldDefinitions(ImmutableList.of(goodField, deletedField, modifiedFieldOld));
+        when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(oldStudy);
+
+        // new study
+        Study newStudy = getTestStudy();
+        newStudy.setUploadMetadataFieldDefinitions(ImmutableList.of(goodField, modifiedlFieldNew));
+
+        // execute - no exception
+        service.updateStudy(newStudy, true);
     }
 
     @Test(expected = BadRequestException.class)

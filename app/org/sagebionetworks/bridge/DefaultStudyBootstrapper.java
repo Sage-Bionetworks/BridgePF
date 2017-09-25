@@ -80,6 +80,7 @@ public class DefaultStudyBootstrapper {
             study.setTechnicalEmail("bridgeit@sagebridge.org");
             study.setConsentNotificationEmail("bridgeit@sagebridge.org");
             study.setPasswordPolicy(new PasswordPolicy(2, false, false, false, false));
+            study.setEmailVerificationEnabled(true);
             studyService.createStudy(study);
         }
     }

@@ -63,6 +63,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
     private static final Logger logger = LoggerFactory.getLogger(IosSchemaValidationHandler2.class);
 
     private static final String FILENAME_INFO_JSON = "info.json";
+    private static final String FILENAME_METADATA_JSON = "metadata.json";
     private static final Pattern FILENAME_TIMESTAMP_PATTERN = Pattern.compile("-\\d{8,}");
     private static final String KEY_FILENAME = "filename";
     private static final String KEY_FILES = "files";
@@ -151,6 +152,17 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         record.setAppVersion(JsonUtils.asText(infoJson, UploadUtil.FIELD_APP_VERSION));
         record.setPhoneInfo(JsonUtils.asText(infoJson, UploadUtil.FIELD_PHONE_INFO));
         record.setMetadata(infoJson);
+
+        // Copy metadata.json to record.userMetadata. (The names are due to an old feature conflicting with the name of
+        // a new feature.) Lightly validate that metadata.json is a JSON object. BridgeEX will handle the rest.
+        JsonNode metadataJson = jsonDataMap.get(FILENAME_METADATA_JSON);
+        if (metadataJson != null && !metadataJson.isNull()) {
+            if (metadataJson.isObject()) {
+                record.setUserMetadata(metadataJson);
+            } else {
+                context.addMessage("upload " + uploadId + " contains metadata.json, but it is not a JSON object");
+            }
+        }
 
         // validate and normalize filenames
         validateInfoJsonFileList(context, uploadId, jsonDataMap, unzippedDataMap, infoJson, record);
@@ -269,8 +281,6 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         fileNameSet.addAll(jsonDataMap.keySet());
         fileNameSet.addAll(unzippedDataMap.keySet());
 
-        // fileList.size() should be exactly 1 less than fileNameSet.size(), because fileList.size() doesn't include
-        // info.json.
         JsonNode fileList = infoJson.get(KEY_FILES);
         if (fileList == null) {
             // Recover by replacing this with an empty list
@@ -278,13 +288,9 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
             fileList = BridgeObjectMapper.get().createArrayNode();
         } else if (fileList.size() == 0) {
             context.addMessage(String.format("upload ID %s info.json contains empty file list", uploadId));
-        } else if (fileList.size() != fileNameSet.size() - 1) {
-            context.addMessage(String.format("upload ID %s info.json reports %d files, but we found %d files",
-                    uploadId, fileList.size(), fileNameSet.size() - 1));
         }
 
         DateTime createdOn = null;
-        Map<String, JsonNode> infoJsonFilesByName = new HashMap<>();
         for (JsonNode oneFileJson : fileList) {
             // validate filename
             JsonNode filenameNode = oneFileJson.get(KEY_FILENAME);
@@ -299,7 +305,6 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
                             "upload ID %s info.json contains filename %s, not found in the archive", uploadId,
                             filename));
                 }
-                infoJsonFilesByName.put(filename, oneFileJson);
             }
 
             // Calculate createdOn timestamp. Each file in the file list has its own timestamp. Canonical createdOn is
@@ -314,15 +319,6 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
                 if (createdOn == null || timestamp.isAfter(createdOn)) {
                     createdOn = timestamp;
                 }
-            }
-        }
-
-        // sanity check filenames with the info.json file list
-        //noinspection Convert2streamapi
-        for (String oneFilename : fileNameSet) {
-            if (!oneFilename.equals(FILENAME_INFO_JSON) && !infoJsonFilesByName.containsKey(oneFilename)) {
-                context.addMessage(String.format(
-                        "upload ID %s contains filename %s not found in info.json", uploadId, oneFilename));
             }
         }
 
@@ -366,8 +362,8 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         Map<String, JsonNode> convertedSurveyMap = new HashMap<>();
         for (Map.Entry<String, JsonNode> oneJsonFile : jsonDataMap.entrySet()) {
             String filename = oneJsonFile.getKey();
-            if (FILENAME_INFO_JSON.equals(filename)) {
-                // Skip info.json. We don't need to add a message, since this is normal.
+            if (FILENAME_INFO_JSON.equals(filename) || FILENAME_METADATA_JSON.equals(filename)) {
+                // Skip info.json and metadata.json. We don't need to add a message, since this is normal.
                 continue;
             }
 

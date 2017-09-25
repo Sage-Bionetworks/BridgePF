@@ -318,7 +318,7 @@ public class UserProfileControllerTest {
         }
     }
     
-    @SuppressWarnings({ "rawtypes", "unchecked", "deprecation" })
+    @SuppressWarnings({ "deprecation" })
     @Test
     public void evenEmptyJsonActsOK() throws Exception {
         StudyParticipant existing = new StudyParticipant.Builder()

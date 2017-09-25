@@ -7,6 +7,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -312,16 +313,18 @@ public class IosSchemaValidationHandler2Test {
                 "}";
         JsonNode newDateTimeAnswerJsonNode = BridgeObjectMapper.get().readTree(newDateTimeAnswerJsonText);
 
-        context.setJsonDataMap(ImmutableMap.<String, JsonNode>builder()
-                .put("info.json", infoJsonNode)
-                .put("foo.json", fooAnswerJsonNode)
-                .put("bar.json", barAnswerJsonNode)
-                .put("baz.json", bazAnswerJsonNode)
-                .put("calendar-date.json", calendarDateAnswerJsonNode)
-                .put("time-without-date.json", timeWithoutDateAnswerJsonNode)
-                .put("legacy-date-time.json", legacyDateTimeAnswerJsonNode)
-                .put("new-date-time.json", newDateTimeAnswerJsonNode)
-                .build());
+        Map<String, JsonNode> jsonDataMap = new HashMap<>();
+        jsonDataMap.put("info.json", infoJsonNode);
+        jsonDataMap.put("foo.json", fooAnswerJsonNode);
+        jsonDataMap.put("bar.json", barAnswerJsonNode);
+        jsonDataMap.put("baz.json", bazAnswerJsonNode);
+        jsonDataMap.put("calendar-date.json", calendarDateAnswerJsonNode);
+        jsonDataMap.put("time-without-date.json", timeWithoutDateAnswerJsonNode);
+        jsonDataMap.put("legacy-date-time.json", legacyDateTimeAnswerJsonNode);
+        jsonDataMap.put("new-date-time.json", newDateTimeAnswerJsonNode);
+        context.setJsonDataMap(jsonDataMap);
+        addMetadataJsonToContext(context);
+
         context.setUnzippedDataMap(ImmutableMap.<String, byte[]>of());
 
         // execute
@@ -420,11 +423,14 @@ public class IosSchemaValidationHandler2Test {
                 "}";
         JsonNode bazAnswerJsonNode = BridgeObjectMapper.get().readTree(bazAnswerJsonText);
 
-        context.setJsonDataMap(ImmutableMap.of(
-                "info.json", infoJsonNode,
-                "foo.json", fooAnswerJsonNode,
-                "bar.json", barAnswerJsonNode,
-                "baz.json", bazAnswerJsonNode));
+        Map<String, JsonNode> jsonDataMap = new HashMap<>();
+        jsonDataMap.put("info.json", infoJsonNode);
+        jsonDataMap.put("foo.json", fooAnswerJsonNode);
+        jsonDataMap.put("bar.json", barAnswerJsonNode);
+        jsonDataMap.put("baz.json", bazAnswerJsonNode);
+        context.setJsonDataMap(jsonDataMap);
+        addMetadataJsonToContext(context);
+
         context.setUnzippedDataMap(ImmutableMap.<String, byte[]>of());
 
         // execute
@@ -493,11 +499,14 @@ public class IosSchemaValidationHandler2Test {
                 "}";
         JsonNode dateJsonNode = BridgeObjectMapper.get().readTree(dateJsonText);
 
-        context.setJsonDataMap(ImmutableMap.of(
-                "info.json", infoJsonNode,
-                "string.json", stringJsonNode,
-                "blob.json", blobJsonNode,
-                "date.json", dateJsonNode));
+        Map<String, JsonNode> jsonDataMap = new HashMap<>();
+        jsonDataMap.put("info.json", infoJsonNode);
+        jsonDataMap.put("string.json", stringJsonNode);
+        jsonDataMap.put("blob.json", blobJsonNode);
+        jsonDataMap.put("date.json", dateJsonNode);
+        context.setJsonDataMap(jsonDataMap);
+        addMetadataJsonToContext(context);
+
         context.setUnzippedDataMap(ImmutableMap.<String, byte[]>of());
 
         // execute
@@ -557,9 +566,12 @@ public class IosSchemaValidationHandler2Test {
                 "}";
         JsonNode jsonJsonNode = BridgeObjectMapper.get().readTree(jsonJsonText);
 
-        context.setJsonDataMap(ImmutableMap.of(
-                "info.json", infoJsonNode,
-                "jsonFile.json", jsonJsonNode));
+        Map<String, JsonNode> jsonDataMap = new HashMap<>();
+        jsonDataMap.put("info.json", infoJsonNode);
+        jsonDataMap.put("jsonFile.json", jsonJsonNode);
+        context.setJsonDataMap(jsonDataMap);
+        addMetadataJsonToContext(context);
+
         context.setUnzippedDataMap(ImmutableMap.<String, byte[]>builder()
                 .put("nonJsonFile.txt", "This is non-JSON data".getBytes(Charsets.UTF_8))
                 .put("empty_attachment", new byte[0])
@@ -631,11 +643,14 @@ public class IosSchemaValidationHandler2Test {
                 "}";
         JsonNode fieldJsonNode = BridgeObjectMapper.get().readTree(fieldJsonText);
 
-        context.setJsonDataMap(ImmutableMap.of(
-                "info.json", infoJsonNode,
-                "attachment.json", attachmentJsonNode,
-                "inline.json", inlineJsonNode,
-                "field.json", fieldJsonNode));
+        Map<String, JsonNode> jsonDataMap = new HashMap<>();
+        jsonDataMap.put("info.json", infoJsonNode);
+        jsonDataMap.put("attachment.json", attachmentJsonNode);
+        jsonDataMap.put("inline.json", inlineJsonNode);
+        jsonDataMap.put("field.json", fieldJsonNode);
+        context.setJsonDataMap(jsonDataMap);
+        addMetadataJsonToContext(context);
+
         context.setUnzippedDataMap(ImmutableMap.of("nonJsonFile.txt",
                 "Non-JSON in mixed data".getBytes(Charsets.UTF_8)));
 
@@ -696,9 +711,12 @@ public class IosSchemaValidationHandler2Test {
                 "}";
         JsonNode dummyJsonNode = BridgeObjectMapper.get().readTree(dummyJsonText);
 
-        context.setJsonDataMap(ImmutableMap.of(
-                "info.json", infoJsonNode,
-                "dummy.json", dummyJsonNode));
+        Map<String, JsonNode> jsonDataMap = new HashMap<>();
+        jsonDataMap.put("info.json", infoJsonNode);
+        jsonDataMap.put("dummy.json", dummyJsonNode);
+        context.setJsonDataMap(jsonDataMap);
+        addMetadataJsonToContext(context);
+
         context.setUnzippedDataMap(ImmutableMap.<String, byte[]>of());
 
         // execute
@@ -743,9 +761,12 @@ public class IosSchemaValidationHandler2Test {
                 "}";
         JsonNode dummyJsonNode = BridgeObjectMapper.get().readTree(dummyJsonText);
 
-        context.setJsonDataMap(ImmutableMap.of(
-                "info.json", infoJsonNode,
-                "dummy.json", dummyJsonNode));
+        Map<String, JsonNode> jsonDataMap = new HashMap<>();
+        jsonDataMap.put("info.json", infoJsonNode);
+        jsonDataMap.put("dummy.json", dummyJsonNode);
+        context.setJsonDataMap(jsonDataMap);
+        addMetadataJsonToContext(context);
+
         context.setUnzippedDataMap(ImmutableMap.<String, byte[]>of());
 
         // execute
@@ -786,8 +807,11 @@ public class IosSchemaValidationHandler2Test {
                 "}";
         JsonNode infoJsonNode = addAppVersionPhoneInfoToInfoJson(infoJsonText);
 
-        context.setJsonDataMap(ImmutableMap.of(
-                "info.json", infoJsonNode));
+        Map<String, JsonNode> jsonDataMap = new HashMap<>();
+        jsonDataMap.put("info.json", infoJsonNode);
+        context.setJsonDataMap(jsonDataMap);
+        addMetadataJsonToContext(context);
+
         context.setUnzippedDataMap(ImmutableMap.<String, byte[]>builder()
                 .put("attachment", "This is an attachment.".getBytes(Charsets.UTF_8))
                 .build());
@@ -810,6 +834,12 @@ public class IosSchemaValidationHandler2Test {
         return infoJsonNode;
     }
 
+    private static void addMetadataJsonToContext(UploadValidationContext ctx) {
+        ObjectNode metadataJson = BridgeObjectMapper.get().createObjectNode();
+        metadataJson.put("sample-metadata-key", "sample-metadata-value");
+        ctx.getJsonDataMap().put("metadata.json", metadataJson);
+    }
+
     private static void validateCommonProps(UploadValidationContext ctx) {
         HealthDataRecord record = ctx.getHealthDataRecord();
         assertEquals(APP_VERSION, record.getAppVersion());
@@ -822,5 +852,10 @@ public class IosSchemaValidationHandler2Test {
 
         // Don't parse into the metadata. Just check that it exists and is an object node.
         assertTrue(record.getMetadata().isObject());
+
+        // userMetadata should contain the "sample-metadata-key":"sample-metadata-value" we defined above.
+        JsonNode userMetadataNode = record.getUserMetadata();
+        assertEquals(1, userMetadataNode.size());
+        assertEquals("sample-metadata-value", userMetadataNode.get("sample-metadata-key").textValue());
     }
 }

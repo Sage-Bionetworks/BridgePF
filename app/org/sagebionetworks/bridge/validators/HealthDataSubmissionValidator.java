@@ -47,6 +47,12 @@ public class HealthDataSubmissionValidator implements Validator {
                 errors.rejectValue("data", "must be an object node");
             }
 
+            // metadata is optional, but if specified, it must be an object node.
+            JsonNode metadata = healthDataSubmission.getMetadata();
+            if (metadata != null && !metadata.isObject()) {
+                errors.rejectValue("metadata", "must be an object node");
+            }
+
             // phoneInfo
             if (StringUtils.isBlank(healthDataSubmission.getPhoneInfo())) {
                 errors.rejectValue("phoneInfo", "is required");

@@ -109,7 +109,6 @@ public class ResourceListTest {
         assertEquals((Integer)3, list.getTotal());
     }
     
-    @SuppressWarnings("deprecation")
     @Test(expected = NullPointerException.class)
     public void nullList() {
         new ResourceList<>(null);

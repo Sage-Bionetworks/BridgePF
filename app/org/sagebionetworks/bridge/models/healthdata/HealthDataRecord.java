@@ -127,6 +127,15 @@ public interface HealthDataRecord extends BridgeEntity {
     /** @see #getUploadedOn */
     void setUploadedOn(Long uploadedOn);
 
+    /**
+     * Metadata fields for this record, as submitted by the app. This corresponds with the
+     * uploadMetadataFieldDefinitions configured in the study.
+     */
+    JsonNode getUserMetadata();
+
+    /** @see #getUserMetadata */
+    void setUserMetadata(JsonNode userMetadata);
+
     /** Whether this record should be shared with all researchers, only study researchers, or not at all. */
     ParticipantOption.SharingScope getUserSharingScope();
 

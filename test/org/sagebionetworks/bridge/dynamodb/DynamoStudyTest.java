@@ -6,9 +6,14 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
@@ -21,13 +26,34 @@ import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
+import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 
 /**
  * Main functionality we want to verify in this test is that study can be serialized with all values, 
  * but filtered in the API to exclude read-only studies when exposed to researchers.
  */
 public class DynamoStudyTest {
-    
+    @Test
+    public void uploadMetadataFieldDefListIsNeverNull() {
+        // make field for test
+        List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
+        fieldDefList.add(new UploadFieldDefinition.Builder().withName("test-field")
+                .withType(UploadFieldType.ATTACHMENT_V2).build());
+
+        // starts as empty
+        Study study = new DynamoStudy();
+        assertTrue(study.getUploadMetadataFieldDefinitions().isEmpty());
+
+        // set value works
+        study.setUploadMetadataFieldDefinitions(fieldDefList);
+        assertEquals(fieldDefList, study.getUploadMetadataFieldDefinitions());
+
+        // set to null makes it empty again
+        study.setUploadMetadataFieldDefinitions(null);
+        assertTrue(study.getUploadMetadataFieldDefinitions().isEmpty());
+    }
+
     @Test
     public void equalsHashCode() {
         // studyIdentifier is derived from the identifier
@@ -41,7 +67,9 @@ public class DynamoStudyTest {
     public void studyFullySerializesForCaching() throws Exception {
         final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
         study.setVersion(2L);
-        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 2);
+        study.setMinSupportedAppVersions(ImmutableMap.<String, Integer>builder().put(OperatingSystem.IOS, 2).build());
+        study.setUploadMetadataFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder()
+                .withName("test-metadata-field").withType(UploadFieldType.INT).build()));
 
         final String json = BridgeObjectMapper.get().writeValueAsString(study);
         final JsonNode node = BridgeObjectMapper.get().readTree(json);
@@ -71,7 +99,7 @@ public class DynamoStudyTest {
         assertEqualsAndNotNull(study.getTaskIdentifiers(), JsonUtils.asStringSet(node, "taskIdentifiers"));
         assertEqualsAndNotNull(study.getActivityEventKeys(), JsonUtils.asStringSet(node, "activityEventKeys"));
         assertEqualsAndNotNull(study.getDataGroups(), JsonUtils.asStringSet(node, "dataGroups"));
-        assertEqualsAndNotNull((Long)study.getVersion(), (Long)node.get("version").asLong());
+        assertEqualsAndNotNull(study.getVersion(), node.get("version").longValue());
         assertTrue(node.get("strictUploadValidationEnabled").asBoolean());
         assertTrue(node.get("healthCodeExportEnabled").asBoolean());
         assertTrue(node.get("emailVerificationEnabled").asBoolean());
@@ -85,12 +113,20 @@ public class DynamoStudyTest {
                 node.get("pushNotificationARNs").get(OperatingSystem.IOS).asText());
         assertEqualsAndNotNull(study.getPushNotificationARNs().get(OperatingSystem.ANDROID),
                 node.get("pushNotificationARNs").get(OperatingSystem.ANDROID).asText());
-        
+
+        // validate minAppVersion
         JsonNode supportedVersionsNode = JsonUtils.asJsonNode(node, "minSupportedAppVersions");
         assertNotNull(supportedVersionsNode);
         assertEqualsAndNotNull(
                 study.getMinSupportedAppVersions().get(OperatingSystem.IOS), 
-                (Integer)supportedVersionsNode.get(OperatingSystem.IOS).asInt());
+                supportedVersionsNode.get(OperatingSystem.IOS).intValue());
+
+        // validate metadata field defs
+        JsonNode metadataFieldDefListNode = node.get("uploadMetadataFieldDefinitions");
+        assertEquals(1, metadataFieldDefListNode.size());
+        JsonNode oneMetadataFieldDefNode = metadataFieldDefListNode.get(0);
+        assertEquals("test-metadata-field", oneMetadataFieldDefNode.get("name").textValue());
+        assertEquals("int", oneMetadataFieldDefNode.get("type").textValue());
 
         // Deserialize back to a POJO and verify.
         final Study deserStudy = BridgeObjectMapper.get().readValue(json, Study.class);

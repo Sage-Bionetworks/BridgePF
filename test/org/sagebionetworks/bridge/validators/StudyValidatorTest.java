@@ -3,9 +3,11 @@ package org.sagebionetworks.bridge.validators;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
+import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestUtils;
@@ -15,6 +17,8 @@ import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
+import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -149,7 +153,24 @@ public class StudyValidatorTest {
         study.setTechnicalEmail(null);
         assertCorrectMessage(study, "technicalEmail", "technicalEmail is required");
     }
-    
+
+    @Test
+    public void validFieldDefList() {
+        study.setUploadMetadataFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder()
+                .withName("test-field").withType(UploadFieldType.INT).build()));
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    }
+
+    @Test
+    public void invalidFieldDef() {
+        // This is tested in-depth in UploadFieldDefinitionListValidatorTest. Just test that we catch a non-trivial
+        // error here.
+        study.setUploadMetadataFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder().withName(null)
+                .withType(UploadFieldType.INT).build()));
+        assertValidatorMessage(StudyValidator.INSTANCE, study, "uploadMetadataFieldDefinitions[0].name",
+                "is required");
+    }
+
     @Test
     public void rejectsInvalidConsentEmailAddresses() {
         study.setConsentNotificationEmail("test@test.com,asdf,test2@test.com");

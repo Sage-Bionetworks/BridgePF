@@ -62,7 +62,6 @@ public class DateRangeResourceListTest {
         assertEquals(3, node.get("total").intValue());
     }
 
-    @SuppressWarnings("deprecation")
     @Test(expected = NullPointerException.class)
     public void nullList() {
         new DateRangeResourceList<>(null);

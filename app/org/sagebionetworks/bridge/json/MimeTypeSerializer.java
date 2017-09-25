@@ -8,7 +8,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
-@SuppressWarnings({"rawtypes", "serial"})
+@SuppressWarnings({"serial"})
 public class MimeTypeSerializer extends StdSerializer<MimeType> {
 
     public MimeTypeSerializer() {

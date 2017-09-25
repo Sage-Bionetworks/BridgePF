@@ -118,7 +118,6 @@ public class ScheduledActivityServiceMockTest {
     @Captor
     private ArgumentCaptor<List<ScheduledActivity>> scheduledActivityListCaptor;
     
-    @SuppressWarnings("unchecked")
     @Before
     public void before() {
         DateTimeUtils.setCurrentMillisFixed(NOW.getMillis());
