@@ -246,9 +246,11 @@ public final class UploadFieldDefinition {
             }
 
             // If the answer list was specified, make an immutable copy.
-            List<String> multiChoiceAnswerListCopy = null;
+            List<String> multiChoiceAnswerListCopy;
             if (multiChoiceAnswerList != null) {
                 multiChoiceAnswerListCopy = ImmutableList.copyOf(multiChoiceAnswerList);
+            } else {
+                multiChoiceAnswerListCopy = ImmutableList.of();
             }
 
             return new UploadFieldDefinition(allowOtherChoices, fileExtension, mimeType, maxLength,
