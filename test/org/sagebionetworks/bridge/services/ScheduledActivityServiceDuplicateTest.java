@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
@@ -148,6 +150,9 @@ public class ScheduledActivityServiceDuplicateTest {
     @Mock
     SchedulePlanService schedulePlanService;
     
+    @Mock
+    AppConfigService appConfigService;
+    
     ScheduledActivityService service;
     
     ScheduleContext.Builder contextBuilder;
@@ -161,6 +166,10 @@ public class ScheduledActivityServiceDuplicateTest {
         service.setScheduledActivityDao(activityDao);
         service.setActivityEventService(activityEventService);
         service.setSchedulePlanService(schedulePlanService);
+        service.setAppConfigService(appConfigService);
+        
+        AppConfig appConfig = AppConfig.create();
+        when(appConfigService.getAppConfigForUser(any())).thenReturn(appConfig);
         
         contextBuilder = new ScheduleContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("Lilly/25 (iPhone Simulator; iPhone OS/9.3) BridgeSDK/12"))

@@ -50,6 +50,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -59,8 +60,8 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
+import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -83,7 +84,7 @@ public class ScheduledActivityServiceMockTest {
     
     private static final String USER_ID = "CCC";
     
-    private static final String SURVEY_GUID = "surveyGuid";
+    private static final String SURVEY_GUID = "BBB";
     
     private static final String ACTIVITY_GUID = "activityGuid";
     
@@ -110,13 +111,12 @@ public class ScheduledActivityServiceMockTest {
     private ActivityEventService activityEventService;
     
     @Mock
-    private SurveyService surveyService;
-    
-    @Mock
-    private Survey survey;
+    private AppConfigService appConfigService;
     
     @Captor
     private ArgumentCaptor<List<ScheduledActivity>> scheduledActivityListCaptor;
+    
+    private AppConfig appConfig;
     
     @Before
     public void before() {
@@ -143,16 +143,14 @@ public class ScheduledActivityServiceMockTest {
         when(activityDao.getActivities(context.getInitialTimeZone(), scheduledActivities))
                 .thenReturn(scheduledActivities);
         
-        doReturn(SURVEY_GUID).when(survey).getGuid();
-        doReturn(SURVEY_CREATED_ON.getMillis()).when(survey).getCreatedOn();
-        doReturn("identifier").when(survey).getIdentifier();
-        when(surveyService.getSurveyMostRecentlyPublishedVersion(
-                eq(TEST_STUDY), any())).thenReturn(survey);
+        appConfig = AppConfig.create();
+        appConfig.setSurveyReferences(Lists.newArrayList(new SurveyReference("identifier", SURVEY_GUID, SURVEY_CREATED_ON)));
+        when(appConfigService.getAppConfigForUser(any())).thenReturn(appConfig);
         
         service.setSchedulePlanService(schedulePlanService);
         service.setScheduledActivityDao(activityDao);
         service.setActivityEventService(activityEventService);
-        service.setSurveyService(surveyService);
+        service.setAppConfigService(appConfigService);
     }
     
     @After
@@ -274,10 +272,12 @@ public class ScheduledActivityServiceMockTest {
         
         List<ScheduledActivity> activities = service.getScheduledActivities(context);
         //noinspection Convert2streamapi
-        for (ScheduledActivity activity : activities) {
-            if (activity.getActivity().getActivityType() == ActivityType.SURVEY) {
-                assertEquals(SURVEY_CREATED_ON.getMillis(),
-                        activity.getActivity().getSurvey().getCreatedOn().getMillis());
+        for (ScheduledActivity schActivity : activities) {
+            Activity activity = schActivity.getActivity();
+            
+            // We only provide a survey for GUID "BBB" so only test that. 
+            if (activity.getActivityType() == ActivityType.SURVEY && "BBB".equals(activity.getSurvey().getGuid())) {
+                assertEquals(SURVEY_CREATED_ON.getMillis(), activity.getSurvey().getCreatedOn().getMillis());
             }
         }
     }
@@ -297,7 +297,7 @@ public class ScheduledActivityServiceMockTest {
         ArgumentCaptor<List> updateCapture = ArgumentCaptor.forClass(List.class);
         ArgumentCaptor<ScheduledActivity> publishCapture = ArgumentCaptor.forClass(ScheduledActivity.class);
         
-        service.updateScheduledActivities("BBB", scheduledActivities);
+        service.updateScheduledActivities(HEALTH_CODE, scheduledActivities);
         
         verify(activityDao).updateActivities(anyString(), updateCapture.capture());
         // Three activities have timestamp updates and need to be persisted
@@ -838,7 +838,7 @@ public class ScheduledActivityServiceMockTest {
         DynamoSurvey survey = new DynamoSurvey();
         survey.setIdentifier("surveyId");
         survey.setGuid("guid");
-        doReturn(survey).when(surveyService).getSurveyMostRecentlyPublishedVersion(any(), any());
+        appConfig.setSurveyReferences(Lists.newArrayList(new SurveyReference("surveyId", "guid", DateTime.now())));
         
         ScheduleContext context = new ScheduleContext.Builder()
                 .withInitialTimeZone(DateTimeZone.UTC)
@@ -872,8 +872,6 @@ public class ScheduledActivityServiceMockTest {
         for (ScheduledActivity act : schActivities) {
             assertEquals("guid", act.getActivity().getSurvey().getGuid());
         }
-        
-        verify(surveyService, times(1)).getSurveyMostRecentlyPublishedVersion(any(), any());
     }
     
     // These cases suggested by Dwayne, there all good to verify further we don't have a date change

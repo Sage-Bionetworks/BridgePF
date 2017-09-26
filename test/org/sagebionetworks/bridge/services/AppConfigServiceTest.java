@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -21,7 +22,6 @@ import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AppConfigDao;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
@@ -29,6 +29,8 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
 import com.newrelic.agent.deps.com.google.common.collect.Lists;
 
@@ -38,6 +40,8 @@ public class AppConfigServiceTest {
     private static final List<AppConfig>  RESULTS = Lists.newArrayList();
     private static final String  GUID = BridgeUtils.generateGuid();
     private static final DateTime TIMESTAMP = DateTime.now();
+    private static final int DEFAULT_SCHEMA_REVISION = 3;
+    private static final DateTime DEFAULT_SURVEY_TIMESTAMP = DateTime.now().minusDays(1);
     private static final long EARLIER_TIMESTAMP = DateTime.now().minusDays(1).getMillis();
     private static final long LATER_TIMESTAMP = DateTime.now().getMillis();
     
@@ -46,6 +50,12 @@ public class AppConfigServiceTest {
     
     @Mock
     private StudyService mockStudyService;
+    
+    @Mock
+    private SurveyService mockSurveyService;
+    
+    @Mock
+    private UploadSchemaService mockSchemaService;
     
     @Captor
     private ArgumentCaptor<AppConfig> appConfigCaptor;
@@ -59,6 +69,8 @@ public class AppConfigServiceTest {
     public void before() {
         service.setAppConfigDao(mockDao);
         service.setStudyService(mockStudyService);
+        service.setSchemaService(mockSchemaService);
+        service.setSurveyService(mockSurveyService);
         
         when(service.getCurrentTimestamp()).thenReturn(TIMESTAMP.getMillis());
         when(service.getGUID()).thenReturn(GUID);
@@ -72,6 +84,23 @@ public class AppConfigServiceTest {
         savedAppConfig.setModifiedOn(TIMESTAMP.getMillis());
         when(mockDao.getAppConfig(TEST_STUDY, GUID)).thenReturn(savedAppConfig);
         when(mockDao.updateAppConfig(any())).thenReturn(savedAppConfig);
+        
+        Survey defaultSurvey = Survey.create();
+        defaultSurvey.setGuid("defaultSurvey");
+        defaultSurvey.setCreatedOn(DEFAULT_SURVEY_TIMESTAMP.getMillis());
+        defaultSurvey.setIdentifier("defaultIdentifier");
+        List<Survey> surveys = Lists.newArrayList(defaultSurvey);
+        
+        UploadSchema defaultSchema = UploadSchema.create();
+        defaultSchema.setSchemaId("defaultSchema");
+        defaultSchema.setRevision(DEFAULT_SCHEMA_REVISION);
+        List<UploadSchema> schemas = Lists.newArrayList(defaultSchema);
+        
+        // set up services to create default AppConfig.
+        when(mockSurveyService.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY)).thenReturn(surveys);
+        when(mockSchemaService.getUploadSchemasForStudy(TEST_STUDY)).thenReturn(schemas);
+        when(mockSchemaService.getLatestUploadSchemaRevisionForAppVersion(eq(TEST_STUDY),
+                eq(defaultSchema.getSchemaId()), any())).thenReturn(defaultSchema);
         
         study = Study.create();
         study.setIdentifier(TEST_STUDY.getIdentifier());
@@ -144,14 +173,17 @@ public class AppConfigServiceTest {
         assertEquals(appConfig2, match);
     }
 
-    @Test(expected = EntityNotFoundException.class)
-    public void getAppConfigForUserThrowsException() {
+    @Test
+    public void getAppConfigForUserReturnsDefaultAppConfig() {
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/21 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
                 .withStudyIdentifier(TEST_STUDY).build();
         
         setupConfigsForUser();
-        service.getAppConfigForUser(context);
+        AppConfig defaultAppConfig = service.getAppConfigForUser(context);
+        assertEquals((Integer)DEFAULT_SCHEMA_REVISION, defaultAppConfig.getSchemaReferences().get(0).getRevision());
+        assertEquals(DEFAULT_SURVEY_TIMESTAMP.getMillis(),
+                defaultAppConfig.getSurveyReferences().get(0).getCreatedOn().getMillis());
     }
 
     @Test

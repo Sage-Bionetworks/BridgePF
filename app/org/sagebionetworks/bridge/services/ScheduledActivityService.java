@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.Comparator.comparing;
-import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
@@ -14,7 +13,6 @@ import static org.sagebionetworks.bridge.validators.ScheduleContextValidator.MAX
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -39,6 +37,8 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.RangeTuple;
+import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivity;
@@ -48,11 +48,6 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
-import org.sagebionetworks.bridge.models.schedules.SchemaReference;
-import org.sagebionetworks.bridge.models.schedules.SurveyReference;
-import org.sagebionetworks.bridge.models.schedules.TaskReference;
-import org.sagebionetworks.bridge.models.surveys.Survey;
-import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -86,9 +81,7 @@ public class ScheduledActivityService {
 
     private SchedulePlanService schedulePlanService;
 
-    private UploadSchemaService schemaService;
-
-    private SurveyService surveyService;
+    private AppConfigService appConfigService;
 
     @Autowired
     final void setScheduledActivityDao(ScheduledActivityDao activityDao) {
@@ -112,16 +105,10 @@ public class ScheduledActivityService {
     final void setSchedulePlanService(SchedulePlanService schedulePlanService) {
         this.schedulePlanService = schedulePlanService;
     }
-
-    /** Schema service, used to resolve schema revision numbers for schema references in activities. */
+    
     @Autowired
-    final void setSchemaService(UploadSchemaService schemaService) {
-        this.schemaService = schemaService;
-    }
-
-    @Autowired
-    final void setSurveyService(SurveyService surveyService) {
-        this.surveyService = surveyService;
+    final void setAppConfigService(AppConfigService appConfigService) {
+        this.appConfigService = appConfigService;
     }
 
     public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(String healthCode,
@@ -130,12 +117,10 @@ public class ScheduledActivityService {
         checkArgument(isNotBlank(healthCode));
 
         // ActivityType.SURVEY is a placeholder vald to pass validation, it's not used in this version of the API
-        DateTime[] dateRange = validateHistoryParameters(ActivityType.SURVEY, pageSize, scheduledOnStart, scheduledOnEnd);
-        scheduledOnStart = dateRange[0];
-        scheduledOnEnd = dateRange[1];
+        RangeTuple<DateTime> dateRange = validateHistoryParameters(ActivityType.SURVEY, pageSize, scheduledOnStart, scheduledOnEnd);
         
-        return activityDao.getActivityHistoryV2(healthCode, activityGuid, scheduledOnStart, scheduledOnEnd, offsetKey,
-                pageSize);
+        return activityDao.getActivityHistoryV2(healthCode, activityGuid, dateRange.getStart(), dateRange.getEnd(),
+                offsetKey, pageSize);
     }
     
     public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(String healthCode, ActivityType activityType,
@@ -143,48 +128,10 @@ public class ScheduledActivityService {
         checkArgument(isNotBlank(healthCode));
         checkArgument(isNotBlank(referentGuid));
         
-        DateTime[] dateRange = validateHistoryParameters(activityType, pageSize, scheduledOnStart, scheduledOnEnd);
-        scheduledOnStart = dateRange[0];
-        scheduledOnEnd = dateRange[1];
+        RangeTuple<DateTime> dateRange = validateHistoryParameters(activityType, pageSize, scheduledOnStart, scheduledOnEnd);
 
-        return activityDao.getActivityHistoryV3(healthCode, activityType, referentGuid, scheduledOnStart,
-                scheduledOnEnd, offsetKey, pageSize);
-    }
-    
-    protected DateTime[] validateHistoryParameters(ActivityType activityType, int pageSize, DateTime scheduledOnStart,
-            DateTime scheduledOnEnd) {
-
-        if (activityType == null) {
-            throw new BadRequestException("Invalid activity type: " + activityType);
-        }
-        if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
-            throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
-        }
-        // If nothing is provided, we will default to two weeks, going max days into future.
-        if (scheduledOnStart == null && scheduledOnEnd == null) {
-            DateTime now = getDateTime();
-            scheduledOnEnd = now.plusDays(MAX_DATE_RANGE_IN_DAYS/2);
-            scheduledOnStart = now.minusDays(MAX_DATE_RANGE_IN_DAYS/2);
-        }
-        // But if only one was provided... we don't know what to do with this. Return bad request exception
-        if (scheduledOnStart == null || scheduledOnEnd == null) {
-            throw new BadRequestException(EITHER_BOTH_DATES_OR_NEITHER);
-        }
-        if (scheduledOnStart.isAfter(scheduledOnEnd)) {
-            throw new BadRequestException(INVALID_TIME_RANGE);
-        }
-
-        DateTimeZone timezone = scheduledOnStart.getZone();
-        if (!timezone.equals(scheduledOnEnd.getZone())) {
-            throw new BadRequestException(AMBIGUOUS_TIMEZONE_ERROR);
-        }
-        return new DateTime[] {scheduledOnStart, scheduledOnEnd};
-    }
-    
-    // This needs to be exposed for tests because although we can fix a point of time for tests, we cannot
-    // change the time zone in a test without controlling construction of the DateTime instance.
-    protected DateTime getDateTime() {
-        return DateTime.now();
+        return activityDao.getActivityHistoryV3(healthCode, activityType, referentGuid, dateRange.getStart(),
+                dateRange.getEnd(), offsetKey, pageSize);
     }
 
     public List<ScheduledActivity> getScheduledActivities(ScheduleContext context) {
@@ -234,6 +181,42 @@ public class ScheduledActivityService {
         scheduledActivities.addAll(dbMap.values());
         
         return orderActivities(scheduledActivities, V4_FILTER);
+    }
+    
+    protected RangeTuple<DateTime> validateHistoryParameters(ActivityType activityType, int pageSize, DateTime scheduledOnStart,
+            DateTime scheduledOnEnd) {
+
+        if (activityType == null) {
+            throw new BadRequestException("Invalid activity type: " + activityType);
+        }
+        if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
+            throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
+        }
+        // If nothing is provided, we will default to two weeks, going max days into future.
+        if (scheduledOnStart == null && scheduledOnEnd == null) {
+            DateTime now = getDateTime();
+            scheduledOnEnd = now.plusDays(MAX_DATE_RANGE_IN_DAYS/2);
+            scheduledOnStart = now.minusDays(MAX_DATE_RANGE_IN_DAYS/2);
+        }
+        // But if only one was provided... we don't know what to do with this. Return bad request exception
+        if (scheduledOnStart == null || scheduledOnEnd == null) {
+            throw new BadRequestException(EITHER_BOTH_DATES_OR_NEITHER);
+        }
+        if (scheduledOnStart.isAfter(scheduledOnEnd)) {
+            throw new BadRequestException(INVALID_TIME_RANGE);
+        }
+
+        DateTimeZone timezone = scheduledOnStart.getZone();
+        if (!timezone.equals(scheduledOnEnd.getZone())) {
+            throw new BadRequestException(AMBIGUOUS_TIMEZONE_ERROR);
+        }
+        return new RangeTuple<DateTime>(scheduledOnStart, scheduledOnEnd);
+    }
+    
+    // This needs to be exposed for tests because although we can fix a point of time for tests, we cannot
+    // change the time zone in a test without controlling construction of the DateTime instance.
+    protected DateTime getDateTime() {
+        return DateTime.now();
     }
     
     protected List<ScheduledActivity> performMerge(List<ScheduledActivity> scheduledActivities,
@@ -367,9 +350,6 @@ public class ScheduledActivityService {
 
     protected List<ScheduledActivity> scheduleActivitiesForPlans(ScheduleContext context) {
         // Cache compound activity defs, schemas, and surveys to reduce calls from duplicate requests.
-        Map<String, CompoundActivity> compoundActivityCache = new HashMap<>();
-        Map<String, SchemaReference> schemaCache = new HashMap<>();
-        Map<String, SurveyReference> surveyCache = new HashMap<>();
         List<ScheduledActivity> scheduledActivities = new ArrayList<>();
 
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(context.getCriteriaContext().getClientInfo(),
@@ -379,176 +359,51 @@ public class ScheduledActivityService {
             Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
             if (schedule != null) {
                 List<ScheduledActivity> activities = schedule.getScheduler().getScheduledActivities(plan, context);
-                List<ScheduledActivity> resolvedActivities = resolveLinks(context.getCriteriaContext(),
-                        compoundActivityCache, schemaCache, surveyCache, activities);
+                List<ScheduledActivity> resolvedActivities = resolveLinks(context.getCriteriaContext(), activities);
                 scheduledActivities.addAll(resolvedActivities);
             }
         }
         return scheduledActivities;
     }
 
-    private List<ScheduledActivity> resolveLinks(CriteriaContext context,
-            Map<String, CompoundActivity> compoundActivityCache, Map<String, SchemaReference> schemaCache,
-            Map<String, SurveyReference> surveyCache, List<ScheduledActivity> activities) {
-
-        return activities.stream().map(schActivity -> {
-            Activity activity = schActivity.getActivity();
-            ActivityType activityType = activity.getActivityType();
-
-            // Multiplex on activity type and resolve the activity, as needed.
-            Activity resolvedActivity = null;
-            if (activityType == ActivityType.COMPOUND) {
-                // Resolve compound activity.
-                CompoundActivity compoundActivity = activity.getCompoundActivity();
-                CompoundActivity resolvedCompoundActivity = resolveCompoundActivity(context, compoundActivityCache,
-                        schemaCache, surveyCache, compoundActivity);
-
-                // If resolution changed the compound activity, generate a new activity instance that contains it.
-                if (resolvedCompoundActivity != null && !resolvedCompoundActivity.equals(compoundActivity)) {
-                    resolvedActivity = new Activity.Builder().withActivity(activity)
-                            .withCompoundActivity(resolvedCompoundActivity).build();
-                }
-            } else if (activityType == ActivityType.SURVEY) {
-                SurveyReference surveyRef = activity.getSurvey();
-                SurveyReference resolvedSurveyRef = resolveSurvey(context, surveyCache, surveyRef);
-
-                if (resolvedSurveyRef != null && !resolvedSurveyRef.equals(surveyRef)) {
-                    resolvedActivity = new Activity.Builder().withActivity(activity).withSurvey(resolvedSurveyRef)
-                            .build();
-                }
-            } else if (activityType == ActivityType.TASK) {
-                TaskReference taskRef = activity.getTask();
-                SchemaReference schemaRef = taskRef.getSchema();
-
-                if (schemaRef != null) {
-                    SchemaReference resolvedSchemaRef = resolveSchema(context, schemaCache, schemaRef);
-
-                    if (resolvedSchemaRef != null && !resolvedSchemaRef.equals(schemaRef)) {
-                        TaskReference resolvedTaskRef = new TaskReference(taskRef.getIdentifier(), resolvedSchemaRef);
-                        resolvedActivity = new Activity.Builder().withActivity(activity).withTask(resolvedTaskRef)
-                                .build();
-                    }
-                }
-            }
-
-            // Set the activity back into the ScheduledActivity, if needed.
-            if (resolvedActivity != null) {
-                schActivity.setActivity(resolvedActivity);
-            }
-            return schActivity;
-        }).collect(toList());
+    private List<ScheduledActivity> resolveLinks(CriteriaContext context, List<ScheduledActivity> activities) {
+        AppConfig appConfig = appConfigService.getAppConfigForUser(context);
+        ModelReferenceResolver resolver = getModelReferenceResolver(appConfig);
+        
+        Map<String,CompoundActivityDefinition> compoundActivityDefinitionMap = Maps.newHashMap();
+        for (ScheduledActivity schActivity : activities) {
+            resolveCompoundActivityReferenceIfNeeded(context, schActivity, compoundActivityDefinitionMap);
+            resolver.resolve(schActivity);
+        }
+        return activities;
     }
-
-    // Helper method to resolve a compound activity reference from its definition.
-    private CompoundActivity resolveCompoundActivity(CriteriaContext context,
-            Map<String, CompoundActivity> compoundActivityCache, Map<String, SchemaReference> schemaCache,
-            Map<String, SurveyReference> surveyCache, CompoundActivity compoundActivity) {
-        String taskId = compoundActivity.getTaskIdentifier();
-        CompoundActivity resolvedCompoundActivity = compoundActivityCache.get(taskId);
-        if (resolvedCompoundActivity == null) {
-            if (compoundActivity.isReference()) {
-                // Compound activity has no schemas or surveys defined. Resolve it with its definition.
-                CompoundActivityDefinition compoundActivityDef;
+    
+    private void resolveCompoundActivityReferenceIfNeeded(CriteriaContext context, ScheduledActivity schActivity,
+            Map<String, CompoundActivityDefinition> compoundActivityDefinitionMap) {
+        // If this is a compound activity that contains only the identifier, it's a "reference" and we need to retrieve
+        // the full object to resolve it property.
+        CompoundActivity compoundActivity = schActivity.getActivity().getCompoundActivity();
+        if (compoundActivity != null && compoundActivity.isReference()) {
+            
+            CompoundActivityDefinition compoundActivityDef = compoundActivityDefinitionMap.get(compoundActivity.getTaskIdentifier());
+            if (compoundActivityDef == null) {
                 try {
                     compoundActivityDef = compoundActivityDefinitionService.getCompoundActivityDefinition(
-                            context.getStudyIdentifier(), taskId);
+                            context.getStudyIdentifier(), compoundActivity.getTaskIdentifier());
+                    compoundActivityDefinitionMap.put(compoundActivity.getTaskIdentifier(), compoundActivityDef);
                 } catch (EntityNotFoundException ex) {
-                    LOG.error("Schedule references non-existent compound activity " + taskId);
-                    return null;
+                    LOG.error("Schedule references non-existent compound activity " + compoundActivity.getTaskIdentifier());
+                    return;
                 }
-                resolvedCompoundActivity = compoundActivityDef.getCompoundActivity();
-            } else {
-                // Compound activity has schemas and surveys defined. Use the schemas and surveys from the lists, but
-                // we may need to resolve individual schema and survey refs at a later step.
-                resolvedCompoundActivity = compoundActivity;
             }
-
-            // Before we cache it, resolve the surveys and schemas in the list.
-            resolvedCompoundActivity = resolveListsInCompoundActivity(context, schemaCache, surveyCache,
-                    resolvedCompoundActivity);
-
-            compoundActivityCache.put(taskId, resolvedCompoundActivity);
+            schActivity.setActivity(new Activity.Builder().withActivity(schActivity.getActivity())
+                    .withCompoundActivity(compoundActivityDef.getCompoundActivity()).build());
         }
-        return resolvedCompoundActivity;
+    }
+    
+    // Allows injecting a spied modelReferenceResolver for tests
+    ModelReferenceResolver getModelReferenceResolver(AppConfig appConfig) {
+        return new ModelReferenceResolver(appConfig);
     }
 
-    // Helper method to resolve schema refs and survey refs inside of a compound activity.
-    private CompoundActivity resolveListsInCompoundActivity(CriteriaContext context,
-            Map<String, SchemaReference> schemaCache, Map<String, SurveyReference> surveyCache,
-            CompoundActivity compoundActivity) {
-        // Resolve schemas.
-        // Lists in CompoundActivity are always non-null, so we don't need to null-check.
-        List<SchemaReference> schemaList = new ArrayList<>();
-        for (SchemaReference oneSchemaRef : compoundActivity.getSchemaList()) {
-            SchemaReference resolvedSchemaRef = resolveSchema(context, schemaCache, oneSchemaRef);
-
-            if (resolvedSchemaRef != null) {
-                schemaList.add(resolvedSchemaRef);
-            }
-        }
-
-        // Similarly, resolve surveys.
-        List<SurveyReference> surveyList = new ArrayList<>();
-        for (SurveyReference oneSurveyRef : compoundActivity.getSurveyList()) {
-            SurveyReference resolvedSurveyRef = resolveSurvey(context, surveyCache, oneSurveyRef);
-
-            if (resolvedSurveyRef != null) {
-                surveyList.add(resolvedSurveyRef);
-            }
-        }
-
-        // Make a new compound activity with the resolved schemas and surveys. This is cached in
-        // resolveCompoundActivities(), so this is okay.
-        return new CompoundActivity.Builder().copyOf(compoundActivity).withSchemaList(schemaList)
-                .withSurveyList(surveyList).build();
-    }
-
-    // Helper method to resolve a schema ref to the latest revision for the client.
-    private SchemaReference resolveSchema(CriteriaContext context, Map<String, SchemaReference> schemaCache,
-            SchemaReference schemaRef) {
-        if (schemaRef.getRevision() != null) {
-            // Already has a revision. No need to resolve. Return as is.
-            return schemaRef;
-        }
-
-        String schemaId = schemaRef.getId();
-        SchemaReference resolvedSchemaRef = schemaCache.get(schemaId);
-        if (resolvedSchemaRef == null) {
-            UploadSchema schema;
-            try {
-                schema = schemaService.getLatestUploadSchemaRevisionForAppVersion(context.getStudyIdentifier(),
-                        schemaId, context.getClientInfo());
-            } catch (EntityNotFoundException ex) {
-                LOG.error("Schedule references non-existent schema " + schemaId);
-                return null;
-            }
-            resolvedSchemaRef = new SchemaReference(schemaId, schema.getRevision());
-            schemaCache.put(schemaId, resolvedSchemaRef);
-        }
-        return resolvedSchemaRef;
-    }
-
-    // Helper method to resolve a published survey to a specific survey version.
-    private SurveyReference resolveSurvey(CriteriaContext context, Map<String, SurveyReference> surveyCache,
-            SurveyReference surveyRef) {
-        if (surveyRef.getCreatedOn() != null) {
-            return surveyRef;
-        }
-
-        String surveyGuid = surveyRef.getGuid();
-        SurveyReference resolvedSurveyRef = surveyCache.get(surveyGuid);
-        if (resolvedSurveyRef == null) {
-            Survey survey;
-            try {
-                survey = surveyService.getSurveyMostRecentlyPublishedVersion(context.getStudyIdentifier(), surveyGuid);
-            } catch (EntityNotFoundException ex) {
-                LOG.error("Schedule references non-existent survey " + surveyGuid);
-                return null;
-            }
-            resolvedSurveyRef = new SurveyReference(survey.getIdentifier(), surveyGuid,
-                    new DateTime(survey.getCreatedOn()));
-            surveyCache.put(surveyGuid, resolvedSurveyRef);
-        }
-        return resolvedSurveyRef;
-    }
 }
