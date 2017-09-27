@@ -8,11 +8,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,6 +23,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityScheduler;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivity;
@@ -172,6 +176,32 @@ public class ScheduledActivityServiceResolveLinksTest {
         verify(mockSurveyService, times(1)).getSurveyMostRecentlyPublishedVersion(any(), any());
     }
 
+    @Test
+    public void resolveCompoundActivityReferenceWithAppConfig() {
+        // Create a compound activity reference (has an ID but no schema or survey lists).
+        CompoundActivity inputCompoundActivity = new CompoundActivity.Builder()
+                .withTaskIdentifier(COMPOUND_ACTIVITY_REF_TASK_ID).build();
+        Activity activity = new Activity.Builder().withCompoundActivity(inputCompoundActivity).build();
+        setupSchedulePlanServiceWithActivity(activity);
+
+        AppConfig appConfig = AppConfig.create();
+        appConfig.setSurveyReferences(Lists.newArrayList(new SurveyReference("surveyRefId", SURVEY_GUID, DateTime.now())));
+        appConfig.setSchemaReferences(Lists.newArrayList(new SchemaReference(SCHEMA_ID, 3)));
+        when(appConfigService.getAppConfigForUser(SCHEDULE_CONTEXT.getCriteriaContext(), false)).thenReturn(appConfig);
+
+        // Execute.
+        List<ScheduledActivity> scheduledActivityList = scheduledActivityService.scheduleActivitiesForPlans(
+                SCHEDULE_CONTEXT);
+        CompoundActivity compoundActivity = scheduledActivityList.get(0).getActivity().getCompoundActivity();
+        assertEquals("surveyRefId", compoundActivity.getSurveyList().get(0).getIdentifier());
+        assertEquals((Integer)3, compoundActivity.getSchemaList().get(0).getRevision());
+
+        // Validate backends. We only called compound activity, schema, and survey services once.
+        verify(mockCompoundActivityDefinitionService, times(1)).getCompoundActivityDefinition(any(), any());
+        verifyNoMoreInteractions(mockSchemaService);
+        verifyNoMoreInteractions(mockSurveyService);
+    }
+    
     @Test
     public void resolveCompoundActivityWithListOfReferences() {
         // Create a compound activity that has a list of unresolved schema and survey references.

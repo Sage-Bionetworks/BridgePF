@@ -75,6 +75,11 @@ public class ReferenceResolverTest {
         RESOLVED_COMPOUND_ACTIVITY_DEF.setSurveyList(Lists.newArrayList(RESOLVED_SURVEY_REF));
         RESOLVED_COMPOUND_ACTIVITY_DEF.setSchemaList(Lists.newArrayList(RESOLVED_SCHEMA_REF));
     }
+    private static final CompoundActivityDefinition UNRESOLVED_COMPOUND_ACTIVITY_DEF = CompoundActivityDefinition.create();
+    static {
+        UNRESOLVED_COMPOUND_ACTIVITY_DEF.setSurveyList(Lists.newArrayList(UNRESOLVED_SURVEY_REF));
+        UNRESOLVED_COMPOUND_ACTIVITY_DEF.setSchemaList(Lists.newArrayList(UNRESOLVED_SCHEMA_REF));
+    }
 
     @Mock
     CompoundActivityDefinitionService compoundActivityDefinitionService;
@@ -218,6 +223,27 @@ public class ReferenceResolverTest {
         
         verify(compoundActivityDefinitionService, times(1)).getCompoundActivityDefinition(STUDY_ID, TASK_ID);
     }
+
+    @Test
+    public void compoundActivitySkinnyReferenceResolvedFromSkinnyDefinitionAndCached() {
+        // Verify here that a skinny ref retrieves a compound activity definition, and then resolves all the 
+        // unresolved references in that definition.
+        scheduledActivity.setActivity(activityBuilder.withCompoundActivity(COMPOUND_ACTIVITY_SKINNY_REF).build());
+        when(compoundActivityDefinitionService.getCompoundActivityDefinition(STUDY_ID, TASK_ID))
+                .thenReturn(UNRESOLVED_COMPOUND_ACTIVITY_DEF);
+        when(surveyService.getSurveyMostRecentlyPublishedVersion(STUDY_ID, SURVEY_GUID)).thenReturn(SURVEY);
+        when(schemaService.getLatestUploadSchemaRevisionForAppVersion(STUDY_ID, SCHEMA_ID, CLIENT_INFO)).thenReturn(SCHEMA);
+
+        resolver.resolve(scheduledActivity);
+        
+        CompoundActivity compoundActivity = scheduledActivity.getActivity().getCompoundActivity();
+        assertEquals(RESOLVED_SCHEMA_REF, compoundActivity.getSchemaList().get(0));
+        assertEquals(RESOLVED_SURVEY_REF, compoundActivity.getSurveyList().get(0));
+        
+        resolver.resolve(scheduledActivity);
+        
+        verify(compoundActivityDefinitionService, times(1)).getCompoundActivityDefinition(STUDY_ID, TASK_ID);
+    }
     
     @Test
     public void compoundActivityFullyResolvedFromAppConfig() {
@@ -317,9 +343,34 @@ public class ReferenceResolverTest {
     }
     
     @Test
+    public void taskWithoutSchemaReferenceReturnedAsIs() {
+        TaskReference taskRef = new TaskReference(TASK_ID, null);
+        scheduledActivity.setActivity(activityBuilder.withTask(taskRef).build());
+        
+        resolver.resolve(scheduledActivity);
+        
+        assertNull(scheduledActivity.getActivity().getTask().getSchema());
+    }
+    
+    @Test
     public void unresolvableCompoundActivityReturnedAsIs() {
         scheduledActivity.setActivity(activityBuilder.withCompoundActivity(COMPOUND_ACTIVITY_SKINNY_REF).build());
         when(compoundActivityDefinitionService.getCompoundActivityDefinition(STUDY_ID, TASK_ID)).thenThrow(new EntityNotFoundException(CompoundActivityDefinition.class));
+        
+        resolver.resolve(scheduledActivity);
+        
+        assertTrue(scheduledActivity.getActivity().getCompoundActivity().getSchemaList().isEmpty());
+        assertTrue(scheduledActivity.getActivity().getCompoundActivity().getSurveyList().isEmpty());
+    }
+
+    @Test
+    public void compoundActivityWithUnresolvableReferencesReturnedAsIs() {
+        scheduledActivity.setActivity(activityBuilder.withCompoundActivity(COMPOUND_ACTIVITY_SKINNY_REF).build());
+        when(compoundActivityDefinitionService.getCompoundActivityDefinition(STUDY_ID, TASK_ID)).thenReturn(UNRESOLVED_COMPOUND_ACTIVITY_DEF);
+        when(surveyService.getSurveyMostRecentlyPublishedVersion(STUDY_ID, SURVEY_GUID))
+                .thenThrow(new EntityNotFoundException(Survey.class));
+        when(schemaService.getLatestUploadSchemaRevisionForAppVersion(STUDY_ID, SCHEMA_ID, CLIENT_INFO))
+                .thenThrow(new EntityNotFoundException(CompoundActivityDefinition.class));
         
         resolver.resolve(scheduledActivity);
         
