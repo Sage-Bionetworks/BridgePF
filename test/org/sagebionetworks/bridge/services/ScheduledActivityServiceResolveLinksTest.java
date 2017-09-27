@@ -58,6 +58,7 @@ public class ScheduledActivityServiceResolveLinksTest {
     private UploadSchemaService mockSchemaService;
     private SurveyService mockSurveyService;
     private ScheduledActivityService scheduledActivityService;
+    private AppConfigService appConfigService;
 
     @Before
     public void setup() {
@@ -96,6 +97,8 @@ public class ScheduledActivityServiceResolveLinksTest {
         mockSurveyService = mock(SurveyService.class);
         when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(TestConstants.TEST_STUDY, SURVEY_GUID))
                 .thenReturn(survey);
+        
+        appConfigService = mock(AppConfigService.class);
 
         // Set up scheduled activity service with the mocks.
         scheduledActivityService = new ScheduledActivityService();
@@ -103,6 +106,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         scheduledActivityService.setSchedulePlanService(mockSchedulePlanService);
         scheduledActivityService.setSchemaService(mockSchemaService);
         scheduledActivityService.setSurveyService(mockSurveyService);
+        scheduledActivityService.setAppConfigService(appConfigService);
     }
 
     private void setupSchedulePlanServiceWithActivity(Activity activity) {

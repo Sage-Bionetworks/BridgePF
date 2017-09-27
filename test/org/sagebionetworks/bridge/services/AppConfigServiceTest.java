@@ -140,7 +140,7 @@ public class AppConfigServiceTest {
         
         AppConfig appConfig2 = setupConfigsForUser();
         
-        AppConfig match = service.getAppConfigForUser(context);
+        AppConfig match = service.getAppConfigForUser(context, true);
         assertEquals(appConfig2, match);
     }
 
@@ -151,7 +151,7 @@ public class AppConfigServiceTest {
                 .withStudyIdentifier(TEST_STUDY).build();
         
         setupConfigsForUser();
-        service.getAppConfigForUser(context);
+        service.getAppConfigForUser(context, true);
     }
 
     @Test
@@ -161,7 +161,7 @@ public class AppConfigServiceTest {
                 .withStudyIdentifier(TEST_STUDY).build();
         
         setupConfigsForUser();
-        AppConfig appConfig = service.getAppConfigForUser(context);
+        AppConfig appConfig = service.getAppConfigForUser(context, true);
         assertEquals(EARLIER_TIMESTAMP, appConfig.getCreatedOn());
     }
     

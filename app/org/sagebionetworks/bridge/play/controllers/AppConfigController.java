@@ -30,7 +30,7 @@ public class AppConfigController extends BaseController {
         
         CriteriaContext context = getCriteriaContext(session);
         
-        AppConfig appConfig = appConfigService.getAppConfigForUser(context);
+        AppConfig appConfig = appConfigService.getAppConfigForUser(context, true);
         
         return okResult(appConfig);
     }
