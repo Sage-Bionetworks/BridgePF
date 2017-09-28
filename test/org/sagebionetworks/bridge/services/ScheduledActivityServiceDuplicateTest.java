@@ -148,6 +148,9 @@ public class ScheduledActivityServiceDuplicateTest {
     @Mock
     SchedulePlanService schedulePlanService;
     
+    @Mock
+    AppConfigService appConfigService;
+    
     ScheduledActivityService service;
     
     ScheduleContext.Builder contextBuilder;
@@ -161,6 +164,7 @@ public class ScheduledActivityServiceDuplicateTest {
         service.setScheduledActivityDao(activityDao);
         service.setActivityEventService(activityEventService);
         service.setSchedulePlanService(schedulePlanService);
+        service.setAppConfigService(appConfigService);
         
         contextBuilder = new ScheduleContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("Lilly/25 (iPhone Simulator; iPhone OS/9.3) BridgeSDK/12"))

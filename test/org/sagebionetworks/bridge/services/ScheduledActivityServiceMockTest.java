@@ -113,6 +113,9 @@ public class ScheduledActivityServiceMockTest {
     private SurveyService surveyService;
     
     @Mock
+    private AppConfigService appConfigService;
+    
+    @Mock
     private Survey survey;
     
     @Captor
@@ -153,6 +156,7 @@ public class ScheduledActivityServiceMockTest {
         service.setScheduledActivityDao(activityDao);
         service.setActivityEventService(activityEventService);
         service.setSurveyService(surveyService);
+        service.setAppConfigService(appConfigService);
     }
     
     @After
@@ -864,7 +868,7 @@ public class ScheduledActivityServiceMockTest {
         DynamoSchedulePlan plan2 = new DynamoSchedulePlan();
         plan2.setStrategy(strategy);
         
-        doReturn(Lists.newArrayList(plan1,plan2)).when(schedulePlanService).getSchedulePlans(any(), any());
+        doReturn(Lists.newArrayList(plan1, plan2)).when(schedulePlanService).getSchedulePlans(any(), any());
         
         List<ScheduledActivity> schActivities = service.getScheduledActivities(context);
         

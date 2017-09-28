@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
@@ -140,7 +141,7 @@ public class AppConfigServiceTest {
         
         AppConfig appConfig2 = setupConfigsForUser();
         
-        AppConfig match = service.getAppConfigForUser(context);
+        AppConfig match = service.getAppConfigForUser(context, true);
         assertEquals(appConfig2, match);
     }
 
@@ -151,7 +152,18 @@ public class AppConfigServiceTest {
                 .withStudyIdentifier(TEST_STUDY).build();
         
         setupConfigsForUser();
-        service.getAppConfigForUser(context);
+        service.getAppConfigForUser(context, true);
+    }
+    
+    @Test
+    public void getAppCOnfigForUserReturnsNull() {
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withClientInfo(ClientInfo.fromUserAgentCache("app/21 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
+                .withStudyIdentifier(TEST_STUDY).build();
+        
+        setupConfigsForUser();
+        AppConfig result = service.getAppConfigForUser(context, false);
+        assertNull(result);
     }
 
     @Test
@@ -161,7 +173,7 @@ public class AppConfigServiceTest {
                 .withStudyIdentifier(TEST_STUDY).build();
         
         setupConfigsForUser();
-        AppConfig appConfig = service.getAppConfigForUser(context);
+        AppConfig appConfig = service.getAppConfigForUser(context, true);
         assertEquals(EARLIER_TIMESTAMP, appConfig.getCreatedOn());
     }
     

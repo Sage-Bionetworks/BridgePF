@@ -76,7 +76,7 @@ public class AppConfigControllerTest {
     @Test
     public void getSelfAppConfig() throws Exception {
         mockPlayContext();
-        when(mockService.getAppConfigForUser(any())).thenReturn(appConfig);
+        when(mockService.getAppConfigForUser(any(), eq(true))).thenReturn(appConfig);
         
         Result result = controller.getSelfAppConfig();
         
@@ -84,7 +84,7 @@ public class AppConfigControllerTest {
         AppConfig found = getResponsePayload(result, AppConfig.class);
         assertEquals(appConfig.getGuid(), found.getGuid());
         
-        verify(mockService).getAppConfigForUser(contextCaptor.capture());
+        verify(mockService).getAppConfigForUser(contextCaptor.capture(), eq(true));
         
         CriteriaContext context = contextCaptor.getValue();
         assertEquals(TEST_STUDY, context.getStudyIdentifier());

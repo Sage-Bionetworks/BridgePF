@@ -67,7 +67,7 @@ public class AppConfigService {
         return appConfigDao.getAppConfig(studyId, guid);
     }
     
-    public AppConfig getAppConfigForUser(CriteriaContext context) {
+    public AppConfig getAppConfigForUser(CriteriaContext context, boolean throwException) {
         checkNotNull(context);
 
         List<AppConfig> appConfigs = getAppConfigs(context.getStudyIdentifier());
@@ -78,10 +78,12 @@ public class AppConfigService {
           .collect(BridgeCollectors.toImmutableList());
 
         // Should have matched one and only one app config.
-        // The goal of the following code is not to introduce production exceptions when changing app configs.
         if (matches.isEmpty()) {
-            // If there are no matches, return the "default" app config (TBD: for now, throw exception)
-            throw new EntityNotFoundException(AppConfig.class);
+            if (throwException) {
+                throw new EntityNotFoundException(AppConfig.class);    
+            } else {
+                return null;
+            }
         } else if (matches.size() != 1) {
             // If there is more than one match, return the one created first, but log an error
             LOG.error("CriteriaContext matches more than one app config: criteriaContext=" + context + ", appConfigs="+matches);
