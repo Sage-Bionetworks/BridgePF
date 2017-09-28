@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.upload;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -23,7 +22,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -36,7 +34,6 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
-import org.sagebionetworks.bridge.schema.SchemaUtils;
 import org.sagebionetworks.bridge.services.SurveyService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
@@ -44,9 +41,9 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
  * <p>
  * Processes iOS data into health data records. This handler reads from
  * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getUnzippedDataMap} and
- * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getJsonDataMap} and writes to
- * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#setHealthDataRecord} and
- * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#setAttachmentsByFieldName}.
+ * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getJsonDataMap} and updates the existing record in
+ * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getHealthDataRecord} and the attachment map in
+ * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getAttachmentsByFieldName}.
  * </p>
  * <p>
  * Currently, all apps are iOS-based. However, when we start having non-iOS apps, we'll need to restructure this
@@ -62,16 +59,10 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
 public class IosSchemaValidationHandler2 implements UploadValidationHandler {
     private static final Logger logger = LoggerFactory.getLogger(IosSchemaValidationHandler2.class);
 
-    private static final String FILENAME_INFO_JSON = "info.json";
-    private static final String FILENAME_METADATA_JSON = "metadata.json";
     private static final Pattern FILENAME_TIMESTAMP_PATTERN = Pattern.compile("-\\d{8,}");
     private static final String KEY_FILENAME = "filename";
     private static final String KEY_FILES = "files";
     private static final String KEY_IDENTIFIER = "identifier";
-    private static final String KEY_ITEM = "item";
-    private static final String KEY_SCHEMA_REV = "schemaRevision";
-    private static final String KEY_SURVEY_GUID = "surveyGuid";
-    private static final String KEY_SURVEY_CREATED_ON = "surveyCreatedOn";
     private static final String KEY_TIMESTAMP = "timestamp";
 
     private static final Map<String, String> SURVEY_TYPE_TO_ANSWER_KEY_MAP = ImmutableMap.<String, String>builder()
@@ -122,55 +113,22 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
     @Override
     public void handle(@Nonnull UploadValidationContext context)
             throws UploadValidationException {
+        Map<String, byte[]> attachmentMap = context.getAttachmentsByFieldName();
         Map<String, JsonNode> jsonDataMap = context.getJsonDataMap();
+        HealthDataRecord record = context.getHealthDataRecord();
+        ObjectNode dataMap = (ObjectNode) record.getData();
         Map<String, byte[]> unzippedDataMap = context.getUnzippedDataMap();
         Upload upload = context.getUpload();
         String uploadId = upload.getUploadId();
-        StudyIdentifier study = context.getStudy();
-        String studyId = study.getIdentifier();
-
-        // Add empty record builder and attachment map to the context. We'll fill these in as we need them.
-        HealthDataRecord record = HealthDataRecord.create();
-        context.setHealthDataRecord(record);
-        Map<String, byte[]> attachmentMap = new HashMap<>();
-        context.setAttachmentsByFieldName(attachmentMap);
-
-        // health data records fields
-        record.setHealthCode(upload.getHealthCode());
-        record.setStudyId(studyId);
-        // TODO: If we globalize Bridge, we'll need to make this timezone configurable.
-        record.setUploadDate(LocalDate.now(BridgeConstants.LOCAL_TIME_ZONE));
-        record.setUploadId(uploadId);
-        record.setUploadedOn(DateUtils.getCurrentMillisFromEpoch());
-
-        // create an empty object node in our record builder, which we'll fill in as we go
-        ObjectNode dataMap = BridgeObjectMapper.get().createObjectNode();
-        record.setData(dataMap);
-
-        // Use info.json verbatim is the metadata. Transcribe appVersion and phoneInfo from info.json into record.
-        JsonNode infoJson = getInfoJsonFile(context, uploadId, jsonDataMap);
-        record.setAppVersion(JsonUtils.asText(infoJson, UploadUtil.FIELD_APP_VERSION));
-        record.setPhoneInfo(JsonUtils.asText(infoJson, UploadUtil.FIELD_PHONE_INFO));
-        record.setMetadata(infoJson);
-
-        // Copy metadata.json to record.userMetadata. (The names are due to an old feature conflicting with the name of
-        // a new feature.) Lightly validate that metadata.json is a JSON object. BridgeEX will handle the rest.
-        JsonNode metadataJson = jsonDataMap.get(FILENAME_METADATA_JSON);
-        if (metadataJson != null && !metadataJson.isNull()) {
-            if (metadataJson.isObject()) {
-                record.setUserMetadata(metadataJson);
-            } else {
-                context.addMessage("upload " + uploadId + " contains metadata.json, but it is not a JSON object");
-            }
-        }
 
         // validate and normalize filenames
+        JsonNode infoJson = jsonDataMap.get(UploadUtil.FILENAME_INFO_JSON);
         validateInfoJsonFileList(context, uploadId, jsonDataMap, unzippedDataMap, infoJson, record);
         removeTimestampsFromFilenames(jsonDataMap);
         removeTimestampsFromFilenames(unzippedDataMap);
 
         // schema
-        UploadSchema schema = getUploadSchema(study, infoJson);
+        UploadSchema schema = getUploadSchema(context.getStudy(), infoJson);
         record.setSchemaId(schema.getSchemaId());
         record.setSchemaRevision(schema.getRevision());
 
@@ -194,10 +152,10 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
     // This is package-scoped to facilitate unit tests.
     UploadSchema getUploadSchema(StudyIdentifier study, JsonNode infoJson) throws UploadValidationException {
         // get relevant params from info.json
-        String item = JsonUtils.asText(infoJson, KEY_ITEM);
-        Integer schemaRev = JsonUtils.asInt(infoJson, KEY_SCHEMA_REV);
-        String surveyGuid = JsonUtils.asText(infoJson, KEY_SURVEY_GUID);
-        String surveyCreatedOn = JsonUtils.asText(infoJson, KEY_SURVEY_CREATED_ON);
+        String item = JsonUtils.asText(infoJson, UploadUtil.FIELD_ITEM);
+        Integer schemaRev = JsonUtils.asInt(infoJson, UploadUtil.FIELD_SCHEMA_REV);
+        String surveyGuid = JsonUtils.asText(infoJson, UploadUtil.FIELD_SURVEY_GUID);
+        String surveyCreatedOn = JsonUtils.asText(infoJson, UploadUtil.FIELD_SURVEY_CREATED_ON);
 
         // Old versions of YML apps sometimes send "identifier" instead of "item". This isn't officially supported,
         // but we have to do it anyway for backwards compatibility.
@@ -255,20 +213,6 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
 
         // get schema
         return uploadSchemaService.getUploadSchemaByIdAndRev(study, item, schemaRev);
-    }
-
-    private static JsonNode getInfoJsonFile(UploadValidationContext context, String uploadId,
-            Map<String, JsonNode> jsonDataMap) {
-        JsonNode infoJson = jsonDataMap.get(FILENAME_INFO_JSON);
-        if (infoJson == null) {
-            // Recover by replacing this with an empty map
-            context.addMessage(String.format("upload ID %s does not contain info.json file", uploadId));
-            infoJson = BridgeObjectMapper.get().createObjectNode();
-
-            // Add it back to the jsonDataMap, since all the logic assumes it contains info.json.
-            jsonDataMap.put(FILENAME_INFO_JSON, infoJson);
-        }
-        return infoJson;
     }
 
     private static void validateInfoJsonFileList(UploadValidationContext context, String uploadId,
@@ -362,7 +306,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         Map<String, JsonNode> convertedSurveyMap = new HashMap<>();
         for (Map.Entry<String, JsonNode> oneJsonFile : jsonDataMap.entrySet()) {
             String filename = oneJsonFile.getKey();
-            if (FILENAME_INFO_JSON.equals(filename) || FILENAME_METADATA_JSON.equals(filename)) {
+            if (UploadUtil.FILENAME_INFO_JSON.equals(filename) || UploadUtil.FILENAME_METADATA_JSON.equals(filename)) {
                 // Skip info.json and metadata.json. We don't need to add a message, since this is normal.
                 continue;
             }
@@ -435,59 +379,22 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         // Get flattened JSON data map (key is filename.fieldname), because schemas can reference fields either by
         // filename.fieldname or wholly by filename.
         // Note that this includes both the flattened map (filename.fieldname) and the whole file (filename).
-        Map<String, JsonNode> flattenedJsonDataMap = flattenJsonDataMap(jsonDataMap);
+        Map<String, JsonNode> flattenedJsonDataMap = UploadUtil.flattenJsonDataMap(jsonDataMap);
 
-        Map<String, JsonNode> sanitizedFlattenedJsonDataMap = sanitizeFieldNames(flattenedJsonDataMap);
-        Map<String, byte[]> sanitizedUnzippedDataMap = sanitizeFieldNames(unzippedDataMap);
+        Map<String, JsonNode> sanitizedFlattenedJsonDataMap = UploadUtil.sanitizeFieldNames(flattenedJsonDataMap);
+        Map<String, byte[]> sanitizedUnzippedDataMap = UploadUtil.sanitizeFieldNames(unzippedDataMap);
 
         // Using schema, copy fields over to data map. Or if it's an attachment, add it to the attachment map.
         for (UploadFieldDefinition oneFieldDef : schema.getFieldDefinitions()) {
             String fieldName = oneFieldDef.getName();
 
             if (sanitizedUnzippedDataMap.containsKey(fieldName)) {
-                addAttachment(attachmentMap, fieldName, sanitizedUnzippedDataMap.get(fieldName));
+                UploadUtil.addAttachment(attachmentMap, fieldName, sanitizedUnzippedDataMap.get(fieldName));
             } else if (sanitizedFlattenedJsonDataMap.containsKey(fieldName)) {
                 copyJsonField(context, uploadId, sanitizedFlattenedJsonDataMap.get(fieldName), oneFieldDef, dataMap,
                         attachmentMap);
             }
         }
-    }
-
-    private static Map<String, JsonNode> flattenJsonDataMap(Map<String, JsonNode> jsonDataMap) {
-        Map<String, JsonNode> dataFieldMap = new HashMap<>();
-        for (Map.Entry<String, JsonNode> oneJsonFile : jsonDataMap.entrySet()) {
-            String filename = oneJsonFile.getKey();
-            if (filename.equals(FILENAME_INFO_JSON)) {
-                // Not info.json. Skip.
-                continue;
-            }
-
-            JsonNode oneJsonFileNode = oneJsonFile.getValue();
-            Iterator<String> fieldNameIter = oneJsonFileNode.fieldNames();
-            while (fieldNameIter.hasNext()) {
-                // Pre-pend file name with field name, so if there are duplicate filenames, they get disambiguated.
-                String oneFieldName = fieldNameIter.next();
-                dataFieldMap.put(filename + "." + oneFieldName, oneJsonFileNode.get(oneFieldName));
-            }
-
-            // Add the whole JSON file into the flattened map. This allows us to simplify some codepaths further down
-            // the chain.
-            dataFieldMap.put(filename, oneJsonFileNode);
-        }
-
-        return dataFieldMap;
-    }
-
-    // Sanitize the field names from the upload to match the rules for sanitizing field names in schemas. (This hasn't
-    // yet become a problem in Prod, but we're adding the safeguards to ensure it never becomes a problem.)
-    private static <T> Map<String, T> sanitizeFieldNames(Map<String, T> rawFieldMap) {
-        Map<String, T> sanitizedFieldMap = new HashMap<>();
-        for (Map.Entry<String, T> oneRawFieldEntry : rawFieldMap.entrySet()) {
-            String rawFieldName = oneRawFieldEntry.getKey();
-            String sanitizedFieldName = SchemaUtils.sanitizeFieldName(rawFieldName);
-            sanitizedFieldMap.put(sanitizedFieldName, oneRawFieldEntry.getValue());
-        }
-        return sanitizedFieldMap;
     }
 
     private static void copyJsonField(UploadValidationContext context, String uploadId, JsonNode fieldValue,
@@ -500,7 +407,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
 
         if (UploadFieldType.ATTACHMENT_TYPE_SET.contains(fieldDef.getType())) {
             try {
-                addAttachment(attachmentMap, fieldName, BridgeObjectMapper.get().writeValueAsBytes(fieldValue));
+                UploadUtil.addAttachment(attachmentMap, fieldName, BridgeObjectMapper.get().writeValueAsBytes(fieldValue));
             } catch (JsonProcessingException ex) {
                 context.addMessage(String.format(
                         "Upload ID %s field %s could not be converted from JSON: %s", uploadId, fieldName,
@@ -526,14 +433,6 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
             dataMap.put(fieldName, fieldValue.toString());
         } else {
             dataMap.set(fieldName, fieldValue);
-        }
-    }
-
-    // Helper method which encapsulates validating an upload before adding it to the attachment map. Right now, all it
-    // does is filter out empty attachments.
-    private static void addAttachment(Map<String, byte[]> attachmentMap, String fieldName, byte[] data) {
-        if (data.length != 0) {
-            attachmentMap.put(fieldName, data);
         }
     }
 }

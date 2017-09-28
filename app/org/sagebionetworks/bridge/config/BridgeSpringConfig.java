@@ -78,13 +78,14 @@ import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
-import org.sagebionetworks.bridge.upload.IosSchemaValidationHandler2;
+import org.sagebionetworks.bridge.upload.InitRecordHandler;
 import org.sagebionetworks.bridge.upload.ParseJsonHandler;
 import org.sagebionetworks.bridge.upload.S3DownloadHandler;
 import org.sagebionetworks.bridge.upload.StrictValidationHandler;
 import org.sagebionetworks.bridge.upload.TranscribeConsentHandler;
 import org.sagebionetworks.bridge.upload.UnzipHandler;
 import org.sagebionetworks.bridge.upload.UploadArtifactsHandler;
+import org.sagebionetworks.bridge.upload.UploadFormatHandler;
 import org.sagebionetworks.bridge.upload.UploadValidationHandler;
 
 /**
@@ -460,11 +461,11 @@ public class BridgeSpringConfig {
     @Autowired
     public List<UploadValidationHandler> uploadValidationHandlerList(S3DownloadHandler s3DownloadHandler,
             DecryptHandler decryptHandler, UnzipHandler unzipHandler, ParseJsonHandler parseJsonHandler,
-            IosSchemaValidationHandler2 iosSchemaValidationHandler2,
+            InitRecordHandler initRecordHandler, UploadFormatHandler uploadFormatHandler,
             StrictValidationHandler strictValidationHandler, TranscribeConsentHandler transcribeConsentHandler,
             UploadArtifactsHandler uploadArtifactsHandler) {
         return ImmutableList.of(s3DownloadHandler, decryptHandler, unzipHandler, parseJsonHandler,
-                iosSchemaValidationHandler2, strictValidationHandler, transcribeConsentHandler,
+                initRecordHandler, uploadFormatHandler, strictValidationHandler, transcribeConsentHandler,
                 uploadArtifactsHandler);
     }
 
