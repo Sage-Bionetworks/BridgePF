@@ -8,7 +8,9 @@ import static org.junit.Assert.assertTrue;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.BigIntegerNode;
@@ -18,8 +20,10 @@ import com.fasterxml.jackson.databind.node.DoubleNode;
 import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.LongNode;
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.junit.Test;
@@ -30,6 +34,29 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 
 @SuppressWarnings({ "ConstantConditions", "unchecked" })
 public class UploadUtilTest {
+    @Test
+    public void addAttachment() {
+        // Init sample data.
+        byte[] data1 = { 102, 111, 111 };
+        byte[] data2 = { 98, 97, 114 };
+        byte[] emptyData = {};
+
+        // Init writable map with a pre-existing value.
+        Map<String, byte[]> attachmentMap = new HashMap<>();
+        attachmentMap.put("file1", data1);
+
+        // Writing an empty file writes nothing.
+        UploadUtil.addAttachment(attachmentMap, "file2", emptyData);
+        assertEquals(1, attachmentMap.size());
+        assertEquals(data1, attachmentMap.get("file1"));
+
+        // Writing a non-empty file writes it.
+        UploadUtil.addAttachment(attachmentMap, "file2", data2);
+        assertEquals(2, attachmentMap.size());
+        assertEquals(data1, attachmentMap.get("file1"));
+        assertEquals(data2, attachmentMap.get("file2"));
+    }
+
     @Test
     public void canonicalize() throws Exception {
         // { inputNode, fieldType, expectedNode, expectedErrorMessage, expectedIsValid }
@@ -242,6 +269,36 @@ public class UploadUtilTest {
             JsonNode resultNestedJson = BridgeObjectMapper.get().readTree(result.textValue());
             assertEquals(inputNode, resultNestedJson);
         }
+    }
+
+    @Test
+    public void flattenJsonDataMap() {
+        // Test cases: info.json (ignored), 2 files each with 2 keys.
+        ObjectNode infoJsonNode = BridgeObjectMapper.get().createObjectNode();
+        infoJsonNode.put("foo", "Doesn't matter");
+        infoJsonNode.put("bar", "This is ignored anyway");
+
+        ObjectNode aaaNode = BridgeObjectMapper.get().createObjectNode();
+        aaaNode.put("foo", "AAA foo value");
+        aaaNode.put("bar", "AAA bar value");
+
+        ObjectNode bbbNode = BridgeObjectMapper.get().createObjectNode();
+        bbbNode.put("foo", "BBB foo value");
+        bbbNode.put("bar", "BBB bar value");
+
+        // Use an immutable map. If we attempt to modify the original map, this will throw.
+        Map<String, JsonNode> jsonDataMap = ImmutableMap.<String, JsonNode>builder().put("info.json", infoJsonNode)
+                .put("AAA.json", aaaNode).put("BBB.json", bbbNode).build();
+
+        // execute and validate
+        Map<String, JsonNode> flattenedJsonDataMap = UploadUtil.flattenJsonDataMap(jsonDataMap);
+        assertEquals(6, flattenedJsonDataMap.size());
+        assertEquals(aaaNode, flattenedJsonDataMap.get("AAA.json"));
+        assertEquals(bbbNode, flattenedJsonDataMap.get("BBB.json"));
+        assertEquals("AAA foo value", flattenedJsonDataMap.get("AAA.json.foo").textValue());
+        assertEquals("AAA bar value", flattenedJsonDataMap.get("AAA.json.bar").textValue());
+        assertEquals("BBB foo value", flattenedJsonDataMap.get("BBB.json.foo").textValue());
+        assertEquals("BBB bar value", flattenedJsonDataMap.get("BBB.json.bar").textValue());
     }
 
     @Test
@@ -587,5 +644,20 @@ public class UploadUtilTest {
         long expectedMillis = DateTime.parse("2015-08-26T16:54:04-07:00").getMillis();
         DateTime parsedTimestamp = UploadUtil.parseIosTimestamp("2015-08-26 16:54:04 -0700");
         assertEquals(expectedMillis, parsedTimestamp.getMillis());
+    }
+
+    @Test
+    public void sanitizeFieldNames() {
+        // Test cases: map with 2 fields, one of which needs to be sanitized.
+        // Use an immutable map. If we attempt to modify the original map, this will throw.
+        // Use a map of strings, for simplicity of testing.
+        Map<String, String> inputMap = ImmutableMap.<String, String>builder().put("foo", "bar")
+                .put("sanitize!@#$this", "sanitize this's value").build();
+
+        // Execute and validate.
+        Map<String, String> outputMap = UploadUtil.sanitizeFieldNames(inputMap);
+        assertEquals(2, outputMap.size());
+        assertEquals("bar", outputMap.get("foo"));
+        assertEquals("sanitize this's value", outputMap.get("sanitize____this"));
     }
 }

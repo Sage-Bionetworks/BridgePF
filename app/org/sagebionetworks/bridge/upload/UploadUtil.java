@@ -1,8 +1,11 @@
 package org.sagebionetworks.bridge.upload;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -34,8 +37,17 @@ public class UploadUtil {
     private static final Logger logger = LoggerFactory.getLogger(UploadUtil.class);
 
     // Common field names
+    public static final String FILENAME_INFO_JSON = "info.json";
+    public static final String FILENAME_METADATA_JSON = "metadata.json";
     public static final String FIELD_APP_VERSION = "appVersion";
+    public static final String FIELD_CREATED_ON = "createdOn";
+    public static final String FIELD_DATA_FILENAME = "dataFilename";
+    public static final String FIELD_FORMAT = "format";
+    public static final String FIELD_ITEM = "item";
     public static final String FIELD_PHONE_INFO = "phoneInfo";
+    public static final String FIELD_SCHEMA_REV = "schemaRevision";
+    public static final String FIELD_SURVEY_GUID = "surveyGuid";
+    public static final String FIELD_SURVEY_CREATED_ON = "surveyCreatedOn";
 
     // Regex patterns and strings for validation.
     private static final Pattern FIELD_NAME_MULTIPLE_SPECIAL_CHARS_PATTERN = Pattern.compile("[\\-\\._ ]{2,}");
@@ -68,6 +80,23 @@ public class UploadUtil {
     public static final String UNIT_FIELD_SUFFIX = "_unit";
     public static final String DIASTOLIC_FIELD_SUFFIX = "_diastolic";
     public static final String SYSTOLIC_FIELD_SUFFIX = "_systolic";
+
+    /**
+     * Helper method which encapsulates validating an upload before adding it to the attachment map. Right now, all it
+     * does is filter out empty attachments.
+     *
+     * @param attachmentMap
+     *         map to add the attachment to
+     * @param fieldName
+     *         attachment field name (map key)
+     * @param data
+     *         attachment data (map value)
+     */
+    public static void addAttachment(Map<String, byte[]> attachmentMap, String fieldName, byte[] data) {
+        if (data.length != 0) {
+            attachmentMap.put(fieldName, data);
+        }
+    }
 
     /** Utility method for canonicalizing an upload JSON value given the schema's field type. */
     public static CanonicalizationResult canonicalize(final JsonNode valueNode, UploadFieldType type) {
@@ -291,6 +320,50 @@ public class UploadUtil {
         } else {
             return new TextNode(inputNode.toString());
         }
+    }
+
+    /**
+     * <p>
+     * Because different files in an upload can have the same keys, the canonical field name is the
+     * "filename.fieldname". Additionally, schema fields can refer to the whole file, so "filename" is also a valid
+     * field name. This function takes in a list of JSON files and constructs a list of all valid fields, which is a
+     * flattened map of all JSON files by name as well as all top-level key-value pairs in the form of
+     * "filename.fieldname".
+     * </p>
+     * <p>
+     * Note: This automatically ignores info.json, as that is a metadata file, not a data file.
+     * </p>
+     * <p>
+     * Note: This does not modify the original map.
+     * </p>
+     *
+     * @param jsonDataMap
+     *         map of JSON files to flatten
+     * @return the flattened map
+     */
+    public static Map<String, JsonNode> flattenJsonDataMap(Map<String, JsonNode> jsonDataMap) {
+        Map<String, JsonNode> dataFieldMap = new HashMap<>();
+        for (Map.Entry<String, JsonNode> oneJsonFile : jsonDataMap.entrySet()) {
+            String filename = oneJsonFile.getKey();
+            if (filename.equals(FILENAME_INFO_JSON)) {
+                // Not info.json. Skip.
+                continue;
+            }
+
+            JsonNode oneJsonFileNode = oneJsonFile.getValue();
+            Iterator<String> fieldNameIter = oneJsonFileNode.fieldNames();
+            while (fieldNameIter.hasNext()) {
+                // Pre-pend file name with field name, so if there are duplicate filenames, they get disambiguated.
+                String oneFieldName = fieldNameIter.next();
+                dataFieldMap.put(filename + "." + oneFieldName, oneJsonFileNode.get(oneFieldName));
+            }
+
+            // Add the whole JSON file into the flattened map. This allows us to simplify some codepaths further down
+            // the chain.
+            dataFieldMap.put(filename, oneJsonFileNode);
+        }
+
+        return dataFieldMap;
     }
 
     /**
@@ -531,5 +604,31 @@ public class UploadUtil {
             logger.warn("Malformatted timestamp in upload data: " + timestampStr);
             return null;
         }
+    }
+
+    /**
+     * <p>
+     * Sanitize the field names from the upload to match the rules for sanitizing field names in schemas. (This hasn't
+     * yet become a problem in Prod, but we're adding the safeguards to ensure it never becomes a problem.)
+     * </p>
+     * <p>
+     * Note: This does not modify the original map.
+     * </p>
+     *
+     * @param rawFieldMap
+     *         map whose keys need to be sanitizied
+     * @param <T>
+     *         generic type corresponding to the map's value type (generally JsonNode for JSON data or byte[] for
+     *         non-JSON data)
+     * @return the sanitized map
+     */
+    public static <T> Map<String, T> sanitizeFieldNames(Map<String, T> rawFieldMap) {
+        Map<String, T> sanitizedFieldMap = new HashMap<>();
+        for (Map.Entry<String, T> oneRawFieldEntry : rawFieldMap.entrySet()) {
+            String rawFieldName = oneRawFieldEntry.getKey();
+            String sanitizedFieldName = SchemaUtils.sanitizeFieldName(rawFieldName);
+            sanitizedFieldMap.put(sanitizedFieldName, oneRawFieldEntry.getValue());
+        }
+        return sanitizedFieldMap;
     }
 }

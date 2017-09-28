@@ -38,6 +38,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachment;
@@ -58,16 +59,19 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
 import org.sagebionetworks.bridge.util.Zipper;
 
 public class UploadHandlersEndToEndTest {
+    private static final String APP_VERSION = "version 1.0.0, build 1";
     private static final String ATTACHMENT_ID_PREFIX = "attachment-";
     private static final Set<String> DATA_GROUP_SET = ImmutableSet.of("parkinson", "test_user");
     private static final String EXTERNAL_ID = "external-id";
     private static final String HEALTH_CODE = "health-code";
+    private static final byte[] METADATA_JSON_CONTENT = "{\"my-meta-key\":\"my-meta-value\"}".getBytes();
+    private static final String PHONE_INFO = "Unit Test Hardware";
     private static final String RECORD_ID = "record-id";
     private static final String UPLOAD_ID = "upload-id";
     private static final Zipper ZIPPER = new Zipper(1000000, 1000000);
 
     private static final String CREATED_ON_STRING = "2015-04-02T03:26:59.456-07:00";
-    private static final long CREATED_ON_MILLIS = DateTime.parse(CREATED_ON_STRING).getMillis();
+    private static final long CREATED_ON_MILLIS = DateUtils.convertToMillisFromEpoch(CREATED_ON_STRING);
     private static final String CREATED_ON_TIME_ZONE = "-0700";
 
     private static final DateTime MOCK_NOW = DateTime.parse("2016-06-03T11:33:55.777-0700");
@@ -87,6 +91,17 @@ public class UploadHandlersEndToEndTest {
         STUDY.setStrictUploadValidationEnabled(true);
     }
 
+    private static final String SCHEMA_ID = "non-survey-schema";
+    private static final String SCHEMA_NAME = "Non-Survey Schema";
+    private static final int SCHEMA_REV = 3;
+
+    private static final String SURVEY_CREATED_ON_STRING = "2016-06-03T16:01:02.003-0700";
+    private static final long SURVEY_CREATED_ON_MILLIS = DateUtils.convertToMillisFromEpoch(SURVEY_CREATED_ON_STRING);
+    private static final String SURVEY_GUID = "survey-guid";
+    private static final String SURVEY_ID = "survey-id";
+    private static final String SURVEY_SCHEMA_NAME = "My Survey";
+    private static final int SURVEY_SCHEMA_REV = 2;
+
     private static final DynamoUpload2 UPLOAD = new DynamoUpload2();
     static {
         UPLOAD.setHealthCode(HEALTH_CODE);
@@ -100,6 +115,7 @@ public class UploadHandlersEndToEndTest {
     }
 
     private static final ParseJsonHandler PARSE_JSON_HANDLER = new ParseJsonHandler();
+    private static final InitRecordHandler INIT_RECORD_HANDLER = new InitRecordHandler();
 
     private int numAttachments;
     private HealthDataService mockHealthDataService;
@@ -136,6 +152,9 @@ public class UploadHandlersEndToEndTest {
             fileBytesMap.put(filename, fileString.getBytes(Charsets.UTF_8));
         }
 
+        // Add metadata.json to the fileBytesMap.
+        fileBytesMap.put("metadata.json", METADATA_JSON_CONTENT);
+
         // zip file
         byte[] zippedFile = ZIPPER.zip(fileBytesMap);
 
@@ -159,16 +178,27 @@ public class UploadHandlersEndToEndTest {
         when(mockUploadSchemaService.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, schema.getSchemaId(),
                 schema.getRevision())).thenReturn(schema);
 
+        // mock survey service
+        SurveyService mockSurveyService = mock(SurveyService.class);
+        if (survey != null) {
+            when(mockSurveyService.getSurvey(new GuidCreatedOnVersionHolderImpl(survey.getGuid(),
+                    survey.getCreatedOn()))).thenReturn(survey);
+        }
+
         // set up IosSchemaValidationHandler
         IosSchemaValidationHandler2 iosSchemaValidationHandler = new IosSchemaValidationHandler2();
         iosSchemaValidationHandler.setUploadSchemaService(mockUploadSchemaService);
+        iosSchemaValidationHandler.setSurveyService(mockSurveyService);
 
-        if (survey != null) {
-            SurveyService mockSurveyService = mock(SurveyService.class);
-            when(mockSurveyService.getSurvey(new GuidCreatedOnVersionHolderImpl(survey.getGuid(),
-                    survey.getCreatedOn()))).thenReturn(survey);
-            iosSchemaValidationHandler.setSurveyService(mockSurveyService);
-        }
+        // set up GenericUploadFormatHandler
+        GenericUploadFormatHandler genericUploadFormatHandler = new GenericUploadFormatHandler();
+        genericUploadFormatHandler.setUploadSchemaService(mockUploadSchemaService);
+        genericUploadFormatHandler.setSurveyService(mockSurveyService);
+
+        // set up UploadFormatHandler
+        UploadFormatHandler uploadFormatHandler = new UploadFormatHandler();
+        uploadFormatHandler.setV1LegacyHandler(iosSchemaValidationHandler);
+        uploadFormatHandler.setV2GenericHandler(genericUploadFormatHandler);
 
         // set up StrictValidationHandler
         StrictValidationHandler strictValidationHandler = new StrictValidationHandler();
@@ -210,7 +240,7 @@ public class UploadHandlersEndToEndTest {
 
         // set up task factory
         List<UploadValidationHandler> handlerList = ImmutableList.of(s3DownloadHandler, decryptHandler, UNZIP_HANDLER,
-                PARSE_JSON_HANDLER, iosSchemaValidationHandler, strictValidationHandler, transcribeConsentHandler,
+                PARSE_JSON_HANDLER, INIT_RECORD_HANDLER, uploadFormatHandler, strictValidationHandler, transcribeConsentHandler,
                 uploadArtifactsHandler);
 
         UploadValidationTaskFactory taskFactory = new UploadValidationTaskFactory();
@@ -224,12 +254,16 @@ public class UploadHandlersEndToEndTest {
     }
 
     private static void validateCommonRecordProps(HealthDataRecord record) {
-        // Ignore ID - This one is created by the DAO, so it's not present in the passed in record.
-        // Ignore version - That's internal.
-        // Data, metadata, and schema fields are specific to individual tests.
+        // The following fields are not used in this test:
+        //   data, schemaId, and schemaRevision fields are specific to individual tests.
+        //   id - This one is created by the DAO, so it's not present in the passed in record.
+        //   synapseExporterStatus - This isn't used in upload validation.
+        //   version - That's internal.
+        assertEquals(APP_VERSION, record.getAppVersion());
         assertEquals(CREATED_ON_MILLIS, record.getCreatedOn().longValue());
         assertEquals(CREATED_ON_TIME_ZONE, record.getCreatedOnTimeZone());
         assertEquals(HEALTH_CODE, record.getHealthCode());
+        assertEquals(PHONE_INFO, record.getPhoneInfo());
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, record.getStudyId());
         assertEquals(MOCK_TODAY, record.getUploadDate());
         assertEquals(UPLOAD_ID, record.getUploadId());
@@ -237,13 +271,20 @@ public class UploadHandlersEndToEndTest {
         assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, record.getUserSharingScope());
         assertEquals(EXTERNAL_ID, record.getUserExternalId());
         assertEquals(DATA_GROUP_SET, record.getUserDataGroups());
+
+        // Metadata needs to exist for backwards compatibility, and it should have appVersion and phoneInfo. Beyond
+        // that, it doesn't really matter
+        JsonNode metadataNode = record.getMetadata();
+        assertEquals(APP_VERSION, metadataNode.get(UploadUtil.FIELD_APP_VERSION).textValue());
+        assertEquals(PHONE_INFO, metadataNode.get(UploadUtil.FIELD_PHONE_INFO).textValue());
+
+        // Validate user metadata.
+        JsonNode userMetadataNode = record.getUserMetadata();
+        assertEquals(1, userMetadataNode.size());
+        assertEquals("my-meta-value", userMetadataNode.get("my-meta-key").textValue());
     }
 
-    @Test
-    public void survey() throws Exception {
-        final String surveyCreatedOnStr = "2016-06-03T16:01:02.003-0700";
-        final long surveyCreatedOnMillis = DateTime.parse(surveyCreatedOnStr).getMillis();
-
+    private void testSurvey(Map<String, String> fileMap) throws Exception {
         // set up schema
         List<UploadFieldDefinition> fieldDefList = ImmutableList.of(
                 new UploadFieldDefinition.Builder().withName("AAA").withType(UploadFieldType.SINGLE_CHOICE)
@@ -255,21 +296,60 @@ public class UploadHandlersEndToEndTest {
 
         UploadSchema schema = UploadSchema.create();
         schema.setFieldDefinitions(fieldDefList);
-        schema.setName("Survey Schema");
-        schema.setRevision(2);
-        schema.setSchemaId("survey-schema");
+        schema.setName(SURVEY_SCHEMA_NAME);
+        schema.setRevision(SURVEY_SCHEMA_REV);
+        schema.setSchemaId(SURVEY_ID);
         schema.setSchemaType(UploadSchemaType.IOS_SURVEY);
         schema.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
-        schema.setSurveyGuid("survey-guid");
-        schema.setSurveyCreatedOn(surveyCreatedOnMillis);
+        schema.setSurveyGuid(SURVEY_GUID);
+        schema.setSurveyCreatedOn(SURVEY_CREATED_ON_MILLIS);
 
         // set up survey (all we need is reference to the schema)
         DynamoSurvey survey = new DynamoSurvey();
-        survey.setCreatedOn(surveyCreatedOnMillis);
-        survey.setGuid("survey-guid");
-        survey.setIdentifier("survey-schema");
-        survey.setSchemaRevision(2);
+        survey.setCreatedOn(SURVEY_CREATED_ON_MILLIS);
+        survey.setGuid(SURVEY_GUID);
+        survey.setIdentifier(SURVEY_ID);
+        survey.setSchemaRevision(SURVEY_SCHEMA_REV);
 
+        // execute
+        test(schema, survey, fileMap);
+
+        // verify created record
+        ArgumentCaptor<HealthDataRecord> recordCaptor = ArgumentCaptor.forClass(HealthDataRecord.class);
+        verify(mockHealthDataService, atLeastOnce()).createOrUpdateRecord(recordCaptor.capture());
+
+        HealthDataRecord record = recordCaptor.getValue();
+        validateCommonRecordProps(record);
+        assertEquals(SURVEY_ID, record.getSchemaId());
+        assertEquals(SURVEY_SCHEMA_REV, record.getSchemaRevision());
+
+        JsonNode dataNode = record.getData();
+        assertEquals(3, dataNode.size());
+        assertEquals("Yes", dataNode.get("AAA").textValue());
+
+        JsonNode bbbChoiceAnswersNode = dataNode.get("BBB");
+        assertEquals(3, bbbChoiceAnswersNode.size());
+        assertEquals("fencing", bbbChoiceAnswersNode.get(0).textValue());
+        assertEquals("running", bbbChoiceAnswersNode.get(1).textValue());
+        assertEquals("3", bbbChoiceAnswersNode.get(2).textValue());
+
+        JsonNode deliciousNode = dataNode.get("delicious");
+        assertEquals(2, deliciousNode.size());
+        assertEquals("Yes", deliciousNode.get(0).textValue());
+        assertEquals("Maybe", deliciousNode.get(1).textValue());
+
+        // validate no uploads to S3
+        verifyZeroInteractions(mockS3UploadHelper);
+
+        // verify no attachments
+        verify(mockHealthDataService, never()).createOrUpdateAttachment(any(HealthDataAttachment.class));
+
+        // verify upload dao write validation status
+        verify(mockUploadDao).writeValidationStatus(UPLOAD, UploadStatus.SUCCEEDED, ImmutableList.of(), RECORD_ID);
+    }
+
+    @Test
+    public void v1LegacySurvey() throws Exception {
         // set up upload files
         String infoJsonText = "{\n" +
                 "   \"files\":[{\n" +
@@ -282,10 +362,10 @@ public class UploadHandlersEndToEndTest {
                 "       \"filename\":\"delicious.json\",\n" +
                 "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
                 "   }],\n" +
-                "   \"surveyGuid\":\"survey-guid\",\n" +
-                "   \"surveyCreatedOn\":\"" + surveyCreatedOnStr + "\",\n" +
-                "   \"appVersion\":\"version 1.0.0, build 1\",\n" +
-                "   \"phoneInfo\":\"Unit Test Hardware\"\n" +
+                "   \"surveyGuid\":\"" + SURVEY_GUID + "\",\n" +
+                "   \"surveyCreatedOn\":\"" + SURVEY_CREATED_ON_STRING + "\",\n" +
+                "   \"appVersion\":\"" + APP_VERSION + "\",\n" +
+                "   \"phoneInfo\":\"" + PHONE_INFO + "\"\n" +
                 "}";
 
         String aaaJsonText = "{\n" +
@@ -320,44 +400,36 @@ public class UploadHandlersEndToEndTest {
                 .build();
 
         // execute
-        test(schema, survey, fileMap);
-
-        // verify created record
-        ArgumentCaptor<HealthDataRecord> recordCaptor = ArgumentCaptor.forClass(HealthDataRecord.class);
-        verify(mockHealthDataService, atLeastOnce()).createOrUpdateRecord(recordCaptor.capture());
-
-        HealthDataRecord record = recordCaptor.getValue();
-        validateCommonRecordProps(record);
-        assertEquals("survey-schema", record.getSchemaId());
-        assertEquals(2, record.getSchemaRevision());
-
-        JsonNode dataNode = record.getData();
-        assertEquals(3, dataNode.size());
-        assertEquals("Yes", dataNode.get("AAA").textValue());
-
-        JsonNode bbbChoiceAnswersNode = dataNode.get("BBB");
-        assertEquals(3, bbbChoiceAnswersNode.size());
-        assertEquals("fencing", bbbChoiceAnswersNode.get(0).textValue());
-        assertEquals("running", bbbChoiceAnswersNode.get(1).textValue());
-        assertEquals("3", bbbChoiceAnswersNode.get(2).textValue());
-
-        JsonNode deliciousNode = dataNode.get("delicious");
-        assertEquals(2, deliciousNode.size());
-        assertEquals("Yes", deliciousNode.get(0).textValue());
-        assertEquals("Maybe", deliciousNode.get(1).textValue());
-
-        // validate no uploads to S3
-        verifyZeroInteractions(mockS3UploadHelper);
-
-        // verify no attachments
-        verify(mockHealthDataService, never()).createOrUpdateAttachment(any(HealthDataAttachment.class));
-
-        // verify upload dao write validation status
-        verify(mockUploadDao).writeValidationStatus(UPLOAD, UploadStatus.SUCCEEDED, ImmutableList.of(), RECORD_ID);
+        testSurvey(fileMap);
     }
 
     @Test
-    public void nonSurvey() throws Exception {
+    public void v2GenericSurvey() throws Exception {
+        // set up upload files
+        String infoJsonText = "{\n" +
+                "   \"createdOn\":\"" + CREATED_ON_STRING + "\",\n" +
+                "   \"dataFilename\":\"answers.json\",\n" +
+                "   \"format\":\"v2_generic\",\n" +
+                "   \"surveyGuid\":\"" + SURVEY_GUID + "\",\n" +
+                "   \"surveyCreatedOn\":\"" + SURVEY_CREATED_ON_STRING + "\",\n" +
+                "   \"appVersion\":\"" + APP_VERSION + "\",\n" +
+                "   \"phoneInfo\":\"" + PHONE_INFO + "\"\n" +
+                "}";
+
+        String answersJsonText = "{\n" +
+                "   \"AAA\":[\"Yes\"],\n" +
+                "   \"BBB\":[\"fencing\", \"running\", 3],\n" +
+                "   \"delicious\":[\"Yes\", \"Maybe\"]\n" +
+                "}";
+
+        Map<String, String> fileMap = ImmutableMap.<String, String>builder().put("info.json", infoJsonText)
+                .put("answers.json", answersJsonText).build();
+
+        // execute
+        testSurvey(fileMap);
+    }
+
+    private void testNonSurvey(String infoJsonText) throws Exception {
         // set up schema
         List<UploadFieldDefinition> fieldDefList = ImmutableList.of(
                 new UploadFieldDefinition.Builder().withName("CCC.txt").withType(UploadFieldType.ATTACHMENT_BLOB)
@@ -395,42 +467,13 @@ public class UploadHandlersEndToEndTest {
 
         UploadSchema schema = UploadSchema.create();
         schema.setFieldDefinitions(fieldDefList);
-        schema.setName("Non-Survey Schema");
-        schema.setRevision(2);
-        schema.setSchemaId("non-survey-schema");
+        schema.setName(SCHEMA_NAME);
+        schema.setRevision(SCHEMA_REV);
+        schema.setSchemaId(SCHEMA_ID);
         schema.setSchemaType(UploadSchemaType.IOS_DATA);
         schema.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
 
         // set up upload files
-        String infoJsonText = "{\n" +
-                "   \"files\":[{\n" +
-                "       \"filename\":\"CCC.txt\",\n" +
-                "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
-                "   },{\n" +
-                "       \"filename\":\"DDD.csv\",\n" +
-                "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
-                "   },{\n" +
-                "       \"filename\":\"EEE.json\",\n" +
-                "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
-                "   },{\n" +
-                "       \"filename\":\"FFF.json\",\n" +
-                "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
-                "   },{\n" +
-                "       \"filename\":\"GGG.txt\",\n" +
-                "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
-                "   },{\n" +
-                "       \"filename\":\"record.json\",\n" +
-                "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
-                "   },{\n" +
-                "       \"filename\":\"empty_attachment\",\n" +
-                "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
-                "   }],\n" +
-                "   \"item\":\"non-survey-schema\",\n" +
-                "   \"schemaRevision\":2,\n" +
-                "   \"appVersion\":\"version 1.0.0, build 1\",\n" +
-                "   \"phoneInfo\":\"Unit Test Hardware\"\n" +
-                "}";
-
         String cccTxtContent = "Blob file";
 
         String dddCsvContent = "foo,bar\nbaz,qux";
@@ -441,6 +484,8 @@ public class UploadHandlersEndToEndTest {
 
         String gggTxtContent = "Arbitrary attachment";
 
+        // Note that a lot of these have the wrong type, but are convertible to the correct type. This is to test that
+        // values can be canonicalized.
         String recordJsonContent = "{\n" +
                 "   \"HHH\":[\"attachment\", \"inside\", \"file\"],\n" +
                 "   \"III\":1,\n" +
@@ -468,8 +513,8 @@ public class UploadHandlersEndToEndTest {
 
         HealthDataRecord record = recordCaptor.getValue();
         validateCommonRecordProps(record);
-        assertEquals("non-survey-schema", record.getSchemaId());
-        assertEquals(2, record.getSchemaRevision());
+        assertEquals(SCHEMA_ID, record.getSchemaId());
+        assertEquals(SCHEMA_REV, record.getSchemaRevision());
 
         JsonNode dataNode = record.getData();
         assertEquals(15, dataNode.size());
@@ -530,6 +575,58 @@ public class UploadHandlersEndToEndTest {
 
         // verify upload dao write validation status
         verify(mockUploadDao).writeValidationStatus(UPLOAD, UploadStatus.SUCCEEDED, ImmutableList.of(), RECORD_ID);
+    }
+
+    @Test
+    public void v1LegacyNonSurvey() throws Exception {
+        // make info.json
+        String infoJsonText = "{\n" +
+                "   \"files\":[{\n" +
+                "       \"filename\":\"CCC.txt\",\n" +
+                "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
+                "   },{\n" +
+                "       \"filename\":\"DDD.csv\",\n" +
+                "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
+                "   },{\n" +
+                "       \"filename\":\"EEE.json\",\n" +
+                "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
+                "   },{\n" +
+                "       \"filename\":\"FFF.json\",\n" +
+                "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
+                "   },{\n" +
+                "       \"filename\":\"GGG.txt\",\n" +
+                "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
+                "   },{\n" +
+                "       \"filename\":\"record.json\",\n" +
+                "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
+                "   },{\n" +
+                "       \"filename\":\"empty_attachment\",\n" +
+                "       \"timestamp\":\"" + CREATED_ON_STRING + "\"\n" +
+                "   }],\n" +
+                "   \"item\":\"" + SCHEMA_ID + "\",\n" +
+                "   \"schemaRevision\":" + SCHEMA_REV + ",\n" +
+                "   \"appVersion\":\"" + APP_VERSION + "\",\n" +
+                "   \"phoneInfo\":\"" + PHONE_INFO + "\"\n" +
+                "}";
+
+        // execute
+        testNonSurvey(infoJsonText);
+    }
+
+    @Test
+    public void v2GenericNonSurvey() throws Exception {
+        // make info.json
+        String infoJsonText = "{\n" +
+                "   \"createdOn\":\"" + CREATED_ON_STRING + "\",\n" +
+                "   \"format\":\"v2_generic\",\n" +
+                "   \"item\":\"" + SCHEMA_ID + "\",\n" +
+                "   \"schemaRevision\":" + SCHEMA_REV + ",\n" +
+                "   \"appVersion\":\"" + APP_VERSION + "\",\n" +
+                "   \"phoneInfo\":\"" + PHONE_INFO + "\"\n" +
+                "}";
+
+        // execute
+        testNonSurvey(infoJsonText);
     }
 
     private void validateTextAttachment(String expected, String attachmentId) throws Exception {
