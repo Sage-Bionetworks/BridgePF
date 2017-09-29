@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
@@ -36,6 +37,7 @@ import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
@@ -46,9 +48,11 @@ import org.sagebionetworks.bridge.services.UploadService;
 
 @RunWith(MockitoJUnitRunner.class)
 public class UploadControllerTest {
-    
+    private static final String HEALTH_CODE = "health-code";
+    private static final String RECORD_ID = "record-id";
     private static final String UPLOAD_ID = "upload-id";
-    
+    private static final String VALIDATION_ERROR_MESSAGE = "There was a validation error";
+
     @Spy
     private UploadController controller;
     
@@ -87,14 +91,32 @@ public class UploadControllerTest {
         controller.setUploadService(uploadService);
         controller.setHealthCodeDao(healthCodeDao);
         controller.setCacheProvider(cacheProvider);
-        
+
+        // mock uploadService.getUpload()
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setHealthCode("consented-user-health-code");
         upload.setUploadId("upload-id");
         doReturn(upload).when(uploadService).getUpload("upload-id");
-        
+
+        // mock uploadService.get/pollUploadValidationStatus()
+        // mock UploadService with validation status
+        HealthDataRecord record = HealthDataRecord.create();
+        record.setId(RECORD_ID);
+        record.setHealthCode(HEALTH_CODE);
+
+        UploadValidationStatus status = new UploadValidationStatus.Builder()
+                .withId(UPLOAD_ID)
+                .withRecord(record)
+                .withMessageList(Lists.newArrayList(VALIDATION_ERROR_MESSAGE))
+                .withStatus(UploadStatus.VALIDATION_FAILED).build();
+
+        doReturn(status).when(uploadService).getUploadValidationStatus(UPLOAD_ID);
+        doReturn(status).when(uploadService).pollUploadValidationStatusUntilComplete(UPLOAD_ID);
+
+        // mock metrics
         doReturn(metrics).when(controller).getMetrics();
-        
+
+        // mock sessions
         doReturn("worker-health-code").when(workerSession).getHealthCode();
         doReturn(new StudyIdentifierImpl("worker-study-id")).when(workerSession).getStudyIdentifier();
         doReturn(true).when(workerSession).isInRole(Roles.WORKER);
@@ -118,7 +140,8 @@ public class UploadControllerTest {
         participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet()).build();
         doReturn(participant).when(otherUserSession).getParticipant();
         doReturn(true).when(otherUserSession).doesConsent();
-        
+
+        // mock healthCodeDao
         doReturn("worker-study-id").when(healthCodeDao).getStudyIdentifier("worker-health-code");
         doReturn("consented-user-study-id").when(healthCodeDao).getStudyIdentifier("consented-user-health-code");
     }
@@ -143,35 +166,46 @@ public class UploadControllerTest {
     
     @Test
     public void uploadCompleteAcceptsWorker() throws Exception {
+        // setup controller
         doReturn(workerSession).when(controller).getAuthenticatedSession();
         TestUtils.mockPlayContext();
-        
-        Result result = controller.uploadComplete(UPLOAD_ID);
-        TestUtils.assertResult(result, 200, "Upload upload-id complete!");
-        
+
+        // execute and validate
+        Result result = controller.uploadComplete(UPLOAD_ID, null);
+        validateValidationStatus(result);
+
+        // verify back-end calls
         verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")), eq(UploadCompletionClient.S3_WORKER), uploadCaptor.capture());
-        
         Upload upload = uploadCaptor.getValue();
         assertEquals("consented-user-health-code", upload.getHealthCode());
+
+        verify(uploadService).getUploadValidationStatus(UPLOAD_ID);
+        verify(uploadService, never()).pollUploadValidationStatusUntilComplete(any());
     }
 
     @Test
     public void uploadCompleteAcceptsConsentedUser() throws Exception {
+        // setup controller
         doReturn(consentedUserSession).when(controller).getAuthenticatedSession();
         doReturn(consentedUserSession).when(controller).getAuthenticatedAndConsentedSession();
         TestUtils.mockPlayContext();
-        
-        Result result = controller.uploadComplete(UPLOAD_ID);
-        TestUtils.assertResult(result, 200, "Upload upload-id complete!");
-        
+
+        // execute and validate
+        Result result = controller.uploadComplete(UPLOAD_ID, null);
+        validateValidationStatus(result);
+
+        // verify back-end calls
         verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")), eq(UploadCompletionClient.APP), uploadCaptor.capture());
-        
         Upload upload = uploadCaptor.getValue();
         assertEquals("consented-user-health-code", upload.getHealthCode());
+
+        verify(uploadService).getUploadValidationStatus(UPLOAD_ID);
+        verify(uploadService, never()).pollUploadValidationStatusUntilComplete(any());
     }
     
     @Test
     public void differentUserInSameStudyCannotCompleteUpload() throws Exception {
+        // setup controller
         doReturn("other-health-code").when(otherUserSession).getHealthCode();
         doReturn(new StudyIdentifierImpl("consented-user-study-id")).when(otherUserSession).getStudyIdentifier();
         doReturn(false).when(otherUserSession).isInRole(Roles.WORKER);
@@ -179,64 +213,76 @@ public class UploadControllerTest {
         doReturn(otherUserSession).when(controller).getAuthenticatedSession();
         doReturn(otherUserSession).when(controller).getAuthenticatedAndConsentedSession();
         TestUtils.mockPlayContext();
-        
+
+        // execute and catch exception
         try {
-            controller.uploadComplete(UPLOAD_ID);
+            controller.uploadComplete(UPLOAD_ID, null);
             fail("Should have thrown exception");
         } catch(UnauthorizedException e) {
-            
+            // expected exception
         }
+
+        // verify back-end calls
         verify(uploadService, never()).uploadComplete(any(), any(), any());
+        verify(uploadService, never()).getUploadValidationStatus(any());
+        verify(uploadService, never()).pollUploadValidationStatusUntilComplete(any());
     }
-    
+
+    @Test
+    public void uploadCompleteSynchronousMode() throws Exception {
+        // setup controller
+        doReturn(consentedUserSession).when(controller).getAuthenticatedSession();
+        doReturn(consentedUserSession).when(controller).getAuthenticatedAndConsentedSession();
+        TestUtils.mockPlayContext();
+
+        // execute and validate
+        Result result = controller.uploadComplete(UPLOAD_ID, "true");
+        validateValidationStatus(result);
+
+        // verify back-end calls
+        verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")),
+                eq(UploadCompletionClient.APP), any());
+        verify(uploadService).pollUploadValidationStatusUntilComplete(UPLOAD_ID);
+        verify(uploadService, never()).getUploadValidationStatus(any());
+    }
+
     @Test
     public void getValidationStatusWorks() throws Exception {
         doReturn(consentedUserSession).when(controller).getSessionEitherConsentedOrInRole(Roles.RESEARCHER);
-        
-        UploadValidationStatus status = new UploadValidationStatus.Builder()
-                .withId(UPLOAD_ID)
-                .withMessageList(Lists.newArrayList("There was a valdation error"))
-                .withStatus(UploadStatus.VALIDATION_FAILED).build();
-        
-        doReturn(status).when(uploadService).getUploadValidationStatus(UPLOAD_ID);
-        
         Result result = controller.getValidationStatus(UPLOAD_ID);
-        assertEquals(200, result.status());
-        
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
-        assertEquals("upload-id", node.get("id").asText());
-        assertEquals("validation_failed", node.get("status").asText());
-        assertEquals("UploadValidationStatus", node.get("type").asText());
-        JsonNode errors = node.get("messageList");
-        assertEquals("There was a valdation error", errors.get(0).asText());
+        validateValidationStatus(result);
+        verify(uploadService).getUploadValidationStatus(UPLOAD_ID);
     }
 
     @Test
     public void getValidationStatusWorksForResearcher() throws Exception {
         doReturn(researcherSession).when(controller).getSessionEitherConsentedOrInRole(Roles.RESEARCHER);
-
-        UploadValidationStatus status = new UploadValidationStatus.Builder()
-                .withId(UPLOAD_ID)
-                .withMessageList(Lists.newArrayList("There was a valdation error"))
-                .withStatus(UploadStatus.VALIDATION_FAILED).build();
-
-        doReturn(status).when(uploadService).getUploadValidationStatus(UPLOAD_ID);
-
         Result result = controller.getValidationStatus(UPLOAD_ID);
-        assertEquals(200, result.status());
-    }    
-    
+        validateValidationStatus(result);
+        verify(uploadService).getUploadValidationStatus(UPLOAD_ID);
+    }
+
     @Test(expected = UnauthorizedException.class)
     public void getValidationStatusEnforcesHealthCodeMatch() throws Exception {
         doReturn(otherUserSession).when(controller).getSessionEitherConsentedOrInRole(Roles.RESEARCHER);
-        
-        UploadValidationStatus status = new UploadValidationStatus.Builder()
-                .withId(UPLOAD_ID)
-                .withMessageList(Lists.newArrayList("There was a valdation error"))
-                .withStatus(UploadStatus.VALIDATION_FAILED).build();
-        
-        doReturn(status).when(uploadService).getUploadValidationStatus(UPLOAD_ID);
-        
         controller.getValidationStatus(UPLOAD_ID);
+    }
+
+    private static void validateValidationStatus(Result result) throws Exception {
+        assertEquals(200, result.status());
+
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        assertEquals(UPLOAD_ID, node.get("id").textValue());
+        assertEquals(UploadStatus.VALIDATION_FAILED.toString().toLowerCase(), node.get("status").textValue());
+        assertEquals("UploadValidationStatus", node.get("type").textValue());
+
+        JsonNode errors = node.get("messageList");
+        assertEquals(VALIDATION_ERROR_MESSAGE, errors.get(0).textValue());
+
+        JsonNode recordNode = node.get("record");
+        assertEquals(RECORD_ID, recordNode.get("id").textValue());
+
+        // Health code is filtered out of the record.
+        assertNull(recordNode.get("healthCode"));
     }
 }
