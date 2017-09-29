@@ -3,8 +3,6 @@ package org.sagebionetworks.bridge.config;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import javax.annotation.Resource;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,30 +22,22 @@ public class BridgeProductionSpringConfig {
     @Autowired
     BridgeConfig bridgeConfig;
     
-    @Bean(name = "jedisOps")
-    @Resource(name = "jedisPool")
-    public JedisOps jedisOps(final JedisPool jedisPool) {
-        return new JedisOps(jedisPool);
+    @Bean(name = "oldJedisOps")
+    public JedisOps oldJedisOps() throws Exception {
+        return new JedisOps(createJedisPool("rediscloud.url"));
     }
 
     @Bean(name = "newJedisOps")
-    @Resource(name = "newJedisPool")
-    public JedisOps newJedisOps(final JedisPool jedisPool) {
-        return new JedisOps(jedisPool);
+    public JedisOps newJedisOps() throws Exception {
+        return new JedisOps(jedisPool());
     }
     
-    @Bean(name = "jedisPool")
+    @Bean
     public JedisPool jedisPool() throws Exception {
-        return createJedisPool("rediscloud.url");
-    }
-
-    @Bean(name = "newJedisPool")
-    public JedisPool newJedisPool() throws Exception {
         return createJedisPool("elasticache.url");
     }
     
     private JedisPool createJedisPool(String redisServerProperty) throws Exception {
-        
         final JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setMaxTotal(bridgeConfig.getPropertyAsInt("redis.max.total"));
         poolConfig.setMinIdle(bridgeConfig.getPropertyAsInt("redis.min.idle"));

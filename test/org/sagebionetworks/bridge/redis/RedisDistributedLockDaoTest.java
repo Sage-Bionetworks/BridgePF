@@ -24,10 +24,12 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class RedisDistributedLockDaoTest {
 
-    @Resource
+    @Resource(name = "newJedisOps")
     private JedisOps jedisOps;
+    
     @Resource
     private DistributedLockDao lockDao;
+    
     private String id;
 
     @Before

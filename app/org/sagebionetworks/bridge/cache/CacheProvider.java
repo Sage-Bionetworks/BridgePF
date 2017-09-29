@@ -44,9 +44,9 @@ public class CacheProvider {
         this.bridgeObjectMapper = bridgeObjectMapper;
     }
 
-    @Resource(name = "jedisOps")
-    final void setJedisOps(JedisOps jedisOps) {
-        this.oldJedisOps = jedisOps;
+    @Resource(name = "oldJedisOps")
+    final void setOldJedisOps(JedisOps oldJedisOps) {
+        this.oldJedisOps = oldJedisOps;
     }
     
     @Resource(name = "newJedisOps")

@@ -85,7 +85,7 @@ public class CacheProviderMockTest {
         when(jedisOps.get(userKey)).thenReturn(SESSION_TOKEN);
         
         cacheProvider = new CacheProvider();
-        cacheProvider.setJedisOps(jedisOps);
+        cacheProvider.setOldJedisOps(jedisOps);
         cacheProvider.setNewJedisOps(newJedisOps);
         cacheProvider.setBridgeObjectMapper(BridgeObjectMapper.get());
     }
@@ -235,7 +235,7 @@ public class CacheProviderMockTest {
     @Test
     public void addAndRemoveViewFromCacheProvider() throws Exception {
         final CacheProvider simpleCacheProvider = new CacheProvider();
-        simpleCacheProvider.setJedisOps(getJedisOps());
+        simpleCacheProvider.setOldJedisOps(getJedisOps());
         simpleCacheProvider.setNewJedisOps(getJedisOps());
         simpleCacheProvider.setBridgeObjectMapper(BridgeObjectMapper.get());
 
@@ -304,7 +304,7 @@ public class CacheProviderMockTest {
         doReturn(newTransaction).when(jedisOps).getTransaction(sessionKey);
         doReturn(json).when(jedisOps).get(sessionKey);
         
-        cacheProvider.setJedisOps(jedisOps);
+        cacheProvider.setOldJedisOps(jedisOps);
         cacheProvider.setBridgeObjectMapper(BridgeObjectMapper.get());
         
         UserSession session = cacheProvider.getUserSession("sessionToken");

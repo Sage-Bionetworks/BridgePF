@@ -17,8 +17,8 @@ import redis.clients.jedis.JedisPool;
 @Configuration
 @ImportResource("classpath:shared-config.xml")
 public class BridgeTestSpringConfig {
-    @Bean(name = "jedisOps")
-    public JedisOps jedisOps() {
+    @Bean(name = "oldJedisOps")
+    public JedisOps oldJedisOps() {
         return new InMemoryJedisOps();
     }
 

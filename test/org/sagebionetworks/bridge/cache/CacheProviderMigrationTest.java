@@ -69,7 +69,7 @@ public class CacheProviderMigrationTest {
     public void before() {
         cacheProvider = new CacheProvider();
         cacheProvider.setBridgeObjectMapper(BridgeObjectMapper.get());
-        cacheProvider.setJedisOps(oldJedisOps);
+        cacheProvider.setOldJedisOps(oldJedisOps);
         cacheProvider.setNewJedisOps(newJedisOps);
         cacheProvider.setSessionExpireInSeconds(10);
         
