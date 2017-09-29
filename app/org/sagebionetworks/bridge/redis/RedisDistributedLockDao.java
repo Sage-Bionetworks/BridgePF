@@ -3,21 +3,23 @@ package org.sagebionetworks.bridge.redis;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import javax.annotation.Resource;
+
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.lock.LockNotAvailableException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class RedisDistributedLockDao implements DistributedLockDao {
 
     private static final int EXPIRATION_IN_SECONDS = 3 * 60;
+    
     private RedisLock redisLock;
-
-    @Autowired
-    public RedisDistributedLockDao(JedisOps jedisOps) {
+    
+    @Resource(name = "newJedisOps")
+    final void setJedisOps(JedisOps jedisOps) {
         redisLock = new RedisLock(jedisOps);
     }
 
