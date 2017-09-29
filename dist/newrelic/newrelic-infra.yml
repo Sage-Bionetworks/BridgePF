@@ -42,7 +42,7 @@
 #          different than the default (for example, with troubleshooting).
 # Default: Typical default location for standard log files
 #
-log_file: /var/log/newrelic/newrelic-infra.log
+log_file: /var/log/newrelic-infra.log
 
 # Option : log_to_stdout
 # Value  : If you have a log file set through the log_file option, the
