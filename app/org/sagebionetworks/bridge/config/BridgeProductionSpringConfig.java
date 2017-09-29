@@ -29,7 +29,12 @@ public class BridgeProductionSpringConfig {
 
     @Bean(name = "newJedisOps")
     public JedisOps newJedisOps() throws Exception {
-        return new JedisOps(createJedisPool("elasticache.url"));
+        return new JedisOps(jedisPool());
+    }
+    
+    @Bean
+    public JedisPool jedisPool() throws Exception {
+        return createJedisPool("elasticache.url");
     }
     
     private JedisPool createJedisPool(String redisServerProperty) throws Exception {
