@@ -77,6 +77,12 @@ public class UploadService {
     private UploadValidationService uploadValidationService;
     private Validator validator;
 
+    // These parameters can be overriden to facilitate testing.
+    // By default, we sleep 5 seconds, including right at the start and end. This means on our 7th iteration,
+    // 30 seconds will have passed.
+    private int pollValidationStatusMaxIterations = 7;
+    private long pollValidationStatusSleepMillis = 5000;
+
     /** Sets parameters from the specified Bridge config. */
     @Autowired
     final void setConfig(BridgeConfig config) {
@@ -130,6 +136,22 @@ public class UploadService {
     @Autowired
     public void setValidator(UploadValidator validator) {
         this.validator = validator;
+    }
+
+    /**
+     * Number of iterations while polling for validation status before we time out. This is used primarily by tests to
+     * reduce the amount of wait time during tests.
+     */
+    public final void setPollValidationStatusMaxIterations(int pollValidationStatusMaxIterations) {
+        this.pollValidationStatusMaxIterations = pollValidationStatusMaxIterations;
+    }
+
+    /**
+     * Milliseconds to sleep per iterations while polling for validation status. This is used primarily by tests to
+     * reduce the amount of wait time during tests.
+     */
+    public final void setPollValidationStatusSleepMillis(long pollValidationStatusSleepMillis) {
+        this.pollValidationStatusSleepMillis = pollValidationStatusSleepMillis;
     }
 
     public UploadSession createUpload(StudyIdentifier studyId, StudyParticipant participant, UploadRequest uploadRequest) {
@@ -330,6 +352,38 @@ public class UploadService {
 
         UploadValidationStatus validationStatus = UploadValidationStatus.from(upload, record);
         return validationStatus;
+    }
+
+    /**
+     * Polls for validation status for a given upload ID. Polls until validation is complete or otherwise is in a state
+     * where further polling won't get any results (like validation failed, or upload is requested but not yet
+     * uploaded), or until it times out. See getUploadValidationStatus() for more details.
+     */
+    public UploadValidationStatus pollUploadValidationStatusUntilComplete(String uploadId) {
+        // Loop logic is a little wonky. (Loop-and-a-half problem.) Use an infinite loop here and rely on tests to make
+        // sure we don't go infinite.
+        int numIters = 0;
+        while (true) {
+            UploadValidationStatus validationStatus = getUploadValidationStatus(uploadId);
+            if (validationStatus.getStatus() != UploadStatus.VALIDATION_IN_PROGRESS) {
+                // Validation is either finished processing, or otherwise in a state where it's pointless to wait.
+                // Return the answer we have now.
+                return validationStatus;
+            }
+
+            // Short-circuit: If we've elapsed our timeout, just exit now. Don't wait for a sleep.
+            numIters++;
+            if (numIters >= pollValidationStatusMaxIterations) {
+                throw new BridgeServiceException("Timeout polling validation status for upload " + uploadId);
+            }
+
+            // Sleep and try again.
+            try {
+                Thread.sleep(pollValidationStatusSleepMillis);
+            } catch (InterruptedException ex) {
+                logger.error("Interrupted while polling for validation status: " + ex.getMessage());
+            }
+        }
     }
 
     public void uploadComplete(StudyIdentifier studyId, UploadCompletionClient completedBy, Upload upload) {

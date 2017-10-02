@@ -78,11 +78,22 @@ public class UploadController extends BaseController {
     }
 
     /**
+     * <p>
      * Signals to the Bridge server that the upload is complete. This kicks off the asynchronous validation process
      * through the Upload Validation Service.
+     * </p>
+     * <p>
+     * If synchronous is set to "true", we will wait until upload validation is complete, then return the upload
+     * validation status. This is generally recommended only for App Development, as some large uploads might take
+     * several seconds to complete.
+     * </p>
+     * <p>
+     * If synchronous is set to anything else, we will return a validation status immediately (which will often be in
+     * the "validation_in_progress" state) and let upload validation run in the background.
+     * </p>
      */
     @BodyParser.Of(BodyParser.Empty.class)
-    public Result uploadComplete(String uploadId) throws Exception {
+    public Result uploadComplete(String uploadId, String synchronous) throws Exception {
         final Metrics metrics = getMetrics();
         if (metrics != null) {
             metrics.setUploadId(uploadId);
@@ -95,21 +106,31 @@ public class UploadController extends BaseController {
             Upload upload = uploadService.getUpload(uploadId);
             String studyId = healthCodeDao.getStudyIdentifier(upload.getHealthCode());
             uploadService.uploadComplete(new StudyIdentifierImpl(studyId), UploadCompletionClient.S3_WORKER, upload);
-            
-            return okResult("Upload " + uploadId + " complete!");
-        }
-        
-        // Or, the consented user that originally made the upload request. Check that health codes match.
-        // Do not need to look up the study.
-        session = getAuthenticatedAndConsentedSession();
-        
-        Upload upload = uploadService.getUpload(uploadId);
-        if (!session.getHealthCode().equals(upload.getHealthCode())) {
-            throw new UnauthorizedException();
-        }
-        uploadService.uploadComplete(session.getStudyIdentifier(), UploadCompletionClient.APP, upload);
+        } else {
+            // Or, the consented user that originally made the upload request. Check that health codes match.
+            // Do not need to look up the study.
+            session = getAuthenticatedAndConsentedSession();
 
-        return okResult("Upload " + uploadId + " complete!");
+            Upload upload = uploadService.getUpload(uploadId);
+            if (!session.getHealthCode().equals(upload.getHealthCode())) {
+                throw new UnauthorizedException();
+            }
+            uploadService.uploadComplete(session.getStudyIdentifier(), UploadCompletionClient.APP, upload);
+        }
+
+        // Boolean.valueOf() converts "true" (ignoring case) to true, and everything else to false (including null).
+        boolean synchronousBool = Boolean.valueOf(synchronous);
+
+        // In async mode, we get the validation status (probably in validation_in_progress) and return immediately.
+        // In sync mode, we poll until the validation status is complete (or failed or another non-transient status).
+        UploadValidationStatus validationStatus;
+        if (synchronousBool) {
+            validationStatus = uploadService.pollUploadValidationStatusUntilComplete(uploadId);
+        } else {
+            validationStatus = uploadService.getUploadValidationStatus(uploadId);
+        }
+
+        // Upload validation status may contain the health data record. Use the filter to filter out health code.
+        return ok(HealthDataRecord.PUBLIC_RECORD_WRITER.writeValueAsString(validationStatus));
     }
-
 }
