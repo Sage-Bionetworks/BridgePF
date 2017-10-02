@@ -175,8 +175,9 @@ public class ConsentService {
         
         // Send email, if required.
         if (sendEmail) {
-            MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, participant.getEmail(),
-                    withConsentCreatedOnSignature, sharingScope, studyConsent.getDocumentContent(), consentTemplate);
+            MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, participant.getTimeZone(),
+                    participant.getEmail(), withConsentCreatedOnSignature, sharingScope,
+                    studyConsent.getDocumentContent(), consentTemplate);
 
             sendMailService.sendEmail(consentEmail);
         }
@@ -297,8 +298,8 @@ public class ConsentService {
         
         String htmlTemplate = studyConsentService.getActiveConsent(subpop).getDocumentContent();
         
-        MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, participant.getEmail(), consentSignature,
-                sharingScope, htmlTemplate, consentTemplate);
+        MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, participant.getTimeZone(),
+                participant.getEmail(), consentSignature, sharingScope, htmlTemplate, consentTemplate);
         sendMailService.sendEmail(consentEmail);
     }
 

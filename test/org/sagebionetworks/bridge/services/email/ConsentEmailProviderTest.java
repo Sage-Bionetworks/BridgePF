@@ -9,6 +9,8 @@ import java.util.List;
 import javax.mail.internet.MimeBodyPart;
 
 import org.apache.commons.io.IOUtils;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
@@ -29,6 +31,8 @@ public class ConsentEmailProviderTest {
     private static final String DUMMY_IMAGE_DATA =
             "Qk1GAAAAAAAAADYAAAAoAAAAAgAAAAIAAAABABgAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAA////AAAAAAAAAAD///8AAA==";
 
+    private static DateTimeZone PST = DateTimeZone.forOffsetHours(-7);
+    
     private String consentBodyTemplate;
     private Study study;
     private StudyParticipant participant;
@@ -47,9 +51,24 @@ public class ConsentEmailProviderTest {
     }
 
     @Test
+    public void docWithNullUserTimeZone() throws Exception {
+        ConsentSignature sig = makeSignatureWithoutImage();
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, null, participant.getEmail(), sig,
+                SharingScope.NO_SHARING, LEGACY_DOCUMENT, consentBodyTemplate);
+        
+        MimeTypeEmail email = provider.getMimeTypeEmail();
+        List<MimeBodyPart> mimePartList = email.getMessageParts();
+        MimeBodyPart body = mimePartList.get(0);
+        String bodyContent = (String) body.getContent();
+        
+        String dateStr = ConsentEmailProvider.FORMATTER.print(DateTime.now(DateTimeZone.UTC));
+        assertTrue("Signing date formatted with default zone", bodyContent.contains(dateStr));
+    }
+    
+    @Test
     public void legacyDocWithoutSigImage() throws Exception {
         ConsentSignature sig = makeSignatureWithoutImage();
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, participant.getEmail(), sig,
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, PST, participant.getEmail(), sig,
                 SharingScope.NO_SHARING, LEGACY_DOCUMENT, consentBodyTemplate);
 
         // Validate common elements.
@@ -70,7 +89,7 @@ public class ConsentEmailProviderTest {
     @Test
     public void newDocWithoutSigImage() throws Exception {
         ConsentSignature sig = makeSignatureWithoutImage();
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, participant.getEmail(), sig,
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, PST, participant.getEmail(), sig,
                 SharingScope.NO_SHARING, NEW_DOCUMENT_FRAGMENT, consentBodyTemplate);
 
         // Validate common elements.
@@ -91,7 +110,7 @@ public class ConsentEmailProviderTest {
     @Test
     public void legacyDocWithSigImage() throws Exception {
         ConsentSignature sig = makeSignatureWithImage();
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, participant.getEmail(), sig,
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, PST, participant.getEmail(), sig,
                 SharingScope.NO_SHARING, LEGACY_DOCUMENT, consentBodyTemplate);
 
         // Validate common elements.
@@ -117,7 +136,7 @@ public class ConsentEmailProviderTest {
     @Test
     public void newDocWithSigImage() throws Exception {
         ConsentSignature sig = makeSignatureWithImage();
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, participant.getEmail(), sig,
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, PST, participant.getEmail(), sig,
                 SharingScope.NO_SHARING, NEW_DOCUMENT_FRAGMENT, consentBodyTemplate);
 
         // Validate common elements.
@@ -142,7 +161,7 @@ public class ConsentEmailProviderTest {
     @Test
     public void legacyDocWithInvalidSig() throws Exception {
         ConsentSignature sig = makeInvalidSignature();
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, participant.getEmail(), sig,
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, PST, participant.getEmail(), sig,
                 SharingScope.NO_SHARING, LEGACY_DOCUMENT, consentBodyTemplate);
 
         // Validate common elements.
@@ -163,7 +182,7 @@ public class ConsentEmailProviderTest {
     @Test
     public void newDocWithInvalidSig() throws Exception {
         ConsentSignature sig = makeInvalidSignature();
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, participant.getEmail(), sig,
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, PST, participant.getEmail(), sig,
                 SharingScope.NO_SHARING, NEW_DOCUMENT_FRAGMENT, consentBodyTemplate);
 
         // Validate common elements.
@@ -205,6 +224,8 @@ public class ConsentEmailProviderTest {
 
     private static void validateLegacyDocBody(MimeBodyPart body) throws Exception {
         String bodyContent = (String) body.getContent();
+        String dateStr = ConsentEmailProvider.FORMATTER.print(DateTime.now(PST));
+        assertTrue("Signing date correct", bodyContent.contains(dateStr));
         assertTrue("Name correct", bodyContent.contains("|Test Person|"));
         assertTrue("User email correct", bodyContent.contains("|user@user.com|"));
         assertTrue("Sharing correct", bodyContent.contains("|Not Sharing|"));
@@ -213,6 +234,8 @@ public class ConsentEmailProviderTest {
 
     private static void validateNewDocBody(MimeBodyPart body) throws Exception {
         String bodyContent = (String) body.getContent();
+        String dateStr = ConsentEmailProvider.FORMATTER.print(DateTime.now(PST));
+        assertTrue("Signing date correct", bodyContent.contains(dateStr));
         assertTrue("Study name correct", bodyContent.contains("<title>Study Name Consent To Research</title>"));
         assertTrue("Name correct", bodyContent.contains(">Test Person<"));
         assertTrue("User email correct", bodyContent.contains(">user@user.com<"));

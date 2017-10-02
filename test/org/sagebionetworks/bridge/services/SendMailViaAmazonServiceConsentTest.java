@@ -14,6 +14,7 @@ import java.util.List;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.simpleemail.model.MessageRejectedException;
 import org.apache.commons.io.IOUtils;
+import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -43,6 +44,7 @@ import com.google.common.base.Charsets;
 public class SendMailViaAmazonServiceConsentTest {
     private static final String SUPPORT_EMAIL = "study-support-email@study.com";
     private static final String FROM_STUDY_AS_FORMATTED = "\"Test Study (Sage)\" <"+SUPPORT_EMAIL+">";
+    private static final DateTimeZone MSK = DateTimeZone.forID("Europe/Moscow");
 
     private SendMailViaAmazonService service;
     private AmazonSimpleEmailServiceClient emailClient;
@@ -98,7 +100,7 @@ public class SendMailViaAmazonServiceConsentTest {
         
         String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
         
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, "test-user@sagebase.org", consent,
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, MSK, "test-user@sagebase.org", consent,
                 SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate);
         service.sendEmail(provider);
 
@@ -116,6 +118,7 @@ public class SendMailViaAmazonServiceConsentTest {
 
         // Validate message content. MIME message must be ASCII
         String rawMessage = new String(req.getRawMessage().getData().array(), Charsets.US_ASCII);
+        System.out.println(rawMessage);
         assertTrue("Contains consent content", rawMessage.contains("Had this been a real study"));
         assertTrue("Name transposed to document", rawMessage.contains("Test 2"));
         assertTrue("Email transposed to document", rawMessage.contains("test-user@sagebase.org"));
@@ -137,7 +140,7 @@ public class SendMailViaAmazonServiceConsentTest {
         
         String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
         
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, "test-user@sagebase.org", consent,
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, MSK, "test-user@sagebase.org", consent,
                 SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate);
         service.sendEmail(provider);
 
@@ -178,7 +181,7 @@ public class SendMailViaAmazonServiceConsentTest {
         
         String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
 
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, "test-user@sagebase.org", consent,
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, MSK, "test-user@sagebase.org", consent,
                 SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate);
 
         // execute
@@ -200,7 +203,7 @@ public class SendMailViaAmazonServiceConsentTest {
         
         String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
 
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, "test-user@sagebase.org", consent,
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, MSK, "test-user@sagebase.org", consent,
                 SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate);
 
         // execute

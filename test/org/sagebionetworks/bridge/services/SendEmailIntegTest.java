@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import javax.annotation.Resource;
 
 import org.apache.commons.io.IOUtils;
+import org.joda.time.DateTimeZone;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
@@ -65,7 +66,7 @@ public class SendEmailIntegTest {
         
         Subpopulation subpopulation = subpopService.getSubpopulation(TEST_STUDY, SUBPOP_GUID);
         String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
-        sendEmailService.sendEmail(new ConsentEmailProvider(study, "bridge-testing@sagebase.org",
+        sendEmailService.sendEmail(new ConsentEmailProvider(study, DateTimeZone.UTC, "bridge-testing@sagebase.org",
                 signature, SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate));
     }
     
