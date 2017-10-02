@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -804,5 +805,41 @@ public class IosSchemaValidationHandler2Test {
         HealthDataRecord record = context.getHealthDataRecord();
         assertEquals(MOCK_NOW.getMillis(), record.getCreatedOn().longValue());
         assertNull(record.getCreatedOnTimeZone());
+    }
+
+    @Test
+    public void createdOnFromInfoJson() throws Exception {
+        // Minimal test w/ createdOn in both file list and info.json, to test createdOn parsing. Everything else has
+        // been tested elsewhere.
+
+        // fill in context
+        String createdOnString = "2017-10-02T16:45:24.312+09:00";
+        long createdOnMillis = DateUtils.convertToMillisFromEpoch(createdOnString);
+        String infoJsonText = "{\n" +
+                "   \"files\":[{\n" +
+                "       \"filename\":\"attachment\",\n" +
+                "       \"timestamp\":\"2017-10-01T01:13:01.046-07:00\"\n" +
+                "   }],\n" +
+                "   \"item\":\"simple-attachment-schema\",\n" +
+                "   \"schemaRevision\":1,\n" +
+                "   \"createdOn\":\"" + createdOnString + "\"\n" +
+                "}";
+        JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
+
+        Map<String, JsonNode> jsonDataMap = new HashMap<>();
+        jsonDataMap.put("info.json", infoJsonNode);
+        context.setJsonDataMap(jsonDataMap);
+
+        context.setUnzippedDataMap(ImmutableMap.<String, byte[]>builder()
+                .put("attachment", "This is an attachment.".getBytes(Charsets.UTF_8))
+                .build());
+
+        // execute
+        handler.handle(context);
+
+        // validate
+        HealthDataRecord record = context.getHealthDataRecord();
+        assertEquals(createdOnMillis, record.getCreatedOn().longValue());
+        assertEquals("+0900", record.getCreatedOnTimeZone());
     }
 }
