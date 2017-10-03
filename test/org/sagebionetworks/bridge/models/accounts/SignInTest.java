@@ -40,4 +40,14 @@ public class SignInTest {
         assertEquals("aName", signIn.getEmail());
         assertEquals("password", signIn.getPassword());
     }
+    
+    @Test
+    public void canSendReauthenticationToken() throws Exception {
+        String json = "{\"email\":\"email@email.com\",\"reauthToken\":\"myReauthToken\"}";
+
+        SignIn signIn = BridgeObjectMapper.get().readValue(json, SignIn.class);
+
+        assertEquals("email@email.com", signIn.getEmail());
+        assertEquals("myReauthToken", signIn.getReauthToken());
+    }
 }

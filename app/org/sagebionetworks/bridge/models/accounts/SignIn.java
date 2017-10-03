@@ -12,12 +12,14 @@ public final class SignIn implements BridgeEntity {
     private final String password;
     private final String studyId;
     private final String token;
+    private final String reauthToken;
     
-    public SignIn(String studyId, String email, String password, String token) {
+    public SignIn(String studyId, String email, String password, String token, String reauthToken) {
         this.studyId = studyId;
         this.email = email;
         this.password = password;
         this.token = token;
+        this.reauthToken = reauthToken;
     }
     
     public String getStudyId() {
@@ -34,5 +36,9 @@ public final class SignIn implements BridgeEntity {
     
     public String getToken() {
         return token;
+    }
+    
+    public String getReauthToken() {
+        return reauthToken;
     }
 }

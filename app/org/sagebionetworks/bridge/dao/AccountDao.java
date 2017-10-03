@@ -57,6 +57,20 @@ public interface AccountDao {
     Account authenticate(Study study, SignIn signIn);
 
     /**
+     * Re-acquire a valid session using a special token passed back on an authenticate request. 
+     * Allows the client to re-authenticate without prompting for a password.
+     */
+    Account reauthenticate(Study study, SignIn signIn);
+    
+    /**
+     * Retrieve an account where authentication is handled outside of the DAO. (Arguably all the 
+     * authentication logic could be moved out of the DAO at a later time.)j This retrieves the 
+     * account, and rotates and returns a new reauthorization token (this is the behavior of 
+     * the authenticate and reauthenticate calls). This method does not throw exceptions.
+     */
+    Account getAccountAsAuthenticated(Study study, String email);
+    
+    /**
      * A factory method to construct a valid Account object that will work with our underlying 
      * persistence store. This does NOT save the account, you must call createAccount() after 
      * the account has been updated.
@@ -76,9 +90,9 @@ public interface AccountDao {
     void updateAccount(Account account);
     
     /**
-     * Get an account in the context of a study by the user's ID or by their email address (email is 
-     * deprecated and in the process of being removed). Returns null if there is no account, it is 
-     * up to callers to translate this into the appropriate exception, if any. 
+     * Get an account in the context of a study by the user's ID or by their email address. 
+     * Returns null if there is no account, it is up to callers to translate this into the 
+     * appropriate exception, if any. 
      */
     Account getAccount(Study study, String id);
     

@@ -69,6 +69,7 @@ import play.test.Helpers;
 @RunWith(MockitoJUnitRunner.class)
 public class AuthenticationControllerMockTest {
     
+    private static final String REAUTH_TOKEN = "reauthToken";
     private static final String TEST_INTERNAL_SESSION_ID = "internal-session-id";
     private static final String TEST_PASSWORD = "password";
     private static final String TEST_ACCOUNT_ID = "spId";
@@ -116,6 +117,7 @@ public class AuthenticationControllerMockTest {
         controller.setCacheProvider(cacheProvider);
         
         userSession = new UserSession();
+        userSession.setReauthToken(REAUTH_TOKEN);
         
         study = new DynamoStudy();
         study.setIdentifier(TEST_STUDY_ID_STRING);
@@ -164,6 +166,19 @@ public class AuthenticationControllerMockTest {
     public void emailSignInMissingStudyId() throws Exception { 
         mockPlayContextWithJson(TestUtils.createJson("{'email':'email@email.com','token':'abc'}"));
         controller.emailSignIn();
+    }
+    
+    @Test
+    public void reauthenticate() throws Exception {
+        mockPlayContextWithJson(TestUtils.createJson(
+                "{'study':'study-key','email':'email@email.com','reauthToken':'abc'}"));
+        when(authenticationService.reauthenticate(any(), any(), signInCaptor.capture())).thenReturn(userSession);
+
+        Result result = controller.reauthenticate();
+        assertEquals(200, result.status());
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+
+        assertEquals(REAUTH_TOKEN, node.get("reauthToken").textValue());
     }
     
     @Test

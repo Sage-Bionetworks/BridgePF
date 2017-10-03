@@ -60,6 +60,22 @@ public class AuthenticationController extends BaseController {
         return signInWithRetry(5);
     }
 
+    public Result reauthenticate() throws Exception {
+        SignIn signInRequest = parseJson(request(), SignIn.class);
+
+        if (isBlank(signInRequest.getStudyId())) {
+            throw new BadRequestException("Study identifier is required.");
+        }
+        Study study = studyService.getStudy(signInRequest.getStudyId());
+        verifySupportedVersionOrThrowException(study);
+        
+        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+        
+        UserSession session = authenticationService.reauthenticate(study, context, signInRequest);
+        
+        return okResult(UserSessionInfo.toJSON(session));
+    }
+    
     @BodyParser.Of(BodyParser.Empty.class)
     public Result signOut() throws Exception {
         final UserSession session = getSessionIfItExists();

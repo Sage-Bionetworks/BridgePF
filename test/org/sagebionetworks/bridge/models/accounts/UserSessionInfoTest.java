@@ -41,23 +41,25 @@ public class UserSessionInfoTest {
         session.setEnvironment(Environment.UAT);
         session.setInternalSessionToken("internal");
         session.setSessionToken("external");
+        session.setReauthToken("reauthToken");
         session.setStudyIdentifier(new StudyIdentifierImpl("study-identifier"));
         
         JsonNode node = UserSessionInfo.toJSON(session);
-        assertEquals("first name", node.get("firstName").asText());
-        assertEquals("last name", node.get("lastName").asText());
-        assertEquals(session.isAuthenticated(), node.get("authenticated").asBoolean());
-        assertEquals(ConsentStatus.isConsentCurrent(map), node.get("signedMostRecentConsent").asBoolean());
-        assertEquals(ConsentStatus.isUserConsented(map), node.get("consented").asBoolean());
-        assertEquals(participant.getSharingScope().name(), node.get("sharingScope").asText().toUpperCase());
-        assertEquals(session.getSessionToken(), node.get("sessionToken").asText());
-        assertEquals(participant.getEmail(), node.get("username").asText());
-        assertEquals(participant.getEmail(), node.get("email").asText());
-        assertEquals("researcher", node.get("roles").get(0).asText());
-        assertEquals("foo", node.get("dataGroups").get(0).asText());
-        assertEquals("staging", node.get("environment").asText());
-        assertEquals(participant.getId(), node.get("id").asText());
-        assertFalse(node.get("notifyByEmail").asBoolean());
+        assertEquals("first name", node.get("firstName").textValue());
+        assertEquals("last name", node.get("lastName").textValue());
+        assertEquals(session.isAuthenticated(), node.get("authenticated").booleanValue());
+        assertEquals(ConsentStatus.isConsentCurrent(map), node.get("signedMostRecentConsent").booleanValue());
+        assertEquals(ConsentStatus.isUserConsented(map), node.get("consented").booleanValue());
+        assertEquals(participant.getSharingScope().name(), node.get("sharingScope").textValue().toUpperCase());
+        assertEquals(session.getSessionToken(), node.get("sessionToken").textValue());
+        assertEquals(participant.getEmail(), node.get("username").textValue());
+        assertEquals(participant.getEmail(), node.get("email").textValue());
+        assertEquals("researcher", node.get("roles").get(0).textValue());
+        assertEquals("foo", node.get("dataGroups").get(0).textValue());
+        assertEquals("staging", node.get("environment").textValue());
+        assertEquals("reauthToken", node.get("reauthToken").textValue());
+        assertEquals(participant.getId(), node.get("id").textValue());
+        assertFalse(node.get("notifyByEmail").booleanValue());
         assertNull(node.get("healthCode"));
         assertNull(node.get("encryptedHealthCode"));
         assertEquals("UserSessionInfo", node.get("type").asText());
@@ -65,16 +67,16 @@ public class UserSessionInfoTest {
         JsonNode consentMap = node.get("consentStatuses");
         
         JsonNode consentStatus = consentMap.get("AAA");
-        assertEquals("Consent", consentStatus.get("name").asText());
-        assertEquals("AAA", consentStatus.get("subpopulationGuid").asText());
-        assertTrue(consentStatus.get("required").asBoolean());
-        assertTrue(consentStatus.get("consented").asBoolean());
-        assertFalse(consentStatus.get("signedMostRecentConsent").asBoolean());
-        assertEquals("ConsentStatus", consentStatus.get("type").asText());
+        assertEquals("Consent", consentStatus.get("name").textValue());
+        assertEquals("AAA", consentStatus.get("subpopulationGuid").textValue());
+        assertTrue(consentStatus.get("required").booleanValue());
+        assertTrue(consentStatus.get("consented").booleanValue());
+        assertFalse(consentStatus.get("signedMostRecentConsent").booleanValue());
+        assertEquals("ConsentStatus", consentStatus.get("type").textValue());
         assertEquals(6, consentStatus.size());
         
         // ... and no things that shouldn't be there
-        assertEquals(19, node.size());
+        assertEquals(20, node.size());
     }
     
 }

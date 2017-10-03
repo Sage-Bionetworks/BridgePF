@@ -148,7 +148,7 @@ public class AuthenticationService {
         // Consume the key regardless of what happens
         cacheProvider.removeString(cacheKey);
         
-        Account account = accountDao.getAccountWithEmail(study, signIn.getEmail());
+        Account account = accountDao.getAccountAsAuthenticated(study, signIn.getEmail());
         if (account.getStatus() == AccountStatus.UNVERIFIED) {
             throw new EntityNotFoundException(Account.class);
         } else if (account.getStatus() == AccountStatus.DISABLED) {
@@ -159,11 +159,6 @@ public class AuthenticationService {
 
         if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
             throw new ConsentRequiredException(session);
-        }
-
-        // The client can optionally change the password in order to sign in when the session expires
-        if (signIn.getPassword() != null) {
-            accountDao.changePassword(account, signIn.getPassword());
         }
         return session;
     }
@@ -210,6 +205,22 @@ public class AuthenticationService {
         Validate.entityThrowingException(SignInValidator.PASSWORD_SIGNIN, signIn);
 
         Account account = accountDao.authenticate(study, signIn);
+
+        UserSession session = getSessionFromAccount(study, context, account);
+        // Do not call sessionUpdateService as we assume system is in sync with the session on sign in
+        cacheProvider.setUserSession(session);
+        
+        return session;
+    }
+    
+    public UserSession reauthenticate(Study study, CriteriaContext context, SignIn signIn) throws EntityNotFoundException {
+        checkNotNull(study);
+        checkNotNull(context);
+        checkNotNull(signIn);
+        
+        Validate.entityThrowingException(SignInValidator.REAUTHENTICATION_REQUEST, signIn);
+
+        Account account = accountDao.reauthenticate(study, signIn);
 
         UserSession session = getSessionFromAccount(study, context, account);
         // Do not call sessionUpdateService as we assume system is in sync with the session on sign in
@@ -311,6 +322,7 @@ public class AuthenticationService {
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment());
         session.setStudyIdentifier(study.getStudyIdentifier());
+        session.setReauthToken(account.getReauthToken());
         
         CriteriaContext newContext = new CriteriaContext.Builder()
                 .withContext(context)

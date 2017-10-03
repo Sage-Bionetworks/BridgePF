@@ -13,11 +13,13 @@ public class SignInValidator implements Validator {
     public static final SignInValidator EMAIL_SIGNIN_REQUEST = new SignInValidator(Type.EMAIL_REQUEST);
     public static final SignInValidator PASSWORD_SIGNIN = new SignInValidator(Type.PASSWORD);
     public static final SignInValidator EMAIL_SIGNIN = new SignInValidator(Type.EMAIL);
+    public static final SignInValidator REAUTHENTICATION_REQUEST = new SignInValidator(Type.REAUTH);
     
     private static enum Type {
         PASSWORD,
         EMAIL_REQUEST,
-        EMAIL
+        EMAIL,
+        REAUTH
     }
     
     private Type type;
@@ -49,6 +51,10 @@ public class SignInValidator implements Validator {
         } else if (type == Type.EMAIL) {
             if (isBlank(signIn.getToken())) {
                 errors.rejectValue("token", "is required");
+            }
+        } else if (type == Type.REAUTH) {
+            if (isBlank(signIn.getReauthToken())) {
+                errors.rejectValue("reauthToken", "is required");
             }
         }
     }

@@ -85,6 +85,7 @@ public class ExceptionInterceptorTest {
         session.setEnvironment(Environment.DEV);
         session.setInternalSessionToken("internalToken");
         session.setSessionToken("sessionToken");
+        session.setReauthToken("reauthToken");
         session.setStudyIdentifier(new StudyIdentifierImpl("test"));
         session.setConsentStatuses(Maps.newHashMap());
         
@@ -96,26 +97,27 @@ public class ExceptionInterceptorTest {
         Result result = (Result)interceptor.invoke(invocation);
         JsonNode node = new ObjectMapper().readTree(contentAsString(result));
 
-        assertTrue(node.get("authenticated").asBoolean());
-        assertFalse(node.get("consented").asBoolean());
-        assertFalse(node.get("signedMostRecentConsent").asBoolean());
-        assertEquals("all_qualified_researchers", node.get("sharingScope").asText());
-        assertEquals("sessionToken", node.get("sessionToken").asText());
-        assertEquals("develop", node.get("environment").asText());
-        assertEquals("email@email.com", node.get("username").asText());
-        assertEquals("email@email.com", node.get("email").asText());
-        assertEquals("userId", node.get("id").asText());
-        assertTrue(node.get("dataSharing").asBoolean());
-        assertTrue(node.get("notifyByEmail").asBoolean());
-        assertEquals("UserSessionInfo", node.get("type").asText());
+        assertTrue(node.get("authenticated").booleanValue());
+        assertFalse(node.get("consented").booleanValue());
+        assertFalse(node.get("signedMostRecentConsent").booleanValue());
+        assertEquals("all_qualified_researchers", node.get("sharingScope").textValue());
+        assertEquals("sessionToken", node.get("sessionToken").textValue());
+        assertEquals("develop", node.get("environment").textValue());
+        assertEquals("email@email.com", node.get("username").textValue());
+        assertEquals("email@email.com", node.get("email").textValue());
+        assertEquals("userId", node.get("id").textValue());
+        assertEquals("reauthToken", node.get("reauthToken").textValue());
+        assertTrue(node.get("dataSharing").booleanValue());
+        assertTrue(node.get("notifyByEmail").booleanValue());
+        assertEquals("UserSessionInfo", node.get("type").textValue());
         ArrayNode array = (ArrayNode)node.get("roles");
         assertEquals(0, array.size());
         array = (ArrayNode)node.get("dataGroups");
         assertEquals(1, array.size());
-        assertEquals("group1", array.get(0).asText());
+        assertEquals("group1", array.get(0).textValue());
         assertEquals(0, node.get("consentStatuses").size());
         // And no further properties
-        assertEquals(19, node.size());
+        assertEquals(20, node.size());
 
         // Don't use assertStatusCode(), because this returns a session, not an exception. Still want to verify the
         // Result status code though.
@@ -147,8 +149,8 @@ public class ExceptionInterceptorTest {
         JsonNode node = new ObjectMapper().readTree(contentAsString(result));
         
         assertEquals(3, node.size()); 
-        assertEquals("This is an error message.", node.get("message").asText());
-        assertEquals("BadRequestException", node.get("type").asText());
+        assertEquals("This is an error message.", node.get("message").textValue());
+        assertEquals("BadRequestException", node.get("type").textValue());
 
         assertStatusCode(400, result, node);
     }
@@ -186,8 +188,8 @@ public class ExceptionInterceptorTest {
             JsonNode node = new ObjectMapper().readTree(contentAsString(result));
             
             assertEquals(5, node.size());
-            assertEquals("identifier is required", node.get("errors").get("identifier").get(0).asText());
-            assertEquals("InvalidEntityException", node.get("type").asText());
+            assertEquals("identifier is required", node.get("errors").get("identifier").get(0).textValue());
+            assertEquals("InvalidEntityException", node.get("type").textValue());
             assertNotNull(node.get("entity"));
             assertNotNull(node.get("errors"));
 

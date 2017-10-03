@@ -51,7 +51,8 @@ public class BridgeUtils {
     public static final Joiner COMMA_JOINER = Joiner.on(",");
     public static final Joiner SEMICOLON_SPACE_JOINER = Joiner.on("; ");
     public static final Joiner SPACE_JOINER = Joiner.on(" ");
-
+    
+    private static final RandomString RANDOM_STRING = new RandomString(); 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     /**
@@ -112,6 +113,10 @@ public class BridgeUtils {
     
     public static String generateGuid() {
         return UUID.randomUUID().toString();
+    }
+    
+    public static String generateRandomString() {
+        return RANDOM_STRING.nextString();
     }
 
     /** Generate a random 16-byte salt, using a {@link SecureRandom}. */

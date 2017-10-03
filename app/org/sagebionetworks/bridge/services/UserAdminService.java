@@ -127,7 +127,7 @@ public class UserAdminService {
         
         UserSession newUserSession = null;
         try {
-            SignIn signIn = new SignIn(study.getIdentifier(), participant.getEmail(), participant.getPassword(), null);
+            SignIn signIn = new SignIn(study.getIdentifier(), participant.getEmail(), participant.getPassword(), null, null);
             newUserSession = authenticationService.signIn(study, context, signIn);
             
             if (consentUser) {

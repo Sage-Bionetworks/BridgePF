@@ -44,6 +44,9 @@ public class HibernateAccount {
     private PasswordAlgorithm passwordAlgorithm;
     private String passwordHash;
     private Long passwordModifiedOn;
+    private PasswordAlgorithm reauthTokenAlgorithm;
+    private String reauthTokenHash;
+    private Long reauthTokenModifiedOn;
     private Set<Roles> roles;
     private AccountStatus status;
     private int version;
@@ -171,7 +174,8 @@ public class HibernateAccount {
         this.healthId = healthId;
     }
 
-    /** Epoch milliseconds when the account was last modified, including password change. */
+    /** Epoch milliseconds when the account was last modified, including password but NOT 
+     * reauthentication token changes. */
     public Long getModifiedOn() {
         return modifiedOn;
     }
@@ -234,6 +238,45 @@ public class HibernateAccount {
     /** @see #getPasswordModifiedOn */
     public void setPasswordModifiedOn(Long passwordModifiedOn) {
         this.passwordModifiedOn = passwordModifiedOn;
+    }
+
+    /**
+     * The algorithm used to hash the reauthentication token. The hashing algorithms are 
+     * the same as those used for passwords.
+     *
+     * @see PasswordAlgorithm
+     */
+    @Enumerated(EnumType.STRING)
+    public PasswordAlgorithm getReauthTokenAlgorithm() {
+        return reauthTokenAlgorithm;
+    }
+
+    /** @see #getReauthTokenAlgorithm */
+    public void setReauthTokenAlgorithm(PasswordAlgorithm reauthTokenAlgorithm) {
+        this.reauthTokenAlgorithm = reauthTokenAlgorithm;
+    }
+
+    /**
+     * The full reauthentication token hash, as used by {@link PasswordAlgorithm} to
+     * decode it.
+     */
+    public String getReauthTokenHash() {
+        return reauthTokenHash;
+    }
+
+    /** @see #getReauthTokenHash */
+    public void setReauthTokenHash(String reauthTokenHash) {
+        this.reauthTokenHash = reauthTokenHash;
+    }
+
+    /** Epoch milliseconds when the user last changed their reauthentication token. */
+    public Long getReauthTokenModifiedOn() {
+        return reauthTokenModifiedOn;
+    }
+
+    /** @see #getReauthTokenModifiedOn */
+    public void setReauthTokenModifiedOn(Long reauthTokenModifiedOn) {
+        this.reauthTokenModifiedOn = reauthTokenModifiedOn;
     }
 
     /**

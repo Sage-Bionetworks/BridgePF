@@ -110,12 +110,8 @@ public class HibernateAccountDao implements AccountDao {
     public void changePassword(Account account, String newPassword) {
         String accountId = account.getId();
         PasswordAlgorithm passwordAlgorithm = PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
-        String passwordHash;
-        try {
-            passwordHash = passwordAlgorithm.generateHash(newPassword);
-        } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException ex) {
-            throw new BridgeServiceException("Error changing password: " + ex.getMessage(), ex);
-        }
+        
+        String passwordHash = generateHashWithAlgorithm(passwordAlgorithm, newPassword);
 
         // We have to load and update the whole account in order to use Hibernate's optimistic versioning.
         HibernateAccount hibernateAccount = hibernateHelper.getById(HibernateAccount.class, accountId);
@@ -135,36 +131,62 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public Account authenticate(Study study, SignIn signIn) {
-        // Fetch account
-        HibernateAccount hibernateAccount = getHibernateAccountByEmail(study.getStudyIdentifier(), signIn.getEmail());
-        if (hibernateAccount == null || hibernateAccount.getStatus() == AccountStatus.UNVERIFIED) {
-            throw new EntityNotFoundException(Account.class);
-        }
-        if (hibernateAccount.getStatus() == AccountStatus.DISABLED) {
-            throw new AccountDisabledException();
-        }
+        HibernateAccount hibernateAccount = fetchHibernateAccount(study, signIn);
 
-        // Verify password
-        PasswordAlgorithm passwordAlgorithm = hibernateAccount.getPasswordAlgorithm();
-        String passwordHash = hibernateAccount.getPasswordHash();
-        if (passwordAlgorithm == null || StringUtils.isBlank(passwordHash)) {
-            LOG.error("Account " + hibernateAccount.getId() + " is enabled but has no password");
-            throw new EntityNotFoundException(Account.class);
-        }
-        try {
-            if (!passwordAlgorithm.checkHash(passwordHash, signIn.getPassword())) {
-                // To prevent enumeration attacks, if the password doesn't match, throw 404 account not found.
-                throw new EntityNotFoundException(Account.class);
-            }
-        } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException ex) {
-            throw new BridgeServiceException("Error validating password: " + ex.getMessage(), ex);
-        }
+        verifyPassword(hibernateAccount.getId(), "password", hibernateAccount.getPasswordAlgorithm(),
+                hibernateAccount.getPasswordHash(), signIn.getPassword());
 
         // Unmarshall account
-        validateHealthCode(study.getStudyIdentifier(), hibernateAccount);
-        return unmarshallAccount(hibernateAccount);
+        Account account = unmarshallAccount(hibernateAccount);
+        validateHealthCode(study.getStudyIdentifier(), hibernateAccount, account, false);
+        updateReauthToken(hibernateAccount, account);
+        return account;
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public Account reauthenticate(Study study, SignIn signIn) {
+        HibernateAccount hibernateAccount = fetchHibernateAccount(study, signIn);
+
+        verifyPassword(hibernateAccount.getId(), "reauth token", hibernateAccount.getReauthTokenAlgorithm(),
+                hibernateAccount.getReauthTokenHash(), signIn.getReauthToken());
+
+        // Unmarshall account. Do not validate health code, you can't re-authenticate until you authenticate, 
+        // so health code has already been checked.
+        Account account = unmarshallAccount(hibernateAccount);
+        updateReauthToken(hibernateAccount, account);
+        return account;
+    }
+    
+    @Override
+    public Account getAccountAsAuthenticated(Study study, String email) {
+        HibernateAccount hibernateAccount = getHibernateAccountByEmail(study, email);
+        
+        if (hibernateAccount != null) {
+            Account account = unmarshallAccount(hibernateAccount);
+            validateHealthCode(study.getStudyIdentifier(), hibernateAccount, account, false);
+            updateReauthToken(hibernateAccount, account);
+            return account;
+        } else {
+            // In keeping with the email implementation, just return null
+            return null;
+        }
+    }
+
+    private void updateReauthToken(HibernateAccount hibernateAccount, Account account) {
+        // Re-create and persist the authentication token. This must also succeed to reauthenticate successfully.
+        String reauthToken = BridgeUtils.generateRandomString();
+        account.setReauthToken(reauthToken);
+        
+        PasswordAlgorithm passwordAlgorithm = PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
+        String reauthTokenHash = generateHashWithAlgorithm(passwordAlgorithm, reauthToken);
+        hibernateAccount.setReauthTokenHash(reauthTokenHash);
+        hibernateAccount.setReauthTokenAlgorithm(passwordAlgorithm);
+        hibernateAccount.setReauthTokenModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+        
+        hibernateHelper.update(hibernateAccount);
+    }
+    
     /** {@inheritDoc} */
     @Override
     public Account constructAccount(Study study, String email, String password) {
@@ -186,12 +208,8 @@ public class HibernateAccountDao implements AccountDao {
 
         // Hash password.
         PasswordAlgorithm passwordAlgorithm = PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
-        String passwordHash;
-        try {
-            passwordHash = passwordAlgorithm.generateHash(password);
-        } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException ex) {
-            throw new BridgeServiceException("Error creating password: " + ex.getMessage(), ex);
-        }
+        String passwordHash = generateHashWithAlgorithm(passwordAlgorithm, password);
+
         account.setPasswordAlgorithm(passwordAlgorithm);
         account.setPasswordHash(passwordHash);
 
@@ -270,8 +288,9 @@ public class HibernateAccountDao implements AccountDao {
     public Account getAccount(Study study, String id) {
         HibernateAccount hibernateAccount = hibernateHelper.getById(HibernateAccount.class, id);
         if (hibernateAccount != null) {
-            validateHealthCode(study.getStudyIdentifier(), hibernateAccount);
-            return unmarshallAccount(hibernateAccount);
+            Account account = unmarshallAccount(hibernateAccount);
+            validateHealthCode(study.getStudyIdentifier(), hibernateAccount, account, true);
+            return account;
         } else {
             // In keeping with the email implementation, just return null
             return null;
@@ -283,11 +302,51 @@ public class HibernateAccountDao implements AccountDao {
     public Account getAccountWithEmail(Study study, String email) {
         HibernateAccount hibernateAccount = getHibernateAccountByEmail(study.getStudyIdentifier(), email);
         if (hibernateAccount != null) {
-            validateHealthCode(study.getStudyIdentifier(), hibernateAccount);
-            return unmarshallAccount(hibernateAccount);
+            Account account = unmarshallAccount(hibernateAccount);
+            validateHealthCode(study.getStudyIdentifier(), hibernateAccount, account, true);
+            return account;
         } else {
             return null;
         }
+    }
+
+    private HibernateAccount fetchHibernateAccount(Study study, SignIn signIn) {
+        // Fetch account
+        HibernateAccount hibernateAccount = getHibernateAccountByEmail(study.getStudyIdentifier(), signIn.getEmail());
+        if (hibernateAccount == null || hibernateAccount.getStatus() == AccountStatus.UNVERIFIED) {
+            throw new EntityNotFoundException(Account.class);
+        }
+        if (hibernateAccount.getStatus() == AccountStatus.DISABLED) {
+            throw new AccountDisabledException();
+        }
+        return hibernateAccount;
+    }
+    
+    private void verifyPassword(String accountId, String type, PasswordAlgorithm algorithm, String hash,
+            String userValue) {
+        // Verify password
+        if (algorithm == null || StringUtils.isBlank(hash)) {
+            LOG.error("Account " + accountId + " is enabled but has no "+type+".");
+            throw new EntityNotFoundException(Account.class);
+        }
+        try {
+            if (!algorithm.checkHash(hash, userValue)) {
+                // To prevent enumeration attacks, if the password doesn't match, throw 404 account not found.
+                throw new EntityNotFoundException(Account.class);
+            }
+        } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException ex) {
+            throw new BridgeServiceException("Error validating "+type+": " + ex.getMessage(), ex);
+        }        
+    }
+    
+    private String generateHashWithAlgorithm(PasswordAlgorithm algorithm, String value) {
+        String hash = null;
+        try {
+            hash = algorithm.generateHash(value);
+        } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException ex) {
+            throw new BridgeServiceException("Error creating reauthentication token: " + ex.getMessage(), ex);
+        }
+        return hash;
     }
 
     // Helper method to get a single account for a given study and email address.
@@ -455,20 +514,23 @@ public class HibernateAccountDao implements AccountDao {
     // through the DAO will automatically have health code and ID populated, but accounts created in the DB directly
     // are left in a bad state. This method validates the health code mapping on a HibernateAccount and updates it as
     // is necessary.
-    private void validateHealthCode(StudyIdentifier studyId, HibernateAccount hibernateAccount) {
+    private void validateHealthCode(StudyIdentifier studyId, HibernateAccount hibernateAccount, Account account,
+            boolean doSave) {
         if (StringUtils.isBlank(hibernateAccount.getHealthCode()) ||
                 StringUtils.isBlank(hibernateAccount.getHealthId())) {
             // Generate health code mapping.
             HealthId healthId = healthCodeService.createMapping(studyId);
             hibernateAccount.setHealthCode(healthId.getCode());
             hibernateAccount.setHealthId(healthId.getId());
+            
+            account.setHealthId(healthId);
 
             // We modified it. Update modifiedOn.
             long modifiedOn = DateUtils.getCurrentMillisFromEpoch();
             hibernateAccount.setModifiedOn(modifiedOn);
-
-            // We need to save the whole account to use Hibernate's optimistic versioning.
-            hibernateHelper.update(hibernateAccount);
+            if (doSave) {
+                hibernateHelper.update(hibernateAccount);    
+            }
         }
     }
 
