@@ -396,7 +396,7 @@ public class HibernateAccountDaoTest {
         when(mockHibernateHelper.queryGet(any(), any(), any(), any())).thenReturn(ImmutableList.of(
                 hibernateAccount));
 
-        Account account = dao.getAccountAsAuthenticated(STUDY, EMAIL);
+        Account account = dao.getAccountAfterAuthentication(STUDY, EMAIL);
         
         String newHash = PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM.generateHash(account.getReauthToken());
         assertNotEquals(originalReauthTokenHash, newHash);

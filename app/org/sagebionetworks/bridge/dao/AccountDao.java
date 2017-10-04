@@ -57,23 +57,26 @@ public interface AccountDao {
     Account authenticate(Study study, SignIn signIn);
 
     /**
-     * Re-acquire a valid session using a special token passed back on an authenticate request. 
-     * Allows the client to re-authenticate without prompting for a password.
+     * Re-acquire a valid session using a special token passed back on an
+     * authenticate request. Allows the client to re-authenticate without prompting
+     * for a password.
      */
     Account reauthenticate(Study study, SignIn signIn);
     
     /**
-     * Retrieve an account where authentication is handled outside of the DAO. (Arguably all the 
-     * authentication logic could be moved out of the DAO at a later time.)j This retrieves the 
-     * account, and rotates and returns a new reauthorization token (this is the behavior of 
-     * the authenticate and reauthenticate calls). This method does not throw exceptions.
+     * Retrieve an account where authentication is handled outside of the DAO (If we
+     * retrieve and return a session to the user through a path that does not call
+     * authenticate/reauthenticate, then you will need to call this method to get
+     * the final account). This retrieves the account, and rotates and returns a new
+     * reauthorization token, the same as the authenticate and reauthenticate calls.
+     * This method returns null if the Account does not exist.
      */
-    Account getAccountAsAuthenticated(Study study, String email);
+    Account getAccountAfterAuthentication(Study study, String email);
     
     /**
-     * A factory method to construct a valid Account object that will work with our underlying 
-     * persistence store. This does NOT save the account, you must call createAccount() after 
-     * the account has been updated.
+     * A factory method to construct a valid Account object that will work with our
+     * underlying persistence store. This does NOT save the account, you must call
+     * createAccount() after the account has been updated.
      */
     Account constructAccount(Study study, String email, String password);
     

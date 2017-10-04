@@ -173,7 +173,7 @@ public class AuthenticationServiceMockTest {
     @Test
     public void emailSignIn() {
         doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
-        doReturn(account).when(accountDao).getAccountAsAuthenticated(study, RECIPIENT_EMAIL);
+        doReturn(account).when(accountDao).getAccountAfterAuthentication(study, RECIPIENT_EMAIL);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
         
@@ -181,7 +181,7 @@ public class AuthenticationServiceMockTest {
         
         assertNotNull(retSession);
         verify(accountDao, never()).changePassword(eq(account), any());
-        verify(accountDao).getAccountAsAuthenticated(study, RECIPIENT_EMAIL);
+        verify(accountDao).getAccountAfterAuthentication(study, RECIPIENT_EMAIL);
         verify(cacheProvider).removeString(CACHE_KEY);
     }
     
@@ -248,7 +248,7 @@ public class AuthenticationServiceMockTest {
         study.setIdentifier(STUDY_ID);
         doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
         doReturn(study).when(studyService).getStudy(STUDY_ID);
-        doReturn(account).when(accountDao).getAccountAsAuthenticated(study, RECIPIENT_EMAIL);
+        doReturn(account).when(accountDao).getAccountAfterAuthentication(study, RECIPIENT_EMAIL);
         account.setStatus(AccountStatus.UNVERIFIED);
         
         service.emailSignIn(CONTEXT, SIGN_IN);
@@ -262,7 +262,7 @@ public class AuthenticationServiceMockTest {
         study.setIdentifier(STUDY_ID);
         doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
         doReturn(study).when(studyService).getStudy(STUDY_ID);
-        doReturn(account).when(accountDao).getAccountAsAuthenticated(study, RECIPIENT_EMAIL);
+        doReturn(account).when(accountDao).getAccountAfterAuthentication(study, RECIPIENT_EMAIL);
         account.setStatus(AccountStatus.DISABLED);
         
         service.emailSignIn(CONTEXT, SIGN_IN);
@@ -277,7 +277,7 @@ public class AuthenticationServiceMockTest {
         study.setIdentifier(STUDY_ID);
         doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
         doReturn(study).when(studyService).getStudy(STUDY_ID);
-        doReturn(account).when(accountDao).getAccountAsAuthenticated(study, RECIPIENT_EMAIL);
+        doReturn(account).when(accountDao).getAccountAfterAuthentication(study, RECIPIENT_EMAIL);
         
         service.emailSignIn(CONTEXT, SIGN_IN);
     }

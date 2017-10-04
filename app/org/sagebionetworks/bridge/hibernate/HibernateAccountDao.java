@@ -55,6 +55,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 public class HibernateAccountDao implements AccountDao {
     
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
+    
+    private static enum AuthTokenType {
+        PASSWORD,
+        REAUTH_TOKEN
+    }
 
     static final String ACCOUNT_SUMMARY_QUERY_PREFIX = "select new " + HibernateAccount.class.getCanonicalName() +
             "(createdOn, studyId, firstName, lastName, email, id, status) ";
@@ -131,10 +136,28 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public Account authenticate(Study study, SignIn signIn) {
+        return authenticateInternal(study, signIn, AuthTokenType.PASSWORD);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Account reauthenticate(Study study, SignIn signIn) {
+        return authenticateInternal(study, signIn, AuthTokenType.REAUTH_TOKEN);
+    }
+    
+    private Account authenticateInternal(Study study, SignIn signIn, AuthTokenType authTokenType) {
         HibernateAccount hibernateAccount = fetchHibernateAccount(study, signIn);
 
-        verifyPassword(hibernateAccount.getId(), "password", hibernateAccount.getPasswordAlgorithm(),
-                hibernateAccount.getPasswordHash(), signIn.getPassword());
+        PasswordAlgorithm algorithm = (authTokenType == AuthTokenType.PASSWORD) ? 
+                hibernateAccount.getPasswordAlgorithm() : hibernateAccount.getReauthTokenAlgorithm();
+        String hash = (authTokenType == AuthTokenType.PASSWORD) ?
+                hibernateAccount.getPasswordHash() : hibernateAccount.getReauthTokenHash();
+        String userValue = (authTokenType == AuthTokenType.PASSWORD) ?
+                signIn.getPassword() : signIn.getReauthToken();
+        String credentialName = (authTokenType == AuthTokenType.PASSWORD) ?
+                "password" : "reauth token";
+        
+        verifyPassword(hibernateAccount.getId(), credentialName, algorithm, hash, userValue);
 
         // Unmarshall account
         Account account = unmarshallAccount(hibernateAccount);
@@ -142,24 +165,9 @@ public class HibernateAccountDao implements AccountDao {
         updateReauthToken(hibernateAccount, account);
         return account;
     }
-
-    /** {@inheritDoc} */
-    @Override
-    public Account reauthenticate(Study study, SignIn signIn) {
-        HibernateAccount hibernateAccount = fetchHibernateAccount(study, signIn);
-
-        verifyPassword(hibernateAccount.getId(), "reauth token", hibernateAccount.getReauthTokenAlgorithm(),
-                hibernateAccount.getReauthTokenHash(), signIn.getReauthToken());
-
-        // Unmarshall account. Do not validate health code, you can't re-authenticate until you authenticate, 
-        // so health code has already been checked.
-        Account account = unmarshallAccount(hibernateAccount);
-        updateReauthToken(hibernateAccount, account);
-        return account;
-    }
     
     @Override
-    public Account getAccountAsAuthenticated(Study study, String email) {
+    public Account getAccountAfterAuthentication(Study study, String email) {
         HibernateAccount hibernateAccount = getHibernateAccountByEmail(study, email);
         
         if (hibernateAccount != null) {

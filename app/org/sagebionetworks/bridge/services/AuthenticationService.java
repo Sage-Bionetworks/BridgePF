@@ -148,7 +148,7 @@ public class AuthenticationService {
         // Consume the key regardless of what happens
         cacheProvider.removeString(cacheKey);
         
-        Account account = accountDao.getAccountAsAuthenticated(study, signIn.getEmail());
+        Account account = accountDao.getAccountAfterAuthentication(study, signIn.getEmail());
         if (account.getStatus() == AccountStatus.UNVERIFIED) {
             throw new EntityNotFoundException(Account.class);
         } else if (account.getStatus() == AccountStatus.DISABLED) {
@@ -181,7 +181,8 @@ public class AuthenticationService {
     
     /**
      * This method re-constructs the session based on potential changes to the user. It is called after a user 
-     * account is updated, and takes the updated CriteriaContext to calculate the current state of the user.
+     * account is updated, and takes the updated CriteriaContext to calculate the current state of the user. We 
+     * do not rotate the reauthentication token just because the user updates their session.
      * @param study
      *      the user's study
      * @param context
@@ -223,7 +224,7 @@ public class AuthenticationService {
         Account account = accountDao.reauthenticate(study, signIn);
 
         UserSession session = getSessionFromAccount(study, context, account);
-        // Do not call sessionUpdateService as we assume system is in sync with the session on sign in
+        // Do not call sessionUpdateService as we assume system is in sync with the session on reauthentication
         cacheProvider.setUserSession(session);
         
         return session;
