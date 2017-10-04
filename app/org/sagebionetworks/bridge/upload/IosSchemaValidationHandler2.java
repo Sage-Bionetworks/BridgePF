@@ -234,7 +234,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
             context.addMessage(String.format("upload ID %s info.json contains empty file list", uploadId));
         }
 
-        DateTime createdOn = null;
+        DateTime createdOnFromFileList = null;
         for (JsonNode oneFileJson : fileList) {
             // validate filename
             JsonNode filenameNode = oneFileJson.get(KEY_FILENAME);
@@ -260,20 +260,35 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
             } else {
                 DateTime timestamp = UploadUtil.parseIosTimestamp(timestampNode.textValue());
                 //noinspection ConstantConditions
-                if (createdOn == null || timestamp.isAfter(createdOn)) {
-                    createdOn = timestamp;
+                if (createdOnFromFileList == null || timestamp.isAfter(createdOnFromFileList)) {
+                    createdOnFromFileList = timestamp;
                 }
             }
         }
 
-        if (createdOn == null) {
+        // While we're at it, calculate createdOn. createdOn in info.json takes top priority, then fall back to file
+        // list, then fall back to current time.
+        String createdOnFromInfoJsonString = JsonUtils.asText(infoJson, UploadUtil.FIELD_CREATED_ON);
+        DateTime createdOnFromInfoJson = null;
+        if (StringUtils.isNotBlank(createdOnFromInfoJsonString)) {
+            try {
+                createdOnFromInfoJson = DateTime.parse(createdOnFromInfoJsonString);
+            } catch (IllegalArgumentException ex) {
+                // Write a message to the validation context, but there's no need to log or throw.
+                context.addMessage("info.json.createdOn is invalid: " + createdOnFromInfoJsonString);
+            }
+        }
+
+        if (createdOnFromInfoJson != null) {
+            record.setCreatedOn(createdOnFromInfoJson.getMillis());
+            record.setCreatedOnTimeZone(HealthDataRecord.TIME_ZONE_FORMATTER.print(createdOnFromInfoJson));
+        } else if (createdOnFromFileList != null) {
+            record.setCreatedOn(createdOnFromFileList.getMillis());
+            record.setCreatedOnTimeZone(HealthDataRecord.TIME_ZONE_FORMATTER.print(createdOnFromFileList));
+        } else {
             // Recover by using current time. Don't set a timezone, since it's indeterminate.
             context.addMessage(String.format("upload ID %s has no timestamps, using current time", uploadId));
             record.setCreatedOn(DateUtils.getCurrentMillisFromEpoch());
-        } else {
-            // Use createdOn and timezone as specified in the upload.
-            record.setCreatedOn(createdOn.getMillis());
-            record.setCreatedOnTimeZone(HealthDataRecord.TIME_ZONE_FORMATTER.print(createdOn));
         }
     }
 
