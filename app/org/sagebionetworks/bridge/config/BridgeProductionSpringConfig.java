@@ -42,10 +42,10 @@ public class BridgeProductionSpringConfig {
         poolConfig.setMaxTotal(bridgeConfig.getPropertyAsInt("redis.max.total"));
         poolConfig.setMinIdle(bridgeConfig.getPropertyAsInt("redis.min.idle"));
         poolConfig.setMaxIdle(bridgeConfig.getPropertyAsInt("redis.max.idle"));
-        poolConfig.setTestOnCreate(true); // test threads when we create them (only)
-        poolConfig.setTestOnBorrow(false);
-        poolConfig.setTestOnReturn(false);
-        poolConfig.setTestWhileIdle(false);
+        poolConfig.setTestOnCreate(true);
+        poolConfig.setTestOnBorrow(true);
+        poolConfig.setTestOnReturn(true);
+        poolConfig.setTestWhileIdle(true);
         
         final String url = bridgeConfig.get(redisServerProperty);
         final JedisPool jedisPool = constructJedisPool(url, poolConfig);
