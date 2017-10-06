@@ -73,6 +73,10 @@ public class UploadUtil {
     // numeric types, but new values are likely to be "true"/"false" or ISO8601 timestamps. This leads to more
     // confusion overall, so we've decided to block it.
     //
+    // Similarly, if you convert a bool to a numeric type (int, float), Synapse will convert the bools to 0s and 1s.
+    // However, old bools in DynamoDB are still using "true"/"false", which will no longer serialize to Synapse. To
+    // prevent this data loss, we're also not allowing bools to convert to numeric types.
+    //
     // Additionally, multi-choice and timestamp fields create multiple columns in Synapse. Changing to single-column
     // types may be confusing, so we prevent these as well.
     private static final SetMultimap<UploadFieldType, UploadFieldType> ALLOWED_OLD_TYPE_TO_NEW_TYPE =
@@ -82,10 +86,8 @@ public class UploadUtil {
                     .put(UploadFieldType.ATTACHMENT_CSV, UploadFieldType.ATTACHMENT_V2)
                     .put(UploadFieldType.ATTACHMENT_JSON_BLOB, UploadFieldType.ATTACHMENT_V2)
                     .put(UploadFieldType.ATTACHMENT_JSON_TABLE, UploadFieldType.ATTACHMENT_V2)
-                    // Numeric types can changed to types with more precision (bool to int to float), but not less
-                    // precision (float to int to bool).
-                    .put(UploadFieldType.BOOLEAN, UploadFieldType.INT)
-                    .put(UploadFieldType.BOOLEAN, UploadFieldType.FLOAT)
+                    // Numeric types can changed to types with more precision (int to float), but not less
+                    // precision (float to int).
                     .put(UploadFieldType.INT, UploadFieldType.FLOAT)
                     // inline_json_blob values are parseable as JSON. This precludes string types, since JSON can't
                     // parse unquoted strings. Numbers are fine.
