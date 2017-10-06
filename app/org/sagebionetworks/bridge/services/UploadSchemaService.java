@@ -735,22 +735,8 @@ public class UploadSchemaService {
         Map<String, UploadFieldDefinition> newFieldMap = getFieldsByName(schemaToUpdate);
         Set<String> newFieldNameSet = newFieldMap.keySet();
 
-        Set<String> addedFieldNameSet = Sets.difference(newFieldNameSet, oldFieldNameSet);
         Set<String> deletedFieldNameSet = Sets.difference(oldFieldNameSet, newFieldNameSet);
         Set<String> retainedFieldNameSet = Sets.intersection(oldFieldNameSet, newFieldNameSet);
-
-        // Added fields must be optional.
-        Set<String> invalidAddedFieldNameSet = new TreeSet<>();
-        for (String oneAddedFieldName : addedFieldNameSet) {
-            UploadFieldDefinition addedField = newFieldMap.get(oneAddedFieldName);
-            if (addedField.isRequired()) {
-                invalidAddedFieldNameSet.add(oneAddedFieldName);
-            }
-        }
-        if (!invalidAddedFieldNameSet.isEmpty()) {
-            errorMessageList.add("Added fields must be optional: " + BridgeUtils.COMMA_SPACE_JOINER
-                    .join(invalidAddedFieldNameSet));
-        }
 
         // Check deleted fields.
         if (!deletedFieldNameSet.isEmpty()) {
@@ -758,18 +744,18 @@ public class UploadSchemaService {
         }
 
         // Check retained fields, make sure none are modified.
-        Set<String> modifiedFieldNameSet = new TreeSet<>();
+        Set<String> incompatibleFieldNameSet = new TreeSet<>();
         for (String oneRetainedFieldName : retainedFieldNameSet) {
             UploadFieldDefinition oldFieldDef = oldFieldMap.get(oneRetainedFieldName);
             UploadFieldDefinition newFieldDef = newFieldMap.get(oneRetainedFieldName);
 
             if (!UploadUtil.isCompatibleFieldDef(oldFieldDef, newFieldDef)) {
-                modifiedFieldNameSet.add(oneRetainedFieldName);
+                incompatibleFieldNameSet.add(oneRetainedFieldName);
             }
         }
-        if (!modifiedFieldNameSet.isEmpty()) {
+        if (!incompatibleFieldNameSet.isEmpty()) {
             errorMessageList.add("Incompatible changes to fields: " + BridgeUtils.COMMA_SPACE_JOINER.join(
-                    modifiedFieldNameSet));
+                    incompatibleFieldNameSet));
         }
 
         // Can't modify schema types.
