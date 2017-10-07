@@ -181,6 +181,26 @@ public class HibernateAccountDao implements AccountDao {
         }
     }
 
+    @Override
+    public String rotateReauthenticationToken(StudyIdentifier studyId, String email, boolean clearToken) {
+        String reauthToken = null;
+        HibernateAccount hibernateAccount = getHibernateAccountByEmail(studyId, email);
+        if (hibernateAccount != null) {
+            PasswordAlgorithm passwordAlgorithm = null;
+            String reauthTokenHash = null;
+            if (!clearToken) {
+                reauthToken = BridgeUtils.generateRandomString();
+                passwordAlgorithm = PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
+                reauthTokenHash = generateHashWithAlgorithm(passwordAlgorithm, reauthToken);
+            }
+            hibernateAccount.setReauthTokenHash(reauthTokenHash);
+            hibernateAccount.setReauthTokenAlgorithm(passwordAlgorithm);
+            hibernateAccount.setReauthTokenModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+            hibernateHelper.update(hibernateAccount);
+        }
+        return reauthToken;
+    }
+    
     private void updateReauthToken(HibernateAccount hibernateAccount, Account account) {
         // Re-create and persist the authentication token. This must also succeed to reauthenticate successfully.
         String reauthToken = BridgeUtils.generateRandomString();

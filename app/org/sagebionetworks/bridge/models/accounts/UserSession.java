@@ -54,13 +54,6 @@ public class UserSession {
     public void setInternalSessionToken(String internalSessionToken) {
         this.internalSessionToken = internalSessionToken;
     }
-    /**
-     * The token (like a one-time password) that can be used to re-establish a session. 
-     * We pass it back from authentication services as part of the session, but it is not
-     * persisted and not available in the session. It is persisted in the same way a 
-     * password is persisted (it's hashed).
-     */
-    @JsonIgnore
     public String getReauthToken() {
         return reauthToken;
     }

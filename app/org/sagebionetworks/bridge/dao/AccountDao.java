@@ -73,6 +73,8 @@ public interface AccountDao {
      */
     Account getAccountAfterAuthentication(Study study, String email);
     
+    String rotateReauthenticationToken(StudyIdentifier studyId, String email, boolean clearToken);
+    
     /**
      * A factory method to construct a valid Account object that will work with our
      * underlying persistence store. This does NOT save the account, you must call

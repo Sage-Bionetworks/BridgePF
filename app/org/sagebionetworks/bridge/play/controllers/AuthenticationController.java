@@ -4,6 +4,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -73,14 +74,25 @@ public class AuthenticationController extends BaseController {
         
         UserSession session = authenticationService.reauthenticate(study, context, signInRequest);
         
+        writeSessionInfoToMetrics(session);
+        response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
+        
+        RequestInfo requestInfo = getRequestInfoBuilder(session)
+                .withSignedInOn(DateUtils.getCurrentDateTime()).build();
+        cacheProvider.updateRequestInfo(requestInfo);
+        
         return okResult(UserSessionInfo.toJSON(session));
     }
     
     @BodyParser.Of(BodyParser.Empty.class)
     public Result signOut() throws Exception {
+        if (request().getHeader("Bridge-Session") == null) {
+            throw new BadRequestException("No session sent to server in order to sign out.");
+        }
         final UserSession session = getSessionIfItExists();
         if (session != null) {
-            authenticationService.signOut(session);
+            authenticationService.signOut(session);    
         }
         response().discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
         return okResult("Signed out.");
@@ -166,7 +178,6 @@ public class AuthenticationController extends BaseController {
         if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
             throw new ConsentRequiredException(session);
         }
-
         return okResult(UserSessionInfo.toJSON(session));
     }
 

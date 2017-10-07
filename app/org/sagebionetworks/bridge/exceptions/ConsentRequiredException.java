@@ -11,8 +11,6 @@ public class ConsentRequiredException extends BridgeServiceException {
     
     public ConsentRequiredException(UserSession userSession) {
         super("Consent is required before signing in.", HttpStatus.SC_PRECONDITION_FAILED);
-        // Do not send this reauthentication token if it happens to be set in the session.
-        userSession.setReauthToken(null);
         this.userSession = userSession;
     }
 

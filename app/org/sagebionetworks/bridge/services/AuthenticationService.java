@@ -193,7 +193,7 @@ public class AuthenticationService {
     public UserSession getSession(Study study, CriteriaContext context) {
         checkNotNull(study);
         checkNotNull(context);
-        
+
         Account account = accountDao.getAccount(study, context.getUserId());
         return getSessionFromAccount(study, context, account);
     }
@@ -223,6 +223,7 @@ public class AuthenticationService {
 
         Account account = accountDao.reauthenticate(study, signIn);
 
+        cacheProvider.removeSessionByUserId(account.getId());
         UserSession session = getSessionFromAccount(study, context, account);
         // Do not call sessionUpdateService as we assume system is in sync with the session on reauthentication
         cacheProvider.setUserSession(session);
@@ -232,6 +233,8 @@ public class AuthenticationService {
 
     public void signOut(final UserSession session) {
         if (session != null) {
+            accountDao.rotateReauthenticationToken(session.getStudyIdentifier(), 
+                    session.getParticipant().getEmail(), true);
             cacheProvider.removeSession(session);
         }
     }
