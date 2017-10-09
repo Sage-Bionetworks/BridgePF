@@ -67,6 +67,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -670,16 +671,45 @@ public class ScheduledActivityServiceMockTest {
         DateTime endsOn = DateTime.now().plusDays(3);
         ScheduleContext context = createScheduleContext(endsOn).build();
         
-        mockAllCallsForDbActivities(Lists.newArrayList());
+        // Reset the mock because we're going to create a one-time schedule and an enrollment date outside of the time window.
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.addActivity(new Activity.Builder().withGuid("guidForCCC").withLabel("Do task CCC").withTask("CCC").build());
+        schedule.setLabel("One-time task");
         
-        service.getScheduledActivitiesV4(context);
+        SchedulePlan plan = TestUtils.getSimpleSchedulePlan(TEST_STUDY);
+        ((SimpleScheduleStrategy)plan.getStrategy()).setSchedule(schedule);
         
-        verify(activityDao, times(1)).getActivityHistoryV2(HEALTH_CODE, "AAA", context.getStartsOn(), context.getEndsOn(),
+        reset(schedulePlanService);
+        when(schedulePlanService.getSchedulePlans(any(), any())).thenReturn(Lists.newArrayList(plan));
+        
+        // The time stamp is derived from the account creation timestamp because there are no events in the event
+        // map. It's in the time zone that the scheduler is working in.
+        String guid = "guidForCCC:" + context.getAccountCreatedOn().withZone(context.getInitialTimeZone()).toLocalDateTime();
+        
+        ScheduledActivity oneTimeActivity = new DynamoScheduledActivity();
+        oneTimeActivity.setGuid(guid);
+        oneTimeActivity.setStartedOn(NOW.plusMinutes(5).getMillis());
+        oneTimeActivity.setFinishedOn(NOW.plusMinutes(5).getMillis());
+        
+        mockAllCallsForDbActivities(ImmutableList.of());
+        when(activityDao.getActivity(HEALTH_CODE, guid, false)).thenReturn(oneTimeActivity);
+        
+        List<ScheduledActivity> scheduledActivities = service.getScheduledActivitiesV4(context);
+        assertEquals(1, scheduledActivities.size());
+        assertEquals(guid, scheduledActivities.get(0).getGuid());
+        assertNotNull(scheduledActivities.get(0).getStartedOn());
+        assertNotNull(scheduledActivities.get(0).getFinishedOn());
+        
+        verify(activityDao, times(1)).getActivityHistoryV2(HEALTH_CODE, "guidForCCC", context.getStartsOn(), context.getEndsOn(),
                 null, BridgeConstants.API_MAXIMUM_PAGE_SIZE);
-        // Retrieve any remaining scheduled activity from the DB to ensure state is maintained.
-        verify(activityDao, times(1)).getActivity(HEALTH_CODE, "activity1guid:"+NOW.toLocalDate()+"T13:00:00.000", false);
+        // Retrieve any remaining scheduled activity from the DB to ensure state is maintained. 
+        verify(activityDao, times(1)).getActivity(HEALTH_CODE, guid, false);
         
         verify(activityDao).saveActivities(scheduledActivityListCaptor.capture());
+        
+        List<ScheduledActivity> saves = scheduledActivityListCaptor.getValue();
+        assertTrue(saves.isEmpty());
     }
     
     private void assertActivityGuids(List<ScheduledActivity> activities, String... guids) {
@@ -1231,8 +1261,10 @@ public class ScheduledActivityServiceMockTest {
         Map<String,DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
         
-        return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY).withInitialTimeZone(DateTimeZone.UTC)
-                .withStartsOn(NOW).withAccountCreatedOn(ENROLLMENT.minusHours(2)).withEndsOn(endsOn)
+        DateTimeZone zone = DateTimeZone.forOffsetHours(-7); // zone of the original times
+        // Initial time zone and the time zone of enrollment should be the same. They are in reality.
+        return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY).withInitialTimeZone(zone)
+                .withStartsOn(NOW).withAccountCreatedOn(ENROLLMENT.minusHours(2).withZone(zone)).withEndsOn(endsOn)
                 .withHealthCode(HEALTH_CODE).withUserId(USER_ID).withEvents(events);
     }
     
