@@ -247,13 +247,13 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
     
     /** {@inheritDoc} */
     @Override
-    public ScheduledActivity getActivity(String healthCode, String guid) {
+    public ScheduledActivity getActivity(String healthCode, String guid, boolean throwException) {
         DynamoScheduledActivity hashKey = new DynamoScheduledActivity();
         hashKey.setHealthCode(healthCode);
         hashKey.setGuid(guid);
         
         ScheduledActivity dbActivity = mapper.load(hashKey);
-        if (dbActivity == null) {
+        if (throwException && dbActivity == null) {
             throw new EntityNotFoundException(ScheduledActivity.class);
         }
         return dbActivity;

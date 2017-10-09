@@ -355,7 +355,7 @@ public class DynamoScheduledActivityDaoTest {
         
         // Verify getActivity() works
         ScheduledActivity savedActivity = activityDao.getActivity(context.getCriteriaContext().getHealthCode(),
-                savedActivities.get(0).getGuid());
+                savedActivities.get(0).getGuid(), true);
         savedActivity.setTimeZone(MSK); // for equality check
         assertEquals(savedActivities.get(0), savedActivity);
         assertEquals(context.getInitialTimeZone(), savedActivity.getTimeZone());

@@ -136,7 +136,7 @@ public class ScheduledActivityServiceMockTest {
         ScheduleContext context = createScheduleContext(ENDS_ON).build();
         List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
         
-        when(activityDao.getActivity(anyString(), anyString())).thenAnswer(invocation -> {
+        when(activityDao.getActivity(anyString(), anyString(), eq(true))).thenAnswer(invocation -> {
             Object[] args = invocation.getArguments();
             DynamoScheduledActivity schActivity = new DynamoScheduledActivity();
             schActivity.setHealthCode((String)args[0]);
@@ -305,7 +305,7 @@ public class ScheduledActivityServiceMockTest {
         
         verify(activityDao).updateActivities(anyString(), updateCapture.capture());
         // Three activities have timestamp updates and need to be persisted
-        verify(activityDao, times(count)).getActivity(anyString(), anyString());
+        verify(activityDao, times(count)).getActivity(anyString(), anyString(), eq(true));
         // Two activities have been finished and generate activity finished events
         verify(activityEventService, times(2)).publishActivityFinishedEvent(publishCapture.capture());
         
@@ -663,6 +663,23 @@ public class ScheduledActivityServiceMockTest {
         DateTime endsOn = DateTime.now(timeZone).plusDays(1);
         
         service.getActivityHistory(HEALTH_CODE, ActivityType.SURVEY, "GUID", endsOn, startsOn, "offsetKey", 20);
+    }
+    
+    @Test
+    public void oneTimeActivityDisappearsOutOfTimeRange() throws Exception {
+        DateTime endsOn = DateTime.now().plusDays(3);
+        ScheduleContext context = createScheduleContext(endsOn).build();
+        
+        mockAllCallsForDbActivities(Lists.newArrayList());
+        
+        service.getScheduledActivitiesV4(context);
+        
+        verify(activityDao, times(1)).getActivityHistoryV2(HEALTH_CODE, "AAA", context.getStartsOn(), context.getEndsOn(),
+                null, BridgeConstants.API_MAXIMUM_PAGE_SIZE);
+        // Retrieve any remaining scheduled activity from the DB to ensure state is maintained.
+        verify(activityDao, times(1)).getActivity(HEALTH_CODE, "activity1guid:"+NOW.toLocalDate()+"T13:00:00.000", false);
+        
+        verify(activityDao).saveActivities(scheduledActivityListCaptor.capture());
     }
     
     private void assertActivityGuids(List<ScheduledActivity> activities, String... guids) {
