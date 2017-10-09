@@ -261,7 +261,7 @@ public class ScheduledActivityService {
         
         Map<String,ScheduledActivity> dbMap = Maps.newHashMap();
         // IA-545: If a schedule has an identical activity but a new GUID (say if we change the schedule on the user), the user can 
-        // lose existing activities. So during the time window the user is looking at, we will return any activities that exist.x`
+        // lose existing activities. So during the time window the user is looking at, we will return any activities that exist.
         for (String activityGuid : activityGuids) {
             ForwardCursorPagedResourceList<ScheduledActivity> list = activityDao.getActivityHistoryV2(
                     context.getCriteriaContext().getHealthCode(), activityGuid,
