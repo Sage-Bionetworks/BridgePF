@@ -1261,10 +1261,8 @@ public class ScheduledActivityServiceMockTest {
         Map<String,DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
         
-        DateTimeZone zone = DateTimeZone.forOffsetHours(-7); // zone of the original times
-        // Initial time zone and the time zone of enrollment should be the same. They are in reality.
-        return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY).withInitialTimeZone(zone)
-                .withStartsOn(NOW).withAccountCreatedOn(ENROLLMENT.minusHours(2).withZone(zone)).withEndsOn(endsOn)
+        return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY).withInitialTimeZone(DateTimeZone.UTC)
+                .withStartsOn(NOW).withAccountCreatedOn(ENROLLMENT.minusHours(2)).withEndsOn(endsOn)
                 .withHealthCode(HEALTH_CODE).withUserId(USER_ID).withEvents(events);
     }
     
