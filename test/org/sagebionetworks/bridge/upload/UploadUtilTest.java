@@ -426,6 +426,13 @@ public class UploadUtilTest {
                         false
                 },
                 {
+                        new UploadFieldDefinition.Builder().withName("field").withType(UploadFieldType.INT)
+                                .build(),
+                        new UploadFieldDefinition.Builder().withName("field").withType(UploadFieldType.STRING)
+                                .build(),
+                        true
+                },
+                {
                         new UploadFieldDefinition.Builder().withName("foo-field").withType(UploadFieldType.INT)
                                 .build(),
                         new UploadFieldDefinition.Builder().withName("bar-field").withType(UploadFieldType.INT)
@@ -484,10 +491,15 @@ public class UploadUtilTest {
         Object[][] testCases = {
                 { null, null, true },
                 { null, 10, false },
-                { 10, null, false },
+                { null, 200, true },
+                { 10, null, true },
+                { 200, null, false },
                 { 10, 10, true },
-                { 10, 15,  false },
+                { 10, 15,  true },
                 { 10, 5, false },
+                { 999, 1000, true },
+                { 1001, 1001, true },
+                { 1000, 1001, false },
         };
 
         for (Object[] oneTestCase : testCases) {
@@ -496,6 +508,32 @@ public class UploadUtilTest {
             UploadFieldDefinition newFieldDef = new UploadFieldDefinition.Builder().withName("field")
                     .withType(UploadFieldType.STRING).withMaxLength((Integer) oneTestCase[1]).build();
             assertEquals(oneTestCase[2], UploadUtil.isCompatibleFieldDef(oldFieldDef, newFieldDef));
+        }
+    }
+
+    @Test
+    public void isCompatibleFieldDefMaxLengthWithNonStrings() {
+        // { oldType, newType, newMaxLength, expected }
+        Object[][] testCases = {
+                { UploadFieldType.INT, UploadFieldType.FLOAT, null, true },
+                { UploadFieldType.CALENDAR_DATE, UploadFieldType.STRING, 9, false },
+                { UploadFieldType.CALENDAR_DATE, UploadFieldType.STRING, 11, true },
+                { UploadFieldType.DURATION_V2, UploadFieldType.STRING, 23, false },
+                { UploadFieldType.DURATION_V2, UploadFieldType.STRING, 25, true },
+                { UploadFieldType.FLOAT, UploadFieldType.STRING, 21, false },
+                { UploadFieldType.FLOAT, UploadFieldType.STRING, 23, true },
+                { UploadFieldType.INT, UploadFieldType.STRING, 19, false },
+                { UploadFieldType.INT, UploadFieldType.STRING, 21, true },
+                { UploadFieldType.TIME_V2, UploadFieldType.STRING, 11, false },
+                { UploadFieldType.TIME_V2, UploadFieldType.STRING, 13, true },
+        };
+
+        for (Object[] oneTestCase : testCases) {
+            UploadFieldDefinition oldFieldDef = new UploadFieldDefinition.Builder().withName("field")
+                    .withType((UploadFieldType) oneTestCase[0]).withMaxLength(null).build();
+            UploadFieldDefinition newFieldDef = new UploadFieldDefinition.Builder().withName("field")
+                    .withType((UploadFieldType) oneTestCase[1]).withMaxLength((Integer) oneTestCase[2]).build();
+            assertEquals(oneTestCase[3], UploadUtil.isCompatibleFieldDef(oldFieldDef, newFieldDef));
         }
     }
 
@@ -531,7 +569,7 @@ public class UploadUtilTest {
                 { false, false, true },
                 { true, true, true },
                 { true, false, true },
-                { false, true, false },
+                { false, true, true },
         };
 
         for (Object[] oneTestCase : testCases) {

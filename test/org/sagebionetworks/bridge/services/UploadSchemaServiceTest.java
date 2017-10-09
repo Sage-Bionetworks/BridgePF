@@ -656,10 +656,9 @@ public class UploadSchemaServiceTest {
 
     @Test
     public void updateV4IncompatibleChange() {
-        // This update fails for 4 reasons
+        // This update fails for 3 reasons
         // - deleted fields
         // - modified non-compatible field
-        // - added required fields
         // - modified schema type
 
         // Make old schema - Only field def list and schema type matter for this test.
@@ -684,11 +683,7 @@ public class UploadSchemaServiceTest {
                 new UploadFieldDefinition.Builder().withName("modify-me-1").withType(UploadFieldType.STRING)
                         .withMaxLength(24).build(),
                 new UploadFieldDefinition.Builder().withName("modify-me-2").withType(UploadFieldType.FLOAT)
-                        .withMaxLength(24).build(),
-                new UploadFieldDefinition.Builder().withName("add-me-1").withType(UploadFieldType.BOOLEAN)
-                        .withRequired(true).build(),
-                new UploadFieldDefinition.Builder().withName("add-me-2").withType(UploadFieldType.BOOLEAN)
-                        .withRequired(true).build());
+                        .withMaxLength(24).build());
 
         UploadSchema newSchema = makeSimpleSchema();
         newSchema.setSchemaType(UploadSchemaType.IOS_SURVEY);
@@ -707,7 +702,6 @@ public class UploadSchemaServiceTest {
             errMsg = ex.getMessage();
         }
 
-        assertTrue(errMsg.contains("Added fields must be optional: add-me-1, add-me-2"));
         assertTrue(errMsg.contains("Can't delete fields: delete-me-1, delete-me-2"));
         assertTrue(errMsg.contains("Incompatible changes to fields: modify-me-1, modify-me-2"));
         assertTrue(errMsg.contains("Can't modify schema type, old=IOS_DATA, new=IOS_SURVEY"));
@@ -722,6 +716,7 @@ public class UploadSchemaServiceTest {
         // - unchanged field
         // - modified compatible field
         // - added optional field
+        // - added required field
 
         // Make old schema - Only field def list and schema type matter for this test.
         List<UploadFieldDefinition> oldFieldDefList = ImmutableList.of(
@@ -739,7 +734,9 @@ public class UploadSchemaServiceTest {
                 new UploadFieldDefinition.Builder().withName("modify-me").withType(UploadFieldType.MULTI_CHOICE)
                         .withMultiChoiceAnswerList("foo", "bar", "baz").withAllowOtherChoices(true).build(),
                 new UploadFieldDefinition.Builder().withName("added-optional-field")
-                        .withType(UploadFieldType.BOOLEAN).withRequired(false).build());
+                        .withType(UploadFieldType.BOOLEAN).withRequired(false).build(),
+                new UploadFieldDefinition.Builder().withName("added-required-field")
+                        .withType(UploadFieldType.INT).withRequired(true).build());
 
         UploadSchema newSchema = makeSimpleSchema();
         newSchema.setSchemaType(UploadSchemaType.IOS_SURVEY);
