@@ -118,7 +118,7 @@ public class DynamoScheduledActivityDaoMockTest {
     
     @Test
     public void getScheduledActivities() throws Exception {
-        ScheduledActivity activity = activityDao.getActivity("AAA", "BBB");
+        ScheduledActivity activity = activityDao.getActivity("AAA", "BBB", true);
         assertEquals(testSchActivity, activity);
         
     }
@@ -127,7 +127,7 @@ public class DynamoScheduledActivityDaoMockTest {
     public void getActivityThrowsException() throws Exception {
         when(mapper.load(any(DynamoScheduledActivity.class))).thenReturn(null);
         
-        activityDao.getActivity("AAA", "BBB");
+        activityDao.getActivity("AAA", "BBB", true);
     }
 
     /**

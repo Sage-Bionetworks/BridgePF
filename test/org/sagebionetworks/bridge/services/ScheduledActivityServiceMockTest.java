@@ -67,6 +67,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -136,7 +137,7 @@ public class ScheduledActivityServiceMockTest {
         ScheduleContext context = createScheduleContext(ENDS_ON).build();
         List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
         
-        when(activityDao.getActivity(anyString(), anyString())).thenAnswer(invocation -> {
+        when(activityDao.getActivity(anyString(), anyString(), eq(true))).thenAnswer(invocation -> {
             Object[] args = invocation.getArguments();
             DynamoScheduledActivity schActivity = new DynamoScheduledActivity();
             schActivity.setHealthCode((String)args[0]);
@@ -305,7 +306,7 @@ public class ScheduledActivityServiceMockTest {
         
         verify(activityDao).updateActivities(anyString(), updateCapture.capture());
         // Three activities have timestamp updates and need to be persisted
-        verify(activityDao, times(count)).getActivity(anyString(), anyString());
+        verify(activityDao, times(count)).getActivity(anyString(), anyString(), eq(true));
         // Two activities have been finished and generate activity finished events
         verify(activityEventService, times(2)).publishActivityFinishedEvent(publishCapture.capture());
         
@@ -663,6 +664,52 @@ public class ScheduledActivityServiceMockTest {
         DateTime endsOn = DateTime.now(timeZone).plusDays(1);
         
         service.getActivityHistory(HEALTH_CODE, ActivityType.SURVEY, "GUID", endsOn, startsOn, "offsetKey", 20);
+    }
+    
+    @Test
+    public void oneTimeActivityDisappearsOutOfTimeRange() throws Exception {
+        DateTime endsOn = DateTime.now().plusDays(3);
+        ScheduleContext context = createScheduleContext(endsOn).build();
+        
+        // Reset the mock because we're going to create a one-time schedule and an enrollment date outside of the time window.
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.ONCE);
+        schedule.addActivity(new Activity.Builder().withGuid("guidForCCC").withLabel("Do task CCC").withTask("CCC").build());
+        schedule.setLabel("One-time task");
+        
+        SchedulePlan plan = TestUtils.getSimpleSchedulePlan(TEST_STUDY);
+        ((SimpleScheduleStrategy)plan.getStrategy()).setSchedule(schedule);
+        
+        reset(schedulePlanService);
+        when(schedulePlanService.getSchedulePlans(any(), any())).thenReturn(Lists.newArrayList(plan));
+        
+        // The time stamp is derived from the account creation timestamp because there are no events in the event
+        // map. It's in the time zone that the scheduler is working in.
+        String guid = "guidForCCC:" + context.getAccountCreatedOn().withZone(context.getInitialTimeZone()).toLocalDateTime();
+        
+        ScheduledActivity oneTimeActivity = new DynamoScheduledActivity();
+        oneTimeActivity.setGuid(guid);
+        oneTimeActivity.setStartedOn(NOW.plusMinutes(5).getMillis());
+        oneTimeActivity.setFinishedOn(NOW.plusMinutes(5).getMillis());
+        
+        mockAllCallsForDbActivities(ImmutableList.of());
+        when(activityDao.getActivity(HEALTH_CODE, guid, false)).thenReturn(oneTimeActivity);
+        
+        List<ScheduledActivity> scheduledActivities = service.getScheduledActivitiesV4(context);
+        assertEquals(1, scheduledActivities.size());
+        assertEquals(guid, scheduledActivities.get(0).getGuid());
+        assertNotNull(scheduledActivities.get(0).getStartedOn());
+        assertNotNull(scheduledActivities.get(0).getFinishedOn());
+        
+        verify(activityDao, times(1)).getActivityHistoryV2(HEALTH_CODE, "guidForCCC", context.getStartsOn(), context.getEndsOn(),
+                null, BridgeConstants.API_MAXIMUM_PAGE_SIZE);
+        // Retrieve any remaining scheduled activity from the DB to ensure state is maintained. 
+        verify(activityDao, times(1)).getActivity(HEALTH_CODE, guid, false);
+        
+        verify(activityDao).saveActivities(scheduledActivityListCaptor.capture());
+        
+        List<ScheduledActivity> saves = scheduledActivityListCaptor.getValue();
+        assertTrue(saves.isEmpty());
     }
     
     private void assertActivityGuids(List<ScheduledActivity> activities, String... guids) {

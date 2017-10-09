@@ -293,12 +293,12 @@ public class TestUtils {
     }
     
     public static Activity getActivity1() {
-        return new Activity.Builder().withGuid(BridgeUtils.generateGuid()).withLabel("Activity1")
+        return new Activity.Builder().withGuid("activity1guid").withLabel("Activity1")
                 .withPublishedSurvey("identifier1", "AAA").build();
     }
     
     public static Activity getActivity2() {
-        return new Activity.Builder().withGuid(BridgeUtils.generateGuid()).withLabel("Activity2")
+        return new Activity.Builder().withGuid("activity2guid").withLabel("Activity2")
                 .withPublishedSurvey("identifier2", "BBB").build();
     }
     
