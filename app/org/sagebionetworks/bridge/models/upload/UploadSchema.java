@@ -133,12 +133,4 @@ public interface UploadSchema extends BridgeEntity {
 
     /** @see #getStudyId */
     void setStudyId(String studyId);
-
-    /**
-     * return if this upload schema is published: if it is, updating it will throw exception
-     */
-    boolean getPublished();
-
-    /** @see #getPublished */
-    void setPublished(boolean published);
 }
