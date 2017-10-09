@@ -35,7 +35,7 @@ public class BridgeUtilsTest {
 
     @Test
     public void generateRandomString() {
-        assertEquals(32, BridgeUtils.generateRandomString().length());
+        assertEquals(21, BridgeUtils.generateRandomString().length());
     }
     
     @Test

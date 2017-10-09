@@ -1,24 +1,20 @@
 package org.sagebionetworks.bridge;
 
 import java.security.SecureRandom;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Random;
 
 /**
- * This code came from stack exchange, reformatted to our standards. I cannot find the 
- * reference now. 
+ * This code came from Stack Exchange, reformatted to our standards. Unfortunately I then lost 
+ * the reference to the page I took it from. Cleaned up to our formatting standards.
  */
 class StringIdGenerator {
 
-    private static final String UPPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    private static final String LOWER = UPPPER.toLowerCase(Locale.ROOT);
-    private static final String DIGITS = "0123456789";
-    private static final String ALPHANUM = UPPPER + LOWER + DIGITS;
+    private static final String ALPHANUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     private final Random random;
     private final char[] symbols;
-    private final char[] buffer;
+    private final int length;
 
     StringIdGenerator(int length, Random random, String symbols) {
         if (length < 1) {
@@ -27,33 +23,21 @@ class StringIdGenerator {
         if (symbols.length() < 2) {
             throw new IllegalArgumentException();
         }
+        this.length = length;
         this.random = Objects.requireNonNull(random);
         this.symbols = symbols.toCharArray();
-        this.buffer = new char[length];
     }
 
     /**
-     * Create an alphanumeric string generator.
-     */
-    StringIdGenerator(int length, Random random) {
-        this(length, random, ALPHANUM);
-    }
-
-    /**
-     * Create an alphanumeric strings from a secure generator.
-     */
-    StringIdGenerator(int length) {
-        this(length, new SecureRandom());
-    }
-
-    /**
-     * Create session identifiers.
+     * Create session identifiers. This is 4.36e+37 unique values, which is enough
+     * for a good session key.
      */
     StringIdGenerator() {
-        this(21);
+        this(21, new SecureRandom(), ALPHANUM);
     }
     
     String nextString() {
+        final char[] buffer = new char[length];
         for (int idx = 0; idx < buffer.length; ++idx) {
             buffer[idx] = symbols[random.nextInt(symbols.length)];
         }
