@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -95,7 +93,6 @@ public class SharedModuleServiceTest {
 
         // mock schema service
         UploadSchema sharedSchema = UploadSchema.create();
-        assertFalse(sharedSchema.getPublished());
         when(mockSchemaService.getUploadSchemaByIdAndRev(BridgeConstants.SHARED_STUDY_ID, SCHEMA_ID, SCHEMA_REV))
                 .thenReturn(sharedSchema);
 
@@ -107,7 +104,6 @@ public class SharedModuleServiceTest {
         assertEquals(SCHEMA_REV, status.getSchemaRevision().intValue());
 
         UploadSchema modifiedSchema = schemaArgumentCaptor.getValue();
-        assertTrue(modifiedSchema.getPublished());
         assertEquals(MODULE_ID, modifiedSchema.getModuleId());
         assertEquals(MODULE_VERSION, modifiedSchema.getModuleVersion().intValue());
 
@@ -184,7 +180,6 @@ public class SharedModuleServiceTest {
 
         // mock schema service
         UploadSchema sharedSchema = UploadSchema.create();
-        assertFalse(sharedSchema.getPublished());
         when(mockSchemaService.getUploadSchemaByIdAndRev(BridgeConstants.SHARED_STUDY_ID, SCHEMA_ID, SCHEMA_REV))
                 .thenReturn(sharedSchema);
 
@@ -196,7 +191,6 @@ public class SharedModuleServiceTest {
         assertEquals(SCHEMA_REV, status.getSchemaRevision().intValue());
 
         UploadSchema modifiedSchema = schemaArgumentCaptor.getValue();
-        assertTrue(modifiedSchema.getPublished());
         assertEquals(MODULE_ID, modifiedSchema.getModuleId());
         assertEquals(MODULE_VERSION, modifiedSchema.getModuleVersion().intValue());
 

@@ -630,13 +630,21 @@ public class UploadSchemaServiceTest {
         svc.updateSchemaRevisionV4(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV, svcInputSchema);
     }
 
-    @Test(expected = BadRequestException.class)
-    public void updateV4PublishedSchema() {
-        // mock as published schema
-        svcInputSchema.setPublished(true);
-        when(dao.getUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(svcInputSchema);
+    @Test
+    public void updateV4SchemaFromSharedModule() {
+        // schema is annotated with shared module
+        svcInputSchema.setModuleId("test-module");
+        svcInputSchema.setModuleVersion(2);
+        when(dao.getUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(
+                svcInputSchema);
 
-        svc.updateSchemaRevisionV4(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV, svcInputSchema);
+        try {
+            svc.updateSchemaRevisionV4(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV, svcInputSchema);
+            fail("expected exception");
+        } catch (BadRequestException ex) {
+            assertEquals("Schema " + SCHEMA_ID + " was imported from a shared module and cannot be modified.",
+                    ex.getMessage());
+        }
     }
 
     @Test
