@@ -118,7 +118,6 @@ public class SendMailViaAmazonServiceConsentTest {
 
         // Validate message content. MIME message must be ASCII
         String rawMessage = new String(req.getRawMessage().getData().array(), Charsets.US_ASCII);
-        System.out.println(rawMessage);
         assertTrue("Contains consent content", rawMessage.contains("Had this been a real study"));
         assertTrue("Name transposed to document", rawMessage.contains("Test 2"));
         assertTrue("Email transposed to document", rawMessage.contains("test-user@sagebase.org"));

@@ -76,4 +76,7 @@ public enum UploadFieldType {
     /** A set of upload field types that are considered attachment types. */
     public static final Set<UploadFieldType> ATTACHMENT_TYPE_SET = EnumSet.of(ATTACHMENT_BLOB, ATTACHMENT_CSV,
             ATTACHMENT_JSON_BLOB, ATTACHMENT_JSON_TABLE, ATTACHMENT_V2);
+
+    /* A set of upload field types that are freeform (or mostly freeform) strings. */
+    public static final Set<UploadFieldType> STRING_TYPE_SET = EnumSet.of(INLINE_JSON_BLOB, SINGLE_CHOICE, STRING);
 }

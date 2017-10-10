@@ -16,7 +16,10 @@ import com.fasterxml.jackson.databind.node.BigIntegerNode;
 import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.DecimalNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -58,6 +61,73 @@ public class UploadUtil {
             "periods, can't contain two or more non-alphanumeric characters in a row";
     public static final String INVALID_FIELD_NAME_ERROR_MESSAGE = INVALID_ANSWER_CHOICE_ERROR_MESSAGE +
             ", and can't be a reserved keyword";
+
+    // Misc constants
+    private static final int DEFAULT_MAX_LENGTH = 100;
+    private static final int MAX_MAX_LENGTH = 1000;
+
+    // Map of allowed field type changes. Key is the old type. Value is the new type.
+    //
+    // A few notes: This is largely based on whether the data can be converted in Synapse tables. Since booleans are
+    // stored as 0/1 and dates are stored as epoch milliseconds, converting these to strings means old values will be
+    // numeric types, but new values are likely to be "true"/"false" or ISO8601 timestamps. This leads to more
+    // confusion overall, so we've decided to block it.
+    //
+    // Similarly, if you convert a bool to a numeric type (int, float), Synapse will convert the bools to 0s and 1s.
+    // However, old bools in DynamoDB are still using "true"/"false", which will no longer serialize to Synapse. To
+    // prevent this data loss, we're also not allowing bools to convert to numeric types.
+    //
+    // Additionally, multi-choice and timestamp fields create multiple columns in Synapse. Changing to single-column
+    // types may be confusing, so we prevent these as well.
+    private static final SetMultimap<UploadFieldType, UploadFieldType> ALLOWED_OLD_TYPE_TO_NEW_TYPE =
+            ImmutableSetMultimap.<UploadFieldType, UploadFieldType>builder()
+                    // All attachment types can be migrated to attachment_v2, but not the other way around.
+                    .put(UploadFieldType.ATTACHMENT_BLOB, UploadFieldType.ATTACHMENT_V2)
+                    .put(UploadFieldType.ATTACHMENT_CSV, UploadFieldType.ATTACHMENT_V2)
+                    .put(UploadFieldType.ATTACHMENT_JSON_BLOB, UploadFieldType.ATTACHMENT_V2)
+                    .put(UploadFieldType.ATTACHMENT_JSON_TABLE, UploadFieldType.ATTACHMENT_V2)
+                    // Numeric types can changed to types with more precision (int to float), but not less
+                    // precision (float to int).
+                    .put(UploadFieldType.INT, UploadFieldType.FLOAT)
+                    // inline_json_blob values are parseable as JSON. This precludes string types, since JSON can't
+                    // parse unquoted strings. Numbers are fine.
+                    .put(UploadFieldType.FLOAT, UploadFieldType.INLINE_JSON_BLOB)
+                    .put(UploadFieldType.INT, UploadFieldType.INLINE_JSON_BLOB)
+                    // Anything can be converted to string types (except for attachments, multi-choice, and
+                    // timestamps), and single_choice is functionally equivalent to strings as far as data migration.
+                    .put(UploadFieldType.CALENDAR_DATE, UploadFieldType.SINGLE_CHOICE)
+                    .put(UploadFieldType.DURATION_V2, UploadFieldType.SINGLE_CHOICE)
+                    .put(UploadFieldType.FLOAT, UploadFieldType.SINGLE_CHOICE)
+                    .put(UploadFieldType.INLINE_JSON_BLOB, UploadFieldType.SINGLE_CHOICE)
+                    .put(UploadFieldType.INT, UploadFieldType.SINGLE_CHOICE)
+                    .put(UploadFieldType.STRING, UploadFieldType.SINGLE_CHOICE)
+                    .put(UploadFieldType.TIME_V2, UploadFieldType.SINGLE_CHOICE)
+                    .put(UploadFieldType.CALENDAR_DATE, UploadFieldType.STRING)
+                    .put(UploadFieldType.DURATION_V2, UploadFieldType.STRING)
+                    .put(UploadFieldType.FLOAT, UploadFieldType.STRING)
+                    .put(UploadFieldType.INLINE_JSON_BLOB, UploadFieldType.STRING)
+                    .put(UploadFieldType.INT, UploadFieldType.STRING)
+                    .put(UploadFieldType.SINGLE_CHOICE, UploadFieldType.STRING)
+                    .put(UploadFieldType.TIME_V2, UploadFieldType.STRING)
+                    // The only thing that can be turned into a timestamp is an int, which can be epoch milliseconds.
+                    .put(UploadFieldType.INT, UploadFieldType.TIMESTAMP)
+                    .build();
+
+    // When we determine if we're shrinking or growing fields, we use this to determine what the "length" of a field,
+    // based on the field type. For any type not in this list, we use DEFAULT_MAX_LENGTH.
+    private static final Map<UploadFieldType, Integer> MAX_LENGTH_BY_TYPE =
+            ImmutableMap.<UploadFieldType, Integer>builder()
+                    // YYYY-MM-DD
+                    .put(UploadFieldType.CALENDAR_DATE, 10)
+                    // See ISO8601 duration format
+                    .put(UploadFieldType.DURATION_V2, 24)
+                    // Empirically, the longest float in Synapse is 22 chars long
+                    .put(UploadFieldType.FLOAT, 22)
+                    // Synapse uses a bigint (signed long), which can be 20 chars long
+                    .put(UploadFieldType.INT, 20)
+                    // hh:mm:ss.sss
+                    .put(UploadFieldType.TIME_V2, 12)
+                    .build();
 
     // List of reserved SQL keywords and Synapse keywords that can't be used as field names.
     private static final Set<String> RESERVED_FIELD_NAME_LIST = ImmutableSet.<String>builder().add("access", "add",
@@ -407,11 +477,16 @@ public class UploadUtil {
         // fileExtension - This is just a hint to BridgeEX for serializing the values. It doesn't affect the columns or
         //   validation.
         // mimeType - Similarly, this is also just a serialization hint.
+        // required - This might break StrictValidation, but it doesn't impact the data in Synapse, so we should allow
+        //   it.
 
-        // Different types are obviously not compatible.
-        // This is the most likely reason fields are incompatible. Check this first.
+        // If types are different, check the table.
         if (oldFieldDef.getType() != newFieldDef.getType()) {
-            return false;
+            Set<UploadFieldType> allowedNewTypes = ALLOWED_OLD_TYPE_TO_NEW_TYPE.get(oldFieldDef
+                    .getType());
+            if (!allowedNewTypes.contains(newFieldDef.getType())) {
+                return false;
+            }
         }
 
         // allowOther - You can flip this to true (adds a field), but you can't flip it from true to false.
@@ -421,12 +496,37 @@ public class UploadUtil {
             return false;
         }
 
-        // Changing the maxLength will cause the Synapse column to be recreated, so we need to block this. (Strictly
-        // speaking, BridgeEX has code to prevent this by ignoring the new max length if it is different, for legacy
-        // reasons but this is confusing behavior, so we should just prevent this situation from happening to begin
-        // with.)
-        if (!Objects.equals(oldFieldDef.getMaxLength(), newFieldDef.getMaxLength())) {
-            return false;
+        // For string types, check max length. You can increase the max length, but you can't decrease it.
+        if (UploadFieldType.STRING_TYPE_SET.contains(newFieldDef.getType()) &&
+                !Objects.equals(oldFieldDef.getMaxLength(), newFieldDef.getMaxLength())) {
+            int oldMaxLength;
+            if (oldFieldDef.getMaxLength() != null) {
+                // If the old field def specified a max length, just use it.
+                oldMaxLength = oldFieldDef.getMaxLength();
+            } else if (MAX_LENGTH_BY_TYPE.containsKey(oldFieldDef.getType())) {
+                // The max length of the old field type is specified by its type.
+                oldMaxLength = MAX_LENGTH_BY_TYPE.get(oldFieldDef.getType());
+            } else {
+                // It's probably a string type with the default length.
+                oldMaxLength = DEFAULT_MAX_LENGTH;
+            }
+
+            // The new field is a string type. If the length isn't specified, it has the default max length.
+            // If max lengths aren't specified, Bridge treats the max length as 100.
+            int newMaxLength = (newFieldDef.getMaxLength() != null) ? newFieldDef.getMaxLength() : DEFAULT_MAX_LENGTH;
+
+            // Special case: if oldMaxLength is less than 1000, but newMaxLength is more than 1000, then Bridge
+            // converts this into an unbounded string (LargeText). There is a bug in Synapse that prevents this from
+            // working, so block this in Bridge.
+            // See also https://sagebionetworks.jira.com/browse/PLFM-4028
+            if (oldMaxLength <= MAX_MAX_LENGTH && newMaxLength > MAX_MAX_LENGTH) {
+                return false;
+            }
+
+            // You can't decrease max length.
+            if (newMaxLength < oldMaxLength) {
+                return false;
+            }
         }
 
         // Note: multiChoiceAnswerList can never be null.
@@ -448,17 +548,10 @@ public class UploadUtil {
             return false;
         }
 
-        // Going from required to optional is fine. Going from optional to required is okay only if you're adding a
-        // minAppVerison.
-        if (!oldFieldDef.isRequired() && newFieldDef.isRequired()) {
-            return false;
-        }
-
-        // isUnboundedText controls whether we use a String or LargeText in Synapse. So changing this is not
-        // compatible. (null defaults to false)
-        //noinspection ConstantConditions
+        // Converting from unbounded text may result in data loss, so it's not allowed.
+        // Converting to an unbounded text fails in Synapse due to a bug.
+        // See https://sagebionetworks.jira.com/browse/PLFM-4028
         boolean oldIsUnboundedText = oldFieldDef.isUnboundedText() != null ? oldFieldDef.isUnboundedText() : false;
-        //noinspection ConstantConditions
         boolean newIsUnboundedText = newFieldDef.isUnboundedText() != null ? newFieldDef.isUnboundedText() : false;
         if (oldIsUnboundedText != newIsUnboundedText) {
             return false;

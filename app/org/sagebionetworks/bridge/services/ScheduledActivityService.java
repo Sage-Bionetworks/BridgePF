@@ -260,6 +260,8 @@ public class ScheduledActivityService {
         }).collect(Collectors.toSet());
         
         Map<String,ScheduledActivity> dbMap = Maps.newHashMap();
+        // IA-545: If a schedule has an identical activity but a new GUID (say if we change the schedule on the user), the user can 
+        // lose existing activities. So during the time window the user is looking at, we will return any activities that exist.
         for (String activityGuid : activityGuids) {
             ForwardCursorPagedResourceList<ScheduledActivity> list = activityDao.getActivityHistoryV2(
                     context.getCriteriaContext().getHealthCode(), activityGuid,
@@ -268,6 +270,17 @@ public class ScheduledActivityService {
             if (list != null) {
                 for(ScheduledActivity activity : list.getItems()) {
                     dbMap.put(activity.getGuid(), activity);
+                }
+            }
+        }
+        // IA-587: When a one-time task falls outside the schedule window, it's not returned by the 
+        // query above, so it is recreated, and it loses its finished state. Load all remaining scheduled activities.
+        String healthCode = context.getCriteriaContext().getHealthCode();
+        for (ScheduledActivity activity : scheduledActivities) {
+            if (!dbMap.containsKey(activity.getGuid())) {
+                ScheduledActivity dbActivity = activityDao.getActivity(healthCode, activity.getGuid(), false);
+                if (dbActivity != null) {
+                    dbMap.put(dbActivity.getGuid(), dbActivity);    
                 }
             }
         }
@@ -290,7 +303,7 @@ public class ScheduledActivityService {
             if (byteLength(schActivity.getClientData()) > CLIENT_DATA_MAX_BYTES) {
                 throw new BadRequestException("Client data too large ("+CLIENT_DATA_MAX_BYTES+" bytes limit)");
             }
-            ScheduledActivity dbActivity = activityDao.getActivity(healthCode, schActivity.getGuid());
+            ScheduledActivity dbActivity = activityDao.getActivity(healthCode, schActivity.getGuid(), true);
             boolean addToSaves = false;
             if (hasUpdatedClientData(schActivity, dbActivity)) {
                 dbActivity.setClientData(schActivity.getClientData());
