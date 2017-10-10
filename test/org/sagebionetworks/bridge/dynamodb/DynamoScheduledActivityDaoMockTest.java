@@ -117,17 +117,17 @@ public class DynamoScheduledActivityDaoMockTest {
     }
     
     @Test
-    public void getScheduledActivities() throws Exception {
-        ScheduledActivity activity = activityDao.getActivity("AAA", "BBB", true);
+    public void getScheduledActivity() throws Exception {
+        ScheduledActivity activity = activityDao.getActivity(PACIFIC_TIME_ZONE, "AAA", "BBB", true);
         assertEquals(testSchActivity, activity);
-        
+        assertEquals(PACIFIC_TIME_ZONE, activity.getTimeZone());
     }
     
     @Test(expected = EntityNotFoundException.class)
     public void getActivityThrowsException() throws Exception {
         when(mapper.load(any(DynamoScheduledActivity.class))).thenReturn(null);
         
-        activityDao.getActivity("AAA", "BBB", true);
+        activityDao.getActivity(PACIFIC_TIME_ZONE, "AAA", "BBB", true);
     }
 
     /**
