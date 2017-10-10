@@ -278,7 +278,8 @@ public class ScheduledActivityService {
         String healthCode = context.getCriteriaContext().getHealthCode();
         for (ScheduledActivity activity : scheduledActivities) {
             if (!dbMap.containsKey(activity.getGuid())) {
-                ScheduledActivity dbActivity = activityDao.getActivity(healthCode, activity.getGuid(), false);
+                ScheduledActivity dbActivity = activityDao.getActivity(context.getStartsOn().getZone(), healthCode,
+                        activity.getGuid(), false);
                 if (dbActivity != null) {
                     dbMap.put(dbActivity.getGuid(), dbActivity);    
                 }
@@ -303,7 +304,8 @@ public class ScheduledActivityService {
             if (byteLength(schActivity.getClientData()) > CLIENT_DATA_MAX_BYTES) {
                 throw new BadRequestException("Client data too large ("+CLIENT_DATA_MAX_BYTES+" bytes limit)");
             }
-            ScheduledActivity dbActivity = activityDao.getActivity(healthCode, schActivity.getGuid(), true);
+            // This isn't returned to the client, so the exact time zone used does not matter.
+            ScheduledActivity dbActivity = activityDao.getActivity(DateTimeZone.UTC, healthCode, schActivity.getGuid(), true);
             boolean addToSaves = false;
             if (hasUpdatedClientData(schActivity, dbActivity)) {
                 dbActivity.setClientData(schActivity.getClientData());

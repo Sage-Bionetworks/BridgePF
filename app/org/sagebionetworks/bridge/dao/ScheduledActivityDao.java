@@ -27,7 +27,7 @@ public interface ScheduledActivityDao {
     /**
      * Load an individual activity.
      */
-    ScheduledActivity getActivity(String healthCode, String guid, boolean throwException);
+    ScheduledActivity getActivity(DateTimeZone timeZone, String healthCode, String guid, boolean throwException);
    
     /**
      * Get a list of activities for a user. The list is derived from the scheduler.
