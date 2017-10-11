@@ -260,7 +260,9 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         if (throwException && dbActivity == null) {
             throw new EntityNotFoundException(ScheduledActivity.class);
         }
-        dbActivity.setTimeZone(timeZone);
+        if (dbActivity != null) {
+            dbActivity.setTimeZone(timeZone);    
+        }
         return dbActivity;
     }
     
