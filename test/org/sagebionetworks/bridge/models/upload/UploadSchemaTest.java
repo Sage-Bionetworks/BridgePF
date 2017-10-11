@@ -213,7 +213,6 @@ public class UploadSchemaTest {
                 "   \"moduleVersion\":" + MODULE_VERSION + ",\n" +
                 "   \"name\":\"Test Schema\",\n" +
                 "   \"revision\":3,\n" +
-                "   \"published\":true,\n" +
                 "   \"schemaId\":\"test-schema\",\n" +
                 "   \"schemaType\":\"ios_survey\",\n" +
                 "   \"studyId\":\"test-study\",\n" +
@@ -246,7 +245,6 @@ public class UploadSchemaTest {
         assertEquals("survey-guid", uploadSchema.getSurveyGuid());
         assertEquals(surveyCreatedOnMillis, uploadSchema.getSurveyCreatedOn().longValue());
         assertEquals(6, ((DynamoUploadSchema) uploadSchema).getVersion().longValue());
-        assertEquals(true, uploadSchema.getPublished());
 
         assertEquals(ImmutableSet.of("iOS", "Android"), uploadSchema.getAppVersionOperatingSystems());
         assertEquals(13, uploadSchema.getMinAppVersion("iOS").intValue());
@@ -273,7 +271,7 @@ public class UploadSchemaTest {
         // for consistency in tests, we should do it the same way every time.
         String convertedJson = BridgeObjectMapper.get().writeValueAsString(uploadSchema);
         JsonNode jsonNode = BridgeObjectMapper.get().readTree(convertedJson);
-        assertEquals(15, jsonNode.size());
+        assertEquals(14, jsonNode.size());
         assertEquals(MODULE_ID, jsonNode.get("moduleId").textValue());
         assertEquals(MODULE_VERSION, jsonNode.get("moduleVersion").intValue());
         assertEquals("Test Schema", jsonNode.get("name").textValue());
@@ -284,7 +282,6 @@ public class UploadSchemaTest {
         assertEquals("survey-guid", jsonNode.get("surveyGuid").textValue());
         assertEquals("UploadSchema", jsonNode.get("type").textValue());
         assertEquals(6,  jsonNode.get("version").intValue());
-        assertTrue(jsonNode.get("published").booleanValue());
 
         JsonNode maxAppVersionMap = jsonNode.get("maxAppVersions");
         assertEquals(2, maxAppVersionMap.size());

@@ -106,8 +106,7 @@ public class SharedModuleService {
             UploadSchema schema = schemaService.getUploadSchemaByIdAndRev(BridgeConstants.SHARED_STUDY_ID, schemaId,
                     schemaRev);
 
-            // also make the schema published and annotate with module ID and version
-            schema.setPublished(true);
+            // annotate with module ID and version
             schema.setModuleId(moduleId);
             schema.setModuleVersion(moduleVersion);
 

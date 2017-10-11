@@ -1,10 +1,12 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -117,17 +119,24 @@ public class DynamoScheduledActivityDaoMockTest {
     }
     
     @Test
-    public void getScheduledActivities() throws Exception {
-        ScheduledActivity activity = activityDao.getActivity("AAA", "BBB", true);
+    public void getScheduledActivity() throws Exception {
+        ScheduledActivity activity = activityDao.getActivity(PACIFIC_TIME_ZONE, "AAA", "BBB", true);
         assertEquals(testSchActivity, activity);
-        
+        assertEquals(PACIFIC_TIME_ZONE, activity.getTimeZone());
+    }
+    
+    @Test
+    public void getScheduledActivityWithNullReturnWorks() {
+        reset(mapper);
+        ScheduledActivity activity = activityDao.getActivity(PACIFIC_TIME_ZONE, "AAA", "BBB", false);
+        assertNull(activity);
     }
     
     @Test(expected = EntityNotFoundException.class)
     public void getActivityThrowsException() throws Exception {
         when(mapper.load(any(DynamoScheduledActivity.class))).thenReturn(null);
         
-        activityDao.getActivity("AAA", "BBB", true);
+        activityDao.getActivity(PACIFIC_TIME_ZONE, "AAA", "BBB", true);
     }
 
     /**

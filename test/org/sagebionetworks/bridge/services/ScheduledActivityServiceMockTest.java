@@ -9,6 +9,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -27,6 +28,7 @@ import java.util.Set;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDateTime;
 import org.junit.After;
 import org.joda.time.Period;
 import org.junit.Before;
@@ -137,11 +139,12 @@ public class ScheduledActivityServiceMockTest {
         ScheduleContext context = createScheduleContext(ENDS_ON).build();
         List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
         
-        when(activityDao.getActivity(anyString(), anyString(), eq(true))).thenAnswer(invocation -> {
+        when(activityDao.getActivity(any(), anyString(), anyString(), eq(true))).thenAnswer(invocation -> {
             Object[] args = invocation.getArguments();
             DynamoScheduledActivity schActivity = new DynamoScheduledActivity();
-            schActivity.setHealthCode((String)args[0]);
-            schActivity.setGuid((String)args[1]);
+            schActivity.setTimeZone((DateTimeZone)args[0]);
+            schActivity.setHealthCode((String)args[1]);
+            schActivity.setGuid((String)args[2]);
             return schActivity;
         });
         when(activityDao.getActivities(context.getInitialTimeZone(), scheduledActivities))
@@ -306,7 +309,7 @@ public class ScheduledActivityServiceMockTest {
         
         verify(activityDao).updateActivities(anyString(), updateCapture.capture());
         // Three activities have timestamp updates and need to be persisted
-        verify(activityDao, times(count)).getActivity(anyString(), anyString(), eq(true));
+        verify(activityDao, times(count)).getActivity(any(), anyString(), anyString(), eq(true));
         // Two activities have been finished and generate activity finished events
         verify(activityEventService, times(2)).publishActivityFinishedEvent(publishCapture.capture());
         
@@ -693,7 +696,8 @@ public class ScheduledActivityServiceMockTest {
         oneTimeActivity.setFinishedOn(NOW.plusMinutes(5).getMillis());
         
         mockAllCallsForDbActivities(ImmutableList.of());
-        when(activityDao.getActivity(HEALTH_CODE, guid, false)).thenReturn(oneTimeActivity);
+        when(activityDao.getActivity(context.getStartsOn().getZone(), HEALTH_CODE, guid, false))
+                .thenReturn(oneTimeActivity);
         
         List<ScheduledActivity> scheduledActivities = service.getScheduledActivitiesV4(context);
         assertEquals(1, scheduledActivities.size());
@@ -704,7 +708,7 @@ public class ScheduledActivityServiceMockTest {
         verify(activityDao, times(1)).getActivityHistoryV2(HEALTH_CODE, "guidForCCC", context.getStartsOn(), context.getEndsOn(),
                 null, BridgeConstants.API_MAXIMUM_PAGE_SIZE);
         // Retrieve any remaining scheduled activity from the DB to ensure state is maintained. 
-        verify(activityDao, times(1)).getActivity(HEALTH_CODE, guid, false);
+        verify(activityDao, times(1)).getActivity(context.getStartsOn().getZone(), HEALTH_CODE, guid, false);
         
         verify(activityDao).saveActivities(scheduledActivityListCaptor.capture());
         
@@ -1150,6 +1154,31 @@ public class ScheduledActivityServiceMockTest {
         
         // The returned list is the same as the db list we created earlier
         assertEquals(toGuids(dbActivities), toGuids(activities));
+    }
+    
+    // BRIDGE-1964. This test reproduces the stack trace in production. 
+    @Test
+    public void nullsRemovedAndLogged() {
+        ScheduledActivityDao mockedActivityDao = mock(ScheduledActivityDao.class);
+        service.setScheduledActivityDao(mockedActivityDao);
+        
+        DateTime startsOn = NOW.minusDays(2);
+        DateTime endsOn = NOW.plusDays(2);
+        ScheduleContext context = createScheduleContext(endsOn).withStartsOn(startsOn).build();
+        
+        ScheduledActivity dbActivity = new DynamoScheduledActivity();
+        dbActivity.setHealthCode(HEALTH_CODE);
+        dbActivity.setGuid("AAA:2017-02-23T13:00:00.000");
+        dbActivity.setActivity(TestUtils.getActivity1());
+        dbActivity.setStartedOn(NOW.getMillis()); 
+        dbActivity.setSchedulePlanGuid("schedulePlanGuid");
+        dbActivity.setLocalScheduledOn(LocalDateTime.parse("2017-02-23T13:00:00.000"));
+        // This is the critical line. Without this, the service fails. Also tested in DAO code.
+        dbActivity.setTimeZone(context.getStartsOn().getZone());
+        when(mockedActivityDao.getActivity(context.getStartsOn().getZone(), HEALTH_CODE, "AAA:2017-02-23T13:00:00.000", false)).thenReturn(dbActivity);
+        
+        service.getScheduledActivitiesV4(context);
+        verify(mockedActivityDao).getActivity(context.getStartsOn().getZone(), HEALTH_CODE, "AAA:2017-02-23T13:00:00.000", false);
     }
     
     private void mockAllCallsForDbActivities(List<ScheduledActivity> dbActivities) {
