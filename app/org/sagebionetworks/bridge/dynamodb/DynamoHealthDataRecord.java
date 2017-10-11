@@ -45,6 +45,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private ParticipantOption.SharingScope userSharingScope;
     private String userExternalId;
     private Set<String> userDataGroups;
+    private String validationErrors;
     private Long version;
     private ExporterStatus synapseExporterStatus;
 
@@ -281,7 +282,19 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
         // DDB doesn't support empty sets, use null reference for empty set. This is also enforced by the builder.
         this.userDataGroups = (userDataGroups != null && !userDataGroups.isEmpty()) ? userDataGroups : null;
     }
-    
+
+    /** {@inheritDoc} */
+    @Override
+    public String getValidationErrors() {
+        return validationErrors;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setValidationErrors(String validationErrors) {
+        this.validationErrors = validationErrors;
+    }
+
     /** {@inheritDoc} */
     @DynamoDBVersionAttribute
     @Override

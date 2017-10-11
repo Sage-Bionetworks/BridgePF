@@ -159,7 +159,13 @@ public interface HealthDataRecord extends BridgeEntity {
 
     /** @see #getUserDataGroups() */
     void setUserDataGroups(Set<String> userDataGroups);
-    
+
+    /** Error messages related to upload validation. Only generated if UploadValidationStrictness is set to REPORT. */
+    String getValidationErrors();
+
+    /** @see #getValidationErrors */
+    void setValidationErrors(String validationErrors);
+
     /**
      * Record version. This is used to detect concurrency conflicts. For creating new health data records, this field
      * should be left unspecified. For updating records, this field should match the version of the most recent GET

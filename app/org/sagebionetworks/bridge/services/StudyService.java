@@ -64,6 +64,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
+import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -325,11 +326,16 @@ public class StudyService {
         }
 
         study.setActive(true);
-        study.setStrictUploadValidationEnabled(true);
         study.setStudyIdExcludedInExport(true);
         study.getDataGroups().add(BridgeConstants.TEST_USER_GROUP);
         setDefaultsIfAbsent(study);
         sanitizeHTML(study);
+
+        // If validation strictness isn't set on study creation, set it to a reasonable default.
+        if (study.getUploadValidationStrictness() == null) {
+            study.setUploadValidationStrictness(UploadValidationStrictness.REPORT);
+        }
+
         Validate.entityThrowingException(validator, study);
 
         if (studyDao.doesIdentifierExist(study.getIdentifier())) {
@@ -450,7 +456,6 @@ public class StudyService {
             study.setExternalIdRequiredOnSignup(originalStudy.isExternalIdRequiredOnSignup());
             study.setEmailSignInEnabled(originalStudy.isEmailSignInEnabled());
             study.setAccountLimit(originalStudy.getAccountLimit());
-            study.setStrictUploadValidationEnabled(originalStudy.isStrictUploadValidationEnabled());
             study.setStudyIdExcludedInExport(originalStudy.isStudyIdExcludedInExport());
         }
 
