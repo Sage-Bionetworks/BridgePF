@@ -4,7 +4,6 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 
-import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -87,9 +86,6 @@ public class AuthenticationController extends BaseController {
     
     @BodyParser.Of(BodyParser.Empty.class)
     public Result signOut() throws Exception {
-        if (request().getHeader("Bridge-Session") == null) {
-            throw new BadRequestException("No session sent to server in order to sign out.");
-        }
         final UserSession session = getSessionIfItExists();
         if (session != null) {
             authenticationService.signOut(session);    

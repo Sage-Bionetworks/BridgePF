@@ -118,6 +118,7 @@ public class AuthenticationControllerMockTest {
         
         userSession = new UserSession();
         userSession.setReauthToken(REAUTH_TOKEN);
+        userSession.setStudyIdentifier(TEST_STUDY_ID);
         
         study = new DynamoStudy();
         study.setIdentifier(TEST_STUDY_ID_STRING);
@@ -173,7 +174,8 @@ public class AuthenticationControllerMockTest {
         mockPlayContextWithJson(TestUtils.createJson(
                 "{'study':'study-key','email':'email@email.com','reauthToken':'abc'}"));
         when(authenticationService.reauthenticate(any(), any(), signInCaptor.capture())).thenReturn(userSession);
-
+        doReturn(new Metrics("abcd")).when(controller).getMetrics();
+        
         Result result = controller.reauthenticate();
         assertEquals(200, result.status());
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));

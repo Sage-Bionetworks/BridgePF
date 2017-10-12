@@ -223,9 +223,9 @@ public class AuthenticationService {
 
         Account account = accountDao.reauthenticate(study, signIn);
 
+        // Force recreation of the session, including the session token
         cacheProvider.removeSessionByUserId(account.getId());
         UserSession session = getSessionFromAccount(study, context, account);
-        // Do not call sessionUpdateService as we assume system is in sync with the session on reauthentication
         cacheProvider.setUserSession(session);
         
         return session;
