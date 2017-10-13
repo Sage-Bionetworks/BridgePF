@@ -8,6 +8,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
+import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -152,6 +153,15 @@ public interface Study extends BridgeEntity, StudyIdentifier {
 
     /** @see #getUploadMetadataFieldDefinitions */
     void setUploadMetadataFieldDefinitions(List<UploadFieldDefinition> uploadMetadataFieldDefinitions);
+
+    /**
+     * How strictly to validate health data and uploads. If this and {@link #isStrictUploadValidationEnabled} are
+     * specified, this enum takes precedence.
+     */
+    UploadValidationStrictness getUploadValidationStrictness();
+
+    /** @see #getUploadValidationStrictness */
+    void setUploadValidationStrictness(UploadValidationStrictness uploadValidationStrictness);
 
     /**
      * Copies of all consent agreements, as well as rosters of all participants in a study, or any 

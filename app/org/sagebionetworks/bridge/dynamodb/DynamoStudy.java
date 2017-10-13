@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
+import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 
 @DynamoDBTable(tableName = "Study")
 @BridgeTypeName("Study")
@@ -39,6 +40,7 @@ public final class DynamoStudy implements Study {
     private String technicalEmail;
     private boolean usesCustomExportSchedule;
     private List<UploadFieldDefinition> uploadMetadataFieldDefinitions;
+    private UploadValidationStrictness uploadValidationStrictness;
     private String consentNotificationEmail;
     private int minAgeOfConsent;
     private int accountLimit;
@@ -219,6 +221,19 @@ public final class DynamoStudy implements Study {
     public void setUploadMetadataFieldDefinitions(List<UploadFieldDefinition> uploadMetadataFieldDefinitions) {
         this.uploadMetadataFieldDefinitions = (uploadMetadataFieldDefinitions == null) ? new ArrayList<>() :
                 uploadMetadataFieldDefinitions;
+    }
+
+    /** {@inheritDoc} */
+    @DynamoDBTypeConverted(converter=EnumMarshaller.class)
+    @Override
+    public UploadValidationStrictness getUploadValidationStrictness() {
+        return uploadValidationStrictness;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setUploadValidationStrictness(UploadValidationStrictness uploadValidationStrictness) {
+        this.uploadValidationStrictness = uploadValidationStrictness;
     }
 
     /** {@inheritDoc} */
@@ -467,7 +482,7 @@ public final class DynamoStudy implements Study {
     public int hashCode() {
         return Objects.hash(name, sponsorName, identifier, studyIdExcludedInExport, supportEmail, synapseDataAccessTeamId,
                 synapseProjectId, technicalEmail, usesCustomExportSchedule, uploadMetadataFieldDefinitions,
-                consentNotificationEmail, minAgeOfConsent,
+                uploadValidationStrictness, consentNotificationEmail, minAgeOfConsent,
                 accountLimit, version, active, profileAttributes, taskIdentifiers, activityEventKeys, dataGroups,
                 passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, emailSignInTemplate, accountExistsTemplate,
                 strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
@@ -487,6 +502,7 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(studyIdExcludedInExport, other.studyIdExcludedInExport)
                 && Objects.equals(supportEmail, other.supportEmail)
                 && Objects.equals(uploadMetadataFieldDefinitions, other.uploadMetadataFieldDefinitions)
+                && Objects.equals(uploadValidationStrictness, other.uploadValidationStrictness)
                 && Objects.equals(minAgeOfConsent, other.minAgeOfConsent) && Objects.equals(name, other.name)
                 && Objects.equals(passwordPolicy, other.passwordPolicy) && Objects.equals(active, other.active))
                 && Objects.equals(verifyEmailTemplate, other.verifyEmailTemplate)
@@ -521,14 +537,14 @@ public final class DynamoStudy implements Study {
         return String.format(
             "DynamoStudy [name=%s, active=%s, sponsorName=%s, identifier=%s, minAgeOfConsent=%s, studyIdExcludedInExport=%b, "
                         + "supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, technicalEmail=%s, "
-                        + "consentNotificationEmail=%s, version=%s, userProfileAttributes=%s, taskIdentifiers=%s, "
+                        + "uploadValidationStrictness=%s, consentNotificationEmail=%s, version=%s, userProfileAttributes=%s, taskIdentifiers=%s, "
                         + "activityEventKeys=%s, dataGroups=%s, passwordPolicy=%s, verifyEmailTemplate=%s, "
                         + "resetPasswordTemplate=%s, strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, "
                         + "emailVerificationEnabled=%s, externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, "
                         + "minSupportedAppVersions=%s, usesCustomExportSchedule=%s, pushNotificationARNs=%s, "
                         + "disableExport=%s, emailSignInTemplate=%s, emailSignInEnabled=%s, accountLimit=%s]",
                 name, active, sponsorName, identifier, minAgeOfConsent, studyIdExcludedInExport, supportEmail,
-                synapseDataAccessTeamId, synapseProjectId, technicalEmail, consentNotificationEmail, version,
+                synapseDataAccessTeamId, synapseProjectId, technicalEmail, uploadValidationStrictness, consentNotificationEmail, version,
                 profileAttributes, taskIdentifiers, activityEventKeys, dataGroups, passwordPolicy, verifyEmailTemplate,
                 resetPasswordTemplate, strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
                 externalIdValidationEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,

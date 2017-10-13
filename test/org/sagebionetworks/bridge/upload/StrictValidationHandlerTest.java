@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.upload;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -29,6 +28,7 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
+import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
@@ -52,7 +52,8 @@ public class StrictValidationHandlerTest {
     }
 
     private void test(List<UploadFieldDefinition> additionalFieldDefList, Map<String, byte[]> additionalAttachmentMap,
-            JsonNode additionalJsonNode, List<String> expectedErrorList, boolean shouldThrow) throws Exception {
+            JsonNode additionalJsonNode, List<String> expectedErrorList,
+            UploadValidationStrictness uploadValidationStrictness) throws Exception {
         // Basic schema with a basic attachment, basic field, and additional fields.
         UploadSchema testSchema = UploadSchema.create();
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
@@ -73,7 +74,7 @@ public class StrictValidationHandlerTest {
 
         // mock study service - this is to get the shouldThrow (strictUploadValidationEnabled) flag
         DynamoStudy testStudy = new DynamoStudy();
-        testStudy.setStrictUploadValidationEnabled(shouldThrow);
+        testStudy.setUploadValidationStrictness(uploadValidationStrictness);
 
         StudyService mockStudyService = mock(StudyService.class);
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(testStudy);
@@ -108,30 +109,40 @@ public class StrictValidationHandlerTest {
         record.setSchemaRevision(1);
         context.setHealthDataRecord(record);
 
-        if (shouldThrow) {
-            // execute - Catch the exception and make sure the exception message contains our expected error messages.
-            Exception thrownEx = null;
-            try {
-                handler.handle(context);
-                fail("Expected exception");
-            } catch (UploadValidationException ex) {
-                thrownEx = ex;
-            }
-            assertFalse(context.getMessageList().isEmpty());
-            for (String oneExpectedError : expectedErrorList) {
-                assertTrue("Expected error: " + oneExpectedError, thrownEx.getMessage().contains(oneExpectedError));
-            }
-        } else {
+        if (expectedErrorList == null || expectedErrorList.isEmpty()) {
+            // In all test cases, we successfully handle and have no error messages.
             handler.handle(context);
-
-            if (expectedErrorList == null || expectedErrorList.isEmpty()) {
-                assertTrue(context.getMessageList().isEmpty());
+            assertTrue(context.getMessageList().isEmpty());
+        } else {
+            if (uploadValidationStrictness == UploadValidationStrictness.STRICT) {
+                // If strict, we need to catch that exception.
+                try {
+                    handler.handle(context);
+                    fail("Expected exception");
+                } catch (UploadValidationException ex) {
+                    for (String oneExpectedError : expectedErrorList) {
+                        assertTrue("Expected error: " + oneExpectedError, ex.getMessage().contains(oneExpectedError));
+                    }
+                }
             } else {
-                // We don't want to do string matching. Instead, the quickest way to verify this is to concatenate the
-                // context message list together and make sure our expected strings are in there.
-                String concatMessage = Joiner.on('\n').join(context.getMessageList());
+                // Handle normally.
+                handler.handle(context);
+            }
+
+            // Error messages in context.
+            // We don't want to do string matching. Instead, the quickest way to verify this is to concatenate the
+            // context message list together and make sure our expected strings are in there.
+            String concatMessage = Joiner.on('\n').join(context.getMessageList());
+            for (String oneExpectedError : expectedErrorList) {
+                assertTrue("Expected error: " + oneExpectedError, concatMessage.contains(oneExpectedError));
+            }
+
+            if (uploadValidationStrictness == UploadValidationStrictness.REPORT) {
+                // If strictness is REPORT, do the same for record.validationErrors.
+                String recordValidationErrors = record.getValidationErrors();
                 for (String oneExpectedError : expectedErrorList) {
-                    assertTrue("Expected error: " + oneExpectedError, concatMessage.contains(oneExpectedError));
+                    assertTrue("Expected error: " + oneExpectedError, recordValidationErrors.contains(
+                            oneExpectedError));
                 }
             }
         }
@@ -205,7 +216,8 @@ public class StrictValidationHandlerTest {
         JsonNode additionalJsonNode = BridgeObjectMapper.get().readTree(additionalJsonText);
 
         // execute and validate
-        test(additionalFieldDefList, additionalAttachmentsMap, additionalJsonNode, null, false);
+        test(additionalFieldDefList, additionalAttachmentsMap, additionalJsonNode, null,
+                UploadValidationStrictness.STRICT);
     }
 
     @Test
@@ -222,7 +234,7 @@ public class StrictValidationHandlerTest {
         JsonNode additionalJsonNode = BridgeObjectMapper.get().readTree(additionalJsonText);
 
         // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, null, false);
+        test(additionalFieldDefList, null, additionalJsonNode, null, UploadValidationStrictness.STRICT);
 
         // verify canonicalized value
         JsonNode dataNode = context.getHealthDataRecord().getData();
@@ -248,7 +260,7 @@ public class StrictValidationHandlerTest {
         List<String> expectedErrorList = ImmutableList.of("invalid int");
 
         // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
+        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, UploadValidationStrictness.STRICT);
     }
 
     @Test
@@ -270,7 +282,7 @@ public class StrictValidationHandlerTest {
                 "Multi-Choice field invalid multi-choice contains invalid answer bad2");
 
         // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
+        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, UploadValidationStrictness.STRICT);
     }
 
     @Test
@@ -284,7 +296,7 @@ public class StrictValidationHandlerTest {
         List<String> expectedErrorList = ImmutableList.of("missing required attachment");
 
         // execute and validate
-        test(additionalFieldDefList, null, null, expectedErrorList, true);
+        test(additionalFieldDefList, null, null, expectedErrorList, UploadValidationStrictness.STRICT);
     }
 
     @Test
@@ -298,7 +310,7 @@ public class StrictValidationHandlerTest {
         List<String> expectedErrorList = ImmutableList.of("missing required field");
 
         // execute and validate
-        test(additionalFieldDefList, null, null, expectedErrorList, true);
+        test(additionalFieldDefList, null, null, expectedErrorList, UploadValidationStrictness.STRICT);
     }
 
     @Test
@@ -318,7 +330,7 @@ public class StrictValidationHandlerTest {
         List<String> expectedErrorList = ImmutableList.of("optional int");
 
         // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
+        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, UploadValidationStrictness.STRICT);
     }
 
     @Test
@@ -338,7 +350,7 @@ public class StrictValidationHandlerTest {
         List<String> expectedErrorList = ImmutableList.of("null required field");
 
         // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
+        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, UploadValidationStrictness.STRICT);
     }
 
     @Test
@@ -360,7 +372,7 @@ public class StrictValidationHandlerTest {
         List<String> expectedErrorList = ImmutableList.of("missing required attachment", "invalid int");
 
         // execute and validate
-        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, true);
+        test(additionalFieldDefList, null, additionalJsonNode, expectedErrorList, UploadValidationStrictness.STRICT);
     }
 
     @Test
@@ -374,6 +386,31 @@ public class StrictValidationHandlerTest {
         List<String> expectedErrorList = ImmutableList.of("missing required field");
 
         // execute and validate
-        test(additionalFieldDefList, null, null, expectedErrorList, false);
+        test(additionalFieldDefList, null, null, expectedErrorList, UploadValidationStrictness.WARNING);
+    }
+
+    @Test
+    public void strictnessWarningWithNoErrors() throws Exception {
+        // No additional fields, data, or errors.
+        test(null, null, null, null, UploadValidationStrictness.WARNING);
+    }
+
+    @Test
+    public void strictnessReportWithErrors() throws Exception {
+        // additional field defs
+        List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.of(new UploadFieldDefinition.Builder()
+                .withName("missing required field").withType(UploadFieldType.STRING).build());
+
+        // expected errors
+        List<String> expectedErrorList = ImmutableList.of("missing required field");
+
+        // execute and validate
+        test(additionalFieldDefList, null, null, expectedErrorList, UploadValidationStrictness.REPORT);
+    }
+
+    @Test
+    public void strictnessReportWithNoErrors() throws Exception {
+        // No additional fields, data, or errors.
+        test(null, null, null, null, UploadValidationStrictness.REPORT);
     }
 }

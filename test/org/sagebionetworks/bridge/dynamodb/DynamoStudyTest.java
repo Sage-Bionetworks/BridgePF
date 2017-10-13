@@ -80,6 +80,8 @@ public class DynamoStudyTest {
         assertEqualsAndNotNull(study.getSynapseDataAccessTeamId(), node.get("synapseDataAccessTeamId").longValue());
         assertEqualsAndNotNull(study.getSynapseProjectId(), node.get("synapseProjectId").textValue());
         assertEqualsAndNotNull(study.getTechnicalEmail(), node.get("technicalEmail").asText());
+        assertEqualsAndNotNull(study.getUploadValidationStrictness().toString().toLowerCase(),
+                node.get("uploadValidationStrictness").textValue());
         assertTrue(node.get("usesCustomExportSchedule").asBoolean());
         assertEqualsAndNotNull(study.getSponsorName(), node.get("sponsorName").asText());
         assertEqualsAndNotNull(study.getName(), node.get("name").asText());
