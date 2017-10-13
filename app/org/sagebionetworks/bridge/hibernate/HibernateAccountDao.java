@@ -55,11 +55,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 public class HibernateAccountDao implements AccountDao {
     
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
-    
-    private static enum AuthTokenType {
-        PASSWORD,
-        REAUTH_TOKEN
-    }
 
     static final String ACCOUNT_SUMMARY_QUERY_PREFIX = "select new " + HibernateAccount.class.getCanonicalName() +
             "(createdOn, studyId, firstName, lastName, email, id, status) ";
@@ -116,7 +111,7 @@ public class HibernateAccountDao implements AccountDao {
         String accountId = account.getId();
         PasswordAlgorithm passwordAlgorithm = PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
         
-        String passwordHash = generateHashWithAlgorithm(passwordAlgorithm, newPassword);
+        String passwordHash = hashCredential(passwordAlgorithm, newPassword);
 
         // We have to load and update the whole account in order to use Hibernate's optimistic versioning.
         HibernateAccount hibernateAccount = hibernateHelper.getById(HibernateAccount.class, accountId);
@@ -136,36 +131,31 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public Account authenticate(Study study, SignIn signIn) {
-        return authenticateInternal(study, signIn, AuthTokenType.PASSWORD);
+        HibernateAccount hibernateAccount = fetchHibernateAccount(study, signIn);
+        return authenticateInternal(hibernateAccount, hibernateAccount.getPasswordAlgorithm(),
+                hibernateAccount.getPasswordHash(), signIn.getPassword(), "password");
     }
 
     /** {@inheritDoc} */
     @Override
     public Account reauthenticate(Study study, SignIn signIn) {
-        return authenticateInternal(study, signIn, AuthTokenType.REAUTH_TOKEN);
+        HibernateAccount hibernateAccount = fetchHibernateAccount(study, signIn);
+        return authenticateInternal(hibernateAccount, hibernateAccount.getReauthTokenAlgorithm(),
+                hibernateAccount.getReauthTokenHash(), signIn.getReauthToken(), "reauth token");
     }
     
-    private Account authenticateInternal(Study study, SignIn signIn, AuthTokenType authTokenType) {
-        HibernateAccount hibernateAccount = fetchHibernateAccount(study, signIn);
+    private Account authenticateInternal(HibernateAccount hibernateAccount, PasswordAlgorithm algorithm,
+            String hash, String credentialValue, String credentialName) {
 
-        PasswordAlgorithm algorithm = (authTokenType == AuthTokenType.PASSWORD) ? 
-                hibernateAccount.getPasswordAlgorithm() : hibernateAccount.getReauthTokenAlgorithm();
-        String hash = (authTokenType == AuthTokenType.PASSWORD) ?
-                hibernateAccount.getPasswordHash() : hibernateAccount.getReauthTokenHash();
-        String userValue = (authTokenType == AuthTokenType.PASSWORD) ?
-                signIn.getPassword() : signIn.getReauthToken();
-        String credentialName = (authTokenType == AuthTokenType.PASSWORD) ?
-                "password" : "reauth token";
-        
-        verifyPassword(hibernateAccount.getId(), credentialName, algorithm, hash, userValue);
+        verifyCredential(hibernateAccount.getId(), credentialName, algorithm, hash, credentialValue);
 
         // Unmarshall account
         Account account = unmarshallAccount(hibernateAccount);
-        validateHealthCode(study.getStudyIdentifier(), hibernateAccount, account, false);
+        validateHealthCode(new StudyIdentifierImpl(hibernateAccount.getStudyId()), hibernateAccount, account, false);
         updateReauthToken(hibernateAccount, account);
         return account;
     }
-    
+
     @Override
     public Account getAccountAfterAuthentication(Study study, String email) {
         HibernateAccount hibernateAccount = getHibernateAccountByEmail(study, email);
@@ -182,32 +172,23 @@ public class HibernateAccountDao implements AccountDao {
     }
 
     @Override
-    public String rotateReauthenticationToken(StudyIdentifier studyId, String email, boolean clearToken) {
-        String reauthToken = null;
+    public void signOut(StudyIdentifier studyId, String email) {
         HibernateAccount hibernateAccount = getHibernateAccountByEmail(studyId, email);
         if (hibernateAccount != null) {
-            PasswordAlgorithm passwordAlgorithm = null;
-            String reauthTokenHash = null;
-            if (!clearToken) {
-                reauthToken = BridgeUtils.generateRandomString();
-                passwordAlgorithm = PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
-                reauthTokenHash = generateHashWithAlgorithm(passwordAlgorithm, reauthToken);
-            }
-            hibernateAccount.setReauthTokenHash(reauthTokenHash);
-            hibernateAccount.setReauthTokenAlgorithm(passwordAlgorithm);
-            hibernateAccount.setReauthTokenModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+            hibernateAccount.setReauthTokenHash(null);
+            hibernateAccount.setReauthTokenAlgorithm(null);
+            hibernateAccount.setReauthTokenModifiedOn(null);
             hibernateHelper.update(hibernateAccount);
         }
-        return reauthToken;
     }
     
     private void updateReauthToken(HibernateAccount hibernateAccount, Account account) {
-        // Re-create and persist the authentication token. This must also succeed to reauthenticate successfully.
+        // Re-create and persist the authentication token.
         String reauthToken = BridgeUtils.generateRandomString();
         account.setReauthToken(reauthToken);
         
         PasswordAlgorithm passwordAlgorithm = PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
-        String reauthTokenHash = generateHashWithAlgorithm(passwordAlgorithm, reauthToken);
+        String reauthTokenHash = hashCredential(passwordAlgorithm, reauthToken);
         hibernateAccount.setReauthTokenHash(reauthTokenHash);
         hibernateAccount.setReauthTokenAlgorithm(passwordAlgorithm);
         hibernateAccount.setReauthTokenModifiedOn(DateUtils.getCurrentMillisFromEpoch());
@@ -236,7 +217,7 @@ public class HibernateAccountDao implements AccountDao {
 
         // Hash password.
         PasswordAlgorithm passwordAlgorithm = PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
-        String passwordHash = generateHashWithAlgorithm(passwordAlgorithm, password);
+        String passwordHash = hashCredential(passwordAlgorithm, password);
 
         account.setPasswordAlgorithm(passwordAlgorithm);
         account.setPasswordHash(passwordHash);
@@ -350,16 +331,16 @@ public class HibernateAccountDao implements AccountDao {
         return hibernateAccount;
     }
     
-    private void verifyPassword(String accountId, String type, PasswordAlgorithm algorithm, String hash,
-            String userValue) {
-        // Verify password
+    private void verifyCredential(String accountId, String type, PasswordAlgorithm algorithm, String hash,
+            String credentialValue) {
+        // Verify credential (password or reauth token)
         if (algorithm == null || StringUtils.isBlank(hash)) {
             LOG.error("Account " + accountId + " is enabled but has no "+type+".");
             throw new EntityNotFoundException(Account.class);
         }
         try {
-            if (!algorithm.checkHash(hash, userValue)) {
-                // To prevent enumeration attacks, if the password doesn't match, throw 404 account not found.
+            if (!algorithm.checkHash(hash, credentialValue)) {
+                // To prevent enumeration attacks, if the credential doesn't match, throw 404 account not found.
                 throw new EntityNotFoundException(Account.class);
             }
         } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException ex) {
@@ -367,7 +348,7 @@ public class HibernateAccountDao implements AccountDao {
         }        
     }
     
-    private String generateHashWithAlgorithm(PasswordAlgorithm algorithm, String value) {
+    private String hashCredential(PasswordAlgorithm algorithm, String value) {
         String hash = null;
         try {
             hash = algorithm.generateHash(value);
@@ -556,6 +537,10 @@ public class HibernateAccountDao implements AccountDao {
             // We modified it. Update modifiedOn.
             long modifiedOn = DateUtils.getCurrentMillisFromEpoch();
             hibernateAccount.setModifiedOn(modifiedOn);
+            
+            // If called from a get method, we do need to update the account. If called as part of an
+            // authentication pathway, we don't save here because we will save the account after we rotate 
+            // the reauthentication token.
             if (doSave) {
                 hibernateHelper.update(hibernateAccount);    
             }

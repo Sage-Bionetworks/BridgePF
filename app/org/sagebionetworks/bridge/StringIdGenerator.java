@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.Random;
@@ -10,22 +12,19 @@ import java.util.Random;
  */
 class StringIdGenerator {
 
-    private static final String ALPHANUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    private static final String ALPHANUMERIC = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     private final Random random;
-    private final char[] symbols;
+    private final char[] characters;
     private final int length;
 
-    StringIdGenerator(int length, Random random, String symbols) {
-        if (length < 1) {
-            throw new IllegalArgumentException();
-        }
-        if (symbols.length() < 2) {
-            throw new IllegalArgumentException();
-        }
+    StringIdGenerator(int length, Random random, String characters) {
+        checkArgument(length > 1);
+        checkArgument(characters != null && characters.length() >= 2);
+
         this.length = length;
         this.random = Objects.requireNonNull(random);
-        this.symbols = symbols.toCharArray();
+        this.characters = characters.toCharArray();
     }
 
     /**
@@ -33,13 +32,13 @@ class StringIdGenerator {
      * for a good session key.
      */
     StringIdGenerator() {
-        this(21, new SecureRandom(), ALPHANUM);
+        this(21, new SecureRandom(), ALPHANUMERIC);
     }
     
     String nextString() {
         final char[] buffer = new char[length];
-        for (int idx = 0; idx < buffer.length; ++idx) {
-            buffer[idx] = symbols[random.nextInt(symbols.length)];
+        for (int i = 0; i < buffer.length; ++i) {
+            buffer[i] = characters[random.nextInt(characters.length)];
         }
         return new String(buffer);
     }

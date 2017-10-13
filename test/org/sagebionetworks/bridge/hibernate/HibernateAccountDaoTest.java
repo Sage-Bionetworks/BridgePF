@@ -412,6 +412,63 @@ public class HibernateAccountDaoTest {
     }
     
     @Test
+    public void signOut() throws Exception {
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, true);
+        hibernateAccount.setReauthTokenAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
+        hibernateAccount.setReauthTokenHash("AAA");
+        hibernateAccount.setReauthTokenModifiedOn(DateTime.now().getMillis());
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any())).thenReturn(ImmutableList.of(
+                hibernateAccount));
+        
+        ArgumentCaptor<HibernateAccount> accountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
+        
+        dao.signOut(STUDY, EMAIL);
+        
+        verify(mockHibernateHelper).update(accountCaptor.capture());
+        HibernateAccount captured = accountCaptor.getValue();
+        
+        assertNull(captured.getReauthTokenAlgorithm());
+        assertNull(captured.getReauthTokenHash());
+        assertNull(captured.getReauthTokenModifiedOn());
+    }
+    
+    @Test
+    public void signOutAccountNotFound() throws Exception {
+        // Just quietly succeeds without doing any work.
+        dao.signOut(STUDY, EMAIL);
+        
+        verify(mockHibernateHelper, never()).update(any());
+    }
+    
+    @Test
+    public void getAccountAfterAuthentication() throws Exception {
+        Long originalTimestamp = DateTime.now().minusMinutes(2).getMillis();
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, true);
+        hibernateAccount.setReauthTokenAlgorithm(PasswordAlgorithm.BCRYPT);
+        hibernateAccount.setReauthTokenHash("AAA");
+        hibernateAccount.setReauthTokenModifiedOn(originalTimestamp);
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any())).thenReturn(ImmutableList.of(
+                hibernateAccount));
+        
+        ArgumentCaptor<HibernateAccount> accountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
+        
+        dao.getAccountAfterAuthentication(STUDY, EMAIL);
+        
+        verify(mockHibernateHelper).update(accountCaptor.capture());
+        HibernateAccount captured = accountCaptor.getValue();
+        
+        assertNotEquals(PasswordAlgorithm.BCRYPT, captured.getReauthTokenAlgorithm());
+        assertNotEquals("AAA", captured.getReauthTokenHash());
+        assertNotEquals(originalTimestamp, captured.getReauthTokenModifiedOn());
+    }
+    
+    @Test
+    public void getAccountAfterAuthenticateReturnsNull() throws Exception {
+        Account account = dao.getAccountAfterAuthentication(STUDY, EMAIL);
+        assertNull(account);
+    }
+    
+    @Test
     public void constructAccount() throws Exception {
         // execute and validate
         GenericAccount account = (GenericAccount) dao.constructAccount(STUDY, EMAIL, DUMMY_PASSWORD);

@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -25,6 +26,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
 import org.apache.http.HttpStatus;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -45,6 +48,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.OperatingSystem;
@@ -56,6 +60,7 @@ import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -70,6 +75,7 @@ import play.test.Helpers;
 public class AuthenticationControllerMockTest {
     
     private static final String REAUTH_TOKEN = "reauthToken";
+    private static final String SESSION_TOKEN = "sessionToken";
     private static final String TEST_INTERNAL_SESSION_ID = "internal-session-id";
     private static final String TEST_PASSWORD = "password";
     private static final String TEST_ACCOUNT_ID = "spId";
@@ -118,6 +124,7 @@ public class AuthenticationControllerMockTest {
         
         userSession = new UserSession();
         userSession.setReauthToken(REAUTH_TOKEN);
+        userSession.setSessionToken(SESSION_TOKEN);
         userSession.setStudyIdentifier(TEST_STUDY_ID);
         
         study = new DynamoStudy();
@@ -169,18 +176,47 @@ public class AuthenticationControllerMockTest {
         controller.emailSignIn();
     }
     
+    @Test(expected = BadRequestException.class)
+    public void reauthenticateWithoutStudyThrowsException() throws Exception {
+        mockPlayContextWithJson(TestUtils.createJson(
+                "{'email':'email@email.com','reauthToken':'abc'}"));
+        
+        controller.reauthenticate();
+    }
+    
     @Test
     public void reauthenticate() throws Exception {
-        mockPlayContextWithJson(TestUtils.createJson(
-                "{'study':'study-key','email':'email@email.com','reauthToken':'abc'}"));
-        when(authenticationService.reauthenticate(any(), any(), signInCaptor.capture())).thenReturn(userSession);
-        doReturn(new Metrics("abcd")).when(controller).getMetrics();
-        
-        Result result = controller.reauthenticate();
-        assertEquals(200, result.status());
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
-
-        assertEquals(REAUTH_TOKEN, node.get("reauthToken").textValue());
+        long timestamp = DateTime.now().getMillis();
+        DateTimeUtils.setCurrentMillisFixed(timestamp);
+        try {
+            Http.Response response = mockPlayContextWithJson(TestUtils.createJson(
+                    "{'study':'study-key','email':'email@email.com','reauthToken':'abc'}"));
+            when(authenticationService.reauthenticate(any(), any(), any())).thenReturn(userSession);
+            doReturn(new Metrics("abcd")).when(controller).getMetrics();
+            
+            Result result = controller.reauthenticate();
+            assertEquals(200, result.status());
+            
+            verify(authenticationService).reauthenticate(any(), any(), signInCaptor.capture());
+            SignIn signIn = signInCaptor.getValue();
+            assertEquals("study-key", signIn.getStudyId());
+            assertEquals("email@email.com", signIn.getEmail());
+            assertEquals("abc", signIn.getReauthToken());
+            
+            verify(controller).getMetrics();
+            
+            verify(response).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, SESSION_TOKEN,
+                    BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
+            
+            verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
+            RequestInfo requestInfo = requestInfoCaptor.getValue();
+            assertEquals(timestamp, requestInfo.getSignedInOn().getMillis());
+            
+            JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+            assertEquals(REAUTH_TOKEN, node.get("reauthToken").textValue());
+        } finally {
+            DateTimeUtils.setCurrentMillisSystem();
+        }
     }
     
     @Test

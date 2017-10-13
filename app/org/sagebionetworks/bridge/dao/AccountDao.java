@@ -64,6 +64,11 @@ public interface AccountDao {
     Account reauthenticate(Study study, SignIn signIn);
     
     /**
+     * Sign the user out of Bridge. This clears the user's reauthentication token.
+     */
+    void signOut(StudyIdentifier studyId, String email);
+    
+    /**
      * Retrieve an account where authentication is handled outside of the DAO (If we
      * retrieve and return a session to the user through a path that does not call
      * authenticate/reauthenticate, then you will need to call this method to get
@@ -72,8 +77,6 @@ public interface AccountDao {
      * This method returns null if the Account does not exist.
      */
     Account getAccountAfterAuthentication(Study study, String email);
-    
-    String rotateReauthenticationToken(StudyIdentifier studyId, String email, boolean clearToken);
     
     /**
      * A factory method to construct a valid Account object that will work with our

@@ -233,8 +233,7 @@ public class AuthenticationService {
 
     public void signOut(final UserSession session) {
         if (session != null) {
-            accountDao.rotateReauthenticationToken(session.getStudyIdentifier(), 
-                    session.getParticipant().getEmail(), true);
+            accountDao.signOut(session.getStudyIdentifier(), session.getParticipant().getEmail());
             cacheProvider.removeSession(session);
         }
     }

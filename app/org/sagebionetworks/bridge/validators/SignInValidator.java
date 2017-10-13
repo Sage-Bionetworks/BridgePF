@@ -44,18 +44,12 @@ public class SignInValidator implements Validator {
         if (isBlank(signIn.getEmail())) {
             errors.rejectValue("email", "is required");
         }            
-        if (type == Type.PASSWORD) {
-            if (isBlank(signIn.getPassword())) {
-                errors.rejectValue("password", "is required");
-            }
-        } else if (type == Type.EMAIL) {
-            if (isBlank(signIn.getToken())) {
-                errors.rejectValue("token", "is required");
-            }
-        } else if (type == Type.REAUTH) {
-            if (isBlank(signIn.getReauthToken())) {
-                errors.rejectValue("reauthToken", "is required");
-            }
+        if (type == Type.PASSWORD && isBlank(signIn.getPassword())) {
+            errors.rejectValue("password", "is required");
+        } else if (type == Type.EMAIL && isBlank(signIn.getToken())) {
+            errors.rejectValue("token", "is required");
+        } else if (type == Type.REAUTH && isBlank(signIn.getReauthToken())) {
+            errors.rejectValue("reauthToken", "is required");
         }
     }
 
