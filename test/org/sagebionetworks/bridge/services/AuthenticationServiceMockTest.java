@@ -57,6 +57,7 @@ public class AuthenticationServiceMockTest {
     private static final String TOKEN = "ABC-DEF";
     private static final SignIn SIGN_IN_REQUEST = new SignIn(STUDY_ID, RECIPIENT_EMAIL, null, null, null);
     private static final SignIn SIGN_IN = new SignIn(STUDY_ID, RECIPIENT_EMAIL, null, TOKEN, null);
+    private static final SignIn REAUTH_REQUEST = new SignIn(STUDY_ID, RECIPIENT_EMAIL, null, null, TOKEN);
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("ABC");
     private static final ConsentStatus CONSENTED_STATUS = new ConsentStatus.Builder().withName("Name")
             .withGuid(SUBPOP_GUID).withRequired(true).withConsented(true).build();
@@ -280,6 +281,22 @@ public class AuthenticationServiceMockTest {
         doReturn(account).when(accountDao).getAccountAfterAuthentication(study, RECIPIENT_EMAIL);
         
         service.emailSignIn(CONTEXT, SIGN_IN);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void reauthTokenRequired() {
+        service.reauthenticate(study, CONTEXT, SIGN_IN); // doesn't have reauth token
+    }
+    
+    @Test(expected = ConsentRequiredException.class)
+    public void reauthThrowsUnconsentedException() {
+        StudyParticipant participant = new StudyParticipant.Builder().withStatus(AccountStatus.ENABLED).build();
+        
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        doReturn(account).when(accountDao).reauthenticate(study, REAUTH_REQUEST);
+        doReturn(participant).when(participantService).getParticipant(study, account, false);
+        
+        service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
     }
     
 }
