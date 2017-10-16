@@ -55,6 +55,7 @@ public class AuthenticationServiceMockTest {
     private static final String CACHE_KEY = "email@email.com:test-study:signInRequest";
     private static final String RECIPIENT_EMAIL = "email@email.com";
     private static final String TOKEN = "ABC-DEF";
+    private static final String USER_ID = "user-id";
     private static final SignIn SIGN_IN_REQUEST = new SignIn(STUDY_ID, RECIPIENT_EMAIL, null, null, null);
     private static final SignIn SIGN_IN = new SignIn(STUDY_ID, RECIPIENT_EMAIL, null, TOKEN, null);
     private static final SignIn REAUTH_REQUEST = new SignIn(STUDY_ID, RECIPIENT_EMAIL, null, null, TOKEN);
@@ -93,6 +94,8 @@ public class AuthenticationServiceMockTest {
     private ArgumentCaptor<String> stringCaptor;
     @Captor
     private ArgumentCaptor<BasicEmailProvider> providerCaptor;
+    @Captor
+    private ArgumentCaptor<UserSession> sessionCaptor;
 
     private Study study;
 
@@ -281,6 +284,24 @@ public class AuthenticationServiceMockTest {
         doReturn(account).when(accountDao).getAccountAfterAuthentication(study, RECIPIENT_EMAIL);
         
         service.emailSignIn(CONTEXT, SIGN_IN);
+    }
+    
+    @Test
+    public void reauthentication() {
+        ((GenericAccount)account).setId(USER_ID);
+
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail(RECIPIENT_EMAIL).build();
+        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        doReturn(account).when(accountDao).reauthenticate(study, REAUTH_REQUEST);
+        doReturn(participant).when(participantService).getParticipant(study, account, false);
+        service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
+        
+        verify(accountDao).reauthenticate(study, REAUTH_REQUEST);
+        verify(cacheProvider).removeSessionByUserId(USER_ID);
+        verify(cacheProvider).setUserSession(sessionCaptor.capture());
+        
+        UserSession captured = sessionCaptor.getValue();
+        assertEquals(RECIPIENT_EMAIL, captured.getParticipant().getEmail());
     }
     
     @Test(expected = InvalidEntityException.class)
