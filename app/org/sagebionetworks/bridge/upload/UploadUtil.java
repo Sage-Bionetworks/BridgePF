@@ -181,7 +181,8 @@ public class UploadUtil {
             case ATTACHMENT_JSON_BLOB:
             case ATTACHMENT_JSON_TABLE:
             case ATTACHMENT_V2:
-            case INLINE_JSON_BLOB: {
+            case INLINE_JSON_BLOB:
+            case LARGE_TEXT_ATTACHMENT: {
                 // always valid, always canonical
                 return CanonicalizationResult.makeResult(valueNode);
             }
