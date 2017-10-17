@@ -40,6 +40,8 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
@@ -55,9 +57,12 @@ public class AuthenticationServiceMockTest {
     private static final String CACHE_KEY = "email@email.com:test-study:signInRequest";
     private static final String RECIPIENT_EMAIL = "email@email.com";
     private static final String TOKEN = "ABC-DEF";
+    private static final String REAUTH_TOKEN = "GHI-JKL";
     private static final String USER_ID = "user-id";
+    private static final String PASSWORD = "password";
     private static final SignIn SIGN_IN_REQUEST = new SignIn(STUDY_ID, RECIPIENT_EMAIL, null, null, null);
     private static final SignIn SIGN_IN = new SignIn(STUDY_ID, RECIPIENT_EMAIL, null, TOKEN, null);
+    private static final SignIn PASSWORD_SIGN_IN = new SignIn(STUDY_ID, RECIPIENT_EMAIL, PASSWORD, null, null);
     private static final SignIn REAUTH_REQUEST = new SignIn(STUDY_ID, RECIPIENT_EMAIL, null, null, TOKEN);
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("ABC");
     private static final ConsentStatus CONSENTED_STATUS = new ConsentStatus.Builder().withName("Name")
@@ -129,6 +134,16 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test
+    public void signIn() throws Exception {
+        account.setReauthToken(REAUTH_TOKEN);
+        doReturn(account).when(accountDao).authenticate(study, PASSWORD_SIGN_IN);
+        doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
+        
+        UserSession retrieved = service.signIn(study, CONTEXT, PASSWORD_SIGN_IN);
+        assertEquals(REAUTH_TOKEN, retrieved.getReauthToken());
+    }
+    
+    @Test
     public void requestEmailSignIn() throws Exception {
         doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
         
@@ -165,6 +180,27 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test
+    public void signOut() {
+        StudyIdentifier studyIdentifier = new StudyIdentifierImpl(STUDY_ID);
+        
+        UserSession session = new UserSession();
+        session.setStudyIdentifier(studyIdentifier);
+        session.setParticipant(new StudyParticipant.Builder().withEmail("email@email.com").build());
+        service.signOut(session);
+        
+        verify(accountDao).signOut(studyIdentifier, "email@email.com");
+        verify(cacheProvider).removeSession(session);
+    }
+    
+    @Test
+    public void signOutNoSessionToken() {
+        service.signOut(null);
+        
+        verify(accountDao, never()).signOut(any(), any());
+        verify(cacheProvider, never()).removeSession(any());
+    }
+    
+    @Test
     public void requestEmailSignInEmailNotRegistered() {
         doReturn(null).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
         
@@ -176,6 +212,7 @@ public class AuthenticationServiceMockTest {
 
     @Test
     public void emailSignIn() {
+        account.setReauthToken(REAUTH_TOKEN);
         doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
         doReturn(account).when(accountDao).getAccountAfterAuthentication(study, RECIPIENT_EMAIL);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
@@ -184,6 +221,7 @@ public class AuthenticationServiceMockTest {
         UserSession retSession = service.emailSignIn(CONTEXT, SIGN_IN);
         
         assertNotNull(retSession);
+        assertEquals(REAUTH_TOKEN, retSession.getReauthToken());
         verify(accountDao, never()).changePassword(eq(account), any());
         verify(accountDao).getAccountAfterAuthentication(study, RECIPIENT_EMAIL);
         verify(cacheProvider).removeString(CACHE_KEY);
@@ -289,6 +327,7 @@ public class AuthenticationServiceMockTest {
     @Test
     public void reauthentication() {
         ((GenericAccount)account).setId(USER_ID);
+        account.setReauthToken(REAUTH_TOKEN);
 
         StudyParticipant participant = new StudyParticipant.Builder().withEmail(RECIPIENT_EMAIL).build();
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
@@ -302,6 +341,7 @@ public class AuthenticationServiceMockTest {
         
         UserSession captured = sessionCaptor.getValue();
         assertEquals(RECIPIENT_EMAIL, captured.getParticipant().getEmail());
+        assertEquals(REAUTH_TOKEN, captured.getReauthToken());
     }
     
     @Test(expected = InvalidEntityException.class)

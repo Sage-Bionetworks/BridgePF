@@ -413,7 +413,7 @@ public class HibernateAccountDaoTest {
     
     @Test
     public void signOut() throws Exception {
-        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, true);
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
         hibernateAccount.setReauthTokenAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
         hibernateAccount.setReauthTokenHash("AAA");
         hibernateAccount.setReauthTokenModifiedOn(DateTime.now().getMillis());
@@ -1220,7 +1220,8 @@ public class HibernateAccountDaoTest {
         if (generateReauthHash) {
             // Hashes are expensive to generate. Only generate them if the test actually needs them.
             hibernateAccount.setReauthTokenAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
-            hibernateAccount.setReauthTokenHash(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM.generateHash(REAUTH_TOKEN));
+            hibernateAccount
+                    .setReauthTokenHash(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM.generateHash(REAUTH_TOKEN));
         }
         return hibernateAccount;
     }
