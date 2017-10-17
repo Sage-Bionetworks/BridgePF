@@ -286,31 +286,32 @@ public class DynamoScheduledActivityTest {
         String json = ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(act);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
-        assertEquals("activityGuid", node.get("guid").asText());
-        assertEquals("2015-10-10T08:08:08.000Z", node.get("startedOn").asText());
-        assertEquals("2015-12-05T08:08:08.000Z", node.get("finishedOn").asText());
-        assertEquals("true", node.get("persistent").asText());
-        assertEquals("finished", node.get("status").asText());
-        assertEquals("ScheduledActivity", node.get("type").asText());
-        assertEquals("2015-10-01T10:10:10.000-06:00", node.get("scheduledOn").asText());
-        assertEquals("2015-10-01T14:10:10.000-06:00", node.get("expiresOn").asText());
+        assertEquals("activityGuid", node.get("guid").textValue());
+        assertEquals("2015-10-10T08:08:08.000Z", node.get("startedOn").textValue());
+        assertEquals("2015-12-05T08:08:08.000Z", node.get("finishedOn").textValue());
+        assertTrue(node.get("persistent").booleanValue());
+        assertEquals("finished", node.get("status").textValue());
+        assertEquals("schedulePlanGuid", node.get("schedulePlanGuid").textValue());
+        assertEquals("ScheduledActivity", node.get("type").textValue());
+        assertEquals("2015-10-01T10:10:10.000-06:00", node.get("scheduledOn").textValue());
+        assertEquals("2015-10-01T14:10:10.000-06:00", node.get("expiresOn").textValue());
         assertNull(node.get("referentType"));
         // all the above, plus activity, and nothing else
-        assertEquals(9, TestUtils.getFieldNamesSet(node).size());
+        assertEquals(10, TestUtils.getFieldNamesSet(node).size());
 
         JsonNode activityNode = node.get("activity");
-        assertEquals("Activity1", activityNode.get("label").asText());
-        assertNotNull(activityNode.get("guid").asText());
-        assertEquals("survey", activityNode.get("activityType").asText());
-        assertEquals("Activity", activityNode.get("type").asText());
+        assertEquals("Activity1", activityNode.get("label").textValue());
+        assertNotNull(activityNode.get("guid").textValue());
+        assertEquals("survey", activityNode.get("activityType").textValue());
+        assertEquals("Activity", activityNode.get("type").textValue());
         // all the above, plus survey, and nothing else
         assertEquals(5, TestUtils.getFieldNamesSet(activityNode).size());
         
         JsonNode surveyNode = activityNode.get("survey");
-        assertEquals("identifier1", surveyNode.get("identifier").asText());
-        assertEquals("AAA", surveyNode.get("guid").asText());
-        assertNotNull("href", surveyNode.get("href").asText());
-        assertEquals("SurveyReference", surveyNode.get("type").asText());
+        assertEquals("identifier1", surveyNode.get("identifier").textValue());
+        assertEquals("AAA", surveyNode.get("guid").textValue());
+        assertNotNull("href", surveyNode.get("href").textValue());
+        assertEquals("SurveyReference", surveyNode.get("type").textValue());
         // all the above and nothing else
         assertEquals(4, TestUtils.getFieldNamesSet(surveyNode).size());
         
