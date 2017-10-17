@@ -38,6 +38,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -112,6 +113,7 @@ public class StudyServiceTest {
         // verify this can be null, that's okay, and the flags are reset correctly on create
         study.setStudyIdExcludedInExport(false);
         study.setTaskIdentifiers(null);
+        study.setUploadValidationStrictness(null);
         study.setActivityEventKeys(null);
         study.setHealthCodeExportEnabled(true);
         study.setActive(false);
@@ -123,8 +125,9 @@ public class StudyServiceTest {
         // Verify that the flags are set correctly on create.
         assertNotNull("Version has been set", study.getVersion());
         assertTrue(study.isActive());
-        assertTrue(study.isStrictUploadValidationEnabled());
+        assertFalse(study.isStrictUploadValidationEnabled());
         assertTrue(study.isStudyIdExcludedInExport());
+        assertEquals(UploadValidationStrictness.REPORT, study.getUploadValidationStrictness());
 
         verify(mockCache).setStudy(study);
         verifyNoMoreInteractions(mockCache);
@@ -138,8 +141,9 @@ public class StudyServiceTest {
 
         Study newStudy = studyService.getStudy(study.getIdentifier());
         assertTrue(newStudy.isActive());
-        assertTrue(newStudy.isStrictUploadValidationEnabled());
+        assertFalse(newStudy.isStrictUploadValidationEnabled());
         assertTrue(newStudy.isStudyIdExcludedInExport());
+        assertEquals(UploadValidationStrictness.REPORT, newStudy.getUploadValidationStrictness());
 
         assertEquals(study.getIdentifier(), newStudy.getIdentifier());
         assertEquals("Test Study [StudyServiceTest]", newStudy.getName());
@@ -158,10 +162,24 @@ public class StudyServiceTest {
         verifyNoMoreInteractions(mockCache);
         reset(mockCache);
 
+        // make some (non-admin) updates
+        newStudy.setStrictUploadValidationEnabled(true);
+        newStudy.setUploadValidationStrictness(UploadValidationStrictness.WARNING);
+        Study updatedStudy = studyService.updateStudy(newStudy, false);
+        assertTrue(updatedStudy.isStrictUploadValidationEnabled());
+        assertEquals(UploadValidationStrictness.WARNING, updatedStudy.getUploadValidationStrictness());
+
+        verify(mockCache).removeStudy(updatedStudy.getIdentifier());
+        verify(mockCache).setStudy(updatedStudy);
+        verifyNoMoreInteractions(mockCache);
+        reset(mockCache);
+
+        // delete study
         studyService.deleteStudy(study.getIdentifier(), true);
         verify(mockCache).getStudy(study.getIdentifier());
-        verify(mockCache).setStudy(study);
+        verify(mockCache).setStudy(updatedStudy);
         verify(mockCache).removeStudy(study.getIdentifier());
+        verifyNoMoreInteractions(mockCache);
 
         try {
             studyService.getStudy(study.getIdentifier());
@@ -297,7 +315,6 @@ public class StudyServiceTest {
     }
 
     private void assertStudyDefaults(Study study) {
-        assertTrue(study.isStrictUploadValidationEnabled());
         assertTrue(study.isStudyIdExcludedInExport());
         assertTrue(study.isEmailVerificationEnabled());
         assertFalse(study.isExternalIdValidationEnabled());
@@ -307,7 +324,6 @@ public class StudyServiceTest {
     }
     
     private void assertStudyChanged(Study study) {
-        assertFalse(study.isStrictUploadValidationEnabled());
         assertFalse(study.isStudyIdExcludedInExport());
         assertFalse(study.isEmailVerificationEnabled());
         assertTrue(study.isExternalIdValidationEnabled());
@@ -317,7 +333,6 @@ public class StudyServiceTest {
     }
     
     private void setStudyDefaults(Study study) {
-        study.setStrictUploadValidationEnabled(true);
         study.setStudyIdExcludedInExport(true);
         study.setEmailVerificationEnabled(true);
         study.setExternalIdValidationEnabled(false);
@@ -327,7 +342,6 @@ public class StudyServiceTest {
     }
     
     private void changeStudyDefaults(Study study) {
-        study.setStrictUploadValidationEnabled(false);
         study.setStudyIdExcludedInExport(false);
         study.setEmailVerificationEnabled(false);
         study.setExternalIdValidationEnabled(true);

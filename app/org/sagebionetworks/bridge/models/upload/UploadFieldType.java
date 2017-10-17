@@ -58,6 +58,13 @@ public enum UploadFieldType {
     /** An integer value, generally represented as a long in Java (64-bit signed integer) */
     INT,
 
+    /**
+     * A value that is written to Synapse as a LargeText (unbounded String), but stored in Bridge as an attachment.
+     * This allows us to have inline strings larger than ~10kb without hitting DynamoDB's 400kb record limit. This is
+     * frequently used to upload large JSON blobs, like accelerometer data.
+     */
+    LARGE_TEXT_ATTACHMENT,
+
     /** Multiple choice question with multiple answers. */
     MULTI_CHOICE,
 
@@ -75,8 +82,11 @@ public enum UploadFieldType {
 
     /** A set of upload field types that are considered attachment types. */
     public static final Set<UploadFieldType> ATTACHMENT_TYPE_SET = EnumSet.of(ATTACHMENT_BLOB, ATTACHMENT_CSV,
-            ATTACHMENT_JSON_BLOB, ATTACHMENT_JSON_TABLE, ATTACHMENT_V2);
+            ATTACHMENT_JSON_BLOB, ATTACHMENT_JSON_TABLE, ATTACHMENT_V2, LARGE_TEXT_ATTACHMENT);
 
-    /* A set of upload field types that are freeform (or mostly freeform) strings. */
+    /**
+     * A set of upload field types that are freeform (or mostly freeform) strings. This is used to make calculations
+     * related to max length. As such, this doesn't include attachment types.
+     */
     public static final Set<UploadFieldType> STRING_TYPE_SET = EnumSet.of(INLINE_JSON_BLOB, SINGLE_CHOICE, STRING);
 }

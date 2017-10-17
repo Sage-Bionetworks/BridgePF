@@ -83,6 +83,9 @@ public class UploadUtilTest {
                 // inline json
                 { new TextNode("dummy inline JSON"), UploadFieldType.INLINE_JSON_BLOB,
                         new TextNode("dummy inline JSON"), true },
+                // large text attachment
+                { new TextNode("dummy large text"), UploadFieldType.LARGE_TEXT_ATTACHMENT,
+                        new TextNode("dummy large text"), true },
                 // boolean zero false
                 { new IntNode(0), UploadFieldType.BOOLEAN, BooleanNode.FALSE, true },
                 // boolean positive true

@@ -63,6 +63,7 @@ import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 import org.sagebionetworks.bridge.validators.Validate;
 
 public class TestUtils {
@@ -388,6 +389,7 @@ public class TestUtils {
         study.setSynapseDataAccessTeamId(1234L);
         study.setSynapseProjectId("test-synapse-project-id");
         study.setTechnicalEmail("bridge-testing+technical@sagebase.org");
+        study.setUploadValidationStrictness(UploadValidationStrictness.REPORT);
         study.setUsesCustomExportSchedule(true);
         study.setSupportEmail("bridge-testing+support@sagebase.org");
         study.setUserProfileAttributes(Sets.newHashSet("a", "b"));

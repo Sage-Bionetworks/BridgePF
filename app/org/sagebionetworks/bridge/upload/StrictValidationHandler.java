@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
+import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
@@ -120,27 +121,45 @@ public class StrictValidationHandler implements UploadValidationHandler {
         errorList.forEach(context::addMessage);
 
         // log warning
-        String combinedErrorMessage = "Strict upload validation error in study " + context.getStudy().getIdentifier()
+        String combinedErrorMessage = ERROR_MESSAGE_JOINER.join(errorList);
+        String loggedErrorMessage = "Strict upload validation error in study " + context.getStudy().getIdentifier()
                 + ", schema " + schemaId + "-v" + schemaRev + ", upload " + context.getUploadId() + ": " +
-                ERROR_MESSAGE_JOINER.join(errorList);
-        logger.warn(combinedErrorMessage);
+                combinedErrorMessage;
+        logger.warn(loggedErrorMessage);
 
-        // throw error, if configured to do so
-        if (shouldThrow(context.getStudy())) {
-            throw new UploadValidationException(combinedErrorMessage);
+        // Further action depends on validation strictness.
+        UploadValidationStrictness uploadValidationStrictness = getUploadValidationStrictnessForStudy(context
+                .getStudy());
+        switch (uploadValidationStrictness) {
+            case WARNING:
+                // We already warned. Do nothing.
+                break;
+            case REPORT:
+                // Write to record.validationErrors.
+                context.getHealthDataRecord().setValidationErrors(combinedErrorMessage);
+                break;
+            case STRICT:
+                // Strict means throw.
+                throw new UploadValidationException(loggedErrorMessage);
         }
     }
 
     /**
-     * Returns whether strict validation should throw exceptions, based on study configs.
-     *
-     * @param studyIdentifier
-     *         study ID of the current data record we're validating
-     * @return true if we should throw an exception, false otherwise
+     * Returns what level of validation strictness we should use, based on study configs. Package-scoped to facilitate
+     * unit tests.
      */
-    private boolean shouldThrow(StudyIdentifier studyIdentifier) {
-        Study study = studyService.getStudy(studyIdentifier);
-        return study.isStrictUploadValidationEnabled();
+    UploadValidationStrictness getUploadValidationStrictnessForStudy(StudyIdentifier studyId) {
+        Study study = studyService.getStudy(studyId);
+
+        // First check UploadValidationStrictness.
+        UploadValidationStrictness uploadValidationStrictness = study.getUploadValidationStrictness();
+        if (uploadValidationStrictness != null) {
+            return uploadValidationStrictness;
+        }
+
+        // Next, try isStrictValidationEnabled. True means Strict. False means Warning.
+        boolean strictValidationEnabled = study.isStrictUploadValidationEnabled();
+        return strictValidationEnabled ? UploadValidationStrictness.STRICT : UploadValidationStrictness.WARNING;
     }
 
     /**
