@@ -25,6 +25,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
 import org.apache.http.HttpStatus;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -69,6 +71,8 @@ import play.test.Helpers;
 @RunWith(MockitoJUnitRunner.class)
 public class AuthenticationControllerMockTest {
     
+    private static final String REAUTH_TOKEN = "reauthToken";
+    private static final String SESSION_TOKEN = "sessionToken";
     private static final String TEST_INTERNAL_SESSION_ID = "internal-session-id";
     private static final String TEST_PASSWORD = "password";
     private static final String TEST_ACCOUNT_ID = "spId";
@@ -116,6 +120,9 @@ public class AuthenticationControllerMockTest {
         controller.setCacheProvider(cacheProvider);
         
         userSession = new UserSession();
+        userSession.setReauthToken(REAUTH_TOKEN);
+        userSession.setSessionToken(SESSION_TOKEN);
+        userSession.setStudyIdentifier(TEST_STUDY_ID);
         
         study = new DynamoStudy();
         study.setIdentifier(TEST_STUDY_ID_STRING);
@@ -164,6 +171,49 @@ public class AuthenticationControllerMockTest {
     public void emailSignInMissingStudyId() throws Exception { 
         mockPlayContextWithJson(TestUtils.createJson("{'email':'email@email.com','token':'abc'}"));
         controller.emailSignIn();
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void reauthenticateWithoutStudyThrowsException() throws Exception {
+        mockPlayContextWithJson(TestUtils.createJson(
+                "{'email':'email@email.com','reauthToken':'abc'}"));
+        
+        controller.reauthenticate();
+    }
+    
+    @Test
+    public void reauthenticate() throws Exception {
+        long timestamp = DateTime.now().getMillis();
+        DateTimeUtils.setCurrentMillisFixed(timestamp);
+        try {
+            Http.Response response = mockPlayContextWithJson(TestUtils.createJson(
+                    "{'study':'study-key','email':'email@email.com','reauthToken':'abc'}"));
+            when(authenticationService.reauthenticate(any(), any(), any())).thenReturn(userSession);
+            doReturn(new Metrics("abcd")).when(controller).getMetrics();
+            
+            Result result = controller.reauthenticate();
+            assertEquals(200, result.status());
+            
+            verify(authenticationService).reauthenticate(any(), any(), signInCaptor.capture());
+            SignIn signIn = signInCaptor.getValue();
+            assertEquals("study-key", signIn.getStudyId());
+            assertEquals("email@email.com", signIn.getEmail());
+            assertEquals("abc", signIn.getReauthToken());
+            
+            verify(controller).getMetrics();
+            
+            verify(response).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, SESSION_TOKEN,
+                    BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
+            
+            verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
+            RequestInfo requestInfo = requestInfoCaptor.getValue();
+            assertEquals(timestamp, requestInfo.getSignedInOn().getMillis());
+            
+            JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+            assertEquals(REAUTH_TOKEN, node.get("reauthToken").textValue());
+        } finally {
+            DateTimeUtils.setCurrentMillisSystem();
+        }
     }
     
     @Test

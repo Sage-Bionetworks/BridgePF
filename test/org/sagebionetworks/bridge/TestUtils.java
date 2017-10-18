@@ -143,7 +143,7 @@ public class TestUtils {
         return builder.build();
     }
     
-    public static void mockPlayContextWithJson(String json, Map<String,String[]> headers) throws Exception {
+    public static Http.Response mockPlayContextWithJson(String json, Map<String,String[]> headers) throws Exception {
         JsonNode node = new ObjectMapper().readTree(json);
         Http.RequestBody body = mock(Http.RequestBody.class);
         when(body.asJson()).thenReturn(node);
@@ -164,24 +164,25 @@ public class TestUtils {
         when(context.response()).thenReturn(response);
 
         Http.Context.current.set(context);
+        return response;
     }
     
     /**
      * In the rare case where you need the context, you can use <code>Http.Context.current.get()</code>;
      */
-    public static void mockPlayContextWithJson(String json) throws Exception {
-        mockPlayContextWithJson(json, Maps.newHashMap());
+    public static Http.Response mockPlayContextWithJson(String json) throws Exception {
+        return mockPlayContextWithJson(json, Maps.newHashMap());
     }
     
-    public static void mockPlayContextWithJson(Object object) throws Exception {
+    public static Http.Response mockPlayContextWithJson(Object object) throws Exception {
         String json = BridgeObjectMapper.get().writeValueAsString(object);
-        mockPlayContextWithJson(json, Maps.newHashMap());
+        return mockPlayContextWithJson(json, Maps.newHashMap());
     }
     
     /**
      * In the rare case where you need the context, you can use <code>Http.Context.current.get()</code>;
      */
-    public static void mockPlayContext(Http.Request mockRequest) {
+    public static Http.Response mockPlayContext(Http.Request mockRequest) {
         Http.Context context = mock(Http.Context.class);
         when(context.request()).thenReturn(mockRequest);
 
@@ -189,6 +190,7 @@ public class TestUtils {
         when(context.response()).thenReturn(mockResponse);
         
         Http.Context.current.set(context);
+        return mockResponse;
     }
     
     /**

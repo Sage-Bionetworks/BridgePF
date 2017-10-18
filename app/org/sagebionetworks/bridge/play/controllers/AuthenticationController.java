@@ -60,6 +60,30 @@ public class AuthenticationController extends BaseController {
         return signInWithRetry(5);
     }
 
+    public Result reauthenticate() throws Exception {
+        SignIn signInRequest = parseJson(request(), SignIn.class);
+
+        if (isBlank(signInRequest.getStudyId())) {
+            throw new BadRequestException("Study identifier is required.");
+        }
+        Study study = studyService.getStudy(signInRequest.getStudyId());
+        verifySupportedVersionOrThrowException(study);
+        
+        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+        
+        UserSession session = authenticationService.reauthenticate(study, context, signInRequest);
+        
+        writeSessionInfoToMetrics(session);
+        response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
+        
+        RequestInfo requestInfo = getRequestInfoBuilder(session)
+                .withSignedInOn(DateUtils.getCurrentDateTime()).build();
+        cacheProvider.updateRequestInfo(requestInfo);
+        
+        return okResult(UserSessionInfo.toJSON(session));
+    }
+    
     @BodyParser.Of(BodyParser.Empty.class)
     public Result signOut() throws Exception {
         final UserSession session = getSessionIfItExists();
@@ -150,7 +174,6 @@ public class AuthenticationController extends BaseController {
         if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
             throw new ConsentRequiredException(session);
         }
-
         return okResult(UserSessionInfo.toJSON(session));
     }
 

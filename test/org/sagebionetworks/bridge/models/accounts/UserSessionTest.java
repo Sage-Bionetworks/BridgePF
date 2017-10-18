@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.accounts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -49,14 +50,16 @@ public class UserSessionTest {
         session.setAuthenticated(true);
         session.setEnvironment(Environment.PROD);
         session.setStudyIdentifier(new StudyIdentifierImpl("study-key"));
+        session.setReauthToken("reauthToken");
         session.setConsentStatuses(statuses);
         
         String json = StudyParticipant.CACHE_WRITER.writeValueAsString(session);
         UserSession newSession = BridgeObjectMapper.get().readValue(json, UserSession.class);
 
+        assertTrue(newSession.isAuthenticated());
+        assertNull(newSession.getReauthToken());
         assertEquals(session.getSessionToken(), newSession.getSessionToken());
         assertEquals(session.getInternalSessionToken(), newSession.getInternalSessionToken());
-        assertTrue(newSession.isAuthenticated());
         assertEquals(session.getEnvironment(), newSession.getEnvironment());
         assertEquals(session.getStudyIdentifier(), newSession.getStudyIdentifier());
         assertEquals(session.getParticipant(), newSession.getParticipant());

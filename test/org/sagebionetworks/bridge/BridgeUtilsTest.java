@@ -32,7 +32,7 @@ import com.google.common.collect.Sets;
 public class BridgeUtilsTest {
     
     private static final LocalDateTime LOCAL_DATE_TIME = LocalDateTime.parse("2010-10-10T10:10:10.111");
-
+    
     @Test
     public void studyTemplateVariblesWorks() {
         Study study = Study.create();

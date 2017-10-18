@@ -49,7 +49,7 @@ public class TestUserAdminHelper {
             return session.getParticipant();
         }
         public SignIn getSignIn() {
-            return new SignIn(study.getIdentifier(), getStudyParticipant().getEmail(), getStudyParticipant().getPassword(), null);
+            return new SignIn(study.getIdentifier(), getStudyParticipant().getEmail(), getStudyParticipant().getPassword(), null, null);
         }
         public String getEmail() {
             return getStudyParticipant().getEmail();

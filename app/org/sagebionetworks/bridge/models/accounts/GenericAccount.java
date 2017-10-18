@@ -39,6 +39,7 @@ public class GenericAccount implements Account {
     private String lastName;
     private PasswordAlgorithm passwordAlgorithm;
     private String passwordHash;
+    private String reauthToken;
     private Set<Roles> roleSet = ImmutableSet.of();
     private AccountStatus status;
     private StudyIdentifier studyId;
@@ -92,7 +93,19 @@ public class GenericAccount implements Account {
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
     }
+    
+    /** The reauthentication token hash. */
+    @Override
+    public String getReauthToken() {
+        return reauthToken;
+    }
 
+    /** @see #getReauthToken */
+    @Override
+    public void setReauthToken(String reauthToken) {
+        this.reauthToken = reauthToken;
+    }
+    
     /** {@inheritDoc} */
     @Override
     public String getAttribute(String name) {

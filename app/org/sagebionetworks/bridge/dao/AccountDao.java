@@ -57,9 +57,31 @@ public interface AccountDao {
     Account authenticate(Study study, SignIn signIn);
 
     /**
-     * A factory method to construct a valid Account object that will work with our underlying 
-     * persistence store. This does NOT save the account, you must call createAccount() after 
-     * the account has been updated.
+     * Re-acquire a valid session using a special token passed back on an
+     * authenticate request. Allows the client to re-authenticate without prompting
+     * for a password.
+     */
+    Account reauthenticate(Study study, SignIn signIn);
+    
+    /**
+     * Sign the user out of Bridge. This clears the user's reauthentication token.
+     */
+    void signOut(StudyIdentifier studyId, String email);
+    
+    /**
+     * Retrieve an account where authentication is handled outside of the DAO (If we
+     * retrieve and return a session to the user through a path that does not call
+     * authenticate/reauthenticate, then you will need to call this method to get
+     * the final account). This retrieves the account, and rotates and returns a new
+     * reauthorization token, the same as the authenticate and reauthenticate calls.
+     * This method returns null if the Account does not exist.
+     */
+    Account getAccountAfterAuthentication(Study study, String email);
+    
+    /**
+     * A factory method to construct a valid Account object that will work with our
+     * underlying persistence store. This does NOT save the account, you must call
+     * createAccount() after the account has been updated.
      */
     Account constructAccount(Study study, String email, String password);
     
@@ -76,9 +98,9 @@ public interface AccountDao {
     void updateAccount(Account account);
     
     /**
-     * Get an account in the context of a study by the user's ID or by their email address (email is 
-     * deprecated and in the process of being removed). Returns null if there is no account, it is 
-     * up to callers to translate this into the appropriate exception, if any. 
+     * Get an account in the context of a study by the user's ID or by their email address. 
+     * Returns null if there is no account, it is up to callers to translate this into the 
+     * appropriate exception, if any. 
      */
     Account getAccount(Study study, String id);
     

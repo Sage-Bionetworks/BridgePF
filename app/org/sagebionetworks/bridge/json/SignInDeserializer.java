@@ -22,10 +22,11 @@ public class SignInDeserializer extends JsonDeserializer<SignIn> {
         String password = JsonUtils.asText(node, "password");
         String studyId = JsonUtils.asText(node, "study");
         String token = JsonUtils.asText(node, "token");
+        String reauthToken = JsonUtils.asText(node, "reauthToken");
         
         String accountIdentifier = (StringUtils.isNotBlank(username)) ? username : email;
         
-        return new SignIn(studyId, accountIdentifier, password, token);
+        return new SignIn(studyId, accountIdentifier, password, token, reauthToken);
     }
 
 }

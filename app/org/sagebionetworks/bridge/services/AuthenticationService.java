@@ -148,7 +148,7 @@ public class AuthenticationService {
         // Consume the key regardless of what happens
         cacheProvider.removeString(cacheKey);
         
-        Account account = accountDao.getAccountWithEmail(study, signIn.getEmail());
+        Account account = accountDao.getAccountAfterAuthentication(study, signIn.getEmail());
         if (account.getStatus() == AccountStatus.UNVERIFIED) {
             throw new EntityNotFoundException(Account.class);
         } else if (account.getStatus() == AccountStatus.DISABLED) {
@@ -159,11 +159,6 @@ public class AuthenticationService {
 
         if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
             throw new ConsentRequiredException(session);
-        }
-
-        // The client can optionally change the password in order to sign in when the session expires
-        if (signIn.getPassword() != null) {
-            accountDao.changePassword(account, signIn.getPassword());
         }
         return session;
     }
@@ -186,7 +181,8 @@ public class AuthenticationService {
     
     /**
      * This method re-constructs the session based on potential changes to the user. It is called after a user 
-     * account is updated, and takes the updated CriteriaContext to calculate the current state of the user.
+     * account is updated, and takes the updated CriteriaContext to calculate the current state of the user. We 
+     * do not rotate the reauthentication token just because the user updates their session.
      * @param study
      *      the user's study
      * @param context
@@ -197,7 +193,7 @@ public class AuthenticationService {
     public UserSession getSession(Study study, CriteriaContext context) {
         checkNotNull(study);
         checkNotNull(context);
-        
+
         Account account = accountDao.getAccount(study, context.getUserId());
         return getSessionFromAccount(study, context, account);
     }
@@ -217,9 +213,30 @@ public class AuthenticationService {
         
         return session;
     }
+    
+    public UserSession reauthenticate(Study study, CriteriaContext context, SignIn signIn) throws EntityNotFoundException {
+        checkNotNull(study);
+        checkNotNull(context);
+        checkNotNull(signIn);
+        
+        Validate.entityThrowingException(SignInValidator.REAUTHENTICATION_REQUEST, signIn);
+
+        Account account = accountDao.reauthenticate(study, signIn);
+
+        // Force recreation of the session, including the session token
+        cacheProvider.removeSessionByUserId(account.getId());
+        UserSession session = getSessionFromAccount(study, context, account);
+        cacheProvider.setUserSession(session);
+        
+        if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
+            throw new ConsentRequiredException(session);
+        }
+        return session;
+    }
 
     public void signOut(final UserSession session) {
         if (session != null) {
+            accountDao.signOut(session.getStudyIdentifier(), session.getParticipant().getEmail());
             cacheProvider.removeSession(session);
         }
     }
@@ -311,6 +328,7 @@ public class AuthenticationService {
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment());
         session.setStudyIdentifier(study.getStudyIdentifier());
+        session.setReauthToken(account.getReauthToken());
         
         CriteriaContext newContext = new CriteriaContext.Builder()
                 .withContext(context)

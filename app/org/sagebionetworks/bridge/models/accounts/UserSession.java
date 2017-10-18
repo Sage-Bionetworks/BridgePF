@@ -22,6 +22,7 @@ public class UserSession {
     private Environment environment;
     private String sessionToken;
     private String internalSessionToken;
+    private String reauthToken;
     private StudyIdentifier studyIdentifier;
     private StudyParticipant participant;
     private Map<SubpopulationGuid,ConsentStatus> consentStatuses = ImmutableMap.of();
@@ -52,6 +53,13 @@ public class UserSession {
     }
     public void setInternalSessionToken(String internalSessionToken) {
         this.internalSessionToken = internalSessionToken;
+    }
+    @JsonIgnore
+    public String getReauthToken() {
+        return reauthToken;
+    }
+    public void setReauthToken(String reauthToken) {
+        this.reauthToken = reauthToken;
     }
     public boolean isAuthenticated() {
         return authenticated;

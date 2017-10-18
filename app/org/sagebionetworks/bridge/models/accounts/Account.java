@@ -40,6 +40,9 @@ public interface Account extends BridgeEntity {
 
     String getEmail();
     void setEmail(String email);
+    
+    String getReauthToken();
+    void setReauthToken(String reauthToken);
 
     /**
      * Gets an immutable copy of the consents this account has for the given subpopulation. Consents should be returned

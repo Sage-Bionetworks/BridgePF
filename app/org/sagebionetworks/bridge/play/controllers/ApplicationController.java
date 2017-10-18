@@ -41,7 +41,7 @@ public class ApplicationController extends BaseController {
     }
     
     public Result startSession(String studyId, String email, String token) {
-        SignIn signIn = new SignIn(studyId, email, null, token);
+        SignIn signIn = new SignIn(studyId, email, null, token, null);
         
         StudyIdentifier studyIdentifier = new StudyIdentifierImpl(studyId);
         CriteriaContext context = getCriteriaContext(studyIdentifier);

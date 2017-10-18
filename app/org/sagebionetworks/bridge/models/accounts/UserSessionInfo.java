@@ -30,6 +30,7 @@ public class UserSessionInfo {
     private static final String DATA_SHARING = "dataSharing";
     private static final String ENVIRONMENT = "environment";
     private static final String SESSION_TOKEN = "sessionToken";
+    private static final String REAUTH_TOKEN = "reauthToken";
     private static final String AUTHENTICATED = "authenticated";
     private static final String USERNAME = "username";
     private static final String USER_SESSION_INFO = "UserSessionInfo";
@@ -62,6 +63,7 @@ public class UserSessionInfo {
         node.put(USERNAME, session.getParticipant().getEmail());
         node.put(SIGNED_MOST_RECENT_CONSENT, ConsentStatus.isConsentCurrent(session.getConsentStatuses()));
         node.put(CONSENTED, ConsentStatus.isUserConsented(session.getConsentStatuses()));
+        node.put(REAUTH_TOKEN, session.getReauthToken());
         node.put(TYPE, USER_SESSION_INFO);
         
         ObjectNode statuses = node.with(CONSENT_STATUSES);
