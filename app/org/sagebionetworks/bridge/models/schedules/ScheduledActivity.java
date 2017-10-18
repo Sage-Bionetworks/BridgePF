@@ -27,7 +27,7 @@ public interface ScheduledActivity extends BridgeEntity {
      */
     ObjectWriter SCHEDULED_ACTIVITY_WRITER = new BridgeObjectMapper().writer(
         new SimpleFilterProvider().addFilter("filter", 
-        SimpleBeanPropertyFilter.serializeAllExcept("healthCode", "schedulePlanGuid", "referentGuid")));
+        SimpleBeanPropertyFilter.serializeAllExcept("healthCode", "referentGuid")));
 
     /**
      * Researchers get the schedule plan GUID. 
