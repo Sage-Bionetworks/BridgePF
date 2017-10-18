@@ -333,7 +333,10 @@ public class AuthenticationServiceMockTest {
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
         doReturn(account).when(accountDao).reauthenticate(study, REAUTH_REQUEST);
         doReturn(participant).when(participantService).getParticipant(study, account, false);
-        service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
+        
+        UserSession session = service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
+        assertEquals(RECIPIENT_EMAIL, session.getParticipant().getEmail());
+        assertEquals(REAUTH_TOKEN, session.getReauthToken());
         
         verify(accountDao).reauthenticate(study, REAUTH_REQUEST);
         verify(cacheProvider).removeSessionByUserId(USER_ID);
