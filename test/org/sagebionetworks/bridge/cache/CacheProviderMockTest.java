@@ -37,6 +37,7 @@ import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -294,6 +295,54 @@ public class CacheProviderMockTest {
                 "'type':'UserSession'}");
 
         assertSession(json);
+    }
+    
+    @Test
+    public void setSignIn() throws Exception {
+        SignIn signIn = new SignIn.Builder().withStudy("study").withEmail("email@email.com").build();
+        String ser = BridgeObjectMapper.get().writeValueAsString(signIn);
+        
+        cacheProvider.setSignIn("token", "reverseLookupKey", signIn, 300);
+        
+        verify(newTransaction).setex("token", 300, ser);
+        verify(newTransaction).setex("reverseLookupKey", 300, "token");
+    }
+    
+    @Test
+    public void hasSignInTokenOK() throws Exception {
+        when(newJedisOps.get("study:email@email.com")).thenReturn("token");
+        
+        String token = cacheProvider.hasSignInToken("study:email@email.com");
+        assertEquals("token", token);
+    }
+    
+    @Test
+    public void hasSignInTokenNoToken() {
+        when(newJedisOps.get("study:email@email.com")).thenReturn(null);
+        
+        String token = cacheProvider.hasSignInToken("study:email@email.com");
+        assertNull(token);
+    }
+    
+    @Test
+    public void getSignIn() throws Exception {
+        SignIn signIn = new SignIn.Builder().withStudy("study").withEmail("email@email.com").build();
+        String ser = BridgeObjectMapper.get().writeValueAsString(signIn);
+        
+        when(newJedisOps.get("token")).thenReturn(ser);
+        
+        SignIn retrieved = cacheProvider.getSignIn("token");
+        
+        assertEquals("study", retrieved.getStudyId());
+        assertEquals("email@email.com", retrieved.getEmail());
+    }
+    
+    @Test
+    public void removeSignIn() {
+        cacheProvider.removeSignIn("token", "reverseLookupKey");
+        
+        verify(newJedisOps).del("token");
+        verify(newJedisOps).del("reverseLookupKey");
     }
 
     private void assertSession(String json) {

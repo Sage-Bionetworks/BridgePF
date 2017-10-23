@@ -4,6 +4,8 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 
+import java.util.LinkedHashSet;
+
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -12,6 +14,7 @@ import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Email;
@@ -32,7 +35,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 @Controller
 public class AuthenticationController extends BaseController {
 
-    public Result requestEmailSignIn() { 
+    public Result requestEmailSignIn() throws Exception { 
         SignIn signInRequest = parseJson(request(), SignIn.class);
         
         authenticationService.requestEmailSignIn(signInRequest);
@@ -40,18 +43,31 @@ public class AuthenticationController extends BaseController {
         return acceptedResult("Email sent.");
     }
     
-    public Result emailSignIn() { 
-        SignIn signInRequest = parseJson(request(), SignIn.class);
+    public Result emailSignIn() throws Exception { 
+        SignIn tokenHolder = parseJson(request(), SignIn.class);
 
-        if (isBlank(signInRequest.getStudyId())) {
-            throw new BadRequestException("Study identifier is required.");
+        // We'll provide the study once we reconstitute the transaction
+        ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
+        LinkedHashSet<String> langs = getLanguagesFromAcceptLanguageHeader();
+        
+        // We reverse the order in which we check and throw consent and unsupported version
+        // exceptions. We want to throw the unsupported version exception if applicable, 
+        // but need in this case to authenticate so we know the study we are examining. 
+        ConsentRequiredException consentRequiredException = null;
+        UserSession session = null;
+        try {
+            session = authenticationService.emailSignIn(clientInfo, langs, tokenHolder);
+        } catch(ConsentRequiredException e) {
+            consentRequiredException = e;
+            session = e.getUserSession();
         }
-        Study study = studyService.getStudy(signInRequest.getStudyId());
+        // Now we can check and throw this first
+        Study study = studyService.getStudy(session.getStudyIdentifier());
         verifySupportedVersionOrThrowException(study);
         
-        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
-        
-        UserSession session = authenticationService.emailSignIn(context, signInRequest);
+        if (consentRequiredException != null) {
+            throw consentRequiredException;
+        }
         
         return okResult(UserSessionInfo.toJSON(session));
     }

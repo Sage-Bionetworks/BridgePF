@@ -4,8 +4,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 
+import java.util.LinkedHashSet;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -15,8 +20,8 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.LimitExceededException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -29,6 +34,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.validators.EmailValidator;
 import org.sagebionetworks.bridge.validators.EmailVerificationValidator;
@@ -45,10 +51,10 @@ import org.springframework.stereotype.Component;
 @Component("authenticationService")
 public class AuthenticationService {
 
-    private final Logger logger = LoggerFactory.getLogger(AuthenticationService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AuthenticationService.class);
+    private static final int SESSION_SIGNIN_TIMEOUT = 60*5;
     
-    private static final String SESSION_SIGNIN_CACHE_KEY = "%s:%s:signInRequest";
-    private static final int SESSION_SIGNIN_TIMEOUT = 60;
+    private final AtomicLong emailSignInRequestInMillis = new AtomicLong(200L);
     
     private CacheProvider cacheProvider;
     private BridgeConfig config;
@@ -101,29 +107,38 @@ public class AuthenticationService {
     final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
         this.accountWorkflowService = accountWorkflowService;
     }
+    final AtomicLong getEmailSignInRequestInMillis() {
+        return emailSignInRequestInMillis;
+    }
     
-    public void requestEmailSignIn(SignIn signIn) {
+    public void requestEmailSignIn(SignIn signIn) throws Exception {
+        long startTime = System.currentTimeMillis();
         Validate.entityThrowingException(SignInValidator.EMAIL_SIGNIN_REQUEST, signIn);
         
+        // We use the study so it's existence is verified. We retrieve the account so we verify it
+        // exists as well. If the token is returned to the server, we can safely use the credentials 
+        // in the persisted SignIn object.
         Study study = studyService.getStudy(signIn.getStudyId());
         if (!study.isEmailSignInEnabled()) {
             throw new UnauthorizedException("Email-based sign in not enabled for study: " + study.getName());
         }
         
-        // check that email is not already locked
-        String cacheKey = getEmailSignInCacheKey(study, signIn.getEmail());
-        if (cacheProvider.getString(cacheKey) != null) {
-            throw new LimitExceededException("Email currently pending confirmation.");
-        }
-        
-        // check that email is in the study, if not, return quietly to prevent session enumeration attacks
+        // check that email is in the study, if not, return quietly to prevent account enumeration attacks
         if (accountDao.getAccountWithEmail(study, signIn.getEmail()) == null) {
+            // The not found case returns *much* faster than the normal case. To prevent account enumeration 
+            // attacks, measure time of a successful case and delay for that period before returning.
+            LOG.info("Email submitted for sign in that is not registered: " + signIn.getEmail());
+            TimeUnit.MILLISECONDS.sleep(emailSignInRequestInMillis.get());
             return;
         }
         
-        // set a time-limited token
-        String token = BridgeUtils.generateGuid().replaceAll("-", "");
-        cacheProvider.setString(cacheKey, token, SESSION_SIGNIN_TIMEOUT);
+        // set a time-limited token, creating and storing credentials if they haven't been created already
+        String reverseTokenLookup = getEmailReverseTokenLookup(signIn);
+        String token = cacheProvider.hasSignInToken(reverseTokenLookup);
+        if (token == null) {
+            token = getVerificationToken();    
+            cacheProvider.setSignIn(token, reverseTokenLookup, signIn, SESSION_SIGNIN_TIMEOUT);
+        }
         
         // email the user the token
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
@@ -133,27 +148,43 @@ public class AuthenticationService {
             .withToken("email", BridgeUtils.encodeURIComponent(signIn.getEmail()))
             .withToken("token", token).build();
         sendMailService.sendEmail(provider);
+        
+        this.emailSignInRequestInMillis.set(System.currentTimeMillis()-startTime);
     }
     
-    public UserSession emailSignIn(CriteriaContext context, SignIn signIn) {
-        Validate.entityThrowingException(SignInValidator.EMAIL_SIGNIN, signIn);
+    public UserSession emailSignIn(ClientInfo clientInfo, LinkedHashSet<String> langs, SignIn tokenHolder) {
+        // Throw invalid entity exception, if no token
+        Validate.entityThrowingException(SignInValidator.TOKEN_SIGNIN, tokenHolder);
         
-        Study study = studyService.getStudy(signIn.getStudyId());
-        String cacheKey = getEmailSignInCacheKey(study, signIn.getEmail());
-        
-        String storedToken = cacheProvider.getString(cacheKey);
-        if (storedToken == null || !storedToken.equals(signIn.getToken())) {
+        SignIn signIn = cacheProvider.getSignIn(tokenHolder.getToken());
+        if (signIn == null) {
             throw new AuthenticationFailedException();
         }
-        // Consume the key regardless of what happens
-        cacheProvider.removeString(cacheKey);
+        // Remove sign in regardless of what happens
+        String reverseTokenLookup = getEmailReverseTokenLookup(signIn);
+        cacheProvider.removeSignIn(tokenHolder.getToken(), reverseTokenLookup);
+        
+        Study study = studyService.getStudy(signIn.getStudyId());
         
         Account account = accountDao.getAccountAfterAuthentication(study, signIn.getEmail());
-        if (account.getStatus() == AccountStatus.UNVERIFIED) {
-            throw new EntityNotFoundException(Account.class);
-        } else if (account.getStatus() == AccountStatus.DISABLED) {
+        
+        if (account.getStatus() == AccountStatus.DISABLED) {
             throw new AccountDisabledException();
+        } else if (account.getStatus() == AccountStatus.UNVERIFIED) {
+            // If the user accesses email sign in, we can verify the email address.
+            account.setStatus(AccountStatus.ENABLED);
+            accountDao.updateAccount(account);
         }
+        
+        CriteriaContext.Builder builder = new CriteriaContext.Builder()
+                .withStudyIdentifier(new StudyIdentifierImpl(signIn.getStudyId()));
+        if (langs != null) {
+            builder.withLanguages(langs);
+        }
+        if (clientInfo != null) {
+            builder.withClientInfo(clientInfo);
+        }
+        CriteriaContext context = builder.build();
 
         UserSession session = getSessionFromAccount(study, context, account);
 
@@ -203,7 +234,7 @@ public class AuthenticationService {
         checkNotNull(context);
         checkNotNull(signIn);
 
-        Validate.entityThrowingException(SignInValidator.PASSWORD_SIGNIN, signIn);
+        Validate.entityThrowingException(SignInValidator.EMAIL_PASSWORD_SIGNIN, signIn);
 
         Account account = accountDao.authenticate(study, signIn);
 
@@ -219,7 +250,7 @@ public class AuthenticationService {
         checkNotNull(context);
         checkNotNull(signIn);
         
-        Validate.entityThrowingException(SignInValidator.REAUTHENTICATION_REQUEST, signIn);
+        Validate.entityThrowingException(SignInValidator.REAUTH_SIGNIN, signIn);
 
         Account account = accountDao.reauthenticate(study, signIn);
 
@@ -256,7 +287,7 @@ public class AuthenticationService {
             // reveals that the email has been taken.
             Email email = new Email(study.getIdentifier(), participant.getEmail());
             accountWorkflowService.notifyAccountExists(study, email);
-            logger.info("Sign up attempt for existing email address in study '"+study.getIdentifier()+"'");
+            LOG.info("Sign up attempt for existing email address in study '"+study.getIdentifier()+"'");
         }
         return null;
     }
@@ -277,7 +308,7 @@ public class AuthenticationService {
             accountDao.resendEmailVerificationToken(studyIdentifier, email);    
         } catch(EntityNotFoundException e) {
             // Suppress this. Otherwise it reveals if the account does not exist
-            logger.info("Resend email verification for unregistered email in study '"+studyIdentifier.getIdentifier()+"'");
+            LOG.info("Resend email verification for unregistered email in study '"+studyIdentifier.getIdentifier()+"'");
         }
     }
 
@@ -290,7 +321,7 @@ public class AuthenticationService {
             accountDao.requestResetPassword(study, email);    
         } catch(EntityNotFoundException e) {
             // Suppress this. Otherwise it reveals if the account does not exist
-            logger.info("Request reset password request for unregistered email in study '"+study.getIdentifier()+"'");
+            LOG.info("Request reset password request for unregistered email in study '"+study.getIdentifier()+"'");
         }
     }
 
@@ -343,7 +374,11 @@ public class AuthenticationService {
         return session;
     }
     
-    private String getEmailSignInCacheKey(Study study, String email) {
-        return String.format(SESSION_SIGNIN_CACHE_KEY, email, study.getIdentifier());
+    String getVerificationToken() {
+        return SecureTokenGenerator.INSTANCE.nextToken();
+    }
+    
+    private String getEmailReverseTokenLookup(SignIn signIn) {
+        return signIn.getStudyId() + ":" + signIn.getEmail();
     }
 }

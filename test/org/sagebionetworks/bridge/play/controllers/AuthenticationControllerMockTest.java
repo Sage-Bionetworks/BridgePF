@@ -9,6 +9,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -44,10 +45,11 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.RequestInfo;
@@ -80,9 +82,13 @@ public class AuthenticationControllerMockTest {
     private static final String TEST_REQUEST_ID = "request-id";
     private static final String TEST_SESSION_TOKEN = "session-token";
     private static final String TEST_STUDY_ID_STRING = "study-key";
+    private static final String TEST_TOKEN = "testToken";
     private static final StudyIdentifier TEST_STUDY_ID = new StudyIdentifierImpl(TEST_STUDY_ID_STRING);
     private static final String TEST_VERIFY_EMAIL_TOKEN = "verify-email-token";
-
+    private static final SignIn SIGN_IN = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING).withEmail(TEST_EMAIL)
+            .withPassword(TEST_PASSWORD).withToken(TEST_TOKEN).build();
+    private static final Map<String, String[]> HEADERS = new ImmutableMap.Builder<String, String[]>()
+            .put("Accept-Language", new String[] { "en" }).build();
     AuthenticationController controller;
 
     @Mock
@@ -147,29 +153,42 @@ public class AuthenticationControllerMockTest {
     @Test
     public void emailSignIn() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().build();
-        mockPlayContextWithJson(TestUtils.createJson("{'study':'study-key','email':'email@email.com','token':'ABC'}"));
+        mockPlayContextWithJson(TestUtils.createJson("{'token':'testToken'}"), HEADERS);
         userSession.setParticipant(participant);
         userSession.setAuthenticated(true);
         study.setIdentifier("study-test");
         doReturn(study).when(studyService).getStudy("study-test");
-        doReturn(userSession).when(authenticationService).emailSignIn(any(CriteriaContext.class), any(SignIn.class));
+        doReturn(userSession).when(authenticationService).emailSignIn(any(), any(), any());
+        doReturn(SIGN_IN).when(cacheProvider).getSignIn("testToken");
         
         Result result = controller.emailSignIn();
         assertEquals(200, result.status());
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertTrue(node.get("authenticated").booleanValue());
      
-        verify(authenticationService).emailSignIn(any(CriteriaContext.class), signInCaptor.capture());
+        verify(authenticationService).emailSignIn(any(), any(), signInCaptor.capture());
         
         SignIn captured = signInCaptor.getValue();
-        assertEquals(TEST_EMAIL, captured.getEmail());
-        assertEquals("study-key", captured.getStudyId());
-        assertEquals("ABC", captured.getToken());
+        assertEquals(TEST_TOKEN, captured.getToken());
     }
     
-    @Test(expected = BadRequestException.class)
-    public void emailSignInMissingStudyId() throws Exception { 
-        mockPlayContextWithJson(TestUtils.createJson("{'email':'email@email.com','token':'abc'}"));
+    @Test(expected = InvalidEntityException.class)
+    public void emailSignInNoToken() throws Exception {
+        SignIn signIn = new SignIn.Builder().build();
+        mockPlayContextWithJson(TestUtils.createJson("{}"), HEADERS);
+
+        when(authenticationService.emailSignIn(any(), any(), any())).thenThrow(new InvalidEntityException(signIn,""));
+        
+        controller.emailSignIn();
+    }
+    
+    @Test(expected = UnsupportedVersionException.class)
+    public void emailSignInUnsupportedExceptionThrownNotConsentRequired() throws Exception {
+        mockPlayContextWithJson(TestUtils.createJson("{}"), HEADERS);
+        UserSession session = new UserSession();
+        when(authenticationService.emailSignIn(any(), any(), any())).thenThrow(new ConsentRequiredException(session));
+        doThrow(new UnsupportedVersionException(ClientInfo.UNKNOWN_CLIENT)).when(controller).verifySupportedVersionOrThrowException(any());
+        
         controller.emailSignIn();
     }
     
@@ -621,15 +640,17 @@ public class AuthenticationControllerMockTest {
     @Test(expected = UnsupportedVersionException.class)
     public void emailSignInBlockedByVersionKillSwitch() throws Exception {
         Map<String,String[]> headers = new ImmutableMap.Builder<String,String[]>()
+                .put("Accept-Language", new String[] {"en"})
                 .put("User-Agent", new String[]{"App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4"}).build();
-        String json = TestUtils.createJson(
-                "{'study':'" + TEST_STUDY_ID_STRING + 
-                "','email':'email@email.com','password':'bar'}");
+        String json = TestUtils.createJson("{'token':'token'}");
         TestUtils.mockPlayContextWithJson(json, headers);
         study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
+        when(authenticationService.emailSignIn(any(), any(), any())).thenReturn(userSession);
         
         Metrics metrics = new Metrics(TEST_REQUEST_ID);
         doReturn(metrics).when(controller).getMetrics();
+        
+        when(cacheProvider.getSignIn("token")).thenReturn(SIGN_IN);
 
         controller.emailSignIn();
     }

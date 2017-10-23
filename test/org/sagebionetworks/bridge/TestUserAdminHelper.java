@@ -49,7 +49,8 @@ public class TestUserAdminHelper {
             return session.getParticipant();
         }
         public SignIn getSignIn() {
-            return new SignIn(study.getIdentifier(), getStudyParticipant().getEmail(), getStudyParticipant().getPassword(), null, null);
+            return new SignIn.Builder().withStudy(study.getIdentifier()).withEmail(getStudyParticipant().getEmail())
+                    .withPassword(getStudyParticipant().getPassword()).build();
         }
         public String getEmail() {
             return getStudyParticipant().getEmail();

@@ -5,13 +5,10 @@ import static org.sagebionetworks.bridge.BridgeConstants.ASSETS_HOST;
 import org.apache.commons.lang3.StringEscapeUtils;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import org.springframework.stereotype.Controller;
 
@@ -40,12 +37,10 @@ public class ApplicationController extends BaseController {
             passwordDescription));
     }
     
-    public Result startSession(String studyId, String email, String token) {
-        SignIn signIn = new SignIn(studyId, email, null, token, null);
+    public Result startSession(String token) {
+        SignIn signIn = new SignIn.Builder().withToken(token).build();
         
-        StudyIdentifier studyIdentifier = new StudyIdentifierImpl(studyId);
-        CriteriaContext context = getCriteriaContext(studyIdentifier);
-        UserSession session = authenticationService.emailSignIn(context, signIn);
+        UserSession session = authenticationService.emailSignIn(null, null, signIn);
         
         return okResult(UserSessionInfo.toJSON(session));
     }

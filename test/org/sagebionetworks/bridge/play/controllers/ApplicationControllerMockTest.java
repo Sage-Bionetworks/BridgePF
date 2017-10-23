@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import java.util.Map;
+import java.util.LinkedHashSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -17,7 +17,6 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -29,7 +28,6 @@ import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.ImmutableMap;
 
 import play.mvc.Result;
 import play.test.Helpers;
@@ -48,6 +46,9 @@ public class ApplicationControllerMockTest {
     
     @Captor
     ArgumentCaptor<SignIn> signInCaptor;
+    
+    @Captor
+    ArgumentCaptor<LinkedHashSet<String>> linkedHashSetCaptor;
     
     @Spy
     ApplicationController controller;
@@ -86,27 +87,19 @@ public class ApplicationControllerMockTest {
     
     @Test
     public void startSessionWorks() throws Exception {
-        Map<String,String[]> headers = new ImmutableMap.Builder<String,String[]>()
-                .put("Accept-Language", new String[]{"en-US"}).build();
-        TestUtils.mockPlayContextWithJson("{}", headers);
-        
         UserSession session = new UserSession();
         session.setSessionToken("ABC");
-        doReturn(session).when(authenticationService).emailSignIn(any(), any());
+        doReturn(session).when(authenticationService).emailSignIn(any(), any(), any());
         
-        Result result = controller.startSession("test-study", "email", "token");
+        Result result = controller.startSession("token");
 
-        verify(authenticationService).emailSignIn(contextCaptor.capture(), signInCaptor.capture());
+        verify(authenticationService).emailSignIn(any(), any(), signInCaptor.capture());
         
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals("UserSessionInfo", node.get("type").asText());
         assertEquals("ABC", node.get("sessionToken").asText());
 
-        CriteriaContext context = contextCaptor.getValue();
-        assertEquals("en", context.getLanguages().iterator().next());
-
         SignIn signIn = signInCaptor.getValue();
-        assertEquals("email", signIn.getEmail());
         assertEquals("token", signIn.getToken());
     }
 

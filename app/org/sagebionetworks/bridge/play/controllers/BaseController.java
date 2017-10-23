@@ -214,7 +214,7 @@ public abstract class BaseController extends Controller {
         Integer minVersionForOs = study.getMinSupportedAppVersions().get(osName);
         
         if (!clientInfo.isSupportedAppVersion(minVersionForOs)) {
-        	throw new UnsupportedVersionException(clientInfo);
+            throw new UnsupportedVersionException(clientInfo);
         }
     }
 
