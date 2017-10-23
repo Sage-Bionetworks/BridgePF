@@ -33,6 +33,9 @@ public class HibernateAccount {
     private String id;
     private String studyId;
     private String email;
+    private String phone;
+    private Boolean emailVerified;
+    private Boolean phoneVerified;
     private Map<String, String> attributes;
     private Map<HibernateAccountConsentKey, HibernateAccountConsent> consents;
     private Long createdOn;
@@ -62,13 +65,14 @@ public class HibernateAccount {
      * construct this object with just the indicated fields using a select clause, without also 
      * specifying a constructor.
      */
-    public HibernateAccount(Long createdOn, String studyId, String firstName, String lastName, String email, String id,
+    public HibernateAccount(Long createdOn, String studyId, String firstName, String lastName, String email, String phone, String id,
             AccountStatus status) {
         this.createdOn = createdOn;
         this.studyId = studyId;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
+        this.phone = phone;
         this.id = id;
         this.status = status;
     }
@@ -105,6 +109,45 @@ public class HibernateAccount {
     /** @see #getEmail */
     public void setEmail(String email) {
         this.email = email;
+    }
+    
+    /** Account phone number (in E164 format). */
+    public String getPhone() {
+        return phone;
+    }
+
+    /** @see #getPhone */
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+    
+    /** Has the email address been verified to be under the control of the account holder. */
+    public void setEmailVerified(Boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+    
+    /** @see #getEmailVerified */
+    public Boolean getEmailVerified() {
+        // For accounts prior to the introduction of the email/phone verification flags, where 
+        // the flag was not set on creation or verification of the email address, return the right value.
+        if (emailVerified == null) {
+            if (status == AccountStatus.ENABLED) {
+                return Boolean.TRUE;
+            } else if (status == AccountStatus.UNVERIFIED) {
+                return Boolean.FALSE;
+            }
+        }
+        return emailVerified;
+    }
+    
+    /** Has the phone number been verified to be under the control of the account holder. */
+    public void setPhoneVerified(Boolean phoneVerified) {
+        this.phoneVerified = phoneVerified;
+    }
+
+    /** @see #getPhoneVerified */
+    public Boolean getPhoneVerified() {
+        return phoneVerified;
     }
 
     /** Map of custom account attributes. Never returns null. */

@@ -21,7 +21,7 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
+import org.sagebionetworks.bridge.models.accounts.VerificationToken;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -31,7 +31,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.validators.EmailValidator;
-import org.sagebionetworks.bridge.validators.EmailVerificationValidator;
+import org.sagebionetworks.bridge.validators.VerificationTokenValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 import org.sagebionetworks.bridge.validators.SignInValidator;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
@@ -261,10 +261,10 @@ public class AuthenticationService {
         return null;
     }
 
-    public void verifyEmail(EmailVerification verification) {
+    public void verifyEmail(VerificationToken verification) {
         checkNotNull(verification);
 
-        Validate.entityThrowingException(EmailVerificationValidator.INSTANCE, verification);
+        Validate.entityThrowingException(VerificationTokenValidator.INSTANCE, verification);
         accountDao.verifyEmail(verification);
     }
     

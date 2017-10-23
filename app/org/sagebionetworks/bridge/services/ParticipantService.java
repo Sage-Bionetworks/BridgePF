@@ -245,7 +245,7 @@ public class ParticipantService {
 
         Validate.entityThrowingException(new StudyParticipantValidator(study, true), participant);
         
-        Account account = accountDao.constructAccount(study, participant.getEmail(), participant.getPassword());
+        Account account = accountDao.constructAccount(study, participant.getEmail(), participant.getPhone(), participant.getPassword());
         Map<ParticipantOption, String> options = Maps.newHashMap();
         
         externalIdService.reserveExternalId(study, participant.getExternalId(), account.getHealthCode());

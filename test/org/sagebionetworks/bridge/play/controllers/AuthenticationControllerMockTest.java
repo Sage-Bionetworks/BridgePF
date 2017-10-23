@@ -53,7 +53,7 @@ import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
+import org.sagebionetworks.bridge.models.accounts.VerificationToken;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -590,7 +590,7 @@ public class AuthenticationControllerMockTest {
         TestUtils.mockPlayContextWithJson(requestJsonString);
 
         // mock AuthenticationService
-        ArgumentCaptor<EmailVerification> emailVerifyCaptor = ArgumentCaptor.forClass(EmailVerification.class);
+        ArgumentCaptor<VerificationToken> emailVerifyCaptor = ArgumentCaptor.forClass(VerificationToken.class);
 
         // execute and validate
         Result result = controller.verifyEmail();
@@ -598,8 +598,8 @@ public class AuthenticationControllerMockTest {
 
         // validate email verification
         verify(authenticationService).verifyEmail(emailVerifyCaptor.capture());
-        EmailVerification emailVerify = emailVerifyCaptor.getValue();
-        assertEquals(TEST_VERIFY_EMAIL_TOKEN, emailVerify.getSptoken());
+        VerificationToken emailVerify = emailVerifyCaptor.getValue();
+        assertEquals(TEST_VERIFY_EMAIL_TOKEN, emailVerify.getToken());
     }
     
     @Test(expected = UnsupportedVersionException.class)

@@ -15,7 +15,7 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Email;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
+import org.sagebionetworks.bridge.models.accounts.VerificationToken;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -104,7 +104,7 @@ public class AuthenticationController extends BaseController {
     }
 
     public Result verifyEmail() throws Exception {
-        EmailVerification emailVerification = parseJson(request(), EmailVerification.class);
+        VerificationToken emailVerification = parseJson(request(), VerificationToken.class);
 
         authenticationService.verifyEmail(emailVerification);
         

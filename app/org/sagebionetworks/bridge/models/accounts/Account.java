@@ -41,6 +41,15 @@ public interface Account extends BridgeEntity {
     String getEmail();
     void setEmail(String email);
     
+    Boolean getEmailVerified();
+    void setEmailVerified(Boolean emailVerified);
+    
+    String getPhone();
+    void setPhone(String phone);
+    
+    Boolean getPhoneVerified();
+    void setPhoneVerified(Boolean phoneVerified);
+    
     String getReauthToken();
     void setReauthToken(String reauthToken);
 

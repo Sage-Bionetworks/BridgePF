@@ -35,7 +35,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
+import org.sagebionetworks.bridge.models.accounts.VerificationToken;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
@@ -58,7 +58,7 @@ public class HibernateAccountDao implements AccountDao {
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
 
     static final String ACCOUNT_SUMMARY_QUERY_PREFIX = "select new " + HibernateAccount.class.getCanonicalName() +
-            "(createdOn, studyId, firstName, lastName, email, id, status) ";
+            "(createdOn, studyId, firstName, lastName, email, phone, id, status) ";
     
     private AccountWorkflowService accountWorkflowService;
     private HealthCodeService healthCodeService;
@@ -84,7 +84,7 @@ public class HibernateAccountDao implements AccountDao {
 
     /** {@inheritDoc} */
     @Override
-    public void verifyEmail(EmailVerification verification) {
+    public void verifyEmail(VerificationToken verification) {
         accountWorkflowService.verifyEmail(verification);
     }
 
@@ -199,9 +199,9 @@ public class HibernateAccountDao implements AccountDao {
     
     /** {@inheritDoc} */
     @Override
-    public Account constructAccount(Study study, String email, String password) {
+    public Account constructAccount(Study study, String email, String phone, String password) {
         HealthId healthId = healthCodeService.createMapping(study.getStudyIdentifier());
-        return constructAccountForMigration(study, email, password, healthId);
+        return constructAccountForMigration(study, email, phone, password, healthId);
     }
 
     /**
@@ -209,11 +209,14 @@ public class HibernateAccountDao implements AccountDao {
      * of creating it ourselves. This allows us to create an account in both MySQL and Stormpath with the same Health
      * Code mapping.
      */
-    public Account constructAccountForMigration(Study study, String email, String password, HealthId healthId) {
+    public Account constructAccountForMigration(Study study, String email, String phone, String password, HealthId healthId) {
         // Set basic params from inputs.
         GenericAccount account = new GenericAccount();
         account.setStudyId(study.getStudyIdentifier());
         account.setEmail(email);
+        account.setEmailVerified(Boolean.FALSE);
+        account.setPhone(phone);
+        account.setPhoneVerified(Boolean.FALSE);
         account.setHealthId(healthId);
 
         // Hash password.
@@ -276,13 +279,16 @@ public class HibernateAccountDao implements AccountDao {
         String accountId = account.getId();
         HibernateAccount accountToUpdate = marshallAccount(account);
 
-        // Can't change study, email, createdOn, or passwordModifiedOn.
+        // Can't change study, email, phone, createdOn, or passwordModifiedOn.
         HibernateAccount persistedAccount = hibernateHelper.getById(HibernateAccount.class, accountId);
         if (persistedAccount == null) {
             throw new EntityNotFoundException(Account.class, "Account " + accountId + " not found");
         }
         accountToUpdate.setStudyId(persistedAccount.getStudyId());
         accountToUpdate.setEmail(persistedAccount.getEmail());
+        accountToUpdate.setPhone(persistedAccount.getPhone());
+        accountToUpdate.setEmailVerified(persistedAccount.getEmailVerified());
+        accountToUpdate.setPhoneVerified(persistedAccount.getPhoneVerified());
         accountToUpdate.setCreatedOn(persistedAccount.getCreatedOn());
         accountToUpdate.setPasswordModifiedOn(persistedAccount.getPasswordModifiedOn());
 
@@ -457,6 +463,9 @@ public class HibernateAccountDao implements AccountDao {
         HibernateAccount hibernateAccount = new HibernateAccount();
         hibernateAccount.setId(genericAccount.getId());
         hibernateAccount.setEmail(genericAccount.getEmail());
+        hibernateAccount.setPhone(genericAccount.getPhone());
+        hibernateAccount.setEmailVerified(genericAccount.getEmailVerified());
+        hibernateAccount.setPhoneVerified(genericAccount.getPhoneVerified());
         hibernateAccount.setHealthCode(genericAccount.getHealthCode());
         hibernateAccount.setHealthId(genericAccount.getHealthId());
         hibernateAccount.setFirstName(genericAccount.getFirstName());
@@ -518,7 +527,7 @@ public class HibernateAccountDao implements AccountDao {
 
         return hibernateAccount;
     }
-
+    
     // Callers of AccountDao assume that an Account will always a health code and health ID. All accounts created
     // through the DAO will automatically have health code and ID populated, but accounts created in the DB directly
     // are left in a bad state. This method validates the health code mapping on a HibernateAccount and updates it as
@@ -551,6 +560,9 @@ public class HibernateAccountDao implements AccountDao {
         GenericAccount account = new GenericAccount();
         account.setId(hibernateAccount.getId());
         account.setEmail(hibernateAccount.getEmail());
+        account.setPhone(hibernateAccount.getPhone());
+        account.setEmailVerified(hibernateAccount.getEmailVerified());
+        account.setPhoneVerified(hibernateAccount.getPhoneVerified());
         account.setFirstName(hibernateAccount.getFirstName());
         account.setLastName(hibernateAccount.getLastName());
         account.setPasswordAlgorithm(hibernateAccount.getPasswordAlgorithm());

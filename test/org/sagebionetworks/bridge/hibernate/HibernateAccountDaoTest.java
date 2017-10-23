@@ -42,7 +42,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
+import org.sagebionetworks.bridge.models.accounts.VerificationToken;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.HealthIdImpl;
@@ -63,6 +63,7 @@ public class HibernateAccountDaoTest {
     private static final String DUMMY_PASSWORD_HASH = "dummy-password-hash";
     private static final String DUMMY_TOKEN = "dummy-token";
     private static final String EMAIL = "eggplant@example.com";
+    private static final String PHONE = "+1234567890";
     private static final String HEALTH_CODE = "health-code";
     private static final String HEALTH_ID = "health-id";
     private static final long MOCK_NOW_MILLIS = DateTime.parse("2017-05-19T14:45:27.593-0700").getMillis();
@@ -108,7 +109,7 @@ public class HibernateAccountDaoTest {
 
     @Test
     public void verifyEmail() {
-        EmailVerification verification = new EmailVerification(DUMMY_TOKEN);
+        VerificationToken verification = new VerificationToken(DUMMY_TOKEN, null);
         dao.verifyEmail(verification);
         verify(mockAccountWorkflowService).verifyEmail(verification);
     }
@@ -471,7 +472,7 @@ public class HibernateAccountDaoTest {
     @Test
     public void constructAccount() throws Exception {
         // execute and validate
-        GenericAccount account = (GenericAccount) dao.constructAccount(STUDY, EMAIL, DUMMY_PASSWORD);
+        GenericAccount account = (GenericAccount) dao.constructAccount(STUDY, EMAIL, PHONE, DUMMY_PASSWORD);
         assertEquals(TestConstants.TEST_STUDY, account.getStudyIdentifier());
         assertEquals(EMAIL, account.getEmail());
         assertEquals(HEALTH_CODE, account.getHealthCode());
@@ -487,7 +488,7 @@ public class HibernateAccountDaoTest {
         HealthId healthId = new HealthIdImpl(HEALTH_ID, HEALTH_CODE);
 
         // execute
-        GenericAccount account = (GenericAccount) dao.constructAccountForMigration(STUDY, EMAIL, DUMMY_PASSWORD,
+        GenericAccount account = (GenericAccount) dao.constructAccountForMigration(STUDY, EMAIL, PHONE, DUMMY_PASSWORD,
                 healthId);
 
         // Most of this stuff has been tested in the previous test. Just test that we set the expected HealthId.

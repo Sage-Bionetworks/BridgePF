@@ -117,6 +117,7 @@ public class ParticipantServiceTest {
             .withFirstName(FIRST_NAME)
             .withLastName(LAST_NAME)
             .withEmail(EMAIL)
+            .withPhone(PHONE)
             .withId(ID)
             .withPassword(PASSWORD)
             .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
@@ -221,7 +222,7 @@ public class ParticipantServiceTest {
     
     private void mockHealthCodeAndAccountRetrieval() {
         when(account.getId()).thenReturn(ID);
-        when(accountDao.constructAccount(STUDY, EMAIL, PASSWORD)).thenReturn(account);
+        when(accountDao.constructAccount(STUDY, EMAIL, PHONE, PASSWORD)).thenReturn(account);
         when(accountDao.createAccount(same(STUDY), same(account), anyBoolean())).thenReturn(ID);
         when(accountDao.getAccount(STUDY, ID)).thenReturn(account);
         when(account.getHealthCode()).thenReturn(HEALTH_CODE);
@@ -240,7 +241,7 @@ public class ParticipantServiceTest {
         verify(externalIdService).reserveExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
         verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
         
-        verify(accountDao).constructAccount(STUDY, EMAIL, PASSWORD);
+        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PASSWORD);
         // suppress email (true) == sendEmail (false)
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
@@ -285,7 +286,7 @@ public class ParticipantServiceTest {
         } catch(EntityAlreadyExistsException e) {
         }
         verify(externalIdService).reserveExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
-        verify(accountDao).constructAccount(STUDY, EMAIL, PASSWORD);
+        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PASSWORD);
         verifyNoMoreInteractions(optionsService);
     }
     
@@ -931,7 +932,7 @@ public class ParticipantServiceTest {
         
         participantService.createParticipant(STUDY, callerRoles, participant, false);
         
-        verify(accountDao).constructAccount(STUDY, EMAIL, PASSWORD);
+        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PASSWORD);
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
         Account account = accountCaptor.getValue();
         
@@ -966,7 +967,7 @@ public class ParticipantServiceTest {
         
         participantService.createParticipant(STUDY, callerRoles, participant, false);
         
-        verify(accountDao).constructAccount(STUDY, EMAIL, PASSWORD);
+        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PASSWORD);
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
         Account account = accountCaptor.getValue();
         

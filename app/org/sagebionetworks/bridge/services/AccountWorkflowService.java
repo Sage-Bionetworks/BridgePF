@@ -17,7 +17,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
+import org.sagebionetworks.bridge.models.accounts.VerificationToken;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -132,10 +132,10 @@ public class AccountWorkflowService {
      * If the token is invalid, it fails quietly. If the token exists but the account 
      * does not, it throws an exception (this would be unexpected).
      */
-    public void verifyEmail(EmailVerification verification) {
+    public void verifyEmail(VerificationToken verification) {
         checkNotNull(verification);
 
-        VerificationData data = restoreVerification(verification.getSptoken());
+        VerificationData data = restoreVerification(verification.getToken());
         if (data == null) {
             throw new BadRequestException(VERIFY_EMAIL_TOKEN_EXPIRED);
         }
@@ -145,6 +145,7 @@ public class AccountWorkflowService {
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
+        account.setEmailVerified(Boolean.TRUE);
         account.setStatus(AccountStatus.ENABLED);
         accountDao.updateAccount(account);
     }
@@ -230,13 +231,13 @@ public class AccountWorkflowService {
         }
     }
              
-    private VerificationData restoreVerification(String sptoken) {
-        checkArgument(isNotBlank(sptoken));
+    private VerificationData restoreVerification(String token) {
+        checkArgument(isNotBlank(token));
                  
-        String json = cacheProvider.getString(sptoken);
+        String json = cacheProvider.getString(token);
         if (json != null) {
             try {
-                cacheProvider.removeString(sptoken);
+                cacheProvider.removeString(token);
                 return BridgeObjectMapper.get().readValue(json, VerificationData.class);
             } catch (IOException e) {
                 throw new BridgeServiceException(e);

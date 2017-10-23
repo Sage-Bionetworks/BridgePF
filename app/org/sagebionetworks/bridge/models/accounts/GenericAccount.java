@@ -32,6 +32,9 @@ public class GenericAccount implements Account {
     private final Map<SubpopulationGuid, List<ConsentSignature>> consentHistoryMap = new HashMap<>();
     private DateTime createdOn;
     private String email;
+    private String phone;
+    private Boolean emailVerified;
+    private Boolean phoneVerified;
     private String healthCode;
     private String healthId;
     private String id;
@@ -141,6 +144,51 @@ public class GenericAccount implements Account {
         this.email = email;
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public String getPhone() {
+        return phone;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public Boolean getEmailVerified() {
+        // For accounts prior to the introduction of the email/phone verification flags, where 
+        // the flag was not set on creation or verification of the email address, return the right value.
+        if (emailVerified == null) {
+            if (status == AccountStatus.ENABLED) {
+                return Boolean.TRUE;
+            } else if (status == AccountStatus.UNVERIFIED) {
+                return Boolean.FALSE;
+            }
+        }
+        return emailVerified;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public void setEmailVerified(Boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public Boolean getPhoneVerified() {
+        return phoneVerified;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public void setPhoneVerified(Boolean phoneVerified) {
+        this.phoneVerified = phoneVerified;
+    }
+    
     /** {@inheritDoc} */
     @Override
     public List<ConsentSignature> getConsentSignatureHistory(SubpopulationGuid subpopGuid) {

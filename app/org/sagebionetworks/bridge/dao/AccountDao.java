@@ -8,7 +8,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
+import org.sagebionetworks.bridge.models.accounts.VerificationToken;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -25,7 +25,7 @@ public interface AccountDao {
     /**
      * Verify an email address using a supplied, one-time token for verification.
      */
-    void verifyEmail(EmailVerification verification);
+    void verifyEmail(VerificationToken verification);
     
     /**
      * Sign up sends an email address with a link that includes a one-time token for verification. That email
@@ -83,7 +83,7 @@ public interface AccountDao {
      * underlying persistence store. This does NOT save the account, you must call
      * createAccount() after the account has been updated.
      */
-    Account constructAccount(Study study, String email, String password);
+    Account constructAccount(Study study, String email, String phone, String password);
     
     /**
      * Create an account. The account object should initially be retrieved from the 
