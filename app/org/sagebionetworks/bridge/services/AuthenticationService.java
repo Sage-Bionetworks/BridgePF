@@ -132,7 +132,6 @@ public class AuthenticationService {
             try {
                 // The not found case returns *much* faster than the normal case. To prevent account enumeration 
                 // attacks, measure time of a successful case and delay for that period before returning.
-                LOG.info("Email submitted for sign in that is not registered: " + signIn.getEmail());
                 TimeUnit.MILLISECONDS.sleep(emailSignInRequestInMillis.get());            
             } catch(InterruptedException e) {
                 // Just return, the thread was killed by the connection, the server died, etc.
