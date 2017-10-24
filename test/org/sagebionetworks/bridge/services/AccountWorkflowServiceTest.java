@@ -159,7 +159,7 @@ public class AccountWorkflowServiceTest {
         when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         when(mockAccountDao.getAccount(study, "userId")).thenReturn(mockAccount);
         
-        EmailVerification verification = new EmailVerification(SPTOKEN, null);
+        EmailVerification verification = new EmailVerification(SPTOKEN);
         
         service.verifyEmail(verification);
         
@@ -173,26 +173,9 @@ public class AccountWorkflowServiceTest {
     public void verifyEmailBadSptokenThrowsException() {
         when(mockCacheProvider.getString(SPTOKEN)).thenReturn(null);
         
-        EmailVerification verification = new EmailVerification(SPTOKEN, null);
+        EmailVerification verification = new EmailVerification(SPTOKEN);
         
         service.verifyEmail(verification);
-    }
-    
-    @Test
-    public void verifyEmailTokenAlsoWorks() {
-        when(mockCacheProvider.getString(SPTOKEN)).thenReturn(
-                TestUtils.createJson("{'studyId':'api','userId':'userId'}"));
-            when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
-            when(mockAccountDao.getAccount(study, "userId")).thenReturn(mockAccount);
-            
-            EmailVerification verification = new EmailVerification(null, SPTOKEN);
-            
-            service.verifyEmail(verification);
-            
-            verify(mockAccountDao).updateAccount(accountCaptor.capture());
-            Account account = accountCaptor.getValue();
-            verify(account).setEmailVerified(Boolean.TRUE);
-            verify(account).setStatus(AccountStatus.ENABLED);
     }
     
     @Test

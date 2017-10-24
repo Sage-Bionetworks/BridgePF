@@ -61,7 +61,7 @@ public class DefaultStudyBootstrapperTest {
         assertEquals("bridge-testing+consent@sagebase.org", study.getConsentNotificationEmail());
         assertEquals("bridge-testing+technical@sagebase.org", study.getTechnicalEmail());
         assertEquals("support@sagebridge.org", study.getSupportEmail());
-        assertEquals(Sets.newHashSet("can_be_recontacted"), study.getUserProfileAttributes());
+        assertEquals(Sets.newHashSet("phone_number", "can_be_recontacted"), study.getUserProfileAttributes());
         assertEquals(new PasswordPolicy(2, false, false, false, false), study.getPasswordPolicy());
         assertTrue(study.isEmailVerificationEnabled());
 
@@ -75,7 +75,6 @@ public class DefaultStudyBootstrapperTest {
         try {
             Validate.entityThrowingException(new StudyValidator(), study);    
         } catch(InvalidEntityException e) {
-            System.out.println(e.getMessage());
             assertEquals(2, e.getErrors().keySet().size());
             assertEquals(1, e.getErrors().get("verifyEmailTemplate").size());
             assertEquals(1, e.getErrors().get("resetPasswordTemplate").size());

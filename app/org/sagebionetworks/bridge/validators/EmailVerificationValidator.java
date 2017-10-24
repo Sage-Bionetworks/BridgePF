@@ -8,9 +8,9 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 @Component
-public class VerificationTokenValidator implements Validator {
+public class EmailVerificationValidator implements Validator {
     
-    public static final VerificationTokenValidator INSTANCE = new VerificationTokenValidator();
+    public static final EmailVerificationValidator INSTANCE = new EmailVerificationValidator();
 
     @Override
     public boolean supports(Class<?> clazz) {
@@ -22,7 +22,7 @@ public class VerificationTokenValidator implements Validator {
         EmailVerification email = (EmailVerification)obj;
 
         if (isBlank(email.getSpToken())) {
-            errors.rejectValue("token", "is required");
+            errors.rejectValue("sptoken", "is required");
         }
     }
 

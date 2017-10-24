@@ -115,7 +115,7 @@ public class HibernateAccountDaoTest {
 
     @Test
     public void verifyEmail() {
-        EmailVerification verification = new EmailVerification(DUMMY_TOKEN, null);
+        EmailVerification verification = new EmailVerification(DUMMY_TOKEN);
         dao.verifyEmail(verification);
         verify(mockAccountWorkflowService).verifyEmail(verification);
     }

@@ -62,7 +62,7 @@ public class DefaultStudyBootstrapper {
             study.setSupportEmail("support@sagebridge.org");
             study.setDataGroups(TEST_DATA_GROUPS);
             study.setTaskIdentifiers(TEST_TASK_IDENTIFIERS);
-            study.setUserProfileAttributes(Sets.newHashSet("can_be_recontacted"));
+            study.setUserProfileAttributes(Sets.newHashSet("phone_number", "can_be_recontacted"));
             study.setPasswordPolicy(new PasswordPolicy(2, false, false, false, false));
             study.setEmailVerificationEnabled(true);
             studyService.createStudy(study);

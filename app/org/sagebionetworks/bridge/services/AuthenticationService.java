@@ -35,7 +35,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.validators.EmailValidator;
-import org.sagebionetworks.bridge.validators.VerificationTokenValidator;
+import org.sagebionetworks.bridge.validators.EmailVerificationValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 import org.sagebionetworks.bridge.validators.SignInValidator;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
@@ -286,7 +286,7 @@ public class AuthenticationService {
     public void verifyEmail(EmailVerification verification) {
         checkNotNull(verification);
 
-        Validate.entityThrowingException(VerificationTokenValidator.INSTANCE, verification);
+        Validate.entityThrowingException(EmailVerificationValidator.INSTANCE, verification);
         accountDao.verifyEmail(verification);
     }
     
