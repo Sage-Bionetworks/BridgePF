@@ -4,7 +4,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 
-public class VerificationTokenValidatorTest {
+public class EmailVerificationValidatorTest {
     @Test
     public void verifySpToken() {
         EmailVerification token = new EmailVerification("sptoken");
@@ -14,6 +14,6 @@ public class VerificationTokenValidatorTest {
     @Test
     public void testTokenRequired() {
         EmailVerification token = new EmailVerification(null);
-        TestUtils.assertValidatorMessage(EmailVerificationValidator.INSTANCE, token, "token", "is required");
+        TestUtils.assertValidatorMessage(EmailVerificationValidator.INSTANCE, token, "sptoken", "is required");
     }
 }
