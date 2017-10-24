@@ -12,7 +12,7 @@ public class EmailVerification implements BridgeEntity {
         this.sptoken = sptoken;
     }
 
-    public String getSpToken() {
+    public String getSptoken() {
         return sptoken;
     }
 

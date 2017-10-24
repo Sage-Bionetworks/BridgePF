@@ -599,7 +599,7 @@ public class AuthenticationControllerMockTest {
         // validate email verification
         verify(authenticationService).verifyEmail(emailVerifyCaptor.capture());
         EmailVerification emailVerify = emailVerifyCaptor.getValue();
-        assertEquals(TEST_VERIFY_EMAIL_TOKEN, emailVerify.getSpToken());
+        assertEquals(TEST_VERIFY_EMAIL_TOKEN, emailVerify.getSptoken());
     }
     
     @Test(expected = UnsupportedVersionException.class)

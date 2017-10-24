@@ -135,7 +135,7 @@ public class AccountWorkflowService {
     public void verifyEmail(EmailVerification verification) {
         checkNotNull(verification);
 
-        VerificationData data = restoreVerification(verification.getSpToken());
+        VerificationData data = restoreVerification(verification.getSptoken());
         if (data == null) {
             throw new BadRequestException(VERIFY_EMAIL_TOKEN_EXPIRED);
         }
@@ -231,13 +231,13 @@ public class AccountWorkflowService {
         }
     }
              
-    private VerificationData restoreVerification(String token) {
-        checkArgument(isNotBlank(token));
+    private VerificationData restoreVerification(String sptoken) {
+        checkArgument(isNotBlank(sptoken));
                  
-        String json = cacheProvider.getString(token);
+        String json = cacheProvider.getString(sptoken);
         if (json != null) {
             try {
-                cacheProvider.removeString(token);
+                cacheProvider.removeString(sptoken);
                 return BridgeObjectMapper.get().readValue(json, VerificationData.class);
             } catch (IOException e) {
                 throw new BridgeServiceException(e);

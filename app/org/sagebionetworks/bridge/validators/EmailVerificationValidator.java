@@ -21,7 +21,7 @@ public class EmailVerificationValidator implements Validator {
     public void validate(Object obj, Errors errors) {
         EmailVerification email = (EmailVerification)obj;
 
-        if (isBlank(email.getSpToken())) {
+        if (isBlank(email.getSptoken())) {
             errors.rejectValue("sptoken", "is required");
         }
     }
