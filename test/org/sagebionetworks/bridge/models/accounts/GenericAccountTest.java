@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.accounts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
@@ -144,5 +145,21 @@ public class GenericAccountTest {
         account.setRoles(EnumSet.noneOf(Roles.class));
         assertTrue(account.getRoles().isEmpty());
         TestUtils.assertSetIsImmutable(account.getRoles(), Roles.TEST_USERS);
+    }
+    
+    // Once flags are introduced, we will assume emailVerified for enabled accounts,
+    // until we can backfill.
+    @Test
+    public void statusWithoutVerificationFlags() {
+        GenericAccount account = new GenericAccount();
+        account.setStatus(AccountStatus.ENABLED);
+        
+        assertEquals(Boolean.TRUE, account.getEmailVerified());
+        
+        account.setStatus(AccountStatus.UNVERIFIED);
+        assertEquals(Boolean.FALSE, account.getEmailVerified());
+        
+        account.setStatus(null);
+        assertNull(account.getEmailVerified());
     }
 }

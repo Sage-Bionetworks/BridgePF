@@ -178,6 +178,9 @@ public class ParticipantService {
         builder.withFirstName(account.getFirstName());
         builder.withLastName(account.getLastName());
         builder.withEmail(account.getEmail());
+        builder.withPhone(account.getPhone());
+        builder.withEmailVerified(account.getEmailVerified());
+        builder.withPhoneVerified(account.getPhoneVerified());
         builder.withStatus(account.getStatus());
         builder.withCreatedOn(account.getCreatedOn());
         builder.withRoles(account.getRoles());

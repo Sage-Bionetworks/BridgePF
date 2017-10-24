@@ -65,8 +65,8 @@ public class HibernateAccount {
      * construct this object with just the indicated fields using a select clause, without also 
      * specifying a constructor.
      */
-    public HibernateAccount(Long createdOn, String studyId, String firstName, String lastName, String email, String phone, String id,
-            AccountStatus status) {
+    public HibernateAccount(Long createdOn, String studyId, String firstName, String lastName, String email,
+            String phone, String id, AccountStatus status) {
         this.createdOn = createdOn;
         this.studyId = studyId;
         this.firstName = firstName;

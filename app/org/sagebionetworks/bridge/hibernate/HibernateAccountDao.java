@@ -58,7 +58,7 @@ public class HibernateAccountDao implements AccountDao {
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
 
     static final String ACCOUNT_SUMMARY_QUERY_PREFIX = "select new " + HibernateAccount.class.getCanonicalName() +
-            "(createdOn, studyId, firstName, lastName, email, phone, id, status) ";
+            "(createdOn, studyId, firstName, lastName, email, id, status) ";
     
     private AccountWorkflowService accountWorkflowService;
     private HealthCodeService healthCodeService;
@@ -214,8 +214,8 @@ public class HibernateAccountDao implements AccountDao {
         GenericAccount account = new GenericAccount();
         account.setStudyId(study.getStudyIdentifier());
         account.setEmail(email);
-        account.setEmailVerified(Boolean.FALSE);
         account.setPhone(phone);
+        account.setEmailVerified(Boolean.FALSE);
         account.setPhoneVerified(Boolean.FALSE);
         account.setHealthId(healthId);
 
@@ -644,8 +644,8 @@ public class HibernateAccountDao implements AccountDao {
         }
 
         // Unmarshall single account
-        return new AccountSummary(hibernateAccount.getFirstName(),
-                hibernateAccount.getLastName(), hibernateAccount.getEmail(), hibernateAccount.getId(), createdOn,
-                hibernateAccount.getStatus(), studyId);
+        return new AccountSummary(hibernateAccount.getFirstName(), hibernateAccount.getLastName(),
+                hibernateAccount.getEmail(), hibernateAccount.getId(), createdOn, hibernateAccount.getStatus(),
+                studyId);
     }
 }
