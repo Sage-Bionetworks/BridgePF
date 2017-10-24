@@ -16,26 +16,27 @@ public class SignInValidatorTest {
     
     @Test
     public void emailSignInRequestOK() {
-        SignIn signIn = new SignIn(TestConstants.TEST_STUDY_IDENTIFIER, EMAIL, null, null, null);
+        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER).withEmail(EMAIL).build();
         Validate.entityThrowingException(SignInValidator.EMAIL_SIGNIN_REQUEST, signIn);
     }
     
     @Test
     public void emailSignInRequestValidates() {
-        SignIn signIn = new SignIn(null, null, null, null, null);
+        SignIn signIn = new SignIn.Builder().build();
         assertValidatorMessage(SignInValidator.EMAIL_SIGNIN_REQUEST, signIn, "study", "is required");
         assertValidatorMessage(SignInValidator.EMAIL_SIGNIN_REQUEST, signIn, "email", "is required");
     }
     
     @Test
     public void emailSignInOK() {
-        SignIn signIn = new SignIn(TestConstants.TEST_STUDY_IDENTIFIER, EMAIL, null, TOKEN, null);
+        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER).withEmail(EMAIL)
+                .withToken(TOKEN).build();
         Validate.entityThrowingException(SignInValidator.EMAIL_SIGNIN, signIn);
     }
     
     @Test
     public void emailSignInValidates() {
-        SignIn signIn = new SignIn(null, null, null, null, null);
+        SignIn signIn = new SignIn.Builder().build();
         assertValidatorMessage(SignInValidator.EMAIL_SIGNIN, signIn, "study", "is required");
         assertValidatorMessage(SignInValidator.EMAIL_SIGNIN, signIn, "email", "is required");
         assertValidatorMessage(SignInValidator.EMAIL_SIGNIN, signIn, "token", "is required");
@@ -43,13 +44,14 @@ public class SignInValidatorTest {
     
     @Test
     public void passwordSignInOK() {
-        SignIn signIn = new SignIn(TestConstants.TEST_STUDY_IDENTIFIER, EMAIL, PASSWORD, null, null);
+        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER).withEmail(EMAIL)
+                .withPassword(PASSWORD).build();
         Validate.entityThrowingException(SignInValidator.PASSWORD_SIGNIN, signIn);
     }
     
     @Test
     public void passwordSignInValidates() {
-        SignIn signIn = new SignIn(null, null, null, null, null);
+        SignIn signIn = new SignIn.Builder().build();
         assertValidatorMessage(SignInValidator.PASSWORD_SIGNIN, signIn, "study", "is required");
         assertValidatorMessage(SignInValidator.PASSWORD_SIGNIN, signIn, "email", "is required");
         assertValidatorMessage(SignInValidator.PASSWORD_SIGNIN, signIn, "password", "is required");
@@ -57,13 +59,14 @@ public class SignInValidatorTest {
     
     @Test
     public void reauthenticationValidates() {
-        SignIn signIn = new SignIn(TestConstants.TEST_STUDY_IDENTIFIER, EMAIL, null, null, REAUTH_TOKEN);
+        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER).withEmail(EMAIL)
+                .withReauthToken(REAUTH_TOKEN).build();
         Validate.entityThrowingException(SignInValidator.REAUTHENTICATION_REQUEST, signIn);
     }
     
     @Test
     public void reauthenticationTokenValidated() {
-        SignIn signIn = new SignIn(null, null, null, null, null);
+        SignIn signIn = new SignIn.Builder().build();
         assertValidatorMessage(SignInValidator.REAUTHENTICATION_REQUEST, signIn, "study", "is required");
         assertValidatorMessage(SignInValidator.REAUTHENTICATION_REQUEST, signIn, "email", "is required");
         assertValidatorMessage(SignInValidator.REAUTHENTICATION_REQUEST, signIn, "reauthToken", "is required");
