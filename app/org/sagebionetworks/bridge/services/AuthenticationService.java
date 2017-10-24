@@ -25,7 +25,7 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
-import org.sagebionetworks.bridge.models.accounts.VerificationToken;
+import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -283,7 +283,7 @@ public class AuthenticationService {
         return null;
     }
 
-    public void verifyEmail(VerificationToken verification) {
+    public void verifyEmail(EmailVerification verification) {
         checkNotNull(verification);
 
         Validate.entityThrowingException(VerificationTokenValidator.INSTANCE, verification);

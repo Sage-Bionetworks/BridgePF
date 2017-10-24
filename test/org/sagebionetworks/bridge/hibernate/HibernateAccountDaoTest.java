@@ -42,7 +42,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
-import org.sagebionetworks.bridge.models.accounts.VerificationToken;
+import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.HealthIdImpl;
@@ -115,7 +115,7 @@ public class HibernateAccountDaoTest {
 
     @Test
     public void verifyEmail() {
-        VerificationToken verification = new VerificationToken(DUMMY_TOKEN, null);
+        EmailVerification verification = new EmailVerification(DUMMY_TOKEN, null);
         dao.verifyEmail(verification);
         verify(mockAccountWorkflowService).verifyEmail(verification);
     }

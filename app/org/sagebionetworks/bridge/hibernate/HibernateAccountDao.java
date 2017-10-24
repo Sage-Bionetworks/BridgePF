@@ -35,7 +35,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
-import org.sagebionetworks.bridge.models.accounts.VerificationToken;
+import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
@@ -84,7 +84,7 @@ public class HibernateAccountDao implements AccountDao {
 
     /** {@inheritDoc} */
     @Override
-    public void verifyEmail(VerificationToken verification) {
+    public void verifyEmail(EmailVerification verification) {
         accountWorkflowService.verifyEmail(verification);
     }
 
@@ -280,7 +280,7 @@ public class HibernateAccountDao implements AccountDao {
         String accountId = account.getId();
         HibernateAccount accountToUpdate = marshallAccount(account);
 
-        // Can't change study, email, phone, createdOn, or passwordModifiedOn.
+        // Can't change study, email, phone, phoneRegion, the verification flags, createdOn, or passwordModifiedOn.
         HibernateAccount persistedAccount = hibernateHelper.getById(HibernateAccount.class, accountId);
         if (persistedAccount == null) {
             throw new EntityNotFoundException(Account.class, "Account " + accountId + " not found");

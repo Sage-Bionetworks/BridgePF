@@ -28,7 +28,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
-import org.sagebionetworks.bridge.models.accounts.VerificationToken;
+import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
@@ -159,7 +159,7 @@ public class AccountWorkflowServiceTest {
         when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         when(mockAccountDao.getAccount(study, "userId")).thenReturn(mockAccount);
         
-        VerificationToken verification = new VerificationToken(SPTOKEN, null);
+        EmailVerification verification = new EmailVerification(SPTOKEN, null);
         
         service.verifyEmail(verification);
         
@@ -173,7 +173,7 @@ public class AccountWorkflowServiceTest {
     public void verifyEmailBadSptokenThrowsException() {
         when(mockCacheProvider.getString(SPTOKEN)).thenReturn(null);
         
-        VerificationToken verification = new VerificationToken(SPTOKEN, null);
+        EmailVerification verification = new EmailVerification(SPTOKEN, null);
         
         service.verifyEmail(verification);
     }
@@ -185,7 +185,7 @@ public class AccountWorkflowServiceTest {
             when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
             when(mockAccountDao.getAccount(study, "userId")).thenReturn(mockAccount);
             
-            VerificationToken verification = new VerificationToken(null, SPTOKEN);
+            EmailVerification verification = new EmailVerification(null, SPTOKEN);
             
             service.verifyEmail(verification);
             

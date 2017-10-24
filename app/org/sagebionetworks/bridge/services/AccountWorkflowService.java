@@ -17,7 +17,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
-import org.sagebionetworks.bridge.models.accounts.VerificationToken;
+import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -132,10 +132,10 @@ public class AccountWorkflowService {
      * If the token is invalid, it fails quietly. If the token exists but the account 
      * does not, it throws an exception (this would be unexpected).
      */
-    public void verifyEmail(VerificationToken verification) {
+    public void verifyEmail(EmailVerification verification) {
         checkNotNull(verification);
 
-        VerificationData data = restoreVerification(verification.getToken());
+        VerificationData data = restoreVerification(verification.getSpToken());
         if (data == null) {
             throw new BadRequestException(VERIFY_EMAIL_TOKEN_EXPIRED);
         }
