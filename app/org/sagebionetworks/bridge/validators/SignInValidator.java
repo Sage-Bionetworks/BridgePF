@@ -46,7 +46,7 @@ public class SignInValidator implements Validator {
         REAUTH
     }
     
-    private EnumSet<RequiredFields> requiredFields;
+    private final EnumSet<RequiredFields> requiredFields;
 
     private SignInValidator(EnumSet<RequiredFields> fields) {
         requiredFields = fields;
