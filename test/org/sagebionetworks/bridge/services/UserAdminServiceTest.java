@@ -88,7 +88,8 @@ public class UserAdminServiceTest {
 
         // This should fail with a 404.
         try {
-            authService.signIn(study, TEST_CONTEXT, new SignIn(study.getIdentifier(), participant.getEmail(), participant.getPassword(), null, null));
+            authService.signIn(study, TEST_CONTEXT, new SignIn.Builder().withStudy(study.getIdentifier())
+                    .withEmail(participant.getEmail()).withPassword(participant.getPassword()).build());
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
             
@@ -111,8 +112,8 @@ public class UserAdminServiceTest {
         UserSession session = userAdminService.createUser(study, participant, null, false, false);
         assertFalse(session.isAuthenticated());
 
-        session = authService.signIn(study, TEST_CONTEXT,
-                new SignIn(study.getIdentifier(), participant.getEmail(), participant.getPassword(), null, null));
+        session = authService.signIn(study, TEST_CONTEXT, new SignIn.Builder().withStudy(study.getIdentifier())
+                .withEmail(participant.getEmail()).withPassword(participant.getPassword()).build());
         assertFalse(session.doesConsent());
     }
 

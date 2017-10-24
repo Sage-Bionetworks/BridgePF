@@ -60,10 +60,15 @@ public class AuthenticationServiceMockTest {
     private static final String REAUTH_TOKEN = "GHI-JKL";
     private static final String USER_ID = "user-id";
     private static final String PASSWORD = "password";
-    private static final SignIn SIGN_IN_REQUEST = new SignIn(STUDY_ID, RECIPIENT_EMAIL, null, null, null);
-    private static final SignIn SIGN_IN = new SignIn(STUDY_ID, RECIPIENT_EMAIL, null, TOKEN, null);
-    private static final SignIn PASSWORD_SIGN_IN = new SignIn(STUDY_ID, RECIPIENT_EMAIL, PASSWORD, null, null);
-    private static final SignIn REAUTH_REQUEST = new SignIn(STUDY_ID, RECIPIENT_EMAIL, null, null, TOKEN);
+    private static final SignIn SIGN_IN_REQUEST = new SignIn.Builder().withStudy(STUDY_ID).withEmail(RECIPIENT_EMAIL)
+            .build();
+    private static final SignIn SIGN_IN = new SignIn.Builder().withStudy(STUDY_ID).withEmail(RECIPIENT_EMAIL)
+            .withToken(TOKEN).build();
+    private static final SignIn PASSWORD_SIGN_IN = new SignIn.Builder().withStudy(STUDY_ID).withEmail(RECIPIENT_EMAIL)
+            .withPassword(PASSWORD).build();
+    private static final SignIn REAUTH_REQUEST = new SignIn.Builder().withStudy(STUDY_ID).withEmail(RECIPIENT_EMAIL)
+            .withReauthToken(TOKEN).build();
+    
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("ABC");
     private static final ConsentStatus CONSENTED_STATUS = new ConsentStatus.Builder().withName("Name")
             .withGuid(SUBPOP_GUID).withRequired(true).withConsented(true).build();
@@ -74,7 +79,7 @@ public class AuthenticationServiceMockTest {
     private static final Map<SubpopulationGuid, ConsentStatus> UNCONSENTED_STATUS_MAP = new ImmutableMap.Builder<SubpopulationGuid, ConsentStatus>()
             .put(SUBPOP_GUID, UNCONSENTED_STATUS).build();
     private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
-            .withStudyIdentifier(TestConstants.TEST_STUDY).build();  
+            .withStudyIdentifier(TestConstants.TEST_STUDY).build();
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder().build();
 
     @Mock
@@ -235,7 +240,8 @@ public class AuthenticationServiceMockTest {
         doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
         
-        SignIn signIn = new SignIn(study.getIdentifier(), RECIPIENT_EMAIL, null, "wrongToken", null);
+        SignIn signIn = new SignIn.Builder().withStudy(study.getIdentifier()).withEmail(RECIPIENT_EMAIL)
+                .withToken("wrongToken").build();
         
         service.emailSignIn(CONTEXT, signIn);
     }
@@ -246,7 +252,8 @@ public class AuthenticationServiceMockTest {
         doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
         
-        SignIn signIn = new SignIn(study.getIdentifier(), RECIPIENT_EMAIL, null, "wrongToken", null);
+        SignIn signIn = new SignIn.Builder().withStudy(study.getIdentifier()).withEmail(RECIPIENT_EMAIL)
+                .withToken("wrongToken").build();
         
         service.emailSignIn(CONTEXT, signIn);
     }
@@ -265,28 +272,28 @@ public class AuthenticationServiceMockTest {
     
     @Test(expected = InvalidEntityException.class)
     public void emailSignInRequestMissingStudy() {
-        SignIn signInRequest = new SignIn(null, RECIPIENT_EMAIL, null, TOKEN, null);
+        SignIn signInRequest = new SignIn.Builder().withEmail(RECIPIENT_EMAIL).withToken(TOKEN).build();
 
         service.requestEmailSignIn(signInRequest);
     }
     
     @Test(expected = InvalidEntityException.class)
     public void emailSignInRequestMissingEmail() {
-        SignIn signInRequest = new SignIn(STUDY_ID, "", null, TOKEN, null);
+        SignIn signInRequest = new SignIn.Builder().withStudy(STUDY_ID).withToken(TOKEN).build();
         
         service.requestEmailSignIn(signInRequest);
     }
     
     @Test(expected = InvalidEntityException.class)
     public void emailSignInMissingStudy() {
-        SignIn signInRequest = new SignIn(null, RECIPIENT_EMAIL, null, TOKEN, null);
+        SignIn signInRequest = new SignIn.Builder().withEmail(RECIPIENT_EMAIL).withToken(TOKEN).build();
 
         service.emailSignIn(CONTEXT, signInRequest);
     }
     
     @Test(expected = InvalidEntityException.class)
     public void emailSignInMissingEmail() {
-        SignIn signInRequest = new SignIn(STUDY_ID, null, null, TOKEN, null);
+        SignIn signInRequest = new SignIn.Builder().withStudy(STUDY_ID).withToken(TOKEN).build();
 
         service.emailSignIn(CONTEXT, signInRequest);
     }
