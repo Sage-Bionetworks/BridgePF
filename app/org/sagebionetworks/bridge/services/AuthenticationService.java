@@ -219,7 +219,7 @@ public class AuthenticationService {
         checkNotNull(context);
         checkNotNull(signIn);
         
-        Validate.entityThrowingException(SignInValidator.REAUTHENTICATION_REQUEST, signIn);
+        Validate.entityThrowingException(SignInValidator.REAUTH_SIGNIN, signIn);
 
         Account account = accountDao.reauthenticate(study, signIn);
 
