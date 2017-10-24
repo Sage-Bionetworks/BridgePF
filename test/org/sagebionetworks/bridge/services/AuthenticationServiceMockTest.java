@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -165,7 +166,7 @@ public class AuthenticationServiceMockTest {
         verify(sendMailService).sendEmail(providerCaptor.capture());
         
         BasicEmailProvider provider = providerCaptor.getValue();
-        assertEquals(32, provider.getTokenMap().get("token").length()); // length of GUID without "-" symbol
+        assertEquals(21, provider.getTokenMap().get("token").length());
         assertEquals(study, provider.getStudy());
         assertEquals(RECIPIENT_EMAIL, Iterables.getFirst(provider.getRecipientEmails(), null));
     }
@@ -218,6 +219,7 @@ public class AuthenticationServiceMockTest {
     @Test
     public void emailSignIn() {
         account.setReauthToken(REAUTH_TOKEN);
+        account.setStatus(AccountStatus.UNVERIFIED);
         doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
         doReturn(account).when(accountDao).getAccountAfterAuthentication(study, RECIPIENT_EMAIL);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
@@ -230,6 +232,7 @@ public class AuthenticationServiceMockTest {
         verify(accountDao, never()).changePassword(eq(account), any());
         verify(accountDao).getAccountAfterAuthentication(study, RECIPIENT_EMAIL);
         verify(cacheProvider).removeString(CACHE_KEY);
+        assertEquals(AccountStatus.ENABLED, account.getStatus());
     }
     
     @Test(expected = AuthenticationFailedException.class)
@@ -255,6 +258,18 @@ public class AuthenticationServiceMockTest {
         
         service.emailSignIn(CONTEXT, signIn);
     }
+    
+    @Test
+    public void requestEmailSignInFailureDelays() throws Exception {
+        service.getEmailSignInRequestInMillis().set(1000);
+        doReturn(null).when(accountDao).getAccountWithEmail(any(), any());
+                 
+        long start = System.currentTimeMillis();
+        service.requestEmailSignIn(SIGN_IN_REQUEST);
+        long total = System.currentTimeMillis()-start;
+        assertTrue(total >= 1000);
+        service.getEmailSignInRequestInMillis().set(0);
+    }    
     
     @Test(expected = InvalidEntityException.class)
     public void emailSignInRequestMissingStudy() {
@@ -287,20 +302,6 @@ public class AuthenticationServiceMockTest {
     @Test(expected = InvalidEntityException.class)
     public void emailSignInMissingToken() {
         service.emailSignIn(CONTEXT, SIGN_IN_REQUEST); // not SIGN_IN which has the token
-    }
-    
-    @Test(expected = EntityNotFoundException.class)
-    public void emailSignInThrowsEntityNotFound() {
-        StudyParticipant participant = new StudyParticipant.Builder().withStatus(AccountStatus.DISABLED).build();
-        
-        doReturn(participant).when(participantService).getParticipant(study, account, false);
-        study.setIdentifier(STUDY_ID);
-        doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
-        doReturn(study).when(studyService).getStudy(STUDY_ID);
-        doReturn(account).when(accountDao).getAccountAfterAuthentication(study, RECIPIENT_EMAIL);
-        account.setStatus(AccountStatus.UNVERIFIED);
-        
-        service.emailSignIn(CONTEXT, SIGN_IN);
     }
     
     @Test(expected = AccountDisabledException.class)
