@@ -9,6 +9,8 @@ import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFiel
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -21,19 +23,19 @@ import com.google.common.collect.Sets;
 public class SignInValidator implements Validator {
     
     /** Request to sign in via email. */
-    public static final SignInValidator EMAIL_SIGNIN_REQUEST = new SignInValidator(STUDY, EMAIL);
+    public static final SignInValidator EMAIL_SIGNIN_REQUEST = new SignInValidator(EnumSet.of(STUDY, EMAIL));
     /** Sign in using token sent through email. */    
-    public static final SignInValidator EMAIL_SIGNIN = new SignInValidator(STUDY, EMAIL, TOKEN);
+    public static final SignInValidator EMAIL_SIGNIN = new SignInValidator(EnumSet.of(STUDY, EMAIL, TOKEN));
 
     /** Request to sign in via phone. */
-    public static final SignInValidator PHONE_SIGNIN_REQUEST = new SignInValidator(STUDY, PHONE);
+    public static final SignInValidator PHONE_SIGNIN_REQUEST = new SignInValidator(EnumSet.of(STUDY, PHONE));
     /** Sign in using token sent through SMS. */
-    public static final SignInValidator PHONE_SIGNIN = new SignInValidator(STUDY, PHONE, TOKEN);
+    public static final SignInValidator PHONE_SIGNIN = new SignInValidator(EnumSet.of(STUDY, PHONE, TOKEN));
 
     /** Sign in using an email and password. */
-    public static final SignInValidator PASSWORD_SIGNIN = new SignInValidator(STUDY, EMAIL, PASSWORD);
+    public static final SignInValidator PASSWORD_SIGNIN = new SignInValidator(EnumSet.of(STUDY, EMAIL, PASSWORD));
     /** Reauthentication. */
-    public static final SignInValidator REAUTH_SIGNIN = new SignInValidator(STUDY, EMAIL, REAUTH);
+    public static final SignInValidator REAUTH_SIGNIN = new SignInValidator(EnumSet.of(STUDY, EMAIL, REAUTH));
     
     static enum RequiredFields {
         STUDY,
@@ -44,10 +46,10 @@ public class SignInValidator implements Validator {
         REAUTH
     }
     
-    private Set<RequiredFields> requiredFields;
+    private EnumSet<RequiredFields> requiredFields;
 
-    private SignInValidator(RequiredFields... fields) {
-        requiredFields = Sets.newHashSet(fields);
+    private SignInValidator(EnumSet<RequiredFields> fields) {
+        requiredFields = fields;
     }
     
     @Override
