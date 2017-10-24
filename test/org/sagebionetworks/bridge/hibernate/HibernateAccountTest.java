@@ -121,14 +121,13 @@ public class HibernateAccountTest {
     @Test
     public void accountSummaryConstructor() {
         HibernateAccount account = new HibernateAccount(new Long(123), "studyId", "firstName", "lastName", "email",
-                "phone", "id", AccountStatus.UNVERIFIED);
+                "id", AccountStatus.UNVERIFIED);
 
         assertEquals(new Long(123), account.getCreatedOn());
         assertEquals("studyId", account.getStudyId());
         assertEquals("firstName", account.getFirstName());
         assertEquals("lastName", account.getLastName());
         assertEquals("email", account.getEmail());
-        assertEquals("phone", account.getPhone());
         assertEquals("id", account.getId());
         assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
     }

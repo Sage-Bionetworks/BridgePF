@@ -199,9 +199,9 @@ public class HibernateAccountDao implements AccountDao {
     
     /** {@inheritDoc} */
     @Override
-    public Account constructAccount(Study study, String email, String phone, String password) {
+    public Account constructAccount(Study study, String email, String phone, String phoneRegion, String password) {
         HealthId healthId = healthCodeService.createMapping(study.getStudyIdentifier());
-        return constructAccountForMigration(study, email, phone, password, healthId);
+        return constructAccountForMigration(study, email, phone, phoneRegion, password, healthId);
     }
 
     /**
@@ -209,12 +209,13 @@ public class HibernateAccountDao implements AccountDao {
      * of creating it ourselves. This allows us to create an account in both MySQL and Stormpath with the same Health
      * Code mapping.
      */
-    public Account constructAccountForMigration(Study study, String email, String phone, String password, HealthId healthId) {
+    public Account constructAccountForMigration(Study study, String email, String phone, String phoneRegion, String password, HealthId healthId) {
         // Set basic params from inputs.
         GenericAccount account = new GenericAccount();
         account.setStudyId(study.getStudyIdentifier());
         account.setEmail(email);
         account.setPhone(phone);
+        account.setPhoneRegion(phoneRegion);
         account.setEmailVerified(Boolean.FALSE);
         account.setPhoneVerified(Boolean.FALSE);
         account.setHealthId(healthId);
@@ -287,6 +288,7 @@ public class HibernateAccountDao implements AccountDao {
         accountToUpdate.setStudyId(persistedAccount.getStudyId());
         accountToUpdate.setEmail(persistedAccount.getEmail());
         accountToUpdate.setPhone(persistedAccount.getPhone());
+        accountToUpdate.setPhoneRegion(persistedAccount.getPhoneRegion());
         accountToUpdate.setEmailVerified(persistedAccount.getEmailVerified());
         accountToUpdate.setPhoneVerified(persistedAccount.getPhoneVerified());
         accountToUpdate.setCreatedOn(persistedAccount.getCreatedOn());
@@ -464,6 +466,7 @@ public class HibernateAccountDao implements AccountDao {
         hibernateAccount.setId(genericAccount.getId());
         hibernateAccount.setEmail(genericAccount.getEmail());
         hibernateAccount.setPhone(genericAccount.getPhone());
+        hibernateAccount.setPhoneRegion(genericAccount.getPhoneRegion());
         hibernateAccount.setEmailVerified(genericAccount.getEmailVerified());
         hibernateAccount.setPhoneVerified(genericAccount.getPhoneVerified());
         hibernateAccount.setHealthCode(genericAccount.getHealthCode());
@@ -561,6 +564,7 @@ public class HibernateAccountDao implements AccountDao {
         account.setId(hibernateAccount.getId());
         account.setEmail(hibernateAccount.getEmail());
         account.setPhone(hibernateAccount.getPhone());
+        account.setPhoneRegion(hibernateAccount.getPhoneRegion());
         account.setEmailVerified(hibernateAccount.getEmailVerified());
         account.setPhoneVerified(hibernateAccount.getPhoneVerified());
         account.setFirstName(hibernateAccount.getFirstName());

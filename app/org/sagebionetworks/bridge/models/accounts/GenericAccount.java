@@ -33,6 +33,7 @@ public class GenericAccount implements Account {
     private DateTime createdOn;
     private String email;
     private String phone;
+    private String phoneRegion;
     private Boolean emailVerified;
     private Boolean phoneVerified;
     private String healthCode;
@@ -154,6 +155,18 @@ public class GenericAccount implements Account {
     @Override
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public String getPhoneRegion() {
+        return phoneRegion;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setPhoneRegion(String phoneRegion) {
+        this.phoneRegion = phoneRegion;
     }
     
     /** {@inheritDoc} */

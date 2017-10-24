@@ -88,7 +88,8 @@ public class ParticipantServiceTest {
     private static final Set<String> STUDY_DATA_GROUPS = BridgeUtils.commaListToOrderedSet("group1,group2");
     private static final long CONSENT_PUBLICATION_DATE = DateTime.now().getMillis();
     private static final Study STUDY = new DynamoStudy();
-    private static final String PHONE = "phone";
+    private static final String PHONE = "4082585869";
+    private static final String PHONE_REGION = "US";
     static {
         STUDY.setIdentifier("test-study");
         STUDY.setHealthCodeExportEnabled(true);
@@ -118,6 +119,7 @@ public class ParticipantServiceTest {
             .withLastName(LAST_NAME)
             .withEmail(EMAIL)
             .withPhone(PHONE)
+            .withPhoneRegion(PHONE_REGION)
             .withId(ID)
             .withPassword(PASSWORD)
             .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
@@ -222,7 +224,7 @@ public class ParticipantServiceTest {
     
     private void mockHealthCodeAndAccountRetrieval() {
         when(account.getId()).thenReturn(ID);
-        when(accountDao.constructAccount(STUDY, EMAIL, PHONE, PASSWORD)).thenReturn(account);
+        when(accountDao.constructAccount(STUDY, EMAIL, PHONE, PHONE_REGION, PASSWORD)).thenReturn(account);
         when(accountDao.createAccount(same(STUDY), same(account), anyBoolean())).thenReturn(ID);
         when(accountDao.getAccount(STUDY, ID)).thenReturn(account);
         when(account.getHealthCode()).thenReturn(HEALTH_CODE);
@@ -241,7 +243,7 @@ public class ParticipantServiceTest {
         verify(externalIdService).reserveExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
         verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
         
-        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PASSWORD);
+        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PHONE_REGION, PASSWORD);
         // suppress email (true) == sendEmail (false)
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
@@ -286,7 +288,7 @@ public class ParticipantServiceTest {
         } catch(EntityAlreadyExistsException e) {
         }
         verify(externalIdService).reserveExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
-        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PASSWORD);
+        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PHONE_REGION, PASSWORD);
         verifyNoMoreInteractions(optionsService);
     }
     
@@ -932,7 +934,7 @@ public class ParticipantServiceTest {
         
         participantService.createParticipant(STUDY, callerRoles, participant, false);
         
-        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PASSWORD);
+        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PHONE_REGION, PASSWORD);
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
         Account account = accountCaptor.getValue();
         
@@ -967,7 +969,7 @@ public class ParticipantServiceTest {
         
         participantService.createParticipant(STUDY, callerRoles, participant, false);
         
-        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PASSWORD);
+        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PHONE_REGION, PASSWORD);
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
         Account account = accountCaptor.getValue();
         

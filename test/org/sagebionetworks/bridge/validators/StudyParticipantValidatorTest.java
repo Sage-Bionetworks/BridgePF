@@ -173,6 +173,44 @@ public class StudyParticipantValidatorTest {
         assertCorrectMessage(withDataGroup("squirrel"), "dataGroups", "dataGroups 'squirrel' is not defined for study (use group1, group2, bluebell)");
     }
     
+    @Test
+    public void validatePhoneRegionRequired() {
+        validator = new StudyParticipantValidator(study, true);
+        assertCorrectMessage(withPhoneAndRegion("1234567890", null), "phoneRegion", "phoneRegion is required if phone is provided");
+    }
+    
+    @Test
+    public void validatePhoneRegionIsCode() {
+        validator = new StudyParticipantValidator(study, true);
+        assertCorrectMessage(withPhoneAndRegion("1234567890", "esg"), "phoneRegion", "phoneRegion is not a two letter region code");
+    }
+    
+    @Test
+    public void validatePhoneRequired() {
+        validator = new StudyParticipantValidator(study, true);
+        assertCorrectMessage(withPhoneAndRegion(null, "US"), "phone", "phone is required if phoneRegion is provided");
+    }
+    
+    @Test
+    public void validatePhonePattern() {
+        validator = new StudyParticipantValidator(study, true);
+        assertCorrectMessage(withPhoneAndRegion("234567890", "US"), "phone", "phone does not appear to be a phone number");
+    }
+    
+    @Test
+    public void validatePhone() {
+        validator = new StudyParticipantValidator(study, true);
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
+                .withPassword("pAssword1@").withPhone("4082588569").withPhoneRegion("US").build();
+        Validate.entityThrowingException(validator, participant);
+    }
+    
+    @Test
+    public void validateTotallyWrongPhone() {
+        validator = new StudyParticipantValidator(study, true);
+        assertCorrectMessage(withPhoneAndRegion("this isn't a phone number", "US"), "phone", "phone does not appear to be a phone number");
+    }
+    
     private void assertCorrectMessage(StudyParticipant participant, String fieldName, String message) {
         try {
             Validate.entityThrowingException(validator, participant);
@@ -183,6 +221,10 @@ public class StudyParticipantValidatorTest {
             String error = errors.get(0);
             assertEquals(message, error);
         }
+    }
+    
+    private StudyParticipant withPhoneAndRegion(String phone, String phoneRegion) {
+        return new StudyParticipant.Builder().withPhone(phone).withPhoneRegion(phoneRegion).build();
     }
     
     private StudyParticipant withPassword(String password) {

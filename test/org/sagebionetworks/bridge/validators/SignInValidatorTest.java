@@ -14,6 +14,7 @@ public class SignInValidatorTest {
     private static final String PASSWORD = "password";
     private static final String EMAIL = "email@email.com";
     private static final String PHONE = "+1234567890";
+    private static final String PHONE_REGION = "US";
     private static final String REAUTH_TOKEN = "reauthToken";
     private static final SignIn EMPTY_SIGNIN = new SignIn.Builder().build();
 
@@ -40,23 +41,26 @@ public class SignInValidatorTest {
     }
     @Test
     public void phoneSignInRequestOK() {
-        SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID).withPhone(PHONE).build();
+        SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID).withPhone(PHONE).withPhoneRegion(PHONE_REGION).build();
         Validate.entityThrowingException(SignInValidator.PHONE_SIGNIN_REQUEST, signIn);
     }
     @Test
     public void phoneSignInRequestInvalid() {
         assertValidatorMessage(SignInValidator.PHONE_SIGNIN_REQUEST, EMPTY_SIGNIN, "study", "is required");
         assertValidatorMessage(SignInValidator.PHONE_SIGNIN_REQUEST, EMPTY_SIGNIN, "phone", "is required");
+        assertValidatorMessage(SignInValidator.PHONE_SIGNIN_REQUEST, EMPTY_SIGNIN, "phoneRegion", "is required");
     }
     @Test
     public void phoneSignInOK() {
-        SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID).withPhone(PHONE).withToken(TOKEN).build();
+        SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID).withPhone(PHONE).withPhoneRegion(PHONE_REGION)
+                .withToken(TOKEN).build();
         Validate.entityThrowingException(SignInValidator.PHONE_SIGNIN, signIn);
     }
     @Test
-    public void phoneSignInNoStudy() {
+    public void phoneSignInInvalid() {
         assertValidatorMessage(SignInValidator.PHONE_SIGNIN, EMPTY_SIGNIN, "study", "is required");
         assertValidatorMessage(SignInValidator.PHONE_SIGNIN, EMPTY_SIGNIN, "phone", "is required");
+        assertValidatorMessage(SignInValidator.PHONE_SIGNIN, EMPTY_SIGNIN, "phoneRegion", "is required");
         assertValidatorMessage(SignInValidator.PHONE_SIGNIN, EMPTY_SIGNIN, "token", "is required");
     }
     @Test

@@ -9,15 +9,17 @@ public final class SignIn implements BridgeEntity {
 
     private final String email;
     private final String phone;
+    private final String phoneRegion;
     private final String password;
     private final String studyId;
     private final String token;
     private final String reauthToken;
     
-    private SignIn(String studyId, String email, String phone, String password, String token, String reauthToken) {
+    private SignIn(String studyId, String email, String phone, String phoneRegion, String password, String token, String reauthToken) {
         this.studyId = studyId;
         this.email = email;
         this.phone = phone;
+        this.phoneRegion = phoneRegion;
         this.password = password;
         this.token = token;
         this.reauthToken = reauthToken;
@@ -35,6 +37,10 @@ public final class SignIn implements BridgeEntity {
         return phone;
     }
 
+    public String getPhoneRegion() {
+        return phoneRegion;
+    }
+    
     public String getPassword() {
         return password;
     }
@@ -51,6 +57,7 @@ public final class SignIn implements BridgeEntity {
         private String username;
         private String email;
         private String phone;
+        private String phoneRegion;
         private String password;
         private String studyId;
         private String token;
@@ -66,6 +73,10 @@ public final class SignIn implements BridgeEntity {
         }
         public Builder withPhone(String phone) {
             this.phone = phone;
+            return this;
+        }
+        public Builder withPhoneRegion(String phoneRegion) {
+            this.phoneRegion = phoneRegion;
             return this;
         }
         public Builder withPassword(String password) {
@@ -86,7 +97,7 @@ public final class SignIn implements BridgeEntity {
         }
         public SignIn build() {
             String identifier = (username != null) ? username : email;
-            return new SignIn(studyId, identifier, phone, password, token, reauthToken);
+            return new SignIn(studyId, identifier, phone, phoneRegion, password, token, reauthToken);
         }
     }
 }

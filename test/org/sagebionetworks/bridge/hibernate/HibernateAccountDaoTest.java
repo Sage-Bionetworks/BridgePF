@@ -64,6 +64,7 @@ public class HibernateAccountDaoTest {
     private static final String DUMMY_TOKEN = "dummy-token";
     private static final String EMAIL = "eggplant@example.com";
     private static final String PHONE = "+1234567890";
+    private static final String PHONE_REGION = "US";
     private static final String HEALTH_CODE = "health-code";
     private static final String HEALTH_ID = "health-id";
     private static final long MOCK_NOW_MILLIS = DateTime.parse("2017-05-19T14:45:27.593-0700").getMillis();
@@ -476,7 +477,7 @@ public class HibernateAccountDaoTest {
     @Test
     public void constructAccount() throws Exception {
         // execute and validate
-        GenericAccount account = (GenericAccount) dao.constructAccount(STUDY, EMAIL, PHONE, DUMMY_PASSWORD);
+        GenericAccount account = (GenericAccount) dao.constructAccount(STUDY, EMAIL, PHONE, PHONE_REGION, DUMMY_PASSWORD);
         assertEquals(TestConstants.TEST_STUDY, account.getStudyIdentifier());
         assertEquals(EMAIL, account.getEmail());
         assertEquals(HEALTH_CODE, account.getHealthCode());
@@ -492,8 +493,8 @@ public class HibernateAccountDaoTest {
         HealthId healthId = new HealthIdImpl(HEALTH_ID, HEALTH_CODE);
 
         // execute
-        GenericAccount account = (GenericAccount) dao.constructAccountForMigration(STUDY, EMAIL, PHONE, DUMMY_PASSWORD,
-                healthId);
+        GenericAccount account = (GenericAccount) dao.constructAccountForMigration(STUDY, EMAIL, PHONE, PHONE_REGION,
+                DUMMY_PASSWORD, healthId);
 
         // Most of this stuff has been tested in the previous test. Just test that we set the expected HealthId.
         assertEquals(HEALTH_CODE, account.getHealthCode());

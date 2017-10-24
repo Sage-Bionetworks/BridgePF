@@ -4,21 +4,18 @@ import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFiel
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.EMAIL;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.PASSWORD;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.PHONE;
+import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.PHONE_REGION;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.TOKEN;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.REAUTH;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
-import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.Set;
 
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
-
-import com.google.common.collect.Sets;
 
 public class SignInValidator implements Validator {
     
@@ -28,9 +25,9 @@ public class SignInValidator implements Validator {
     public static final SignInValidator EMAIL_SIGNIN = new SignInValidator(EnumSet.of(STUDY, EMAIL, TOKEN));
 
     /** Request to sign in via phone. */
-    public static final SignInValidator PHONE_SIGNIN_REQUEST = new SignInValidator(EnumSet.of(STUDY, PHONE));
+    public static final SignInValidator PHONE_SIGNIN_REQUEST = new SignInValidator(EnumSet.of(STUDY, PHONE, PHONE_REGION));
     /** Sign in using token sent through SMS. */
-    public static final SignInValidator PHONE_SIGNIN = new SignInValidator(EnumSet.of(STUDY, PHONE, TOKEN));
+    public static final SignInValidator PHONE_SIGNIN = new SignInValidator(EnumSet.of(STUDY, PHONE, PHONE_REGION, TOKEN));
 
     /** Sign in using an email and password. */
     public static final SignInValidator PASSWORD_SIGNIN = new SignInValidator(EnumSet.of(STUDY, EMAIL, PASSWORD));
@@ -42,6 +39,7 @@ public class SignInValidator implements Validator {
         EMAIL,
         PASSWORD,
         PHONE,
+        PHONE_REGION,
         TOKEN,
         REAUTH
     }
@@ -72,6 +70,9 @@ public class SignInValidator implements Validator {
         }
         if (requiredFields.contains(PHONE) && isBlank(signIn.getPhone())) {
             errors.rejectValue("phone", "is required");
+        }
+        if (requiredFields.contains(PHONE_REGION) && isBlank(signIn.getPhoneRegion())) {
+            errors.rejectValue("phoneRegion", "is required");
         }
         if (requiredFields.contains(TOKEN) && isBlank(signIn.getToken())) {
             errors.rejectValue("token", "is required");

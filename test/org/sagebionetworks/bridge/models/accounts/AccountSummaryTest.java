@@ -31,7 +31,6 @@ public class AccountSummaryTest {
         assertEquals("firstName", node.get("firstName").textValue());
         assertEquals("lastName", node.get("lastName").textValue());
         assertEquals("email@email.com", node.get("email").textValue());
-        assertEquals("+1234567890", node.get("phone").textValue());
         assertEquals("ABC", node.get("id").textValue());
         assertEquals(dateTime.withZone(DateTimeZone.UTC).toString(), node.get("createdOn").textValue());
         assertEquals("unverified", node.get("status").textValue());

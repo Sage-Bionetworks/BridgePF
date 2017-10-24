@@ -34,6 +34,7 @@ public class HibernateAccount {
     private String studyId;
     private String email;
     private String phone;
+    private String phoneRegion;
     private Boolean emailVerified;
     private Boolean phoneVerified;
     private Map<String, String> attributes;
@@ -66,13 +67,12 @@ public class HibernateAccount {
      * specifying a constructor.
      */
     public HibernateAccount(Long createdOn, String studyId, String firstName, String lastName, String email,
-            String phone, String id, AccountStatus status) {
+            String id, AccountStatus status) {
         this.createdOn = createdOn;
         this.studyId = studyId;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
-        this.phone = phone;
         this.id = id;
         this.status = status;
     }
@@ -121,6 +121,16 @@ public class HibernateAccount {
         this.phone = phone;
     }
     
+    /** Account phone number region (CLDR two-letter region code). */
+    public String getPhoneRegion() {
+        return phoneRegion;
+    }
+
+    /** @see #getPhoneRegion */
+    public void setPhoneRegion(String phoneRegion) {
+        this.phoneRegion = phoneRegion;
+    }
+
     /** Has the email address been verified to be under the control of the account holder. */
     public void setEmailVerified(Boolean emailVerified) {
         this.emailVerified = emailVerified;

@@ -50,6 +50,9 @@ public interface Account extends BridgeEntity {
     Boolean getPhoneVerified();
     void setPhoneVerified(Boolean phoneVerified);
     
+    String getPhoneRegion();
+    void setPhoneRegion(String phoneRegion);
+    
     String getReauthToken();
     void setReauthToken(String reauthToken);
 
