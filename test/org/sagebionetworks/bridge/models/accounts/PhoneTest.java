@@ -12,37 +12,46 @@ public class PhoneTest {
 
     @Test
     public void canSerialize() throws Exception {
-        Phone phone = new Phone("(408) 258-8569", "US");
-        assertEquals("+14082588569", phone.getCanonicalPhone());
+        Phone phone = new Phone("408.258.8569", "US");
+        assertEquals("(408) 258-8569", phone.getNationalFormat());
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(phone);
-        assertEquals("(408) 258-8569", node.get("number").textValue());
+        assertEquals("+14082588569", node.get("number").textValue());
         assertEquals("US", node.get("regionCode").textValue());
         assertEquals("Phone", node.get("type").textValue());
-        assertEquals(3, node.size());
+        assertEquals(4, node.size());
         
         Phone deser = BridgeObjectMapper.get().readValue(node.toString(), Phone.class);
         assertEquals(phone.getNumber(), deser.getNumber());
         assertEquals(phone.getRegionCode(), deser.getRegionCode());
-        assertEquals("+14082588569", deser.getCanonicalPhone());
+        assertEquals("(408) 258-8569", deser.getNationalFormat());
     }
     
     @Test
     public void badPhoneReturnsNullCanonicalPhone() {
         Phone phone = new Phone("(408) 258-8569", null);
-        assertNull(phone.getCanonicalPhone());
+        assertNull(phone.getNationalFormat());
         
         phone = new Phone(null, "US");
-        assertNull(phone.getCanonicalPhone());
+        assertNull(phone.getNationalFormat());
         
         phone = new Phone("(881) 258-8569", "FR");
-        assertNull(phone.getCanonicalPhone());
+        assertNull(phone.getNationalFormat());
         
         phone = new Phone(null, null);
-        assertNull(phone.getCanonicalPhone());
+        assertNull(phone.getNationalFormat());
         
         phone = new Phone("totally junk", "totally junk");
-        assertNull(phone.getCanonicalPhone());
+        assertNull(phone.getNationalFormat());
+    }
+    
+    @Test
+    public void hibernateConstructionPathWorks() {
+        Phone phone = new Phone();
+        phone.setNumber("408-258-8569");
+        phone.setRegionCode("US");
+        assertEquals("+14082588569", phone.getNumber());
+        assertEquals("(408) 258-8569", phone.getNationalFormat());
     }
     
 }

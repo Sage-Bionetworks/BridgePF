@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.Set;
 
@@ -47,18 +46,8 @@ public class StudyParticipantValidator implements Validator {
             // Validate phone number. We currently don't allow phone number to be updated, so only do this
             // on a new account.
             Phone phone = participant.getPhone();
-            if (phone != null) {
-                String phoneNumber = phone.getNumber(); 
-                String phoneRegion = phone.getRegionCode();
-                if (isNotBlank(phoneNumber) && isBlank(phoneRegion)) {
-                    errors.rejectValue("phoneRegion", "is required if phone is provided");
-                } else if (isNotBlank(phoneRegion) && isBlank(phoneNumber)) {
-                    errors.rejectValue("phone", "is required if phoneRegion is provided");
-                } else if (phoneRegion.length() != 2) {
-                    errors.rejectValue("phoneRegion", "is not a two letter region code");
-                } else  if (phone.getCanonicalPhone() == null) {
-                    errors.rejectValue("phone", "does not appear to be a phone number");
-                }
+            if (phone != null && !Phone.isValid(phone)) {
+                errors.rejectValue("phone", "does not appear to be a phone number");
             }
             // This validation logic is also performed for reset password requests.
             String password = participant.getPassword();

@@ -5,15 +5,23 @@ import javax.persistence.Embeddable;
 import javax.persistence.Transient;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat;
 import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 
 @Embeddable
 public class Phone {
+    
+    public static final boolean isValid(Phone phone) {
+        try {
+            PhoneNumber phoneNumber = PHONE_UTIL.parse(phone.getNumber(), phone.getRegionCode());
+            return PHONE_UTIL.isValidNumber(phoneNumber);
+        } catch (Exception e) {
+        }
+        return false;
+    }
+    
     private static final PhoneNumberUtil PHONE_UTIL = PhoneNumberUtil.getInstance();
     private String number;
     private String regionCode;
@@ -30,7 +38,7 @@ public class Phone {
     
     @Column(name="phone", length=20)
     public String getNumber() {
-        return number;
+        return format(PhoneNumberFormat.E164);
     }
     public void setNumber(String number) {
         this.number = number;
@@ -44,23 +52,21 @@ public class Phone {
         this.regionCode = regionCode;
     }
     
-    /**
-     * Returns the phone number formatted in E164 format, or null if the phone number 
-     * cannot be parsed into a valid phone number.
-     */
     @Transient
-    @JsonIgnore
-    public String getCanonicalPhone() {
-        String formattedNumber = null;
-        if (number != null && regionCode != null) {
+    public String getNationalFormat() {
+        return format(PhoneNumberFormat.NATIONAL);
+    }
+    
+    private String format(PhoneNumberFormat format) {
+        if (this.number != null && this.regionCode != null) {
             try {
-                PhoneNumber phoneNumber = PHONE_UTIL.parse(number, regionCode);
-                if (PHONE_UTIL.isValidNumber(phoneNumber)) {
-                    formattedNumber = PHONE_UTIL.format(phoneNumber, PhoneNumberFormat.E164);
+                PhoneNumber phoneNumber = PHONE_UTIL.parse(this.number, this.regionCode);
+                if (PHONE_UTIL.isValidNumber(phoneNumber)) {            
+                    return PHONE_UTIL.format(phoneNumber, format);
                 }
-            } catch (NumberParseException e) {
+            } catch (Exception e) {
             }
         }
-        return formattedNumber;
+        return number;
     }
 }

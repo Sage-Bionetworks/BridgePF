@@ -177,19 +177,19 @@ public class StudyParticipantValidatorTest {
     @Test
     public void validatePhoneRegionRequired() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withPhone("1234567890", null), "phoneRegion", "phoneRegion is required if phone is provided");
+        assertCorrectMessage(withPhone("1234567890", null), "phone", "phone does not appear to be a phone number");
     }
     
     @Test
     public void validatePhoneRegionIsCode() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withPhone("1234567890", "esg"), "phoneRegion", "phoneRegion is not a two letter region code");
+        assertCorrectMessage(withPhone("1234567890", "esg"), "phone", "phone does not appear to be a phone number");
     }
     
     @Test
     public void validatePhoneRequired() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withPhone(null, "US"), "phone", "phone is required if phoneRegion is provided");
+        assertCorrectMessage(withPhone(null, "US"), "phone", "phone does not appear to be a phone number");
     }
     
     @Test
@@ -217,6 +217,7 @@ public class StudyParticipantValidatorTest {
             Validate.entityThrowingException(validator, participant);
             fail("should have thrown exception");
         } catch(InvalidEntityException e) {
+            System.out.println(e.getErrors());
             List<String> errors = e.getErrors().get(fieldName);
             assertFalse(errors == null || errors.isEmpty());
             String error = errors.get(0);

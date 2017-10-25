@@ -75,7 +75,7 @@ public class SignInValidator implements Validator {
         if (requiredFields.contains(PHONE)) {
             if (signIn.getPhone() == null) {
                 errors.rejectValue("phone", "is required");
-            } else if (signIn.getPhone().getCanonicalPhone() == null) {
+            } else if (signIn.getPhone().getNationalFormat() == null) {
                 errors.rejectValue("phone", "does not appear to be a phone number");
             }
         }
