@@ -7,6 +7,7 @@ import java.util.Set;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
+import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -21,6 +22,7 @@ import javax.persistence.Version;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 
 /** MySQL implementation of accounts via Hibernate. */
 // Note: We use a separate class entirely and marshall it to/from GenericAccount instead of using the Account interface
@@ -33,8 +35,7 @@ public class HibernateAccount {
     private String id;
     private String studyId;
     private String email;
-    private String phone;
-    private String phoneRegion;
+    private Phone phone;
     private Boolean emailVerified;
     private Boolean phoneVerified;
     private Map<String, String> attributes;
@@ -111,24 +112,15 @@ public class HibernateAccount {
         this.email = email;
     }
     
-    /** Account phone number (in E164 format). */
-    public String getPhone() {
+    /** Account phone number, as entered by the user. */
+    @Embedded
+    public Phone getPhone() {
         return phone;
     }
 
     /** @see #getPhone */
-    public void setPhone(String phone) {
+    public void setPhone(Phone phone) {
         this.phone = phone;
-    }
-    
-    /** Account phone number region (CLDR two-letter region code). */
-    public String getPhoneRegion() {
-        return phoneRegion;
-    }
-
-    /** @see #getPhoneRegion */
-    public void setPhoneRegion(String phoneRegion) {
-        this.phoneRegion = phoneRegion;
     }
 
     /** Has the email address been verified to be under the control of the account holder. */

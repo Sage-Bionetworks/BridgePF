@@ -32,8 +32,7 @@ public class GenericAccount implements Account {
     private final Map<SubpopulationGuid, List<ConsentSignature>> consentHistoryMap = new HashMap<>();
     private DateTime createdOn;
     private String email;
-    private String phone;
-    private String phoneRegion;
+    private Phone phone;
     private Boolean emailVerified;
     private Boolean phoneVerified;
     private String healthCode;
@@ -147,26 +146,14 @@ public class GenericAccount implements Account {
 
     /** {@inheritDoc} */
     @Override
-    public String getPhone() {
+    public Phone getPhone() {
         return phone;
     }
 
     /** {@inheritDoc} */
     @Override
-    public void setPhone(String phone) {
+    public void setPhone(Phone phone) {
         this.phone = phone;
-    }
-    
-    /** {@inheritDoc} */
-    @Override
-    public String getPhoneRegion() {
-        return phoneRegion;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void setPhoneRegion(String phoneRegion) {
-        this.phoneRegion = phoneRegion;
     }
     
     /** {@inheritDoc} */

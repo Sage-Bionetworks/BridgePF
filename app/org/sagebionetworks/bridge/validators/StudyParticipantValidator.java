@@ -9,18 +9,14 @@ import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
-import com.google.i18n.phonenumbers.NumberParseException;
-import com.google.i18n.phonenumbers.PhoneNumberUtil;
-import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
-
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 public class StudyParticipantValidator implements Validator {
 
-    private static final PhoneNumberUtil PHONE_UTIL = PhoneNumberUtil.getInstance();
     private static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
     private final Study study;
     private final boolean isNew;
@@ -50,24 +46,17 @@ public class StudyParticipantValidator implements Validator {
             }
             // Validate phone number. We currently don't allow phone number to be updated, so only do this
             // on a new account.
-            String phone = participant.getPhone();
-            String phoneRegion = participant.getPhoneRegion();
-            
-            if (isBlank(phone) && isBlank(phoneRegion)) {
-                // Do nothing. This is okay. Phone is optional right now, we don't use it.
-            } else if (isNotBlank(phone) && isBlank(phoneRegion)) {
-                errors.rejectValue("phoneRegion", "is required if phone is provided");
-            } else if (isNotBlank(phoneRegion) && isBlank(phone)) {
-                errors.rejectValue("phone", "is required if phoneRegion is provided");
-            } else if (phoneRegion.length() != 2) {
-                errors.rejectValue("phoneRegion", "is not a two letter region code");
-            } else {
-                try {
-                    PhoneNumber phoneNumber = PHONE_UTIL.parse(phone, phoneRegion);
-                    if (!PHONE_UTIL.isValidNumber(phoneNumber)) {
-                        errors.rejectValue("phone", "does not appear to be a phone number");
-                    }
-                } catch (NumberParseException e) {
+            Phone phone = participant.getPhone();
+            if (phone != null) {
+                String phoneNumber = phone.getNumber(); 
+                String phoneRegion = phone.getRegionCode();
+                if (isNotBlank(phoneNumber) && isBlank(phoneRegion)) {
+                    errors.rejectValue("phoneRegion", "is required if phone is provided");
+                } else if (isNotBlank(phoneRegion) && isBlank(phoneNumber)) {
+                    errors.rejectValue("phone", "is required if phoneRegion is provided");
+                } else if (phoneRegion.length() != 2) {
+                    errors.rejectValue("phoneRegion", "is not a two letter region code");
+                } else  if (phone.getCanonicalPhone() == null) {
                     errors.rejectValue("phone", "does not appear to be a phone number");
                 }
             }

@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -83,7 +84,7 @@ public interface AccountDao {
      * underlying persistence store. This does NOT save the account, you must call
      * createAccount() after the account has been updated.
      */
-    Account constructAccount(Study study, String email, String phone, String phoneRegion, String password);
+    Account constructAccount(Study study, String email, Phone phone, String password);
     
     /**
      * Create an account. The account object should initially be retrieved from the 

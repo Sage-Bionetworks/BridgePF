@@ -15,6 +15,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -201,7 +202,7 @@ public class StudyParticipantValidatorTest {
     public void validatePhone() {
         validator = new StudyParticipantValidator(study, true);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
-                .withPassword("pAssword1@").withPhone("4082588569").withPhoneRegion("US").build();
+                .withPassword("pAssword1@").withPhone(new Phone("4082588569","US")).build();
         Validate.entityThrowingException(validator, participant);
     }
     
@@ -224,7 +225,7 @@ public class StudyParticipantValidatorTest {
     }
     
     private StudyParticipant withPhoneAndRegion(String phone, String phoneRegion) {
-        return new StudyParticipant.Builder().withPhone(phone).withPhoneRegion(phoneRegion).build();
+        return new StudyParticipant.Builder().withPhone(new Phone(phone, phoneRegion)).build();
     }
     
     private StudyParticipant withPassword(String password) {

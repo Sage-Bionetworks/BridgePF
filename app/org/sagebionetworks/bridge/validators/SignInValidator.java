@@ -68,17 +68,18 @@ public class SignInValidator implements Validator {
         if (requiredFields.contains(PASSWORD) && isBlank(signIn.getPassword())) {
             errors.rejectValue("password", "is required");
         }
-        if (requiredFields.contains(PHONE) && isBlank(signIn.getPhone())) {
-            errors.rejectValue("phone", "is required");
-        }
-        if (requiredFields.contains(PHONE_REGION) && isBlank(signIn.getPhoneRegion())) {
-            errors.rejectValue("phoneRegion", "is required");
-        }
         if (requiredFields.contains(TOKEN) && isBlank(signIn.getToken())) {
             errors.rejectValue("token", "is required");
         }
         if (requiredFields.contains(REAUTH) && isBlank(signIn.getReauthToken())) {
             errors.rejectValue("reauthToken", "is required");
+        }
+        if (requiredFields.contains(PHONE)) {
+            if (signIn.getPhone() == null) {
+                errors.rejectValue("phone", "is required");
+            } else if (signIn.getPhone().getCanonicalPhone() == null) {
+                errors.rejectValue("phone", "does not appear to be a phone number");
+            }
         }
     }
 

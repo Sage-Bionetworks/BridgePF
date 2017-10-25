@@ -66,6 +66,7 @@ import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -88,15 +89,14 @@ public class ParticipantServiceTest {
     private static final Set<String> STUDY_DATA_GROUPS = BridgeUtils.commaListToOrderedSet("group1,group2");
     private static final long CONSENT_PUBLICATION_DATE = DateTime.now().getMillis();
     private static final Study STUDY = new DynamoStudy();
-    private static final String PHONE = "4082585869";
-    private static final String PHONE_REGION = "US";
+    private static final Phone PHONE = new Phone("4082585869", "US");
     static {
         STUDY.setIdentifier("test-study");
         STUDY.setHealthCodeExportEnabled(true);
         STUDY.setUserProfileAttributes(STUDY_PROFILE_ATTRS);
         STUDY.setDataGroups(STUDY_DATA_GROUPS);
         STUDY.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        STUDY.getUserProfileAttributes().add(PHONE);
+        STUDY.getUserProfileAttributes().add("phone_number");
     }
     private static final String EXTERNAL_ID = "externalId";
     private static final String HEALTH_CODE = "healthCode";
@@ -112,14 +112,13 @@ public class ParticipantServiceTest {
     private static final String EMAIL = "email@email.com";
     private static final String ID = "ASDF";
     private static final DateTimeZone USER_TIME_ZONE = DateTimeZone.forOffsetHours(-3);
-    private static final Map<String,String> ATTRS = new ImmutableMap.Builder<String,String>().put(PHONE,"123456789").build();
+    private static final Map<String,String> ATTRS = new ImmutableMap.Builder<String,String>().put("phone_number","123456789").build();
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create(STUDY.getIdentifier());
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder()
             .withFirstName(FIRST_NAME)
             .withLastName(LAST_NAME)
             .withEmail(EMAIL)
             .withPhone(PHONE)
-            .withPhoneRegion(PHONE_REGION)
             .withId(ID)
             .withPassword(PASSWORD)
             .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
@@ -224,7 +223,7 @@ public class ParticipantServiceTest {
     
     private void mockHealthCodeAndAccountRetrieval() {
         when(account.getId()).thenReturn(ID);
-        when(accountDao.constructAccount(STUDY, EMAIL, PHONE, PHONE_REGION, PASSWORD)).thenReturn(account);
+        when(accountDao.constructAccount(STUDY, EMAIL, PHONE, PASSWORD)).thenReturn(account);
         when(accountDao.createAccount(same(STUDY), same(account), anyBoolean())).thenReturn(ID);
         when(accountDao.getAccount(STUDY, ID)).thenReturn(account);
         when(account.getHealthCode()).thenReturn(HEALTH_CODE);
@@ -243,7 +242,7 @@ public class ParticipantServiceTest {
         verify(externalIdService).reserveExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
         verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
         
-        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PHONE_REGION, PASSWORD);
+        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PASSWORD);
         // suppress email (true) == sendEmail (false)
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
@@ -263,7 +262,7 @@ public class ParticipantServiceTest {
         Account account = accountCaptor.getValue();
         verify(account).setFirstName(FIRST_NAME);
         verify(account).setLastName(LAST_NAME);
-        verify(account).setAttribute(PHONE, "123456789");
+        verify(account).setAttribute("phone_number", "123456789");
         verify(account).setRoles(USER_ROLES);
         verify(account).setClientData(TestUtils.getClientData());
         // Not called on create
@@ -288,7 +287,7 @@ public class ParticipantServiceTest {
         } catch(EntityAlreadyExistsException e) {
         }
         verify(externalIdService).reserveExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
-        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PHONE_REGION, PASSWORD);
+        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PASSWORD);
         verifyNoMoreInteractions(optionsService);
     }
     
@@ -496,7 +495,7 @@ public class ParticipantServiceTest {
         Account account = accountCaptor.getValue();
         verify(account).setFirstName(FIRST_NAME);
         verify(account).setLastName(LAST_NAME);
-        verify(account).setAttribute(PHONE, "123456789");
+        verify(account).setAttribute("phone_number", "123456789");
         verify(account).setClientData(TestUtils.getClientData());
     }
     
@@ -934,7 +933,7 @@ public class ParticipantServiceTest {
         
         participantService.createParticipant(STUDY, callerRoles, participant, false);
         
-        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PHONE_REGION, PASSWORD);
+        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PASSWORD);
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
         Account account = accountCaptor.getValue();
         
@@ -969,7 +968,7 @@ public class ParticipantServiceTest {
         
         participantService.createParticipant(STUDY, callerRoles, participant, false);
         
-        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PHONE_REGION, PASSWORD);
+        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PASSWORD);
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
         Account account = accountCaptor.getValue();
         

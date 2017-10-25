@@ -44,14 +44,11 @@ public interface Account extends BridgeEntity {
     Boolean getEmailVerified();
     void setEmailVerified(Boolean emailVerified);
     
-    String getPhone();
-    void setPhone(String phone);
+    Phone getPhone();
+    void setPhone(Phone phone);
     
     Boolean getPhoneVerified();
     void setPhoneVerified(Boolean phoneVerified);
-    
-    String getPhoneRegion();
-    void setPhoneRegion(String phoneRegion);
     
     String getReauthToken();
     void setReauthToken(String reauthToken);

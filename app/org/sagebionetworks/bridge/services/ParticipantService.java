@@ -179,7 +179,6 @@ public class ParticipantService {
         builder.withLastName(account.getLastName());
         builder.withEmail(account.getEmail());
         builder.withPhone(account.getPhone());
-        builder.withPhoneRegion(account.getPhoneRegion());
         builder.withEmailVerified(account.getEmailVerified());
         builder.withPhoneVerified(account.getPhoneVerified());
         builder.withStatus(account.getStatus());
@@ -250,7 +249,7 @@ public class ParticipantService {
         Validate.entityThrowingException(new StudyParticipantValidator(study, true), participant);
         
         Account account = accountDao.constructAccount(study, participant.getEmail(), participant.getPhone(),
-                participant.getPhoneRegion(), participant.getPassword());
+                participant.getPassword());
         Map<ParticipantOption, String> options = Maps.newHashMap();
         
         externalIdService.reserveExternalId(study, participant.getExternalId(), account.getHealthCode());

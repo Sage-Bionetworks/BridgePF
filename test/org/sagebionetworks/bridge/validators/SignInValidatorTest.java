@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 
 public class SignInValidatorTest {
@@ -13,8 +14,7 @@ public class SignInValidatorTest {
     private static final String TOKEN = "token";
     private static final String PASSWORD = "password";
     private static final String EMAIL = "email@email.com";
-    private static final String PHONE = "+1234567890";
-    private static final String PHONE_REGION = "US";
+    private static final Phone PHONE = new Phone("4082588569","US");
     private static final String REAUTH_TOKEN = "reauthToken";
     private static final SignIn EMPTY_SIGNIN = new SignIn.Builder().build();
 
@@ -41,27 +41,31 @@ public class SignInValidatorTest {
     }
     @Test
     public void phoneSignInRequestOK() {
-        SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID).withPhone(PHONE).withPhoneRegion(PHONE_REGION).build();
+        SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID).withPhone(PHONE).build();
         Validate.entityThrowingException(SignInValidator.PHONE_SIGNIN_REQUEST, signIn);
     }
     @Test
     public void phoneSignInRequestInvalid() {
         assertValidatorMessage(SignInValidator.PHONE_SIGNIN_REQUEST, EMPTY_SIGNIN, "study", "is required");
         assertValidatorMessage(SignInValidator.PHONE_SIGNIN_REQUEST, EMPTY_SIGNIN, "phone", "is required");
-        assertValidatorMessage(SignInValidator.PHONE_SIGNIN_REQUEST, EMPTY_SIGNIN, "phoneRegion", "is required");
     }
     @Test
     public void phoneSignInOK() {
-        SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID).withPhone(PHONE).withPhoneRegion(PHONE_REGION)
-                .withToken(TOKEN).build();
+        SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID).withPhone(PHONE).withToken(TOKEN).build();
         Validate.entityThrowingException(SignInValidator.PHONE_SIGNIN, signIn);
     }
     @Test
     public void phoneSignInInvalid() {
         assertValidatorMessage(SignInValidator.PHONE_SIGNIN, EMPTY_SIGNIN, "study", "is required");
         assertValidatorMessage(SignInValidator.PHONE_SIGNIN, EMPTY_SIGNIN, "phone", "is required");
-        assertValidatorMessage(SignInValidator.PHONE_SIGNIN, EMPTY_SIGNIN, "phoneRegion", "is required");
         assertValidatorMessage(SignInValidator.PHONE_SIGNIN, EMPTY_SIGNIN, "token", "is required");
+    }
+    @Test
+    public void phoneSignInInvalidPhoneFields() {
+        SignIn missingPhoneFields = new SignIn.Builder().withPhone(new Phone(null,null)).build();
+        assertValidatorMessage(SignInValidator.PHONE_SIGNIN, missingPhoneFields, "study", "is required");
+        assertValidatorMessage(SignInValidator.PHONE_SIGNIN, missingPhoneFields, "phone", "does not appear to be a phone number");
+        assertValidatorMessage(SignInValidator.PHONE_SIGNIN, missingPhoneFields, "token", "is required");
     }
     @Test
     public void passwordSignInOK() {

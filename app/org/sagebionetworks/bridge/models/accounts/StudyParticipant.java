@@ -54,8 +54,7 @@ public final class StudyParticipant implements BridgeEntity {
     private final String firstName;
     private final String lastName;
     private final String email;
-    private final String phone;
-    private final String phoneRegion;
+    private final Phone phone;
     private final Boolean emailVerified;
     private final Boolean phoneVerified;
     private final String externalId;
@@ -74,9 +73,9 @@ public final class StudyParticipant implements BridgeEntity {
     private final DateTimeZone timeZone;
     private final JsonNode clientData;
     
-    private StudyParticipant(String firstName, String lastName, String email, String phone, String phoneRegion,
-            Boolean emailVerified, Boolean phoneVerified, String externalId, String password, SharingScope sharingScope,
-            Boolean notifyByEmail, Set<String> dataGroups, String healthCode, Map<String, String> attributes,
+    private StudyParticipant(String firstName, String lastName, String email, Phone phone, Boolean emailVerified,
+            Boolean phoneVerified, String externalId, String password, SharingScope sharingScope, Boolean notifyByEmail,
+            Set<String> dataGroups, String healthCode, Map<String, String> attributes,
             Map<String, List<UserConsentHistory>> consentHistories, Set<Roles> roles, LinkedHashSet<String> languages,
             AccountStatus status, DateTime createdOn, String id, DateTimeZone timeZone, JsonNode clientData) {
         
@@ -94,7 +93,6 @@ public final class StudyParticipant implements BridgeEntity {
         this.lastName = lastName;
         this.email = email;
         this.phone = phone;
-        this.phoneRegion = phoneRegion;
         this.emailVerified = emailVerified;
         this.phoneVerified = phoneVerified;
         this.externalId = externalId;
@@ -123,11 +121,8 @@ public final class StudyParticipant implements BridgeEntity {
     public String getEmail() {
         return email;
     }
-    public String getPhone() {
+    public Phone getPhone() {
         return phone;
-    }
-    public String getPhoneRegion() {
-        return phoneRegion;
     }
     public Boolean getEmailVerified() {
         return emailVerified;
@@ -186,9 +181,9 @@ public final class StudyParticipant implements BridgeEntity {
     
     @Override
     public int hashCode() {
-        return Objects.hash(attributes, consentHistories, createdOn, dataGroups, email, phone, phoneRegion,
-                emailVerified, phoneVerified, externalId, firstName, healthCode, id, languages, lastName, notifyByEmail,
-                password, roles, sharingScope, status, timeZone, clientData);
+        return Objects.hash(attributes, consentHistories, createdOn, dataGroups, email, phone, emailVerified,
+                phoneVerified, externalId, firstName, healthCode, id, languages, lastName, notifyByEmail, password,
+                roles, sharingScope, status, timeZone, clientData);
     }
 
     @Override
@@ -201,7 +196,6 @@ public final class StudyParticipant implements BridgeEntity {
         return Objects.equals(attributes, other.attributes) && Objects.equals(consentHistories, other.consentHistories)
                 && Objects.equals(createdOn, other.createdOn) && Objects.equals(dataGroups, other.dataGroups)
                 && Objects.equals(email, other.email) && Objects.equals(phone, other.phone)
-                && Objects.equals(phoneRegion, other.phoneRegion)
                 && Objects.equals(emailVerified, other.emailVerified) && Objects.equals(phoneVerified, other.phoneVerified)
                 && Objects.equals(externalId, other.externalId)
                 && Objects.equals(firstName, other.firstName) && Objects.equals(healthCode, other.healthCode)
@@ -217,8 +211,7 @@ public final class StudyParticipant implements BridgeEntity {
         private String firstName;
         private String lastName;
         private String email;
-        private String phone;
-        private String phoneRegion;
+        private Phone phone;
         private Boolean emailVerified;
         private Boolean phoneVerified;
         private String externalId;
@@ -242,7 +235,6 @@ public final class StudyParticipant implements BridgeEntity {
             this.lastName = participant.getLastName();
             this.email = participant.getEmail();
             this.phone = participant.getPhone();
-            this.phoneRegion = participant.getPhoneRegion();
             this.emailVerified = participant.getEmailVerified();
             this.phoneVerified = participant.getPhoneVerified();
             this.externalId = participant.getExternalId();
@@ -274,9 +266,6 @@ public final class StudyParticipant implements BridgeEntity {
             }
             if (fieldNames.contains("phone")) {
                 withPhone(participant.getPhone());
-            }
-            if (fieldNames.contains("phoneRegion")) {
-                withPhoneRegion(participant.getPhoneRegion());
             }
             if (fieldNames.contains("emailVerified")) {
                 withEmailVerified(participant.getEmailVerified());
@@ -343,12 +332,8 @@ public final class StudyParticipant implements BridgeEntity {
             this.email = email;
             return this;
         }
-        public Builder withPhone(String phone) {
+        public Builder withPhone(Phone phone) {
             this.phone = phone;
-            return this;
-        }
-        public Builder withPhoneRegion(String phoneRegion) {
-            this.phoneRegion = phoneRegion;
             return this;
         }
         public Builder withEmailVerified(Boolean emailVerified) {
@@ -435,9 +420,9 @@ public final class StudyParticipant implements BridgeEntity {
         }
         
         public StudyParticipant build() {
-            return new StudyParticipant(firstName, lastName, email, phone, phoneRegion, emailVerified, phoneVerified,
-                    externalId, password, sharingScope, notifyByEmail, dataGroups, healthCode, attributes,
-                    consentHistories, roles, languages, status, createdOn, id, timeZone, clientData);
+            return new StudyParticipant(firstName, lastName, email, phone, emailVerified, phoneVerified, externalId,
+                    password, sharingScope, notifyByEmail, dataGroups, healthCode, attributes, consentHistories, roles,
+                    languages, status, createdOn, id, timeZone, clientData);
         }
     }
 
