@@ -14,8 +14,8 @@ public class SignInValidatorTest {
     private static final String TOKEN = "token";
     private static final String PASSWORD = "password";
     private static final String EMAIL = "email@email.com";
-    private static final Phone PHONE = new Phone("4082588569","US");
     private static final String REAUTH_TOKEN = "reauthToken";
+    private static final Phone PHONE = new Phone("4082588569","US");
     private static final SignIn EMPTY_SIGNIN = new SignIn.Builder().build();
 
     @Test

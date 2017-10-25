@@ -96,7 +96,7 @@ public class ParticipantServiceTest {
         STUDY.setUserProfileAttributes(STUDY_PROFILE_ATTRS);
         STUDY.setDataGroups(STUDY_DATA_GROUPS);
         STUDY.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        STUDY.getUserProfileAttributes().add("phone_number");
+        STUDY.getUserProfileAttributes().add("can_be_recontacted");
     }
     private static final String EXTERNAL_ID = "externalId";
     private static final String HEALTH_CODE = "healthCode";
@@ -112,7 +112,7 @@ public class ParticipantServiceTest {
     private static final String EMAIL = "email@email.com";
     private static final String ID = "ASDF";
     private static final DateTimeZone USER_TIME_ZONE = DateTimeZone.forOffsetHours(-3);
-    private static final Map<String,String> ATTRS = new ImmutableMap.Builder<String,String>().put("phone_number","123456789").build();
+    private static final Map<String,String> ATTRS = new ImmutableMap.Builder<String,String>().put("can_be_recontacted","true").build();
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create(STUDY.getIdentifier());
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder()
             .withFirstName(FIRST_NAME)
@@ -262,7 +262,7 @@ public class ParticipantServiceTest {
         Account account = accountCaptor.getValue();
         verify(account).setFirstName(FIRST_NAME);
         verify(account).setLastName(LAST_NAME);
-        verify(account).setAttribute("phone_number", "123456789");
+        verify(account).setAttribute("can_be_recontacted", "true");
         verify(account).setRoles(USER_ROLES);
         verify(account).setClientData(TestUtils.getClientData());
         // Not called on create
@@ -495,7 +495,7 @@ public class ParticipantServiceTest {
         Account account = accountCaptor.getValue();
         verify(account).setFirstName(FIRST_NAME);
         verify(account).setLastName(LAST_NAME);
-        verify(account).setAttribute("phone_number", "123456789");
+        verify(account).setAttribute("can_be_recontacted", "true");
         verify(account).setClientData(TestUtils.getClientData());
     }
     

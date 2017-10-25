@@ -11,6 +11,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.util.EnumSet;
 
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 
 import org.springframework.validation.Errors;
@@ -75,7 +76,7 @@ public class SignInValidator implements Validator {
         if (requiredFields.contains(PHONE)) {
             if (signIn.getPhone() == null) {
                 errors.rejectValue("phone", "is required");
-            } else if (signIn.getPhone().getNationalFormat() == null) {
+            } else if (!Phone.isValid(signIn.getPhone())) {
                 errors.rejectValue("phone", "does not appear to be a phone number");
             }
         }
