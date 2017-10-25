@@ -86,7 +86,17 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public void verifyEmail(EmailVerification verification) {
-        accountWorkflowService.verifyEmail(verification);
+        String accountId = accountWorkflowService.verifyEmail(verification);
+        // If it didn't throw an exception, verification has succeeded.
+        HibernateAccount hibernateAccount = hibernateHelper.getById(HibernateAccount.class, accountId);
+        // This shouldn't happen
+        if (hibernateAccount == null) {
+            throw new EntityNotFoundException(Account.class, "Account " + accountId + " not found");
+        }
+        hibernateAccount.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+        hibernateAccount.setEmailVerified(Boolean.TRUE);
+        hibernateAccount.setStatus(AccountStatus.ENABLED);
+        hibernateHelper.update(hibernateAccount);
     }
 
     /** {@inheritDoc} */

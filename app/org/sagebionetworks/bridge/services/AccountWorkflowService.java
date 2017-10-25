@@ -15,7 +15,6 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
@@ -130,9 +129,12 @@ public class AccountWorkflowService {
     /**
      * Using the verification token that was sent to the user, verify the email address. 
      * If the token is invalid, it fails quietly. If the token exists but the account 
-     * does not, it throws an exception (this would be unexpected).
+     * does not, it throws an exception (this would be unexpected). If an account is 
+     * returned, the email has been verified, but the AccountDao must be called in order 
+     * to persist the state change.
+     * @returns accountId if the account is successfull verified (otherwise, throws an exception)
      */
-    public void verifyEmail(EmailVerification verification) {
+    public String verifyEmail(EmailVerification verification) {
         checkNotNull(verification);
 
         VerificationData data = restoreVerification(verification.getSptoken());
@@ -145,9 +147,7 @@ public class AccountWorkflowService {
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        account.setEmailVerified(Boolean.TRUE);
-        account.setStatus(AccountStatus.ENABLED);
-        accountDao.updateAccount(account);
+        return account.getId();
     }
     
     /**

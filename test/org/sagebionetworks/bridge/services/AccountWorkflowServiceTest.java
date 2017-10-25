@@ -158,15 +158,12 @@ public class AccountWorkflowServiceTest {
             TestUtils.createJson("{'studyId':'api','userId':'userId'}"));
         when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         when(mockAccountDao.getAccount(study, "userId")).thenReturn(mockAccount);
+        when(mockAccount.getId()).thenReturn("accountId");
         
         EmailVerification verification = new EmailVerification(SPTOKEN);
         
-        service.verifyEmail(verification);
-        
-        verify(mockAccountDao).updateAccount(accountCaptor.capture());
-        Account account = accountCaptor.getValue();
-        verify(account).setEmailVerified(Boolean.TRUE);
-        verify(account).setStatus(AccountStatus.ENABLED);
+        String accountId = service.verifyEmail(verification);
+        assertEquals("accountId",accountId);
     }
     
     @Test(expected = BadRequestException.class)
