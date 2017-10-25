@@ -4,7 +4,6 @@ import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFiel
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.EMAIL;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.PASSWORD;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.PHONE;
-import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.PHONE_REGION;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.TOKEN;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.REAUTH;
 
@@ -25,9 +24,9 @@ public class SignInValidator implements Validator {
     public static final SignInValidator EMAIL_SIGNIN = new SignInValidator(EnumSet.of(STUDY, EMAIL, TOKEN));
 
     /** Request to sign in via phone. */
-    public static final SignInValidator PHONE_SIGNIN_REQUEST = new SignInValidator(EnumSet.of(STUDY, PHONE, PHONE_REGION));
+    public static final SignInValidator PHONE_SIGNIN_REQUEST = new SignInValidator(EnumSet.of(STUDY, PHONE));
     /** Sign in using token sent through SMS. */
-    public static final SignInValidator PHONE_SIGNIN = new SignInValidator(EnumSet.of(STUDY, PHONE, PHONE_REGION, TOKEN));
+    public static final SignInValidator PHONE_SIGNIN = new SignInValidator(EnumSet.of(STUDY, PHONE, TOKEN));
 
     /** Sign in using an email and password. */
     public static final SignInValidator PASSWORD_SIGNIN = new SignInValidator(EnumSet.of(STUDY, EMAIL, PASSWORD));
@@ -39,7 +38,6 @@ public class SignInValidator implements Validator {
         EMAIL,
         PASSWORD,
         PHONE,
-        PHONE_REGION,
         TOKEN,
         REAUTH
     }

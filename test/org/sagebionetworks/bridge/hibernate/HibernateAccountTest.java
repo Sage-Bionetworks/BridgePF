@@ -132,8 +132,7 @@ public class HibernateAccountTest {
         assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
     }
     
-    // Once flags are introduced, we will assume emailVerified for enabled accounts,
-    // until we can backfill.
+    // For accounts where it hasn't been set, emailVerified=true if the account is enabled
     @Test
     public void statusWithoutVerificationFlags() {
         HibernateAccount account = new HibernateAccount();

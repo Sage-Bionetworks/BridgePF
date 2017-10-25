@@ -280,7 +280,7 @@ public class HibernateAccountDao implements AccountDao {
         String accountId = account.getId();
         HibernateAccount accountToUpdate = marshallAccount(account);
 
-        // Can't change study, email, phone, phoneRegion, the verification flags, createdOn, or passwordModifiedOn.
+        // Can't change study, email, phone, emailVerified, phoneVerified, createdOn, or passwordModifiedOn.
         HibernateAccount persistedAccount = hibernateHelper.getById(HibernateAccount.class, accountId);
         if (persistedAccount == null) {
             throw new EntityNotFoundException(Account.class, "Account " + accountId + " not found");

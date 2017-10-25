@@ -32,6 +32,9 @@ public class PhoneTest {
         Phone phone = new Phone("(408) 258-8569", null);
         assertNull(phone.getCanonicalPhone());
         
+        phone = new Phone(null, "US");
+        assertNull(phone.getCanonicalPhone());
+        
         phone = new Phone("(881) 258-8569", "FR");
         assertNull(phone.getCanonicalPhone());
         

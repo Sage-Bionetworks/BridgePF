@@ -147,8 +147,7 @@ public class GenericAccountTest {
         TestUtils.assertSetIsImmutable(account.getRoles(), Roles.TEST_USERS);
     }
     
-    // Once flags are introduced, we will assume emailVerified for enabled accounts,
-    // until we can backfill.
+    // For accounts where it hasn't been set, emailVerified=true if the account is enabled
     @Test
     public void statusWithoutVerificationFlags() {
         GenericAccount account = new GenericAccount();

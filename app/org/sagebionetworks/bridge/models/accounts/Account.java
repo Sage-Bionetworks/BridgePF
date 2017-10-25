@@ -41,11 +41,11 @@ public interface Account extends BridgeEntity {
     String getEmail();
     void setEmail(String email);
     
-    Boolean getEmailVerified();
-    void setEmailVerified(Boolean emailVerified);
-    
     Phone getPhone();
     void setPhone(Phone phone);
+    
+    Boolean getEmailVerified();
+    void setEmailVerified(Boolean emailVerified);
     
     Boolean getPhoneVerified();
     void setPhoneVerified(Boolean phoneVerified);

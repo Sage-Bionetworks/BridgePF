@@ -177,25 +177,25 @@ public class StudyParticipantValidatorTest {
     @Test
     public void validatePhoneRegionRequired() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withPhoneAndRegion("1234567890", null), "phoneRegion", "phoneRegion is required if phone is provided");
+        assertCorrectMessage(withPhone("1234567890", null), "phoneRegion", "phoneRegion is required if phone is provided");
     }
     
     @Test
     public void validatePhoneRegionIsCode() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withPhoneAndRegion("1234567890", "esg"), "phoneRegion", "phoneRegion is not a two letter region code");
+        assertCorrectMessage(withPhone("1234567890", "esg"), "phoneRegion", "phoneRegion is not a two letter region code");
     }
     
     @Test
     public void validatePhoneRequired() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withPhoneAndRegion(null, "US"), "phone", "phone is required if phoneRegion is provided");
+        assertCorrectMessage(withPhone(null, "US"), "phone", "phone is required if phoneRegion is provided");
     }
     
     @Test
     public void validatePhonePattern() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withPhoneAndRegion("234567890", "US"), "phone", "phone does not appear to be a phone number");
+        assertCorrectMessage(withPhone("234567890", "US"), "phone", "phone does not appear to be a phone number");
     }
     
     @Test
@@ -209,7 +209,7 @@ public class StudyParticipantValidatorTest {
     @Test
     public void validateTotallyWrongPhone() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withPhoneAndRegion("this isn't a phone number", "US"), "phone", "phone does not appear to be a phone number");
+        assertCorrectMessage(withPhone("this isn't a phone number", "US"), "phone", "phone does not appear to be a phone number");
     }
     
     private void assertCorrectMessage(StudyParticipant participant, String fieldName, String message) {
@@ -224,7 +224,7 @@ public class StudyParticipantValidatorTest {
         }
     }
     
-    private StudyParticipant withPhoneAndRegion(String phone, String phoneRegion) {
+    private StudyParticipant withPhone(String phone, String phoneRegion) {
         return new StudyParticipant.Builder().withPhone(new Phone(phone, phoneRegion)).build();
     }
     
