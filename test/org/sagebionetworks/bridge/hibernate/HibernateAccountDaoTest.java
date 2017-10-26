@@ -114,7 +114,7 @@ public class HibernateAccountDaoTest {
     }
 
     @Test
-    public void verifyEmail() {
+    public void verifyEmailUsingToken() {
         HibernateAccount hibernateAccount = new HibernateAccount();
         hibernateAccount.setStatus(AccountStatus.UNVERIFIED);
         hibernateAccount.setEmailVerified(Boolean.FALSE);
@@ -133,9 +133,76 @@ public class HibernateAccountDaoTest {
         verify(mockAccountWorkflowService).verifyEmail(verification);
         assertEquals(AccountStatus.ENABLED, hibernateAccount.getStatus());
         assertEquals(Boolean.TRUE, hibernateAccount.getEmailVerified());
+        assertTrue(hibernateAccount.getModifiedOn() > 0L);
+        assertEquals(AccountStatus.ENABLED, account.getStatus());
+        assertEquals(Boolean.TRUE, account.getEmailVerified());
         verify(mockHibernateHelper).update(hibernateAccount);
     }
 
+    @Test
+    public void verifyEmailUsingAccount() {
+        HibernateAccount hibernateAccount = new HibernateAccount();
+        hibernateAccount.setStatus(AccountStatus.UNVERIFIED);
+        hibernateAccount.setEmailVerified(Boolean.FALSE);
+        
+        GenericAccount account = new GenericAccount();
+        account.setId(ACCOUNT_ID);
+        account.setStatus(AccountStatus.UNVERIFIED);
+        account.setEmailVerified(Boolean.FALSE);
+        
+        when(mockAccountWorkflowService.verifyEmail(any())).thenReturn(account);
+        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
+        
+        dao.verifyEmail(account);
+        
+        assertEquals(AccountStatus.ENABLED, hibernateAccount.getStatus());
+        assertEquals(Boolean.TRUE, hibernateAccount.getEmailVerified());
+        assertTrue(hibernateAccount.getModifiedOn() > 0L);
+        assertEquals(AccountStatus.ENABLED, account.getStatus());
+        assertEquals(Boolean.TRUE, account.getEmailVerified());
+        verify(mockHibernateHelper).update(hibernateAccount);
+    }
+    
+    @Test
+    public void verifyEmailUsingAccountNoChangeNecessary() {
+        HibernateAccount hibernateAccount = new HibernateAccount();
+        hibernateAccount.setStatus(AccountStatus.ENABLED);
+        hibernateAccount.setEmailVerified(Boolean.TRUE);
+        
+        GenericAccount account = new GenericAccount();
+        account.setId(ACCOUNT_ID);
+        account.setStatus(AccountStatus.ENABLED);
+        account.setEmailVerified(Boolean.TRUE);
+        
+        when(mockAccountWorkflowService.verifyEmail(any())).thenReturn(account);
+        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
+        
+        dao.verifyEmail(account);
+        verify(mockHibernateHelper, never()).update(hibernateAccount);
+    }
+    
+    @Test
+    public void verifyEmailUsingAccountDisabled() {
+        HibernateAccount hibernateAccount = new HibernateAccount();
+        hibernateAccount.setStatus(AccountStatus.DISABLED);
+        hibernateAccount.setEmailVerified(Boolean.FALSE);
+        
+        GenericAccount account = new GenericAccount();
+        account.setId(ACCOUNT_ID);
+        account.setStatus(AccountStatus.DISABLED);
+        account.setEmailVerified(Boolean.FALSE);
+        
+        when(mockAccountWorkflowService.verifyEmail(any())).thenReturn(account);
+        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
+        
+        dao.verifyEmail(account);
+        assertEquals(AccountStatus.DISABLED, hibernateAccount.getStatus());
+        assertEquals(Boolean.TRUE, hibernateAccount.getEmailVerified());
+        assertEquals(AccountStatus.DISABLED, account.getStatus());
+        assertEquals(Boolean.TRUE, account.getEmailVerified());
+        verify(mockHibernateHelper).update(hibernateAccount);
+    }    
+    
     @Test
     public void resendEmailVerificationToken() {
         Email email = new Email(TestConstants.TEST_STUDY, EMAIL);

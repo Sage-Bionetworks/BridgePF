@@ -110,9 +110,11 @@ public class HibernateAccountDao implements AccountDao {
                 return;
             }
             if (shouldUpdateEmailVerified) {
+                account.setEmailVerified(Boolean.TRUE);
                 hibernateAccount.setEmailVerified(Boolean.TRUE);
             }
             if (shouldUpdateStatus) {
+                account.setStatus(AccountStatus.ENABLED);
                 hibernateAccount.setStatus(AccountStatus.ENABLED);
             }
             hibernateAccount.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
