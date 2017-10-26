@@ -161,8 +161,8 @@ public class AccountWorkflowServiceTest {
         
         EmailVerification verification = new EmailVerification(SPTOKEN);
         
-        String accountId = service.verifyEmail(verification);
-        assertEquals("accountId",accountId);
+        Account account = service.verifyEmail(verification);
+        assertEquals("accountId",account.getId());
     }
     
     @Test(expected = BadRequestException.class)

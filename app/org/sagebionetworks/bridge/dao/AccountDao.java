@@ -29,6 +29,12 @@ public interface AccountDao {
     void verifyEmail(EmailVerification verification);
     
     /**
+     * Set the emailVerified flag to true and enable the account (if needed). Called from  
+     * <code>AuthenticationService.emailSignIn</code>. 
+     */
+    void verifyEmail(Account account);
+    
+    /**
      * Sign up sends an email address with a link that includes a one-time token for verification. That email
      * can be resent by calling this method.
      */

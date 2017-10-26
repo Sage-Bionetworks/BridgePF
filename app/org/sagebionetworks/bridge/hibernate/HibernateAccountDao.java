@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -86,17 +88,36 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public void verifyEmail(EmailVerification verification) {
-        String accountId = accountWorkflowService.verifyEmail(verification);
-        // If it didn't throw an exception, verification has succeeded.
-        HibernateAccount hibernateAccount = hibernateHelper.getById(HibernateAccount.class, accountId);
-        // This shouldn't happen
-        if (hibernateAccount == null) {
-            throw new EntityNotFoundException(Account.class, "Account " + accountId + " not found");
+        Account account = accountWorkflowService.verifyEmail(verification);
+        verifyEmail(account);
+    }
+    
+    /**
+     * Mark the email address as verified and enable the account if it is in the unverified state. 
+     * This method assumes some logic has executed that proves the user has control of the email 
+     * address.
+     */
+    @Override
+    public void verifyEmail(Account account) {
+        checkNotNull(account);
+        
+        boolean shouldUpdateEmailVerified = (account.getEmailVerified() != Boolean.TRUE);
+        boolean shouldUpdateStatus = (account.getStatus() == AccountStatus.UNVERIFIED);
+        
+        if (shouldUpdateEmailVerified || shouldUpdateStatus) {
+            HibernateAccount hibernateAccount = hibernateHelper.getById(HibernateAccount.class, account.getId());
+            if (hibernateAccount == null) {
+                return;
+            }
+            if (shouldUpdateEmailVerified) {
+                hibernateAccount.setEmailVerified(Boolean.TRUE);
+            }
+            if (shouldUpdateStatus) {
+                hibernateAccount.setStatus(AccountStatus.ENABLED);
+            }
+            hibernateAccount.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+            hibernateHelper.update(hibernateAccount);
         }
-        hibernateAccount.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        hibernateAccount.setEmailVerified(Boolean.TRUE);
-        hibernateAccount.setStatus(AccountStatus.ENABLED);
-        hibernateHelper.update(hibernateAccount);
     }
 
     /** {@inheritDoc} */

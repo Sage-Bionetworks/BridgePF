@@ -132,9 +132,9 @@ public class AccountWorkflowService {
      * does not, it throws an exception (this would be unexpected). If an account is 
      * returned, the email has been verified, but the AccountDao must be called in order 
      * to persist the state change.
-     * @returns accountId if the account is successfull verified (otherwise, throws an exception)
+     * @returns account if the account is successfully verified (otherwise, throws an exception)
      */
-    public String verifyEmail(EmailVerification verification) {
+    public Account verifyEmail(EmailVerification verification) {
         checkNotNull(verification);
 
         VerificationData data = restoreVerification(verification.getSptoken());
@@ -147,7 +147,7 @@ public class AccountWorkflowService {
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        return account.getId();
+        return account;
     }
     
     /**

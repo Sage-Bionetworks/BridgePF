@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -25,24 +24,6 @@ public class PhoneTest {
         assertEquals(phone.getNumber(), deser.getNumber());
         assertEquals(phone.getRegionCode(), deser.getRegionCode());
         assertEquals("(408) 258-8569", deser.getNationalFormat());
-    }
-    
-    @Test
-    public void badPhoneReturnsNullCanonicalPhone() {
-        Phone phone = new Phone("(408) 258-8569", null);
-        assertNull(phone.getNationalFormat());
-        
-        phone = new Phone(null, "US");
-        assertNull(phone.getNationalFormat());
-        
-        phone = new Phone("(881) 258-8569", "FR");
-        assertNull(phone.getNationalFormat());
-        
-        phone = new Phone(null, null);
-        assertNull(phone.getNationalFormat());
-        
-        phone = new Phone("totally junk", "totally junk");
-        assertNull(phone.getNationalFormat());
     }
     
     @Test

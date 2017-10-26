@@ -118,10 +118,15 @@ public class HibernateAccountDaoTest {
         HibernateAccount hibernateAccount = new HibernateAccount();
         hibernateAccount.setStatus(AccountStatus.UNVERIFIED);
         hibernateAccount.setEmailVerified(Boolean.FALSE);
-        when(mockAccountWorkflowService.verifyEmail(any())).thenReturn(ACCOUNT_ID);
+        
+        GenericAccount account = new GenericAccount();
+        account.setId(ACCOUNT_ID);
+        account.setStatus(AccountStatus.UNVERIFIED);
+        account.setEmailVerified(Boolean.FALSE);
+        
+        when(mockAccountWorkflowService.verifyEmail(any())).thenReturn(account);
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
         
-        // HibernateAccount hibernateAccount = hibernateHelper.getById(HibernateAccount.class, accountId);
         EmailVerification verification = new EmailVerification(DUMMY_TOKEN);
         dao.verifyEmail(verification);
         
