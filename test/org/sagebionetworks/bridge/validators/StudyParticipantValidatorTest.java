@@ -217,7 +217,6 @@ public class StudyParticipantValidatorTest {
             Validate.entityThrowingException(validator, participant);
             fail("should have thrown exception");
         } catch(InvalidEntityException e) {
-            System.out.println(e.getErrors());
             List<String> errors = e.getErrors().get(fieldName);
             assertFalse(errors == null || errors.isEmpty());
             String error = errors.get(0);

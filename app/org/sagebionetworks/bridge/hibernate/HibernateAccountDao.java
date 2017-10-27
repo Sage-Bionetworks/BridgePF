@@ -101,13 +101,18 @@ public class HibernateAccountDao implements AccountDao {
     public void verifyEmail(Account account) {
         checkNotNull(account);
         
+        // Do not modify the account if it is disabled (all email verification workflows are 
+        // user triggered, and disabled means that a user cannot use or change an account).
+        if (account.getStatus() == AccountStatus.DISABLED) {
+            return;
+        }
         boolean shouldUpdateEmailVerified = (account.getEmailVerified() != Boolean.TRUE);
         boolean shouldUpdateStatus = (account.getStatus() == AccountStatus.UNVERIFIED);
         
         if (shouldUpdateEmailVerified || shouldUpdateStatus) {
             HibernateAccount hibernateAccount = hibernateHelper.getById(HibernateAccount.class, account.getId());
             if (hibernateAccount == null) {
-                return;
+                throw new EntityNotFoundException(Account.class);
             }
             if (shouldUpdateEmailVerified) {
                 account.setEmailVerified(Boolean.TRUE);
@@ -606,6 +611,16 @@ public class HibernateAccountDao implements AccountDao {
         account.setStatus(hibernateAccount.getStatus());
         account.setRoles(hibernateAccount.getRoles());
         account.setVersion(hibernateAccount.getVersion());
+        
+        // For accounts prior to the introduction of the email/phone verification flags, where 
+        // the flag was not set on creation or verification of the email address, return the right value.
+        if (account.getEmailVerified() == null) {
+            if (account.getStatus() == AccountStatus.ENABLED) {
+                account.setEmailVerified(Boolean.TRUE);
+            } else if (account.getStatus() == AccountStatus.UNVERIFIED) {
+                account.setEmailVerified(Boolean.FALSE);
+            }
+        }
         
         if (hibernateAccount.getClientData() != null) {
             try {

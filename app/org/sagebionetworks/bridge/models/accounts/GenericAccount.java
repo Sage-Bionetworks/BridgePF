@@ -159,15 +159,6 @@ public class GenericAccount implements Account {
     /** {@inheritDoc} */
     @Override
     public Boolean getEmailVerified() {
-        // For accounts prior to the introduction of the email/phone verification flags, where 
-        // the flag was not set on creation or verification of the email address, return the right value.
-        if (emailVerified == null) {
-            if (status == AccountStatus.ENABLED) {
-                return Boolean.TRUE;
-            } else if (status == AccountStatus.UNVERIFIED) {
-                return Boolean.FALSE;
-            }
-        }
         return emailVerified;
     }
     

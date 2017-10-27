@@ -420,6 +420,14 @@ public final class StudyParticipant implements BridgeEntity {
         }
         
         public StudyParticipant build() {
+            Boolean emailVerified = this.emailVerified;
+            if (emailVerified == null) {
+                if (status == AccountStatus.ENABLED) {
+                    emailVerified = Boolean.TRUE;
+                } else if (status == AccountStatus.UNVERIFIED) {
+                    emailVerified = Boolean.FALSE;
+                }
+            }
             return new StudyParticipant(firstName, lastName, email, phone, emailVerified, phoneVerified, externalId,
                     password, sharingScope, notifyByEmail, dataGroups, healthCode, attributes, consentHistories, roles,
                     languages, status, createdOn, id, timeZone, clientData);

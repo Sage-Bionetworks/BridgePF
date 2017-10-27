@@ -375,6 +375,9 @@ public class ParticipantServiceTest {
         when(account.getFirstName()).thenReturn(FIRST_NAME);
         when(account.getLastName()).thenReturn(LAST_NAME);
         when(account.getEmail()).thenReturn(EMAIL);
+        when(account.getPhone()).thenReturn(PHONE);
+        when(account.getEmailVerified()).thenReturn(Boolean.TRUE);
+        when(account.getPhoneVerified()).thenReturn(Boolean.FALSE);
         when(account.getId()).thenReturn(ID);
         when(account.getStatus()).thenReturn(AccountStatus.DISABLED);
         when(account.getCreatedOn()).thenReturn(createdOn);
@@ -422,6 +425,9 @@ public class ParticipantServiceTest {
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, participant.getSharingScope());
         assertEquals(HEALTH_CODE, participant.getHealthCode());
         assertEquals(EMAIL, participant.getEmail());
+        assertEquals(PHONE.getNationalFormat(), participant.getPhone().getNationalFormat());
+        assertEquals(Boolean.TRUE, participant.getEmailVerified());
+        assertEquals(Boolean.FALSE, participant.getPhoneVerified());
         assertEquals(ID, participant.getId());
         assertEquals(AccountStatus.DISABLED, participant.getStatus());
         assertEquals(createdOn, participant.getCreatedOn());

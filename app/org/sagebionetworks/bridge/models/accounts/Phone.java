@@ -1,11 +1,12 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
 import javax.persistence.Transient;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat;
 import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
@@ -14,10 +15,11 @@ import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 public class Phone {
     
     public static final boolean isValid(Phone phone) {
+        checkNotNull(phone);
         try {
             PhoneNumber phoneNumber = PHONE_UTIL.parse(phone.getNumber(), phone.getRegionCode());
             return PHONE_UTIL.isValidNumber(phoneNumber);
-        } catch (Exception e) {
+        } catch (NumberParseException e) {
         }
         return false;
     }
@@ -30,8 +32,7 @@ public class Phone {
     Phone() {
     }
     
-    @JsonCreator
-    public Phone(@JsonProperty("number") String number, @JsonProperty("regionCode") String regionCode) {
+    public Phone(String number, String regionCode) {
         this.number = number;
         this.regionCode = regionCode;
     }
@@ -64,7 +65,7 @@ public class Phone {
                 if (PHONE_UTIL.isValidNumber(phoneNumber)) {            
                     return PHONE_UTIL.format(phoneNumber, format);
                 }
-            } catch (Exception e) {
+            } catch (NumberParseException e) {
             }
         }
         return number;

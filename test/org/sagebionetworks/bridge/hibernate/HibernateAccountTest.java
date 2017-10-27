@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
@@ -130,20 +129,5 @@ public class HibernateAccountTest {
         assertEquals("email", account.getEmail());
         assertEquals("id", account.getId());
         assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
-    }
-    
-    // For accounts where it hasn't been set, emailVerified=true if the account is enabled
-    @Test
-    public void statusWithoutVerificationFlags() {
-        HibernateAccount account = new HibernateAccount();
-        account.setStatus(AccountStatus.ENABLED);
-        
-        assertEquals(Boolean.TRUE, account.getEmailVerified());
-        
-        account.setStatus(AccountStatus.UNVERIFIED);
-        assertEquals(Boolean.FALSE, account.getEmailVerified());
-        
-        account.setStatus(null);
-        assertNull(account.getEmailVerified());
     }
 }

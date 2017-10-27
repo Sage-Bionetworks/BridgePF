@@ -64,7 +64,8 @@ public class HibernateAccountDaoTest {
     private static final String DUMMY_PASSWORD_HASH = "dummy-password-hash";
     private static final String DUMMY_TOKEN = "dummy-token";
     private static final String EMAIL = "eggplant@example.com";
-    private static final Phone PHONE = new Phone("+1234567890","US");
+    private static final Phone PHONE = new Phone("+14082588569", "US");
+    private static final Phone OTHER_PHONE = new Phone("+12065881469", "US");
     private static final String HEALTH_CODE = "health-code";
     private static final String HEALTH_ID = "health-id";
     private static final long MOCK_NOW_MILLIS = DateTime.parse("2017-05-19T14:45:27.593-0700").getMillis();
@@ -182,26 +183,33 @@ public class HibernateAccountDaoTest {
     }
     
     @Test
-    public void verifyEmailUsingAccountDisabled() {
-        HibernateAccount hibernateAccount = new HibernateAccount();
-        hibernateAccount.setStatus(AccountStatus.DISABLED);
-        hibernateAccount.setEmailVerified(Boolean.FALSE);
-        
+    public void verifyEmailWithDisabledAccountMakesNoChanges() {
         GenericAccount account = new GenericAccount();
-        account.setId(ACCOUNT_ID);
         account.setStatus(AccountStatus.DISABLED);
-        account.setEmailVerified(Boolean.FALSE);
-        
-        when(mockAccountWorkflowService.verifyEmail(any())).thenReturn(account);
-        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
         
         dao.verifyEmail(account);
-        assertEquals(AccountStatus.DISABLED, hibernateAccount.getStatus());
-        assertEquals(Boolean.TRUE, hibernateAccount.getEmailVerified());
+        verify(mockHibernateHelper, never()).update(any());
         assertEquals(AccountStatus.DISABLED, account.getStatus());
-        assertEquals(Boolean.TRUE, account.getEmailVerified());
-        verify(mockHibernateHelper).update(hibernateAccount);
-    }    
+    }
+    
+    @Test
+    public void verifyEmailFailsIfHibernateAccountNotFound() {
+        GenericAccount account = new GenericAccount();
+        account.setId(ACCOUNT_ID);
+        account.setStatus(AccountStatus.UNVERIFIED);
+        account.setEmailVerified(null);
+        
+        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(null);
+        try {
+            dao.verifyEmail(account);
+            fail("Should have thrown an exception");
+        } catch (EntityNotFoundException e) {
+
+        }
+        verify(mockHibernateHelper, never()).update(any());
+        assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
+        assertNull(account.getEmailVerified());
+    }
     
     @Test
     public void resendEmailVerificationToken() {
@@ -563,6 +571,9 @@ public class HibernateAccountDaoTest {
         GenericAccount account = (GenericAccount) dao.constructAccount(STUDY, EMAIL, PHONE, DUMMY_PASSWORD);
         assertEquals(TestConstants.TEST_STUDY, account.getStudyIdentifier());
         assertEquals(EMAIL, account.getEmail());
+        assertEquals(PHONE.getNationalFormat(), account.getPhone().getNationalFormat());
+        assertEquals(Boolean.FALSE, account.getEmailVerified());
+        assertEquals(Boolean.FALSE, account.getPhoneVerified());
         assertEquals(HEALTH_CODE, account.getHealthCode());
         assertEquals(HEALTH_ID, account.getHealthId());
         assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, account.getPasswordAlgorithm());
@@ -686,6 +697,9 @@ public class HibernateAccountDaoTest {
         persistedAccount.setEmail("persisted@example.com");
         persistedAccount.setCreatedOn(1234L);
         persistedAccount.setPasswordModifiedOn(5678L);
+        persistedAccount.setPhone(PHONE);
+        persistedAccount.setEmailVerified(Boolean.TRUE);
+        persistedAccount.setPhoneVerified(Boolean.TRUE);
 
         // Set a dummy modifiedOn to make sure we're overwriting it.
         persistedAccount.setModifiedOn(5678L);
@@ -694,7 +708,11 @@ public class HibernateAccountDaoTest {
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(persistedAccount);
 
         // execute
-        dao.updateAccount(makeValidGenericAccount());
+        GenericAccount account = makeValidGenericAccount();
+        account.setPhone(OTHER_PHONE);
+        account.setEmailVerified(Boolean.FALSE);
+        account.setPhoneVerified(Boolean.FALSE);
+        dao.updateAccount(account);
 
         // verify hibernate update
         ArgumentCaptor<HibernateAccount> updatedHibernateAccountCaptor = ArgumentCaptor.forClass(
@@ -705,6 +723,10 @@ public class HibernateAccountDaoTest {
         assertEquals(ACCOUNT_ID, updatedHibernateAccount.getId());
         assertEquals("persisted-study", updatedHibernateAccount.getStudyId());
         assertEquals("persisted@example.com", updatedHibernateAccount.getEmail());
+        assertEquals(PHONE.getNationalFormat(),
+                updatedHibernateAccount.getPhone().getNationalFormat());
+        assertEquals(Boolean.TRUE, updatedHibernateAccount.getEmailVerified());
+        assertEquals(Boolean.TRUE, updatedHibernateAccount.getPhoneVerified());
         assertEquals(1234, updatedHibernateAccount.getCreatedOn().longValue());
         assertEquals(5678, updatedHibernateAccount.getPasswordModifiedOn().longValue());
         assertEquals(MOCK_NOW_MILLIS, updatedHibernateAccount.getModifiedOn().longValue());
@@ -1015,6 +1037,9 @@ public class HibernateAccountDaoTest {
         genericAccount.setId(ACCOUNT_ID);
         genericAccount.setStudyId(TestConstants.TEST_STUDY);
         genericAccount.setEmail(EMAIL);
+        genericAccount.setPhone(PHONE);
+        genericAccount.setEmailVerified(Boolean.TRUE);
+        genericAccount.setPhoneVerified(Boolean.FALSE);
         genericAccount.setCreatedOn(CREATED_ON);
         genericAccount.setHealthCode(HEALTH_CODE);
         genericAccount.setHealthId(HEALTH_ID);
@@ -1058,6 +1083,9 @@ public class HibernateAccountDaoTest {
         assertEquals(ACCOUNT_ID, hibernateAccount.getId());
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, hibernateAccount.getStudyId());
         assertEquals(EMAIL, hibernateAccount.getEmail());
+        assertEquals(PHONE, hibernateAccount.getPhone());
+        assertEquals(Boolean.TRUE, hibernateAccount.getEmailVerified());
+        assertEquals(Boolean.FALSE, hibernateAccount.getPhoneVerified());
         assertEquals(CREATED_ON.getMillis(), hibernateAccount.getCreatedOn().longValue());
         assertEquals(HEALTH_CODE, hibernateAccount.getHealthCode());
         assertEquals(HEALTH_ID, hibernateAccount.getHealthId());
@@ -1112,6 +1140,9 @@ public class HibernateAccountDaoTest {
         hibernateAccount.setId(ACCOUNT_ID);
         hibernateAccount.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         hibernateAccount.setEmail(EMAIL);
+        hibernateAccount.setPhone(PHONE);
+        hibernateAccount.setEmailVerified(Boolean.TRUE);
+        hibernateAccount.setPhoneVerified(Boolean.FALSE);
         hibernateAccount.setCreatedOn(CREATED_ON.getMillis());
         hibernateAccount.setHealthCode(HEALTH_CODE);
         hibernateAccount.setHealthId(HEALTH_ID);
@@ -1173,6 +1204,9 @@ public class HibernateAccountDaoTest {
         assertEquals(ACCOUNT_ID, genericAccount.getId());
         assertEquals(TestConstants.TEST_STUDY, genericAccount.getStudyIdentifier());
         assertEquals(EMAIL, genericAccount.getEmail());
+        assertEquals(PHONE.getNationalFormat(), genericAccount.getPhone().getNationalFormat());
+        assertEquals(Boolean.TRUE, genericAccount.getEmailVerified());
+        assertEquals(Boolean.FALSE, genericAccount.getPhoneVerified());
         assertEquals(HEALTH_CODE, genericAccount.getHealthCode());
         assertEquals(HEALTH_ID, genericAccount.getHealthId());
         assertEquals(FIRST_NAME, genericAccount.getFirstName());
@@ -1245,6 +1279,35 @@ public class HibernateAccountDaoTest {
     public void unmarshallAccountSummaryBlankAccount() {
         AccountSummary accountSummary = HibernateAccountDao.unmarshallAccountSummary(new HibernateAccount());
         assertNotNull(accountSummary);
+    }
+    
+    @Test
+    public void legacyAccountsWithoutEmailVerificationAreFixed() {
+        HibernateAccount hibernateAccount = new HibernateAccount();
+        hibernateAccount.setStatus(AccountStatus.ENABLED);
+        
+        Account account = HibernateAccountDao.unmarshallAccount(hibernateAccount);
+        assertEquals(AccountStatus.ENABLED, account.getStatus());
+        assertEquals(Boolean.TRUE, account.getEmailVerified());
+        
+        hibernateAccount = new HibernateAccount();
+        hibernateAccount.setStatus(AccountStatus.UNVERIFIED);
+        
+        account = HibernateAccountDao.unmarshallAccount(hibernateAccount);
+        assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
+        assertEquals(Boolean.FALSE, account.getEmailVerified());
+    }
+    
+    @Test
+    public void unmarshallAccountWithEmailVerifiedSet() {
+        HibernateAccount hibernateAccount = new HibernateAccount();
+        hibernateAccount.setStatus(AccountStatus.ENABLED);
+        // Because this is set, it will not be changed by legacy fix
+        hibernateAccount.setEmailVerified(Boolean.FALSE);
+        
+        Account account = HibernateAccountDao.unmarshallAccount(hibernateAccount);
+        assertEquals(AccountStatus.ENABLED, account.getStatus());
+        assertEquals(Boolean.FALSE, account.getEmailVerified());
     }
 
     private void verifyCreatedHealthCode() {
