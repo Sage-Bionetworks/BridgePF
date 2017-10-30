@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.itp;
 
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -10,12 +11,12 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 public class IntentToParticipate implements BridgeEntity {
     private final String study;
     private final String email;
-    private final String phone;
+    private final Phone phone;
     private final String subpopGuid;
     private final SharingScope scope;
     private final ConsentSignature consentSignature;
     
-    private IntentToParticipate(String study, String email, String phone, String subpopGuid,
+    private IntentToParticipate(String study, String email, Phone phone, String subpopGuid,
             SharingScope scope, ConsentSignature consentSignature) {
         this.study = study;
         this.email = email;
@@ -31,7 +32,7 @@ public class IntentToParticipate implements BridgeEntity {
     public String getEmail() {
         return email;
     }
-    public String getPhone() {
+    public Phone getPhone() {
         return phone;
     }
     public String getSubpopGuid() {
@@ -47,7 +48,7 @@ public class IntentToParticipate implements BridgeEntity {
     public static class Builder {
         private String study;
         private String email;
-        private String phone;
+        private Phone phone;
         private String subpopGuid;
         private SharingScope scope;
         private ConsentSignature consentSignature;
@@ -60,7 +61,7 @@ public class IntentToParticipate implements BridgeEntity {
             this.email = email;
             return this;
         }
-        public Builder withPhone(String phone) {
+        public Builder withPhone(Phone phone) {
             this.phone = phone;
             return this;
         }

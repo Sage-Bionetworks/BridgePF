@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -33,13 +34,16 @@ public class IntentToParticipateValidator implements Validator {
         if (StringUtils.isNotBlank(itp.getEmail())) {
             identifiers++;
         }
-        if (StringUtils.isNotBlank(itp.getPhone())) {
+        if (itp.getPhone() != null) {
             identifiers++;
         }
         if (identifiers == 0) {
             errors.reject("must include email or phone");
         } else if (identifiers > 1) {
             errors.reject("must include email or phone, but not both");
+        }
+        if (itp.getPhone() != null && !Phone.isValid(itp.getPhone())) {
+            errors.rejectValue("phone", "does not appear to be a phone number");
         }
         if (itp.getConsentSignature() == null) {
             errors.rejectValue("consentSignature", "is required");

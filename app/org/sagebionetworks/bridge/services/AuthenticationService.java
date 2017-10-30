@@ -266,7 +266,7 @@ public class AuthenticationService {
         }
     }
 
-    public IdentifierHolder signUp(Study study, StudyParticipant participant, boolean checkIntentToParticipate) {
+    public IdentifierHolder signUp(Study study, StudyParticipant participant, boolean checkForConsent) {
         checkNotNull(study);
         checkNotNull(participant);
         
@@ -275,9 +275,9 @@ public class AuthenticationService {
         try {
             // Since caller has no roles, no roles can be assigned on sign up.
             IdentifierHolder holder = participantService.createParticipant(study, NO_CALLER_ROLES, participant, true);
-            if (checkIntentToParticipate) {
-                // Check to see if this user has saved consent records for the study. Consent them now, so authentication 
-                // will not return 412 (consent required). Need to retrieve the full participant record (w/ healthCode) for this
+            if (checkForConsent) {
+                // Check to see if this user has saved consent records for the study. Consent them now, so sign in  
+                // will not return 412 (consent required). Need to retrieve the full participant record (w/ healthCode).
                 StudyParticipant updatedParticipant = participantService.getParticipant(study, holder.getIdentifier(), false);
                 intentService.registerIntentToParticipate(study, updatedParticipant);
             }

@@ -98,10 +98,10 @@ public class AuthenticationController extends BaseController {
         JsonNode node = requestToJSON(request());
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
         
-        boolean checkIntentToParticipate = JsonUtils.asBoolean(node, "hasConsent");
+        boolean checkForConsent = JsonUtils.asBoolean(node, "checkForConsent");
         
         Study study = getStudyOrThrowException(node);
-        authenticationService.signUp(study, participant, checkIntentToParticipate);
+        authenticationService.signUp(study, participant, checkForConsent);
         return createdResult("Signed up.");
     }
 

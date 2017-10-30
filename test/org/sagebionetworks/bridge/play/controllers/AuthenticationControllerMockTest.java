@@ -726,13 +726,59 @@ public class AuthenticationControllerMockTest {
     }
     
     @Test
-    public void signUpWithExplicitNoIntentToParticipate() {
-        throw new UnsupportedOperationException();
+    public void signUpWithExplicitNoIntentToParticipate() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(TEST_EMAIL).withPassword(TEST_PASSWORD).build();
+        
+        ObjectNode node = (ObjectNode)BridgeObjectMapper.get().valueToTree(participant);
+        node.put("study", TEST_STUDY_ID_STRING);
+        TestUtils.mockPlayContextWithJson(node.toString());
+        
+        Result result = controller.signUp();
+        TestUtils.assertResult(result, 201, "Signed up.");
+        
+        verify(authenticationService).signUp(eq(study), participantCaptor.capture(), eq(false));
+        StudyParticipant captured = participantCaptor.getValue();
+        assertEquals(TEST_EMAIL, captured.getEmail());
+        assertEquals(TEST_PASSWORD, captured.getPassword());
     }
 
     @Test
-    public void signUpWithExplicitIntentToParticipate() {
-        throw new UnsupportedOperationException();
+    public void signUpWithExplicitNoIntentToParticipateExplicit() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(TEST_EMAIL).withPassword(TEST_PASSWORD).build();
+        
+        ObjectNode node = (ObjectNode)BridgeObjectMapper.get().valueToTree(participant);
+        node.put("study", TEST_STUDY_ID_STRING);
+        node.put("checkForConsent", false);
+        TestUtils.mockPlayContextWithJson(node.toString());
+        
+        Result result = controller.signUp();
+        TestUtils.assertResult(result, 201, "Signed up.");
+        
+        verify(authenticationService).signUp(eq(study), participantCaptor.capture(), eq(false));
+        StudyParticipant captured = participantCaptor.getValue();
+        assertEquals(TEST_EMAIL, captured.getEmail());
+        assertEquals(TEST_PASSWORD, captured.getPassword());
+    }
+    
+    @Test
+    public void signUpWithExplicitIntentToParticipate() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(TEST_EMAIL).withPassword(TEST_PASSWORD).build();
+        
+        ObjectNode node = (ObjectNode)BridgeObjectMapper.get().valueToTree(participant);
+        node.put("study", TEST_STUDY_ID_STRING);
+        node.put("checkForConsent", true);
+        TestUtils.mockPlayContextWithJson(node.toString());
+        
+        Result result = controller.signUp();
+        TestUtils.assertResult(result, 201, "Signed up.");
+        
+        verify(authenticationService).signUp(eq(study), participantCaptor.capture(), eq(true));
+        StudyParticipant captured = participantCaptor.getValue();
+        assertEquals(TEST_EMAIL, captured.getEmail());
+        assertEquals(TEST_PASSWORD, captured.getPassword());
     }
     
     private void mockEmailRequestPayload() throws Exception {
