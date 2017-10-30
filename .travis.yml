@@ -31,7 +31,6 @@ branches:
   - uat
   - prod
 deploy:
-  matrix:
   - provider: elasticbeanstalk
     skip_cleanup: true
     bucket_name: org-sagebridge-bridgepf-deployment-bridgepf-$TRAVIS_BRANCH
