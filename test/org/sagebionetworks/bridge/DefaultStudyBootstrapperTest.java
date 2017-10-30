@@ -61,7 +61,7 @@ public class DefaultStudyBootstrapperTest {
         assertEquals("bridge-testing+consent@sagebase.org", study.getConsentNotificationEmail());
         assertEquals("bridge-testing+technical@sagebase.org", study.getTechnicalEmail());
         assertEquals("support@sagebridge.org", study.getSupportEmail());
-        assertEquals(Sets.newHashSet("phone", "can_be_recontacted"), study.getUserProfileAttributes());
+        assertEquals(Sets.newHashSet("can_be_recontacted"), study.getUserProfileAttributes());
         assertEquals(new PasswordPolicy(2, false, false, false, false), study.getPasswordPolicy());
         assertTrue(study.isEmailVerificationEnabled());
 

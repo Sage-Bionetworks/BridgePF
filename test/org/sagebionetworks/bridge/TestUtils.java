@@ -269,7 +269,7 @@ public class TestUtils {
                 .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
                 .withNotifyByEmail(true)
                 .withDataGroups(Sets.newHashSet("group1"))
-                .withAttributes(new ImmutableMap.Builder<String,String>().put("phone","123-456-7890").build())
+                .withAttributes(new ImmutableMap.Builder<String,String>().put("can_be_recontacted","true").build())
                 .withLanguages(TestUtils.newLinkedHashSet("fr")).build();
     }
     

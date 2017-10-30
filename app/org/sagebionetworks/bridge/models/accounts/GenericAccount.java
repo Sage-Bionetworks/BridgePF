@@ -32,6 +32,9 @@ public class GenericAccount implements Account {
     private final Map<SubpopulationGuid, List<ConsentSignature>> consentHistoryMap = new HashMap<>();
     private DateTime createdOn;
     private String email;
+    private Phone phone;
+    private Boolean emailVerified;
+    private Boolean phoneVerified;
     private String healthCode;
     private String healthId;
     private String id;
@@ -141,6 +144,42 @@ public class GenericAccount implements Account {
         this.email = email;
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public Phone getPhone() {
+        return phone;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setPhone(Phone phone) {
+        this.phone = phone;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public Boolean getEmailVerified() {
+        return emailVerified;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public void setEmailVerified(Boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public Boolean getPhoneVerified() {
+        return phoneVerified;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public void setPhoneVerified(Boolean phoneVerified) {
+        this.phoneVerified = phoneVerified;
+    }
+    
     /** {@inheritDoc} */
     @Override
     public List<ConsentSignature> getConsentSignatureHistory(SubpopulationGuid subpopGuid) {

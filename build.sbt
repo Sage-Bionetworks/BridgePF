@@ -65,6 +65,8 @@ libraryDependencies ++= Seq(
   // PDF, HTML
   "org.xhtmlrenderer" % "flying-saucer-pdf" % "9.0.7",
   "org.jsoup" % "jsoup" % "1.8.3",
+  // Google
+  "com.googlecode.libphonenumber" % "libphonenumber" % "8.8.4",
 
   // Test
   javaWs % Test,

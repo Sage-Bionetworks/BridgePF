@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
-import org.apache.commons.lang3.StringUtils;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
@@ -20,8 +21,8 @@ public class EmailVerificationValidator implements Validator {
     public void validate(Object obj, Errors errors) {
         EmailVerification email = (EmailVerification)obj;
 
-        if (StringUtils.isBlank(email.getSptoken())) {
-            errors.rejectValue("sptoken", "required");
+        if (isBlank(email.getSptoken())) {
+            errors.rejectValue("sptoken", "is required");
         }
     }
 

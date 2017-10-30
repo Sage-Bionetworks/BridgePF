@@ -8,13 +8,13 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 public final class SignIn implements BridgeEntity {
 
     private final String email;
-    private final String phone;
+    private final Phone phone;
     private final String password;
     private final String studyId;
     private final String token;
     private final String reauthToken;
     
-    private SignIn(String studyId, String email, String phone, String password, String token, String reauthToken) {
+    private SignIn(String studyId, String email, Phone phone, String password, String token, String reauthToken) {
         this.studyId = studyId;
         this.email = email;
         this.phone = phone;
@@ -31,7 +31,7 @@ public final class SignIn implements BridgeEntity {
         return email;
     }
     
-    public String getPhone() {
+    public Phone getPhone() {
         return phone;
     }
 
@@ -50,7 +50,7 @@ public final class SignIn implements BridgeEntity {
     public static class Builder {
         private String username;
         private String email;
-        private String phone;
+        private Phone phone;
         private String password;
         private String studyId;
         private String token;
@@ -64,7 +64,7 @@ public final class SignIn implements BridgeEntity {
             this.email = email;
             return this;
         }
-        public Builder withPhone(String phone) {
+        public Builder withPhone(Phone phone) {
             this.phone = phone;
             return this;
         }

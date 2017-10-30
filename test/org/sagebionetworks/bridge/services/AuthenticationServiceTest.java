@@ -296,7 +296,7 @@ public class AuthenticationServiceTest {
             assertTrue(persisted.isNotifyByEmail());
             assertNotNull(persisted.getId());
             assertEquals(participant.getDataGroups(), persisted.getDataGroups());
-            assertEquals(participant.getAttributes().get("phone"), persisted.getAttributes().get("phone"));
+            assertEquals(participant.getAttributes().get("can_be_recontacted"), persisted.getAttributes().get("can_be_recontacted"));
             assertEquals(participant.getLanguages(), persisted.getLanguages());
         } finally {
             if (holder != null) {

@@ -43,6 +43,6 @@ deploy:
       prod: bridgepf-prod
     on:
       all_branches: true
-    access_key_id: AKIAIG6T67NMROEIMC7A
+    access_key_id: AKIAJ6YWVFOX3GHDXVRQ
     secret_access_key:
-      secure: gKFHd4igRV5NxvlaDAJFzoiGcr+TEulbd3GQU2vqHjGZmNveQ0ilbbA5ycDOekxfcK6ucnOJGroEOGpqJe9sRGnXmryZ3uptSGH4PiGELtBRF1X2CGsT0oJa629v5qKtkvwBScPz4/kSiukcKrZwMqlXYYQR1exhRskOoa1GEbw=
+      secure: Jod2Jr1sj/ZqoK32+xkUTSlFhQbtUGTXkGmETCr132nEcCFK71ecysXA/ZsjxsJJDYUAP+xzMqs/tH0xq5YldW96yI0yzq9RH4lHaYJBVxp5LwLlmlGlSQ+tVrUxt4VW6djV/GtmVDKHjin10PTUjQp9WiLOBOOaf69Y+JxJ26I=

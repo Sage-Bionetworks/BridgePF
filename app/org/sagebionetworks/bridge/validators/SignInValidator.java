@@ -11,6 +11,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.util.EnumSet;
 
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 
 import org.springframework.validation.Errors;
@@ -66,14 +67,18 @@ public class SignInValidator implements Validator {
         if (requiredFields.contains(PASSWORD) && isBlank(signIn.getPassword())) {
             errors.rejectValue("password", "is required");
         }
-        if (requiredFields.contains(PHONE) && isBlank(signIn.getPhone())) {
-            errors.rejectValue("phone", "is required");
-        }
         if (requiredFields.contains(TOKEN) && isBlank(signIn.getToken())) {
             errors.rejectValue("token", "is required");
         }
         if (requiredFields.contains(REAUTH) && isBlank(signIn.getReauthToken())) {
             errors.rejectValue("reauthToken", "is required");
+        }
+        if (requiredFields.contains(PHONE)) {
+            if (signIn.getPhone() == null) {
+                errors.rejectValue("phone", "is required");
+            } else if (!Phone.isValid(signIn.getPhone())) {
+                errors.rejectValue("phone", "does not appear to be a phone number");
+            }
         }
     }
 

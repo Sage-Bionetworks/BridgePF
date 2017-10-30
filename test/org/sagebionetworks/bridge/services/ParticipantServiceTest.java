@@ -66,6 +66,7 @@ import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -88,14 +89,14 @@ public class ParticipantServiceTest {
     private static final Set<String> STUDY_DATA_GROUPS = BridgeUtils.commaListToOrderedSet("group1,group2");
     private static final long CONSENT_PUBLICATION_DATE = DateTime.now().getMillis();
     private static final Study STUDY = new DynamoStudy();
-    private static final String PHONE = "phone";
+    private static final Phone PHONE = new Phone("4082585869", "US");
     static {
         STUDY.setIdentifier("test-study");
         STUDY.setHealthCodeExportEnabled(true);
         STUDY.setUserProfileAttributes(STUDY_PROFILE_ATTRS);
         STUDY.setDataGroups(STUDY_DATA_GROUPS);
         STUDY.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        STUDY.getUserProfileAttributes().add(PHONE);
+        STUDY.getUserProfileAttributes().add("can_be_recontacted");
     }
     private static final String EXTERNAL_ID = "externalId";
     private static final String HEALTH_CODE = "healthCode";
@@ -111,12 +112,13 @@ public class ParticipantServiceTest {
     private static final String EMAIL = "email@email.com";
     private static final String ID = "ASDF";
     private static final DateTimeZone USER_TIME_ZONE = DateTimeZone.forOffsetHours(-3);
-    private static final Map<String,String> ATTRS = new ImmutableMap.Builder<String,String>().put(PHONE,"123456789").build();
+    private static final Map<String,String> ATTRS = new ImmutableMap.Builder<String,String>().put("can_be_recontacted","true").build();
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create(STUDY.getIdentifier());
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder()
             .withFirstName(FIRST_NAME)
             .withLastName(LAST_NAME)
             .withEmail(EMAIL)
+            .withPhone(PHONE)
             .withId(ID)
             .withPassword(PASSWORD)
             .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
@@ -221,7 +223,7 @@ public class ParticipantServiceTest {
     
     private void mockHealthCodeAndAccountRetrieval() {
         when(account.getId()).thenReturn(ID);
-        when(accountDao.constructAccount(STUDY, EMAIL, PASSWORD)).thenReturn(account);
+        when(accountDao.constructAccount(STUDY, EMAIL, PHONE, PASSWORD)).thenReturn(account);
         when(accountDao.createAccount(same(STUDY), same(account), anyBoolean())).thenReturn(ID);
         when(accountDao.getAccount(STUDY, ID)).thenReturn(account);
         when(account.getHealthCode()).thenReturn(HEALTH_CODE);
@@ -240,7 +242,7 @@ public class ParticipantServiceTest {
         verify(externalIdService).reserveExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
         verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
         
-        verify(accountDao).constructAccount(STUDY, EMAIL, PASSWORD);
+        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PASSWORD);
         // suppress email (true) == sendEmail (false)
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
@@ -260,7 +262,7 @@ public class ParticipantServiceTest {
         Account account = accountCaptor.getValue();
         verify(account).setFirstName(FIRST_NAME);
         verify(account).setLastName(LAST_NAME);
-        verify(account).setAttribute(PHONE, "123456789");
+        verify(account).setAttribute("can_be_recontacted", "true");
         verify(account).setRoles(USER_ROLES);
         verify(account).setClientData(TestUtils.getClientData());
         // Not called on create
@@ -285,7 +287,7 @@ public class ParticipantServiceTest {
         } catch(EntityAlreadyExistsException e) {
         }
         verify(externalIdService).reserveExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
-        verify(accountDao).constructAccount(STUDY, EMAIL, PASSWORD);
+        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PASSWORD);
         verifyNoMoreInteractions(optionsService);
     }
     
@@ -373,6 +375,9 @@ public class ParticipantServiceTest {
         when(account.getFirstName()).thenReturn(FIRST_NAME);
         when(account.getLastName()).thenReturn(LAST_NAME);
         when(account.getEmail()).thenReturn(EMAIL);
+        when(account.getPhone()).thenReturn(PHONE);
+        when(account.getEmailVerified()).thenReturn(Boolean.TRUE);
+        when(account.getPhoneVerified()).thenReturn(Boolean.FALSE);
         when(account.getId()).thenReturn(ID);
         when(account.getStatus()).thenReturn(AccountStatus.DISABLED);
         when(account.getCreatedOn()).thenReturn(createdOn);
@@ -420,6 +425,9 @@ public class ParticipantServiceTest {
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, participant.getSharingScope());
         assertEquals(HEALTH_CODE, participant.getHealthCode());
         assertEquals(EMAIL, participant.getEmail());
+        assertEquals(PHONE.getNationalFormat(), participant.getPhone().getNationalFormat());
+        assertEquals(Boolean.TRUE, participant.getEmailVerified());
+        assertEquals(Boolean.FALSE, participant.getPhoneVerified());
         assertEquals(ID, participant.getId());
         assertEquals(AccountStatus.DISABLED, participant.getStatus());
         assertEquals(createdOn, participant.getCreatedOn());
@@ -493,7 +501,7 @@ public class ParticipantServiceTest {
         Account account = accountCaptor.getValue();
         verify(account).setFirstName(FIRST_NAME);
         verify(account).setLastName(LAST_NAME);
-        verify(account).setAttribute(PHONE, "123456789");
+        verify(account).setAttribute("can_be_recontacted", "true");
         verify(account).setClientData(TestUtils.getClientData());
     }
     
@@ -931,7 +939,7 @@ public class ParticipantServiceTest {
         
         participantService.createParticipant(STUDY, callerRoles, participant, false);
         
-        verify(accountDao).constructAccount(STUDY, EMAIL, PASSWORD);
+        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PASSWORD);
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
         Account account = accountCaptor.getValue();
         
@@ -966,7 +974,7 @@ public class ParticipantServiceTest {
         
         participantService.createParticipant(STUDY, callerRoles, participant, false);
         
-        verify(accountDao).constructAccount(STUDY, EMAIL, PASSWORD);
+        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PASSWORD);
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
         Account account = accountCaptor.getValue();
         

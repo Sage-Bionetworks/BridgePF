@@ -230,8 +230,8 @@ public class AuthenticationServiceMockTest {
         assertEquals(REAUTH_TOKEN, retSession.getReauthToken());
         verify(accountDao, never()).changePassword(eq(account), any());
         verify(accountDao).getAccountAfterAuthentication(study, RECIPIENT_EMAIL);
+        verify(accountDao).verifyEmail(account);
         verify(cacheProvider).removeString(CACHE_KEY);
-        assertEquals(AccountStatus.ENABLED, account.getStatus());
     }
     
     @Test(expected = AuthenticationFailedException.class)

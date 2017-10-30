@@ -177,9 +177,7 @@ public class AuthenticationService {
         if (account.getStatus() == AccountStatus.DISABLED) {
             throw new AccountDisabledException();
         } else if (account.getStatus() == AccountStatus.UNVERIFIED) {
-            // If the user accesses email sign in, we can verify the email address.
-            account.setStatus(AccountStatus.ENABLED);
-            accountDao.updateAccount(account);            
+            accountDao.verifyEmail(account);
         }
 
         UserSession session = getSessionFromAccount(study, context, account);

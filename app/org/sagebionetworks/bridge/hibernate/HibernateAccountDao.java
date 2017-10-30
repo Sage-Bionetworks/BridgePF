@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -40,6 +42,7 @@ import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -85,7 +88,43 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public void verifyEmail(EmailVerification verification) {
-        accountWorkflowService.verifyEmail(verification);
+        Account account = accountWorkflowService.verifyEmail(verification);
+        verifyEmail(account);
+    }
+    
+    /**
+     * Mark the email address as verified and enable the account if it is in the unverified state. 
+     * This method assumes some logic has executed that proves the user has control of the email 
+     * address.
+     */
+    @Override
+    public void verifyEmail(Account account) {
+        checkNotNull(account);
+        
+        // Do not modify the account if it is disabled (all email verification workflows are 
+        // user triggered, and disabled means that a user cannot use or change an account).
+        if (account.getStatus() == AccountStatus.DISABLED) {
+            return;
+        }
+        boolean shouldUpdateEmailVerified = (account.getEmailVerified() != Boolean.TRUE);
+        boolean shouldUpdateStatus = (account.getStatus() == AccountStatus.UNVERIFIED);
+        
+        if (shouldUpdateEmailVerified || shouldUpdateStatus) {
+            HibernateAccount hibernateAccount = hibernateHelper.getById(HibernateAccount.class, account.getId());
+            if (hibernateAccount == null) {
+                throw new EntityNotFoundException(Account.class);
+            }
+            if (shouldUpdateEmailVerified) {
+                account.setEmailVerified(Boolean.TRUE);
+                hibernateAccount.setEmailVerified(Boolean.TRUE);
+            }
+            if (shouldUpdateStatus) {
+                account.setStatus(AccountStatus.ENABLED);
+                hibernateAccount.setStatus(AccountStatus.ENABLED);
+            }
+            hibernateAccount.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+            hibernateHelper.update(hibernateAccount);
+        }
     }
 
     /** {@inheritDoc} */
@@ -199,9 +238,9 @@ public class HibernateAccountDao implements AccountDao {
     
     /** {@inheritDoc} */
     @Override
-    public Account constructAccount(Study study, String email, String password) {
+    public Account constructAccount(Study study, String email, Phone phone, String password) {
         HealthId healthId = healthCodeService.createMapping(study.getStudyIdentifier());
-        return constructAccountForMigration(study, email, password, healthId);
+        return constructAccountForMigration(study, email, phone, password, healthId);
     }
 
     /**
@@ -209,11 +248,14 @@ public class HibernateAccountDao implements AccountDao {
      * of creating it ourselves. This allows us to create an account in both MySQL and Stormpath with the same Health
      * Code mapping.
      */
-    public Account constructAccountForMigration(Study study, String email, String password, HealthId healthId) {
+    public Account constructAccountForMigration(Study study, String email, Phone phone, String password, HealthId healthId) {
         // Set basic params from inputs.
         GenericAccount account = new GenericAccount();
         account.setStudyId(study.getStudyIdentifier());
         account.setEmail(email);
+        account.setPhone(phone);
+        account.setEmailVerified(Boolean.FALSE);
+        account.setPhoneVerified(Boolean.FALSE);
         account.setHealthId(healthId);
 
         // Hash password.
@@ -276,13 +318,16 @@ public class HibernateAccountDao implements AccountDao {
         String accountId = account.getId();
         HibernateAccount accountToUpdate = marshallAccount(account);
 
-        // Can't change study, email, createdOn, or passwordModifiedOn.
+        // Can't change study, email, phone, emailVerified, phoneVerified, createdOn, or passwordModifiedOn.
         HibernateAccount persistedAccount = hibernateHelper.getById(HibernateAccount.class, accountId);
         if (persistedAccount == null) {
             throw new EntityNotFoundException(Account.class, "Account " + accountId + " not found");
         }
         accountToUpdate.setStudyId(persistedAccount.getStudyId());
         accountToUpdate.setEmail(persistedAccount.getEmail());
+        accountToUpdate.setPhone(persistedAccount.getPhone());
+        accountToUpdate.setEmailVerified(persistedAccount.getEmailVerified());
+        accountToUpdate.setPhoneVerified(persistedAccount.getPhoneVerified());
         accountToUpdate.setCreatedOn(persistedAccount.getCreatedOn());
         accountToUpdate.setPasswordModifiedOn(persistedAccount.getPasswordModifiedOn());
 
@@ -457,6 +502,9 @@ public class HibernateAccountDao implements AccountDao {
         HibernateAccount hibernateAccount = new HibernateAccount();
         hibernateAccount.setId(genericAccount.getId());
         hibernateAccount.setEmail(genericAccount.getEmail());
+        hibernateAccount.setPhone(genericAccount.getPhone());
+        hibernateAccount.setEmailVerified(genericAccount.getEmailVerified());
+        hibernateAccount.setPhoneVerified(genericAccount.getPhoneVerified());
         hibernateAccount.setHealthCode(genericAccount.getHealthCode());
         hibernateAccount.setHealthId(genericAccount.getHealthId());
         hibernateAccount.setFirstName(genericAccount.getFirstName());
@@ -518,7 +566,7 @@ public class HibernateAccountDao implements AccountDao {
 
         return hibernateAccount;
     }
-
+    
     // Callers of AccountDao assume that an Account will always a health code and health ID. All accounts created
     // through the DAO will automatically have health code and ID populated, but accounts created in the DB directly
     // are left in a bad state. This method validates the health code mapping on a HibernateAccount and updates it as
@@ -551,6 +599,9 @@ public class HibernateAccountDao implements AccountDao {
         GenericAccount account = new GenericAccount();
         account.setId(hibernateAccount.getId());
         account.setEmail(hibernateAccount.getEmail());
+        account.setPhone(hibernateAccount.getPhone());
+        account.setEmailVerified(hibernateAccount.getEmailVerified());
+        account.setPhoneVerified(hibernateAccount.getPhoneVerified());
         account.setFirstName(hibernateAccount.getFirstName());
         account.setLastName(hibernateAccount.getLastName());
         account.setPasswordAlgorithm(hibernateAccount.getPasswordAlgorithm());
@@ -560,6 +611,16 @@ public class HibernateAccountDao implements AccountDao {
         account.setStatus(hibernateAccount.getStatus());
         account.setRoles(hibernateAccount.getRoles());
         account.setVersion(hibernateAccount.getVersion());
+        
+        // For accounts prior to the introduction of the email/phone verification flags, where 
+        // the flag was not set on creation or verification of the email address, return the right value.
+        if (account.getEmailVerified() == null) {
+            if (account.getStatus() == AccountStatus.ENABLED) {
+                account.setEmailVerified(Boolean.TRUE);
+            } else if (account.getStatus() == AccountStatus.UNVERIFIED) {
+                account.setEmailVerified(Boolean.FALSE);
+            }
+        }
         
         if (hibernateAccount.getClientData() != null) {
             try {
@@ -632,8 +693,8 @@ public class HibernateAccountDao implements AccountDao {
         }
 
         // Unmarshall single account
-        return new AccountSummary(hibernateAccount.getFirstName(),
-                hibernateAccount.getLastName(), hibernateAccount.getEmail(), hibernateAccount.getId(), createdOn,
-                hibernateAccount.getStatus(), studyId);
+        return new AccountSummary(hibernateAccount.getFirstName(), hibernateAccount.getLastName(),
+                hibernateAccount.getEmail(), hibernateAccount.getId(), createdOn, hibernateAccount.getStatus(),
+                studyId);
     }
 }

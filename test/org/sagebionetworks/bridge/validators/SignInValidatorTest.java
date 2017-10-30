@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 
 public class SignInValidatorTest {
@@ -13,8 +14,8 @@ public class SignInValidatorTest {
     private static final String TOKEN = "token";
     private static final String PASSWORD = "password";
     private static final String EMAIL = "email@email.com";
-    private static final String PHONE = "+1234567890";
     private static final String REAUTH_TOKEN = "reauthToken";
+    private static final Phone PHONE = new Phone("4082588569","US");
     private static final SignIn EMPTY_SIGNIN = new SignIn.Builder().build();
 
     @Test
@@ -54,10 +55,17 @@ public class SignInValidatorTest {
         Validate.entityThrowingException(SignInValidator.PHONE_SIGNIN, signIn);
     }
     @Test
-    public void phoneSignInNoStudy() {
+    public void phoneSignInInvalid() {
         assertValidatorMessage(SignInValidator.PHONE_SIGNIN, EMPTY_SIGNIN, "study", "is required");
         assertValidatorMessage(SignInValidator.PHONE_SIGNIN, EMPTY_SIGNIN, "phone", "is required");
         assertValidatorMessage(SignInValidator.PHONE_SIGNIN, EMPTY_SIGNIN, "token", "is required");
+    }
+    @Test
+    public void phoneSignInInvalidPhoneFields() {
+        SignIn missingPhoneFields = new SignIn.Builder().withPhone(new Phone(null,null)).build();
+        assertValidatorMessage(SignInValidator.PHONE_SIGNIN, missingPhoneFields, "study", "is required");
+        assertValidatorMessage(SignInValidator.PHONE_SIGNIN, missingPhoneFields, "phone", "does not appear to be a phone number");
+        assertValidatorMessage(SignInValidator.PHONE_SIGNIN, missingPhoneFields, "token", "is required");
     }
     @Test
     public void passwordSignInOK() {
