@@ -63,6 +63,7 @@ public class AuthenticationService {
     private StudyService studyService;
     private PasswordResetValidator passwordResetValidator;
     private AccountWorkflowService accountWorkflowService;
+    private IntentService intentService;
     private final AtomicLong emailSignInRequestInMillis = new AtomicLong(200L);
 
     @Autowired
@@ -104,6 +105,10 @@ public class AuthenticationService {
     @Autowired
     final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
         this.accountWorkflowService = accountWorkflowService;
+    }
+    @Autowired
+    final void setIntentToParticipateService(IntentService intentService) {
+        this.intentService = intentService;
     }
     final AtomicLong getEmailSignInRequestInMillis() {
         return emailSignInRequestInMillis;
@@ -263,7 +268,7 @@ public class AuthenticationService {
         }
     }
 
-    public IdentifierHolder signUp(Study study, StudyParticipant participant) {
+    public IdentifierHolder signUp(Study study, StudyParticipant participant, boolean checkIntentToParticipate) {
         checkNotNull(study);
         checkNotNull(participant);
         
@@ -271,7 +276,14 @@ public class AuthenticationService {
         
         try {
             // Since caller has no roles, no roles can be assigned on sign up.
-            return participantService.createParticipant(study, NO_CALLER_ROLES, participant, true);
+            IdentifierHolder holder = participantService.createParticipant(study, NO_CALLER_ROLES, participant, true);
+            if (checkIntentToParticipate) {
+                // Check to see if this user has saved consent records for the study. Consent them now, so authentication 
+                // will not return 412 (consent required). Need to retrieve the full participant record (w/ healthCode) for this
+                StudyParticipant updatedParticipant = participantService.getParticipant(study, holder.getIdentifier(), false);
+                intentService.registerIntentToParticipate(study, updatedParticipant);
+            }
+            return holder;
         } catch(EntityAlreadyExistsException e) {
             // Suppress this and send an email to notify the user that the account already exists. From 
             // this call, we simply return a 200 the same as any other sign up. Otherwise the response 

@@ -219,6 +219,9 @@ POST   /v3/appconfigs        @org.sagebionetworks.bridge.play.controllers.AppCon
 POST   /v3/appconfigs/:guid  @org.sagebionetworks.bridge.play.controllers.AppConfigController.updateAppConfig(guid: String)
 DELETE /v3/appconfigs/:guid  @org.sagebionetworks.bridge.play.controllers.AppConfigController.deleteAppConfig(guid: String)
 
+# Intent to Participant (ITP)
+POST   /v3/itp @org.sagebionetworks.bridge.play.controllers.IntentController.submitIntentToParticipate
+
 # Bridge Exporter
 POST /v3/recordexportstatuses      @org.sagebionetworks.bridge.play.controllers.HealthDataController.updateRecordsStatus
 POST /v3/recordExportStatuses      @org.sagebionetworks.bridge.play.controllers.HealthDataController.updateRecordsStatus

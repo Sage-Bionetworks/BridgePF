@@ -306,6 +306,46 @@ public class CacheProvider {
         }
     }
     
+    public <T> T getObject(String cacheKey, Class<? extends T> clazz) {
+        try {
+            String ser = newJedisOps.get(cacheKey);
+            if (ser == null) {
+                return null;
+            }
+            try {
+                return bridgeObjectMapper.readValue(ser, clazz);
+            } catch (IOException ex) {
+                throw new BridgeServiceException("Error parsing JSON");
+            }
+        } catch (Throwable e) {
+            promptToStartRedisIfLocal(e);
+            throw new BridgeServiceException(e);
+        }
+        
+    }
+    
+    public <T> void setObject(String cacheKey, T value, int expireInSeconds) {
+        try {
+            String ser = BridgeObjectMapper.get().writeValueAsString(value);
+            String result = newJedisOps.setex(cacheKey, expireInSeconds, ser);
+            if (!"OK".equals(result)) {
+                throw new BridgeServiceException("View storage error");
+            }
+        } catch (Throwable e) {
+            promptToStartRedisIfLocal(e);
+            throw new BridgeServiceException(e);
+        }
+    }
+    
+    public void removeObject(String cacheKey) {
+        try {
+            oldJedisOps.del(cacheKey);
+        } catch(Throwable e) {
+            promptToStartRedisIfLocal(e);
+            throw new BridgeServiceException(e);
+        }
+    }
+    
     private String getWithFallback(String key, boolean expireIfFound) {
         String ser = newJedisOps.get(key);
         if (ser != null) {

@@ -95,11 +95,13 @@ public class AuthenticationController extends BaseController {
     }
 
     public Result signUp() throws Exception {
-        JsonNode json = requestToJSON(request());
+        JsonNode node = requestToJSON(request());
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
         
-        Study study = getStudyOrThrowException(json);
-        authenticationService.signUp(study, participant);
+        boolean checkIntentToParticipate = JsonUtils.asBoolean(node, "hasConsent");
+        
+        Study study = getStudyOrThrowException(node);
+        authenticationService.signUp(study, participant, checkIntentToParticipate);
         return createdResult("Signed up.");
     }
 

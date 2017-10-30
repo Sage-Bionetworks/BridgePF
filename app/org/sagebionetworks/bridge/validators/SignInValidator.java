@@ -9,16 +9,12 @@ import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFiel
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
-import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.Set;
 
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
-
-import com.google.common.collect.Sets;
 
 public class SignInValidator implements Validator {
     

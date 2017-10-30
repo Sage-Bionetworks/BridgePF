@@ -333,7 +333,7 @@ public class AuthenticationControllerMockTest {
         Result result = controller.signUp();
         TestUtils.assertResult(result, 201, "Signed up.");
         
-        verify(authenticationService).signUp(eq(study), participantCaptor.capture());
+        verify(authenticationService).signUp(eq(study), participantCaptor.capture(), eq(false));
         
         StudyParticipant persistedParticipant = participantCaptor.getValue();
         assertEquals(originalParticipant.getFirstName(), persistedParticipant.getFirstName());
@@ -724,7 +724,17 @@ public class AuthenticationControllerMockTest {
         TestUtils.mockPlayContextWithJson(new Email((StudyIdentifier) null, TEST_EMAIL));
         controller.requestResetPassword();
     }
+    
+    @Test
+    public void signUpWithExplicitNoIntentToParticipate() {
+        throw new UnsupportedOperationException();
+    }
 
+    @Test
+    public void signUpWithExplicitIntentToParticipate() {
+        throw new UnsupportedOperationException();
+    }
+    
     private void mockEmailRequestPayload() throws Exception {
         Map<String,String[]> headers = new ImmutableMap.Builder<String,String[]>()
                 .put("User-Agent", new String[]{"App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4"}).build();

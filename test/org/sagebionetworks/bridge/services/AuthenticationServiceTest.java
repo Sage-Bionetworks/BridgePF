@@ -29,6 +29,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.DefaultStudyBootstrapper;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
@@ -51,7 +52,9 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
+import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -96,6 +99,9 @@ public class AuthenticationServiceTest {
     @Resource
     private AccountWorkflowService accountWorkflowService;
     
+    @Resource
+    private IntentService intentService;
+    
     private Study study;
     
     private TestUser testUser;
@@ -130,6 +136,42 @@ public class AuthenticationServiceTest {
     public void signInInvalidCredentials() throws Exception {
         authService.signIn(study, TEST_CONTEXT,
                 new SignIn.Builder().withStudy(study.getIdentifier()).withEmail("foobar").withPassword("bar").build());
+    }
+    
+    @Test
+    public void signUpWithIntentToParticipate() throws Exception {
+        String email = TestUtils.makeRandomTestEmail(AuthenticationServiceTest.class);
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(email)
+                .withPassword("P@ssword`1").build();
+        IdentifierHolder holder = null;
+        try {
+            IntentToParticipate itp = new IntentToParticipate.Builder()
+                    .withEmail(email)
+                    .withScope(SharingScope.NO_SHARING)
+                    .withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                    .withConsentSignature(new ConsentSignature.Builder()
+                            .withName("Name")
+                            .withBirthdate("1970-01-01").build())
+                    .withSubpopGuid(TestConstants.TEST_STUDY_IDENTIFIER).build();
+            intentService.submitIntentToParticipate(itp);
+            
+            study.setEmailVerificationEnabled(false); // cheating here to avoid having email confirmation path.
+            holder = authService.signUp(study, participant, true);
+            
+            CriteriaContext context = new CriteriaContext.Builder()
+                    .withStudyIdentifier(TestConstants.TEST_STUDY)
+                    .build();
+            
+            // You should be able to sign in, and be consented. No exception.
+            SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER).withEmail(email)
+                    .withPassword("P@ssword`1").build();
+            authService.signIn(study, context, signIn);
+        } finally {
+            if (holder != null) {
+                userAdminService.deleteUser(study, holder.getIdentifier());
+            }
+        }
     }
 
     @Test
@@ -243,7 +285,7 @@ public class AuthenticationServiceTest {
         StudyParticipant participant = TestUtils.getStudyParticipant(AuthenticationServiceTest.class);
         IdentifierHolder holder = null;
         try {
-            holder = authService.signUp(study, participant);
+            holder = authService.signUp(study, participant, false);
             
             StudyParticipant persisted = participantService.getParticipant(study, holder.getIdentifier(), false);
             assertEquals(participant.getFirstName(), persisted.getFirstName());
@@ -272,7 +314,7 @@ public class AuthenticationServiceTest {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withEmail(email).withPassword("P@ssword1").withDataGroups(groups).build();
 
-        IdentifierHolder holder = authService.signUp(study, participant);
+        IdentifierHolder holder = authService.signUp(study, participant, false);
         
         Account account = accountDao.getAccount(study, holder.getIdentifier());
         
@@ -312,7 +354,7 @@ public class AuthenticationServiceTest {
         authService.setAccountWorkflowService(accountWorkflowServiceSpy);
 
         // Second sign up
-        authService.signUp(testUser.getStudy(), testUser.getStudyParticipant());
+        authService.signUp(testUser.getStudy(), testUser.getStudyParticipant(), false);
         
         ArgumentCaptor<Email> emailCaptor = ArgumentCaptor.forClass(Email.class);
         verify(accountWorkflowServiceSpy).notifyAccountExists(eq(testUser.getStudy()), emailCaptor.capture());
@@ -420,7 +462,7 @@ public class AuthenticationServiceTest {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withEmail(email).withPassword("P@ssword`1").withRoles(roles).build();
         
-        IdentifierHolder idHolder = authService.signUp(study, participant);
+        IdentifierHolder idHolder = authService.signUp(study, participant, false);
         
         participant = participantService.getParticipant(study, idHolder.getIdentifier(), false);
         assertTrue(participant.getRoles().isEmpty());

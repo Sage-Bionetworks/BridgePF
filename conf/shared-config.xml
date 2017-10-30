@@ -206,4 +206,8 @@
     <bean id="AppConfigControllerProxied" parent="proxiedController">
         <property name="targetName" value="appConfigController" />
     </bean>
+    
+    <bean id="ITPControllerProxied" parent="proxiedController">
+        <property name="targetName" value="itpController" />
+    </bean>
 </beans>
