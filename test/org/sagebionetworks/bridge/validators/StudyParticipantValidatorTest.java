@@ -15,6 +15,7 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -173,6 +174,44 @@ public class StudyParticipantValidatorTest {
         assertCorrectMessage(withDataGroup("squirrel"), "dataGroups", "dataGroups 'squirrel' is not defined for study (use group1, group2, bluebell)");
     }
     
+    @Test
+    public void validatePhoneRegionRequired() {
+        validator = new StudyParticipantValidator(study, true);
+        assertCorrectMessage(withPhone("1234567890", null), "phone", "phone does not appear to be a phone number");
+    }
+    
+    @Test
+    public void validatePhoneRegionIsCode() {
+        validator = new StudyParticipantValidator(study, true);
+        assertCorrectMessage(withPhone("1234567890", "esg"), "phone", "phone does not appear to be a phone number");
+    }
+    
+    @Test
+    public void validatePhoneRequired() {
+        validator = new StudyParticipantValidator(study, true);
+        assertCorrectMessage(withPhone(null, "US"), "phone", "phone does not appear to be a phone number");
+    }
+    
+    @Test
+    public void validatePhonePattern() {
+        validator = new StudyParticipantValidator(study, true);
+        assertCorrectMessage(withPhone("234567890", "US"), "phone", "phone does not appear to be a phone number");
+    }
+    
+    @Test
+    public void validatePhone() {
+        validator = new StudyParticipantValidator(study, true);
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
+                .withPassword("pAssword1@").withPhone(new Phone("4082588569","US")).build();
+        Validate.entityThrowingException(validator, participant);
+    }
+    
+    @Test
+    public void validateTotallyWrongPhone() {
+        validator = new StudyParticipantValidator(study, true);
+        assertCorrectMessage(withPhone("this isn't a phone number", "US"), "phone", "phone does not appear to be a phone number");
+    }
+    
     private void assertCorrectMessage(StudyParticipant participant, String fieldName, String message) {
         try {
             Validate.entityThrowingException(validator, participant);
@@ -183,6 +222,10 @@ public class StudyParticipantValidatorTest {
             String error = errors.get(0);
             assertEquals(message, error);
         }
+    }
+    
+    private StudyParticipant withPhone(String phone, String phoneRegion) {
+        return new StudyParticipant.Builder().withPhone(new Phone(phone, phoneRegion)).build();
     }
     
     private StudyParticipant withPassword(String password) {

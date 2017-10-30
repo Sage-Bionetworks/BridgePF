@@ -7,6 +7,7 @@ import java.util.Set;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
+import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -21,6 +22,7 @@ import javax.persistence.Version;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 
 /** MySQL implementation of accounts via Hibernate. */
 // Note: We use a separate class entirely and marshall it to/from GenericAccount instead of using the Account interface
@@ -33,6 +35,9 @@ public class HibernateAccount {
     private String id;
     private String studyId;
     private String email;
+    private Phone phone;
+    private Boolean emailVerified;
+    private Boolean phoneVerified;
     private Map<String, String> attributes;
     private Map<HibernateAccountConsentKey, HibernateAccountConsent> consents;
     private Long createdOn;
@@ -62,8 +67,8 @@ public class HibernateAccount {
      * construct this object with just the indicated fields using a select clause, without also 
      * specifying a constructor.
      */
-    public HibernateAccount(Long createdOn, String studyId, String firstName, String lastName, String email, String id,
-            AccountStatus status) {
+    public HibernateAccount(Long createdOn, String studyId, String firstName, String lastName, String email,
+            String id, AccountStatus status) {
         this.createdOn = createdOn;
         this.studyId = studyId;
         this.firstName = firstName;
@@ -105,6 +110,37 @@ public class HibernateAccount {
     /** @see #getEmail */
     public void setEmail(String email) {
         this.email = email;
+    }
+    
+    /** Account phone number, as entered by the user. */
+    @Embedded
+    public Phone getPhone() {
+        return phone;
+    }
+
+    /** @see #getPhone */
+    public void setPhone(Phone phone) {
+        this.phone = phone;
+    }
+
+    /** Has the email address been verified to be under the control of the account holder. */
+    public void setEmailVerified(Boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+    
+    /** @see #getEmailVerified */
+    public Boolean getEmailVerified() {
+        return emailVerified;
+    }
+    
+    /** Has the phone number been verified to be under the control of the account holder. */
+    public void setPhoneVerified(Boolean phoneVerified) {
+        this.phoneVerified = phoneVerified;
+    }
+
+    /** @see #getPhoneVerified */
+    public Boolean getPhoneVerified() {
+        return phoneVerified;
     }
 
     /** Map of custom account attributes. Never returns null. */

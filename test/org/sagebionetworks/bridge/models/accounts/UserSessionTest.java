@@ -185,4 +185,22 @@ public class UserSessionTest {
         // Again, we don't count optional consents, only required consents.
         assertTrue(session.hasSignedMostRecentConsent());
     }
+    
+    @Test
+    public void emailVerifiedStatusCorrectlySetForSerializedSessions() throws Exception {
+        // If a persisted session is retrieved, we should set emailVerified correctly if we can
+        String json = TestUtils.createJson("{"+
+            "'authenticated':false,"+
+            "'participant':{'dataGroups':[],"+
+                "'attributes':{},"+
+                "'consentHistories':{},"+
+                "'roles':[],"+
+                "'languages':[],"+
+                "'status':'enabled'},"+ // STATUS = ENABLED so email has been verified
+            "'consentStatuses':{}}");
+        
+        UserSession session = BridgeObjectMapper.get().readValue(json, UserSession.class);
+        assertEquals(AccountStatus.ENABLED, session.getParticipant().getStatus());
+        assertEquals(Boolean.TRUE, session.getParticipant().getEmailVerified());
+    }
 }

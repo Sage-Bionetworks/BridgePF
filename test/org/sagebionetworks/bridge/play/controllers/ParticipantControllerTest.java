@@ -277,7 +277,7 @@ public class ParticipantControllerTest {
 
     @Test
     public void updateParticipant() throws Exception {
-        study.getUserProfileAttributes().add("phone");
+        study.getUserProfileAttributes().add("can_be_recontacted");
         mockPlayContextWithJson(createJson("{'firstName':'firstName',"+
                 "'lastName':'lastName',"+
                 "'email':'email@email.com',"+
@@ -286,7 +286,7 @@ public class ParticipantControllerTest {
                 "'sharingScope':'sponsors_and_partners',"+
                 "'notifyByEmail':true,"+
                 "'dataGroups':['group2','group1'],"+
-                "'attributes':{'phone':'123456789'},"+
+                "'attributes':{'can_be_recontacted':'true'},"+
                 "'languages':['en','fr']}"));
         
         Result result = controller.updateParticipant(ID);
@@ -304,7 +304,7 @@ public class ParticipantControllerTest {
         assertEquals(SharingScope.SPONSORS_AND_PARTNERS, participant.getSharingScope());
         assertTrue(participant.isNotifyByEmail());
         assertEquals(Sets.newHashSet("group2","group1"), participant.getDataGroups());
-        assertEquals("123456789", participant.getAttributes().get("phone"));
+        assertEquals("true", participant.getAttributes().get("can_be_recontacted"));
         assertEquals(Sets.newHashSet("en","fr"), participant.getLanguages());
     }
     
@@ -458,7 +458,7 @@ public class ParticipantControllerTest {
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, captured.getSharingScope());
         assertTrue(captured.isNotifyByEmail());
         assertEquals(Sets.newHashSet("group1"), captured.getDataGroups());
-        assertEquals("123-456-7890", captured.getAttributes().get("phone"));
+        assertEquals("true", captured.getAttributes().get("can_be_recontacted"));
     }
     
     // Some values will be missing in the JSON and should be preserved from this original participant object.

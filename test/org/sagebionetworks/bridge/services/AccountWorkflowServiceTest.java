@@ -26,7 +26,6 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
@@ -158,14 +157,12 @@ public class AccountWorkflowServiceTest {
             TestUtils.createJson("{'studyId':'api','userId':'userId'}"));
         when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         when(mockAccountDao.getAccount(study, "userId")).thenReturn(mockAccount);
+        when(mockAccount.getId()).thenReturn("accountId");
         
         EmailVerification verification = new EmailVerification(SPTOKEN);
         
-        service.verifyEmail(verification);
-        
-        verify(mockAccountDao).updateAccount(accountCaptor.capture());
-        Account account = accountCaptor.getValue();
-        verify(account).setStatus(AccountStatus.ENABLED);
+        Account account = service.verifyEmail(verification);
+        assertEquals("accountId",account.getId());
     }
     
     @Test(expected = BadRequestException.class)

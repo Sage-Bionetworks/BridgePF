@@ -60,7 +60,7 @@ public class SignInTest {
                 "'password':'passwordValue',"+
                 "'study':'studyValue',"+
                 "'token':'tokenValue',"+
-                "'phone':'1234567890',"+
+                "'phone':{'number':'4082588569','regionCode':'US'},"+
                 "'reauthToken':'reauthTokenValue'"+
                 "}"));
         
@@ -69,7 +69,8 @@ public class SignInTest {
         assertEquals("passwordValue", signIn.getPassword());
         assertEquals("studyValue", signIn.getStudyId());
         assertEquals("tokenValue", signIn.getToken());
-        assertEquals("1234567890", signIn.getPhone());
+        assertEquals("+14082588569", signIn.getPhone().getNumber());
+        assertEquals("US", signIn.getPhone().getRegionCode());
         assertEquals("reauthTokenValue", signIn.getReauthToken());
     }
     

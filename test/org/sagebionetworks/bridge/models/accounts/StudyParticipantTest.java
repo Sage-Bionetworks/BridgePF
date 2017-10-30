@@ -40,6 +40,7 @@ public class StudyParticipantTest {
     private static final String ACCOUNT_ID = "6278uk74xoQkXkrbh9vJnh";
     private static final DateTime CREATED_ON = DateTime.now();
     private static final DateTime CREATED_ON_UTC = CREATED_ON.withZone(DateTimeZone.UTC);
+    private static final Phone PHONE = new Phone("4082588569", "US");
     private static final Set<Roles> ROLES = Sets.newHashSet(Roles.ADMIN, Roles.WORKER);
     private static final LinkedHashSet<String> LANGS = TestUtils.newLinkedHashSet("en","fr");
     private static final Set<String> DATA_GROUPS = Sets.newHashSet("group1","group2");
@@ -98,7 +99,7 @@ public class StudyParticipantTest {
 
         assertEquals("B", node.get("attributes").get("A").asText());
         assertEquals("D", node.get("attributes").get("C").asText());
-        assertEquals(19, node.size());
+        assertEquals(22, node.size());
         
         StudyParticipant deserParticipant = BridgeObjectMapper.get().readValue(node.toString(), StudyParticipant.class);
         assertEquals("firstName", deserParticipant.getFirstName());
@@ -157,6 +158,9 @@ public class StudyParticipantTest {
         assertEquals("firstName", copy.getFirstName());
         assertEquals("lastName", copy.getLastName());
         assertEquals("email@email.com", copy.getEmail());
+        assertEquals(PHONE.getNationalFormat(), copy.getPhone().getNationalFormat());
+        assertEquals(Boolean.TRUE, copy.getEmailVerified());
+        assertEquals(Boolean.TRUE, copy.getPhoneVerified());
         assertEquals("externalId", copy.getExternalId());
         assertEquals("newUserPassword", copy.getPassword());
         assertEquals(TIME_ZONE, copy.getTimeZone());
@@ -234,6 +238,18 @@ public class StudyParticipantTest {
     public void canCopyGetClientData() {
         assertCopyField("clientData", (builder)-> verify(builder).withClientData(any()));
     }
+    @Test
+    public void canCopyPhone() {
+        assertCopyField("phone", (builder)-> verify(builder).withPhone(any()));
+    }
+    @Test
+    public void canCopyEmailVerified() {
+        assertCopyField("emailVerified", (builder)-> verify(builder).withEmailVerified(any()));
+    }
+    @Test
+    public void canCopyPhoneVerified() {
+        assertCopyField("phoneVerified", (builder)-> verify(builder).withPhoneVerified(any()));
+    }
     
     @Test
     public void testNullResiliency() {
@@ -267,7 +283,34 @@ public class StudyParticipantTest {
         StudyParticipant participant = BridgeObjectMapper.get().readValue(json, StudyParticipant.class);
         assertEquals("email@email.com", participant.getEmail());
         assertEquals("password", participant.getPassword());
-    }    
+    }
+    
+    @Test
+    public void legacyAccountsWithoutEmailVerificationAreFixed() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder().withStatus(AccountStatus.ENABLED).build();
+        assertEquals(Boolean.TRUE, participant.getEmailVerified());
+        assertEquals(AccountStatus.ENABLED, participant.getStatus());
+        
+        participant = new StudyParticipant.Builder().withStatus(AccountStatus.UNVERIFIED).build();
+        assertEquals(Boolean.FALSE, participant.getEmailVerified());
+        assertEquals(AccountStatus.UNVERIFIED, participant.getStatus());
+        
+        // WHen disabled, we don't absolutely know the status of email verification.
+        participant = new StudyParticipant.Builder().withStatus(AccountStatus.DISABLED).build();
+        assertNull(participant.getEmailVerified());
+        assertEquals(AccountStatus.DISABLED, participant.getStatus());
+    }
+    
+    @Test
+    public void ifEmailVerifiedIsSetItWillNotBeChanged() {
+        // because emailVerified is set, it will not be changed by legacy fix
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withStatus(AccountStatus.ENABLED)
+                .withEmailVerified(Boolean.FALSE).build();
+        assertEquals(Boolean.FALSE, participant.getEmailVerified());
+        assertEquals(AccountStatus.ENABLED, participant.getStatus());
+    }
+    
 
     private void assertCopyField(String fieldName, Consumer<StudyParticipant.Builder> predicate) {
         StudyParticipant participant = makeParticipant().build();
@@ -293,6 +336,9 @@ public class StudyParticipantTest {
                 .withFirstName("firstName")
                 .withLastName("lastName")
                 .withEmail("email@email.com")
+                .withPhone(PHONE)
+                .withPhoneVerified(Boolean.TRUE)
+                .withEmailVerified(Boolean.TRUE)
                 .withExternalId("externalId")
                 .withPassword("newUserPassword")
                 .withSharingScope(SharingScope.SPONSORS_AND_PARTNERS)

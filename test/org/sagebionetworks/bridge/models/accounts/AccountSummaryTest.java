@@ -28,14 +28,14 @@ public class AccountSummaryTest {
                 AccountStatus.UNVERIFIED, TestConstants.TEST_STUDY);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(summary);
-        assertEquals("firstName", node.get("firstName").asText());
-        assertEquals("lastName", node.get("lastName").asText());
-        assertEquals("email@email.com", node.get("email").asText());
-        assertEquals("ABC", node.get("id").asText());
-        assertEquals(dateTime.withZone(DateTimeZone.UTC).toString(), node.get("createdOn").asText());
-        assertEquals("unverified", node.get("status").asText());
-        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, node.get("studyIdentifier").get("identifier").asText());
-        assertEquals("AccountSummary", node.get("type").asText());
+        assertEquals("firstName", node.get("firstName").textValue());
+        assertEquals("lastName", node.get("lastName").textValue());
+        assertEquals("email@email.com", node.get("email").textValue());
+        assertEquals("ABC", node.get("id").textValue());
+        assertEquals(dateTime.withZone(DateTimeZone.UTC).toString(), node.get("createdOn").textValue());
+        assertEquals("unverified", node.get("status").textValue());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, node.get("studyIdentifier").get("identifier").textValue());
+        assertEquals("AccountSummary", node.get("type").textValue());
         
         AccountSummary newSummary = BridgeObjectMapper.get().treeToValue(node, AccountSummary.class);
         assertEquals(summary, newSummary);
