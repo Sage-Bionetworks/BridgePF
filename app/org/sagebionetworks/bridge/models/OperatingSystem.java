@@ -14,6 +14,7 @@ public class OperatingSystem {
     
     public static final String IOS = "iPhone OS";
     public static final String ANDROID = "Android";
+    public static final String UNIVERSAL = "Universal";
 
     /**
      * Apple has changed the name of the iOS platform from "iPhone OS" to "iOS" and this is reflected in the 

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Controller;
 
 import play.mvc.Result;
 
-@Controller("itpController")
+@Controller("intentController")
 public class IntentController extends BaseController {
 
     private IntentService intentService;
@@ -18,11 +18,10 @@ public class IntentController extends BaseController {
     }
     
     public Result submitIntentToParticipate() throws Exception {
-        IntentToParticipate itp = parseJson(request(), IntentToParticipate.class);
+        IntentToParticipate intent = parseJson(request(), IntentToParticipate.class);
         
-        intentService.submitIntentToParticipate(itp);
+        intentService.submitIntentToParticipate(intent);
         
-        // Always return this, no matter what.
         return acceptedResult("Intent to participate accepted.");
     }
     

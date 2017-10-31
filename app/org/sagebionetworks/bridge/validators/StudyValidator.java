@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
@@ -142,6 +143,17 @@ public class StudyValidator implements Validator {
             }
             if (!study.isExternalIdValidationEnabled()) {
                 errors.rejectValue("externalIdValidationEnabled", "cannot be disabled if email verification has been disabled");
+            }
+        }
+        
+        // Links in installedLinks are length-constrained by SMS.
+        if (!study.getInstallLinks().isEmpty()) {
+            for (Map.Entry<String,String> entry : study.getInstallLinks().entrySet()) {
+                if (StringUtils.isBlank(entry.getValue())) {
+                    errors.rejectValue("installLinks", "cannot be blank");
+                } else if (entry.getValue().length() > 140) {
+                    errors.rejectValue("installLinks", "cannot be longer than 140 characters");
+                }
             }
         }
     }

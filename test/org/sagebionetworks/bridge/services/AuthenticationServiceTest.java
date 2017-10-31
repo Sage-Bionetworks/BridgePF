@@ -48,6 +48,7 @@ import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -109,6 +110,8 @@ public class AuthenticationServiceTest {
     @Before
     public void before() {
         study = studyService.getStudy("api");
+        study.getInstallLinks().put("Android", "TEST");
+        studyService.updateStudy(study, true);
     }
     
     @After
@@ -146,15 +149,16 @@ public class AuthenticationServiceTest {
                 .withPassword("P@ssword`1").build();
         IdentifierHolder holder = null;
         try {
-            IntentToParticipate itp = new IntentToParticipate.Builder()
-                    .withEmail(email)
+            IntentToParticipate intent = new IntentToParticipate.Builder()
                     .withScope(SharingScope.NO_SHARING)
+                    .withPhone(TestConstants.PHONE)
                     .withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                    .withOsName("Android")
                     .withConsentSignature(new ConsentSignature.Builder()
                             .withName("Name")
                             .withBirthdate("1970-01-01").build())
                     .withSubpopGuid(TestConstants.TEST_STUDY_IDENTIFIER).build();
-            intentService.submitIntentToParticipate(itp);
+            intentService.submitIntentToParticipate(intent);
             
             study.setEmailVerificationEnabled(false); // cheating here to avoid having email confirmation path.
             holder = authService.signUp(study, participant, true);

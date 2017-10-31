@@ -10,6 +10,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
 import org.sagebionetworks.bridge.services.IntentService;
@@ -47,7 +48,7 @@ public class IntentControllerTest {
         
         IntentToParticipate captured = intentCaptor.getValue();
         // It's pretty simple, we just want to make sure we got it, check a couple of fields
-        assertEquals("email@email.com", captured.getEmail());
+        assertEquals(TestConstants.PHONE.getNumber(), captured.getPhone().getNumber());
         assertEquals("Gladlight Stonewell", captured.getConsentSignature().getName());
     }
 

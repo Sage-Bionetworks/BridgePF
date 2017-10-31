@@ -1,16 +1,16 @@
 package org.sagebionetworks.bridge.validators;
 
-import org.apache.commons.lang3.StringUtils;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 public class IntentToParticipateValidator implements Validator {
-
     public static final IntentToParticipateValidator INSTANCE = new IntentToParticipateValidator();
     
-    private IntentToParticipateValidator() { 
+    private IntentToParticipateValidator() {
     }
     
     public boolean supports(Class<?> clazz) {
@@ -19,38 +19,27 @@ public class IntentToParticipateValidator implements Validator {
 
     @Override
     public void validate(Object object, Errors errors) {
-        IntentToParticipate itp = (IntentToParticipate)object;
+        IntentToParticipate intent = (IntentToParticipate)object;
         
-        if (StringUtils.isBlank(itp.getStudy())) {
+        if (isBlank(intent.getStudy())) {
             errors.rejectValue("study", "is required");
         }
-        if (StringUtils.isBlank(itp.getSubpopGuid())) {
+        if (isBlank(intent.getSubpopGuid())) {
             errors.rejectValue("subpopGuid", "is required");
         }
-        if (itp.getScope() == null) {
+        if (intent.getScope() == null) {
             errors.rejectValue("scope", "is required");
         }
-        int identifiers = 0;
-        if (StringUtils.isNotBlank(itp.getEmail())) {
-            identifiers++;
-        }
-        if (itp.getPhone() != null) {
-            identifiers++;
-        }
-        if (identifiers == 0) {
-            errors.reject("must include email or phone");
-        } else if (identifiers > 1) {
-            errors.reject("must include email or phone, but not both");
-        }
-        if (itp.getPhone() != null && !Phone.isValid(itp.getPhone())) {
+        if (intent.getPhone() == null) {
+            errors.rejectValue("phone", "is required");
+        } else if (!Phone.isValid(intent.getPhone())) {
             errors.rejectValue("phone", "does not appear to be a phone number");
         }
-        if (itp.getConsentSignature() == null) {
+        if (intent.getConsentSignature() == null) {
             errors.rejectValue("consentSignature", "is required");
         } else {
             // consent signature is validated during construction, which
             // prevents us from doing this here
         }
     }
-
 }

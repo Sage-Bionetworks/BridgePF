@@ -22,13 +22,8 @@ public class BridgeProductionSpringConfig {
     @Autowired
     BridgeConfig bridgeConfig;
     
-    @Bean(name = "oldJedisOps")
-    public JedisOps oldJedisOps() throws Exception {
-        return new JedisOps(createJedisPool("rediscloud.url"));
-    }
-
-    @Bean(name = "newJedisOps")
-    public JedisOps newJedisOps() throws Exception {
+    @Bean(name = "jedisOps")
+    public JedisOps jedisOps() throws Exception {
         return new JedisOps(jedisPool());
     }
     

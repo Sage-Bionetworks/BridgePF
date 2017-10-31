@@ -1,8 +1,11 @@
 package org.sagebionetworks.bridge.services;
 
 import java.util.List;
+import java.util.Map;
 
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
@@ -29,6 +32,8 @@ public class IntentService {
     
     private CacheProvider cacheProvider;
     
+    private NotificationsService notificationsService;
+    
     @Autowired
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
@@ -49,32 +54,42 @@ public class IntentService {
         this.cacheProvider = cacheProvider;
     }
     
+    @Autowired
+    final void setNotificationsService(NotificationsService notificationsService) {
+        this.notificationsService = notificationsService;
+    }
+    
     public void submitIntentToParticipate(IntentToParticipate intent) {
         Validate.entityThrowingException(IntentToParticipateValidator.INSTANCE, intent);
         
         // validate the references are real
         Study study = studyService.getStudy(intent.getStudy());
+        if (study.getInstallLinks().isEmpty()) {
+            throw new BadRequestException("Study not configured to receive intent to participate.");
+        }
         SubpopulationGuid guid = SubpopulationGuid.create(intent.getSubpopGuid());
         subpopService.getSubpopulation(study, guid);
         
         // It's validated and pointing to real things. Persist it.
-        String cacheKey = getCacheKey(study, guid, intent.getEmail(), intent.getPhone());
+        String cacheKey = getCacheKey(study, guid, intent.getPhone());
         cacheProvider.setObject(cacheKey, intent, EXPIRATION_IN_SECONDS);
+        
+        // send an app store link to download the app.
+        String message = getInstallLink(intent.getOsName(), study.getInstallLinks());
+        notificationsService.sendSMSMessage(study, intent.getPhone(), message);
     }
     
     public void registerIntentToParticipate(Study study, StudyParticipant participant) {
-        String email = participant.getEmail();
         Phone phone = participant.getPhone();
+        // Somehow, this is being called but the user has no phone number.
+        if (phone == null) {
+            return;
+        }
         
         List<Subpopulation> subpops = subpopService.getSubpopulations(study.getStudyIdentifier());
         for (Subpopulation subpop : subpops) {
-            // We do not know whether the consent was saved using an email or a phone number, so look for both.
-            String cacheKey = getCacheKey(study, subpop.getGuid(), email, null);
+            String cacheKey = getCacheKey(study, subpop.getGuid(), phone);
             IntentToParticipate intent = cacheProvider.getObject(cacheKey, IntentToParticipate.class);
-            if (intent == null) {
-                cacheKey = getCacheKey(study, subpop.getGuid(), null, phone);
-                intent = cacheProvider.getObject(cacheKey, IntentToParticipate.class);
-            }
             if (intent != null) {
                 cacheProvider.removeObject(cacheKey);
                 consentService.consentToResearch(study, subpop.getGuid(), participant, 
@@ -83,12 +98,20 @@ public class IntentService {
         }
     }
     
-    private String getCacheKey(StudyIdentifier studyId, SubpopulationGuid subpopGuid, String email, Phone phone) {
-        String identifier = email;
-        if (identifier == null && phone != null) {
-            identifier = phone.getNumber();
-        }
-        return subpopGuid.getGuid() + ":" + identifier + ":" + studyId.getIdentifier() + ":itp";
+    private String getCacheKey(StudyIdentifier studyId, SubpopulationGuid subpopGuid, Phone phone) {
+        return subpopGuid.getGuid() + ":" + phone.getNumber() + ":" + studyId.getIdentifier() + ":itp";
     }
-    
+
+    protected String getInstallLink(String osName, Map<String,String> installLinks) {
+        String message = installLinks.get(osName);
+        // OS name wasn't submitted or it's wrong, use the universal link
+        if (message == null) {
+            message = installLinks.get(OperatingSystem.UNIVERSAL);
+        }
+        // Don't have a link named "Universal" so just find ANYTHING
+        if (message == null && !installLinks.isEmpty()) {
+            message = installLinks.values().iterator().next();
+        }
+        return message;
+    }
 }

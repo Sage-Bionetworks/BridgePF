@@ -18,7 +18,7 @@ public class RedisDistributedLockDao implements DistributedLockDao {
     
     private RedisLock redisLock;
     
-    @Resource(name = "newJedisOps")
+    @Resource(name = "jedisOps")
     final void setJedisOps(JedisOps jedisOps) {
         redisLock = new RedisLock(jedisOps);
     }

@@ -207,7 +207,7 @@
         <property name="targetName" value="appConfigController" />
     </bean>
     
-    <bean id="ITPControllerProxied" parent="proxiedController">
-        <property name="targetName" value="itpController" />
+    <bean id="IntentControllerProxied" parent="proxiedController">
+        <property name="targetName" value="intentController" />
     </bean>
 </beans>

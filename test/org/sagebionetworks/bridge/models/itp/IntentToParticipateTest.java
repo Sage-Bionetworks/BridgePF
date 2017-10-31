@@ -23,8 +23,8 @@ public class IntentToParticipateTest {
                 .withBirthdate("1980-10-10").withImageData("image-data").withImageMimeType("image/png")
                 .withSignedOn(TIMESTAMP).withConsentCreatedOn(TIMESTAMP).build();
         
-        IntentToParticipate itp = new IntentToParticipate.Builder().withStudy("study").withEmail("email@email.com")
-                .withPhone(phone).withSubpopGuid("subpopGuid").withScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
+        IntentToParticipate itp = new IntentToParticipate.Builder().withStudy("study").withPhone(phone)
+                .withSubpopGuid("subpopGuid").withScope(SharingScope.ALL_QUALIFIED_RESEARCHERS).withOsName("iOS")
                 .withConsentSignature(consentSignature).build();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(itp);
@@ -32,15 +32,16 @@ public class IntentToParticipateTest {
         assertEquals("email@email.com", node.get("email").textValue());
         assertEquals("subpopGuid", node.get("subpopGuid").textValue());
         assertEquals("all_qualified_researchers", node.get("scope").textValue());
+        assertEquals("iPhone OS", node.get("osName").textValue());
         assertEquals("IntentToParticipate", node.get("type").textValue());
-        assertEquals(7, node.size());
+        assertEquals(8, node.size());
         
         JsonNode phoneNode = node.get("phone");
         assertEquals("+14082588569", phoneNode.get("number").textValue());
         assertEquals("US", phoneNode.get("regionCode").textValue());
         assertEquals("(408) 258-8569", phoneNode.get("nationalFormat").textValue());
         assertEquals("Phone", phoneNode.get("type").textValue());
-        assertEquals(4, node.size());
+        assertEquals(4, phoneNode.size());
         
         JsonNode consentNode = node.get("consentSignature");
         assertEquals("Consent Name", consentNode.get("name").textValue());
@@ -54,9 +55,9 @@ public class IntentToParticipateTest {
         
         IntentToParticipate deser = BridgeObjectMapper.get().readValue(node.toString(), IntentToParticipate.class);
         assertEquals("study", deser.getStudy());
-        assertEquals("email@email.com", deser.getEmail());
-        assertEquals("phone", deser.getPhone());
+        assertEquals("(408) 258-8569", deser.getPhone().getNationalFormat());
         assertEquals("subpopGuid", deser.getSubpopGuid());
+        assertEquals("iPhone OS", deser.getOsName());
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, deser.getScope());
 
         ConsentSignature consentDeser = deser.getConsentSignature();
@@ -71,6 +72,5 @@ public class IntentToParticipateTest {
         assertEquals("+14082588569", deserPhone.getNumber());
         assertEquals("US", deserPhone.getRegionCode());
         assertEquals("(408) 258-8569", deserPhone.getNationalFormat());
-        
     }
 }

@@ -310,6 +310,16 @@ public interface Study extends BridgeEntity, StudyIdentifier {
 
     /** @see #getPushNotificationARNs(); */
     void setPushNotificationARNs(Map<String, String> pushNotificationARNs);
+    
+    /**
+     * A map between operating system names, and a link to send via SMS to acquire the study's app. 
+     * This can be either to an app store, or an intermediate web page that will route to a final 
+     * app or appstore.
+     */
+    Map<String, String> getInstallLinks();
+    
+    /** @see #getInstallLinks(); */
+    void setInstallLinks(Map<String, String> installLinks);
 
     /** The flag to disable exporting or not. */
     boolean getDisableExport();

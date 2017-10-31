@@ -2,8 +2,12 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -16,7 +20,6 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
-import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -25,30 +28,13 @@ import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 @RunWith(MockitoJUnitRunner.class)
 public class IntentServiceTest {
 
     private static final long TIMESTAMP = 1000L; 
     
-    private static final String STUDY = "studyId";
-    private static final String EMAIL = "email@email.com";
-    private static final Phone PHONE = new Phone("4082588569", "US");
-    private static final String SUBPOP_GUID = "subpopGuid";
-    private static final SharingScope SCOPE = SharingScope.SPONSORS_AND_PARTNERS;
-    private static final ConsentSignature SIGNATURE = new ConsentSignature.Builder()
-            .withName("Test Name")
-            .withBirthdate("1985-02-02")
-            .build();
-    
-    private IntentToParticipate.Builder builder() {
-        return new IntentToParticipate.Builder()
-                .withStudy(STUDY)
-                .withSubpopGuid(SUBPOP_GUID)
-                .withScope(SCOPE)
-                .withConsentSignature(SIGNATURE);
-    }    
-
     IntentService service;
     
     @Mock
@@ -62,6 +48,9 @@ public class IntentServiceTest {
     
     @Mock
     CacheProvider mockCacheProvider;
+    
+    @Mock
+    NotificationsService mockNotificationsService;
     
     @Mock
     Study mockStudy;
@@ -82,13 +71,18 @@ public class IntentServiceTest {
         service.setSubpopulationService(mockSubpopService);
         service.setConsentService(mockConsentService);
         service.setCacheProvider(mockCacheProvider);
+        service.setNotificationsService(mockNotificationsService);
     }
     
     @Test
     public void submitIntentToParticipate() {
         IntentToParticipate itp = TestUtils.getIntentToParticipate(TIMESTAMP);
         
+        Map<String,String> installLinks = Maps.newHashMap();
+        installLinks.put("Android", "this-is-a-link");
+        
         when(mockStudy.getIdentifier()).thenReturn("testStudy");
+        when(mockStudy.getInstallLinks()).thenReturn(installLinks);
         when(mockStudyService.getStudy(itp.getStudy())).thenReturn(mockStudy);
         
         service.submitIntentToParticipate(itp);
@@ -97,72 +91,92 @@ public class IntentServiceTest {
         assertEquals(itp.getSubpopGuid(), subpopGuidCaptor.getValue().getGuid());
         
         verify(mockCacheProvider).setObject(stringCaptor.capture(), eq(itp), eq(4 * 60 * 60));
-        assertEquals("subpopGuid:email@email.com:testStudy:itp", stringCaptor.getValue());
+        assertEquals("subpopGuid:+14082588569:testStudy:itp", stringCaptor.getValue());
+        
+        verify(mockNotificationsService).sendSMSMessage(mockStudy, itp.getPhone(), "this-is-a-link");
     }
     
     @Test
-    public void registerIntentToParticipateWithEmail() {
-        IntentToParticipate intent = builder().withEmail(EMAIL).build();
+    public void registerIntentToParticipate() {
+        Subpopulation subpopA = Subpopulation.create();
+        subpopA.setGuidString("AAA");
+        Subpopulation subpopB = Subpopulation.create();
+        subpopB.setGuidString("BBB");
         
-        Subpopulation subpop1 = Subpopulation.create();
-        SubpopulationGuid guidAAA = SubpopulationGuid.create("AAA");
-        subpop1.setGuid(guidAAA);
+        IntentToParticipate intent = new IntentToParticipate.Builder()
+                .withOsName("Android")
+                .withPhone(TestConstants.PHONE)
+                .withScope(SharingScope.NO_SHARING)
+                .withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withSubpopGuid("BBB")
+                .withConsentSignature(new ConsentSignature.Builder()
+                        .withName("Test Name")
+                        .withBirthdate("1975-01-01")
+                        .build())
+                .build();
         
-        Subpopulation subpop2 = Subpopulation.create();
-        SubpopulationGuid guidBBB = SubpopulationGuid.create("BBB");
-        subpop2.setGuid(guidBBB);
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withPhone(TestConstants.PHONE).build();
+        String key = "BBB:"+TestConstants.PHONE.getNumber()+":api:itp";
         
-        String key = "BBB:email@email.com:api:itp";
-        
+        when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
+        when(mockStudy.getIdentifier()).thenReturn(TestConstants.TEST_STUDY_IDENTIFIER);
         when(mockSubpopService.getSubpopulations(TestConstants.TEST_STUDY))
-                .thenReturn(Lists.newArrayList(subpop1, subpop2));
-        
+                .thenReturn(Lists.newArrayList(subpopA, subpopB));
         when(mockCacheProvider.getObject(key, IntentToParticipate.class)).thenReturn(intent);
         
-        Study study = Study.create();
-        study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
-        StudyParticipant participant = new StudyParticipant.Builder().withEmail(EMAIL).build();
+        service.registerIntentToParticipate(mockStudy, participant);
         
-        service.registerIntentToParticipate(study, participant);
-        
-        // verify we iterate through all subpopulations
-        verify(mockCacheProvider).getObject("AAA:email@email.com:api:itp", IntentToParticipate.class);
-        verify(mockCacheProvider).getObject("BBB:email@email.com:api:itp", IntentToParticipate.class);
-        
-        verify(mockConsentService).consentToResearch(study, guidBBB, participant, SIGNATURE, SCOPE, true);
+        verify(mockSubpopService).getSubpopulations(TestConstants.TEST_STUDY);
+        verify(mockCacheProvider).removeObject(key);
+        verify(mockConsentService).consentToResearch(mockStudy, SubpopulationGuid.create("BBB"), 
+                participant, intent.getConsentSignature(), intent.getScope(), true);
     }
-
+    
     @Test
-    public void registerIntentToParticipateWithPhone() {
-        IntentToParticipate intent = builder().withEmail(EMAIL).build();
+    public void noPhoneDoesNothing() {
+        StudyParticipant participant = new StudyParticipant.Builder().build();
         
-        Subpopulation subpop1 = Subpopulation.create();
-        SubpopulationGuid guidAAA = SubpopulationGuid.create("AAA");
-        subpop1.setGuid(guidAAA);
+        service.registerIntentToParticipate(mockStudy, participant);
         
-        Subpopulation subpop2 = Subpopulation.create();
-        SubpopulationGuid guidBBB = SubpopulationGuid.create("BBB");
-        subpop2.setGuid(guidBBB);
+        verifyNoMoreInteractions(mockSubpopService);
+        verifyNoMoreInteractions(mockCacheProvider);
+        verifyNoMoreInteractions(mockConsentService); 
+    }
+    
+    @Test
+    public void noIntentDoesNothing() {
+        Subpopulation subpopA = Subpopulation.create();
+        subpopA.setGuidString("AAA");
+        Subpopulation subpopB = Subpopulation.create();
+        subpopB.setGuidString("BBB");
         
-        String key = "BBB:+14082588569:api:itp";
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withPhone(TestConstants.PHONE).build();
+        String key = "BBB:"+TestConstants.PHONE.getNumber()+":api:itp";
         
+        when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
+        when(mockStudy.getIdentifier()).thenReturn(TestConstants.TEST_STUDY_IDENTIFIER);
         when(mockSubpopService.getSubpopulations(TestConstants.TEST_STUDY))
-                .thenReturn(Lists.newArrayList(subpop1, subpop2));
+                .thenReturn(Lists.newArrayList(subpopA, subpopB));
         
-        when(mockCacheProvider.getObject(key, IntentToParticipate.class)).thenReturn(intent);
+        service.registerIntentToParticipate(mockStudy, participant);
         
-        Study study = Study.create();
-        study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
-        StudyParticipant participant = new StudyParticipant.Builder().withPhone(PHONE).withEmail(EMAIL).build();
+        verify(mockSubpopService).getSubpopulations(TestConstants.TEST_STUDY);
+        verify(mockCacheProvider, never()).removeObject(key);
+        verifyNoMoreInteractions(mockConsentService); 
+    }
+    
+    @Test
+    public void installLinkCorrectlySelected() {
+        Map<String,String> installLinks = Maps.newHashMap();
+        installLinks.put("iPhone OS", "iphone-os-link");
         
-        service.registerIntentToParticipate(study, participant);
+        // Lacking android or universal, find the only link that's there.
+        assertEquals("iphone-os-link", service.getInstallLink("Android", installLinks));
         
-        // verify we iterate through all subpopulations
-        verify(mockCacheProvider).getObject("AAA:email@email.com:api:itp", IntentToParticipate.class);
-        verify(mockCacheProvider).getObject("AAA:+14082588569:api:itp", IntentToParticipate.class);
-        verify(mockCacheProvider).getObject("BBB:email@email.com:api:itp", IntentToParticipate.class);
-        verify(mockCacheProvider).getObject("BBB:+14082588569:api:itp", IntentToParticipate.class);
-        
-        verify(mockConsentService).consentToResearch(study, guidBBB, participant, SIGNATURE, SCOPE, true);
+        installLinks.put("Universal", "universal-link");
+        assertEquals("iphone-os-link", service.getInstallLink("iPhone OS", installLinks));
+        assertEquals("universal-link", service.getInstallLink("Android", installLinks));
     }
 }

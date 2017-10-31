@@ -37,6 +37,7 @@ public class StudyValidatorTest {
             Validate.entityThrowingException(StudyValidator.INSTANCE, study);
             fail("should have thrown an exception");
         } catch(InvalidEntityException e) {
+            System.out.println(e.getErrors());
             List<String> errors = e.getErrors().get(fieldName);
             assertFalse(errors == null || errors.isEmpty());
             String error = errors.get(0);
@@ -369,5 +370,17 @@ public class StudyValidatorTest {
         study.setEmailVerificationEnabled(false);
         study.setExternalIdRequiredOnSignup(false);
         assertCorrectMessage(study, "externalIdRequiredOnSignup", "externalIdRequiredOnSignup cannot be disabled if email verification has been disabled");
-    }    
+    }
+    
+    @Test
+    public void installLinksCannotBeBlank() {
+        study.getInstallLinks().put("SomeKey","");
+        assertCorrectMessage(study, "installLinks", "installLinks cannot be blank");
+    }
+    
+    @Test
+    public void installLinksCannotBeLong() {
+        study.getInstallLinks().put("SomeKey","This is a really really really really long link that will never ever ever ever fit in an SMS message This is a really really really really long link that will never ever ever ever fit in an SMS message This is a really really really really long link that will never ever ever ever fit in an SMS message");
+        assertCorrectMessage(study, "installLinks", "installLinks cannot be longer than 140 characters");
+    }
 }

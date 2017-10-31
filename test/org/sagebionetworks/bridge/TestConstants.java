@@ -7,6 +7,7 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -72,4 +73,7 @@ public class TestConstants {
     public static final Set<String> USER_DATA_GROUPS = Sets.newHashSet("group1","group2");
     
     public static final LinkedHashSet<String> LANGUAGES = TestUtils.newLinkedHashSet("en","fr");
+    
+    // This is a Google Voice account under Alx's control. We can switch this to another test number.
+    public static final Phone PHONE = new Phone("9174267643", "US");
 }
