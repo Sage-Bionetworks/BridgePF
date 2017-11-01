@@ -85,15 +85,64 @@ public class IntentServiceTest {
         when(mockStudy.getInstallLinks()).thenReturn(installLinks);
         when(mockStudyService.getStudy(intent.getStudy())).thenReturn(mockStudy);
         
+        String cacheKey = "subpopGuid:"+TestConstants.PHONE.getNumber()+":testStudy:itp";
+        
         service.submitIntentToParticipate(intent);
         
         verify(mockSubpopService).getSubpopulation(eq(mockStudy), subpopGuidCaptor.capture());
         assertEquals(intent.getSubpopGuid(), subpopGuidCaptor.getValue().getGuid());
         
         verify(mockCacheProvider).setObject(stringCaptor.capture(), eq(intent), eq(4 * 60 * 60));
-        assertEquals("subpopGuid:+14082588569:testStudy:itp", stringCaptor.getValue());
+        assertEquals(cacheKey, stringCaptor.getValue());
         
         verify(mockNotificationsService).sendSMSMessage(mockStudy, intent.getPhone(), "this-is-a-link");
+    }
+    
+    @Test
+    public void submitIntentToParticipateWithoutInstallLinks() {
+        IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP);
+        
+        when(mockStudy.getIdentifier()).thenReturn("testStudy");
+        when(mockStudyService.getStudy(intent.getStudy())).thenReturn(mockStudy);
+        
+        String cacheKey = "subpopGuid:"+TestConstants.PHONE.getNumber()+":testStudy:itp";
+        
+        service.submitIntentToParticipate(intent);
+        
+        verify(mockSubpopService).getSubpopulation(eq(mockStudy), subpopGuidCaptor.capture());
+        assertEquals(intent.getSubpopGuid(), subpopGuidCaptor.getValue().getGuid());
+        
+        // We do store the intent
+        verify(mockCacheProvider).setObject(stringCaptor.capture(), eq(intent), eq(4 * 60 * 60));
+        assertEquals(cacheKey, stringCaptor.getValue());
+        
+        // But we don't send a message because installLinks map is empty
+        verify(mockNotificationsService, never()).sendSMSMessage(mockStudy, intent.getPhone(), "this-is-a-link");
+    }
+    
+    @Test
+    public void submitIntentToParticipateExists() {
+        IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP);
+        
+        Map<String,String> installLinks = Maps.newHashMap();
+        installLinks.put("Android", "this-is-a-link");
+        
+        String cacheKey = "subpopGuid:"+TestConstants.PHONE.getNumber()+":testStudy:itp";
+        
+        when(mockStudy.getIdentifier()).thenReturn("testStudy");
+        when(mockStudy.getInstallLinks()).thenReturn(installLinks);
+        when(mockStudyService.getStudy(intent.getStudy())).thenReturn(mockStudy);
+        when(mockCacheProvider.getObject(cacheKey, IntentToParticipate.class))
+                .thenReturn(intent);
+
+        service.submitIntentToParticipate(intent);
+        
+        verify(mockSubpopService).getSubpopulation(eq(mockStudy), subpopGuidCaptor.capture());
+        assertEquals(intent.getSubpopGuid(), subpopGuidCaptor.getValue().getGuid());
+        
+        // These are not called.
+        verify(mockCacheProvider, never()).setObject(cacheKey, intent, (4 * 60 * 60));
+        verify(mockNotificationsService, never()).sendSMSMessage(mockStudy, intent.getPhone(), "this-is-a-link");
     }
     
     @Test

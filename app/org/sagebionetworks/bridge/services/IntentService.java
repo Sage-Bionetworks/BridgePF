@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -64,21 +63,27 @@ public class IntentService {
     public void submitIntentToParticipate(IntentToParticipate intent) {
         Validate.entityThrowingException(IntentToParticipateValidator.INSTANCE, intent);
         
-        // validate the references are real
+        // TODO: if the account exists, we should return. 
+        
+        // validate study exists
         Study study = studyService.getStudy(intent.getStudy());
-        if (study.getInstallLinks().isEmpty()) {
-            throw new BadRequestException("Study not configured to receive intent to participate.");
-        }
+
+        // validate subpopulation exists
         SubpopulationGuid guid = SubpopulationGuid.create(intent.getSubpopGuid());
         subpopService.getSubpopulation(study, guid);
         
-        // It's validated and pointing to real things. Persist it.
+        // validate it has not yet been submitted
         String cacheKey = getCacheKey(study, guid, intent.getPhone());
-        cacheProvider.setObject(cacheKey, intent, EXPIRATION_IN_SECONDS);
-        
-        // send an app store link to download the app.
-        String message = getInstallLink(intent.getOsName(), study.getInstallLinks());
-        notificationsService.sendSMSMessage(study, intent.getPhone(), message);
+
+        if (cacheProvider.getObject(cacheKey, IntentToParticipate.class) == null) {
+            cacheProvider.setObject(cacheKey, intent, EXPIRATION_IN_SECONDS);
+            
+            // send an app store link to download the app, if we have something to send.
+            if (!study.getInstallLinks().isEmpty()) {
+                String message = getInstallLink(intent.getOsName(), study.getInstallLinks());
+                notificationsService.sendSMSMessage(study, intent.getPhone(), message);
+            }
+        }
     }
     
     public void registerIntentToParticipate(Study study, StudyParticipant participant) {
