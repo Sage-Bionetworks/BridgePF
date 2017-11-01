@@ -726,7 +726,7 @@ public class AuthenticationControllerMockTest {
     }
     
     @Test
-    public void signUpWithExplicitNoIntentToParticipate() throws Exception {
+    public void signUpWithNoCheckForConsentDeclared() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withEmail(TEST_EMAIL).withPassword(TEST_PASSWORD).build();
         
@@ -744,7 +744,7 @@ public class AuthenticationControllerMockTest {
     }
 
     @Test
-    public void signUpWithExplicitNoIntentToParticipateExplicit() throws Exception {
+    public void signUpWithCheckForConsentDeclaredFalse() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withEmail(TEST_EMAIL).withPassword(TEST_PASSWORD).build();
         
@@ -763,7 +763,7 @@ public class AuthenticationControllerMockTest {
     }
     
     @Test
-    public void signUpWithExplicitIntentToParticipate() throws Exception {
+    public void signUpWithCheckForConsentDeclaredTrue() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withEmail(TEST_EMAIL).withPassword(TEST_PASSWORD).build();
         

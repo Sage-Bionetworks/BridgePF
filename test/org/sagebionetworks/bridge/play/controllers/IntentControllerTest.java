@@ -38,8 +38,8 @@ public class IntentControllerTest {
     
     @Test
     public void canSubmitAnIntent() throws Exception {
-        IntentToParticipate itp = TestUtils.getIntentToParticipate(TIMESTAMP);
-        TestUtils.mockPlayContextWithJson(itp);
+        IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP);
+        TestUtils.mockPlayContextWithJson(intent);
         
         Result result = controller.submitIntentToParticipate();
         TestUtils.assertResult(result, 202, "Intent to participate accepted.");

@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.NotificationRegistrationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -192,7 +192,7 @@ public class NotificationsService {
         
         // Limited to 140 characters (Java is UTF-16, so two bytes per character, assuming for now that 
         // SNS converts these to ASCII, requires integration testing
-        if (message.length() > 140) {
+        if (message.length() > BridgeConstants.SMS_CHARACTER_LIMIT) {
             throw new BridgeServiceException("SMS message cannot be longer than 140 UTF-8/ASCII characters.");
         }
         

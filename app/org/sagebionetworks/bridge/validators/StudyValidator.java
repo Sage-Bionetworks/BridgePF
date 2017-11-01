@@ -151,8 +151,8 @@ public class StudyValidator implements Validator {
             for (Map.Entry<String,String> entry : study.getInstallLinks().entrySet()) {
                 if (StringUtils.isBlank(entry.getValue())) {
                     errors.rejectValue("installLinks", "cannot be blank");
-                } else if (entry.getValue().length() > 140) {
-                    errors.rejectValue("installLinks", "cannot be longer than 140 characters");
+                } else if (entry.getValue().length() > BridgeConstants.SMS_CHARACTER_LIMIT) {
+                    errors.rejectValue("installLinks", "cannot be longer than "+BridgeConstants.SMS_CHARACTER_LIMIT+" characters");
                 }
             }
         }

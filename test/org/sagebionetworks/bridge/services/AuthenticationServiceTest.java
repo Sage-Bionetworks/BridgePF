@@ -43,12 +43,12 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
-import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -109,8 +109,8 @@ public class AuthenticationServiceTest {
     
     @Before
     public void before() {
-        study = studyService.getStudy("api");
-        study.getInstallLinks().put("Android", "TEST");
+        study = studyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER);
+        study.getInstallLinks().put(OperatingSystem.ANDROID, "TEST");
         studyService.updateStudy(study, true);
     }
     
@@ -153,7 +153,7 @@ public class AuthenticationServiceTest {
                     .withScope(SharingScope.NO_SHARING)
                     .withPhone(TestConstants.PHONE)
                     .withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
-                    .withOsName("Android")
+                    .withOsName(OperatingSystem.ANDROID)
                     .withConsentSignature(new ConsentSignature.Builder()
                             .withName("Name")
                             .withBirthdate("1970-01-01").build())

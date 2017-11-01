@@ -18,6 +18,8 @@ import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.google.common.collect.Iterables;
+
 @Component
 public class IntentService {
 
@@ -91,9 +93,9 @@ public class IntentService {
             String cacheKey = getCacheKey(study, subpop.getGuid(), phone);
             IntentToParticipate intent = cacheProvider.getObject(cacheKey, IntentToParticipate.class);
             if (intent != null) {
-                cacheProvider.removeObject(cacheKey);
                 consentService.consentToResearch(study, subpop.getGuid(), participant, 
                         intent.getConsentSignature(), intent.getScope(), true);
+                cacheProvider.removeObject(cacheKey);
             }
         }
     }
@@ -110,7 +112,7 @@ public class IntentService {
         }
         // Don't have a link named "Universal" so just find ANYTHING
         if (message == null && !installLinks.isEmpty()) {
-            message = installLinks.values().iterator().next();
+            message = Iterables.getFirst(installLinks.values(), null);
         }
         return message;
     }

@@ -191,8 +191,8 @@ POST   /v3/scheduleplans/:guid            @org.sagebionetworks.bridge.play.contr
 DELETE /v3/scheduleplans/:guid            @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.deleteSchedulePlan(guid: String)
 
 # Activity Events
-GET    /v1/activityevents               @org.sagebionetworks.bridge.play.controllers.ActivityEventController.getSelfActivityEvents
-POST   /v1/activityevents              @org.sagebionetworks.bridge.play.controllers.ActivityEventController.createCustomActivityEvent
+GET    /v1/activityevents @org.sagebionetworks.bridge.play.controllers.ActivityEventController.getSelfActivityEvents
+POST   /v1/activityevents @org.sagebionetworks.bridge.play.controllers.ActivityEventController.createCustomActivityEvent
 
 # Notifications
 GET    /v3/notifications                      @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.getAllRegistrations

@@ -76,24 +76,24 @@ public class IntentServiceTest {
     
     @Test
     public void submitIntentToParticipate() {
-        IntentToParticipate itp = TestUtils.getIntentToParticipate(TIMESTAMP);
+        IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP);
         
         Map<String,String> installLinks = Maps.newHashMap();
         installLinks.put("Android", "this-is-a-link");
         
         when(mockStudy.getIdentifier()).thenReturn("testStudy");
         when(mockStudy.getInstallLinks()).thenReturn(installLinks);
-        when(mockStudyService.getStudy(itp.getStudy())).thenReturn(mockStudy);
+        when(mockStudyService.getStudy(intent.getStudy())).thenReturn(mockStudy);
         
-        service.submitIntentToParticipate(itp);
+        service.submitIntentToParticipate(intent);
         
         verify(mockSubpopService).getSubpopulation(eq(mockStudy), subpopGuidCaptor.capture());
-        assertEquals(itp.getSubpopGuid(), subpopGuidCaptor.getValue().getGuid());
+        assertEquals(intent.getSubpopGuid(), subpopGuidCaptor.getValue().getGuid());
         
-        verify(mockCacheProvider).setObject(stringCaptor.capture(), eq(itp), eq(4 * 60 * 60));
+        verify(mockCacheProvider).setObject(stringCaptor.capture(), eq(intent), eq(4 * 60 * 60));
         assertEquals("subpopGuid:+14082588569:testStudy:itp", stringCaptor.getValue());
         
-        verify(mockNotificationsService).sendSMSMessage(mockStudy, itp.getPhone(), "this-is-a-link");
+        verify(mockNotificationsService).sendSMSMessage(mockStudy, intent.getPhone(), "this-is-a-link");
     }
     
     @Test
