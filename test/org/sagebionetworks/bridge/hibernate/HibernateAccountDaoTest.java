@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -75,6 +76,7 @@ public class HibernateAccountDaoTest {
     private static final int VERSION = 7;
     private static final AccountId ACCOUNT_ID_WITH_ID = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, ACCOUNT_ID);
     private static final AccountId ACCOUNT_ID_WITH_EMAIL = AccountId.forEmail(TestConstants.TEST_STUDY_IDENTIFIER, EMAIL);
+    private static final AccountId ACCOUNT_ID_WITH_PHONE = AccountId.forPhone(TestConstants.TEST_STUDY_IDENTIFIER, TestConstants.PHONE);
     
     private static final SignIn REAUTH_SIGNIN = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
             .withEmail(EMAIL).withReauthToken(REAUTH_TOKEN).build();
@@ -853,7 +855,53 @@ public class HibernateAccountDaoTest {
         Account account = dao.getAccount(ACCOUNT_ID_WITH_EMAIL);
         assertNull(account);
     }
+    
+    @Test
+    public void getByPhone() throws Exception {
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
+        // mock hibernate
+        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId='"
+                + TestConstants.TEST_STUDY_IDENTIFIER + "' and phone='" + TestConstants.PHONE.getNumber() + 
+                "'", null, null, HibernateAccount.class)).thenReturn(ImmutableList.of(hibernateAccount));
 
+        // execute and validate
+        Account account = dao.getAccount(ACCOUNT_ID_WITH_PHONE);
+        assertEquals(hibernateAccount.getEmail(), account.getEmail());
+    }
+    
+    @Test
+    public void getByPhoneNotFound() {
+        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId='"
+                + TestConstants.TEST_STUDY_IDENTIFIER + "' and phone='" + TestConstants.PHONE.getNumber() + 
+                "'", null, null, HibernateAccount.class)).thenReturn(ImmutableList.of());
+        
+        Account account = dao.getAccount(ACCOUNT_ID_WITH_PHONE);
+        assertNull(account);
+    }
+
+    @Test
+    public void getByPhoneAfterAuthentication() throws Exception {
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
+        // mock hibernate
+        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId='"
+                + TestConstants.TEST_STUDY_IDENTIFIER + "' and phone='" + TestConstants.PHONE.getNumber() + 
+                "'", null, null, HibernateAccount.class)).thenReturn(ImmutableList.of(hibernateAccount));
+
+        // execute and validate
+        Account account = dao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_PHONE);
+        assertEquals(hibernateAccount.getEmail(), account.getEmail());
+    }
+    
+    @Test
+    public void getByPhoneNotFoundAfterAuthentication() {
+        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId='"
+                + TestConstants.TEST_STUDY_IDENTIFIER + "' and phone='" + TestConstants.PHONE.getNumber() + 
+                "'", null, null, HibernateAccount.class)).thenReturn(ImmutableList.of());
+        
+        Account account = dao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_PHONE);
+        assertNull(account);
+    }
+    
     @Test
     public void delete() throws Exception {
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);

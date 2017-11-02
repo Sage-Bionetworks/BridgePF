@@ -406,7 +406,7 @@ public class HibernateAccountDao implements AccountDao {
         if (unguarded.getEmail() != null) {
             query = String.format(EMAIL_QUERY, unguarded.getStudyId(), unguarded.getEmail());
         } else {
-            query = String.format(PHONE_QUERY, unguarded.getStudyId(), unguarded.getPhone());
+            query = String.format(PHONE_QUERY, unguarded.getStudyId(), unguarded.getPhone().getNumber());
         }
         List<HibernateAccount> accountList = hibernateHelper.queryGet(query, null, null, HibernateAccount.class);
         if (accountList.isEmpty()) {
