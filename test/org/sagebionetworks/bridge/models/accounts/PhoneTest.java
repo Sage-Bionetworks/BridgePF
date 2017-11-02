@@ -9,8 +9,16 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
+
 public class PhoneTest {
 
+    @Test
+    public void hashCodeEquals() {
+        EqualsVerifier.forClass(Phone.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();
+    }
+    
     @Test
     public void canSerialize() throws Exception {
         Phone phone = new Phone("408.258.8569", "US");

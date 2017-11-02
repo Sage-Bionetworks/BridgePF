@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.accounts;
 
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonDeserialize(builder = SignIn.Builder.class)
@@ -45,6 +46,16 @@ public final class SignIn implements BridgeEntity {
     
     public String getReauthToken() {
         return reauthToken;
+    }
+    
+    @JsonIgnore
+    public AccountId getAccountId() {
+        if (email != null) {
+            return AccountId.forEmail(studyId, email);
+        } else if (phone != null) {
+            return AccountId.forEmail(studyId, phone.getNumber());
+        }
+        throw new IllegalArgumentException("SignIn not constructed with enough information to retrieve an account");
     }
     
     public static class Builder {

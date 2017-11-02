@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -75,6 +76,9 @@ public class TestUserAdminHelper {
         }
         public StudyIdentifier getStudyIdentifier() {
             return study.getStudyIdentifier();
+        }
+        public AccountId getAccountId() {
+            return AccountId.forId(study.getIdentifier(), getStudyParticipant().getId());
         }
         public CriteriaContext getCriteriaContext() {
             return new CriteriaContext.Builder()

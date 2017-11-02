@@ -6,6 +6,7 @@ import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.google.common.collect.ImmutableSet;
@@ -28,6 +29,10 @@ public final class CriteriaContext {
         this.clientInfo = clientInfo;
         this.userDataGroups = (userDataGroups == null) ? ImmutableSet.of() : ImmutableSet.copyOf(userDataGroups);
         this.languages = (languages == null) ? new LinkedHashSet<>() : languages;
+    }
+    
+    public AccountId getAccountId() {
+        return AccountId.forId(studyId.getIdentifier(), userId);
     }
 
     /**

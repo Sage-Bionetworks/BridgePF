@@ -6,14 +6,13 @@ import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 /**
  * DAO to retrieve personally identifiable account information, including authentication 
@@ -38,13 +37,13 @@ public interface AccountDao {
      * Sign up sends an email address with a link that includes a one-time token for verification. That email
      * can be resent by calling this method.
      */
-    void resendEmailVerificationToken(StudyIdentifier studyIdentifier, Email email);
+    void resendEmailVerificationToken(AccountId accountId);
     
     /**
      * Request that an email be sent to the account holder with a link to reset a password, including a 
      * one-time verification token. 
      */
-    void requestResetPassword(Study study, Email email);
+    void requestResetPassword(AccountId accountId);
     
     /**
      * Reset a password, supplying a new password and the one-time verification token that was sent via email 
@@ -73,7 +72,7 @@ public interface AccountDao {
     /**
      * Sign the user out of Bridge. This clears the user's reauthentication token.
      */
-    void signOut(StudyIdentifier studyId, String email);
+    void signOut(AccountId accountId);
     
     /**
      * Retrieve an account where authentication is handled outside of the DAO (If we
@@ -83,7 +82,7 @@ public interface AccountDao {
      * reauthorization token, the same as the authenticate and reauthenticate calls.
      * This method returns null if the Account does not exist.
      */
-    Account getAccountAfterAuthentication(Study study, String email);
+    Account getAccountAfterAuthentication(AccountId accountId);
     
     /**
      * A factory method to construct a valid Account object that will work with our
@@ -105,22 +104,16 @@ public interface AccountDao {
     void updateAccount(Account account);
     
     /**
-     * Get an account in the context of a study by the user's ID or by their email address. 
-     * Returns null if there is no account, it is up to callers to translate this into the 
-     * appropriate exception, if any. 
+     * Get an account in the context of a study by the user's ID, email address, or phone 
+     * number. Returns null if there is no account, it is up to callers to translate this 
+     * into the appropriate exception, if any. 
      */
-    Account getAccount(Study study, String id);
-    
-    /**
-     * Get an account in the context of a study by the email address used to register the study. Returns 
-     * null if there is no account.
-     */
-    Account getAccountWithEmail(Study study, String email);
+    Account getAccount(AccountId accountId);
     
     /**
      * Delete an account along with the authentication credentials.
      */
-    void deleteAccount(Study study, String id);
+    void deleteAccount(AccountId accountId);
     
     /**
      * Get all account summaries in all studies in a given environment.
@@ -157,8 +150,8 @@ public interface AccountDao {
     /**
      * For MailChimp, and other external systems, we need a way to get a healthCode for a given email.
      */
-    default String getHealthCodeForEmail(Study study, String email) {
-        Account account = getAccountWithEmail(study, email);
+    default String getHealthCodeForAccount(AccountId accountId) {
+        Account account = getAccount(accountId);
         if (account != null) {
             return account.getHealthCode();
         } else {

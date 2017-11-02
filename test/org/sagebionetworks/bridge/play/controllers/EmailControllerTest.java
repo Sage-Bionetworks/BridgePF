@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIO
 import static org.mockito.Mockito.verify;
 
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -23,6 +24,7 @@ import play.test.Helpers;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.Maps;
@@ -35,8 +37,9 @@ public class EmailControllerTest {
     private static final String UNSUBSCRIBE_TOKEN = "unsubscribeToken";
     private static final String TOKEN = "token";
     private static final String STUDY2 = "study";
-    private static final String API = "api";
+    private static final String API = TestConstants.TEST_STUDY_IDENTIFIER;
     private static final String EMAIL_ADDRESS = "bridge-testing@sagebase.org";
+    private static final AccountId ACCOUNT_ID = AccountId.forEmail(API, EMAIL_ADDRESS);
 
     private ParticipantOptionsService optionsService;
 
@@ -73,7 +76,7 @@ public class EmailControllerTest {
         study.setIdentifier(API);
 
         accountDao = mock(AccountDao.class);
-        when(accountDao.getHealthCodeForEmail(study, EMAIL_ADDRESS)).thenReturn(HEALTH_CODE);
+        when(accountDao.getHealthCodeForAccount(ACCOUNT_ID)).thenReturn(HEALTH_CODE);
 
         StudyService studyService = mock(StudyService.class);
         when(studyService.getStudy(API)).thenReturn(study);
@@ -155,7 +158,7 @@ public class EmailControllerTest {
     public void noAccountThrowsException() throws Exception {
         mockContext(map(DATA_BRACKET_EMAIL, EMAIL_ADDRESS, STUDY2, API, TOKEN, UNSUBSCRIBE_TOKEN), null);
         EmailController controller = createController();
-        doReturn(null).when(accountDao).getHealthCodeForEmail(study, EMAIL_ADDRESS);
+        doReturn(null).when(accountDao).getHealthCodeForAccount(ACCOUNT_ID);
 
         Result result = controller.unsubscribeFromEmail();
         assertEquals(200, result.status());

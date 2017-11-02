@@ -34,9 +34,9 @@ import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
@@ -62,6 +62,8 @@ public class HibernateAccountDao implements AccountDao {
 
     static final String ACCOUNT_SUMMARY_QUERY_PREFIX = "select new " + HibernateAccount.class.getCanonicalName() +
             "(createdOn, studyId, firstName, lastName, email, id, status) ";
+    static final String EMAIL_QUERY = "from HibernateAccount where studyId='%s' and email='%s'";
+    static final String PHONE_QUERY = "from HibernateAccount where studyId='%s' and phone='%s'";
     
     private AccountWorkflowService accountWorkflowService;
     private HealthCodeService healthCodeService;
@@ -129,14 +131,14 @@ public class HibernateAccountDao implements AccountDao {
 
     /** {@inheritDoc} */
     @Override
-    public void resendEmailVerificationToken(StudyIdentifier studyIdentifier, Email email) {
-        accountWorkflowService.resendEmailVerificationToken(studyIdentifier, email);
+    public void resendEmailVerificationToken(AccountId accountId) {
+        accountWorkflowService.resendEmailVerificationToken(accountId);
     }
 
     /** {@inheritDoc} */
     @Override
-    public void requestResetPassword(Study study, Email email) {
-        accountWorkflowService.requestResetPassword(study, email);
+    public void requestResetPassword(AccountId accountId) {
+        accountWorkflowService.requestResetPassword(accountId);
     }
 
     /** {@inheritDoc} */
@@ -190,18 +192,18 @@ public class HibernateAccountDao implements AccountDao {
         verifyCredential(hibernateAccount.getId(), credentialName, algorithm, hash, credentialValue);
 
         // Unmarshall account
-        validateHealthCode(new StudyIdentifierImpl(hibernateAccount.getStudyId()), hibernateAccount, false);
+        validateHealthCode(hibernateAccount, false);
         Account account = unmarshallAccount(hibernateAccount);
         updateReauthToken(hibernateAccount, account);
         return account;
     }
 
     @Override
-    public Account getAccountAfterAuthentication(Study study, String email) {
-        HibernateAccount hibernateAccount = getHibernateAccountByEmail(study, email);
+    public Account getAccountAfterAuthentication(AccountId accountId) {
+        HibernateAccount hibernateAccount = getHibernateAccount(accountId);
         
         if (hibernateAccount != null) {
-            validateHealthCode(study.getStudyIdentifier(), hibernateAccount, false);
+            validateHealthCode(hibernateAccount, false);
             Account account = unmarshallAccount(hibernateAccount);
             updateReauthToken(hibernateAccount, account);
             return account;
@@ -212,8 +214,8 @@ public class HibernateAccountDao implements AccountDao {
     }
 
     @Override
-    public void signOut(StudyIdentifier studyId, String email) {
-        HibernateAccount hibernateAccount = getHibernateAccountByEmail(studyId, email);
+    public void signOut(AccountId accountId) {
+        HibernateAccount hibernateAccount = getHibernateAccount(accountId);
         if (hibernateAccount != null) {
             hibernateAccount.setReauthTokenHash(null);
             hibernateAccount.setReauthTokenAlgorithm(null);
@@ -302,7 +304,7 @@ public class HibernateAccountDao implements AccountDao {
             hibernateHelper.create(hibernateAccount);
         } catch (ConcurrentModificationException ex) {
             // account exists, but we don't have the userId, load the account
-            HibernateAccount otherAccount = getHibernateAccountByEmail(study, account.getEmail());
+            HibernateAccount otherAccount = getHibernateAccount(AccountId.forEmail(study.getIdentifier(), account.getEmail()));
             if (otherAccount != null) {
                 throw new EntityAlreadyExistsException(Account.class, "userId", otherAccount.getId());
             } else {
@@ -340,10 +342,10 @@ public class HibernateAccountDao implements AccountDao {
 
     /** {@inheritDoc} */
     @Override
-    public Account getAccount(Study study, String id) {
-        HibernateAccount hibernateAccount = hibernateHelper.getById(HibernateAccount.class, id);
+    public Account getAccount(AccountId accountId) {
+        HibernateAccount hibernateAccount = getHibernateAccount(accountId);
         if (hibernateAccount != null) {
-            validateHealthCode(study.getStudyIdentifier(), hibernateAccount, true);
+            validateHealthCode(hibernateAccount, true);
             Account account = unmarshallAccount(hibernateAccount);
             return account;
         } else {
@@ -352,21 +354,9 @@ public class HibernateAccountDao implements AccountDao {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public Account getAccountWithEmail(Study study, String email) {
-        HibernateAccount hibernateAccount = getHibernateAccountByEmail(study.getStudyIdentifier(), email);
-        if (hibernateAccount != null) {
-            validateHealthCode(study.getStudyIdentifier(), hibernateAccount, true);
-            return unmarshallAccount(hibernateAccount);
-        } else {
-            return null;
-        }
-    }
-
     private HibernateAccount fetchHibernateAccount(Study study, SignIn signIn) {
         // Fetch account
-        HibernateAccount hibernateAccount = getHibernateAccountByEmail(study.getStudyIdentifier(), signIn.getEmail());
+        HibernateAccount hibernateAccount = getHibernateAccount(signIn.getAccountId());
         if (hibernateAccount == null || hibernateAccount.getStatus() == AccountStatus.UNVERIFIED) {
             throw new EntityNotFoundException(Account.class);
         }
@@ -403,27 +393,36 @@ public class HibernateAccountDao implements AccountDao {
         return hash;
     }
 
-    // Helper method to get a single account for a given study and email address.
-    private HibernateAccount getHibernateAccountByEmail(StudyIdentifier studyId, String email) {
-        List<HibernateAccount> accountList = hibernateHelper.queryGet("from HibernateAccount where studyId='" +
-                studyId.getIdentifier() + "' and email='" + email + "'", null, null, HibernateAccount.class);
+    // Helper method to get a single account for a given study and id, email address, or phone number.
+    private HibernateAccount getHibernateAccount(AccountId accountId) {
+        AccountId unguarded = accountId.getUnguardedAccountId();
+        if (unguarded.getId() != null) {
+            return hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
+        }
+        String query = null;
+        if (unguarded.getEmail() != null) {
+            query = String.format(EMAIL_QUERY, unguarded.getStudyId(), unguarded.getEmail());
+        } else {
+            query = String.format(PHONE_QUERY, unguarded.getStudyId(), unguarded.getPhone());
+        }
+        List<HibernateAccount> accountList = hibernateHelper.queryGet(query, null, null, HibernateAccount.class);
         if (accountList.isEmpty()) {
             return null;
         }
         HibernateAccount hibernateAccount = accountList.get(0);
-
         if (accountList.size() > 1) {
-            LOG.warn("Multiple accounts found for the same study and email address; example accountId=" +
-                    hibernateAccount.getId());
+            LOG.warn("Multiple accounts found email/phone query; example accountId=" + hibernateAccount.getId());
         }
-
         return hibernateAccount;
     }
 
     /** {@inheritDoc} */
     @Override
-    public void deleteAccount(Study study, String id) {
-        hibernateHelper.deleteById(HibernateAccount.class, id);
+    public void deleteAccount(AccountId accountId) {
+        HibernateAccount hibernateAccount = getHibernateAccount(accountId);
+        if (hibernateAccount != null) {
+            hibernateHelper.deleteById(HibernateAccount.class, hibernateAccount.getId());    
+        }
     }
 
     /** {@inheritDoc} */
@@ -571,11 +570,11 @@ public class HibernateAccountDao implements AccountDao {
     // through the DAO will automatically have health code and ID populated, but accounts created in the DB directly
     // are left in a bad state. This method validates the health code mapping on a HibernateAccount and updates it as
     // is necessary.
-    private void validateHealthCode(StudyIdentifier studyId, HibernateAccount hibernateAccount, boolean doSave) {
+    private void validateHealthCode(HibernateAccount hibernateAccount, boolean doSave) {
         if (StringUtils.isBlank(hibernateAccount.getHealthCode()) ||
                 StringUtils.isBlank(hibernateAccount.getHealthId())) {
             // Generate health code mapping.
-            HealthId healthId = healthCodeService.createMapping(studyId);
+            HealthId healthId = healthCodeService.createMapping(new StudyIdentifierImpl(hibernateAccount.getStudyId()));
             hibernateAccount.setHealthCode(healthId.getCode());
             hibernateAccount.setHealthId(healthId.getId());
 

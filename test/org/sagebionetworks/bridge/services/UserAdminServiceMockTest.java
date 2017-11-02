@@ -29,6 +29,7 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
@@ -177,9 +178,11 @@ public class UserAdminServiceMockTest {
     public void deleteUser() {
         Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
         
+        AccountId accountId = AccountId.forId(study.getIdentifier(),  "userId");
+        
         doReturn("userId").when(account).getId();
         doReturn("healthCode").when(account).getHealthCode();
-        doReturn(account).when(accountDao).getAccount(study, "userId");
+        doReturn(account).when(accountDao).getAccount(accountId);
         
         doReturn(lookup).when(participantOptionsService).getOptions("healthCode");
         doReturn("externalId").when(lookup).getString(EXTERNAL_IDENTIFIER);
@@ -195,7 +198,7 @@ public class UserAdminServiceMockTest {
         verify(activityEventService).deleteActivityEvents("healthCode");
         verify(externalIdService).unassignExternalId(study, "externalId", "healthCode");
         verify(participantOptionsService).deleteAllParticipantOptions("healthCode");
-        verify(accountDao).deleteAccount(study, "userId");
+        verify(accountDao).deleteAccount(accountId);
     }
     
 }
