@@ -6,6 +6,7 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -14,6 +15,7 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 public class CriteriaContextTest {
     
     private static final ClientInfo CLIENT_INFO = ClientInfo.parseUserAgentString("app/20");
+    private static final String USER_ID = "user-id";
     
     @Test
     public void equalsHashCode() {
@@ -23,6 +25,7 @@ public class CriteriaContextTest {
     @Test
     public void defaultsClientInfo() {
         CriteriaContext context = new CriteriaContext.Builder()
+                .withUserId(USER_ID)
                 .withStudyIdentifier(TestConstants.TEST_STUDY).build();
         assertEquals(ClientInfo.UNKNOWN_CLIENT, context.getClientInfo());
         assertEquals(ImmutableSet.of(), context.getLanguages());
@@ -30,13 +33,14 @@ public class CriteriaContextTest {
     
     @Test(expected = NullPointerException.class)
     public void requiresStudyIdentifier() {
-        new CriteriaContext.Builder().build();
+        new CriteriaContext.Builder().withUserId(USER_ID).build();
     }
     
     @Test
     public void builderWorks() {
         CriteriaContext context = new CriteriaContext.Builder()
                 .withStudyIdentifier(TestConstants.TEST_STUDY)
+                .withUserId(USER_ID)
                 .withClientInfo(CLIENT_INFO)
                 .withUserDataGroups(TestConstants.USER_DATA_GROUPS).build();
         
@@ -47,5 +51,16 @@ public class CriteriaContextTest {
         CriteriaContext copy = new CriteriaContext.Builder().withContext(context).build();
         assertEquals(CLIENT_INFO, copy.getClientInfo());
         assertEquals(TestConstants.USER_DATA_GROUPS, copy.getUserDataGroups());
+    }
+    
+    @Test
+    public void contextHasAccountId() {
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withStudyIdentifier(TestConstants.TEST_STUDY)
+                .withUserId(USER_ID).build();
+        
+        AccountId accountId = context.getAccountId();
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, accountId.getStudyId());
+        assertEquals(USER_ID, accountId.getId());
     }
 }

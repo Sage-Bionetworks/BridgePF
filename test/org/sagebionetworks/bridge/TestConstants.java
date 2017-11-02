@@ -24,7 +24,7 @@ public class TestConstants {
     public static final String TEST_STUDY_IDENTIFIER = "api";
     public static final StudyIdentifier TEST_STUDY = new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER);
     public static final CriteriaContext TEST_CONTEXT = new CriteriaContext.Builder()
-            .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+            .withUserId("user-id").withStudyIdentifier(TestConstants.TEST_STUDY).build();
 
     public static final int TIMEOUT = 10000;
     public static final String TEST_BASE_URL = "http://localhost:3333";

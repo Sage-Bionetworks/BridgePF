@@ -289,10 +289,10 @@ public class HibernateAccountDao implements AccountDao {
      * happen outside of this method. This is used during migration so that Stormpath does ID generation and so we
      * don't verify email twice.
      */
-    public void createAccountForMigration(Study study, Account account, String accountId, boolean sendVerifyEmail) {
+    public void createAccountForMigration(Study study, Account account, String id, boolean sendVerifyEmail) {
         // Initial creation of account. Fill in basic initial parameters.
         HibernateAccount hibernateAccount = marshallAccount(account);
-        hibernateAccount.setId(accountId);
+        hibernateAccount.setId(id);
         hibernateAccount.setStudyId(study.getIdentifier());
         hibernateAccount.setCreatedOn(DateUtils.getCurrentMillisFromEpoch());
         hibernateAccount.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
@@ -304,7 +304,8 @@ public class HibernateAccountDao implements AccountDao {
             hibernateHelper.create(hibernateAccount);
         } catch (ConcurrentModificationException ex) {
             // account exists, but we don't have the userId, load the account
-            HibernateAccount otherAccount = getHibernateAccount(AccountId.forEmail(study.getIdentifier(), account.getEmail()));
+            AccountId accountId = AccountId.forEmail(study.getIdentifier(), account.getEmail());
+            HibernateAccount otherAccount = getHibernateAccount(accountId);
             if (otherAccount != null) {
                 throw new EntityAlreadyExistsException(Account.class, "userId", otherAccount.getId());
             } else {
@@ -395,6 +396,8 @@ public class HibernateAccountDao implements AccountDao {
 
     // Helper method to get a single account for a given study and id, email address, or phone number.
     private HibernateAccount getHibernateAccount(AccountId accountId) {
+        // This is the only method where accessing null values is not an error, since we're searching for 
+        // the value that was provided. There will be one.
         AccountId unguarded = accountId.getUnguardedAccountId();
         if (unguarded.getId() != null) {
             return hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
@@ -574,7 +577,8 @@ public class HibernateAccountDao implements AccountDao {
         if (StringUtils.isBlank(hibernateAccount.getHealthCode()) ||
                 StringUtils.isBlank(hibernateAccount.getHealthId())) {
             // Generate health code mapping.
-            HealthId healthId = healthCodeService.createMapping(new StudyIdentifierImpl(hibernateAccount.getStudyId()));
+            StudyIdentifier studyId = new StudyIdentifierImpl(hibernateAccount.getStudyId());
+            HealthId healthId = healthCodeService.createMapping(studyId);
             hibernateAccount.setHealthCode(healthId.getCode());
             hibernateAccount.setHealthId(healthId.getId());
 

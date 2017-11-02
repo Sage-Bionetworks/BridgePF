@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Objects;
@@ -47,30 +48,24 @@ public final class AccountId {
     // the DAO where these values are checked to determine the type of database query.
     
     public String getStudyId() {
-        //Preconditions.checkArgument(usePreconditions && studyId != null);
-        Preconditions.checkArgument( !(usePreconditions && studyId == null) );
+        checkArgument(!usePreconditions || studyId != null);
         return studyId;
     }
     public String getId() {
-        //Preconditions.checkArgument(usePreconditions && id != null);
-        Preconditions.checkArgument( !(usePreconditions && id == null) );
+        checkArgument(!usePreconditions || id != null);
         return id;
     }
     public String getEmail() {
-        //Preconditions.checkArgument(usePreconditions && email != null);
-        Preconditions.checkArgument( !(usePreconditions && email == null) );
+        checkArgument(!usePreconditions || email != null);
         return email;
     }
     public Phone getPhone() {
-        //Preconditions.checkArgument(usePreconditions && phone != null);
-        Preconditions.checkArgument( !(usePreconditions && phone == null) );
+        checkArgument(!usePreconditions || phone != null);
         return phone;
     }
-    
     public AccountId getUnguardedAccountId() {
         return new AccountId(this.studyId, this.id, this.email, this.phone, false);
     }
-    
     @Override
     public int hashCode() {
         return Objects.hash(studyId, email, id, phone, usePreconditions);

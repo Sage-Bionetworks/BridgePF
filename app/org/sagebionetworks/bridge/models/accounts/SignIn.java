@@ -53,7 +53,7 @@ public final class SignIn implements BridgeEntity {
         if (email != null) {
             return AccountId.forEmail(studyId, email);
         } else if (phone != null) {
-            return AccountId.forEmail(studyId, phone.getNumber());
+            return AccountId.forPhone(studyId, phone);
         }
         throw new IllegalArgumentException("SignIn not constructed with enough information to retrieve an account");
     }

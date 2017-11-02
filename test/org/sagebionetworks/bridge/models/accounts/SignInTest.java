@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.models.accounts;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
-
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
@@ -89,5 +89,23 @@ public class SignInTest {
         assertEquals("studyValue", signIn.getStudyId());
         assertEquals("tokenValue", signIn.getToken());
         assertEquals("reauthTokenValue", signIn.getReauthToken());
-    }  
+    }
+    
+    @Test
+    public void signInAccountIdWithEmail() {
+        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER).withEmail("email")
+                .withPassword("password").build();
+        AccountId accountId = signIn.getAccountId();
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, accountId.getStudyId());
+        assertEquals("email", accountId.getEmail());
+    }
+    
+    @Test
+    public void signInAccountIdWithPhone() {
+        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withPhone(TestConstants.PHONE).withPassword("password").build();
+        AccountId accountId = signIn.getAccountId();
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, accountId.getStudyId());
+        assertEquals(TestConstants.PHONE.getNumber(), accountId.getPhone().getNumber());
+    }
 }

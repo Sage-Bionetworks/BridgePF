@@ -325,10 +325,10 @@ public class ParticipantService {
         checkNotNull(study);
         checkArgument(isNotBlank(userId));
 
-        // TODO: Loading account twice in this code path.
-        getAccountThrowingException(study, userId);
+        // Don't throw an exception here, you'd be exposing that an email/phone number is in the system.
+        AccountId accountId = AccountId.forId(study.getIdentifier(), userId);
 
-        accountDao.requestResetPassword(AccountId.forId(study.getIdentifier(), userId));
+        accountDao.requestResetPassword(accountId);
     }
 
     public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(Study study, String userId,

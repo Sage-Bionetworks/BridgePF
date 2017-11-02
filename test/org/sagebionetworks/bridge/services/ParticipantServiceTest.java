@@ -737,9 +737,10 @@ public class ParticipantServiceTest {
         assertEquals(ID, accountId.getId());
     }
     
-    @Test(expected = EntityNotFoundException.class)
-    public void requestResetPasswordNoUserThrowsCorrectException() {
+    public void requestResetPasswordNoAccountIsSilent() {
         participantService.requestResetPassword(STUDY, ID);
+        
+        verifyNoMoreInteractions(accountDao);
     }
     
     @Test
