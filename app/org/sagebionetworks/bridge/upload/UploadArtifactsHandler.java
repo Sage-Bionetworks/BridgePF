@@ -61,6 +61,7 @@ public class UploadArtifactsHandler implements UploadValidationHandler {
                 attachmentIdsByFieldName.put(fieldName, attachmentId);
 
                 // step 2b: upload attachments to S3
+                logger.info("Accessing Bucket: " + ATTACHMENT_BUCKET + " with AttachmentId: " + attachmentId);
                 try {
                     s3Helper.writeBytesToS3(ATTACHMENT_BUCKET, attachmentId, data);
                 } catch (IOException ex) {
