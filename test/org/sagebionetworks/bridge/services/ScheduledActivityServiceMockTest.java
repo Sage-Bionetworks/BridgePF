@@ -213,12 +213,15 @@ public class ScheduledActivityServiceMockTest {
         service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID, ENDS_ON, STARTS_ON, null, 200);
     }
 
-    @Test(expected = BadRequestException.class)
-    public void activityHistoryEnforcesSameEndAndStartTimeZone() {
+    // This used to be a condition of using the service, but we have removed it because it's not
+    // necessary to process the request and at least some clients break this constraint when submitting
+    // a time range that spans a time zone change (such as daylight savings time).
+    @Test
+    public void activityHistoryDoesNotEnforceSameEndAndStartTimeZone() {
         // won't be same as default time zone, since this is not a real timezone
         DateTimeZone otherTimeZone = DateTimeZone.forOffsetHoursMinutes(4, 17);
         service.getActivityHistory(HEALTH_CODE, ACTIVITY_GUID,STARTS_ON,
-                ENDS_ON.withZone(otherTimeZone), null, 200);
+                ENDS_ON.withZone(otherTimeZone), null, 100);
     }
 
     @Test(expected = BadRequestException.class)
