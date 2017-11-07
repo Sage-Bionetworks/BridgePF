@@ -1,11 +1,8 @@
 package org.sagebionetworks.bridge.models.accounts;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Objects;
-
-import com.google.common.base.Preconditions;
 
 /**
  * An identifier that can be used to find an account (a study identifier with an ID, email, or phone number).
@@ -48,19 +45,27 @@ public final class AccountId {
     // the DAO where these values are checked to determine the type of database query.
     
     public String getStudyId() {
-        checkArgument(!usePreconditions || studyId != null);
+        if (usePreconditions && studyId == null) {
+            throw new NullPointerException("AccountId.studyId is null");
+        }
         return studyId;
     }
     public String getId() {
-        checkArgument(!usePreconditions || id != null);
+        if (usePreconditions && id == null) {
+            throw new NullPointerException("AccountId.id is null");
+        }
         return id;
     }
     public String getEmail() {
-        checkArgument(!usePreconditions || email != null);
+        if (usePreconditions && email == null) {
+            throw new NullPointerException("AccountId.email is null");
+        }
         return email;
     }
     public Phone getPhone() {
-        checkArgument(!usePreconditions || phone != null);
+        if (usePreconditions && phone == null) {
+            throw new NullPointerException("AccountId.phone is null");
+        }
         return phone;
     }
     public AccountId getUnguardedAccountId() {

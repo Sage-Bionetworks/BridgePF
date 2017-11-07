@@ -38,6 +38,21 @@ public class AccountIdTest {
     }
     
     @Test(expected = NullPointerException.class)
+    public void idAccessorThrows() {
+        AccountId.forEmail(TEST_STUDY_IDENTIFIER, "one").getId();
+    }
+    
+    @Test(expected = NullPointerException.class)
+    public void emailAccessorThrows() {
+        AccountId.forId(TEST_STUDY_IDENTIFIER, "one").getEmail();
+    }
+    
+    @Test(expected = NullPointerException.class)
+    public void phoneAccessorThrows() {
+        AccountId.forId(TEST_STUDY_IDENTIFIER, "one").getPhone();
+    }
+    
+    @Test(expected = NullPointerException.class)
     public void cannotCreateIdObjectWithNoEmail() {
         AccountId.forEmail(TEST_STUDY_IDENTIFIER, null);
     }
@@ -55,6 +70,21 @@ public class AccountIdTest {
     @Test(expected = NullPointerException.class)
     public void cannotCreateIdObjectWithNoStudy() {
         AccountId.forId(null, "id");
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void cannotCreateIdObjectWithNoStudyOrEmail() {
+        AccountId.forEmail(null, null);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void cannotCreateIdObjectWithNoStudyOrId() {
+        AccountId.forId(null, null);
+    }
+    
+    @Test(expected = NullPointerException.class)
+    public void cannotCreateIdObjectWithNoStudyOrPhone() {
+        AccountId.forPhone(null, null);
     }
     
     @Test

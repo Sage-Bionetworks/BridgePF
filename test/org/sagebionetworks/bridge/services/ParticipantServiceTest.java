@@ -730,11 +730,7 @@ public class ParticipantServiceTest {
         
         participantService.requestResetPassword(STUDY, ID);
         
-        verify(accountDao).requestResetPassword(accountIdCaptor.capture());
-        
-        AccountId accountId = accountIdCaptor.getValue();
-        assertEquals(STUDY.getIdentifier(), accountId.getStudyId());
-        assertEquals(ID, accountId.getId());
+        verify(accountDao).requestResetPassword(eq(STUDY), eq(ACCOUNT_ID));
     }
     
     public void requestResetPasswordNoAccountIsSilent() {

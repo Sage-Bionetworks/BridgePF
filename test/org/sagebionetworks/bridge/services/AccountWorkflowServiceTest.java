@@ -201,7 +201,7 @@ public class AccountWorkflowServiceTest {
         when(mockAccount.getEmail()).thenReturn(EMAIL);
         when(mockAccount.getStudyIdentifier()).thenReturn(TEST_STUDY);
         
-        service.requestResetPassword(ACCOUNT_ID_WITH_EMAIL);
+        service.requestResetPassword(study, ACCOUNT_ID_WITH_EMAIL);
         
         verify(mockCacheProvider).setString("ABC:api", EMAIL, 60*60*2);
         verify(mockSendMailService).sendEmail(emailProviderCaptor.capture());
@@ -221,7 +221,7 @@ public class AccountWorkflowServiceTest {
         when(service.createTimeLimitedToken()).thenReturn("ABC");
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(null);
         
-        service.requestResetPassword(ACCOUNT_ID_WITH_EMAIL);
+        service.requestResetPassword(study, ACCOUNT_ID_WITH_EMAIL);
         
         verify(mockCacheProvider, never()).setString("ABC:api", EMAIL, 60*5);
         verify(mockSendMailService, never()).sendEmail(emailProviderCaptor.capture());

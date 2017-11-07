@@ -167,12 +167,12 @@ public class AccountWorkflowService {
      * the email does not map to an account, in order to prevent account enumeration 
      * attacks.
      */
-    public void requestResetPassword(AccountId accountId) {
+    public void requestResetPassword(Study study, AccountId accountId) {
         checkNotNull(accountId);
+        checkArgument(study.getIdentifier().equals(accountId.getStudyId()));
         
         Account account = accountDao.getAccount(accountId);
         if (account != null) {
-            Study study = studyService.getStudy(account.getStudyIdentifier());
             sendPasswordResetRelatedEmail(study, account.getEmail(), study.getResetPasswordTemplate());    
         }
     }

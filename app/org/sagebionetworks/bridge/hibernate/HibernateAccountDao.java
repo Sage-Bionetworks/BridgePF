@@ -137,8 +137,8 @@ public class HibernateAccountDao implements AccountDao {
 
     /** {@inheritDoc} */
     @Override
-    public void requestResetPassword(AccountId accountId) {
-        accountWorkflowService.requestResetPassword(accountId);
+    public void requestResetPassword(Study study, AccountId accountId) {
+        accountWorkflowService.requestResetPassword(study, accountId);
     }
 
     /** {@inheritDoc} */
@@ -422,10 +422,12 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public void deleteAccount(AccountId accountId) {
-        HibernateAccount hibernateAccount = getHibernateAccount(accountId);
-        if (hibernateAccount != null) {
-            hibernateHelper.deleteById(HibernateAccount.class, hibernateAccount.getId());    
+        String userId = accountId.getUnguardedAccountId().getId();
+        if (userId == null) {
+            HibernateAccount hibernateAccount = getHibernateAccount(accountId);
+            userId = hibernateAccount.getId();
         }
+        hibernateHelper.deleteById(HibernateAccount.class, userId);    
     }
 
     /** {@inheritDoc} */

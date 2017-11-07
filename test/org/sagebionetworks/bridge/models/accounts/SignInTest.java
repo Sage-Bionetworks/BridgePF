@@ -108,4 +108,17 @@ public class SignInTest {
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, accountId.getStudyId());
         assertEquals(TestConstants.PHONE.getNumber(), accountId.getPhone().getNumber());
     }
+    
+    @Test
+    public void signInAccountIncomplete() {
+        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withPassword("password").build();
+        // SignIn should be validated to hold either email or phone before we 
+        // retrieve accountId 
+        try {
+            signIn.getAccountId();    
+        } catch(IllegalArgumentException e) {
+            assertEquals("SignIn not constructed with enough information to retrieve an account", e.getMessage());
+        }
+    }
 }
