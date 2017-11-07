@@ -43,7 +43,7 @@ public interface AccountDao {
      * Request that an email be sent to the account holder with a link to reset a password, including a 
      * one-time verification token. 
      */
-    void requestResetPassword(AccountId accountId);
+    void requestResetPassword(Study study, AccountId accountId);
     
     /**
      * Reset a password, supplying a new password and the one-time verification token that was sent via email 

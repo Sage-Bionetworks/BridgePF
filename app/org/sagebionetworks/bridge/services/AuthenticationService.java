@@ -311,7 +311,7 @@ public class AuthenticationService {
         Validate.entityThrowingException(EmailValidator.INSTANCE, email);
         try {
             AccountId accountId = AccountId.forEmail(study.getIdentifier(), email.getEmail());
-            accountDao.requestResetPassword(accountId);    
+            accountDao.requestResetPassword(study, accountId);    
         } catch(EntityNotFoundException e) {
             // Suppress this. Otherwise it reveals if the account does not exist
             LOG.info("Request reset password request for unregistered email in study '"+study.getIdentifier()+"'");

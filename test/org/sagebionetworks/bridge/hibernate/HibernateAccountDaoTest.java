@@ -8,7 +8,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -223,8 +222,8 @@ public class HibernateAccountDaoTest {
 
     @Test
     public void requestResetPassword() {
-        dao.requestResetPassword(ACCOUNT_ID_WITH_EMAIL);
-        verify(mockAccountWorkflowService).requestResetPassword(ACCOUNT_ID_WITH_EMAIL);
+        dao.requestResetPassword(STUDY, ACCOUNT_ID_WITH_EMAIL);
+        verify(mockAccountWorkflowService).requestResetPassword(STUDY, ACCOUNT_ID_WITH_EMAIL);
     }
 
     @Test
@@ -903,10 +902,19 @@ public class HibernateAccountDaoTest {
     }
     
     @Test
-    public void delete() throws Exception {
+    public void deleteWithoutId() throws Exception {
+        // Can't use email, so it will do a lookup of the account
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
-        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any())).thenReturn(ImmutableList.of(hibernateAccount));
         
+        dao.deleteAccount(ACCOUNT_ID_WITH_EMAIL);
+        
+        verify(mockHibernateHelper).deleteById(HibernateAccount.class, ACCOUNT_ID);
+    }
+    
+    @Test
+    public void deleteWithId() throws Exception {
+        // Directly deletes with the ID it has
         dao.deleteAccount(ACCOUNT_ID_WITH_ID);
         
         verify(mockHibernateHelper).deleteById(HibernateAccount.class, ACCOUNT_ID);
