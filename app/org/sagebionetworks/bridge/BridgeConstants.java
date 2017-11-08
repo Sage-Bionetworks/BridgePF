@@ -94,6 +94,12 @@ public class BridgeConstants {
     
     /**
      * This whitelist adds a few additional tags and attributes that are used by the CKEDITOR options we have 
+     * Limited to 140 characters (Java is UTF-16, so two bytes per character, assuming for now that 
+     * SNS converts these to ASCII.
+     */
+    public static final int SMS_CHARACTER_LIMIT = 140;
+
+    /**
      * displayed in the UI.
      */
     public static final Whitelist CKEDITOR_WHITELIST = Whitelist.relaxed()

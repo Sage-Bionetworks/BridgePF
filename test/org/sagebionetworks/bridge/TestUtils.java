@@ -117,7 +117,13 @@ public class TestUtils {
             Validate.entityThrowingException(validator, object);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
-            assertEquals(fieldNameAsLabel+error, e.getErrors().get(fieldName).get(0));
+            for (int i=0; i < e.getErrors().get(fieldName).size(); i++) {
+                String msg = e.getErrors().get(fieldName).get(i);
+                if ((fieldNameAsLabel+error).equals(msg)) {
+                    return;
+                }
+            }
+            fail("Did not find error message in errors object");
         }
     }
     
@@ -177,6 +183,11 @@ public class TestUtils {
     public static Http.Response mockPlayContextWithJson(Object object) throws Exception {
         String json = BridgeObjectMapper.get().writeValueAsString(object);
         return mockPlayContextWithJson(json, Maps.newHashMap());
+    }
+    
+    public static Http.Response mockPlayContextWithJson(Object object, Map<String, String[]> headers) throws Exception {
+        String json = BridgeObjectMapper.get().writeValueAsString(object);
+        return mockPlayContextWithJson(json, headers);
     }
     
     /**
@@ -376,6 +387,7 @@ public class TestUtils {
         // This study will save without further modification.
         DynamoStudy study = new DynamoStudy();
         study.setName("Test Study ["+clazz.getSimpleName()+"]");
+        study.setShortName("ShortName");
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         study.setStudyIdExcludedInExport(true);
         study.setVerifyEmailTemplate(new EmailTemplate("verifyEmail subject", "body with ${url}", MimeType.TEXT));

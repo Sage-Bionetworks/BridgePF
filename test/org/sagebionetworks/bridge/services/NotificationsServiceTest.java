@@ -20,9 +20,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.NotificationRegistrationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.NotImplementedException;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
@@ -214,5 +215,33 @@ public class NotificationsServiceTest {
         } catch(BadRequestException e) {
             assertEquals("Error sending push notification: bad parameter; bad parameter.", e.getMessage());
         }
+    }
+    
+    @Test
+    public void sendSMSMessageOK() throws Exception {
+        doReturn(mockPublishResult).when(mockSnsClient).publish(any());
+        String message = "This is my SMS message.";
+        
+        service.sendSMSMessage(STUDY_ID, TestConstants.PHONE, message);
+        
+        verify(mockSnsClient).publish(requestCaptor.capture());
+        
+        PublishRequest request = requestCaptor.getValue();
+        assertEquals(TestConstants.PHONE.getNumber(), request.getPhoneNumber());
+        assertEquals(message, request.getMessage());
+        assertEquals("Transactional",
+                request.getMessageAttributes().get(NotificationsService.SMS_TYPE).getStringValue());
+        assertEquals("Bridge", 
+                request.getMessageAttributes().get(NotificationsService.SENDER_ID).getStringValue());
+    }
+    
+    @Test(expected = BridgeServiceException.class)
+    public void sendSMSMessageTooLongInvalid() throws Exception {
+        doReturn(mockPublishResult).when(mockSnsClient).publish(any());
+        String message = "This is my SMS message.";
+        for (int i=0; i < 3; i++) {
+            message += message;
+        }
+        service.sendSMSMessage(STUDY_ID, TestConstants.PHONE, message);
     }
 }

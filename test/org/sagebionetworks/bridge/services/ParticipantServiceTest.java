@@ -4,9 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
@@ -179,6 +179,9 @@ public class ParticipantServiceTest {
     @Mock
     private PagedResourceList<AccountSummary> accountSummaries;
     
+    @Mock
+    private ExternalIdService externalIdService;
+    
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
     
@@ -205,9 +208,6 @@ public class ParticipantServiceTest {
     
     @Captor
     ArgumentCaptor<AccountId> accountIdCaptor;
-    
-    @Mock
-    private ExternalIdService externalIdService;
     
     @Before
     public void before() {
@@ -931,7 +931,7 @@ public class ParticipantServiceTest {
         when(accountDao.getPagedAccountSummaries(STUDY, 0, BridgeConstants.API_MINIMUM_PAGE_SIZE, null, null, null))
                 .thenReturn(accountSummaries);
         
-        participantService.createParticipant(STUDY,  CALLER_ROLES, PARTICIPANT, false);
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
     }
     
     private void verifyStatusCreate(Set<Roles> callerRoles) {

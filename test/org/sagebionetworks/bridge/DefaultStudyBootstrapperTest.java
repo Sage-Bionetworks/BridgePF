@@ -57,6 +57,7 @@ public class DefaultStudyBootstrapperTest {
         assertEquals("Test Study", study.getName());
         assertEquals(BridgeConstants.API_STUDY_ID_STRING, study.getIdentifier());
         assertEquals("Sage Bionetworks", study.getSponsorName());
+        assertEquals("TestStudy", study.getShortName());
         assertEquals(18, study.getMinAgeOfConsent());
         assertEquals("bridge-testing+consent@sagebase.org", study.getConsentNotificationEmail());
         assertEquals("bridge-testing+technical@sagebase.org", study.getTechnicalEmail());

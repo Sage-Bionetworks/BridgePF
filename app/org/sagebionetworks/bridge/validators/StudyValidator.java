@@ -69,6 +69,11 @@ public class StudyValidator implements Validator {
         if (StringUtils.isBlank(study.getName())) {
             errors.rejectValue("name", "is required");
         }
+        if (StringUtils.isBlank(study.getShortName())) {
+            errors.rejectValue("shortName", "is required");
+        } else if (study.getShortName().length() > 10) {
+            errors.rejectValue("shortName", "must be 10 characters or less");
+        }
         if (StringUtils.isBlank(study.getSponsorName())) {
             errors.rejectValue("sponsorName", "is required");
         }

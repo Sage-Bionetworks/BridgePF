@@ -81,7 +81,11 @@ public class AuthenticationControllerMockTest {
     private static final String TEST_SESSION_TOKEN = "session-token";
     private static final String TEST_STUDY_ID_STRING = "study-key";
     private static final StudyIdentifier TEST_STUDY_ID = new StudyIdentifierImpl(TEST_STUDY_ID_STRING);
-    private static final String TEST_VERIFY_EMAIL_TOKEN = "verify-email-token";
+    private static final String TEST_TOKEN = "verify-token";
+    private static final SignIn PHONE_SIGN_IN_REQUEST = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING)
+            .withPhone(TestConstants.PHONE).build();
+    private static final SignIn PHONE_SIGN_IN = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING)
+            .withPhone(TestConstants.PHONE).withToken(TEST_TOKEN).build();
 
     AuthenticationController controller;
 
@@ -110,6 +114,9 @@ public class AuthenticationControllerMockTest {
     
     @Captor
     ArgumentCaptor<PasswordReset> passwordResetCaptor;
+
+    @Captor
+    ArgumentCaptor<CriteriaContext> contextCaptor;
     
     UserSession userSession;
     
@@ -129,6 +136,7 @@ public class AuthenticationControllerMockTest {
         study.setDataGroups(TestConstants.USER_DATA_GROUPS);
         when(studyService.getStudy(TEST_STUDY_ID_STRING)).thenReturn(study);
         when(studyService.getStudy(TEST_STUDY_ID)).thenReturn(study);
+        
         controller.setStudyService(studyService);
     }
     
@@ -153,6 +161,9 @@ public class AuthenticationControllerMockTest {
         study.setIdentifier("study-test");
         doReturn(study).when(studyService).getStudy("study-test");
         doReturn(userSession).when(authenticationService).emailSignIn(any(CriteriaContext.class), any(SignIn.class));
+        
+        Metrics metrics = new Metrics(TEST_REQUEST_ID);
+        doReturn(metrics).when(controller).getMetrics();
         
         Result result = controller.emailSignIn();
         assertEquals(200, result.status());
@@ -583,7 +594,7 @@ public class AuthenticationControllerMockTest {
         
         // mock request
         String requestJsonString = "{\n" +
-                "   \"sptoken\":\"" + TEST_VERIFY_EMAIL_TOKEN + "\",\n" +
+                "   \"sptoken\":\"" + TEST_TOKEN + "\",\n" +
                 "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
                 "}";
 
@@ -599,7 +610,7 @@ public class AuthenticationControllerMockTest {
         // validate email verification
         verify(authenticationService).verifyEmail(emailVerifyCaptor.capture());
         EmailVerification emailVerify = emailVerifyCaptor.getValue();
-        assertEquals(TEST_VERIFY_EMAIL_TOKEN, emailVerify.getSptoken());
+        assertEquals(TEST_TOKEN, emailVerify.getSptoken());
     }
     
     @Test(expected = UnsupportedVersionException.class)
@@ -636,7 +647,7 @@ public class AuthenticationControllerMockTest {
     
     @Test
     public void resendEmailVerificationWorks() throws Exception {
-        mockEmailRequestPayload();
+        mockSignInWithEmailPayload();
         study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
         
         controller.resendEmailVerification();
@@ -649,7 +660,7 @@ public class AuthenticationControllerMockTest {
     
     @Test(expected = UnsupportedVersionException.class)
     public void resendEmailVerificationAppVersionDisabled() throws Exception {
-        mockEmailRequestPayload();
+        mockSignInWithEmailPayload();
         study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
         
         controller.resendEmailVerification();
@@ -699,21 +710,34 @@ public class AuthenticationControllerMockTest {
     }
     
     @Test
-    public void requestResetPassword() throws Exception {
-        mockEmailRequestPayload();
+    public void requestResetPasswordWithEmail() throws Exception {
+        mockSignInWithEmailPayload();
         study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
         
         controller.requestResetPassword();
         
-        verify(authenticationService).requestResetPassword(eq(study), emailCaptor.capture());
-        Email deser = emailCaptor.getValue();
-        assertEquals(TEST_STUDY_ID, deser.getStudyIdentifier());
+        verify(authenticationService).requestResetPassword(eq(study), signInCaptor.capture());
+        SignIn deser = signInCaptor.getValue();
+        assertEquals(TEST_STUDY_ID_STRING, deser.getStudyId());
         assertEquals(TEST_EMAIL, deser.getEmail());
+    }
+    
+    @Test
+    public void requestResetPasswordWithPhone() throws Exception {
+        mockSignInWithPhonePayload();
+        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
+        
+        controller.requestResetPassword();
+        
+        verify(authenticationService).requestResetPassword(eq(study), signInCaptor.capture());
+        SignIn deser = signInCaptor.getValue();
+        assertEquals(TEST_STUDY_ID_STRING, deser.getStudyId());
+        assertEquals(TestConstants.PHONE.getNumber(), deser.getPhone().getNumber());
     }
     
     @Test(expected = UnsupportedVersionException.class)
     public void requestResetPasswordAppVersionDisabled() throws Exception {
-        mockEmailRequestPayload();
+        mockSignInWithEmailPayload();
         study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20); // blocked
         
         controller.requestResetPassword();
@@ -721,16 +745,80 @@ public class AuthenticationControllerMockTest {
 
     @Test(expected = EntityNotFoundException.class)
     public void requestResetPasswordNoStudy() throws Exception {
-        TestUtils.mockPlayContextWithJson(new Email((StudyIdentifier) null, TEST_EMAIL));
+        when(studyService.getStudy((String)any())).thenThrow(new EntityNotFoundException(Study.class));
+        TestUtils.mockPlayContextWithJson(new SignIn.Builder().withEmail(TEST_EMAIL).build());
         controller.requestResetPassword();
     }
+    
+    @Test
+    public void requestPhoneSignIn() throws Exception {
+        TestUtils.mockPlayContextWithJson(PHONE_SIGN_IN_REQUEST);
+        
+        Result result = controller.requestPhoneSignIn();
+        TestUtils.assertResult(result, 202, "Message sent.");
+        
+        verify(authenticationService).requestPhoneSignIn(signInCaptor.capture());
+        
+        SignIn captured = signInCaptor.getValue();
+        assertEquals(TEST_STUDY_ID_STRING, captured.getStudyId());
+        assertEquals(TestConstants.PHONE.getNumber(), captured.getPhone().getNumber());
+    }
+    
+    @Test
+    public void phoneSignIn() throws Exception {
+        TestUtils.mockPlayContextWithJson(PHONE_SIGN_IN);
+        
+        Metrics metrics = new Metrics(TEST_REQUEST_ID);
+        doReturn(metrics).when(controller).getMetrics();
+        
+        when(authenticationService.phoneSignIn(any(), any())).thenReturn(userSession);
+        
+        Result result = controller.phoneSignIn();
+        assertEquals(200, result.status());
+        
+        verify(authenticationService).phoneSignIn(contextCaptor.capture(), signInCaptor.capture());
+        
+        CriteriaContext context = contextCaptor.getValue();
+        assertEquals(TEST_STUDY_ID_STRING, context.getStudyIdentifier().getIdentifier());
+        
+        SignIn captured = signInCaptor.getValue();
+        assertEquals(TEST_STUDY_ID_STRING, captured.getStudyId());
+        assertEquals(TEST_TOKEN, captured.getToken());
+        assertEquals(TestConstants.PHONE.getNumber(), captured.getPhone().getNumber());
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void phoneSignInMissingStudy() throws Exception {
+        SignIn badPhoneSignIn = new SignIn.Builder().withStudy(null)
+                .withPhone(TestConstants.PHONE).withToken(TEST_TOKEN).build();
+        TestUtils.mockPlayContextWithJson(badPhoneSignIn);
+        
+        controller.phoneSignIn();
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void phoneSignInBadStudy() throws Exception {
+        SignIn badPhoneSignIn = new SignIn.Builder().withStudy("bad-study")
+                .withPhone(TestConstants.PHONE).withToken(TEST_TOKEN).build();
+        TestUtils.mockPlayContextWithJson(badPhoneSignIn);
+        when(authenticationService.phoneSignIn(any(), any())).thenReturn(userSession);
+        when(studyService.getStudy((String)any())).thenThrow(new EntityNotFoundException(Study.class));
+        
+        controller.phoneSignIn();
+    }
+    
+    private void mockSignInWithEmailPayload() throws Exception {
+        Map<String, String[]> headers = new ImmutableMap.Builder<String, String[]>()
+                .put("User-Agent", new String[] { "App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4" }).build();
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING).withEmail(TEST_EMAIL).build();
+        TestUtils.mockPlayContextWithJson(signIn, headers);
+    }
 
-    private void mockEmailRequestPayload() throws Exception {
-        Map<String,String[]> headers = new ImmutableMap.Builder<String,String[]>()
-                .put("User-Agent", new String[]{"App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4"}).build();
-        String json = TestUtils.createJson(
-                "{'study':'" + TEST_STUDY_ID_STRING +"','email':'"+TEST_EMAIL+"'}");
-        TestUtils.mockPlayContextWithJson(json, headers);
+    private void mockSignInWithPhonePayload() throws Exception {
+        Map<String, String[]> headers = new ImmutableMap.Builder<String, String[]>()
+                .put("User-Agent", new String[] { "App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4" }).build();
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING).withPhone(TestConstants.PHONE).build();
+        TestUtils.mockPlayContextWithJson(signIn, headers);
     }
 
     private static void assertSessionInPlayResult(Result result) throws Exception {

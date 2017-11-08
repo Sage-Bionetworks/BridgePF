@@ -14,6 +14,8 @@ public class SecureTokenGenerator {
 
     public static final SecureTokenGenerator INSTANCE = new SecureTokenGenerator();
     
+    public static final SecureTokenGenerator PHONE_CODE_INSTANCE = new SecureTokenGenerator(6, new SecureRandom(), "0123456789");
+    
     private static final String ALPHANUMERIC = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     private final Random random;

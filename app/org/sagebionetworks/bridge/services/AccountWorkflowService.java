@@ -7,6 +7,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.io.IOException;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -16,9 +17,9 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
@@ -65,6 +66,8 @@ public class AccountWorkflowService {
     private AccountDao accountDao;
     
     private CacheProvider cacheProvider;
+    
+    private NotificationsService notificationsService;
 
     @Autowired
     public final void setStudyService(StudyService studyService) {
@@ -86,6 +89,11 @@ public class AccountWorkflowService {
         this.cacheProvider = cacheProvider;
     }
     
+    @Autowired
+    public final void setNotificationsService(NotificationsService notificationsService) {
+        this.notificationsService = notificationsService;
+    }
+    
     /**
      * Send email verification token as part of creating an account that requires an email address be
      * verified. We assume that an account has been created and that email verification should be sent
@@ -94,21 +102,22 @@ public class AccountWorkflowService {
     public void sendEmailVerificationToken(Study study, String userId, String email) {
         checkNotNull(study);
         checkArgument(isNotBlank(userId));
-        checkArgument(isNotBlank(email));
-
-        String sptoken = createTimeLimitedToken();
         
-        saveVerification(sptoken, new VerificationData(study.getIdentifier(), userId));
-        
-        String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
-        String url = String.format(VERIFY_EMAIL_URL, BASE_URL, studyId, sptoken);
-        
-        BasicEmailProvider provider = new BasicEmailProvider.Builder()
-            .withStudy(study)
-            .withEmailTemplate(study.getVerifyEmailTemplate())
-            .withRecipientEmail(email)
-            .withToken(URL_TOKEN, url).build();
-        sendMailService.sendEmail(provider);         
+        if (email != null) {
+            String sptoken = createTimeLimitedToken();
+            
+            saveVerification(sptoken, new VerificationData(study.getIdentifier(), userId));
+            
+            String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
+            String url = String.format(VERIFY_EMAIL_URL, BASE_URL, studyId, sptoken);
+            
+            BasicEmailProvider provider = new BasicEmailProvider.Builder()
+                .withStudy(study)
+                .withEmailTemplate(study.getVerifyEmailTemplate())
+                .withRecipientEmail(email)
+                .withToken(URL_TOKEN, url).build();
+            sendMailService.sendEmail(provider);         
+        }
     }
     
     /**
@@ -154,11 +163,17 @@ public class AccountWorkflowService {
      * provide a link to reset the password if desired. The workflow of this email then merges 
      * with the workflow to reset a password.
      */
-    public void notifyAccountExists(Study study, Email email) {
+    public void notifyAccountExists(Study study, AccountId accountId) {
         checkNotNull(study);
-        checkNotNull(email);
+        checkNotNull(accountId);
         
-        sendPasswordResetRelatedEmail(study, email.getEmail(), study.getAccountExistsTemplate());
+        Account account = accountDao.getAccount(accountId);
+        if (account.getEmail() != null && account.getEmailVerified()) {
+            sendPasswordResetRelatedEmail(study, account.getEmail(), study.getAccountExistsTemplate());    
+        } else if (account.getPhone() != null && account.getPhoneVerified()) {
+            String message = "Account for " + study.getShortName() + " already exists. Reset password: ";
+            sendPasswordResetRelatedSMS(study, account.getPhone(), message);
+        }
     }
     
     /**
@@ -173,10 +188,15 @@ public class AccountWorkflowService {
         
         Account account = accountDao.getAccount(accountId);
         if (account != null) {
-            sendPasswordResetRelatedEmail(study, account.getEmail(), study.getResetPasswordTemplate());    
+            if (account.getEmail() != null && account.getEmailVerified()) {
+                sendPasswordResetRelatedEmail(study, account.getEmail(), study.getResetPasswordTemplate());    
+            } else if (account.getPhone() != null && account.getPhoneVerified()) {
+                String message = "Reset " + study.getShortName() + " password: ";
+                sendPasswordResetRelatedSMS(study, account.getPhone(), message);
+            }
         }
     }
-
+    
     private void sendPasswordResetRelatedEmail(Study study, String email, EmailTemplate template) {
         String sptoken = createTimeLimitedToken();
         
@@ -193,6 +213,17 @@ public class AccountWorkflowService {
             .withToken(URL_TOKEN, url)
             .withToken(EXP_WINDOW_TOKEN, Integer.toString(EXPIRE_IN_SECONDS/60/60)).build();
         sendMailService.sendEmail(provider);
+    }
+    
+    private void sendPasswordResetRelatedSMS(Study study, Phone phone, String message) {
+        String sptoken = createTimeLimitedToken();        
+        String cacheKey = sptoken + ":" + study.getIdentifier();
+        cacheProvider.setString(cacheKey, phone.getNumber(), EXPIRE_IN_SECONDS);
+        
+        String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
+        String url = String.format(RESET_PASSWORD_URL, BASE_URL, studyId, sptoken);
+        
+        notificationsService.sendSMSMessage(study.getStudyIdentifier(), phone, message + url);
     }
 
     /**
@@ -246,6 +277,6 @@ public class AccountWorkflowService {
     }    
     
     protected String createTimeLimitedToken() {
-        return BridgeUtils.generateGuid().replaceAll("-", "");
+        return SecureTokenGenerator.INSTANCE.nextToken();
     }
 }
