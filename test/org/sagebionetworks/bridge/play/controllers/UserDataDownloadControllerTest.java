@@ -51,7 +51,8 @@ public class UserDataDownloadControllerTest {
     
     @Test
     public void test() throws Exception {
-        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withEmail(EMAIL).build();
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withEmail(EMAIL)
+                .withEmailVerified(Boolean.TRUE).build();
         doReturn(STUDY_ID).when(mockSession).getStudyIdentifier();
         doReturn(participant).when(mockSession).getParticipant();
         
@@ -77,7 +78,8 @@ public class UserDataDownloadControllerTest {
     
     @Test
     public void testQueryParameters() throws Exception {
-        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withEmail(EMAIL).build();
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withEmail(EMAIL)
+                .withEmailVerified(Boolean.TRUE).build();
         doReturn(STUDY_ID).when(mockSession).getStudyIdentifier();
         doReturn(participant).when(mockSession).getParticipant();
         
@@ -101,6 +103,13 @@ public class UserDataDownloadControllerTest {
         controller.requestUserData("2015-08-15", "2015-08-19");
     }
     
-    
-    
+    @Test(expected = BadRequestException.class)
+    public void throwExceptionIfAccountEmailUnverified() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID)
+                .withEmail(EMAIL).withEmailVerified(Boolean.FALSE).build();
+        doReturn(STUDY_ID).when(mockSession).getStudyIdentifier();
+        doReturn(participant).when(mockSession).getParticipant();
+
+        controller.requestUserData("2015-08-15", "2015-08-19");
+    }
 }

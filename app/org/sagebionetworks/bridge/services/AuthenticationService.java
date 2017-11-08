@@ -394,6 +394,7 @@ public class AuthenticationService {
         if (account.getStatus() == AccountStatus.DISABLED) {
             throw new AccountDisabledException();
         }
+        // Update account state before we create the session, so it's accurate...
         accountDao.verifyChannel(channelType, account);
 
         UserSession session = getSessionFromAccount(study, context, account);
