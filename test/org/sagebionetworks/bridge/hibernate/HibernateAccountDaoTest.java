@@ -918,6 +918,7 @@ public class HibernateAccountDaoTest {
         dao.deleteAccount(ACCOUNT_ID_WITH_ID);
         
         verify(mockHibernateHelper).deleteById(HibernateAccount.class, ACCOUNT_ID);
+        verify(mockHibernateHelper, never()).queryGet(any(), any(), any(), any());
     }
 
     @Test

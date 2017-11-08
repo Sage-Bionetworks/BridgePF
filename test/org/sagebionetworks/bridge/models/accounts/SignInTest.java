@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
@@ -116,7 +117,8 @@ public class SignInTest {
         // SignIn should be validated to hold either email or phone before we 
         // retrieve accountId 
         try {
-            signIn.getAccountId();    
+            signIn.getAccountId();
+            fail("Should have thrown an exception");
         } catch(IllegalArgumentException e) {
             assertEquals("SignIn not constructed with enough information to retrieve an account", e.getMessage());
         }
