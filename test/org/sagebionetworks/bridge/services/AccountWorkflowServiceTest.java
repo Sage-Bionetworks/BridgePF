@@ -26,6 +26,7 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
@@ -43,6 +44,8 @@ public class AccountWorkflowServiceTest {
     private static final String SPTOKEN = "sptoken";
     private static final String USER_ID = "userId";
     private static final String EMAIL = "email@email.com";
+    private static final AccountId ACCOUNT_ID_WITH_ID = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
+    private static final AccountId ACCOUNT_ID_WITH_EMAIL = AccountId.forEmail(TEST_STUDY_IDENTIFIER, EMAIL);
 
     @Mock
     private StudyService mockStudyService;
@@ -111,27 +114,24 @@ public class AccountWorkflowServiceTest {
     
     @Test
     public void resendEmailVerificationToken() {
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
-        when(mockAccountDao.getAccountWithEmail(study, EMAIL)).thenReturn(mockAccount);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(mockAccount);
         when(mockAccount.getId()).thenReturn(USER_ID);
+        when(mockAccount.getEmail()).thenReturn(EMAIL);
         
-        Email email = new Email(TEST_STUDY_IDENTIFIER, EMAIL);
-        
-        service.resendEmailVerificationToken(TEST_STUDY, email);
+        service.resendEmailVerificationToken(ACCOUNT_ID_WITH_EMAIL);
         
         verify(service).sendEmailVerificationToken(study, USER_ID, EMAIL);
     }
     
     @Test
     public void resendEmailVerificationTokenFailsWithMissingStudy() {
-        when(mockStudyService.getStudy(TEST_STUDY)).thenThrow(new EntityNotFoundException(Study.class));
-        when(mockAccountDao.getAccountWithEmail(study, EMAIL)).thenReturn(mockAccount);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenThrow(new EntityNotFoundException(Study.class));
+        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(mockAccount);
         when(mockAccount.getId()).thenReturn(USER_ID);
         
-        Email email = new Email(TEST_STUDY_IDENTIFIER, EMAIL);
-        
         try {
-            service.resendEmailVerificationToken(TEST_STUDY, email);
+            service.resendEmailVerificationToken(ACCOUNT_ID_WITH_EMAIL);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
         }
@@ -141,12 +141,10 @@ public class AccountWorkflowServiceTest {
     @Test
     public void resendEmailVerificationTokenFailsQuietlyWithMissingAccount() {
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
-        when(mockAccountDao.getAccountWithEmail(study, EMAIL)).thenReturn(null);
+        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(null);
         when(mockAccount.getId()).thenReturn(USER_ID);
         
-        Email email = new Email(TEST_STUDY_IDENTIFIER, EMAIL);
-        
-        service.resendEmailVerificationToken(TEST_STUDY, email);
+        service.resendEmailVerificationToken(ACCOUNT_ID_WITH_EMAIL);
         
         verify(service, never()).sendEmailVerificationToken(study, USER_ID, EMAIL);
     }
@@ -156,7 +154,7 @@ public class AccountWorkflowServiceTest {
         when(mockCacheProvider.getString(SPTOKEN)).thenReturn(
             TestUtils.createJson("{'studyId':'api','userId':'userId'}"));
         when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
-        when(mockAccountDao.getAccount(study, "userId")).thenReturn(mockAccount);
+        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(mockAccount);
         when(mockAccount.getId()).thenReturn("accountId");
         
         EmailVerification verification = new EmailVerification(SPTOKEN);
@@ -198,11 +196,12 @@ public class AccountWorkflowServiceTest {
     @Test
     public void requestResetPassword() throws Exception {
         when(service.createTimeLimitedToken()).thenReturn("ABC");
-        when(mockAccountDao.getAccountWithEmail(study, EMAIL)).thenReturn(mockAccount);
+        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(mockAccount);
+        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockAccount.getEmail()).thenReturn(EMAIL);
+        when(mockAccount.getStudyIdentifier()).thenReturn(TEST_STUDY);
         
-        Email emailObj = new Email(TEST_STUDY_IDENTIFIER, EMAIL);
-        
-        service.requestResetPassword(study, emailObj);
+        service.requestResetPassword(study, ACCOUNT_ID_WITH_EMAIL);
         
         verify(mockCacheProvider).setString("ABC:api", EMAIL, 60*60*2);
         verify(mockSendMailService).sendEmail(emailProviderCaptor.capture());
@@ -220,11 +219,9 @@ public class AccountWorkflowServiceTest {
     @Test
     public void requestResetPasswordInvalidEmailFailsQuietly() throws Exception {
         when(service.createTimeLimitedToken()).thenReturn("ABC");
-        when(mockAccountDao.getAccountWithEmail(study, EMAIL)).thenReturn(null);
+        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(null);
         
-        Email emailObj = new Email(TEST_STUDY_IDENTIFIER, EMAIL);
-        
-        service.requestResetPassword(study, emailObj);
+        service.requestResetPassword(study, ACCOUNT_ID_WITH_EMAIL);
         
         verify(mockCacheProvider, never()).setString("ABC:api", EMAIL, 60*5);
         verify(mockSendMailService, never()).sendEmail(emailProviderCaptor.capture());
@@ -234,7 +231,7 @@ public class AccountWorkflowServiceTest {
     public void resetPassword() {
         when(mockCacheProvider.getString("sptoken:api")).thenReturn(EMAIL);
         when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
-        when(mockAccountDao.getAccountWithEmail(study, EMAIL)).thenReturn(mockAccount);
+        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(mockAccount);
 
         PasswordReset passwordReset = new PasswordReset("newPassword", "sptoken", TEST_STUDY_IDENTIFIER);
         
@@ -265,7 +262,7 @@ public class AccountWorkflowServiceTest {
     public void resetPasswordInvalidAccount() {
         when(mockCacheProvider.getString("sptoken:api")).thenReturn(EMAIL);
         when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
-        when(mockAccountDao.getAccountWithEmail(study, EMAIL)).thenReturn(null);
+        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(null);
 
         PasswordReset passwordReset = new PasswordReset("newPassword", "sptoken", TEST_STUDY_IDENTIFIER);
         

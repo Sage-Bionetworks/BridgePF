@@ -43,6 +43,7 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
@@ -274,7 +275,7 @@ public class AuthenticationServiceTest {
 
         IdentifierHolder holder = authService.signUp(study, participant);
         
-        Account account = accountDao.getAccount(study, holder.getIdentifier());
+        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), holder.getIdentifier()));
         
         Set<String> persistedGroups = optionsService.getOptions(account.getHealthCode()).getStringSet(DATA_GROUPS);
         assertEquals(groups, persistedGroups);

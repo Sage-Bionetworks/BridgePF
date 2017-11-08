@@ -8,6 +8,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -35,6 +36,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -73,8 +75,6 @@ public class ConsentServiceMockTest {
     @Mock
     private SubpopulationService subpopService;
     @Mock
-    private StudyService studyService;
-    @Mock
     private Subpopulation subpopulation;
 
     private Study study;
@@ -90,7 +90,6 @@ public class ConsentServiceMockTest {
         consentService.setSendMailService(sendMailService);
         consentService.setActivityEventService(activityEventService);
         consentService.setStudyConsentService(studyConsentService);
-        consentService.setStudyService(studyService);
         consentService.setSubpopulationService(subpopService);
         
         study = TestUtils.getValidStudy(ConsentServiceMockTest.class);
@@ -104,14 +103,12 @@ public class ConsentServiceMockTest {
                 .withSignedOn(SIGNED_ON).build();
         
         account = spy(new GenericAccount()); // mock(Account.class);
-        when(accountDao.getAccount(any(Study.class), any(String.class))).thenReturn(account);
+        when(accountDao.getAccount(any(AccountId.class))).thenReturn(account);
         
         StudyConsentView studyConsentView = mock(StudyConsentView.class);
         when(studyConsentView.getCreatedOn()).thenReturn(CONSENT_CREATED_ON);
         when(studyConsentService.getActiveConsent(subpopulation)).thenReturn(studyConsentView);
         when(subpopService.getSubpopulation(study.getStudyIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
-        
-        when(studyService.getStudy(study.getStudyIdentifier())).thenReturn(study);
     }
     
     @Test
@@ -230,10 +227,12 @@ public class ConsentServiceMockTest {
         optionsMap.put(EXTERNAL_IDENTIFIER.name(), participant.getExternalId());
         
         doReturn(participant.getHealthCode()).when(account).getHealthCode();
-        doReturn(account).when(accountDao).getAccount(study, participant.getId());
+        doReturn(account).when(accountDao).getAccount(AccountId.forId(study.getIdentifier(), participant.getId()));
         doReturn(new ParticipantOptionsLookup(optionsMap)).when(optionsService).getOptions(participant.getHealthCode());
         
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(study.getStudyIdentifier()).build();
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withUserId(participant.getId())
+                .withStudyIdentifier(study.getStudyIdentifier()).build();
 
         // Add two consents to the account, one withdrawn, one active. This tests to make sure we're not accidentally
         // dropping withdrawn consents from the history.
@@ -248,7 +247,7 @@ public class ConsentServiceMockTest {
         ArgumentCaptor<Account> captor = ArgumentCaptor.forClass(Account.class);
         ArgumentCaptor<MimeTypeEmailProvider> emailCaptor = ArgumentCaptor.forClass(MimeTypeEmailProvider.class);
         
-        verify(accountDao).getAccount(study, participant.getId());
+        verify(accountDao, times(2)).getAccount(context.getAccountId());
         verify(accountDao).updateAccount(captor.capture());
         // It happens twice because we do it the first time to set up the test properly
         //verify(account, times(2)).getConsentSignatures(setterCaptor.capture());
@@ -287,10 +286,12 @@ public class ConsentServiceMockTest {
         optionsMap.put(ParticipantOption.EXTERNAL_IDENTIFIER.name(), participant.getExternalId());
 
         doReturn(participant.getHealthCode()).when(account).getHealthCode();
-        doReturn(account).when(accountDao).getAccount(study, participant.getId());
+        doReturn(account).when(accountDao).getAccount(AccountId.forId(study.getIdentifier(), participant.getId()));
         doReturn(new ParticipantOptionsLookup(optionsMap)).when(optionsService).getOptions(participant.getHealthCode());
         
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(study.getStudyIdentifier()).build();
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withUserId(participant.getId())
+                .withStudyIdentifier(study.getStudyIdentifier()).build();
         
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
         consentService.withdrawConsent(study, SUBPOP_GUID, participant, context, new Withdrawal("For reasons."), SIGNED_ON);
@@ -303,9 +304,11 @@ public class ConsentServiceMockTest {
     
     @Test
     public void accountFailureConsistent() {
-        when(accountDao.getAccount(any(), any())).thenThrow(new BridgeServiceException("Something bad happend", 500));
+        when(accountDao.getAccount(any())).thenThrow(new BridgeServiceException("Something bad happend", 500));
         
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(study.getStudyIdentifier()).build();
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withUserId(participant.getId())
+                .withStudyIdentifier(study.getStudyIdentifier()).build();
         try {
             consentService.withdrawConsent(study, SUBPOP_GUID, participant, context, new Withdrawal("For reasons."),
                     DateTime.now().getMillis());

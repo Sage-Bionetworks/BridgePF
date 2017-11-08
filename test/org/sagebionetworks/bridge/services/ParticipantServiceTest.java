@@ -44,6 +44,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.Environment;
@@ -60,6 +61,7 @@ import org.sagebionetworks.bridge.exceptions.LimitExceededException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
@@ -91,7 +93,7 @@ public class ParticipantServiceTest {
     private static final Study STUDY = new DynamoStudy();
     private static final Phone PHONE = new Phone("4082585869", "US");
     static {
-        STUDY.setIdentifier("test-study");
+        STUDY.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         STUDY.setHealthCodeExportEnabled(true);
         STUDY.setUserProfileAttributes(STUDY_PROFILE_ATTRS);
         STUDY.setDataGroups(STUDY_DATA_GROUPS);
@@ -114,6 +116,7 @@ public class ParticipantServiceTest {
     private static final DateTimeZone USER_TIME_ZONE = DateTimeZone.forOffsetHours(-3);
     private static final Map<String,String> ATTRS = new ImmutableMap.Builder<String,String>().put("can_be_recontacted","true").build();
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create(STUDY.getIdentifier());
+    private static final AccountId ACCOUNT_ID = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, ID);
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder()
             .withFirstName(FIRST_NAME)
             .withLastName(LAST_NAME)
@@ -200,6 +203,9 @@ public class ParticipantServiceTest {
     @Captor
     ArgumentCaptor<CriteriaContext> contextCaptor;
     
+    @Captor
+    ArgumentCaptor<AccountId> accountIdCaptor;
+    
     @Mock
     private ExternalIdService externalIdService;
     
@@ -225,7 +231,7 @@ public class ParticipantServiceTest {
         when(account.getId()).thenReturn(ID);
         when(accountDao.constructAccount(STUDY, EMAIL, PHONE, PASSWORD)).thenReturn(account);
         when(accountDao.createAccount(same(STUDY), same(account), anyBoolean())).thenReturn(ID);
-        when(accountDao.getAccount(STUDY, ID)).thenReturn(account);
+        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
         when(account.getHealthCode()).thenReturn(HEALTH_CODE);
         when(account.getEmail()).thenReturn(EMAIL);
         when(optionsService.getOptions(HEALTH_CODE)).thenReturn(lookup);
@@ -361,7 +367,7 @@ public class ParticipantServiceTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void getParticipantEmailDoesNotExist() {
-        when(accountDao.getAccount(STUDY, ID)).thenReturn(null);
+        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(null);
         
         participantService.getParticipant(STUDY, ID, false);
     }
@@ -447,19 +453,19 @@ public class ParticipantServiceTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void signOutUserWhoDoesNotExist() {
-        when(accountDao.getAccount(STUDY, ID)).thenReturn(null);
+        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(null);
         
         participantService.signUserOut(STUDY, ID);
     }
     
     @Test
     public void signOutUser() {
-        when(accountDao.getAccount(STUDY, ID)).thenReturn(account);
+        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
         when(account.getId()).thenReturn("userId");
         
         participantService.signUserOut(STUDY, ID);
         
-        verify(accountDao).getAccount(STUDY, ID);
+        verify(accountDao).getAccount(ACCOUNT_ID);
         verify(cacheProvider).removeSessionByUserId("userId");
     }
     
@@ -517,7 +523,7 @@ public class ParticipantServiceTest {
     
     @Test
     public void updateParticipantWithNoAccount() {
-        doThrow(new EntityNotFoundException(Account.class)).when(accountDao).getAccount(STUDY, ID);
+        doThrow(new EntityNotFoundException(Account.class)).when(accountDao).getAccount(ACCOUNT_ID);
         try {
             participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
             fail("Should have thrown exception.");
@@ -724,16 +730,13 @@ public class ParticipantServiceTest {
         
         participantService.requestResetPassword(STUDY, ID);
         
-        verify(accountDao).requestResetPassword(eq(STUDY), emailCaptor.capture());
-        
-        Email email = emailCaptor.getValue();
-        assertEquals(STUDY.getStudyIdentifier(), email.getStudyIdentifier());
-        assertEquals(EMAIL, email.getEmail());
+        verify(accountDao).requestResetPassword(eq(STUDY), eq(ACCOUNT_ID));
     }
     
-    @Test(expected = EntityNotFoundException.class)
-    public void requestResetPasswordNoUserThrowsCorrectException() {
+    public void requestResetPasswordNoAccountIsSilent() {
         participantService.requestResetPassword(STUDY, ID);
+        
+        verifyNoMoreInteractions(accountDao);
     }
     
     @Test
@@ -780,11 +783,11 @@ public class ParticipantServiceTest {
         
         participantService.resendEmailVerification(STUDY, ID);
         
-        verify(accountDao).resendEmailVerificationToken(eq(STUDY.getStudyIdentifier()), emailCaptor.capture());
+        verify(accountDao).resendEmailVerificationToken(accountIdCaptor.capture());
         
-        Email email = emailCaptor.getValue();
-        assertEquals(STUDY.getStudyIdentifier(), email.getStudyIdentifier());
-        assertEquals(EMAIL, email.getEmail());
+        AccountId accountId = accountIdCaptor.getValue();
+        assertEquals(STUDY.getIdentifier(), accountId.getStudyId());
+        assertEquals(EMAIL, accountId.getEmail());
     }
     
     @Test

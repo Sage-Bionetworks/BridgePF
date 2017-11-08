@@ -15,12 +15,12 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -115,14 +115,13 @@ public class AccountWorkflowService {
      * Send another email verification token. This creates and sends a new verification token 
      * starting with the user's email address.
      */
-    public void resendEmailVerificationToken(StudyIdentifier studyIdentifier, Email email) {
-        checkNotNull(studyIdentifier);
-        checkNotNull(email);
+    public void resendEmailVerificationToken(AccountId accountId) {
+        checkNotNull(accountId);
         
-        Study study = studyService.getStudy(studyIdentifier);
-        Account account = accountDao.getAccountWithEmail(study, email.getEmail());
+        Study study = studyService.getStudy(accountId.getStudyId());
+        Account account = accountDao.getAccount(accountId);
         if (account != null) {
-            sendEmailVerificationToken(study, account.getId(), email.getEmail());
+            sendEmailVerificationToken(study, account.getId(), account.getEmail());
         }
     }
     
@@ -143,7 +142,7 @@ public class AccountWorkflowService {
         }
         Study study = studyService.getStudy(data.getStudyId());
 
-        Account account = accountDao.getAccount(study, data.getUserId());
+        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), data.getUserId()));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
@@ -159,7 +158,7 @@ public class AccountWorkflowService {
         checkNotNull(study);
         checkNotNull(email);
         
-        sendPasswordResetRelatedEmail(study, email, study.getAccountExistsTemplate());
+        sendPasswordResetRelatedEmail(study, email.getEmail(), study.getAccountExistsTemplate());
     }
     
     /**
@@ -168,21 +167,21 @@ public class AccountWorkflowService {
      * the email does not map to an account, in order to prevent account enumeration 
      * attacks.
      */
-    public void requestResetPassword(Study study, Email email) {
-        checkNotNull(study);
-        checkNotNull(email);
+    public void requestResetPassword(Study study, AccountId accountId) {
+        checkNotNull(accountId);
+        checkArgument(study.getIdentifier().equals(accountId.getStudyId()));
         
-        Account account = accountDao.getAccountWithEmail(study, email.getEmail());
+        Account account = accountDao.getAccount(accountId);
         if (account != null) {
-            sendPasswordResetRelatedEmail(study, email, study.getResetPasswordTemplate());    
+            sendPasswordResetRelatedEmail(study, account.getEmail(), study.getResetPasswordTemplate());    
         }
     }
 
-    private void sendPasswordResetRelatedEmail(Study study, Email email, EmailTemplate template) {
+    private void sendPasswordResetRelatedEmail(Study study, String email, EmailTemplate template) {
         String sptoken = createTimeLimitedToken();
         
         String cacheKey = sptoken + ":" + study.getIdentifier();
-        cacheProvider.setString(cacheKey, email.getEmail(), EXPIRE_IN_SECONDS);
+        cacheProvider.setString(cacheKey, email, EXPIRE_IN_SECONDS);
         
         String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
         String url = String.format(RESET_PASSWORD_URL, BASE_URL, studyId, sptoken);
@@ -190,7 +189,7 @@ public class AccountWorkflowService {
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
             .withStudy(study)
             .withEmailTemplate(template)
-            .withRecipientEmail(email.getEmail())
+            .withRecipientEmail(email)
             .withToken(URL_TOKEN, url)
             .withToken(EXP_WINDOW_TOKEN, Integer.toString(EXPIRE_IN_SECONDS/60/60)).build();
         sendMailService.sendEmail(provider);
@@ -213,7 +212,7 @@ public class AccountWorkflowService {
         cacheProvider.removeString(cacheKey);
         
         Study study = studyService.getStudy(passwordReset.getStudyIdentifier());
-        Account account = accountDao.getAccountWithEmail(study, email);
+        Account account = accountDao.getAccount(AccountId.forEmail(study.getIdentifier(), email));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }

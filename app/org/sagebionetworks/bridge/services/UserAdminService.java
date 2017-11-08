@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
@@ -175,7 +176,8 @@ public class UserAdminService {
         checkNotNull(study);
         checkArgument(StringUtils.isNotBlank(id));
         
-        Account account = accountDao.getAccount(study, id);
+        AccountId accountId = AccountId.forId(study.getIdentifier(), id);
+        Account account = accountDao.getAccount(accountId);
         if (account != null) {
             // remove this first so if account is partially deleted, re-authenticating will pick
             // up accurate information about the state of the account (as we can recover it)
@@ -196,7 +198,7 @@ public class UserAdminService {
                 externalIdService.unassignExternalId(study, externalId, healthCode);    
             }
             optionsService.deleteAllParticipantOptions(healthCode);
-            accountDao.deleteAccount(study, account.getId());
+            accountDao.deleteAccount(accountId);
         }
     }
 }

@@ -7,6 +7,7 @@ import java.util.Iterator;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.backfill.BackfillTask;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -56,7 +57,8 @@ public class StudyIdBackfill extends AsyncBackfillTemplate  {
             // This ensures the healthCode is created.
             AccountSummary summary = i.next();
             Study study = studyService.getStudy(summary.getStudyIdentifier());
-            Account account = accountDao.getAccount(study, summary.getId());
+            AccountId accountId = AccountId.forId(study.getIdentifier(), summary.getId());
+            Account account = accountDao.getAccount(accountId);
             try {
                 String healthCode = account.getHealthCode();
                 final String studyId = healthCodeDao.getStudyIdentifier(healthCode);

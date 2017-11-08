@@ -20,6 +20,7 @@ import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
@@ -115,7 +116,7 @@ public class ParticipantReportController extends BaseController {
         LocalDate startDate = getLocalDateOrDefault(startDateString, null);
         LocalDate endDate = getLocalDateOrDefault(endDateString, null);
         
-        Account account = accountDao.getAccount(study, userId);
+        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), userId));
         
         DateRangeResourceList<? extends ReportData> results = reportService.getParticipantReport(
                 session.getStudyIdentifier(), identifier, account.getHealthCode(), startDate, endDate);
@@ -132,7 +133,7 @@ public class ParticipantReportController extends BaseController {
         DateTime endTime = getDateTimeOrDefault(endTimeString, null);
         int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
         
-        Account account = accountDao.getAccount(study, userId);
+        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), userId));
         
         ForwardCursorPagedResourceList<ReportData> page = reportService.getParticipantReportV4(
                 session.getStudyIdentifier(), identifier, account.getHealthCode(), startTime, endTime, offsetKey,
@@ -149,7 +150,7 @@ public class ParticipantReportController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        Account account = accountDao.getAccount(study, userId);
+        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), userId));
         
         ReportData reportData = parseJson(request(), ReportData.class);
         reportData.setKey(null); // set in service, but just so no future use depends on it
@@ -191,7 +192,7 @@ public class ParticipantReportController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        Account account = accountDao.getAccount(study, userId);
+        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), userId));
         
         reportService.deleteParticipantReport(session.getStudyIdentifier(), identifier, account.getHealthCode());
         
@@ -205,7 +206,7 @@ public class ParticipantReportController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        Account account = accountDao.getAccount(study, userId);
+        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), userId));
         
         reportService.deleteParticipantReportRecord(session.getStudyIdentifier(), identifier, dateString, account.getHealthCode());
         

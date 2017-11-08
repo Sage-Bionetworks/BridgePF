@@ -299,7 +299,7 @@ public class ConsentServiceTest {
             assertEquals("ConsentSignature not found.", e.getMessage());
         }
         
-        Account account = accountDao.getAccount(testUser.getStudy(), testUser.getId());
+        Account account = accountDao.getAccount(testUser.getAccountId());
         assertEquals(1, account.getConsentSignatureHistory(defaultSubpopulation.getGuid()).size());
         ConsentSignature historicalSignature = account.getConsentSignatureHistory(defaultSubpopulation.getGuid()).get(0);
         
@@ -465,7 +465,7 @@ public class ConsentServiceTest {
         assertFalse(ConsentStatus.isUserConsented(map));
         
         assertFalse(testUser.getSession().doesConsent());
-        Account account = accountDao.getAccount(study, testUser.getId());
+        Account account = accountDao.getAccount(testUser.getAccountId());
         assertNull(account.getActiveConsentSignature(subpopGuid));
     }
     

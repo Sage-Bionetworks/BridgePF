@@ -23,6 +23,7 @@ import org.sagebionetworks.bridge.exceptions.LimitExceededException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
@@ -128,7 +129,7 @@ public class AuthenticationService {
         }
         
         // check that email is in the study, if not, return quietly to prevent account enumeration attacks
-        if (accountDao.getAccountWithEmail(study, signIn.getEmail()) == null) {
+        if (accountDao.getAccount(signIn.getAccountId()) == null) {
             try {
                 // The not found case returns *much* faster than the normal case. To prevent account enumeration 
                 // attacks, measure time of a successful case and delay for that period before returning.
@@ -168,7 +169,7 @@ public class AuthenticationService {
         // Consume the key regardless of what happens
         cacheProvider.removeString(cacheKey);
         
-        Account account = accountDao.getAccountAfterAuthentication(study, signIn.getEmail());
+        Account account = accountDao.getAccountAfterAuthentication(signIn.getAccountId());
         if (account.getStatus() == AccountStatus.DISABLED) {
             throw new AccountDisabledException();
         } else if (account.getStatus() == AccountStatus.UNVERIFIED) {
@@ -214,7 +215,7 @@ public class AuthenticationService {
         checkNotNull(study);
         checkNotNull(context);
 
-        Account account = accountDao.getAccount(study, context.getUserId());
+        Account account = accountDao.getAccount(context.getAccountId());
         return getSessionFromAccount(study, context, account);
     }
 
@@ -256,7 +257,8 @@ public class AuthenticationService {
 
     public void signOut(final UserSession session) {
         if (session != null) {
-            accountDao.signOut(session.getStudyIdentifier(), session.getParticipant().getEmail());
+            AccountId accountId = AccountId.forId(session.getStudyIdentifier().getIdentifier(), session.getId());
+            accountDao.signOut(accountId);
             cacheProvider.removeSession(session);
         }
     }
@@ -294,7 +296,8 @@ public class AuthenticationService {
         
         Validate.entityThrowingException(EmailValidator.INSTANCE, email);
         try {
-            accountDao.resendEmailVerificationToken(studyIdentifier, email);    
+            AccountId accountId = AccountId.forEmail(studyIdentifier.getIdentifier(), email.getEmail());
+            accountDao.resendEmailVerificationToken(accountId);    
         } catch(EntityNotFoundException e) {
             // Suppress this. Otherwise it reveals if the account does not exist
             LOG.info("Resend email verification for unregistered email in study '"+studyIdentifier.getIdentifier()+"'");
@@ -307,7 +310,8 @@ public class AuthenticationService {
         
         Validate.entityThrowingException(EmailValidator.INSTANCE, email);
         try {
-            accountDao.requestResetPassword(study, email);    
+            AccountId accountId = AccountId.forEmail(study.getIdentifier(), email.getEmail());
+            accountDao.requestResetPassword(study, accountId);    
         } catch(EntityNotFoundException e) {
             // Suppress this. Otherwise it reveals if the account does not exist
             LOG.info("Request reset password request for unregistered email in study '"+study.getIdentifier()+"'");

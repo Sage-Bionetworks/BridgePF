@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.spy;
@@ -36,13 +35,13 @@ import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ReportService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -70,6 +69,8 @@ public class ParticipantReportControllerTest {
     private static final String OTHER_PARTICIPANT_HEALTH_CODE = "ABC";
 
     private static final String OTHER_PARTICIPANT_ID = "userId";
+    
+    private static final AccountId OTHER_ACCOUNT_ID = AccountId.forId(TEST_STUDY_IDENTIFIER, OTHER_PARTICIPANT_ID);
 
     private static final String HEALTH_CODE = "healthCode";
     
@@ -123,7 +124,7 @@ public class ParticipantReportControllerTest {
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
                 .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
         
-        doReturn(mockOtherAccount).when(mockAccountDao).getAccount(study, OTHER_PARTICIPANT_ID);
+        doReturn(mockOtherAccount).when(mockAccountDao).getAccount(OTHER_ACCOUNT_ID);
         
         ConsentStatus status = new ConsentStatus.Builder().withName("Name").withGuid(SubpopulationGuid.create("GUID"))
                 .withConsented(true).withRequired(true).withSignedMostRecentConsent(true).build();
@@ -241,7 +242,7 @@ public class ParticipantReportControllerTest {
                 .withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
         session.setParticipant(participant);
         
-        doReturn(mockAccount).when(mockAccountDao).getAccount(any(Study.class), eq(OTHER_PARTICIPANT_ID));
+        doReturn(mockAccount).when(mockAccountDao).getAccount(OTHER_ACCOUNT_ID);
         
         doReturn(makePagedResults()).when(mockReportService).getParticipantReportV4(session.getStudyIdentifier(),
                 REPORT_ID, HEALTH_CODE, START_TIME, END_TIME, OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
@@ -268,7 +269,7 @@ public class ParticipantReportControllerTest {
                 .withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
         session.setParticipant(participant);
         
-        doReturn(mockAccount).when(mockAccountDao).getAccount(any(Study.class), eq(OTHER_PARTICIPANT_ID));
+        doReturn(mockAccount).when(mockAccountDao).getAccount(OTHER_ACCOUNT_ID);
         
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getStudyIdentifier(),
                 REPORT_ID, HEALTH_CODE, START_DATE, END_DATE);

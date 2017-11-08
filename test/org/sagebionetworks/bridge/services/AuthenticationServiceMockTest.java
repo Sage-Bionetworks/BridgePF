@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.exceptions.LimitExceededException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
@@ -53,8 +54,8 @@ import com.google.common.collect.Iterables;
 public class AuthenticationServiceMockTest {
     
     private static final String SUPPORT_EMAIL = "support@support.com";
-    private static final String STUDY_ID = "test-study";
-    private static final String CACHE_KEY = "email@email.com:test-study:signInRequest";
+    private static final String STUDY_ID = TestConstants.TEST_STUDY_IDENTIFIER;
+    private static final String CACHE_KEY = "email@email.com:"+STUDY_ID+":signInRequest";
     private static final String RECIPIENT_EMAIL = "email@email.com";
     private static final String TOKEN = "ABC-DEF";
     private static final String REAUTH_TOKEN = "GHI-JKL";
@@ -81,6 +82,7 @@ public class AuthenticationServiceMockTest {
     private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
             .withStudyIdentifier(TestConstants.TEST_STUDY).build();
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder().build();
+    private static final AccountId ACCOUNT_ID = AccountId.forId(STUDY_ID, USER_ID);
 
     @Mock
     private CacheProvider cacheProvider;
@@ -150,14 +152,14 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void requestEmailSignIn() throws Exception {
-        doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
+        doReturn(account).when(accountDao).getAccount(SIGN_IN_REQUEST.getAccountId());
         
         service.requestEmailSignIn(SIGN_IN_REQUEST);
         
         verify(cacheProvider).getString(stringCaptor.capture());
         assertEquals(CACHE_KEY, stringCaptor.getValue());
         
-        verify(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
+        verify(accountDao).getAccount(SIGN_IN_REQUEST.getAccountId());
         
         verify(cacheProvider).setString(eq(CACHE_KEY), stringCaptor.capture(), eq(60));
         assertNotNull(stringCaptor.getValue());
@@ -190,10 +192,10 @@ public class AuthenticationServiceMockTest {
         
         UserSession session = new UserSession();
         session.setStudyIdentifier(studyIdentifier);
-        session.setParticipant(new StudyParticipant.Builder().withEmail("email@email.com").build());
+        session.setParticipant(new StudyParticipant.Builder().withEmail("email@email.com").withId(USER_ID).build());
         service.signOut(session);
         
-        verify(accountDao).signOut(studyIdentifier, "email@email.com");
+        verify(accountDao).signOut(ACCOUNT_ID);
         verify(cacheProvider).removeSession(session);
     }
     
@@ -201,13 +203,13 @@ public class AuthenticationServiceMockTest {
     public void signOutNoSessionToken() {
         service.signOut(null);
         
-        verify(accountDao, never()).signOut(any(), any());
+        verify(accountDao, never()).signOut(any());
         verify(cacheProvider, never()).removeSession(any());
     }
     
     @Test
     public void requestEmailSignInEmailNotRegistered() {
-        doReturn(null).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
+        doReturn(null).when(accountDao).getAccount(ACCOUNT_ID);
         
         service.requestEmailSignIn(SIGN_IN_REQUEST);
 
@@ -220,7 +222,7 @@ public class AuthenticationServiceMockTest {
         account.setReauthToken(REAUTH_TOKEN);
         account.setStatus(AccountStatus.UNVERIFIED);
         doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
-        doReturn(account).when(accountDao).getAccountAfterAuthentication(study, RECIPIENT_EMAIL);
+        doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN.getAccountId());
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
         
@@ -229,7 +231,7 @@ public class AuthenticationServiceMockTest {
         assertNotNull(retSession);
         assertEquals(REAUTH_TOKEN, retSession.getReauthToken());
         verify(accountDao, never()).changePassword(eq(account), any());
-        verify(accountDao).getAccountAfterAuthentication(study, RECIPIENT_EMAIL);
+        verify(accountDao).getAccountAfterAuthentication(SIGN_IN.getAccountId());
         verify(accountDao).verifyEmail(account);
         verify(cacheProvider).removeString(CACHE_KEY);
     }
@@ -237,7 +239,7 @@ public class AuthenticationServiceMockTest {
     @Test(expected = AuthenticationFailedException.class)
     public void emailSignInTokenWrong() {
         doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
-        doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
+        doReturn(account).when(accountDao).getAccount(ACCOUNT_ID);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
         
         SignIn signIn = new SignIn.Builder().withStudy(study.getIdentifier()).withEmail(RECIPIENT_EMAIL)
@@ -249,7 +251,7 @@ public class AuthenticationServiceMockTest {
     @Test(expected = AuthenticationFailedException.class)
     public void emailSignInTokenNotSet() {
         doReturn(null).when(cacheProvider).getString(CACHE_KEY);
-        doReturn(account).when(accountDao).getAccountWithEmail(study, RECIPIENT_EMAIL);
+        doReturn(account).when(accountDao).getAccount(ACCOUNT_ID);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
         
         SignIn signIn = new SignIn.Builder().withStudy(study.getIdentifier()).withEmail(RECIPIENT_EMAIL)
@@ -261,7 +263,7 @@ public class AuthenticationServiceMockTest {
     @Test
     public void requestEmailSignInFailureDelays() throws Exception {
         service.getEmailSignInRequestInMillis().set(1000);
-        doReturn(null).when(accountDao).getAccountWithEmail(any(), any());
+        doReturn(null).when(accountDao).getAccount(any());
                  
         long start = System.currentTimeMillis();
         service.requestEmailSignIn(SIGN_IN_REQUEST);
@@ -305,13 +307,14 @@ public class AuthenticationServiceMockTest {
     
     @Test(expected = AccountDisabledException.class)
     public void emailSignInThrowsAccountDisabled() {
-        StudyParticipant participant = new StudyParticipant.Builder().withStatus(AccountStatus.DISABLED).build();
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withStatus(AccountStatus.DISABLED)
+                .build();
         
         doReturn(participant).when(participantService).getParticipant(study, account, false);
         study.setIdentifier(STUDY_ID);
         doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
         doReturn(study).when(studyService).getStudy(STUDY_ID);
-        doReturn(account).when(accountDao).getAccountAfterAuthentication(study, RECIPIENT_EMAIL);
+        doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN.getAccountId());
         account.setStatus(AccountStatus.DISABLED);
         
         service.emailSignIn(CONTEXT, SIGN_IN);
@@ -326,7 +329,7 @@ public class AuthenticationServiceMockTest {
         study.setIdentifier(STUDY_ID);
         doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
         doReturn(study).when(studyService).getStudy(STUDY_ID);
-        doReturn(account).when(accountDao).getAccountAfterAuthentication(study, RECIPIENT_EMAIL);
+        doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN.getAccountId());
         
         service.emailSignIn(CONTEXT, SIGN_IN);
     }

@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.models.accounts;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.Objects;
+
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
 import javax.persistence.Transient;
@@ -11,8 +13,11 @@ import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat;
 import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 
+/**
+ * A phone number. Phone is mutable, do not use it as a key in a map.
+ */
 @Embeddable
-public class Phone {
+public final class Phone {
     
     public static final boolean isValid(Phone phone) {
         checkNotNull(phone);
@@ -69,5 +74,20 @@ public class Phone {
             }
         }
         return number;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getNumber(), regionCode);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+        Phone other = (Phone) obj;
+        return Objects.equals(getNumber(), other.getNumber()) && Objects.equals(regionCode, other.regionCode);
     }
 }
