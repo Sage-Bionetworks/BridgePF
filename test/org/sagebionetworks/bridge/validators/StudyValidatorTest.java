@@ -39,12 +39,6 @@ public class StudyValidatorTest {
     }
     
     @Test
-    public void shortNameRequired() {
-        study.setShortName("");
-        assertValidatorMessage(INSTANCE, study, "shortName", "is required");
-    }
-    
-    @Test
     public void shortNameTooLong() {
         study.setShortName("ThisNameIsOverTenCharactersLong");
         assertValidatorMessage(INSTANCE, study, "shortName", "must be 10 characters or less");

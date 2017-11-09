@@ -99,11 +99,11 @@ public class AccountWorkflowService {
      * verified. We assume that an account has been created and that email verification should be sent
      * (neither is verified in this method).
      */
-    public void sendEmailVerificationToken(Study study, String userId, String email) {
+    public void sendEmailVerificationToken(Study study, String userId, String recipientEmail) {
         checkNotNull(study);
         checkArgument(isNotBlank(userId));
         
-        if (email != null) {
+        if (recipientEmail != null) {
             String sptoken = createTimeLimitedToken();
             
             saveVerification(sptoken, new VerificationData(study.getIdentifier(), userId));
@@ -114,7 +114,7 @@ public class AccountWorkflowService {
             BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
                 .withEmailTemplate(study.getVerifyEmailTemplate())
-                .withRecipientEmail(email)
+                .withRecipientEmail(recipientEmail)
                 .withToken(URL_TOKEN, url).build();
             sendMailService.sendEmail(provider);         
         }
@@ -171,7 +171,8 @@ public class AccountWorkflowService {
         if (account.getEmail() != null && account.getEmailVerified()) {
             sendPasswordResetRelatedEmail(study, account.getEmail(), study.getAccountExistsTemplate());    
         } else if (account.getPhone() != null && account.getPhoneVerified()) {
-            String message = "Account for " + study.getShortName() + " already exists. Reset password: ";
+            String appName = (study.getShortName() != null) ? study.getShortName() : "Bridge";
+            String message = "Account for " + appName + " already exists. Reset password: ";
             sendPasswordResetRelatedSMS(study, account.getPhone(), message);
         }
     }
@@ -191,7 +192,8 @@ public class AccountWorkflowService {
             if (account.getEmail() != null && account.getEmailVerified()) {
                 sendPasswordResetRelatedEmail(study, account.getEmail(), study.getResetPasswordTemplate());    
             } else if (account.getPhone() != null && account.getPhoneVerified()) {
-                String message = "Reset " + study.getShortName() + " password: ";
+                String appName = (study.getShortName() != null) ? study.getShortName() : "Bridge";
+                String message = "Reset " + appName + " password: ";
                 sendPasswordResetRelatedSMS(study, account.getPhone(), message);
             }
         }
