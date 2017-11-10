@@ -354,10 +354,6 @@ public class AuthenticationService {
         }
 
         String cacheKey = cacheKeySupplier.get();
-        if (cacheProvider.getString(cacheKey) != null) {
-            throw new LimitExceededException("Sign in currently pending confirmation.");
-        }
-        
         // check that the account exists, return quietly if not to prevent account enumeration attacks
         if (accountDao.getAccount(signIn.getAccountId()) == null) {
             try {
@@ -369,8 +365,11 @@ public class AuthenticationService {
             }
             return;
         }
-        String token = tokenSupplier.get();
-        cacheProvider.setString(cacheKey, token, SESSION_SIGNIN_TIMEOUT);
+        String token = cacheProvider.getString(cacheKey);
+        if (token == null) {
+            token = tokenSupplier.get();
+            cacheProvider.setString(cacheKey, token, SESSION_SIGNIN_TIMEOUT);
+        }
 
         messageSender.accept(study, token);
         atomicLong.set(System.currentTimeMillis()-startTime);

@@ -5,6 +5,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyObject;
 import static org.mockito.Mockito.anySet;
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
@@ -124,6 +125,8 @@ public class UserAdminServiceMockTest {
         doReturn(new IdentifierHolder("ABC")).when(participantService).createParticipant(anyObject(), anySet(),
                 anyObject(), anyBoolean());
         doReturn(session).when(authenticationService).getSession(anyObject(), anyObject());
+        doReturn(new StudyParticipant.Builder().withId("ABC").build()).when(participantService).getParticipant(any(),
+                anyString(), anyBoolean());
     }
     
     private void addConsentStatus(Map<SubpopulationGuid,ConsentStatus> statuses, String guid) {
@@ -137,7 +140,7 @@ public class UserAdminServiceMockTest {
         Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
 
-        UserSession session = service.createUser(study, participant, null, true, true);
+        service.createUser(study, participant, null, true, true);
         
         verify(participantService).createParticipant(study, Sets.newHashSet(Roles.ADMIN), participant, false);
         verify(authenticationService).signIn(eq(study), contextCaptor.capture(), signInCaptor.capture());
@@ -149,9 +152,7 @@ public class UserAdminServiceMockTest {
         assertEquals(participant.getEmail(), signIn.getEmail());
         assertEquals(participant.getPassword(), signIn.getPassword());
         
-        for (SubpopulationGuid guid : session.getConsentStatuses().keySet()) {
-            verify(consentService).consentToResearch(eq(study), eq(guid), any(StudyParticipant.class), any(), eq(SharingScope.NO_SHARING), eq(false));
-        }
+        verify(consentService).getConsentStatuses(context);
     }
     
     @Test

@@ -212,11 +212,17 @@ public class AuthenticationServiceMockTest {
         service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
     }
     
-    @Test(expected = LimitExceededException.class)
-    public void requestEmailSignInLimitExceeded() {
+    @Test
+    public void requestEmailSignInTwiceReturnsSameToken() {
+        // In this case, where there is a value and an account, we do't generate a new one,
+        // we just send the message again.
         doReturn("something").when(cacheProvider).getString(CACHE_KEY);
+        doReturn(account).when(accountDao).getAccount(any());
         
         service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
+        
+        verify(cacheProvider, never()).setString(any(), any(), anyInt());
+        verify(sendMailService).sendEmail(any());
     }
     
     @Test
