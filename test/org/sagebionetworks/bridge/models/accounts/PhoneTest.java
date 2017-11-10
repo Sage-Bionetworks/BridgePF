@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -21,20 +22,20 @@ public class PhoneTest {
     
     @Test
     public void canSerialize() throws Exception {
-        Phone phone = new Phone("408.258.8569", "US");
-        assertEquals("+14082588569", phone.getNumber());
+        Phone phone = new Phone(TestConstants.PHONE.getNationalFormat(), TestConstants.PHONE.getRegionCode());
+        assertEquals(TestConstants.PHONE.getNumber(), phone.getNumber());
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(phone);
-        assertEquals("+14082588569", node.get("number").textValue());
-        assertEquals("US", node.get("regionCode").textValue());
-        assertEquals("(408) 258-8569", node.get("nationalFormat").textValue());
+        assertEquals(TestConstants.PHONE.getNumber(), node.get("number").textValue());
+        assertEquals(TestConstants.PHONE.getRegionCode(), node.get("regionCode").textValue());
+        assertEquals(TestConstants.PHONE.getNationalFormat(), node.get("nationalFormat").textValue());
         assertEquals("Phone", node.get("type").textValue());
         assertEquals(4, node.size());
         
         Phone deser = BridgeObjectMapper.get().readValue(node.toString(), Phone.class);
         assertEquals(phone.getNumber(), deser.getNumber());
         assertEquals(phone.getRegionCode(), deser.getRegionCode());
-        assertEquals("(408) 258-8569", deser.getNationalFormat());
+        assertEquals(TestConstants.PHONE.getNationalFormat(), deser.getNationalFormat());
     }
     
     @Test
@@ -50,10 +51,10 @@ public class PhoneTest {
     @Test
     public void hibernateConstructionPathWorks() {
         Phone phone = new Phone();
-        phone.setNumber("408-258-8569");
+        phone.setNumber(TestConstants.PHONE.getNationalFormat());
         phone.setRegionCode("US");
-        assertEquals("+14082588569", phone.getNumber());
-        assertEquals("(408) 258-8569", phone.getNationalFormat());
+        assertEquals(TestConstants.PHONE.getNumber(), phone.getNumber());
+        assertEquals(TestConstants.PHONE.getNationalFormat(), phone.getNationalFormat());
     }
     
     @Test

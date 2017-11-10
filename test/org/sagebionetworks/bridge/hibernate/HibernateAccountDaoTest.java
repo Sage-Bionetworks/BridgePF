@@ -65,7 +65,7 @@ public class HibernateAccountDaoTest {
     private static final String DUMMY_PASSWORD_HASH = "dummy-password-hash";
     private static final String DUMMY_TOKEN = "dummy-token";
     private static final String EMAIL = "eggplant@example.com";
-    private static final Phone PHONE = new Phone("+14082588569", "US");
+    private static final Phone PHONE = TestConstants.PHONE;
     private static final Phone OTHER_PHONE = new Phone("+12065881469", "US");
     private static final String HEALTH_CODE = "health-code";
     private static final String HEALTH_ID = "health-id";
@@ -799,7 +799,7 @@ public class HibernateAccountDaoTest {
             fail("expected exception");
         } catch (EntityAlreadyExistsException ex) {
             assertEquals(otherAccountId, ex.getEntity().get("userId"));
-            assertTrue(queryCaptor.getValue().contains("phone.number='+19174267643' and phone.regionCode='US'"));
+            assertTrue(queryCaptor.getValue().contains("phone.number='+19712486796' and phone.regionCode='US'"));
         }
     }
     
