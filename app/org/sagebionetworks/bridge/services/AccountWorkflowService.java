@@ -26,6 +26,8 @@ import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -202,7 +204,7 @@ public class AccountWorkflowService {
     private void sendPasswordResetRelatedEmail(Study study, String email, EmailTemplate template) {
         String sptoken = createTimeLimitedToken();
         
-        String cacheKey = sptoken + ":" + study.getIdentifier();
+        String cacheKey = sptoken + ":email:" + study.getIdentifier();
         cacheProvider.setString(cacheKey, email, EXPIRE_IN_SECONDS);
         
         String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
@@ -219,8 +221,8 @@ public class AccountWorkflowService {
     
     private void sendPasswordResetRelatedSMS(Study study, Phone phone, String message) {
         String sptoken = createTimeLimitedToken();        
-        String cacheKey = sptoken + ":" + study.getIdentifier();
-        cacheProvider.setString(cacheKey, phone.getNumber(), EXPIRE_IN_SECONDS);
+        String cacheKey = sptoken + ":phone:" + study.getIdentifier();
+        cacheProvider.setString(cacheKey, getPhoneString(phone), EXPIRE_IN_SECONDS);
         
         String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
         String url = String.format(RESET_PASSWORD_URL, BASE_URL, studyId, sptoken);
@@ -236,16 +238,28 @@ public class AccountWorkflowService {
     public void resetPassword(PasswordReset passwordReset) {
         checkNotNull(passwordReset);
         
-        String cacheKey = passwordReset.getSptoken() + ":" + passwordReset.getStudyIdentifier();
-        String email = cacheProvider.getString(cacheKey);
+        // This pathway is unusual as the account may have an email address or a phone number, so test for both.
+        String emailCacheKey = passwordReset.getSptoken() + ":email:" + passwordReset.getStudyIdentifier();
+        String phoneCacheKey = passwordReset.getSptoken() + ":phone:" + passwordReset.getStudyIdentifier();
         
-        if (email == null) {
+        String email = cacheProvider.getString(emailCacheKey);
+        String phoneJson = cacheProvider.getString(phoneCacheKey);
+        if (email == null && phoneJson == null) {
             throw new BadRequestException(PASSWORD_RESET_TOKEN_EXPIRED);
         }
-        cacheProvider.removeString(cacheKey);
+        cacheProvider.removeString(emailCacheKey);
+        cacheProvider.removeString(phoneCacheKey);
         
         Study study = studyService.getStudy(passwordReset.getStudyIdentifier());
-        Account account = accountDao.getAccount(AccountId.forEmail(study.getIdentifier(), email));
+        AccountId accountId = null;
+        if (email != null) {
+            accountId = AccountId.forEmail(study.getIdentifier(), email);
+        } else if (phoneJson != null) {
+            accountId = AccountId.forPhone(study.getIdentifier(), getPhone(phoneJson));
+        } else {
+            throw new BridgeServiceException("Could not reset password");
+        }
+        Account account = accountDao.getAccount(accountId);
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
@@ -277,6 +291,22 @@ public class AccountWorkflowService {
         }
         return null;
     }    
+    
+    private String getPhoneString(Phone phone) {
+        try {
+            return BridgeObjectMapper.get().writeValueAsString(phone);
+        } catch (JsonProcessingException e) {
+            throw new BridgeServiceException(e);
+        }
+    }
+    
+    private Phone getPhone(String json) {
+        try {
+            return BridgeObjectMapper.get().readValue(json, Phone.class);
+        } catch (IOException e) {
+            throw new BridgeServiceException(e);
+        }
+    }
     
     protected String createTimeLimitedToken() {
         return SecureTokenGenerator.INSTANCE.nextToken();
