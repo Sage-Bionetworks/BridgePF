@@ -8,7 +8,9 @@ import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.Criteria;
+import org.sagebionetworks.bridge.models.appconfig.AndroidAppLink;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
+import org.sagebionetworks.bridge.models.appconfig.AppleAppLink;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 
@@ -37,6 +39,8 @@ public class DynamoAppConfig implements AppConfig {
     private JsonNode clientData;
     private List<SurveyReference> surveyReferences;
     private List<SchemaReference> schemaReferences;
+    private List<AppleAppLink> appleAppLinks;
+    private List<AndroidAppLink> androidAppLinks;
     private Long version;
     
     @JsonIgnore
@@ -148,6 +152,30 @@ public class DynamoAppConfig implements AppConfig {
         this.schemaReferences = references;
     }
     
+    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
+    @Override
+    public List<AppleAppLink> getAppleAppLinks() {
+        return appleAppLinks;
+    }
+    
+    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
+    @Override
+    public void setAppleAppLinks(List<AppleAppLink> appleAppLinks) {
+        this.appleAppLinks = appleAppLinks;
+    }
+    
+    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
+    @Override
+    public List<AndroidAppLink> getAndroidAppLinks() {
+        return androidAppLinks;
+    }
+    
+    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
+    @Override
+    public void setAndroidAppLinks(List<AndroidAppLink> androidAppLinks) {
+        this.androidAppLinks = androidAppLinks;
+    }
+    
     @DynamoDBVersionAttribute
     @Override
     public Long getVersion() {
@@ -162,7 +190,7 @@ public class DynamoAppConfig implements AppConfig {
     @Override
     public int hashCode() {
         return Objects.hash(clientData, createdOn, criteria, guid, label, modifiedOn, schemaReferences, studyId,
-                surveyReferences, version);
+                surveyReferences, appleAppLinks, androidAppLinks, version);
     }
 
     @Override
@@ -177,7 +205,10 @@ public class DynamoAppConfig implements AppConfig {
                 && Objects.equals(label, other.label) && Objects.equals(modifiedOn, other.modifiedOn)
                 && Objects.equals(getSchemaReferences(), other.getSchemaReferences())
                 && Objects.equals(getSurveyReferences(), other.getSurveyReferences()) 
-                && Objects.equals(studyId, other.studyId) && Objects.equals(version, other.version);
+                && Objects.equals(studyId, other.studyId) 
+                && Objects.equals(appleAppLinks, other.appleAppLinks)
+                && Objects.equals(androidAppLinks, other.androidAppLinks)
+                && Objects.equals(version, other.version);
     }
 
     @Override
@@ -185,6 +216,7 @@ public class DynamoAppConfig implements AppConfig {
         return "DynamoAppConfig [studyId=" + studyId + ", label=" + label + ", guid=" + guid + ", criteria=" + criteria
                 + ", createdOn=" + createdOn + ", modifiedOn=" + modifiedOn + ", clientData=" + clientData
                 + ", surveyReferences=" + getSurveyReferences() + ", schemaReferences=" + getSchemaReferences()
-                + ", version=" + version + "]";
+                + ", appleAppLinks=" + appleAppLinks + ", androidAppLinks=" + androidAppLinks + ", version=" + version
+                + "]";
     }
 }

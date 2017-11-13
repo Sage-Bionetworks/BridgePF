@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.cache;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.redis.RedisKey;
@@ -10,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.google.common.base.Supplier;
 
@@ -44,11 +44,12 @@ public class ViewCache {
      * @param supplier
      * @return
      */
-    public <T> String getView(ViewCacheKey<T> key, Supplier<T> supplier) {
+    public <T> String getView(ViewCacheKey<T> key, boolean useBridgeObjectMapper, int cachePeriod,
+            Supplier<T> supplier) {
         try {
             String value = cache.getString(key.getKey());
             if (value == null) {
-                value = cacheView(key, supplier);
+                value = cacheView(key, useBridgeObjectMapper, cachePeriod, supplier);
             } else {
                 logger.debug("Retrieving " +key.getKey()+"' JSON from cache");
             }
@@ -79,11 +80,13 @@ public class ViewCache {
         return new ViewCacheKey<T>(RedisKey.VIEW.getRedisKey(id + ":" + clazz.getName()));
     }
     
-    private <T> String cacheView(ViewCacheKey<T> key, Supplier<T> supplier) throws JsonProcessingException {
+    private <T> String cacheView(ViewCacheKey<T> key, boolean useBridgeObjectMapper, int cachePeriod,
+            Supplier<T> supplier) throws JsonProcessingException {
         logger.debug("Caching JSON for " +key.getKey()+"'");
         T object = supplier.get();
-        String value = BridgeObjectMapper.get().writeValueAsString(object);
-        cache.setString(key.getKey(), value, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
+        ObjectMapper mapper = (useBridgeObjectMapper) ? BridgeObjectMapper.get() : new ObjectMapper();
+        String value = mapper.writeValueAsString(object);
+        cache.setString(key.getKey(), value, cachePeriod);
         return value;
     }
     

@@ -29,6 +29,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
@@ -810,7 +811,7 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, DEVELOPER, false, survey);
         
         viewCache.getView(viewCache.getCacheKey(
-                Survey.class, SURVEY_GUID, CREATED_ON.toString(), "api"), () -> { return survey; });
+                Survey.class, SURVEY_GUID, CREATED_ON.toString(), "api"), true, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS, () -> { return survey; });
         
         // Verify this call hits the cache not the service
         controller.getSurvey(SURVEY_GUID, CREATED_ON.toString());

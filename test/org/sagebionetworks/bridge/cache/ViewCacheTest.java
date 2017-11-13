@@ -9,6 +9,7 @@ import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -39,7 +40,7 @@ public class ViewCacheTest {
         when(provider.getString(cacheKey.getKey())).thenReturn(null);
         cache.setCacheProvider(provider);
         
-        String json = cache.getView(cacheKey, new Supplier<Study>() {
+        String json = cache.getView(cacheKey, true, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS, new Supplier<Study>() {
             @Override public Study get() {
                 Study study = TestUtils.getValidStudy(ViewCacheTest.class);
                 study.setName("Test Study 2");
@@ -62,7 +63,7 @@ public class ViewCacheTest {
         
         // It doesn't get wrapped or transformed or anything
         try {
-            cache.getView(cacheKey, new Supplier<Study>() {
+            cache.getView(cacheKey, true, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS, new Supplier<Study>() {
                 @Override public Study get() {
                     throw new BridgeServiceException("There has been a problem retrieving the study");
                 }
@@ -84,7 +85,7 @@ public class ViewCacheTest {
         when(provider.getString(cacheKey.getKey())).thenReturn(originalStudyJson);
         cache.setCacheProvider(provider);
         
-        String json = cache.getView(cacheKey, new Supplier<Study>() {
+        String json = cache.getView(cacheKey, true, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS, new Supplier<Study>() {
             @Override public Study get() {
                 fail("This should not be called");
                 return null;
@@ -105,7 +106,7 @@ public class ViewCacheTest {
         
         cache.removeView(cacheKey);
         
-        String json = cache.getView(cacheKey, new Supplier<Study>() {
+        String json = cache.getView(cacheKey, true, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS, new Supplier<Study>() {
             @Override public Study get() {
                 Study study = TestUtils.getValidStudy(ViewCacheTest.class);
                 study.setName("Test Study 2");

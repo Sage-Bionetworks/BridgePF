@@ -69,7 +69,7 @@ public class UserProfileController extends BaseController {
         final String userId = session.getId();
         
         ViewCacheKey<ObjectNode> cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, study.getIdentifier());
-        String json = viewCache.getView(cacheKey, new Supplier<ObjectNode>() {
+        String json = viewCache.getView(cacheKey, true, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS, new Supplier<ObjectNode>() {
             @Override public ObjectNode get() {
                 StudyParticipant participant = participantService.getParticipant(study, userId, false);
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
