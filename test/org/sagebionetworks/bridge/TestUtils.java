@@ -117,11 +117,8 @@ public class TestUtils {
             Validate.entityThrowingException(validator, object);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
-            for (int i=0; i < e.getErrors().get(fieldName).size(); i++) {
-                String msg = e.getErrors().get(fieldName).get(i);
-                if ((fieldNameAsLabel+error).equals(msg)) {
-                    return;
-                }
+            if (e.getErrors().get(fieldName).contains(fieldNameAsLabel+error)) {
+                return;
             }
             fail("Did not find error message in errors object");
         }
@@ -207,13 +204,13 @@ public class TestUtils {
     /**
      * In the rare case where you need the context, you can use <code>Http.Context.current.get()</code>;
      */
-    public static void mockPlayContext() throws Exception {
+    public static Http.Response mockPlayContext() throws Exception {
         Http.RequestBody body = mock(Http.RequestBody.class);
         when(body.asJson()).thenReturn(null);
         
         Http.Request request = mock(Http.Request.class);
         when(request.body()).thenReturn(body);
-        mockPlayContext(request);
+        return mockPlayContext(request);
     }
     
     public static String randomName(Class<?> clazz) {

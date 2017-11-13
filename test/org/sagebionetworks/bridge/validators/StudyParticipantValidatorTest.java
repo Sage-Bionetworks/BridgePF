@@ -86,8 +86,6 @@ public class StudyParticipantValidatorTest {
             assertNull(e.getErrors().get("email"));
             assertNull(e.getErrors().get("externalId"));
             assertNull(e.getErrors().get("password"));
-            //assertError(e, "dataGroups", 0, " 'badGroup' is not defined for study (use group1, group2, bluebell)");
-            //assertError(e, "attributes", 0, " 'badValue' is not defined for study (use attr1, attr2, phone)");
         }
         assertValidatorMessage(validator, participant, "dataGroups", "'badGroup' is not defined for study (use group1, group2, bluebell)");
         assertValidatorMessage(validator, participant, "attributes", "'badValue' is not defined for study (use attr1, attr2, phone)");
@@ -121,9 +119,15 @@ public class StudyParticipantValidatorTest {
     }
     
     @Test
-    public void passwordRequired() {
+    public void emptyStringPasswordRequired() {
         validator = new StudyParticipantValidator(study, true);
         assertValidatorMessage(validator, withPassword(""), "password", "is required");
+    }
+    
+    @Test
+    public void nullPasswordOK() {
+        validator = new StudyParticipantValidator(study, true);
+        Validate.entityThrowingException(validator, withPassword(null));
     }
     
     @Test

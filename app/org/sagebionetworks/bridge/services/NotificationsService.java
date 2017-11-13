@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeUtils.SEMICOLON_SPACE_JOINER;
 
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 
@@ -190,9 +191,9 @@ public class NotificationsService {
         checkNotNull(phone);
         checkNotNull(message);
         
-        // Limited to 140 characters (Java is UTF-16, so two bytes per character, assuming for now that 
-        // SNS converts these to ASCII, requires integration testing
-        if (message.length() > BridgeConstants.SMS_CHARACTER_LIMIT) {
+        // Limited to 140 bytes in GSM. We can test the length in ASCII (GSM is not a supported encoding in the 
+        // JDK) and this is a rough approximation as both are 7-bit encodings.
+        if (message.getBytes(Charset.forName("US-ASCII")).length > BridgeConstants.SMS_CHARACTER_LIMIT) {
             throw new BridgeServiceException("SMS message cannot be longer than 140 UTF-8/ASCII characters.");
         }
         

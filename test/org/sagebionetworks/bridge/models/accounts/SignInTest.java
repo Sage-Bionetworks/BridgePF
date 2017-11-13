@@ -35,6 +35,24 @@ public class SignInTest {
     }
     
     @Test
+    public void canSerialize() throws Exception {
+        // We set up tests with this object so verify it creates the correct JSON
+        SignIn signIn = new SignIn.Builder().withEmail("email@email.com")
+                .withPassword("password").withPhone(TestConstants.PHONE)
+                .withReauthToken("reauthToken").withStudy("study-key")
+                .withToken("token").build();
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(signIn);
+        assertEquals("email@email.com", node.get("email").textValue());
+        assertEquals("password", node.get("password").textValue());
+        assertEquals(TestConstants.PHONE.getNumber(), node.get("phone").get("number").textValue());
+        assertEquals(TestConstants.PHONE.getRegionCode(), node.get("phone").get("regionCode").textValue());
+        assertEquals("reauthToken", node.get("reauthToken").textValue());
+        assertEquals("study-key", node.get("study").textValue());
+        assertEquals("token", node.get("token").textValue());
+    }
+    
+    @Test
     public void preferUsernameOverEmailForBackwardsCompatibility() throws Exception {
         String json = "{\"username\":\"aName\",\"email\":\"email@email.com\",\"password\":\"password\"}";
 

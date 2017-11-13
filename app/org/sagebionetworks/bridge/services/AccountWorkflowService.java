@@ -41,7 +41,7 @@ public class AccountWorkflowService {
     private static final String BASE_URL = BridgeConfigFactory.getConfig().get("webservices.url");
     private static final String EXP_WINDOW_TOKEN = "expirationWindow";
     private static final String URL_TOKEN = "url";
-    private static final int EXPIRE_IN_SECONDS = 60*60*2;
+    static final int EXPIRE_IN_SECONDS = 60*60*2;
     
     private static class VerificationData {
         private final String studyId;
@@ -204,7 +204,7 @@ public class AccountWorkflowService {
     private void sendPasswordResetRelatedEmail(Study study, String email, EmailTemplate template) {
         String sptoken = createTimeLimitedToken();
         
-        String cacheKey = sptoken + ":email:" + study.getIdentifier();
+        String cacheKey = sptoken + ":" + study.getIdentifier();
         cacheProvider.setString(cacheKey, email, EXPIRE_IN_SECONDS);
         
         String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
@@ -239,7 +239,7 @@ public class AccountWorkflowService {
         checkNotNull(passwordReset);
         
         // This pathway is unusual as the account may have an email address or a phone number, so test for both.
-        String emailCacheKey = passwordReset.getSptoken() + ":email:" + passwordReset.getStudyIdentifier();
+        String emailCacheKey = passwordReset.getSptoken() + ":" + passwordReset.getStudyIdentifier();
         String phoneCacheKey = passwordReset.getSptoken() + ":phone:" + passwordReset.getStudyIdentifier();
         
         String email = cacheProvider.getString(emailCacheKey);

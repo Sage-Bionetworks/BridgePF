@@ -118,4 +118,30 @@ public class SignInValidatorTest {
         assertValidatorMessage(SignInValidator.REAUTH_SIGNIN, EMPTY_SIGNIN, "study", "is required");
         assertValidatorMessage(SignInValidator.REAUTH_SIGNIN, EMPTY_SIGNIN, "reauthToken", "is required");
     }
+    @Test
+    public void requestResetPasswordOK() {
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).withEmail(EMAIL).build();
+        Validate.entityThrowingException(SignInValidator.REQUEST_RESET_PASSWORD, signIn);
+
+        signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).withPhone(TestConstants.PHONE).build();
+        Validate.entityThrowingException(SignInValidator.REQUEST_RESET_PASSWORD, signIn);
+    }
+    @Test
+    public void requestResetPassword() {
+        assertValidatorMessage(SignInValidator.REQUEST_RESET_PASSWORD, EMPTY_SIGNIN, "SignIn", "email or phone is required");
+        assertValidatorMessage(SignInValidator.REQUEST_RESET_PASSWORD, EMPTY_SIGNIN, "study", "is required");
+    }
+    @Test
+    public void minimalOK() {
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).withEmail(EMAIL).build();
+        Validate.entityThrowingException(SignInValidator.MINIMAL, signIn);
+
+        signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).withPhone(TestConstants.PHONE).build();
+        Validate.entityThrowingException(SignInValidator.MINIMAL, signIn);
+    }
+    @Test
+    public void minimal() {
+        assertValidatorMessage(SignInValidator.MINIMAL, EMPTY_SIGNIN, "SignIn", "email or phone is required");
+        assertValidatorMessage(SignInValidator.MINIMAL, EMPTY_SIGNIN, "study", "is required");
+    }
 }

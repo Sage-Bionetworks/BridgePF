@@ -26,6 +26,8 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.validators.SignInValidator;
+import org.sagebionetworks.bridge.validators.Validate;
 
 import com.google.common.collect.Sets;
 
@@ -119,6 +121,11 @@ public class UserAdminService {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(participant, "Participant cannot be null");
         
+        // Validate study + email or phone. This is the minimum we need to create a functional account.
+        SignIn signIn = new SignIn.Builder().withStudy(study.getIdentifier()).withEmail(participant.getEmail())
+                .withPhone(participant.getPhone()).withPassword(participant.getPassword()).build();
+        Validate.entityThrowingException(SignInValidator.MINIMAL, signIn);
+        
         IdentifierHolder identifier = null;
         try {
             identifier = participantService.createParticipant(study, ADMIN_ROLE, participant, false);
@@ -147,8 +154,6 @@ public class UserAdminService {
                 }
             }
             if (signUserIn) {
-                SignIn signIn = new SignIn.Builder().withStudy(study.getIdentifier()).withEmail(participant.getEmail())
-                        .withPassword(participant.getPassword()).build();
                 return authenticationService.signIn(study, context, signIn);
             }
             // Return a session *without* signing in because we have 3 sign in pathways that we want to test. In this case

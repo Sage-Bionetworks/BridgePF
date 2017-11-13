@@ -182,8 +182,8 @@ public class AuthenticationController extends BaseController {
                 }
                 throw e;
             }
-            logAuthenticationSuccess(session);
         }
+        logAuthenticationSuccess(session);
 
         // You can proceed if 1) you're some kind of system administrator (developer, researcher), or 2)
         // you've consented to research.
@@ -194,7 +194,7 @@ public class AuthenticationController extends BaseController {
     }
 
     private void logAuthenticationSuccess(UserSession session) {
-        writeSessionInfoToMetrics(session);
+        writeSessionInfoToMetrics(session);  
         // We have removed the cookie in the past, only to find out that clients were unknowingly
         // depending on the cookie to preserve the session token. So it remains.
         response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),

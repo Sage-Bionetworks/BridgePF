@@ -52,6 +52,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
+import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 
 import com.google.common.collect.ImmutableMap;
@@ -141,7 +142,7 @@ public class AuthenticationServiceMockTest {
         study = Study.create();
         study.setIdentifier(STUDY_ID);
         study.setEmailSignInEnabled(true);
-        study.setEmailSignInTemplate(new EmailTemplate("subject","body",MimeType.TEXT));
+        study.setEmailSignInTemplate(new EmailTemplate("subject","${token}",MimeType.TEXT));
         study.setSupportEmail(SUPPORT_EMAIL);
         study.setName("Sender");
         
@@ -212,7 +213,7 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test
-    public void requestEmailSignInTwiceReturnsSameToken() {
+    public void requestEmailSignInTwiceReturnsSameToken() throws Exception {
         // In this case, where there is a value and an account, we do't generate a new one,
         // we just send the message again.
         doReturn("something").when(cacheProvider).getString(CACHE_KEY);
@@ -221,7 +222,13 @@ public class AuthenticationServiceMockTest {
         service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
         
         verify(cacheProvider, never()).setString(any(), any(), anyInt());
-        verify(sendMailService).sendEmail(any());
+        verify(sendMailService).sendEmail(providerCaptor.capture());
+        
+        MimeTypeEmailProvider provider = providerCaptor.getValue();
+        assertEquals(RECIPIENT_EMAIL, provider.getMimeTypeEmail().getRecipientAddresses().get(0));
+        assertEquals(SUPPORT_EMAIL, provider.getPlainSenderEmail());
+        String bodyString = (String)provider.getMimeTypeEmail().getMessageParts().get(0).getContent();
+        assertEquals("something", bodyString);
     }
     
     @Test
@@ -485,11 +492,9 @@ public class AuthenticationServiceMockTest {
         service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
         
         verify(cacheProvider).getString(cacheKey);
-        verify(cacheProvider).setString(eq(cacheKey), stringCaptor.capture(), eq(300));
-        verify(notificationsService).sendSMSMessage(eq(study.getStudyIdentifier()), eq(TestConstants.PHONE),
-                stringCaptor.capture());
-        assertEquals("123456", stringCaptor.getAllValues().get(0));
-        assertEquals("Enter 123-456 to sign in to AppName", stringCaptor.getAllValues().get(1));
+        verify(cacheProvider).setString(cacheKey, "123456", 300);
+        verify(notificationsService).sendSMSMessage(study.getStudyIdentifier(), TestConstants.PHONE,
+                "Enter 123-456 to sign in to AppName");
     }
     
     @Test

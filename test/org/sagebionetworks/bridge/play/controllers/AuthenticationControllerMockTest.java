@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.spy;
@@ -15,6 +16,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 import static org.sagebionetworks.bridge.TestUtils.assertResult;
+import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContextWithJson;
 
 import java.util.Map;
@@ -27,6 +29,7 @@ import com.google.common.collect.Sets;
 import org.apache.http.HttpStatus;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -71,13 +74,12 @@ import play.test.Helpers;
 @RunWith(MockitoJUnitRunner.class)
 public class AuthenticationControllerMockTest {
     
+    private static final DateTime NOW = DateTime.now();
     private static final String REAUTH_TOKEN = "reauthToken";
-    private static final String SESSION_TOKEN = "sessionToken";
     private static final String TEST_INTERNAL_SESSION_ID = "internal-session-id";
     private static final String TEST_PASSWORD = "password";
     private static final String TEST_ACCOUNT_ID = "spId";
     private static final String TEST_EMAIL = "email@email.com";
-    private static final String TEST_REQUEST_ID = "request-id";
     private static final String TEST_SESSION_TOKEN = "session-token";
     private static final String TEST_STUDY_ID_STRING = "study-key";
     private static final StudyIdentifier TEST_STUDY_ID = new StudyIdentifierImpl(TEST_STUDY_ID_STRING);
@@ -120,15 +122,26 @@ public class AuthenticationControllerMockTest {
     
     UserSession userSession;
     
+    // This is manually mocked along with a request payload and captured in some tests
+    // for verification
+    Http.Response response;
+    
+    @Mock
+    Metrics metrics;
+    
     @Before
     public void before() {
+        DateTimeUtils.setCurrentMillisFixed(NOW.getMillis());
+        
         controller = spy(new AuthenticationController());
         controller.setAuthenticationService(authenticationService);
         controller.setCacheProvider(cacheProvider);
         
         userSession = new UserSession();
         userSession.setReauthToken(REAUTH_TOKEN);
-        userSession.setSessionToken(SESSION_TOKEN);
+        userSession.setSessionToken(TEST_SESSION_TOKEN);
+        userSession.setParticipant(new StudyParticipant.Builder().withId(TEST_ACCOUNT_ID).build());
+        userSession.setInternalSessionToken(TEST_INTERNAL_SESSION_ID);
         userSession.setStudyIdentifier(TEST_STUDY_ID);
         
         study = new DynamoStudy();
@@ -138,6 +151,13 @@ public class AuthenticationControllerMockTest {
         when(studyService.getStudy(TEST_STUDY_ID)).thenReturn(study);
         
         controller.setStudyService(studyService);
+        
+        doReturn(metrics).when(controller).getMetrics();
+    }
+    
+    @After
+    public void after() {
+        DateTimeUtils.setCurrentMillisSystem();
     }
     
     @Test
@@ -154,16 +174,11 @@ public class AuthenticationControllerMockTest {
     
     @Test
     public void emailSignIn() throws Exception {
-        StudyParticipant participant = new StudyParticipant.Builder().build();
-        mockPlayContextWithJson(TestUtils.createJson("{'study':'study-key','email':'email@email.com','token':'ABC'}"));
-        userSession.setParticipant(participant);
+        response = mockPlayContextWithJson(TestUtils.createJson("{'study':'study-key','email':'email@email.com','token':'ABC'}"));
         userSession.setAuthenticated(true);
         study.setIdentifier("study-test");
         doReturn(study).when(studyService).getStudy("study-test");
         doReturn(userSession).when(authenticationService).emailSignIn(any(CriteriaContext.class), any(SignIn.class));
-        
-        Metrics metrics = new Metrics(TEST_REQUEST_ID);
-        doReturn(metrics).when(controller).getMetrics();
         
         Result result = controller.emailSignIn();
         assertEquals(200, result.status());
@@ -176,6 +191,8 @@ public class AuthenticationControllerMockTest {
         assertEquals(TEST_EMAIL, captured.getEmail());
         assertEquals("study-key", captured.getStudyId());
         assertEquals("ABC", captured.getToken());
+        
+        verifyCommonLoggingForSignIns();
     }
     
     @Test(expected = BadRequestException.class)
@@ -197,10 +214,9 @@ public class AuthenticationControllerMockTest {
         long timestamp = DateTime.now().getMillis();
         DateTimeUtils.setCurrentMillisFixed(timestamp);
         try {
-            Http.Response response = mockPlayContextWithJson(TestUtils.createJson(
+            response = mockPlayContextWithJson(TestUtils.createJson(
                     "{'study':'study-key','email':'email@email.com','reauthToken':'abc'}"));
             when(authenticationService.reauthenticate(any(), any(), any())).thenReturn(userSession);
-            doReturn(new Metrics("abcd")).when(controller).getMetrics();
             
             Result result = controller.reauthenticate();
             assertEquals(200, result.status());
@@ -211,17 +227,12 @@ public class AuthenticationControllerMockTest {
             assertEquals("email@email.com", signIn.getEmail());
             assertEquals("abc", signIn.getReauthToken());
             
-            verify(controller).getMetrics();
-            
-            verify(response).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, SESSION_TOKEN,
-                    BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
-            
-            verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
-            RequestInfo requestInfo = requestInfoCaptor.getValue();
-            assertEquals(timestamp, requestInfo.getSignedInOn().getMillis());
+            verifyCommonLoggingForSignIns();
             
             JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
             assertEquals(REAUTH_TOKEN, node.get("reauthToken").textValue());
+            
+            verifyCommonLoggingForSignIns();
         } finally {
             DateTimeUtils.setCurrentMillisSystem();
         }
@@ -246,21 +257,18 @@ public class AuthenticationControllerMockTest {
     }
 
     @Test
-    public void getSessionIfItExistsSuccess() {
+    public void getSessionIfItExistsSuccess() throws Exception {
+        mockPlayContext(); 
         // mock getSessionToken and getMetrics
         doReturn(TEST_SESSION_TOKEN).when(controller).getSessionToken();
 
-        Metrics metrics = new Metrics(TEST_REQUEST_ID);
-        doReturn(metrics).when(controller).getMetrics();
-
         // mock AuthenticationService
-        UserSession session = createSession(TestConstants.REQUIRED_SIGNED_CURRENT, null);
-        when(authenticationService.getSession(TEST_SESSION_TOKEN)).thenReturn(session);
+        when(authenticationService.getSession(TEST_SESSION_TOKEN)).thenReturn(userSession);
 
         // execute and validate
         UserSession retVal = controller.getSessionIfItExists();
-        assertSame(session, retVal);
-        assertSessionInfoInMetrics(metrics);
+        assertSame(userSession, retVal);
+        verifyMetrics();
     }
 
     @Test(expected = NotAuthenticatedException.class)
@@ -286,9 +294,6 @@ public class AuthenticationControllerMockTest {
         // mock getSessionToken and getMetrics
         doReturn(TEST_SESSION_TOKEN).when(controller).getSessionToken();
 
-        Metrics metrics = new Metrics(TEST_REQUEST_ID);
-        doReturn(metrics).when(controller).getMetrics();
-
         // mock AuthenticationService
         when(authenticationService.getSession(TEST_SESSION_TOKEN)).thenReturn(null);
 
@@ -301,9 +306,6 @@ public class AuthenticationControllerMockTest {
         // mock getSessionToken and getMetrics
         doReturn(TEST_SESSION_TOKEN).when(controller).getSessionToken();
 
-        Metrics metrics = new Metrics(TEST_REQUEST_ID);
-        doReturn(metrics).when(controller).getMetrics();
-
         // mock AuthenticationService
         UserSession session = createSession(TestConstants.REQUIRED_SIGNED_CURRENT, null);
         session.setAuthenticated(false);
@@ -314,12 +316,10 @@ public class AuthenticationControllerMockTest {
     }
 
     @Test
-    public void getAuthenticatedSessionSuccess() {
+    public void getAuthenticatedSessionSuccess() throws Exception {
+        TestUtils.mockPlayContext();
         // mock getSessionToken and getMetrics
         doReturn(TEST_SESSION_TOKEN).when(controller).getSessionToken();
-
-        Metrics metrics = new Metrics(TEST_REQUEST_ID);
-        doReturn(metrics).when(controller).getMetrics();
 
         // mock AuthenticationService
         UserSession session = createSession(TestConstants.REQUIRED_SIGNED_CURRENT, null);
@@ -328,7 +328,7 @@ public class AuthenticationControllerMockTest {
         // execute and validate
         UserSession retVal = controller.getAuthenticatedSession();
         assertSame(session, retVal);
-        assertSessionInfoInMetrics(metrics);
+        verifyMetrics();
     }
 
     @Test
@@ -339,10 +339,10 @@ public class AuthenticationControllerMockTest {
         ObjectNode node = BridgeObjectMapper.get().valueToTree(originalParticipant);
         node.put("study", TEST_STUDY_ID_STRING);
         
-        TestUtils.mockPlayContextWithJson(node.toString());
+        mockPlayContextWithJson(node.toString());
         
         Result result = controller.signUp();
-        TestUtils.assertResult(result, 201, "Signed up.");
+        assertResult(result, 201, "Signed up.");
         
         verify(authenticationService).signUp(eq(study), participantCaptor.capture());
         
@@ -374,7 +374,7 @@ public class AuthenticationControllerMockTest {
         study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
 
         // Setup and execute. This will throw.
-        TestUtils.mockPlayContextWithJson(node.toString(), headers);
+        response = TestUtils.mockPlayContextWithJson(node.toString(), headers);
         controller.signUp();
     }
 
@@ -385,16 +385,14 @@ public class AuthenticationControllerMockTest {
         ObjectNode node = BridgeObjectMapper.get().valueToTree(originalParticipant);
 
         // Setup and execute. This will throw.
-        TestUtils.mockPlayContextWithJson(node.toString());
+        mockPlayContextWithJson(node.toString());
         controller.signUp();
     }
 
     private void signInExistingSession(boolean isConsented, Roles role, boolean shouldThrow) throws Exception {
+        response = mockPlayContext();
         // mock getSessionToken and getMetrics
         doReturn(TEST_SESSION_TOKEN).when(controller).getSessionToken();
-
-        Metrics metrics = new Metrics(TEST_REQUEST_ID);
-        doReturn(metrics).when(controller).getMetrics();
 
         // mock AuthenticationService
         ConsentStatus consentStatus = (isConsented) ? TestConstants.REQUIRED_SIGNED_CURRENT : null;
@@ -413,7 +411,7 @@ public class AuthenticationControllerMockTest {
                 throw ex;
             }
         }
-        assertSessionInfoInMetrics(metrics);
+        verifyCommonLoggingForSignIns();    
     }
     @Test
     public void signInExistingSession() throws Exception {
@@ -457,9 +455,6 @@ public class AuthenticationControllerMockTest {
 
         doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
 
-        Metrics metrics = new Metrics(TEST_REQUEST_ID);
-        doReturn(metrics).when(controller).getMetrics();
-
         // mock request
         String requestJsonString = "{\n" +
                 "   \"email\":\"" + TEST_EMAIL + "\",\n" +
@@ -467,7 +462,7 @@ public class AuthenticationControllerMockTest {
                 "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
                 "}";
 
-        TestUtils.mockPlayContextWithJson(requestJsonString);
+        response = TestUtils.mockPlayContextWithJson(requestJsonString);
 
         // mock AuthenticationService
         ConsentStatus consentStatus = (isConsented) ? TestConstants.REQUIRED_SIGNED_CURRENT : null;
@@ -502,7 +497,7 @@ public class AuthenticationControllerMockTest {
                 throw ex;
             }
         }
-        assertSessionInfoInMetrics(metrics);
+        verifyCommonLoggingForSignIns();
 
         // validate signIn
         SignIn signIn = signInCaptor.getValue();
@@ -547,13 +542,10 @@ public class AuthenticationControllerMockTest {
 
     @Test
     public void signOut() throws Exception {
-        TestUtils.mockPlayContext();
+        mockPlayContext();
         
         // mock getSessionToken and getMetrics
         doReturn(TEST_SESSION_TOKEN).when(controller).getSessionToken();
-
-        Metrics metrics = new Metrics(TEST_REQUEST_ID);
-        doReturn(metrics).when(controller).getMetrics();
 
         // mock AuthenticationService
         UserSession session = createSession(TestConstants.REQUIRED_SIGNED_CURRENT, null);
@@ -562,7 +554,6 @@ public class AuthenticationControllerMockTest {
         // execute and validate
         Result result = controller.signOut();
         assertEquals(HttpStatus.SC_OK, result.status());
-        assertSessionInfoInMetrics(metrics);
         
         @SuppressWarnings("static-access")
         Http.Response mockResponse = controller.response();
@@ -576,9 +567,6 @@ public class AuthenticationControllerMockTest {
         // mock getSessionToken and getMetrics
         doReturn(null).when(controller).getSessionToken();
 
-        Metrics metrics = new Metrics(TEST_REQUEST_ID);
-        doReturn(metrics).when(controller).getMetrics();
-
         // execute and validate
         Result result = controller.signOut();
         assertEquals(HttpStatus.SC_OK, result.status());
@@ -588,17 +576,13 @@ public class AuthenticationControllerMockTest {
 
     @Test
     public void verifyEmail() throws Exception {
-        // mock getMetrics
-        Metrics metrics = new Metrics(TEST_REQUEST_ID);
-        doReturn(metrics).when(controller).getMetrics();
-        
         // mock request
         String requestJsonString = "{\n" +
                 "   \"sptoken\":\"" + TEST_TOKEN + "\",\n" +
                 "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
                 "}";
 
-        TestUtils.mockPlayContextWithJson(requestJsonString);
+        mockPlayContextWithJson(requestJsonString);
 
         // mock AuthenticationService
         ArgumentCaptor<EmailVerification> emailVerifyCaptor = ArgumentCaptor.forClass(EmailVerification.class);
@@ -620,12 +604,9 @@ public class AuthenticationControllerMockTest {
         String json = TestUtils.createJson(
                 "{'study':'" + TEST_STUDY_ID_STRING + 
                 "','email':'email@email.com','password':'bar'}");
-        TestUtils.mockPlayContextWithJson(json, headers);
+        mockPlayContextWithJson(json, headers);
         study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
         
-        Metrics metrics = new Metrics(TEST_REQUEST_ID);
-        doReturn(metrics).when(controller).getMetrics();
-
         controller.signIn();
     }
     
@@ -636,13 +617,23 @@ public class AuthenticationControllerMockTest {
         String json = TestUtils.createJson(
                 "{'study':'" + TEST_STUDY_ID_STRING + 
                 "','email':'email@email.com','password':'bar'}");
-        TestUtils.mockPlayContextWithJson(json, headers);
+        mockPlayContextWithJson(json, headers);
         study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
         
-        Metrics metrics = new Metrics(TEST_REQUEST_ID);
-        doReturn(metrics).when(controller).getMetrics();
-
         controller.emailSignIn();
+    }
+    
+    @Test(expected = UnsupportedVersionException.class)
+    public void phoneSignInBlockedByVersionKillSwitch() throws Exception {
+        Map<String,String[]> headers = new ImmutableMap.Builder<String,String[]>()
+                .put("User-Agent", new String[]{"App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4"}).build();
+        String json = TestUtils.createJson(
+                "{'study':'" + TEST_STUDY_ID_STRING + 
+                "','email':'email@email.com','password':'bar'}");
+        mockPlayContextWithJson(json, headers);
+        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
+        
+        controller.phoneSignIn();
     }
     
     @Test
@@ -668,7 +659,7 @@ public class AuthenticationControllerMockTest {
 
     @Test(expected = EntityNotFoundException.class)
     public void resendEmailVerificationNoStudy() throws Exception {
-        TestUtils.mockPlayContextWithJson(new Email((StudyIdentifier) null, TEST_EMAIL));
+        mockPlayContextWithJson(new Email((StudyIdentifier) null, TEST_EMAIL));
         controller.resendEmailVerification();
     }
 
@@ -697,7 +688,7 @@ public class AuthenticationControllerMockTest {
 
     @Test(expected = EntityNotFoundException.class)
     public void resetPasswordNoStudy() throws Exception {
-        TestUtils.mockPlayContextWithJson(new PasswordReset("aPassword", "aSpToken", null));
+        mockPlayContextWithJson(new PasswordReset("aPassword", "aSpToken", null));
         controller.resetPassword();
     }
 
@@ -706,7 +697,7 @@ public class AuthenticationControllerMockTest {
                 .put("User-Agent", new String[]{"App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4"}).build();
         String json = TestUtils.createJson("{'study':'" + TEST_STUDY_ID_STRING + 
             "','sptoken':'aSpToken','password':'aPassword'}");
-        TestUtils.mockPlayContextWithJson(json, headers);
+        mockPlayContextWithJson(json, headers);
     }
     
     @Test
@@ -746,16 +737,16 @@ public class AuthenticationControllerMockTest {
     @Test(expected = EntityNotFoundException.class)
     public void requestResetPasswordNoStudy() throws Exception {
         when(studyService.getStudy((String)any())).thenThrow(new EntityNotFoundException(Study.class));
-        TestUtils.mockPlayContextWithJson(new SignIn.Builder().withEmail(TEST_EMAIL).build());
+        mockPlayContextWithJson(new SignIn.Builder().withEmail(TEST_EMAIL).build());
         controller.requestResetPassword();
     }
     
     @Test
     public void requestPhoneSignIn() throws Exception {
-        TestUtils.mockPlayContextWithJson(PHONE_SIGN_IN_REQUEST);
+        mockPlayContextWithJson(PHONE_SIGN_IN_REQUEST);
         
         Result result = controller.requestPhoneSignIn();
-        TestUtils.assertResult(result, 202, "Message sent.");
+        assertResult(result, 202, "Message sent.");
         
         verify(authenticationService).requestPhoneSignIn(signInCaptor.capture());
         
@@ -766,15 +757,17 @@ public class AuthenticationControllerMockTest {
     
     @Test
     public void phoneSignIn() throws Exception {
-        TestUtils.mockPlayContextWithJson(PHONE_SIGN_IN);
-        
-        Metrics metrics = new Metrics(TEST_REQUEST_ID);
-        doReturn(metrics).when(controller).getMetrics();
+        response = mockPlayContextWithJson(PHONE_SIGN_IN);
         
         when(authenticationService.phoneSignIn(any(), any())).thenReturn(userSession);
         
         Result result = controller.phoneSignIn();
         assertEquals(200, result.status());
+        
+        // Returns user session.
+        JsonNode node = TestUtils.getJson(result);
+        assertEquals(TEST_SESSION_TOKEN, node.get("sessionToken").textValue());
+        assertEquals("UserSessionInfo", node.get("type").textValue());
         
         verify(authenticationService).phoneSignIn(contextCaptor.capture(), signInCaptor.capture());
         
@@ -785,13 +778,15 @@ public class AuthenticationControllerMockTest {
         assertEquals(TEST_STUDY_ID_STRING, captured.getStudyId());
         assertEquals(TEST_TOKEN, captured.getToken());
         assertEquals(TestConstants.PHONE.getNumber(), captured.getPhone().getNumber());
+        
+        verifyCommonLoggingForSignIns();
     }
     
     @Test(expected = BadRequestException.class)
     public void phoneSignInMissingStudy() throws Exception {
         SignIn badPhoneSignIn = new SignIn.Builder().withStudy(null)
                 .withPhone(TestConstants.PHONE).withToken(TEST_TOKEN).build();
-        TestUtils.mockPlayContextWithJson(badPhoneSignIn);
+        mockPlayContextWithJson(badPhoneSignIn);
         
         controller.phoneSignIn();
     }
@@ -800,7 +795,7 @@ public class AuthenticationControllerMockTest {
     public void phoneSignInBadStudy() throws Exception {
         SignIn badPhoneSignIn = new SignIn.Builder().withStudy("bad-study")
                 .withPhone(TestConstants.PHONE).withToken(TEST_TOKEN).build();
-        TestUtils.mockPlayContextWithJson(badPhoneSignIn);
+        mockPlayContextWithJson(badPhoneSignIn);
         when(authenticationService.phoneSignIn(any(), any())).thenReturn(userSession);
         when(studyService.getStudy((String)any())).thenThrow(new EntityNotFoundException(Study.class));
         
@@ -811,14 +806,14 @@ public class AuthenticationControllerMockTest {
         Map<String, String[]> headers = new ImmutableMap.Builder<String, String[]>()
                 .put("User-Agent", new String[] { "App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4" }).build();
         SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING).withEmail(TEST_EMAIL).build();
-        TestUtils.mockPlayContextWithJson(signIn, headers);
+        mockPlayContextWithJson(signIn, headers);
     }
 
     private void mockSignInWithPhonePayload() throws Exception {
         Map<String, String[]> headers = new ImmutableMap.Builder<String, String[]>()
                 .put("User-Agent", new String[] { "App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4" }).build();
         SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING).withPhone(TestConstants.PHONE).build();
-        TestUtils.mockPlayContextWithJson(signIn, headers);
+        mockPlayContextWithJson(signIn, headers);
     }
 
     private static void assertSessionInPlayResult(Result result) throws Exception {
@@ -829,13 +824,6 @@ public class AuthenticationControllerMockTest {
         JsonNode resultNode = BridgeObjectMapper.get().readTree(resultString);
         assertTrue(resultNode.get("authenticated").booleanValue());
         assertEquals(TEST_SESSION_TOKEN, resultNode.get("sessionToken").textValue());
-    }
-
-    private static void assertSessionInfoInMetrics(Metrics metrics) {
-        ObjectNode metricsJsonNode = metrics.getJson();
-        assertEquals(TEST_INTERNAL_SESSION_ID, metricsJsonNode.get("session_id").textValue());
-        assertEquals(TEST_STUDY_ID_STRING, metricsJsonNode.get("study").textValue());
-        assertEquals(TEST_ACCOUNT_ID, metricsJsonNode.get("user_id").textValue());
     }
 
     private UserSession createSession(ConsentStatus status, Roles role) {
@@ -855,6 +843,25 @@ public class AuthenticationControllerMockTest {
             session.setConsentStatuses(TestUtils.toMap(status));    
         }
         return session;
+    }
+    
+    private void verifyMetrics() {
+        verify(controller, atLeastOnce()).getMetrics();
+        
+        verify(metrics, atLeastOnce()).setSessionId(TEST_INTERNAL_SESSION_ID);
+        verify(metrics, atLeastOnce()).setUserId(TEST_ACCOUNT_ID);
+        verify(metrics, atLeastOnce()).setStudy(TEST_STUDY_ID_STRING);
+    }
+    
+    private void verifyCommonLoggingForSignIns() throws Exception {
+        verifyMetrics();
+        
+        verify(response).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, TEST_SESSION_TOKEN,
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
+        
+        verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
+        RequestInfo info = requestInfoCaptor.getValue();
+        assertEquals(NOW.getMillis(), info.getSignedInOn().getMillis());
     }
     
 }

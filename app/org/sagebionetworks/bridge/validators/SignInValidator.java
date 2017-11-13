@@ -34,6 +34,9 @@ public class SignInValidator implements Validator {
     /** Request a reset password link via email or SMS. */
     public static final SignInValidator REQUEST_RESET_PASSWORD = new SignInValidator(EnumSet.of(STUDY, EMAIL_OR_PHONE));
     
+    /** The basics of a sign in that must be present for the admin create user API. */
+    public static final SignInValidator MINIMAL = new SignInValidator(EnumSet.of(STUDY, EMAIL_OR_PHONE));
+    
     /** Sign in using an email and password. */
     public static final SignInValidator PASSWORD_SIGNIN = new SignInValidator(EnumSet.of(STUDY, EMAIL_OR_PHONE, PASSWORD));
     /** Reauthentication. */

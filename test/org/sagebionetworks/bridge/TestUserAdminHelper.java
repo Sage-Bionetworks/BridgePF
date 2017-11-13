@@ -111,11 +111,11 @@ public class TestUserAdminHelper {
     public void deleteUser(TestUser testUser) {
         checkNotNull(testUser);
         
+        String userId = testUser.getId();
         if (testUser.getSession() != null) {
-            String userId = testUser.getId();
             authService.signOut(testUser.getSession());
-            deleteUser(testUser.getStudy(), userId);
         }
+        deleteUser(testUser.getStudy(), userId);
     }
 
     public void deleteUser(Study study, String id) {
