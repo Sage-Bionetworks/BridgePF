@@ -44,12 +44,6 @@ public interface AppConfig extends BridgeEntity {
 
     List<SchemaReference> getSchemaReferences();
     void setSchemaReferences(List<SchemaReference> references);
-
-    List<AppleAppLink> getAppleAppLinks();
-    void setAppleAppLinks(List<AppleAppLink> appleAppLinks);
-    
-    List<AndroidAppLink> getAndroidAppLinks();
-    void setAndroidAppLinks(List<AndroidAppLink> androidAppLinks);
     
     Long getVersion();
     void setVersion(Long versions);

@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.models;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.appconfig.AppleAppLink;
+import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.newrelic.agent.deps.com.google.common.collect.ImmutableList;
@@ -13,7 +13,7 @@ import com.newrelic.agent.deps.com.google.common.collect.ImmutableList;
  */
 public class AppleAppSiteAssociation {
     
-    private static class AppLinks {
+    public static class AppLinks {
         private List<AppleAppLink> details;
         
         private AppLinks(List<AppleAppLink> details) {
@@ -21,12 +21,12 @@ public class AppleAppSiteAssociation {
         }
         @SuppressWarnings("unused")
         @JsonProperty("apps") // needed for a private accessor
-        private List<String> getApps() {
+        public List<String> getApps() {
             return ImmutableList.of();
         }
         @SuppressWarnings("unused")
         @JsonProperty("details") // needed for a private accessor
-        private List<AppleAppLink> getDetails() {
+        public List<AppleAppLink> getDetails() {
             return details;
         }
     }

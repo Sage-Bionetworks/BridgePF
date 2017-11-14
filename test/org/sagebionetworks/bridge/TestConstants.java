@@ -8,10 +8,13 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Phone;
+import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
+import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class TestConstants {
@@ -75,4 +78,13 @@ public class TestConstants {
     public static final LinkedHashSet<String> LANGUAGES = TestUtils.newLinkedHashSet("en","fr");
     
     public static final Phone PHONE = new Phone("9174267643", "US");
+    
+    public static final AndroidAppLink ANDROID_APP_LINK = new AndroidAppLink("namespace", "package_name",
+            Lists.newArrayList("sha256_cert_fingerprints"));
+    public static final AndroidAppLink ANDROID_APP_LINK_2 = new AndroidAppLink("namespace2", "package_name2",
+            Lists.newArrayList("sha256_cert_fingerprints2"));
+    public static final AppleAppLink APPLE_APP_LINK = new AppleAppLink("studyId",
+            Lists.newArrayList("/appId/", "/appId/*"));
+    public static final AppleAppLink APPLE_APP_LINK_2 = new AppleAppLink("studyId2",
+            Lists.newArrayList("/appId2/", "/appId2/*"));
 }

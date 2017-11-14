@@ -316,4 +316,10 @@ public interface Study extends BridgeEntity, StudyIdentifier {
 
     /** @see #getDisableExport */
     void setDisableExport(boolean disable);
+
+    List<AppleAppLink> getAppleAppLinks();
+    void setAppleAppLinks(List<AppleAppLink> appleAppLinks);
+    
+    List<AndroidAppLink> getAndroidAppLinks();
+    void setAndroidAppLinks(List<AndroidAppLink> androidAppLinks);
 }

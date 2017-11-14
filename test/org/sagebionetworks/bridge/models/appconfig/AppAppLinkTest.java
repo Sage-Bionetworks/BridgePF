@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.appconfig;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
+import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

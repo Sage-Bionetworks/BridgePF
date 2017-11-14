@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -498,6 +499,10 @@ public class TestUtils {
     
     public static <T> T getResponsePayload(Result result, Class<T> clazz) throws Exception {
         return BridgeObjectMapper.get().readValue(Helpers.contentAsString(result), clazz);
+    }
+    
+    public static <T> T getResponsePayload(Result result, TypeReference<T> ref) throws Exception {
+        return BridgeObjectMapper.get().readValue(Helpers.contentAsString(result), ref);
     }
     
     public static Criteria createCriteria(Integer minAppVersion, Integer maxAppVersion, Set<String> allOfGroups, Set<String> noneOfGroups) {

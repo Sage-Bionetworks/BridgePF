@@ -17,13 +17,11 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
-import org.sagebionetworks.bridge.models.appconfig.AndroidAppLink;
-import org.sagebionetworks.bridge.models.appconfig.AppConfig;
-import org.sagebionetworks.bridge.models.appconfig.AppleAppLink;
+import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
+import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-import org.sagebionetworks.bridge.services.AppConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -36,18 +34,11 @@ public class ApplicationController extends BaseController {
     
     @SuppressWarnings("serial")
     private static class AndroidAppLinkList extends ArrayList<AndroidAppSiteAssociation> {};
-
-    private AppConfigService appConfigService;
-    
-    private ViewCache viewCache;
     
     private static final String ASSETS_BUILD = "201501291830";
 
-    @Autowired
-    final void setAppConfigService(AppConfigService appConfigService) {
-        this.appConfigService = appConfigService;
-    }
-    
+    private ViewCache viewCache;
+
     @Autowired
     final void setViewCache(ViewCache viewCache) {
         this.viewCache = viewCache;
@@ -88,13 +79,8 @@ public class ApplicationController extends BaseController {
             AndroidAppLinkList links = new AndroidAppLinkList();
             List<Study> studies = studyService.getStudies();
             for(Study study : studies) {
-                CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
-                
-                AppConfig config = appConfigService.getAppConfigForUser(context, false);
-                if (config != null) {
-                    for (AndroidAppLink link : config.getAndroidAppLinks()) {
-                        links.add(new AndroidAppSiteAssociation(link));
-                    }
+                for (AndroidAppLink link : study.getAndroidAppLinks()) {
+                    links.add(new AndroidAppSiteAssociation(link));
                 }
             }
             return links;
@@ -109,12 +95,7 @@ public class ApplicationController extends BaseController {
             List<AppleAppLink> links = Lists.newArrayList();
             List<Study> studies = studyService.getStudies();
             for(Study study : studies) {
-                CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
-                
-                AppConfig config = appConfigService.getAppConfigForUser(context, false);
-                if (config != null) {
-                    links.addAll(config.getAppleAppLinks());
-                }
+                links.addAll(study.getAppleAppLinks());
             }
             return new AppleAppSiteAssociation(links);
         });

@@ -15,9 +15,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Criteria;
-import org.sagebionetworks.bridge.models.appconfig.AndroidAppLink;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
-import org.sagebionetworks.bridge.models.appconfig.AppleAppLink;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -25,7 +23,6 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -43,14 +40,6 @@ public class DynamoAppConfigTest {
     private static final List<SchemaReference> SCHEMA_REFS = new ImmutableList.Builder<SchemaReference>()
             .add(new SchemaReference("schemaA", 1))
             .add(new SchemaReference("schemaB", 2)).build();
-    
-    private static final AppleAppLink APPLE_APP_LINK = new AppleAppLink("studyId", Lists.newArrayList("/appId/","/appId/*"));
-    private static final List<AppleAppLink> APPLE_APP_LINKS = Lists.newArrayList(APPLE_APP_LINK);
-    
-    private static final AndroidAppLink ANDROID_APP_LINK = new AndroidAppLink("namespace", "package_name",
-            Lists.newArrayList("sha256_cert_fingerprints"));    
-    private static final List<AndroidAppLink> ANDROID_APP_LINKS = Lists.newArrayList(ANDROID_APP_LINK);
-    
     private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl(TestUtils.randomName(DynamoAppConfigDaoTest.class));
     
     @Test
@@ -78,8 +67,6 @@ public class DynamoAppConfigTest {
         appConfig.setSurveyReferences(SURVEY_REFS);
         appConfig.setSchemaReferences(SCHEMA_REFS);
         appConfig.setClientData(clientData);
-        appConfig.setAppleAppLinks(APPLE_APP_LINKS);
-        appConfig.setAndroidAppLinks(ANDROID_APP_LINKS);
         appConfig.setVersion(3L);
         
         Set<String> fields = Sets.newHashSet("criteria", "label", "createdOn", "modifiedOn", "clientData",
@@ -102,8 +89,6 @@ public class DynamoAppConfigTest {
         assertEquals(appConfig.getCreatedOn(), deser.getCreatedOn());
         assertEquals(appConfig.getModifiedOn(), deser.getModifiedOn());
         assertEquals(appConfig.getGuid(), deser.getGuid());
-        assertEquals(APPLE_APP_LINKS, appConfig.getAppleAppLinks());
-        assertEquals(ANDROID_APP_LINKS, appConfig.getAndroidAppLinks());
         assertEquals(appConfig.getVersion(), deser.getVersion());
     }
     
