@@ -148,6 +148,7 @@ public class StudyValidator implements Validator {
             }
         }
         
+        // app link configuration is not required, but if it is provided, we validate it
         if (study.getAppleAppLinks() != null && !study.getAppleAppLinks().isEmpty()) {
             validateAppLinks(errors, "appleAppLinks", study.getAppleAppLinks(), (AppleAppLink link) -> {
                 if (StringUtils.isBlank(link.getAppId())) {

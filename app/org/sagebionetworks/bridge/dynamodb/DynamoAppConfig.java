@@ -177,8 +177,7 @@ public class DynamoAppConfig implements AppConfig {
                 && Objects.equals(label, other.label) && Objects.equals(modifiedOn, other.modifiedOn)
                 && Objects.equals(getSchemaReferences(), other.getSchemaReferences())
                 && Objects.equals(getSurveyReferences(), other.getSurveyReferences()) 
-                && Objects.equals(studyId, other.studyId) 
-                && Objects.equals(version, other.version);
+                && Objects.equals(studyId, other.studyId) && Objects.equals(version, other.version);
     }
 
     @Override

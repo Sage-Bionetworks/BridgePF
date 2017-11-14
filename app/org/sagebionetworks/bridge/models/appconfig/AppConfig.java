@@ -17,7 +17,7 @@ public interface AppConfig extends BridgeEntity {
     static AppConfig create() {
         return new DynamoAppConfig();
     }
-    
+
     String getStudyId();
     void setStudyId(String studyId);
     
@@ -47,4 +47,5 @@ public interface AppConfig extends BridgeEntity {
     
     Long getVersion();
     void setVersion(Long versions);
+
 }

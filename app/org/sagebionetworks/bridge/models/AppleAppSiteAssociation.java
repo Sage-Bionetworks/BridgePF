@@ -9,7 +9,9 @@ import com.newrelic.agent.deps.com.google.common.collect.ImmutableList;
 
 /**
  * A model of the JSON we return to iOS clients. For iOS clients, one object encompasses all the 
- * links for all the studies. 
+ * links for all the studies.
+ * 
+ * @see https://developer.apple.com/library/content/documentation/General/Conceptual/AppSearch/UniversalLinks.html
  */
 public class AppleAppSiteAssociation {
     
@@ -19,13 +21,9 @@ public class AppleAppSiteAssociation {
         private AppLinks(List<AppleAppLink> details) {
             this.details = details;
         }
-        @SuppressWarnings("unused")
-        @JsonProperty("apps") // needed for a private accessor
         public List<String> getApps() {
             return ImmutableList.of();
         }
-        @SuppressWarnings("unused")
-        @JsonProperty("details") // needed for a private accessor
         public List<AppleAppLink> getDetails() {
             return details;
         }
