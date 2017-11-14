@@ -68,7 +68,7 @@ public class BridgeConstants {
     // 5 hrs
     public static final int BRIDGE_VIEW_EXPIRE_IN_SECONDS = 5 * 60 * 60;
     
-    // 3 minues
+    // 3 minutes
     public static final int APP_LINKS_EXPIRE_IN_SECONDS = 3* 60;
     
     // 1 minute
