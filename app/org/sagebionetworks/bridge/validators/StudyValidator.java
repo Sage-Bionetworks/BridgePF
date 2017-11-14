@@ -6,6 +6,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
@@ -13,6 +14,8 @@ import org.apache.commons.validator.routines.EmailValidator;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
+import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -142,6 +145,69 @@ public class StudyValidator implements Validator {
             }
             if (!study.isExternalIdValidationEnabled()) {
                 errors.rejectValue("externalIdValidationEnabled", "cannot be disabled if email verification has been disabled");
+            }
+        }
+        
+        if (study.getAppleAppLinks() != null && !study.getAppleAppLinks().isEmpty()) {
+            validateAppLinks(errors, "appleAppLinks", study.getAppleAppLinks(), (AppleAppLink link) -> {
+                if (StringUtils.isBlank(link.getAppId())) {
+                    errors.rejectValue("appId", "cannot be blank or null");
+                }
+                if (link.getPaths() == null || link.getPaths().isEmpty()) {
+                    errors.rejectValue("paths", "cannot be null or empty");
+                } else {
+                    for (int j=0; j < link.getPaths().size(); j++) {
+                        String path =  link.getPaths().get(j);
+                        if (StringUtils.isBlank(path)) {
+                            errors.rejectValue("paths["+j+"]", "cannot be blank or empty");
+                        }
+                    }                        
+                }
+                return link.getAppId();
+            });
+        }
+        if (study.getAndroidAppLinks() != null && !study.getAndroidAppLinks().isEmpty()) {
+            validateAppLinks(errors, "androidAppLinks", study.getAndroidAppLinks(), (AndroidAppLink link) -> {
+                if (StringUtils.isBlank(link.getNamespace())) {
+                    errors.rejectValue("namespace", "cannot be blank or null");
+                }
+                if (StringUtils.isBlank(link.getPackageName())) {
+                    errors.rejectValue("packageName", "cannot be blank or null");
+                }
+                if (link.getFingerprints() == null || link.getFingerprints().isEmpty()) {
+                    errors.rejectValue("fingerprints", "cannot be null or empty");
+                } else {
+                    for (int i=0; i < link.getFingerprints().size(); i++) {
+                        String fingerprint = link.getFingerprints().get(i);
+                        if (StringUtils.isBlank(fingerprint)) {
+                            errors.rejectValue("fingerprints["+i+"]", "cannot be null or empty");
+                        }
+                    }
+                }
+                return link.getNamespace() + "." + link.getPackageName();
+            });
+        }
+    }
+    
+    private <T> void validateAppLinks(Errors errors, String propName, List<T> appLinks, Function<T,String> itemValidator) {
+        Set<String> uniqueAppIDs = Sets.newHashSet();
+        int len = appLinks.size();
+        for (int i=0; i < appLinks.size(); i++) {
+            T link = appLinks.get(i);
+            String fieldName = propName+"["+i+"]";
+            errors.pushNestedPath(fieldName);
+            if (link == null) {
+                errors.rejectValue("", "cannot be null");
+                len--;
+            } else {
+                String id = itemValidator.apply(link);
+                if (id != null) {
+                    uniqueAppIDs.add(id);
+                }
+            }
+            errors.popNestedPath();
+            if (uniqueAppIDs.size() < len) {
+                errors.rejectValue(propName, "cannot contain duplicate entries");
             }
         }
     }

@@ -13,9 +13,9 @@ import com.google.common.collect.Lists;
 public class AppleAppSiteAssociationTest {
 
     @Test
-    public void test() throws Exception {
-        AppleAppLink detail1 = new AppleAppLink("studyId1", Lists.newArrayList("/appId1/","/appId1/*"));
-        AppleAppLink detail2 = new AppleAppLink("studyId2", Lists.newArrayList("/appId2/","/appId2/*"));
+    public void createsCorrectJson() throws Exception {
+        AppleAppLink detail1 = new AppleAppLink("appId1", Lists.newArrayList("/appId1/","/appId1/*"));
+        AppleAppLink detail2 = new AppleAppLink("appId2", Lists.newArrayList("/appId2/","/appId2/*"));
         
         AppleAppSiteAssociation assoc = new AppleAppSiteAssociation(Lists.newArrayList(detail1, detail2));
         
@@ -29,13 +29,13 @@ public class AppleAppSiteAssociationTest {
         
         JsonNode node1 = details.get(0);
         assertEquals("appId1", node1.get("appID").textValue());
-        assertEquals("/studyId1/", node1.get("paths").get(0).textValue());
-        assertEquals("/studyId1/*", node1.get("paths").get(1).textValue());
+        assertEquals("/appId1/", node1.get("paths").get(0).textValue());
+        assertEquals("/appId1/*", node1.get("paths").get(1).textValue());
         
         JsonNode node2 = details.get(1);
         assertEquals("appId2", node2.get("appID").textValue());
-        assertEquals("/studyId2/", node2.get("paths").get(0).textValue());
-        assertEquals("/studyId2/*", node2.get("paths").get(1).textValue());
+        assertEquals("/appId2/", node2.get("paths").get(0).textValue());
+        assertEquals("/appId2/*", node2.get("paths").get(1).textValue());
     }
 
 }

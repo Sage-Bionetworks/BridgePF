@@ -70,7 +70,7 @@ public class DynamoAppConfigTest {
         appConfig.setVersion(3L);
         
         Set<String> fields = Sets.newHashSet("criteria", "label", "createdOn", "modifiedOn", "clientData",
-                "surveyReferences", "schemaReferences", "version", "appleAppLinks", "androidAppLinks", "type");
+                "surveyReferences", "schemaReferences", "version", "type");
                 
         JsonNode node = BridgeObjectMapper.get().valueToTree(appConfig);
         assertEquals(fields, Sets.newHashSet(node.fieldNames()));

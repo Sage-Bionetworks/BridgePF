@@ -9,14 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 
-import nl.jqno.equalsverifier.EqualsVerifier;
-
 public class AndroidAppSiteAssociationTest {
-    
-    @Test
-    public void equalsHashCode() {
-        EqualsVerifier.forClass(AndroidAppSiteAssociation.class).allFieldsShouldBeUsed().verify();
-    }
     
     @Test
     public void producesCorrectJson() throws Exception {

@@ -12,6 +12,7 @@ import java.util.List;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -123,6 +124,16 @@ public class DynamoStudyTest {
                 node.get("pushNotificationARNs").get(OperatingSystem.IOS).asText());
         assertEqualsAndNotNull(study.getPushNotificationARNs().get(OperatingSystem.ANDROID),
                 node.get("pushNotificationARNs").get(OperatingSystem.ANDROID).asText());
+        
+        JsonNode appleLink = node.get("appleAppLinks").get(0);
+        assertEquals("studyId", appleLink.get("appID").textValue());
+        assertEquals("/appId/", appleLink.get("paths").get(0).textValue());
+        assertEquals("/appId/*", appleLink.get("paths").get(1).textValue());
+        
+        JsonNode androidLink = node.get("androidAppLinks").get(0);
+        assertEquals("namespace", androidLink.get("namespace").textValue());
+        assertEquals("package_name", androidLink.get("package_name").textValue());
+        assertEquals("sha256_cert_fingerprints", androidLink.get("sha256_cert_fingerprints").get(0).textValue());
 
         // validate minAppVersion
         JsonNode supportedVersionsNode = JsonUtils.asJsonNode(node, "minSupportedAppVersions");
