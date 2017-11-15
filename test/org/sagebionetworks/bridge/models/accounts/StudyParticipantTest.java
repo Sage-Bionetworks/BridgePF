@@ -40,7 +40,7 @@ public class StudyParticipantTest {
     private static final String ACCOUNT_ID = "6278uk74xoQkXkrbh9vJnh";
     private static final DateTime CREATED_ON = DateTime.now();
     private static final DateTime CREATED_ON_UTC = CREATED_ON.withZone(DateTimeZone.UTC);
-    private static final Phone PHONE = new Phone("4082588569", "US");
+    private static final Phone PHONE = TestConstants.PHONE;
     private static final Set<Roles> ROLES = Sets.newHashSet(Roles.ADMIN, Roles.WORKER);
     private static final LinkedHashSet<String> LANGS = TestUtils.newLinkedHashSet("en","fr");
     private static final Set<String> DATA_GROUPS = Sets.newHashSet("group1","group2");

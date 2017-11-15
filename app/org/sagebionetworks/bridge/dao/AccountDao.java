@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.AuthenticationService;
 
 /**
  * DAO to retrieve personally identifiable account information, including authentication 
@@ -28,10 +29,9 @@ public interface AccountDao {
     void verifyEmail(EmailVerification verification);
     
     /**
-     * Set the emailVerified flag to true and enable the account (if needed). Called from  
-     * <code>AuthenticationService.emailSignIn</code>. 
+     * Set the verified flag for the channel (email or phone) to true, and enable the account (if needed).
      */
-    void verifyEmail(Account account);
+    void verifyChannel(AuthenticationService.ChannelType channelType, Account account);
     
     /**
      * Sign up sends an email address with a link that includes a one-time token for verification. That email

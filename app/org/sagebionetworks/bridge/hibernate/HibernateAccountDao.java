@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
+import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -50,6 +52,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
+import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -61,9 +64,9 @@ public class HibernateAccountDao implements AccountDao {
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
 
     static final String ACCOUNT_SUMMARY_QUERY_PREFIX = "select new " + HibernateAccount.class.getCanonicalName() +
-            "(createdOn, studyId, firstName, lastName, email, id, status) ";
+            "(createdOn, studyId, firstName, lastName, email, phone, id, status) ";
     static final String EMAIL_QUERY = "from HibernateAccount where studyId='%s' and email='%s'";
-    static final String PHONE_QUERY = "from HibernateAccount where studyId='%s' and phone='%s'";
+    static final String PHONE_QUERY = "from HibernateAccount where studyId='%s' and phone.number='%s' and phone.regionCode='%s'";
     
     private AccountWorkflowService accountWorkflowService;
     private HealthCodeService healthCodeService;
@@ -91,7 +94,7 @@ public class HibernateAccountDao implements AccountDao {
     @Override
     public void verifyEmail(EmailVerification verification) {
         Account account = accountWorkflowService.verifyEmail(verification);
-        verifyEmail(account);
+        verifyChannel(EMAIL, account);
     }
     
     /**
@@ -100,7 +103,8 @@ public class HibernateAccountDao implements AccountDao {
      * address.
      */
     @Override
-    public void verifyEmail(Account account) {
+    public void verifyChannel(AuthenticationService.ChannelType channelType, Account account) {
+        checkNotNull(channelType);
         checkNotNull(account);
         
         // Do not modify the account if it is disabled (all email verification workflows are 
@@ -108,10 +112,13 @@ public class HibernateAccountDao implements AccountDao {
         if (account.getStatus() == AccountStatus.DISABLED) {
             return;
         }
-        boolean shouldUpdateEmailVerified = (account.getEmailVerified() != Boolean.TRUE);
+        
+        // Avoid updating on every sign in by examining object state first.
+        boolean shouldUpdateEmailVerified = (channelType == EMAIL && account.getEmailVerified() != Boolean.TRUE);
+        boolean shouldUpdatePhoneVerified = (channelType == PHONE && account.getPhoneVerified() != Boolean.TRUE);
         boolean shouldUpdateStatus = (account.getStatus() == AccountStatus.UNVERIFIED);
         
-        if (shouldUpdateEmailVerified || shouldUpdateStatus) {
+        if (shouldUpdatePhoneVerified || shouldUpdateEmailVerified || shouldUpdateStatus) {
             HibernateAccount hibernateAccount = hibernateHelper.getById(HibernateAccount.class, account.getId());
             if (hibernateAccount == null) {
                 throw new EntityNotFoundException(Account.class);
@@ -119,6 +126,10 @@ public class HibernateAccountDao implements AccountDao {
             if (shouldUpdateEmailVerified) {
                 account.setEmailVerified(Boolean.TRUE);
                 hibernateAccount.setEmailVerified(Boolean.TRUE);
+            }
+            if (shouldUpdatePhoneVerified) {
+                account.setPhoneVerified(Boolean.TRUE);
+                hibernateAccount.setPhoneVerified(Boolean.TRUE);
             }
             if (shouldUpdateStatus) {
                 account.setStatus(AccountStatus.ENABLED);
@@ -173,7 +184,7 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public Account authenticate(Study study, SignIn signIn) {
-        HibernateAccount hibernateAccount = fetchHibernateAccount(study, signIn);
+        HibernateAccount hibernateAccount = fetchHibernateAccount(signIn);
         return authenticateInternal(hibernateAccount, hibernateAccount.getPasswordAlgorithm(),
                 hibernateAccount.getPasswordHash(), signIn.getPassword(), "password");
     }
@@ -181,7 +192,7 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public Account reauthenticate(Study study, SignIn signIn) {
-        HibernateAccount hibernateAccount = fetchHibernateAccount(study, signIn);
+        HibernateAccount hibernateAccount = fetchHibernateAccount(signIn);
         return authenticateInternal(hibernateAccount, hibernateAccount.getReauthTokenAlgorithm(),
                 hibernateAccount.getReauthTokenHash(), signIn.getReauthToken(), "reauth token");
     }
@@ -201,7 +212,7 @@ public class HibernateAccountDao implements AccountDao {
     @Override
     public Account getAccountAfterAuthentication(AccountId accountId) {
         HibernateAccount hibernateAccount = getHibernateAccount(accountId);
-        
+
         if (hibernateAccount != null) {
             validateHealthCode(hibernateAccount, false);
             Account account = unmarshallAccount(hibernateAccount);
@@ -260,13 +271,14 @@ public class HibernateAccountDao implements AccountDao {
         account.setPhoneVerified(Boolean.FALSE);
         account.setHealthId(healthId);
 
-        // Hash password.
-        PasswordAlgorithm passwordAlgorithm = PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
-        String passwordHash = hashCredential(passwordAlgorithm, "password", password);
+        // Hash password if it has been supplied.
+        if (password != null) {
+            PasswordAlgorithm passwordAlgorithm = PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
+            String passwordHash = hashCredential(passwordAlgorithm, "password", password);
 
-        account.setPasswordAlgorithm(passwordAlgorithm);
-        account.setPasswordHash(passwordHash);
-
+            account.setPasswordAlgorithm(passwordAlgorithm);
+            account.setPasswordHash(passwordHash);
+        }
         return account;
     }
 
@@ -303,14 +315,20 @@ public class HibernateAccountDao implements AccountDao {
         try {
             hibernateHelper.create(hibernateAccount);
         } catch (ConcurrentModificationException ex) {
-            // account exists, but we don't have the userId, load the account
-            AccountId accountId = AccountId.forEmail(study.getIdentifier(), account.getEmail());
+            // Account can conflict because studyId + email or studyId + phone has been used for an 
+            // existing account. 
+            AccountId accountId = null;
+            if (account.getEmail() != null) {
+                accountId = AccountId.forEmail(study.getIdentifier(), account.getEmail());
+            } else if (account.getPhone() != null) {
+                accountId = AccountId.forPhone(study.getIdentifier(), account.getPhone());
+            }
             HibernateAccount otherAccount = getHibernateAccount(accountId);
             if (otherAccount != null) {
                 throw new EntityAlreadyExistsException(Account.class, "userId", otherAccount.getId());
             } else {
                 throw new BridgeServiceException("Conflict creating an account, but can't find an existing " +
-                        "account with the same study and email");
+                        "account with the same study and email or phone");
             }
         }
     }
@@ -355,7 +373,7 @@ public class HibernateAccountDao implements AccountDao {
         }
     }
 
-    private HibernateAccount fetchHibernateAccount(Study study, SignIn signIn) {
+    private HibernateAccount fetchHibernateAccount(SignIn signIn) {
         // Fetch account
         HibernateAccount hibernateAccount = getHibernateAccount(signIn.getAccountId());
         if (hibernateAccount == null || hibernateAccount.getStatus() == AccountStatus.UNVERIFIED) {
@@ -406,7 +424,7 @@ public class HibernateAccountDao implements AccountDao {
         if (unguarded.getEmail() != null) {
             query = String.format(EMAIL_QUERY, unguarded.getStudyId(), unguarded.getEmail());
         } else {
-            query = String.format(PHONE_QUERY, unguarded.getStudyId(), unguarded.getPhone().getNumber());
+            query = String.format(PHONE_QUERY, unguarded.getStudyId(), unguarded.getPhone().getNumber(), unguarded.getPhone().getRegionCode());
         }
         List<HibernateAccount> accountList = hibernateHelper.queryGet(query, null, null, HibernateAccount.class);
         if (accountList.isEmpty()) {
@@ -699,7 +717,7 @@ public class HibernateAccountDao implements AccountDao {
 
         // Unmarshall single account
         return new AccountSummary(hibernateAccount.getFirstName(), hibernateAccount.getLastName(),
-                hibernateAccount.getEmail(), hibernateAccount.getId(), createdOn, hibernateAccount.getStatus(),
-                studyId);
+                hibernateAccount.getEmail(), hibernateAccount.getPhone(), hibernateAccount.getId(), createdOn,
+                hibernateAccount.getStatus(), studyId);
     }
 }

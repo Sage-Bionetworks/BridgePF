@@ -117,7 +117,10 @@ public class TestUtils {
             Validate.entityThrowingException(validator, object);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
-            assertEquals(fieldNameAsLabel+error, e.getErrors().get(fieldName).get(0));
+            if (e.getErrors().get(fieldName).contains(fieldNameAsLabel+error)) {
+                return;
+            }
+            fail("Did not find error message in errors object");
         }
     }
     
@@ -179,6 +182,11 @@ public class TestUtils {
         return mockPlayContextWithJson(json, Maps.newHashMap());
     }
     
+    public static Http.Response mockPlayContextWithJson(Object object, Map<String, String[]> headers) throws Exception {
+        String json = BridgeObjectMapper.get().writeValueAsString(object);
+        return mockPlayContextWithJson(json, headers);
+    }
+    
     /**
      * In the rare case where you need the context, you can use <code>Http.Context.current.get()</code>;
      */
@@ -196,13 +204,13 @@ public class TestUtils {
     /**
      * In the rare case where you need the context, you can use <code>Http.Context.current.get()</code>;
      */
-    public static void mockPlayContext() throws Exception {
+    public static Http.Response mockPlayContext() throws Exception {
         Http.RequestBody body = mock(Http.RequestBody.class);
         when(body.asJson()).thenReturn(null);
         
         Http.Request request = mock(Http.Request.class);
         when(request.body()).thenReturn(body);
-        mockPlayContext(request);
+        return mockPlayContext(request);
     }
     
     public static String randomName(Class<?> clazz) {
@@ -376,6 +384,7 @@ public class TestUtils {
         // This study will save without further modification.
         DynamoStudy study = new DynamoStudy();
         study.setName("Test Study ["+clazz.getSimpleName()+"]");
+        study.setShortName("ShortName");
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         study.setStudyIdExcludedInExport(true);
         study.setVerifyEmailTemplate(new EmailTemplate("verifyEmail subject", "body with ${url}", MimeType.TEXT));

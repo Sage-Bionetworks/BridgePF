@@ -214,7 +214,7 @@ public abstract class BaseController extends Controller {
         Integer minVersionForOs = study.getMinSupportedAppVersions().get(osName);
         
         if (!clientInfo.isSupportedAppVersion(minVersionForOs)) {
-        	throw new UnsupportedVersionException(clientInfo);
+            throw new UnsupportedVersionException(clientInfo);
         }
     }
 
@@ -275,9 +275,8 @@ public abstract class BaseController extends Controller {
         if (info.equals(ClientInfo.UNKNOWN_CLIENT)) {
             addWarningMessage(BridgeConstants.WARN_NO_USER_AGENT);
         }
-
-        LOG.debug("User-Agent: '"+userAgentHeader+"' converted to " + info);
-    	return info;
+        LOG.debug("User-Agent: '"+userAgentHeader+"' converted to " + info);    
+    	    return info;
     }
 
     CriteriaContext getCriteriaContext(StudyIdentifier studyId) {

@@ -52,10 +52,36 @@ public class AuthenticationController extends BaseController {
         CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
         
         UserSession session = authenticationService.emailSignIn(context, signInRequest);
-        
+        logAuthenticationSuccess(session);
+
         return okResult(UserSessionInfo.toJSON(session));
     }
 
+    public Result requestPhoneSignIn() {
+        SignIn signInRequest = parseJson(request(), SignIn.class);
+        
+        authenticationService.requestPhoneSignIn(signInRequest);
+
+        return acceptedResult("Message sent.");
+    }
+
+    public Result phoneSignIn() {
+        SignIn signInRequest = parseJson(request(), SignIn.class);
+
+        if (isBlank(signInRequest.getStudyId())) {
+            throw new BadRequestException("Study identifier is required.");
+        }
+        Study study = studyService.getStudy(signInRequest.getStudyId());
+        verifySupportedVersionOrThrowException(study);
+        
+        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+        
+        UserSession session = authenticationService.phoneSignIn(context, signInRequest);
+        logAuthenticationSuccess(session);
+
+        return okResult(UserSessionInfo.toJSON(session));
+    }
+    
     public Result signIn() throws Exception {
         return signInWithRetry(5);
     }
@@ -73,13 +99,7 @@ public class AuthenticationController extends BaseController {
         
         UserSession session = authenticationService.reauthenticate(study, context, signInRequest);
         
-        writeSessionInfoToMetrics(session);
-        response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
-        
-        RequestInfo requestInfo = getRequestInfoBuilder(session)
-                .withSignedInOn(DateUtils.getCurrentDateTime()).build();
-        cacheProvider.updateRequestInfo(requestInfo);
+        logAuthenticationSuccess(session);
         
         return okResult(UserSessionInfo.toJSON(session));
     }
@@ -120,12 +140,14 @@ public class AuthenticationController extends BaseController {
     }
 
     public Result requestResetPassword() throws Exception {
-        JsonNode json = requestToJSON(request());
-        Email email = parseJson(request(), Email.class);
-        Study study = getStudyOrThrowException(json);
-        authenticationService.requestResetPassword(study, email);
+        SignIn signIn = parseJson(request(), SignIn.class);
+        
+        Study study = studyService.getStudy(signIn.getStudyId());
+        verifySupportedVersionOrThrowException(study);
+        
+        authenticationService.requestResetPassword(study, signIn);
 
-        return okResult("If registered with the study, we'll email you instructions on how to change your password.");
+        return okResult("If registered with the study, we'll send you instructions on how to change your password.");
     }
 
     public Result resetPassword() throws Exception {
@@ -160,14 +182,8 @@ public class AuthenticationController extends BaseController {
                 }
                 throw e;
             }
-            writeSessionInfoToMetrics(session);
-            response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
-                    BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
-            
-            RequestInfo requestInfo = getRequestInfoBuilder(session)
-                    .withSignedInOn(DateUtils.getCurrentDateTime()).build();
-            cacheProvider.updateRequestInfo(requestInfo);
         }
+        logAuthenticationSuccess(session);
 
         // You can proceed if 1) you're some kind of system administrator (developer, researcher), or 2)
         // you've consented to research.
@@ -175,6 +191,18 @@ public class AuthenticationController extends BaseController {
             throw new ConsentRequiredException(session);
         }
         return okResult(UserSessionInfo.toJSON(session));
+    }
+
+    private void logAuthenticationSuccess(UserSession session) {
+        writeSessionInfoToMetrics(session);  
+        // We have removed the cookie in the past, only to find out that clients were unknowingly
+        // depending on the cookie to preserve the session token. So it remains.
+        response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
+        
+        RequestInfo requestInfo = getRequestInfoBuilder(session)
+                .withSignedInOn(DateUtils.getCurrentDateTime()).build();
+        cacheProvider.updateRequestInfo(requestInfo);
     }
 
     /**

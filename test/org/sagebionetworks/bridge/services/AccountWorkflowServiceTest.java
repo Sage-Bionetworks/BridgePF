@@ -3,8 +3,11 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
@@ -19,17 +22,18 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
-
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -46,12 +50,16 @@ public class AccountWorkflowServiceTest {
     private static final String EMAIL = "email@email.com";
     private static final AccountId ACCOUNT_ID_WITH_ID = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
     private static final AccountId ACCOUNT_ID_WITH_EMAIL = AccountId.forEmail(TEST_STUDY_IDENTIFIER, EMAIL);
+    private static final AccountId ACCOUNT_ID_WITH_PHONE = AccountId.forPhone(TEST_STUDY_IDENTIFIER, TestConstants.PHONE);
 
     @Mock
     private StudyService mockStudyService;
     
     @Mock
     private SendMailService mockSendMailService;
+    
+    @Mock
+    private NotificationsService mockNotificationsService;
     
     @Mock
     private AccountDao mockAccountDao;
@@ -68,6 +76,12 @@ public class AccountWorkflowServiceTest {
     @Captor
     private ArgumentCaptor<Account> accountCaptor;
     
+    @Captor
+    private ArgumentCaptor<String> stringCaptor;
+    
+    @Captor
+    private ArgumentCaptor<String> secondStringCaptor;
+    
     private Study study;
     
     @Spy
@@ -82,6 +96,7 @@ public class AccountWorkflowServiceTest {
         study = Study.create();
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
         study.setName("This study name");
+        study.setShortName("ShortName");
         study.setSupportEmail(SUPPORT_EMAIL);
         study.setVerifyEmailTemplate(verifyEmailTemplate);
         study.setResetPasswordTemplate(resetPasswordTemplate);
@@ -91,6 +106,7 @@ public class AccountWorkflowServiceTest {
         service.setCacheProvider(mockCacheProvider);
         service.setSendMailService(mockSendMailService);
         service.setStudyService(mockStudyService);
+        service.setNotificationsService(mockNotificationsService);
     }
     
     @Test
@@ -110,6 +126,12 @@ public class AccountWorkflowServiceTest {
         MimeBodyPart body = email.getMessageParts().get(0);
         String bodyString = (String)body.getContent();
         assertTrue(bodyString.contains("/mobile/verifyEmail.html?study=api&sptoken=ABC"));
+    }
+    
+    @Test
+    public void sendEmailVerificationTokenNoEmail() throws Exception {
+        service.sendEmailVerificationToken(study, USER_ID, null);
+        verify(mockSendMailService, never()).sendEmail(any());
     }
     
     @Test
@@ -173,12 +195,14 @@ public class AccountWorkflowServiceTest {
     }
     
     @Test
-    public void notifyAccountExists() throws Exception {
+    public void notifyAccountExistsForEmail() throws Exception {
+        AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
         when(service.createTimeLimitedToken()).thenReturn("ABC");
+        when(mockAccount.getEmail()).thenReturn(EMAIL);
+        when(mockAccount.getEmailVerified()).thenReturn(Boolean.TRUE);
+        when(mockAccountDao.getAccount(accountId)).thenReturn(mockAccount);
         
-        Email emailObj = new Email(TEST_STUDY_IDENTIFIER, EMAIL);
-        
-        service.notifyAccountExists(study, emailObj);
+        service.notifyAccountExists(study, accountId);
         
         verify(mockCacheProvider).setString("ABC:api", EMAIL, 60*60*2);
         verify(mockSendMailService).sendEmail(emailProviderCaptor.capture());
@@ -194,11 +218,32 @@ public class AccountWorkflowServiceTest {
     }
     
     @Test
-    public void requestResetPassword() throws Exception {
+    public void notifyAccountExistsForPhone() throws Exception {
+        AccountId accountId = AccountId.forPhone(TEST_STUDY_IDENTIFIER, TestConstants.PHONE);
+        when(service.createTimeLimitedToken()).thenReturn("ABC");
+        when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
+        when(mockAccount.getPhoneVerified()).thenReturn(Boolean.TRUE);
+        when(mockAccountDao.getAccount(accountId)).thenReturn(mockAccount);
+        
+        service.notifyAccountExists(study, accountId);
+        
+        verify(mockCacheProvider).setString("ABC:phone:api", 
+                BridgeObjectMapper.get().writeValueAsString(TestConstants.PHONE), 
+                AccountWorkflowService.EXPIRE_IN_SECONDS);
+        verify(mockNotificationsService).sendSMSMessage(eq(study.getStudyIdentifier()), 
+                eq(TestConstants.PHONE), stringCaptor.capture());
+        String message = stringCaptor.getValue();
+        assertTrue(message.contains("Account for ShortName already exists. Reset password: "));
+        assertTrue(message.contains("/mobile/resetPassword.html?study=api&sptoken=ABC"));
+    }
+    
+    @Test
+    public void requestResetPasswordWithEmail() throws Exception {
         when(service.createTimeLimitedToken()).thenReturn("ABC");
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(mockAccount);
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
         when(mockAccount.getEmail()).thenReturn(EMAIL);
+        when(mockAccount.getEmailVerified()).thenReturn(Boolean.TRUE);        
         when(mockAccount.getStudyIdentifier()).thenReturn(TEST_STUDY);
         
         service.requestResetPassword(study, ACCOUNT_ID_WITH_EMAIL);
@@ -217,6 +262,56 @@ public class AccountWorkflowServiceTest {
     }
     
     @Test
+    public void requestResetPasswordWithPhone() throws Exception {
+        when(service.createTimeLimitedToken()).thenReturn("ABC");
+        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
+        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
+        when(mockAccount.getPhoneVerified()).thenReturn(Boolean.TRUE);        
+        when(mockAccount.getStudyIdentifier()).thenReturn(TEST_STUDY);
+        
+        service.requestResetPassword(study, ACCOUNT_ID_WITH_PHONE);
+        
+        verify(mockCacheProvider).setString(eq("ABC:phone:api"), stringCaptor.capture(), eq(60*60*2));
+        verify(mockNotificationsService).sendSMSMessage(eq(TEST_STUDY), eq(TestConstants.PHONE), secondStringCaptor.capture());
+        
+        Phone captured = BridgeObjectMapper.get().readValue(stringCaptor.getValue(), Phone.class);
+        assertEquals(TestConstants.PHONE, captured); 
+        
+        String message = secondStringCaptor.getValue();
+        assertTrue(message.contains("Reset ShortName password: "));
+        assertTrue(message.contains("/mobile/resetPassword.html?study=api&sptoken=ABC"));
+    }
+
+    @Test
+    public void requestResetPasswordFailsQuietlyIfEmailPhoneUnverifiedUsingEmail() {
+        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
+        when(mockAccount.getEmail()).thenReturn(EMAIL);
+        when(mockAccount.getPhoneVerified()).thenReturn(Boolean.FALSE);
+        when(mockAccount.getEmailVerified()).thenReturn(Boolean.FALSE);
+        when(mockAccount.getStudyIdentifier()).thenReturn(TEST_STUDY);
+
+        service.requestResetPassword(study, ACCOUNT_ID_WITH_PHONE);
+        
+        verify(mockCacheProvider, never()).setString("ABC:api", TestConstants.PHONE.getNumber(), 60*60*2);
+        verify(mockNotificationsService, never()).sendSMSMessage(eq(TEST_STUDY), eq(TestConstants.PHONE), any());
+    }
+
+    @Test
+    public void requestResetPasswordFailsQuietlyIfEmailPhoneUnverifiedUsingPhone() {
+        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
+        when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
+        when(mockAccount.getPhoneVerified()).thenReturn(Boolean.FALSE);
+        when(mockAccount.getEmailVerified()).thenReturn(Boolean.FALSE);
+        when(mockAccount.getStudyIdentifier()).thenReturn(TEST_STUDY);
+        
+        service.requestResetPassword(study, ACCOUNT_ID_WITH_PHONE);
+        
+        verify(mockCacheProvider, never()).setString("ABC:api", TestConstants.PHONE.getNumber(), 60*60*2);
+        verify(mockNotificationsService, never()).sendSMSMessage(eq(TEST_STUDY), eq(TestConstants.PHONE), any());
+    }
+    
+    @Test
     public void requestResetPasswordInvalidEmailFailsQuietly() throws Exception {
         when(service.createTimeLimitedToken()).thenReturn("ABC");
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(null);
@@ -228,7 +323,31 @@ public class AccountWorkflowServiceTest {
     }
 
     @Test
-    public void resetPassword() {
+    public void requestRestPasswordUnverifiedEmailFailsQuietly() throws Exception {
+        when(service.createTimeLimitedToken()).thenReturn("ABC");
+        when(mockAccount.getEmail()).thenReturn(EMAIL);
+        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(mockAccount);
+        
+        service.requestResetPassword(study, ACCOUNT_ID_WITH_EMAIL);
+        
+        verifyNoMoreInteractions(mockSendMailService);
+        verifyNoMoreInteractions(mockNotificationsService);
+    }
+    
+    @Test
+    public void requestRestPasswordUnverifiedPhoneFailsQuietly() throws Exception {
+        when(service.createTimeLimitedToken()).thenReturn("ABC");
+        when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
+        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
+        
+        service.requestResetPassword(study, ACCOUNT_ID_WITH_PHONE);
+        
+        verifyNoMoreInteractions(mockSendMailService);
+        verifyNoMoreInteractions(mockNotificationsService);
+    }
+    
+    @Test
+    public void resetPasswordWithEmail() {
         when(mockCacheProvider.getString("sptoken:api")).thenReturn(EMAIL);
         when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(mockAccount);
@@ -239,6 +358,22 @@ public class AccountWorkflowServiceTest {
         
         verify(mockCacheProvider).getString("sptoken:api");
         verify(mockCacheProvider).removeString("sptoken:api");
+        verify(mockAccountDao).changePassword(mockAccount, "newPassword");
+    }
+    
+    @Test
+    public void resetPasswordWithPhone() throws Exception {
+        String phoneJson = BridgeObjectMapper.get().writeValueAsString(TestConstants.PHONE);
+        when(mockCacheProvider.getString("sptoken:phone:api")).thenReturn(phoneJson);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
+
+        PasswordReset passwordReset = new PasswordReset("newPassword", "sptoken", TEST_STUDY_IDENTIFIER);
+        
+        service.resetPassword(passwordReset);
+        
+        verify(mockCacheProvider).getString("sptoken:phone:api");
+        verify(mockCacheProvider).removeString("sptoken:phone:api");
         verify(mockAccountDao).changePassword(mockAccount, "newPassword");
     }
     

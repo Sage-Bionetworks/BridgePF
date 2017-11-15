@@ -246,7 +246,8 @@ public final class ClientInfo {
      * @return
      */
     public static ClientInfo fromUserAgentCache(String userAgent) {
-        if (!StringUtils.isBlank(userAgent)) {
+        // The "null" string comes up in tests, and there's no point in parsing it
+        if (!StringUtils.isBlank(userAgent) && !"null".equals(userAgent)) {
             try {
                 return userAgents.get(userAgent);    
             } catch(ExecutionException e) {

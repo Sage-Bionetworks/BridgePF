@@ -1,11 +1,8 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -13,6 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -58,19 +56,14 @@ public class StudyParticipantValidatorTest {
                 .withAttributes(attrs)
                 .withPassword("bad")
                 .build();
-        
-        try {
-            Validate.entityThrowingException(validator, participant);
-        } catch(InvalidEntityException e) {
-            assertError(e, "email", 0, " is required");
-            assertError(e, "externalId", 0, " is required");
-            assertError(e, "dataGroups", 0, " 'badGroup' is not defined for study (use group1, group2, bluebell)");
-            assertError(e, "attributes", 0, " 'badValue' is not defined for study (use attr1, attr2, phone)");
-            assertError(e, "password", 0, " must be at least 8 characters");
-            assertError(e, "password", 1, " must contain at least one number (0-9)");
-            assertError(e, "password", 2, " must contain at least one symbol ( !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ )");
-            assertError(e, "password", 3, " must contain at least one uppercase letter (A-Z)");
-        }
+        assertValidatorMessage(validator, participant, "StudyParticipant", "email or phone is required");
+        assertValidatorMessage(validator, participant, "externalId", "is required");
+        assertValidatorMessage(validator, participant, "dataGroups", "'badGroup' is not defined for study (use group1, group2, bluebell)");
+        assertValidatorMessage(validator, participant, "attributes", "'badValue' is not defined for study (use attr1, attr2, phone)");
+        assertValidatorMessage(validator, participant, "password", "must be at least 8 characters");
+        assertValidatorMessage(validator, participant, "password", "must contain at least one number (0-9)");
+        assertValidatorMessage(validator, participant, "password", "must contain at least one symbol ( !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ )");
+        assertValidatorMessage(validator, participant, "password", "must contain at least one uppercase letter (A-Z)");
     }
     
     // Password, email address, and externalId (if being validated) cannot be updated, so these don't need to be validated.
@@ -93,9 +86,9 @@ public class StudyParticipantValidatorTest {
             assertNull(e.getErrors().get("email"));
             assertNull(e.getErrors().get("externalId"));
             assertNull(e.getErrors().get("password"));
-            assertError(e, "dataGroups", 0, " 'badGroup' is not defined for study (use group1, group2, bluebell)");
-            assertError(e, "attributes", 0, " 'badValue' is not defined for study (use attr1, attr2, phone)");
         }
+        assertValidatorMessage(validator, participant, "dataGroups", "'badGroup' is not defined for study (use group1, group2, bluebell)");
+        assertValidatorMessage(validator, participant, "attributes", "'badValue' is not defined for study (use attr1, attr2, phone)");
     }
     
     @Test
@@ -120,108 +113,101 @@ public class StudyParticipantValidatorTest {
     }
     
     @Test
-    public void emailRequired() {
+    public void emailOrPhoneRequired() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withEmail(null), "email", "email is required");
+        assertValidatorMessage(validator, withEmail(null), "StudyParticipant", "email or phone is required");
     }
     
     @Test
-    public void passwordRequired() {
+    public void emptyStringPasswordRequired() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withPassword(""), "password", "password is required");
+        assertValidatorMessage(validator, withPassword(""), "password", "is required");
+    }
+    
+    @Test
+    public void nullPasswordOK() {
+        validator = new StudyParticipantValidator(study, true);
+        Validate.entityThrowingException(validator, withPassword(null));
     }
     
     @Test
     public void validEmail() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withEmail("belgium"), "email", "email must be a valid email address");
+        assertValidatorMessage(validator, withEmail("belgium"), "email", "does not appear to be an email address");
     }
     
     @Test
     public void minLength() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withPassword("a1A~"), "password", "password must be at least 8 characters");
+        assertValidatorMessage(validator, withPassword("a1A~"), "password", "must be at least 8 characters");
     }
     
     @Test
     public void numberRequired() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withPassword("aaaaaaaaA~"), "password", "password must contain at least one number (0-9)");
+        assertValidatorMessage(validator, withPassword("aaaaaaaaA~"), "password", "must contain at least one number (0-9)");
     }
     
     @Test
     public void symbolRequired() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withPassword("aaaaaaaaA1"), "password", 
-            "password must contain at least one symbol ( !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ )");
+        assertValidatorMessage(validator, withPassword("aaaaaaaaA1"), "password", "must contain at least one symbol ( !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ )");
     }
     
     @Test
     public void lowerCaseRequired() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withPassword("AAAAA!A1"), "password", "password must contain at least one lowercase letter (a-z)");
+        assertValidatorMessage(validator, withPassword("AAAAA!A1"), "password", "must contain at least one lowercase letter (a-z)");
     }
     
     @Test
     public void upperCaseRequired() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withPassword("aaaaa!a1"), "password", "password must contain at least one uppercase letter (A-Z)");
+        assertValidatorMessage(validator, withPassword("aaaaa!a1"), "password", "must contain at least one uppercase letter (A-Z)");
     }
     
     @Test
     public void validatesDataGroupsValidIfSupplied() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withDataGroup("squirrel"), "dataGroups", "dataGroups 'squirrel' is not defined for study (use group1, group2, bluebell)");
+        assertValidatorMessage(validator, withDataGroup("squirrel"), "dataGroups", "'squirrel' is not defined for study (use group1, group2, bluebell)");
     }
     
     @Test
     public void validatePhoneRegionRequired() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withPhone("1234567890", null), "phone", "phone does not appear to be a phone number");
+        assertValidatorMessage(validator, withPhone("1234567890", null), "phone", "does not appear to be a phone number");
     }
     
     @Test
     public void validatePhoneRegionIsCode() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withPhone("1234567890", "esg"), "phone", "phone does not appear to be a phone number");
+        assertValidatorMessage(validator, withPhone("1234567890", "esg"), "phone", "does not appear to be a phone number");
     }
     
     @Test
     public void validatePhoneRequired() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withPhone(null, "US"), "phone", "phone does not appear to be a phone number");
+        assertValidatorMessage(validator, withPhone(null, "US"), "phone", "does not appear to be a phone number");
     }
     
     @Test
     public void validatePhonePattern() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withPhone("234567890", "US"), "phone", "phone does not appear to be a phone number");
+        assertValidatorMessage(validator, withPhone("234567890", "US"), "phone", "does not appear to be a phone number");
     }
     
     @Test
     public void validatePhone() {
         validator = new StudyParticipantValidator(study, true);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
-                .withPassword("pAssword1@").withPhone(new Phone("4082588569","US")).build();
+                .withPassword("pAssword1@").withPhone(TestConstants.PHONE).build();
         Validate.entityThrowingException(validator, participant);
     }
     
     @Test
     public void validateTotallyWrongPhone() {
         validator = new StudyParticipantValidator(study, true);
-        assertCorrectMessage(withPhone("this isn't a phone number", "US"), "phone", "phone does not appear to be a phone number");
-    }
-    
-    private void assertCorrectMessage(StudyParticipant participant, String fieldName, String message) {
-        try {
-            Validate.entityThrowingException(validator, participant);
-            fail("should have thrown exception");
-        } catch(InvalidEntityException e) {
-            List<String> errors = e.getErrors().get(fieldName);
-            assertFalse(errors == null || errors.isEmpty());
-            String error = errors.get(0);
-            assertEquals(message, error);
-        }
+        assertValidatorMessage(validator, withPhone("this isn't a phone number", "US"), "phone", "does not appear to be a phone number");
     }
     
     private StudyParticipant withPhone(String phone, String phoneRegion) {
@@ -240,10 +226,4 @@ public class StudyParticipantValidatorTest {
         return new StudyParticipant.Builder().withEmail("email@email.com").withPassword("aAz1%_aAz1%")
                 .withDataGroups(Sets.newHashSet(dataGroup)).build();
     }
-    
-    private void assertError(InvalidEntityException e, String fieldName, int index, String errorMsg) {
-        assertEquals(fieldName+errorMsg, e.getErrors().get(fieldName).get(index));
-    }
-    
-    
 }
