@@ -79,6 +79,9 @@ public class AccountWorkflowServiceTest {
     @Captor
     private ArgumentCaptor<String> stringCaptor;
     
+    @Captor
+    private ArgumentCaptor<String> secondStringCaptor;
+    
     private Study study;
     
     @Spy
@@ -270,12 +273,12 @@ public class AccountWorkflowServiceTest {
         service.requestResetPassword(study, ACCOUNT_ID_WITH_PHONE);
         
         verify(mockCacheProvider).setString(eq("ABC:phone:api"), stringCaptor.capture(), eq(60*60*2));
-        verify(mockNotificationsService).sendSMSMessage(eq(TEST_STUDY), eq(TestConstants.PHONE), stringCaptor.capture());
+        verify(mockNotificationsService).sendSMSMessage(eq(TEST_STUDY), eq(TestConstants.PHONE), secondStringCaptor.capture());
         
-        Phone captured = BridgeObjectMapper.get().readValue(stringCaptor.getAllValues().get(0), Phone.class);
+        Phone captured = BridgeObjectMapper.get().readValue(stringCaptor.getValue(), Phone.class);
         assertEquals(TestConstants.PHONE, captured); 
         
-        String message = stringCaptor.getAllValues().get(1);
+        String message = secondStringCaptor.getValue();
         assertTrue(message.contains("Reset ShortName password: "));
         assertTrue(message.contains("/mobile/resetPassword.html?study=api&sptoken=ABC"));
     }

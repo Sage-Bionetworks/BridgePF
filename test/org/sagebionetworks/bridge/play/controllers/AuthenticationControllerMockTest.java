@@ -560,6 +560,7 @@ public class AuthenticationControllerMockTest {
 
         verify(authenticationService).signOut(session);
         verify(mockResponse).discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
+        verifyMetrics();
     }
 
     @Test

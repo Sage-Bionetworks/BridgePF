@@ -508,13 +508,21 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void phoneSignIn() {
+        // Put some stuff in participant to verify session is initialized
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(RECIPIENT_EMAIL).withFirstName("Test").withLastName("Tester").build();
+        
         String cacheKey = TestConstants.PHONE.getNumber() + ":api:phoneSignInRequest";
         when(cacheProvider.getString(cacheKey)).thenReturn(TOKEN);
         when(accountDao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_PHONE)).thenReturn(account);
-        when(participantService.getParticipant(study, account, false)).thenReturn(PARTICIPANT);
+        when(participantService.getParticipant(study, account, false)).thenReturn(participant);
         when(consentService.getConsentStatuses(any())).thenReturn(CONSENTED_STATUS_MAP);
         
-        service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
+        UserSession session = service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
+        
+        assertEquals(RECIPIENT_EMAIL, session.getParticipant().getEmail());
+        assertEquals("Test", session.getParticipant().getFirstName());
+        assertEquals("Tester", session.getParticipant().getLastName());
         
         // this doesn't pass if our mock calls above aren't executed, but verify these:
         verify(cacheProvider).removeString(cacheKey);
