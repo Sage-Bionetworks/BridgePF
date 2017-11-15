@@ -16,6 +16,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConvertedJson;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
@@ -32,6 +33,25 @@ import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 @BridgeTypeName("Study")
 @JsonFilter("filter")
 public final class DynamoStudy implements Study {
+    
+    public static class AppleLinksMarshaller extends ListMarshaller<AppleAppLink> {
+        private static final TypeReference<List<AppleAppLink>> FIELD_LIST_TYPE =
+                new TypeReference<List<AppleAppLink>>() {};
+        @Override
+        public TypeReference<List<AppleAppLink>> getTypeReference() {
+            return FIELD_LIST_TYPE;
+        }
+    }
+    
+    public static class AndroidLinksMarshaller extends ListMarshaller<AndroidAppLink> {
+        private static final TypeReference<List<AndroidAppLink>> FIELD_LIST_TYPE =
+                new TypeReference<List<AndroidAppLink>>() {};
+        @Override
+        public TypeReference<List<AndroidAppLink>> getTypeReference() {
+            return FIELD_LIST_TYPE;
+        }
+    }
+    
     private String name;
     private String sponsorName;
     private String identifier;
@@ -484,25 +504,23 @@ public final class DynamoStudy implements Study {
         this.accountLimit = accountLimit;
     }
     
-    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
+    @DynamoDBTypeConverted(converter = AppleLinksMarshaller.class)
     @Override
     public List<AppleAppLink> getAppleAppLinks() {
         return appleAppLinks;
     }
     
-    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
     @Override
     public void setAppleAppLinks(List<AppleAppLink> appleAppLinks) {
         this.appleAppLinks = appleAppLinks;
     }
     
-    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
+    @DynamoDBTypeConverted(converter = AndroidLinksMarshaller.class)
     @Override
     public List<AndroidAppLink> getAndroidAppLinks() {
         return androidAppLinks;
     }
     
-    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
     @Override
     public void setAndroidAppLinks(List<AndroidAppLink> androidAppLinks) {
         this.androidAppLinks = androidAppLinks;
