@@ -15,6 +15,8 @@ public final class AppleAppLink {
         this.appId = appId;
         this.paths = paths;
     }
+    // This is not our normal naming convention, but this is the property as Apple wants to see it
+    // in the final JSON. Likely to be confusing if someone uses the REST API directly.
     @JsonProperty("appID")
     public String getAppId() {
         return appId;
