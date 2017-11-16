@@ -94,6 +94,7 @@ public class DynamoStudyTest {
         assertTrue(node.get("usesCustomExportSchedule").asBoolean());
         assertEqualsAndNotNull(study.getSponsorName(), node.get("sponsorName").asText());
         assertEqualsAndNotNull(study.getName(), node.get("name").asText());
+        assertEqualsAndNotNull(study.getShortName(), node.get("shortName").textValue());
         assertEqualsAndNotNull(study.isActive(), node.get("active").asBoolean());
         assertEqualsAndNotNull(study.getIdentifier(), node.get("identifier").asText());
         assertEqualsAndNotNull(study.getMinAgeOfConsent(), node.get("minAgeOfConsent").asInt());

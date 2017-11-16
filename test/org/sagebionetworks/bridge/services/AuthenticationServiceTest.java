@@ -183,8 +183,8 @@ public class AuthenticationServiceTest {
 
     @Test(expected = InvalidEntityException.class)
     public void requestPasswordResetFailsOnEmptyString() throws Exception {
-        Email email = new Email(TEST_STUDY_IDENTIFIER, "");
-        authService.requestResetPassword(study, email);
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).build();
+        authService.requestResetPassword(study, signIn);
     }
     
     @Test(expected = BadRequestException.class)
@@ -315,10 +315,10 @@ public class AuthenticationServiceTest {
         // Second sign up
         authService.signUp(testUser.getStudy(), testUser.getStudyParticipant());
         
-        ArgumentCaptor<Email> emailCaptor = ArgumentCaptor.forClass(Email.class);
-        verify(accountWorkflowServiceSpy).notifyAccountExists(eq(testUser.getStudy()), emailCaptor.capture());
-        assertEquals(testUser.getStudyIdentifier(), emailCaptor.getValue().getStudyIdentifier());
-        assertEquals(testUser.getEmail(), emailCaptor.getValue().getEmail());
+        ArgumentCaptor<AccountId> accountIdCaptor = ArgumentCaptor.forClass(AccountId.class);
+        verify(accountWorkflowServiceSpy).notifyAccountExists(eq(testUser.getStudy()), accountIdCaptor.capture());
+        assertEquals(testUser.getStudyIdentifier().getIdentifier(), accountIdCaptor.getValue().getStudyId());
+        assertEquals(testUser.getId(), accountIdCaptor.getValue().getId());
     }
     
     @Test
@@ -329,8 +329,9 @@ public class AuthenticationServiceTest {
     
     @Test
     public void requestResetPasswordLooksSuccessfulWhenNoAccount() throws Exception {
-        Email email = new Email(TEST_STUDY_IDENTIFIER, "notarealaccount@sagebase.org");
-        authService.requestResetPassword(study, email);
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).withEmail("notarealaccount@sagebase.org")
+                .build();
+        authService.requestResetPassword(study, signIn);
     }
     
     // Consent statuses passed on to sessionInfo

@@ -77,7 +77,7 @@ public class TestConstants {
     
     public static final LinkedHashSet<String> LANGUAGES = TestUtils.newLinkedHashSet("en","fr");
     
-    public static final Phone PHONE = new Phone("9174267643", "US");
+    public static final Phone PHONE = new Phone("9712486796", "US");
     
     public static final AndroidAppLink ANDROID_APP_LINK = new AndroidAppLink("namespace", "package_name",
             Lists.newArrayList("sha256_cert_fingerprints"));

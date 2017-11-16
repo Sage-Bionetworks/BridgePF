@@ -9,7 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import play.mvc.Result;
 
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.DateRange;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.UserDataDownloadService;
@@ -32,6 +34,12 @@ public class UserDataDownloadController extends BaseController {
     public Result requestUserData(String startDate, String endDate) throws JsonProcessingException {
         UserSession session = getAuthenticatedAndConsentedSession();
         StudyIdentifier studyIdentifier = session.getStudyIdentifier();
+        
+        // At least for now, if the user does not have a verified email address, do not allow this service.
+        StudyParticipant participant = session.getParticipant();
+        if (participant.getEmail() == null || participant.getEmailVerified() != Boolean.TRUE) {
+            throw new BadRequestException("Cannot request user data, account has no verified email address.");
+        }
         
         DateRange dateRange;
         if (isNotBlank(startDate) && isNotBlank(endDate)) {

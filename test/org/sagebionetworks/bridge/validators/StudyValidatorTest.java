@@ -1,7 +1,8 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
-import static org.sagebionetworks.bridge.validators.StudyValidator.INSTANCE;
+
+import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.Before;
@@ -21,6 +22,13 @@ import com.google.common.collect.Sets;
 
 public class StudyValidatorTest {
 
+    private static final StudyValidator INSTANCE = StudyValidator.INSTANCE;
+    private static final String APP_ID = "appID";
+    private static final String PATHS = "paths";
+    private static final String NAMESPACE = "namespace";
+    private static final String PACKAGE_NAME = "package_name";
+    private static final String FINGERPRINTS = "sha256_cert_fingerprints";
+    
     private DynamoStudy study;
     
     @Before
@@ -30,6 +38,16 @@ public class StudyValidatorTest {
     
     @Test
     public void acceptsValidStudy() {
+        AndroidAppLink androidAppLink = new AndroidAppLink("org.sagebionetworks.bridge", "APP", Lists.newArrayList(
+                "14:6D:E9:83:C5:73:06:50:D8:EE:B9:95:2F:34:FC:64:16:A0:83:42:E6:1D:BE:A8:8A:04:96:B2:3F:CF:44:E5"));
+        List<AndroidAppLink> androidAppLinks = Lists.newArrayList(androidAppLink);
+        study.setAndroidAppLinks(androidAppLinks);
+        
+        AppleAppLink appleAppLink = new AppleAppLink("org.sagebionetworks.bridge.APP",
+                Lists.newArrayList("/" + study.getIdentifier() + "/*"));
+        List<AppleAppLink> appleAppLinks = Lists.newArrayList(appleAppLink);
+        study.setAppleAppLinks(appleAppLinks);
+        
         Validate.entityThrowingException(INSTANCE, study);
     }
     
@@ -38,6 +56,12 @@ public class StudyValidatorTest {
     public void minLengthCannotBeLessThan2() {
         study.setPasswordPolicy(new PasswordPolicy(1, false, false, false, false));
         assertValidatorMessage(INSTANCE, study, "passwordPolicy.minLength", "must be 2-999 characters");
+    }
+    
+    @Test
+    public void shortNameTooLong() {
+        study.setShortName("ThisNameIsOverTenCharactersLong");
+        assertValidatorMessage(INSTANCE, study, "shortName", "must be 10 characters or less");
     }
     
     @Test
@@ -55,29 +79,25 @@ public class StudyValidatorTest {
     @Test
     public void resetPasswordMustHaveUrlVariable() {
         study.setResetPasswordTemplate(new EmailTemplate("subject", "no url variable", MimeType.TEXT));
-        assertValidatorMessage(INSTANCE, study, "resetPasswordTemplate.body",
-                "must contain the ${url} template variable");
+        assertValidatorMessage(INSTANCE, study, "resetPasswordTemplate.body", "must contain the ${url} template variable");
     }
     
     @Test
     public void verifyEmailMustHaveUrlVariable() {
         study.setVerifyEmailTemplate(new EmailTemplate("subject", "no url variable", MimeType.TEXT));
-        assertValidatorMessage(INSTANCE, study, "verifyEmailTemplate.body",
-                "must contain the ${url} template variable");
+        assertValidatorMessage(INSTANCE, study, "verifyEmailTemplate.body", "must contain the ${url} template variable");
     }
 
     @Test
     public void cannotCreateIdentifierWithUppercase() {
         study.setIdentifier("Test");
-        assertValidatorMessage(INSTANCE, study, "identifier",
-                "must contain only lower-case letters and/or numbers with optional dashes");
+        assertValidatorMessage(INSTANCE, study, "identifier", "must contain only lower-case letters and/or numbers with optional dashes");
     }
 
     @Test
     public void cannotCreateInvalidIdentifierWithSpaces() {
         study.setIdentifier("test test");
-        assertValidatorMessage(INSTANCE, study, "identifier",
-                "must contain only lower-case letters and/or numbers with optional dashes");
+        assertValidatorMessage(INSTANCE, study, "identifier", "must contain only lower-case letters and/or numbers with optional dashes");
     }
 
     @Test
@@ -95,15 +115,13 @@ public class StudyValidatorTest {
     @Test
     public void rejectEventKeysWithColons() {
         study.setActivityEventKeys(Sets.newHashSet("a-1", "b:2"));
-        assertValidatorMessage(INSTANCE, study, "activityEventKeys",
-                "must contain only lower-case letters and/or numbers with optional dashes");
+        assertValidatorMessage(INSTANCE, study, "activityEventKeys", "must contain only lower-case letters and/or numbers with optional dashes");
     }
 
     @Test
     public void cannotCreateIdentifierWithColons() {
         study.setActivityEventKeys(Sets.newHashSet("a-1", "b:2"));
-        assertValidatorMessage(INSTANCE, study, "activityEventKeys",
-                "must contain only lower-case letters and/or numbers with optional dashes");
+        assertValidatorMessage(INSTANCE, study, "activityEventKeys", "must contain only lower-case letters and/or numbers with optional dashes");
     }
 
     @Test
@@ -167,29 +185,25 @@ public class StudyValidatorTest {
     @Test
     public void cannotAddConflictingEmailAttribute() {
         study.getUserProfileAttributes().add("email");
-        assertValidatorMessage(INSTANCE, study, "userProfileAttributes",
-                "'email' conflicts with existing user profile property");
+        assertValidatorMessage(INSTANCE, study, "userProfileAttributes", "'email' conflicts with existing user profile property");
     }
     
     @Test
     public void cannotAddConflictingExternalIdAttribute() {
         study.getUserProfileAttributes().add("externalId");
-        assertValidatorMessage(INSTANCE, study, "userProfileAttributes",
-                "'externalId' conflicts with existing user profile property");
+        assertValidatorMessage(INSTANCE, study, "userProfileAttributes", "'externalId' conflicts with existing user profile property");
     }
     
     @Test
     public void userProfileAttributesCannotStartWithDash() {
         study.getUserProfileAttributes().add("-illegal");
-        assertValidatorMessage(INSTANCE, study, "userProfileAttributes",
-                "'-illegal' must contain only digits, letters, underscores and dashes, and cannot start with a dash");
+        assertValidatorMessage(INSTANCE, study, "userProfileAttributes", "'-illegal' must contain only digits, letters, underscores and dashes, and cannot start with a dash");
     }
     
     @Test
     public void userProfileAttributesCannotContainSpaces() {
         study.getUserProfileAttributes().add("Game Points");
-        assertValidatorMessage(INSTANCE, study, "userProfileAttributes",
-                "'Game Points' must contain only digits, letters, underscores and dashes, and cannot start with a dash");
+        assertValidatorMessage(INSTANCE, study, "userProfileAttributes", "'Game Points' must contain only digits, letters, underscores and dashes, and cannot start with a dash");
     }
     
     @Test
@@ -207,8 +221,7 @@ public class StudyValidatorTest {
     @Test
     public void userProfileAttributesCannotBeEmpty() {
         study.getUserProfileAttributes().add("");
-        assertValidatorMessage(INSTANCE, study, "userProfileAttributes",
-                "'' must contain only digits, letters, underscores and dashes, and cannot start with a dash");
+        assertValidatorMessage(INSTANCE, study, "userProfileAttributes", "'' must contain only digits, letters, underscores and dashes, and cannot start with a dash");
     }
     
     @Test
@@ -280,8 +293,7 @@ public class StudyValidatorTest {
     @Test
     public void requiresEmailSignInTemplateRequiresToken() {
         study.setEmailSignInTemplate(new EmailTemplate("subject", "body with no token", MimeType.HTML));
-        assertValidatorMessage(INSTANCE, study, "emailSignInTemplate.body",
-                "must contain the ${token} template variable");
+        assertValidatorMessage(INSTANCE, study, "emailSignInTemplate.body", "must contain the ${token} template variable");
     }
     
     @Test
@@ -305,15 +317,13 @@ public class StudyValidatorTest {
     @Test
     public void requiresAccountExistsTemplateRequiresURL() {
         study.setAccountExistsTemplate(new EmailTemplate("subject", "body with no url", MimeType.HTML));
-        assertValidatorMessage(INSTANCE, study, "accountExistsTemplate.body",
-                "must contain the ${url} template variable");
+        assertValidatorMessage(INSTANCE, study, "accountExistsTemplate.body", "must contain the ${url} template variable");
     }
     
     @Test
     public void cannotSetMinAgeOfConsentLessThanZero() {
         study.setMinAgeOfConsent(-100);
-        assertValidatorMessage(INSTANCE, study, "minAgeOfConsent",
-                "must be zero (no minimum age of consent) or higher");
+        assertValidatorMessage(INSTANCE, study, "minAgeOfConsent", "must be zero (no minimum age of consent) or higher");
     }
     
     @Test
@@ -331,15 +341,13 @@ public class StudyValidatorTest {
     @Test
     public void longListOfDataGroupsInvalid() {
         study.setDataGroups(Sets.newTreeSet(Lists.newArrayList("Antwerp", "Ghent", "Charleroi", "Liege", "Brussels-City", "Bruges", "Schaerbeek", "Anderlecht", "Namur", "Leuven", "Mons", "Molenbeek-Saint-Jean")));
-        assertValidatorMessage(INSTANCE, study, "dataGroups",
-                "will not export to Synapse (string is over 100 characters: 'Anderlecht, Antwerp, Bruges, Brussels-City, Charleroi, Ghent, Leuven, Liege, Molenbeek-Saint-Jean, Mons, Namur, Schaerbeek')");
+        assertValidatorMessage(INSTANCE, study, "dataGroups", "will not export to Synapse (string is over 100 characters: 'Anderlecht, Antwerp, Bruges, Brussels-City, Charleroi, Ghent, Leuven, Liege, Molenbeek-Saint-Jean, Mons, Namur, Schaerbeek')");
     }
     
     @Test
     public void dataGroupCharactersRestricted() {
         study.setDataGroups(Sets.newHashSet("Liège"));
-        assertValidatorMessage(INSTANCE, study, "dataGroups",
-                "contains invalid tag 'Liège' (only letters, numbers, underscore and dash allowed)");
+        assertValidatorMessage(INSTANCE, study, "dataGroups", "contains invalid tag 'Liège' (only letters, numbers, underscore and dash allowed)");
     }
 
     @Test
@@ -358,16 +366,14 @@ public class StudyValidatorTest {
     public void nonPublicStudiesMustEnableExternalIdValdation() {
         study.setEmailVerificationEnabled(false);
         study.setExternalIdValidationEnabled(false);
-        assertValidatorMessage(INSTANCE, study, "externalIdValidationEnabled",
-                "cannot be disabled if email verification has been disabled");
+        assertValidatorMessage(INSTANCE, study, "externalIdValidationEnabled", "cannot be disabled if email verification has been disabled");
     }
     
     @Test
     public void nonPublicStudiesMustRequireExternalIdOnSignUp() {
         study.setEmailVerificationEnabled(false);
         study.setExternalIdRequiredOnSignup(false);
-        assertValidatorMessage(INSTANCE, study, "externalIdRequiredOnSignup",
-                "cannot be disabled if email verification has been disabled");
+        assertValidatorMessage(INSTANCE, study, "externalIdRequiredOnSignup", "cannot be disabled if email verification has been disabled");
     }   
     
     @Test
@@ -379,7 +385,7 @@ public class StudyValidatorTest {
     @Test
     public void appleAppLinkAppIdCannotBeEmpty() {
         study.getAppleAppLinks().add(new AppleAppLink(null, Lists.newArrayList("*")));
-        assertValidatorMessage(INSTANCE, study, "appleAppLinks[0].appId","cannot be blank or null");
+        assertValidatorMessage(INSTANCE, study, "appleAppLinks[0]."+APP_ID,"cannot be blank or null");
     }
     
     @Test
@@ -392,49 +398,49 @@ public class StudyValidatorTest {
     @Test
     public void appleAppLinkPathsCannotBeNull() {
         study.getAppleAppLinks().add(new AppleAppLink("A", null));
-        assertValidatorMessage(INSTANCE, study, "appleAppLinks[0].paths","cannot be null or empty");
+        assertValidatorMessage(INSTANCE, study, "appleAppLinks[0]."+PATHS,"cannot be null or empty");
     }
     
     @Test
     public void appleAppLinkPathsCannotBeEmpty() {
         study.getAppleAppLinks().add(new AppleAppLink("A", Lists.newArrayList()));
-        assertValidatorMessage(INSTANCE, study, "appleAppLinks[0].paths","cannot be null or empty");
+        assertValidatorMessage(INSTANCE, study, "appleAppLinks[0]."+PATHS,"cannot be null or empty");
     }
     
     @Test
     public void appleAppLinkPathCannotBeNull() {
         study.getAppleAppLinks().add(new AppleAppLink("A", Lists.newArrayList("*", null)));
-        assertValidatorMessage(INSTANCE, study, "appleAppLinks[0].paths[1]","cannot be blank or empty");
+        assertValidatorMessage(INSTANCE, study, "appleAppLinks[0]."+PATHS+"[1]","cannot be blank or empty");
     }
     
     @Test
     public void appleAppLinkPathCannotBeEmpty() {
         study.getAppleAppLinks().add(new AppleAppLink("A", Lists.newArrayList("*", "")));
-        assertValidatorMessage(INSTANCE, study, "appleAppLinks[0].paths[1]","cannot be blank or empty");
+        assertValidatorMessage(INSTANCE, study, "appleAppLinks[0]."+PATHS+"[1]","cannot be blank or empty");
     }
 
     @Test
     public void androidAppLinkNamespaceCannotBeNull() {
         study.getAndroidAppLinks().add(new AndroidAppLink(null, "packageName", Lists.newArrayList("fingerprint")));
-        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0].namespace","cannot be blank or null");
+        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0]."+NAMESPACE,"cannot be blank or null");
     }
     
     @Test
     public void androidAppLinkNamespaceCannotBeEmpty() {
         study.getAndroidAppLinks().add(new AndroidAppLink("", "packageName", Lists.newArrayList("fingerprint")));
-        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0].namespace","cannot be blank or null");
+        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0]."+NAMESPACE,"cannot be blank or null");
     }
     
     @Test
     public void androidAppLinkPackageNameCannotBeNull() {
         study.getAndroidAppLinks().add(new AndroidAppLink("appId", null, Lists.newArrayList("fingerprint")));
-        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0].packageName","cannot be blank or null");
+        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0]."+PACKAGE_NAME,"cannot be blank or null");
     }
     
     @Test
     public void androidAppLinkPackageNameCannotBeEmpty() {
         study.getAndroidAppLinks().add(new AndroidAppLink("appId", "", Lists.newArrayList("fingerprint")));
-        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0].packageName","cannot be blank or null");
+        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0]."+PACKAGE_NAME,"cannot be blank or null");
     }
     
     @Test
@@ -447,24 +453,31 @@ public class StudyValidatorTest {
     @Test
     public void androidAppLinkFingerprintsCannotBeNull() {
         study.getAndroidAppLinks().add(new AndroidAppLink("appId", "packageName", null));
-        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0].fingerprints","cannot be null or empty");
+        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0]."+FINGERPRINTS,"cannot be null or empty");
     }
     
     @Test
     public void androidAppLinkFingerprintsCannotBeEmpty() {
         study.getAndroidAppLinks().add(new AndroidAppLink("appId", "packageName", Lists.newArrayList()));
-        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0].fingerprints","cannot be null or empty");
+        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0]."+FINGERPRINTS,"cannot be null or empty");
     }
     
     @Test
     public void androidAppLinkFingerprintCannotBeNull() {
         study.getAndroidAppLinks().add(new AndroidAppLink("appId", "packageName", Lists.newArrayList((String)null)));
-        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0].fingerprints[0]","cannot be null or empty");
+        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0]."+FINGERPRINTS+"[0]","cannot be null or empty");
     }
 
     @Test
     public void androidAppLinkFingerprintCannotBeEmpty() {
         study.getAndroidAppLinks().add(new AndroidAppLink("appId", "packageName", Lists.newArrayList("  ")));
-        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0].fingerprints[0]","cannot be null or empty");
+        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0]."+FINGERPRINTS+"[0]","cannot be null or empty");
     }
+    
+    @Test
+    public void androidAppLinkFingerprintCannotBeInvalid() {
+        study.getAndroidAppLinks().add(new AndroidAppLink("appId", "packageName", Lists.newArrayList("asdf")));
+        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0]."+FINGERPRINTS+"[0]","is not a SHA 256 fingerprint");
+    }
+    
 }

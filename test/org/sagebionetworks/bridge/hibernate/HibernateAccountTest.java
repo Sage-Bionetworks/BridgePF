@@ -12,6 +12,7 @@ import java.util.Set;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 
 public class HibernateAccountTest {
@@ -120,13 +121,14 @@ public class HibernateAccountTest {
     @Test
     public void accountSummaryConstructor() {
         HibernateAccount account = new HibernateAccount(new Long(123), "studyId", "firstName", "lastName", "email",
-                "id", AccountStatus.UNVERIFIED);
+                TestConstants.PHONE, "id", AccountStatus.UNVERIFIED);
 
         assertEquals(new Long(123), account.getCreatedOn());
         assertEquals("studyId", account.getStudyId());
         assertEquals("firstName", account.getFirstName());
         assertEquals("lastName", account.getLastName());
         assertEquals("email", account.getEmail());
+        assertEquals(TestConstants.PHONE, account.getPhone());
         assertEquals("id", account.getId());
         assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
     }

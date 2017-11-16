@@ -40,6 +40,12 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     void setName(String name);
 
     /**
+     * A short display name for SMS messages and other highly constrained UIs. 10 characters of less. 
+     */
+    String getShortName();
+    void setShortName(String shortName);
+    
+    /**
      * The name of the institution or research group conducting the study. 
      */
     String getSponsorName();

@@ -7,6 +7,7 @@ import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
@@ -30,7 +31,10 @@ import org.springframework.validation.Validator;
 @Component
 public class StudyValidator implements Validator {
     public static final StudyValidator INSTANCE = new StudyValidator();
+    
     private static final int MAX_SYNAPSE_LENGTH = 100;
+    private static final Pattern FINGERPRINT_PATTERN = Pattern.compile("^[0-9a-fA-F:]{95,95}$");
+    
     /**
      * Inspect StudyParticipant for its field names; these cannot be used as user profile attributes because UserProfile
      * collapses these values into the top-level JSON it returns (unlike StudyParticipant where these values are a map
@@ -71,6 +75,9 @@ public class StudyValidator implements Validator {
         }
         if (StringUtils.isBlank(study.getName())) {
             errors.rejectValue("name", "is required");
+        }
+        if (study.getShortName() != null && study.getShortName().length() > 10) {
+            errors.rejectValue("shortName", "must be 10 characters or less");
         }
         if (StringUtils.isBlank(study.getSponsorName())) {
             errors.rejectValue("sponsorName", "is required");
@@ -152,7 +159,7 @@ public class StudyValidator implements Validator {
         if (study.getAppleAppLinks() != null && !study.getAppleAppLinks().isEmpty()) {
             validateAppLinks(errors, "appleAppLinks", study.getAppleAppLinks(), (AppleAppLink link) -> {
                 if (StringUtils.isBlank(link.getAppId())) {
-                    errors.rejectValue("appId", "cannot be blank or null");
+                    errors.rejectValue("appID", "cannot be blank or null");
                 }
                 if (link.getPaths() == null || link.getPaths().isEmpty()) {
                     errors.rejectValue("paths", "cannot be null or empty");
@@ -173,15 +180,17 @@ public class StudyValidator implements Validator {
                     errors.rejectValue("namespace", "cannot be blank or null");
                 }
                 if (StringUtils.isBlank(link.getPackageName())) {
-                    errors.rejectValue("packageName", "cannot be blank or null");
+                    errors.rejectValue("package_name", "cannot be blank or null");
                 }
                 if (link.getFingerprints() == null || link.getFingerprints().isEmpty()) {
-                    errors.rejectValue("fingerprints", "cannot be null or empty");
+                    errors.rejectValue("sha256_cert_fingerprints", "cannot be null or empty");
                 } else {
                     for (int i=0; i < link.getFingerprints().size(); i++) {
                         String fingerprint = link.getFingerprints().get(i);
                         if (StringUtils.isBlank(fingerprint)) {
-                            errors.rejectValue("fingerprints["+i+"]", "cannot be null or empty");
+                            errors.rejectValue("sha256_cert_fingerprints["+i+"]", "cannot be null or empty");
+                        } else if (!FINGERPRINT_PATTERN.matcher(fingerprint).matches()){
+                            errors.rejectValue("sha256_cert_fingerprints["+i+"]", "is not a SHA 256 fingerprint");
                         }
                     }
                 }
@@ -191,24 +200,21 @@ public class StudyValidator implements Validator {
     }
     
     private <T> void validateAppLinks(Errors errors, String propName, List<T> appLinks, Function<T,String> itemValidator) {
+        boolean hasNotRecordedDuplicates = true;
         Set<String> uniqueAppIDs = Sets.newHashSet();
-        int len = appLinks.size();
         for (int i=0; i < appLinks.size(); i++) {
             T link = appLinks.get(i);
             String fieldName = propName+"["+i+"]";
-            errors.pushNestedPath(fieldName);
             if (link == null) {
-                errors.rejectValue("", "cannot be null");
-                len--;
+                errors.rejectValue(fieldName, "cannot be null");
             } else {
+                errors.pushNestedPath(fieldName);
                 String id = itemValidator.apply(link);
-                if (id != null) {
-                    uniqueAppIDs.add(id);
+                errors.popNestedPath();
+                if (id != null && hasNotRecordedDuplicates && !uniqueAppIDs.add(id)) {
+                    errors.rejectValue(propName, "cannot contain duplicate entries");
+                    hasNotRecordedDuplicates = false;
                 }
-            }
-            errors.popNestedPath();
-            if (uniqueAppIDs.size() < len) {
-                errors.rejectValue(propName, "cannot contain duplicate entries");
             }
         }
     }

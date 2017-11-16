@@ -170,7 +170,7 @@ public class ConsentService {
         optionsService.setEnum(study, participant.getHealthCode(), SHARING_SCOPE, sharingScope);
         
         // Send email, if required.
-        if (sendEmail) {
+        if (sendEmail && participant.getEmail() != null) {
             MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, participant.getTimeZone(),
                     participant.getEmail(), withConsentCreatedOnSignature, sharingScope,
                     studyConsent.getDocumentContent(), consentTemplate);
@@ -231,9 +231,11 @@ public class ConsentService {
         }
         accountDao.updateAccount(account);
         
-        MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account, withdrawal,
-                withdrewOn);
-        sendMailService.sendEmail(consentEmail);
+        if (account.getEmail() != null) {
+            MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account, withdrawal,
+                    withdrewOn);
+            sendMailService.sendEmail(consentEmail);
+        }
         
         Map<SubpopulationGuid,ConsentStatus> statuses = getConsentStatuses(context);
         
@@ -268,9 +270,12 @@ public class ConsentService {
         accountDao.updateAccount(account);
         
         String externalId = optionsService.getOptions(account.getHealthCode()).getString(EXTERNAL_IDENTIFIER);
-        MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account, withdrawal,
-                withdrewOn);
-        sendMailService.sendEmail(consentEmail);
+        
+        if (account.getEmail() != null) {
+            MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account, withdrawal,
+                    withdrewOn);
+            sendMailService.sendEmail(consentEmail);
+        }
         
         // But we don't need to query, we know these are all withdraw.
         return getConsentStatuses(context);
@@ -293,9 +298,11 @@ public class ConsentService {
         
         String htmlTemplate = studyConsentService.getActiveConsent(subpop).getDocumentContent();
         
-        MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, participant.getTimeZone(),
-                participant.getEmail(), consentSignature, sharingScope, htmlTemplate, consentTemplate);
-        sendMailService.sendEmail(consentEmail);
+        if (participant.getEmail() != null) {
+            MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, participant.getTimeZone(),
+                    participant.getEmail(), consentSignature, sharingScope, htmlTemplate, consentTemplate);
+            sendMailService.sendEmail(consentEmail);
+        }
     }
 
     private boolean withdrawSignatures(Account account, SubpopulationGuid subpopGuid, long withdrewOn) {

@@ -104,8 +104,8 @@ public class ParticipantControllerTest {
     
     private static final DateTime END_TIME = DateTime.now();
     
-    private static final AccountSummary SUMMARY = new AccountSummary("firstName", "lastName", "email", "id",
-            DateTime.now(), AccountStatus.ENABLED, TestConstants.TEST_STUDY);
+    private static final AccountSummary SUMMARY = new AccountSummary("firstName", "lastName", "email",
+            TestConstants.PHONE, "id", DateTime.now(), AccountStatus.ENABLED, TestConstants.TEST_STUDY);
     
     @Spy
     private ParticipantController controller;

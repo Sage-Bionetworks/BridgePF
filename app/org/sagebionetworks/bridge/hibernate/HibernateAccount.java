@@ -68,12 +68,13 @@ public class HibernateAccount {
      * specifying a constructor.
      */
     public HibernateAccount(Long createdOn, String studyId, String firstName, String lastName, String email,
-            String id, AccountStatus status) {
+            Phone phone, String id, AccountStatus status) {
         this.createdOn = createdOn;
         this.studyId = studyId;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
+        this.phone = phone;
         this.id = id;
         this.status = status;
     }
