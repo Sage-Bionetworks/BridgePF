@@ -7,7 +7,8 @@ import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.BridgeConstants;
+import javax.annotation.Resource;
+
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
@@ -43,7 +44,7 @@ public class SurveyController extends BaseController {
     public void setSurveyService(SurveyService surveyService) {
         this.surveyService = surveyService;
     }
-    @Autowired
+    @Resource(name = "genericViewCache")
     public void setViewCache(ViewCache viewCache) {
         this.viewCache = viewCache;
     }
@@ -275,7 +276,7 @@ public class SurveyController extends BaseController {
     }
     
     private String getView(ViewCacheKey<Survey> cacheKey, UserSession session, Supplier<Survey> supplier) {
-        return viewCache.getView(cacheKey, true, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS, () -> {
+        return viewCache.getView(cacheKey, () -> {
             Survey survey = supplier.get();
             verifySurveyIsInStudy(session, survey);
             return survey;

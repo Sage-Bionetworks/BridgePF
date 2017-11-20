@@ -17,6 +17,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -35,6 +36,8 @@ import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
@@ -67,6 +70,8 @@ public class ApplicationControllerMockTest {
     @Before
     public void before() {
         ViewCache viewCache = new ViewCache();
+        viewCache.setCachePeriod(BridgeConstants.APP_LINKS_EXPIRE_IN_SECONDS);
+        viewCache.setObjectMapper(new ObjectMapper());
         viewCache.setCacheProvider(cacheProvider);
         
         controller = new ApplicationController();
@@ -129,8 +134,16 @@ public class ApplicationControllerMockTest {
     
     @Test
     public void androidAppLinks() throws Exception {
+        DynamoStudy study2 = new DynamoStudy();
+        study2.setIdentifier("test-study2");
+        study2.setSupportEmail("support@email.com");
+        study2.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        doReturn(ImmutableList.of(study, study2)).when(studyService).getStudies();
+        
         study.getAndroidAppLinks().add(TestConstants.ANDROID_APP_LINK);
         study.getAndroidAppLinks().add(TestConstants.ANDROID_APP_LINK_2);
+        study2.getAndroidAppLinks().add(TestConstants.ANDROID_APP_LINK_3);
+        study2.getAndroidAppLinks().add(TestConstants.ANDROID_APP_LINK_4);
         
         Result result = controller.androidAppLinks();
         assertEquals(200, result.status());
@@ -140,13 +153,23 @@ public class ApplicationControllerMockTest {
         List<AndroidAppSiteAssociation> links = TestUtils.getResponsePayload(result, type);
         assertEquals(TestConstants.ANDROID_APP_LINK, links.get(0).getTarget());
         assertEquals(TestConstants.ANDROID_APP_LINK_2, links.get(1).getTarget());
+        assertEquals(TestConstants.ANDROID_APP_LINK_3, links.get(2).getTarget());
+        assertEquals(TestConstants.ANDROID_APP_LINK_4, links.get(3).getTarget());
     }
 
     @Test
     public void appleAppLinks() throws Exception {
+        DynamoStudy study2 = new DynamoStudy();
+        study2.setIdentifier("test-study2");
+        study2.setSupportEmail("support@email.com");
+        study2.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        doReturn(ImmutableList.of(study, study2)).when(studyService).getStudies();
+        
         study.getAppleAppLinks().add(TestConstants.APPLE_APP_LINK);
         study.getAppleAppLinks().add(TestConstants.APPLE_APP_LINK_2);
-        
+        study2.getAppleAppLinks().add(TestConstants.APPLE_APP_LINK_3);
+        study2.getAppleAppLinks().add(TestConstants.APPLE_APP_LINK_4);
+
         Result result = controller.appleAppLinks();
         assertEquals(200, result.status());
         
@@ -154,9 +177,14 @@ public class ApplicationControllerMockTest {
         JsonNode applinks = node.get("applinks");
         JsonNode details = applinks.get("details");
         
-        AppleAppLink link0 = BridgeObjectMapper.get().readValue(details.get(0).toString(), AppleAppLink.class);
-        AppleAppLink link1 = BridgeObjectMapper.get().readValue(details.get(1).toString(), AppleAppLink.class);
+        BridgeObjectMapper mapper = BridgeObjectMapper.get();
+        AppleAppLink link0 = mapper.readValue(details.get(0).toString(), AppleAppLink.class);
+        AppleAppLink link1 = mapper.readValue(details.get(1).toString(), AppleAppLink.class);
+        AppleAppLink link2 = mapper.readValue(details.get(2).toString(), AppleAppLink.class);
+        AppleAppLink link3 = mapper.readValue(details.get(3).toString(), AppleAppLink.class);
         assertEquals(TestConstants.APPLE_APP_LINK, link0);
         assertEquals(TestConstants.APPLE_APP_LINK_2, link1);
+        assertEquals(TestConstants.APPLE_APP_LINK_3, link2);
+        assertEquals(TestConstants.APPLE_APP_LINK_4, link3);        
     }
 }

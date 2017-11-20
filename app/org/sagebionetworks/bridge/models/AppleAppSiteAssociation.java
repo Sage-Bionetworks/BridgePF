@@ -5,7 +5,7 @@ import java.util.List;
 import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.newrelic.agent.deps.com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList;
 
 /**
  * A model of the JSON we return to iOS clients. For iOS clients, one object encompasses all the 

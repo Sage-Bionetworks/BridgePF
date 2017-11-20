@@ -25,13 +25,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
@@ -113,6 +114,8 @@ public class UserProfileControllerTest {
         when(studyService.getStudy((StudyIdentifier)any())).thenReturn(study);
         
         ViewCache viewCache = new ViewCache();
+        viewCache.setCachePeriod(BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
+        viewCache.setObjectMapper(BridgeObjectMapper.get());
         viewCache.setCacheProvider(cacheProvider);
         
         controller = spy(new UserProfileController());

@@ -6,6 +6,8 @@ import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Resource;
+
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
@@ -53,7 +55,7 @@ public class UserProfileController extends BaseController {
     public final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
     }
-    @Autowired
+    @Resource(name = "genericViewCache")
     public final void setViewCache(ViewCache viewCache) {
         this.viewCache = viewCache;
     }
@@ -69,7 +71,7 @@ public class UserProfileController extends BaseController {
         final String userId = session.getId();
         
         ViewCacheKey<ObjectNode> cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, study.getIdentifier());
-        String json = viewCache.getView(cacheKey, true, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS, new Supplier<ObjectNode>() {
+        String json = viewCache.getView(cacheKey, new Supplier<ObjectNode>() {
             @Override public ObjectNode get() {
                 StudyParticipant participant = participantService.getParticipant(study, userId, false);
                 ObjectNode node = JsonNodeFactory.instance.objectNode();

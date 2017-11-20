@@ -1,11 +1,9 @@
 package org.sagebionetworks.bridge.cache;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -31,10 +29,19 @@ public class ViewCache {
     };
     
     private CacheProvider cache;
+    private ObjectMapper objectMapper;
+    private int cachePeriod;
     
-    @Autowired
-    public void setCacheProvider(CacheProvider cacheProvider) {
+    public final void setCacheProvider(CacheProvider cacheProvider) {
         this.cache = cacheProvider;
+    }
+    
+    public final void setObjectMapper(ObjectMapper mapper) {
+        this.objectMapper = mapper;
+    }
+    
+    public final void setCachePeriod(int cachePeriod) {
+        this.cachePeriod = cachePeriod;
     }
     
     /**
@@ -44,12 +51,11 @@ public class ViewCache {
      * @param supplier
      * @return
      */
-    public <T> String getView(ViewCacheKey<T> key, boolean useBridgeObjectMapper, int cachePeriod,
-            Supplier<T> supplier) {
+    public <T> String getView(ViewCacheKey<T> key, Supplier<T> supplier) {
         try {
             String value = cache.getString(key.getKey());
             if (value == null) {
-                value = cacheView(key, useBridgeObjectMapper, cachePeriod, supplier);
+                value = cacheView(key, supplier);
             } else {
                 logger.debug("Retrieving " +key.getKey()+"' JSON from cache");
             }
@@ -80,12 +86,10 @@ public class ViewCache {
         return new ViewCacheKey<T>(RedisKey.VIEW.getRedisKey(id + ":" + clazz.getName()));
     }
     
-    private <T> String cacheView(ViewCacheKey<T> key, boolean useBridgeObjectMapper, int cachePeriod,
-            Supplier<T> supplier) throws JsonProcessingException {
+    private <T> String cacheView(ViewCacheKey<T> key, Supplier<T> supplier) throws JsonProcessingException {
         logger.debug("Caching JSON for " +key.getKey()+"'");
         T object = supplier.get();
-        ObjectMapper mapper = (useBridgeObjectMapper) ? BridgeObjectMapper.get() : new ObjectMapper();
-        String value = mapper.writeValueAsString(object);
+        String value = objectMapper.writeValueAsString(object);
         cache.setString(key.getKey(), value, cachePeriod);
         return value;
     }

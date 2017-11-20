@@ -6,8 +6,9 @@ import static org.sagebionetworks.bridge.BridgeConstants.JSON_MIME_TYPE;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.Resource;
+
 import org.apache.commons.lang3.StringEscapeUtils;
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
@@ -22,7 +23,6 @@ import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import com.google.common.collect.Lists;
@@ -39,7 +39,7 @@ public class ApplicationController extends BaseController {
 
     private ViewCache viewCache;
 
-    @Autowired
+    @Resource(name = "appLinkViewCache")
     final void setViewCache(ViewCache viewCache) {
         this.viewCache = viewCache;
     }
@@ -75,7 +75,7 @@ public class ApplicationController extends BaseController {
     public Result androidAppLinks() throws Exception {
         ViewCacheKey<AndroidAppLinkList> cacheKey = viewCache.getCacheKey(AndroidAppLinkList.class);
         
-        String json = viewCache.getView(cacheKey, false, BridgeConstants.APP_LINKS_EXPIRE_IN_SECONDS, () -> {
+        String json = viewCache.getView(cacheKey, () -> {
             AndroidAppLinkList links = new AndroidAppLinkList();
             List<Study> studies = studyService.getStudies();
             for(Study study : studies) {
@@ -91,7 +91,7 @@ public class ApplicationController extends BaseController {
     public Result appleAppLinks() throws Exception {
         ViewCacheKey<AppleAppSiteAssociation> cacheKey = viewCache.getCacheKey(AppleAppSiteAssociation.class);
         
-        String json = viewCache.getView(cacheKey, false, BridgeConstants.APP_LINKS_EXPIRE_IN_SECONDS, () -> {
+        String json = viewCache.getView(cacheKey, () -> {
             List<AppleAppLink> links = Lists.newArrayList();
             List<Study> studies = studyService.getStudies();
             for(Study study : studies) {

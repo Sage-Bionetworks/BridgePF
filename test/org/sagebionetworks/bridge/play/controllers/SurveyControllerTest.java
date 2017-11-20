@@ -105,6 +105,9 @@ public class SurveyControllerTest {
         // Dummy this out so it works and we can forget about it as a dependency
         cacheMap = Maps.newHashMap();
         viewCache = new ViewCache();
+        viewCache.setObjectMapper(BridgeObjectMapper.get());
+        viewCache.setCachePeriod(BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
+        
         CacheProvider provider = mock(CacheProvider.class);
         when(provider.getString(anyString())).thenAnswer(new Answer<String>() {
             @Override
@@ -811,7 +814,7 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, DEVELOPER, false, survey);
         
         viewCache.getView(viewCache.getCacheKey(
-                Survey.class, SURVEY_GUID, CREATED_ON.toString(), "api"), true, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS, () -> { return survey; });
+                Survey.class, SURVEY_GUID, CREATED_ON.toString(), "api"), () -> { return survey; });
         
         // Verify this call hits the cache not the service
         controller.getSurvey(SURVEY_GUID, CREATED_ON.toString());

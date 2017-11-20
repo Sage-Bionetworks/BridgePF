@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.cache;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Map;
@@ -16,7 +17,11 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.surveys.Survey;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ser.FilterProvider;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.google.common.base.Supplier;
 import com.google.common.collect.Maps;
 
@@ -35,12 +40,15 @@ public class ViewCacheTest {
     @Test
     public void nothingWasCached() throws Exception {
         ViewCache cache = new ViewCache();
+        cache.setObjectMapper(BridgeObjectMapper.get());
+        cache.setCachePeriod(BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
+        
         ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
         CacheProvider provider = mock(CacheProvider.class);
         when(provider.getString(cacheKey.getKey())).thenReturn(null);
         cache.setCacheProvider(provider);
         
-        String json = cache.getView(cacheKey, true, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS, new Supplier<Study>() {
+        String json = cache.getView(cacheKey, new Supplier<Study>() {
             @Override public Study get() {
                 Study study = TestUtils.getValidStudy(ViewCacheTest.class);
                 study.setName("Test Study 2");
@@ -55,6 +63,9 @@ public class ViewCacheTest {
     @Test
     public void nothingWasCachedAndThereIsAnException() {
         ViewCache cache = new ViewCache();
+        cache.setObjectMapper(BridgeObjectMapper.get());
+        cache.setCachePeriod(BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
+        
         ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
         
         CacheProvider provider = mock(CacheProvider.class);
@@ -63,7 +74,7 @@ public class ViewCacheTest {
         
         // It doesn't get wrapped or transformed or anything
         try {
-            cache.getView(cacheKey, true, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS, new Supplier<Study>() {
+            cache.getView(cacheKey, new Supplier<Study>() {
                 @Override public Study get() {
                     throw new BridgeServiceException("There has been a problem retrieving the study");
                 }
@@ -76,16 +87,18 @@ public class ViewCacheTest {
     
     @Test
     public void somethingIsCached() throws Exception {
-        
         String originalStudyJson = mapper.writeValueAsString(study);
         
         ViewCache cache = new ViewCache();
+        cache.setObjectMapper(BridgeObjectMapper.get());
+        cache.setCachePeriod(BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
+        
         ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
         CacheProvider provider = mock(CacheProvider.class);
         when(provider.getString(cacheKey.getKey())).thenReturn(originalStudyJson);
         cache.setCacheProvider(provider);
         
-        String json = cache.getView(cacheKey, true, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS, new Supplier<Study>() {
+        String json = cache.getView(cacheKey, new Supplier<Study>() {
             @Override public Study get() {
                 fail("This should not be called");
                 return null;
@@ -98,15 +111,18 @@ public class ViewCacheTest {
     
     @Test
     public void removeFromCacheWorks() throws Exception {
-        
         final String originalStudyJson = mapper.writeValueAsString(study);
+        
         ViewCache cache = new ViewCache();
+        cache.setObjectMapper(BridgeObjectMapper.get());
+        cache.setCachePeriod(BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
+        
         final ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
         cache.setCacheProvider(getSimpleCacheProvider(cacheKey.getKey(), originalStudyJson));
         
         cache.removeView(cacheKey);
         
-        String json = cache.getView(cacheKey, true, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS, new Supplier<Study>() {
+        String json = cache.getView(cacheKey, new Supplier<Study>() {
             @Override public Study get() {
                 Study study = TestUtils.getValidStudy(ViewCacheTest.class);
                 study.setName("Test Study 2");
@@ -123,6 +139,31 @@ public class ViewCacheTest {
         
         ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, "mostRandom", "leastRandom");
         assertEquals("mostRandom:leastRandom:org.sagebionetworks.bridge.models.studies.Study:view", cacheKey.getKey());
+    }
+    
+    @Test
+    public void canReconfigureViewCache() throws Exception {
+        CacheProvider provider = mock(CacheProvider.class);
+        
+        Survey survey = Survey.create();
+        survey.setIdentifier("config-test");
+
+        ObjectMapper mapper = new ObjectMapper();
+        // need this filter config for mapper to work on Survey
+        FilterProvider filter = new SimpleFilterProvider().setFailOnUnknownId(false);
+        mapper.setFilterProvider(filter);
+        
+        ViewCache cache = new ViewCache();
+        cache.setCachePeriod(1000);
+        cache.setObjectMapper(mapper);
+        cache.setCacheProvider(provider);
+        
+        ViewCacheKey<Survey> cacheKey = cache.getCacheKey(Survey.class, survey.getIdentifier());
+        cache.getView(cacheKey, () -> survey);
+        
+        // The string from this mapper doesn't have the "type" attribute, so if this passes, we
+        // can be confident that the right mapper has been used.
+        verify(provider).setString(cacheKey.getKey(), mapper.writeValueAsString(survey), 1000);
     }
     
     private CacheProvider getSimpleCacheProvider(final String cacheKey, final String originalStudyJson) {

@@ -1,12 +1,9 @@
 package org.sagebionetworks.bridge.models;
 
-import java.util.List;
-
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.Lists;
 
 /**
  * A model of the JSON we produce to associate app links on Android with our server. The JSON 
@@ -17,7 +14,7 @@ import com.google.common.collect.Lists;
  */
 public final class AndroidAppSiteAssociation {
     public static final String RELATION = "delegate_permission/common.handle_all_urls";
-    private static final List<String> RELATION_LIST = Lists.newArrayList(RELATION);
+    private static final String[] RELATION_LIST = new String[] {RELATION};
     
     private final AndroidAppLink target;
     
@@ -25,7 +22,7 @@ public final class AndroidAppSiteAssociation {
     public AndroidAppSiteAssociation(@JsonProperty("target") AndroidAppLink target) {
         this.target = target;
     }
-    public List<String> getRelation() {
+    public String[] getRelation() {
         return RELATION_LIST; // this never appears to change.
     }
     @JsonProperty("target")
