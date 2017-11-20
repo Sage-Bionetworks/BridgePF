@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
+import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
@@ -354,5 +355,32 @@ public class StudyValidatorTest {
         study.setEmailVerificationEnabled(false);
         study.setExternalIdRequiredOnSignup(false);
         assertValidatorMessage(INSTANCE, study, "externalIdRequiredOnSignup", "cannot be disabled if email verification has been disabled");
-    }    
+    } 
+    
+    @Test
+    public void oauthProviderRequiresClientId() {
+        OAuthProvider provider = new OAuthProvider(null, "secret", "endpoint");
+        study.getOAuthProviders().put("vendor", provider);
+        assertValidatorMessage(INSTANCE, study, "oauthProviders[vendor].clientId", "is required");
+    }
+
+    @Test
+    public void oauthProviderRequiresSecret() {
+        OAuthProvider provider = new OAuthProvider("clientId", null, "endpoint");
+        study.getOAuthProviders().put("vendor", provider);
+        assertValidatorMessage(INSTANCE, study, "oauthProviders[vendor].secret", "is required");
+    }
+    
+    @Test
+    public void oauthProviderRequiresEndpoint() {
+        OAuthProvider provider = new OAuthProvider("clientId", "secret", null);
+        study.getOAuthProviders().put("vendor", provider);
+        assertValidatorMessage(INSTANCE, study, "oauthProviders[vendor].endpoint", "is required");
+    }
+    
+    @Test
+    public void oauthProviderRequired() {
+        study.getOAuthProviders().put("vendor", null);
+        assertValidatorMessage(INSTANCE, study, "oauthProviders[vendor]", "is required");
+    }
 }

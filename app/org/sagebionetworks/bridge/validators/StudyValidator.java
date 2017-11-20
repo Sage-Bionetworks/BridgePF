@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
@@ -14,6 +15,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -145,6 +147,26 @@ public class StudyValidator implements Validator {
             }
             if (!study.isExternalIdValidationEnabled()) {
                 errors.rejectValue("externalIdValidationEnabled", "cannot be disabled if email verification has been disabled");
+            }
+        }
+        
+        for (Map.Entry<String, OAuthProvider> entry : study.getOAuthProviders().entrySet()) {
+            String fieldName = "oauthProviders["+entry.getKey()+"]";
+            OAuthProvider provider = entry.getValue();
+            if (provider == null) {
+                errors.rejectValue(fieldName, "is required");
+            } else {
+                errors.pushNestedPath(fieldName);
+                if (StringUtils.isBlank(provider.getClientId())) {
+                    errors.rejectValue("clientId", "is required");
+                }
+                if (StringUtils.isBlank(provider.getSecret())) {
+                    errors.rejectValue("secret", "is required");
+                }
+                if (StringUtils.isBlank(provider.getEndpoint())) {
+                    errors.rejectValue("endpoint", "is required");
+                }
+                errors.popNestedPath();
             }
         }
     }

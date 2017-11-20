@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -64,6 +65,7 @@ public final class DynamoStudy implements Study {
     private boolean externalIdRequiredOnSignup;
     private Map<String, Integer> minSupportedAppVersions;
     private Map<String, String> pushNotificationARNs;
+    private Map<String, OAuthProvider> oauthProviders;
     private boolean disableExport;
 
     public DynamoStudy() {
@@ -74,6 +76,7 @@ public final class DynamoStudy implements Study {
         dataGroups = new HashSet<>();
         minSupportedAppVersions = new HashMap<>();
         pushNotificationARNs = new HashMap<>();
+        oauthProviders = new HashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -489,6 +492,17 @@ public final class DynamoStudy implements Study {
     public void setAccountLimit(int accountLimit) {
         this.accountLimit = accountLimit;
     }
+    
+    @DynamoDBTypeConverted(converter = OAuthProviderMapMarshaller.class)
+    @Override
+    public Map<String, OAuthProvider> getOAuthProviders() {
+        return oauthProviders;
+    }
+    
+    @Override
+    public void setOAuthProviders(Map<String, OAuthProvider> oauthProviders) {
+        this.oauthProviders = (oauthProviders == null) ? new HashMap<>() : oauthProviders;
+    }
 
     @Override
     public int hashCode() {
@@ -499,7 +513,7 @@ public final class DynamoStudy implements Study {
                 passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, emailSignInTemplate, accountExistsTemplate,
                 strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
                 externalIdValidationEnabled, emailSignInEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
-                pushNotificationARNs, disableExport);
+                pushNotificationARNs, disableExport, oauthProviders);
     }
 
     @Override
@@ -544,7 +558,8 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(disableExport, other.disableExport)
                 && Objects.equals(emailSignInTemplate, other.emailSignInTemplate)
                 && Objects.equals(emailSignInEnabled, other.emailSignInEnabled)
-                && Objects.equals(accountLimit, other.accountLimit);
+                && Objects.equals(accountLimit, other.accountLimit)
+                && Objects.equals(oauthProviders, other.oauthProviders);
     }
 
     @Override
@@ -557,13 +572,13 @@ public final class DynamoStudy implements Study {
                         + "resetPasswordTemplate=%s, strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, "
                         + "emailVerificationEnabled=%s, externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, "
                         + "minSupportedAppVersions=%s, usesCustomExportSchedule=%s, pushNotificationARNs=%s, "
-                        + "disableExport=%s, emailSignInTemplate=%s, emailSignInEnabled=%s, accountLimit=%s]",
+                        + "disableExport=%s, emailSignInTemplate=%s, emailSignInEnabled=%s, accountLimit=%s, oauthProviders=%s]",
                 name, shortName, active, sponsorName, identifier, minAgeOfConsent, studyIdExcludedInExport, supportEmail,
                 synapseDataAccessTeamId, synapseProjectId, technicalEmail, uploadValidationStrictness, consentNotificationEmail, version,
                 profileAttributes, taskIdentifiers, activityEventKeys, dataGroups, passwordPolicy, verifyEmailTemplate,
                 resetPasswordTemplate, strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
                 externalIdValidationEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
                 usesCustomExportSchedule, pushNotificationARNs, disableExport, emailSignInTemplate,
-                emailSignInEnabled, accountLimit);
+                emailSignInEnabled, accountLimit, oauthProviders);
     }
 }

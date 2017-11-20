@@ -23,6 +23,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -66,6 +67,10 @@ public class DynamoStudyTest {
     @Test
     public void studyFullySerializesForCaching() throws Exception {
         final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
+        
+        OAuthProvider oauthProvider = new OAuthProvider("clientId", "secret", "endpoint");
+        study.getOAuthProviders().put("myProvider", oauthProvider);
+        
         study.setVersion(2L);
         study.setMinSupportedAppVersions(ImmutableMap.<String, Integer>builder().put(OperatingSystem.IOS, 2).build());
         study.setUploadMetadataFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder()
@@ -131,6 +136,12 @@ public class DynamoStudyTest {
         assertEquals("test-metadata-field", oneMetadataFieldDefNode.get("name").textValue());
         assertEquals("int", oneMetadataFieldDefNode.get("type").textValue());
 
+        JsonNode providerNode = node.get("oauthProviders").get("myProvider");
+        assertEquals("clientId", providerNode.get("clientId").textValue());
+        assertEquals("secret", providerNode.get("secret").textValue());
+        assertEquals("endpoint", providerNode.get("endpoint").textValue());
+        assertEquals("OAuthProvider", providerNode.get("type").textValue());
+        
         // Deserialize back to a POJO and verify.
         final Study deserStudy = BridgeObjectMapper.get().readValue(json, Study.class);
         assertEquals(study, deserStudy);
