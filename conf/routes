@@ -19,6 +19,8 @@ POST   /v3/auth/email/signIn            @org.sagebionetworks.bridge.play.control
 POST   /v3/auth/phone                   @org.sagebionetworks.bridge.play.controllers.AuthenticationController.requestPhoneSignIn
 POST   /v3/auth/phone/signIn            @org.sagebionetworks.bridge.play.controllers.AuthenticationController.phoneSignIn
 
+# OAuth
+POST /v3/oauth/:vendorId    @org.sagebionetworks.bridge.play.controllers.OAuthController.requestAccessToken(vendorId: String)
 
 # Compound Activity Definitions
 GET    /v3/compoundactivitydefinitions @org.sagebionetworks.bridge.play.controllers.CompoundActivityDefinitionController.getAllCompoundActivityDefinitionsInStudy
@@ -253,6 +255,8 @@ POST   /v3/studies/:studyId/reports/:identifier                         @org.sag
 GET    /v3/studies/:studyId/uploads                                     @org.sagebionetworks.bridge.play.controllers.StudyController.getUploadsForStudy(studyId: String, startTime: String ?= null, endTime: String ?= null, pageSize: java.lang.Integer ?= null, offsetKey: String ?= null)
 GET    /v3/studies/:studyId/participants                                @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipantsForWorker(studyId: String, offsetBy: String ?= null, pageSize: String ?= null, emailFilter: String ?= null, startDate: String ?= null, endDate: String ?= null, startTime: String ?= null, endTime: String ?= null)
 GET    /v3/studies/:studyId/participants/:userId                        @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipantForWorker(studyId: String, userId: String)
+GET    /v3/studies/:studyId/oauth/:vendorId                             @org.sagebionetworks.bridge.play.controllers.OAuthController.getHealthCodesGrantingAccess(studyId: String, vendorId: String, offsetKey: String ?= null, pageSize: String ?= null)
+GET    /v3/studies/:studyId/oauth/:vendorId/:healthCode                 @org.sagebionetworks.bridge.play.controllers.OAuthController.getAccessToken(studyId: String, vendorId: String, healthCode: String)
 
 # Admin APIs for across studies
 POST   /v3/studies/:studyId/users                                       @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUserWithStudyId(studyId: String)

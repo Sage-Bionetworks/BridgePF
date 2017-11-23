@@ -206,4 +206,8 @@
     <bean id="AppConfigControllerProxied" parent="proxiedController">
         <property name="targetName" value="appConfigController" />
     </bean>
+    
+    <bean id="OAuthControllerProxied" parent="proxiedController">
+        <property name="targetName" value="oauthController" />
+    </bean>
 </beans>

@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
+import org.sagebionetworks.bridge.models.studies.OAuthProviderTest;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -68,7 +69,8 @@ public class DynamoStudyTest {
     public void studyFullySerializesForCaching() throws Exception {
         final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
         
-        OAuthProvider oauthProvider = new OAuthProvider("clientId", "secret", "endpoint");
+        OAuthProvider oauthProvider = new OAuthProvider("clientId", "secret", "endpoint",
+                OAuthProviderTest.CALLBACK_URL);
         study.getOAuthProviders().put("myProvider", oauthProvider);
         
         study.setVersion(2L);
