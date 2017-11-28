@@ -31,7 +31,7 @@ import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
 import org.sagebionetworks.client.exceptions.SynapseServerException;
-import org.sagebionetworks.repo.model.MembershipInvtnSubmission;
+import org.sagebionetworks.repo.model.MembershipInvitation;
 import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.ResourceAccess;
 import org.sagebionetworks.repo.model.Team;
@@ -302,7 +302,7 @@ public class StudyService {
             try {
                 synapseClient.newAccountEmailValidation(synapseUser, SYNAPSE_REGISTER_END_POINT);
             } catch (SynapseServerException e) {
-                if (!"The email address provided is already used.".equals(e.getMessage())) {
+                if (!e.getMessage().contains("The email address provided is already used.")) {
                     throw e;
                 } else {
                     LOG.info("Email: " + user.getEmail() + " already exists in Synapse", e);
@@ -417,7 +417,7 @@ public class StudyService {
 
         for (String synapseUserId : synapseUserIds) {
             // send invitation to target user for joining new team and grant admin permission to that user
-            MembershipInvtnSubmission teamMemberInvitation = new MembershipInvtnSubmission();
+            MembershipInvitation teamMemberInvitation = new MembershipInvitation();
             teamMemberInvitation.setInviteeId(synapseUserId);
             teamMemberInvitation.setTeamId(newTeam.getId());
             synapseClient.createMembershipInvitation(teamMemberInvitation, null, null);

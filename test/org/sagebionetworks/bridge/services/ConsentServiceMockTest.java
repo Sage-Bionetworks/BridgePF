@@ -52,7 +52,6 @@ import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
-import org.sagebionetworks.bridge.services.email.WithdrawConsentEmailProvider;
 
 import com.google.common.collect.Maps;
 

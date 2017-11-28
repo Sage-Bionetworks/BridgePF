@@ -41,7 +41,7 @@ import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
 import org.sagebionetworks.client.exceptions.SynapseServerException;
 import org.sagebionetworks.repo.model.AccessControlList;
-import org.sagebionetworks.repo.model.MembershipInvtnSubmission;
+import org.sagebionetworks.repo.model.MembershipInvitation;
 import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.ResourceAccess;
 import org.sagebionetworks.repo.model.Team;
@@ -117,7 +117,7 @@ public class StudyServiceMockTest {
     private Study study;
     private Team mockTeam;
     private Project mockProject;
-    private MembershipInvtnSubmission mockTeamMemberInvitation;
+    private MembershipInvitation mockTeamMemberInvitation;
 
     @Before
     public void before() {
@@ -145,7 +145,7 @@ public class StudyServiceMockTest {
         mockTeam.setName(TEST_TEAM_NAME);
         mockTeam.setId(TEST_TEAM_ID);
 
-        mockTeamMemberInvitation = new MembershipInvtnSubmission();
+        mockTeamMemberInvitation = new MembershipInvitation();
         mockTeamMemberInvitation.setInviteeId(TEST_USER_ID.toString());
         mockTeamMemberInvitation.setTeamId(TEST_TEAM_ID);
     }
