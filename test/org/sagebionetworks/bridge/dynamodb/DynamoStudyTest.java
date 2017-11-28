@@ -68,7 +68,7 @@ public class DynamoStudyTest {
     public void studyFullySerializesForCaching() throws Exception {
         final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
         
-        OAuthProvider oauthProvider = new OAuthProvider("clientId", "secret", "endpoint");
+        OAuthProvider oauthProvider = new OAuthProvider("clientId", "secret", "endpoint", "callbackUrl");
         study.getOAuthProviders().put("myProvider", oauthProvider);
         
         study.setVersion(2L);
@@ -140,6 +140,7 @@ public class DynamoStudyTest {
         assertEquals("clientId", providerNode.get("clientId").textValue());
         assertEquals("secret", providerNode.get("secret").textValue());
         assertEquals("endpoint", providerNode.get("endpoint").textValue());
+        assertEquals("callbackUrl", providerNode.get("callbackUrl").textValue());
         assertEquals("OAuthProvider", providerNode.get("type").textValue());
         
         // Deserialize back to a POJO and verify.

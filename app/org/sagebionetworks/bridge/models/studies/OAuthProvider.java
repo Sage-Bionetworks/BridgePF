@@ -9,13 +9,15 @@ public final class OAuthProvider {
     private final String clientId;
     private final String secret;
     private final String endpoint;
+    private final String callbackUrl;
     
     @JsonCreator
     public OAuthProvider(@JsonProperty("clientId") String clientId, @JsonProperty("secret") String secret,
-            @JsonProperty("endpoint") String endpoint) {
+            @JsonProperty("endpoint") String endpoint, @JsonProperty("callbackUrl") String callbackUrl) {
         this.clientId = clientId;
         this.secret = secret;
         this.endpoint = endpoint;
+        this.callbackUrl = callbackUrl;
     }
     public String getClientId() {
         return clientId;
@@ -26,9 +28,12 @@ public final class OAuthProvider {
     public String getEndpoint() {
         return endpoint;
     }
+    public String getCallbackUrl() {
+        return callbackUrl;
+    }
     @Override
     public int hashCode() {
-        return Objects.hash(clientId, endpoint, secret);
+        return Objects.hash(clientId, endpoint, secret, callbackUrl);
     }
     @Override
     public boolean equals(Object obj) {
@@ -39,10 +44,12 @@ public final class OAuthProvider {
         OAuthProvider other = (OAuthProvider) obj;
         return Objects.equals(clientId, other.clientId) 
                && Objects.equals(endpoint, other.endpoint) 
-               && Objects.equals(secret, other.secret);
+               && Objects.equals(secret, other.secret)
+               && Objects.equals(callbackUrl,  other.callbackUrl);
     }
     @Override
     public String toString() {
-        return "OAuthProvider [clientId=" + clientId + ", endpoint=" + endpoint + ", secret=REDACTED]";
+        return "OAuthProvider [clientId=" + clientId + ", endpoint=" + endpoint + ", secret=REDACTED, callbackUrl="
+                + callbackUrl + "]";
     }
 }

@@ -359,23 +359,30 @@ public class StudyValidatorTest {
     
     @Test
     public void oauthProviderRequiresClientId() {
-        OAuthProvider provider = new OAuthProvider(null, "secret", "endpoint");
+        OAuthProvider provider = new OAuthProvider(null, "secret", "endpoint", "callbackUrl");
         study.getOAuthProviders().put("vendor", provider);
         assertValidatorMessage(INSTANCE, study, "oauthProviders[vendor].clientId", "is required");
     }
 
     @Test
     public void oauthProviderRequiresSecret() {
-        OAuthProvider provider = new OAuthProvider("clientId", null, "endpoint");
+        OAuthProvider provider = new OAuthProvider("clientId", null, "endpoint", "callbackUrl");
         study.getOAuthProviders().put("vendor", provider);
         assertValidatorMessage(INSTANCE, study, "oauthProviders[vendor].secret", "is required");
     }
     
     @Test
     public void oauthProviderRequiresEndpoint() {
-        OAuthProvider provider = new OAuthProvider("clientId", "secret", null);
+        OAuthProvider provider = new OAuthProvider("clientId", "secret", null, "callbackUrl");
         study.getOAuthProviders().put("vendor", provider);
         assertValidatorMessage(INSTANCE, study, "oauthProviders[vendor].endpoint", "is required");
+    }
+    
+    @Test
+    public void oauthProviderRequiresCallbackUrl() {
+        OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint", null);
+        study.getOAuthProviders().put("vendor", provider);
+        assertValidatorMessage(INSTANCE, study, "oauthProviders[vendor].callbackUrl", "is required");
     }
     
     @Test

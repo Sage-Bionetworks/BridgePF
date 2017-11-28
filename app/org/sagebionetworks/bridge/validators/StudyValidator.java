@@ -166,6 +166,9 @@ public class StudyValidator implements Validator {
                 if (StringUtils.isBlank(provider.getEndpoint())) {
                     errors.rejectValue("endpoint", "is required");
                 }
+                if (StringUtils.isBlank(provider.getCallbackUrl())) {
+                    errors.rejectValue("callbackUrl", "is required");
+                }
                 errors.popNestedPath();
             }
         }
