@@ -2,9 +2,6 @@ package org.sagebionetworks.bridge.models;
 
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 /**
  * A model of the JSON we produce to associate app links on Android with our server. The JSON 
  * that is returned is an array of these objects, one for every study that has defined app 
@@ -18,14 +15,12 @@ public final class AndroidAppSiteAssociation {
     
     private final AndroidAppLink target;
     
-    @JsonCreator
-    public AndroidAppSiteAssociation(@JsonProperty("target") AndroidAppLink target) {
+    public AndroidAppSiteAssociation(AndroidAppLink target) {
         this.target = target;
     }
     public String[] getRelation() {
         return RELATION_LIST; // this never appears to change.
     }
-    @JsonProperty("target")
     public AndroidAppLink getTarget() {
         return target;
     }

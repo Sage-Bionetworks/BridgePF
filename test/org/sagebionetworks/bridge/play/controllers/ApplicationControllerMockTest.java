@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.models.AndroidAppSiteAssociation;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
 import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -148,13 +149,15 @@ public class ApplicationControllerMockTest {
         Result result = controller.androidAppLinks();
         assertEquals(200, result.status());
         
-        TypeReference<List<AndroidAppSiteAssociation>> type = new TypeReference<List<AndroidAppSiteAssociation>>() {}; 
-        
-        List<AndroidAppSiteAssociation> links = TestUtils.getResponsePayload(result, type);
-        assertEquals(TestConstants.ANDROID_APP_LINK, links.get(0).getTarget());
-        assertEquals(TestConstants.ANDROID_APP_LINK_2, links.get(1).getTarget());
-        assertEquals(TestConstants.ANDROID_APP_LINK_3, links.get(2).getTarget());
-        assertEquals(TestConstants.ANDROID_APP_LINK_4, links.get(3).getTarget());
+        JsonNode node = TestUtils.getJson(result);
+        assertEquals(TestConstants.ANDROID_APP_LINK, getLinkAtIndex(node, 0));
+        assertEquals(TestConstants.ANDROID_APP_LINK_2, getLinkAtIndex(node, 1));
+        assertEquals(TestConstants.ANDROID_APP_LINK_3, getLinkAtIndex(node, 2));
+        assertEquals(TestConstants.ANDROID_APP_LINK_4, getLinkAtIndex(node, 3));
+    }
+    
+    private AndroidAppLink getLinkAtIndex(JsonNode node, int index) throws Exception {
+        return BridgeObjectMapper.get().treeToValue(node.get(index).get("target"), AndroidAppLink.class);
     }
 
     @Test
