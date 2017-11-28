@@ -22,6 +22,7 @@ import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
 import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -86,6 +87,7 @@ public final class DynamoStudy implements Study {
     private boolean externalIdRequiredOnSignup;
     private Map<String, Integer> minSupportedAppVersions;
     private Map<String, String> pushNotificationARNs;
+    private Map<String, OAuthProvider> oauthProviders;
     private boolean disableExport;
     private List<AppleAppLink> appleAppLinks;
     private List<AndroidAppLink> androidAppLinks;
@@ -98,6 +100,7 @@ public final class DynamoStudy implements Study {
         dataGroups = new HashSet<>();
         minSupportedAppVersions = new HashMap<>();
         pushNotificationARNs = new HashMap<>();
+        oauthProviders = new HashMap<>();
         appleAppLinks = new ArrayList<>();
         androidAppLinks = new ArrayList<>();
     }
@@ -516,6 +519,17 @@ public final class DynamoStudy implements Study {
         this.accountLimit = accountLimit;
     }
     
+    @DynamoDBTypeConverted(converter = OAuthProviderMapMarshaller.class)
+    @Override
+    public Map<String, OAuthProvider> getOAuthProviders() {
+        return oauthProviders;
+    }
+    
+    @Override
+    public void setOAuthProviders(Map<String, OAuthProvider> oauthProviders) {
+        this.oauthProviders = (oauthProviders == null) ? new HashMap<>() : oauthProviders;
+    }
+    
     @DynamoDBTypeConverted(converter = AppleLinksMarshaller.class)
     @Override
     public List<AppleAppLink> getAppleAppLinks() {
@@ -547,7 +561,7 @@ public final class DynamoStudy implements Study {
                 passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, emailSignInTemplate, accountExistsTemplate,
                 strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
                 externalIdValidationEnabled, emailSignInEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
-                pushNotificationARNs, disableExport, appleAppLinks, androidAppLinks);
+                pushNotificationARNs, disableExport, oauthProviders, appleAppLinks, androidAppLinks);
     }
 
     @Override
@@ -593,6 +607,7 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(emailSignInTemplate, other.emailSignInTemplate)
                 && Objects.equals(emailSignInEnabled, other.emailSignInEnabled)
                 && Objects.equals(accountLimit, other.accountLimit)
+                && Objects.equals(oauthProviders, other.oauthProviders)
                 && Objects.equals(appleAppLinks, other.appleAppLinks)
                 && Objects.equals(androidAppLinks, other.androidAppLinks);
     }
@@ -607,7 +622,7 @@ public final class DynamoStudy implements Study {
                         + "resetPasswordTemplate=%s, strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, "
                         + "emailVerificationEnabled=%s, externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, "
                         + "minSupportedAppVersions=%s, usesCustomExportSchedule=%s, pushNotificationARNs=%s, "
-                        + "disableExport=%s, emailSignInTemplate=%s, emailSignInEnabled=%s, accountLimit=%s, "
+                        + "disableExport=%s, emailSignInTemplate=%s, emailSignInEnabled=%s, accountLimit=%s, oauthProviders=%s, "
                         + "appleAppLinks=%s, androidAppLinks=%s]",
                 name, shortName, active, sponsorName, identifier, minAgeOfConsent, studyIdExcludedInExport, supportEmail,
                 synapseDataAccessTeamId, synapseProjectId, technicalEmail, uploadValidationStrictness, consentNotificationEmail, version,
@@ -615,6 +630,6 @@ public final class DynamoStudy implements Study {
                 resetPasswordTemplate, strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
                 externalIdValidationEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
                 usesCustomExportSchedule, pushNotificationARNs, disableExport, emailSignInTemplate,
-                emailSignInEnabled, accountLimit, appleAppLinks, androidAppLinks);
+                emailSignInEnabled, accountLimit, oauthProviders, appleAppLinks, androidAppLinks);
     }
 }
