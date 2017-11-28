@@ -2,11 +2,15 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
+import java.util.List;
+
 import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
+import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -19,6 +23,12 @@ import com.google.common.collect.Sets;
 public class StudyValidatorTest {
 
     private static final StudyValidator INSTANCE = StudyValidator.INSTANCE;
+    private static final String APP_ID = "appID";
+    private static final String PATHS = "paths";
+    private static final String NAMESPACE = "namespace";
+    private static final String PACKAGE_NAME = "package_name";
+    private static final String FINGERPRINTS = "sha256_cert_fingerprints";
+    
     private DynamoStudy study;
     
     @Before
@@ -28,7 +38,17 @@ public class StudyValidatorTest {
     
     @Test
     public void acceptsValidStudy() {
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        AndroidAppLink androidAppLink = new AndroidAppLink("org.sagebionetworks.bridge", "APP", Lists.newArrayList(
+                "14:6D:E9:83:C5:73:06:50:D8:EE:B9:95:2F:34:FC:64:16:A0:83:42:E6:1D:BE:A8:8A:04:96:B2:3F:CF:44:E5"));
+        List<AndroidAppLink> androidAppLinks = Lists.newArrayList(androidAppLink);
+        study.setAndroidAppLinks(androidAppLinks);
+        
+        AppleAppLink appleAppLink = new AppleAppLink("org.sagebionetworks.bridge.APP",
+                Lists.newArrayList("/" + study.getIdentifier() + "/*"));
+        List<AppleAppLink> appleAppLinks = Lists.newArrayList(appleAppLink);
+        study.setAppleAppLinks(appleAppLinks);
+        
+        Validate.entityThrowingException(INSTANCE, study);
     }
     
     // While 2 is not a good length, we must allow it for legacy reasons.
@@ -83,13 +103,13 @@ public class StudyValidatorTest {
     @Test
     public void identifierCanContainDashes() {
         study.setIdentifier("sage-pd");
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        Validate.entityThrowingException(INSTANCE, study);
     }
 
     @Test
     public void acceptsEventKeysWithColons() {
         study.setActivityEventKeys(Sets.newHashSet("a-1", "b2"));
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        Validate.entityThrowingException(INSTANCE, study);
     }
 
     @Test
@@ -107,7 +127,7 @@ public class StudyValidatorTest {
     @Test
     public void acceptsMultipleValidSupportEmailAddresses() {
         study.setSupportEmail("test@test.com,test2@test.com");
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        Validate.entityThrowingException(INSTANCE, study);
     }
     
     @Test
@@ -125,14 +145,14 @@ public class StudyValidatorTest {
     @Test
     public void acceptsMultipleValidTechnicalEmailAddresses() {
         study.setTechnicalEmail("test@test.com,test2@test.com");
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        Validate.entityThrowingException(INSTANCE, study);
     }
     
     @Test
     public void rejectsInvalidTechnicalEmailAddresses() {
         study.setTechnicalEmail("test@test.com,asdf,test2@test.com");
         assertValidatorMessage(INSTANCE, study, "technicalEmail", "'asdf' is not a valid email address");
-    }        
+    }
     
     @Test
     public void requiresMissingTechnicalEmail() {
@@ -144,7 +164,7 @@ public class StudyValidatorTest {
     public void validFieldDefList() {
         study.setUploadMetadataFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder()
                 .withName("test-field").withType(UploadFieldType.INT).build()));
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        Validate.entityThrowingException(INSTANCE, study);
     }
 
     @Test
@@ -189,13 +209,13 @@ public class StudyValidatorTest {
     @Test
     public void userProfileAttributesCanBeJustADash() {
         study.getUserProfileAttributes().add("_");
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        Validate.entityThrowingException(INSTANCE, study);
     }
     
     @Test
     public void userProfileAttributesCanBeJustADashAndLetter() {
         study.getUserProfileAttributes().add("_A");
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        Validate.entityThrowingException(INSTANCE, study);
     }
     
     @Test
@@ -255,7 +275,7 @@ public class StudyValidatorTest {
     @Test
     public void emailSignInTemplateNotRequired() {
         study.setEmailSignInTemplate(null);
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        Validate.entityThrowingException(INSTANCE, study);
     }
 
     @Test
@@ -279,7 +299,7 @@ public class StudyValidatorTest {
     @Test
     public void accountExistsTemplateNotRequired() {
         study.setAccountExistsTemplate(null);
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        Validate.entityThrowingException(INSTANCE, study);
     }
 
     @Test
@@ -315,7 +335,7 @@ public class StudyValidatorTest {
     @Test
     public void shortListOfDataGroupsOK() {
         study.setDataGroups(Sets.newHashSet("beta_users", "production_users", "testers", "internal"));
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        Validate.entityThrowingException(INSTANCE, study);
     }
     
     @Test
@@ -333,13 +353,13 @@ public class StudyValidatorTest {
     @Test
     public void publicStudyWithoutExternalIdValidationIsValid() {
         study.setExternalIdValidationEnabled(false);
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        Validate.entityThrowingException(INSTANCE, study);
     }
     
     @Test
     public void publicStudyWithoutExternalIdOnSignUpIsValid() {
         study.setExternalIdRequiredOnSignup(false);
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        Validate.entityThrowingException(INSTANCE, study);
     }
     
     @Test
@@ -354,5 +374,110 @@ public class StudyValidatorTest {
         study.setEmailVerificationEnabled(false);
         study.setExternalIdRequiredOnSignup(false);
         assertValidatorMessage(INSTANCE, study, "externalIdRequiredOnSignup", "cannot be disabled if email verification has been disabled");
-    }    
+    }   
+    
+    @Test
+    public void appleAppLinkAppIdCannotBeNull() {
+        study.getAppleAppLinks().add(null);
+        assertValidatorMessage(INSTANCE, study, "appleAppLinks[0]","cannot be null");
+    }
+    
+    @Test
+    public void appleAppLinkAppIdCannotBeEmpty() {
+        study.getAppleAppLinks().add(new AppleAppLink(null, Lists.newArrayList("*")));
+        assertValidatorMessage(INSTANCE, study, "appleAppLinks[0]."+APP_ID,"cannot be blank or null");
+    }
+    
+    @Test
+    public void appleAppLinkAppIdCannotBeDuplicated() {
+        study.getAppleAppLinks().add(new AppleAppLink("A", Lists.newArrayList("*")));
+        study.getAppleAppLinks().add(new AppleAppLink("A", Lists.newArrayList("*")));
+        assertValidatorMessage(INSTANCE, study, "appleAppLinks","cannot contain duplicate entries");
+    }
+    
+    @Test
+    public void appleAppLinkPathsCannotBeNull() {
+        study.getAppleAppLinks().add(new AppleAppLink("A", null));
+        assertValidatorMessage(INSTANCE, study, "appleAppLinks[0]."+PATHS,"cannot be null or empty");
+    }
+    
+    @Test
+    public void appleAppLinkPathsCannotBeEmpty() {
+        study.getAppleAppLinks().add(new AppleAppLink("A", Lists.newArrayList()));
+        assertValidatorMessage(INSTANCE, study, "appleAppLinks[0]."+PATHS,"cannot be null or empty");
+    }
+    
+    @Test
+    public void appleAppLinkPathCannotBeNull() {
+        study.getAppleAppLinks().add(new AppleAppLink("A", Lists.newArrayList("*", null)));
+        assertValidatorMessage(INSTANCE, study, "appleAppLinks[0]."+PATHS+"[1]","cannot be blank or empty");
+    }
+    
+    @Test
+    public void appleAppLinkPathCannotBeEmpty() {
+        study.getAppleAppLinks().add(new AppleAppLink("A", Lists.newArrayList("*", "")));
+        assertValidatorMessage(INSTANCE, study, "appleAppLinks[0]."+PATHS+"[1]","cannot be blank or empty");
+    }
+
+    @Test
+    public void androidAppLinkNamespaceCannotBeNull() {
+        study.getAndroidAppLinks().add(new AndroidAppLink(null, "packageName", Lists.newArrayList("fingerprint")));
+        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0]."+NAMESPACE,"cannot be blank or null");
+    }
+    
+    @Test
+    public void androidAppLinkNamespaceCannotBeEmpty() {
+        study.getAndroidAppLinks().add(new AndroidAppLink("", "packageName", Lists.newArrayList("fingerprint")));
+        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0]."+NAMESPACE,"cannot be blank or null");
+    }
+    
+    @Test
+    public void androidAppLinkPackageNameCannotBeNull() {
+        study.getAndroidAppLinks().add(new AndroidAppLink("appId", null, Lists.newArrayList("fingerprint")));
+        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0]."+PACKAGE_NAME,"cannot be blank or null");
+    }
+    
+    @Test
+    public void androidAppLinkPackageNameCannotBeEmpty() {
+        study.getAndroidAppLinks().add(new AndroidAppLink("appId", "", Lists.newArrayList("fingerprint")));
+        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0]."+PACKAGE_NAME,"cannot be blank or null");
+    }
+    
+    @Test
+    public void androidAppLinkIdentifiersCannotBeDuplicated() {
+        study.getAndroidAppLinks().add(new AndroidAppLink("appId", "packageName", Lists.newArrayList("fingerprint")));
+        study.getAndroidAppLinks().add(new AndroidAppLink("appId", "packageName", Lists.newArrayList("fingerprint")));
+        assertValidatorMessage(INSTANCE, study, "androidAppLinks","cannot contain duplicate entries");
+    }
+    
+    @Test
+    public void androidAppLinkFingerprintsCannotBeNull() {
+        study.getAndroidAppLinks().add(new AndroidAppLink("appId", "packageName", null));
+        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0]."+FINGERPRINTS,"cannot be null or empty");
+    }
+    
+    @Test
+    public void androidAppLinkFingerprintsCannotBeEmpty() {
+        study.getAndroidAppLinks().add(new AndroidAppLink("appId", "packageName", Lists.newArrayList()));
+        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0]."+FINGERPRINTS,"cannot be null or empty");
+    }
+    
+    @Test
+    public void androidAppLinkFingerprintCannotBeNull() {
+        study.getAndroidAppLinks().add(new AndroidAppLink("appId", "packageName", Lists.newArrayList((String)null)));
+        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0]."+FINGERPRINTS+"[0]","cannot be null or empty");
+    }
+
+    @Test
+    public void androidAppLinkFingerprintCannotBeEmpty() {
+        study.getAndroidAppLinks().add(new AndroidAppLink("appId", "packageName", Lists.newArrayList("  ")));
+        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0]."+FINGERPRINTS+"[0]","cannot be null or empty");
+    }
+    
+    @Test
+    public void androidAppLinkFingerprintCannotBeInvalid() {
+        study.getAndroidAppLinks().add(new AndroidAppLink("appId", "packageName", Lists.newArrayList("asdf")));
+        assertValidatorMessage(INSTANCE, study, "androidAppLinks[0]."+FINGERPRINTS+"[0]","is not a SHA 256 fingerprint");
+    }
+    
 }

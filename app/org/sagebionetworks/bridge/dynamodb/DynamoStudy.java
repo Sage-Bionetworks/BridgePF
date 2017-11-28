@@ -16,8 +16,11 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConvertedJson;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
+import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -30,6 +33,25 @@ import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 @BridgeTypeName("Study")
 @JsonFilter("filter")
 public final class DynamoStudy implements Study {
+    
+    public static class AppleLinksMarshaller extends ListMarshaller<AppleAppLink> {
+        private static final TypeReference<List<AppleAppLink>> FIELD_LIST_TYPE =
+                new TypeReference<List<AppleAppLink>>() {};
+        @Override
+        public TypeReference<List<AppleAppLink>> getTypeReference() {
+            return FIELD_LIST_TYPE;
+        }
+    }
+    
+    public static class AndroidLinksMarshaller extends ListMarshaller<AndroidAppLink> {
+        private static final TypeReference<List<AndroidAppLink>> FIELD_LIST_TYPE =
+                new TypeReference<List<AndroidAppLink>>() {};
+        @Override
+        public TypeReference<List<AndroidAppLink>> getTypeReference() {
+            return FIELD_LIST_TYPE;
+        }
+    }
+    
     private String name;
     private String shortName;
     private String sponsorName;
@@ -65,6 +87,8 @@ public final class DynamoStudy implements Study {
     private Map<String, Integer> minSupportedAppVersions;
     private Map<String, String> pushNotificationARNs;
     private boolean disableExport;
+    private List<AppleAppLink> appleAppLinks;
+    private List<AndroidAppLink> androidAppLinks;
 
     public DynamoStudy() {
         uploadMetadataFieldDefinitions = new ArrayList<>();
@@ -74,6 +98,8 @@ public final class DynamoStudy implements Study {
         dataGroups = new HashSet<>();
         minSupportedAppVersions = new HashMap<>();
         pushNotificationARNs = new HashMap<>();
+        appleAppLinks = new ArrayList<>();
+        androidAppLinks = new ArrayList<>();
     }
 
     /** {@inheritDoc} */
@@ -489,6 +515,28 @@ public final class DynamoStudy implements Study {
     public void setAccountLimit(int accountLimit) {
         this.accountLimit = accountLimit;
     }
+    
+    @DynamoDBTypeConverted(converter = AppleLinksMarshaller.class)
+    @Override
+    public List<AppleAppLink> getAppleAppLinks() {
+        return appleAppLinks;
+    }
+    
+    @Override
+    public void setAppleAppLinks(List<AppleAppLink> appleAppLinks) {
+        this.appleAppLinks = appleAppLinks;
+    }
+    
+    @DynamoDBTypeConverted(converter = AndroidLinksMarshaller.class)
+    @Override
+    public List<AndroidAppLink> getAndroidAppLinks() {
+        return androidAppLinks;
+    }
+    
+    @Override
+    public void setAndroidAppLinks(List<AndroidAppLink> androidAppLinks) {
+        this.androidAppLinks = androidAppLinks;
+    }
 
     @Override
     public int hashCode() {
@@ -499,7 +547,7 @@ public final class DynamoStudy implements Study {
                 passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, emailSignInTemplate, accountExistsTemplate,
                 strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
                 externalIdValidationEnabled, emailSignInEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
-                pushNotificationARNs, disableExport);
+                pushNotificationARNs, disableExport, appleAppLinks, androidAppLinks);
     }
 
     @Override
@@ -544,7 +592,9 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(disableExport, other.disableExport)
                 && Objects.equals(emailSignInTemplate, other.emailSignInTemplate)
                 && Objects.equals(emailSignInEnabled, other.emailSignInEnabled)
-                && Objects.equals(accountLimit, other.accountLimit);
+                && Objects.equals(accountLimit, other.accountLimit)
+                && Objects.equals(appleAppLinks, other.appleAppLinks)
+                && Objects.equals(androidAppLinks, other.androidAppLinks);
     }
 
     @Override
@@ -557,13 +607,14 @@ public final class DynamoStudy implements Study {
                         + "resetPasswordTemplate=%s, strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, "
                         + "emailVerificationEnabled=%s, externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, "
                         + "minSupportedAppVersions=%s, usesCustomExportSchedule=%s, pushNotificationARNs=%s, "
-                        + "disableExport=%s, emailSignInTemplate=%s, emailSignInEnabled=%s, accountLimit=%s]",
+                        + "disableExport=%s, emailSignInTemplate=%s, emailSignInEnabled=%s, accountLimit=%s, "
+                        + "appleAppLinks=%s, androidAppLinks=%s]",
                 name, shortName, active, sponsorName, identifier, minAgeOfConsent, studyIdExcludedInExport, supportEmail,
                 synapseDataAccessTeamId, synapseProjectId, technicalEmail, uploadValidationStrictness, consentNotificationEmail, version,
                 profileAttributes, taskIdentifiers, activityEventKeys, dataGroups, passwordPolicy, verifyEmailTemplate,
                 resetPasswordTemplate, strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
                 externalIdValidationEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
                 usesCustomExportSchedule, pushNotificationARNs, disableExport, emailSignInTemplate,
-                emailSignInEnabled, accountLimit);
+                emailSignInEnabled, accountLimit, appleAppLinks, androidAppLinks);
     }
 }
