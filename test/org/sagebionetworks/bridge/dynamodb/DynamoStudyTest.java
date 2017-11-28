@@ -14,14 +14,18 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
-
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.OperatingSystem;
+import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
+import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -35,6 +39,9 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldType;
  * but filtered in the API to exclude read-only studies when exposed to researchers.
  */
 public class DynamoStudyTest {
+    private static final List<AppleAppLink> APPLE_APP_LINKS = Lists.newArrayList(TestConstants.APPLE_APP_LINK);
+    private static final List<AndroidAppLink> ANDROID_APP_LINKS = Lists.newArrayList(TestConstants.ANDROID_APP_LINK);
+    
     @Test
     public void uploadMetadataFieldDefListIsNeverNull() {
         // make field for test
@@ -75,9 +82,10 @@ public class DynamoStudyTest {
         study.setMinSupportedAppVersions(ImmutableMap.<String, Integer>builder().put(OperatingSystem.IOS, 2).build());
         study.setUploadMetadataFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder()
                 .withName("test-metadata-field").withType(UploadFieldType.INT).build()));
+        study.setAndroidAppLinks(ANDROID_APP_LINKS);
+        study.setAppleAppLinks(APPLE_APP_LINKS);
 
-        final String json = BridgeObjectMapper.get().writeValueAsString(study);
-        final JsonNode node = BridgeObjectMapper.get().readTree(json);
+        final JsonNode node = BridgeObjectMapper.get().valueToTree(study);
         
         assertEqualsAndNotNull(study.getConsentNotificationEmail(), node.get("consentNotificationEmail").asText());
         assertTrue(node.get("studyIdExcludedInExport").booleanValue());
@@ -121,6 +129,16 @@ public class DynamoStudyTest {
                 node.get("pushNotificationARNs").get(OperatingSystem.IOS).asText());
         assertEqualsAndNotNull(study.getPushNotificationARNs().get(OperatingSystem.ANDROID),
                 node.get("pushNotificationARNs").get(OperatingSystem.ANDROID).asText());
+        
+        JsonNode appleLink = node.get("appleAppLinks").get(0);
+        assertEquals("studyId", appleLink.get("appID").textValue());
+        assertEquals("/appId/", appleLink.get("paths").get(0).textValue());
+        assertEquals("/appId/*", appleLink.get("paths").get(1).textValue());
+        
+        JsonNode androidLink = node.get("androidAppLinks").get(0);
+        assertEquals("namespace", androidLink.get("namespace").textValue());
+        assertEquals("package_name", androidLink.get("package_name").textValue());
+        assertEquals("sha256_cert_fingerprints", androidLink.get("sha256_cert_fingerprints").get(0).textValue());
 
         // validate minAppVersion
         JsonNode supportedVersionsNode = JsonUtils.asJsonNode(node, "minSupportedAppVersions");
@@ -144,7 +162,7 @@ public class DynamoStudyTest {
         assertEquals("OAuthProvider", providerNode.get("type").textValue());
         
         // Deserialize back to a POJO and verify.
-        final Study deserStudy = BridgeObjectMapper.get().readValue(json, Study.class);
+        final Study deserStudy = BridgeObjectMapper.get().readValue(node.toString(), Study.class);
         assertEquals(study, deserStudy);
     }
     
