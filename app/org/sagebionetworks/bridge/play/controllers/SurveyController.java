@@ -7,6 +7,8 @@ import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import java.util.List;
 
+import javax.annotation.Resource;
+
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
@@ -42,7 +44,7 @@ public class SurveyController extends BaseController {
     public void setSurveyService(SurveyService surveyService) {
         this.surveyService = surveyService;
     }
-    @Autowired
+    @Resource(name = "genericViewCache")
     public void setViewCache(ViewCache viewCache) {
         this.viewCache = viewCache;
     }

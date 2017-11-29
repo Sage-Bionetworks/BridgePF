@@ -1,19 +1,15 @@
 package org.sagebionetworks.bridge.cache;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.redis.RedisKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.google.common.base.Supplier;
 
-@Component
 public class ViewCache {
     
     private static final Logger logger = LoggerFactory.getLogger(ViewCache.class);
@@ -31,10 +27,19 @@ public class ViewCache {
     };
     
     private CacheProvider cache;
+    private ObjectMapper objectMapper;
+    private int cachePeriod;
     
-    @Autowired
-    public void setCacheProvider(CacheProvider cacheProvider) {
+    public final void setCacheProvider(CacheProvider cacheProvider) {
         this.cache = cacheProvider;
+    }
+    
+    public final void setObjectMapper(ObjectMapper mapper) {
+        this.objectMapper = mapper;
+    }
+    
+    public final void setCachePeriod(int cachePeriod) {
+        this.cachePeriod = cachePeriod;
     }
     
     /**
@@ -82,8 +87,8 @@ public class ViewCache {
     private <T> String cacheView(ViewCacheKey<T> key, Supplier<T> supplier) throws JsonProcessingException {
         logger.debug("Caching JSON for " +key.getKey()+"'");
         T object = supplier.get();
-        String value = BridgeObjectMapper.get().writeValueAsString(object);
-        cache.setString(key.getKey(), value, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
+        String value = objectMapper.writeValueAsString(object);
+        cache.setString(key.getKey(), value, cachePeriod);
         return value;
     }
     
