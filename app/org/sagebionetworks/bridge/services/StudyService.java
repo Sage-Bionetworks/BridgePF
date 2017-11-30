@@ -387,7 +387,7 @@ public class StudyService {
             }
         }
 
-        // Name in Synapse are globally unique, so we add a rando token into the name to ensure it 
+        // Name in Synapse are globally unique, so we add a random token to the name to ensure it 
         // doesn't conflict with an existing name. Also, Synapse names can only contain a certain 
         // subset of characters.
         String nameScopingToken = SecureTokenGenerator.NAME_SCOPE_INSTANCE.nextToken();

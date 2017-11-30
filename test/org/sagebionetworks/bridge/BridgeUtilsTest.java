@@ -389,8 +389,8 @@ public class BridgeUtilsTest {
     
     @Test
     public void toSynapseFriendlyName() {
-        assertEquals("This is a .-_ synapse Friendly Name",
-                BridgeUtils.toSynapseFriendlyName("This (is a).-_ synapse Friendly Name "));
+        assertEquals("This is a .-_ synapse Friendly Name3",
+                BridgeUtils.toSynapseFriendlyName("This (is a).-_ synapse Friendly Name3 "));
     }
     
     @Test
