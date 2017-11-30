@@ -12,11 +12,13 @@ import java.util.Random;
  */
 public class SecureTokenGenerator {
 
+    private static final String ALPHANUMERIC = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    
     public static final SecureTokenGenerator INSTANCE = new SecureTokenGenerator();
     
     public static final SecureTokenGenerator PHONE_CODE_INSTANCE = new SecureTokenGenerator(6, new SecureRandom(), "0123456789");
     
-    private static final String ALPHANUMERIC = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    public static final SecureTokenGenerator NAME_SCOPE_INSTANCE = new SecureTokenGenerator(5, new SecureRandom(), ALPHANUMERIC);
 
     private final Random random;
     private final char[] characters;

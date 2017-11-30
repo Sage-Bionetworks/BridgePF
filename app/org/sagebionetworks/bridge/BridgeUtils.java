@@ -397,5 +397,11 @@ public class BridgeUtils {
         }
         throw new BridgeServiceException("Invalid activityType specified");    
     }
-
+    
+    public static String toSynapseFriendlyName(String input) {
+        if (input == null) {
+            return "";
+        }
+        return input.replaceAll("[^a-zA-Z0-9\\.\\-_\\s]", " ").replaceAll("\\s+", " ").trim();
+    }
 }
