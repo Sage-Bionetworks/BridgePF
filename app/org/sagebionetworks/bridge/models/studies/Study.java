@@ -328,4 +328,10 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     
     /** @see #getOAuthProviders */
     void setOAuthProviders(Map<String, OAuthProvider> providers);
+
+    List<AppleAppLink> getAppleAppLinks();
+    void setAppleAppLinks(List<AppleAppLink> appleAppLinks);
+    
+    List<AndroidAppLink> getAndroidAppLinks();
+    void setAndroidAppLinks(List<AndroidAppLink> androidAppLinks);
 }

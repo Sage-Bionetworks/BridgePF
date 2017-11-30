@@ -29,6 +29,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
@@ -104,6 +105,9 @@ public class SurveyControllerTest {
         // Dummy this out so it works and we can forget about it as a dependency
         cacheMap = Maps.newHashMap();
         viewCache = new ViewCache();
+        viewCache.setObjectMapper(BridgeObjectMapper.get());
+        viewCache.setCachePeriod(BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
+        
         CacheProvider provider = mock(CacheProvider.class);
         when(provider.getString(anyString())).thenAnswer(new Answer<String>() {
             @Override

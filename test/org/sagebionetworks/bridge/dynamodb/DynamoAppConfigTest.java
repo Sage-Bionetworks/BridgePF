@@ -40,7 +40,6 @@ public class DynamoAppConfigTest {
     private static final List<SchemaReference> SCHEMA_REFS = new ImmutableList.Builder<SchemaReference>()
             .add(new SchemaReference("schemaA", 1))
             .add(new SchemaReference("schemaB", 2)).build();
-    
     private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl(TestUtils.randomName(DynamoAppConfigDaoTest.class));
     
     @Test

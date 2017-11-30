@@ -23,6 +23,7 @@ import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
@@ -49,6 +50,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
@@ -566,5 +569,25 @@ public class BridgeSpringConfig {
         synapseClient.setUserName(bridgeConfig().get("synapse.user"));
         synapseClient.setApiKey(bridgeConfig().get("synapse.api.key"));
         return synapseClient;
+    }
+
+    @Bean(name = "genericViewCache")
+    @Autowired
+    public ViewCache genericViewCache(CacheProvider cacheProvider) {
+        ViewCache cache = new ViewCache();
+        cache.setCacheProvider(cacheProvider);
+        cache.setObjectMapper(BridgeObjectMapper.get());
+        cache.setCachePeriod(BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
+        return cache;
+    }
+    
+    @Bean(name = "appLinkViewCache")
+    @Autowired
+    public ViewCache appLinkViewCache(CacheProvider cacheProvider) {
+        ViewCache cache = new ViewCache();
+        cache.setCacheProvider(cacheProvider);
+        cache.setObjectMapper(new ObjectMapper());
+        cache.setCachePeriod(BridgeConstants.APP_LINKS_EXPIRE_IN_SECONDS);
+        return cache;
     }
 }

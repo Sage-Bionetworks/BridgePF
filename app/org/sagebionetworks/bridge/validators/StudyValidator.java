@@ -7,6 +7,8 @@ import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
@@ -14,6 +16,8 @@ import org.apache.commons.validator.routines.EmailValidator;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
+import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -29,7 +33,10 @@ import org.springframework.validation.Validator;
 @Component
 public class StudyValidator implements Validator {
     public static final StudyValidator INSTANCE = new StudyValidator();
+    
     private static final int MAX_SYNAPSE_LENGTH = 100;
+    private static final Pattern FINGERPRINT_PATTERN = Pattern.compile("^[0-9a-fA-F:]{95,95}$");
+    
     /**
      * Inspect StudyParticipant for its field names; these cannot be used as user profile attributes because UserProfile
      * collapses these values into the top-level JSON it returns (unlike StudyParticipant where these values are a map
@@ -170,6 +177,69 @@ public class StudyValidator implements Validator {
                     errors.rejectValue("callbackUrl", "is required");
                 }
                 errors.popNestedPath();
+            }
+        }
+        
+        // app link configuration is not required, but if it is provided, we validate it
+        if (study.getAppleAppLinks() != null && !study.getAppleAppLinks().isEmpty()) {
+            validateAppLinks(errors, "appleAppLinks", study.getAppleAppLinks(), (AppleAppLink link) -> {
+                if (StringUtils.isBlank(link.getAppId())) {
+                    errors.rejectValue("appID", "cannot be blank or null");
+                }
+                if (link.getPaths() == null || link.getPaths().isEmpty()) {
+                    errors.rejectValue("paths", "cannot be null or empty");
+                } else {
+                    for (int j=0; j < link.getPaths().size(); j++) {
+                        String path =  link.getPaths().get(j);
+                        if (StringUtils.isBlank(path)) {
+                            errors.rejectValue("paths["+j+"]", "cannot be blank or empty");
+                        }
+                    }                        
+                }
+                return link.getAppId();
+            });
+        }
+        if (study.getAndroidAppLinks() != null && !study.getAndroidAppLinks().isEmpty()) {
+            validateAppLinks(errors, "androidAppLinks", study.getAndroidAppLinks(), (AndroidAppLink link) -> {
+                if (StringUtils.isBlank(link.getNamespace())) {
+                    errors.rejectValue("namespace", "cannot be blank or null");
+                }
+                if (StringUtils.isBlank(link.getPackageName())) {
+                    errors.rejectValue("package_name", "cannot be blank or null");
+                }
+                if (link.getFingerprints() == null || link.getFingerprints().isEmpty()) {
+                    errors.rejectValue("sha256_cert_fingerprints", "cannot be null or empty");
+                } else {
+                    for (int i=0; i < link.getFingerprints().size(); i++) {
+                        String fingerprint = link.getFingerprints().get(i);
+                        if (StringUtils.isBlank(fingerprint)) {
+                            errors.rejectValue("sha256_cert_fingerprints["+i+"]", "cannot be null or empty");
+                        } else if (!FINGERPRINT_PATTERN.matcher(fingerprint).matches()){
+                            errors.rejectValue("sha256_cert_fingerprints["+i+"]", "is not a SHA 256 fingerprint");
+                        }
+                    }
+                }
+                return link.getNamespace() + "." + link.getPackageName();
+            });
+        }
+    }
+    
+    private <T> void validateAppLinks(Errors errors, String propName, List<T> appLinks, Function<T,String> itemValidator) {
+        boolean hasNotRecordedDuplicates = true;
+        Set<String> uniqueAppIDs = Sets.newHashSet();
+        for (int i=0; i < appLinks.size(); i++) {
+            T link = appLinks.get(i);
+            String fieldName = propName+"["+i+"]";
+            if (link == null) {
+                errors.rejectValue(fieldName, "cannot be null");
+            } else {
+                errors.pushNestedPath(fieldName);
+                String id = itemValidator.apply(link);
+                errors.popNestedPath();
+                if (id != null && hasNotRecordedDuplicates && !uniqueAppIDs.add(id)) {
+                    errors.rejectValue(propName, "cannot contain duplicate entries");
+                    hasNotRecordedDuplicates = false;
+                }
             }
         }
     }

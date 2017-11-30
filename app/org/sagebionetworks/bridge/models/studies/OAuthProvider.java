@@ -31,7 +31,7 @@ public final class OAuthProvider implements BridgeEntity {
         return endpoint;
     }
     public String getCallbackUrl() {
-        return  callbackUrl;
+        return callbackUrl;
     }
     @Override
     public int hashCode() {
