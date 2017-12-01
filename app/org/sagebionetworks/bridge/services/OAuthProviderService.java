@@ -222,8 +222,6 @@ class OAuthProviderService {
         DateTime createdOn = getDateTime();
         DateTime expiresOn = createdOn.plusSeconds(expiresInSeconds).minusMinutes(1);
         
-        System.out.println(createdOn.withZone(DateTimeZone.forOffsetHours(-8)) + " - " + expiresOn.withZone(DateTimeZone.forOffsetHours(-8)));
-
         OAuthAccessGrant grant = OAuthAccessGrant.create();
         grant.setAccessToken(accessToken);
         grant.setRefreshToken(refreshToken);
@@ -234,16 +232,16 @@ class OAuthProviderService {
     }
     
     protected String jsonToErrorMessage(JsonNode node) {
-        List<String> messages = jsonTo(node, AbstractMap.SimpleEntry::getValue);
+        List<String> messages = extractFromJSON(node, AbstractMap.SimpleEntry::getValue);
         return BridgeUtils.SPACE_JOINER.join(messages);
     }
     
     private boolean isErrorType(Response response, Set<String> errorTypes) {
-        List<String> responseErrorTypes = jsonTo(response.getBody(), AbstractMap.SimpleEntry::getKey);
+        List<String> responseErrorTypes = extractFromJSON(response.getBody(), AbstractMap.SimpleEntry::getKey);
         return !Collections.disjoint(errorTypes, responseErrorTypes);
     }
     
-    protected List<String> jsonTo(JsonNode node,
+    protected List<String> extractFromJSON(JsonNode node,
             Function<? super SimpleEntry<String, String>, ? extends String> mapField) {
         List<AbstractMap.SimpleEntry<String,String>> list = Lists.newArrayList();
         if (node.has(ERRORS_PROP_NAME)) {
