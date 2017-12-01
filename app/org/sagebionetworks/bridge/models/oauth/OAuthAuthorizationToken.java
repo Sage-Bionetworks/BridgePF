@@ -5,6 +5,9 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * The payload of the authorization token that is sent by the client to retrieve an OAuth 2.0 access token.
+ */
 public final class OAuthAuthorizationToken {
     private final String vendorId;
     private final String authToken;

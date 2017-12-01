@@ -4,7 +4,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoOAuthAccessGrant;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 /**
- * Record of an access grant from an OAuth 2.0 provider
+ * Record of an access grant from an OAuth 2.0 provider.
  *
  */
 public interface OAuthAccessGrant extends BridgeEntity {
@@ -14,7 +14,8 @@ public interface OAuthAccessGrant extends BridgeEntity {
     }
     
     /**
-     * The vendor ID for the OAuth provider issuing the grant.
+     * The vendor ID for the OAuth provider issuing the grant. This value is defined by Bridge and is scoped 
+     * to a study.
      */
     public String getVendorId();
     public void setVendorId(String vendorId);
@@ -38,14 +39,15 @@ public interface OAuthAccessGrant extends BridgeEntity {
     public void setRefreshToken(String refreshToken);
     
     /**
-     * The timestamp (millis since epoch) that the access grant was created.
+     * The timestamp (millis since epoch) when the Bridge access grant was created.
      */
     public long getCreatedOn();
     public void setCreatedOn(long createdOn);
     
     /**
-     * The timestamp (millis since epoch) when the access grant will expire. This is calculated 
-     * from the expiration period of the grant and the time when it was created.
+     * The timestamp (millis since epoch) when the access grant should expire. This is calculated 
+     * from the expiration period of the grant and the time when it was created. This is not 
+     * guaranteed to be true, since a user (external to Bridge) can revoke the grant.
      */
     public long getExpiresOn();
     public void setExpiresOn(long expiresOn);

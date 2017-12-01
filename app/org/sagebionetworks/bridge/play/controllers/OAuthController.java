@@ -7,8 +7,7 @@ import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessToken;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.OAuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -34,9 +33,10 @@ public class OAuthController extends BaseController {
         JsonNode node = requestToJSON(request());
         String token = node.has(AUTH_TOKEN) ? node.get(AUTH_TOKEN).textValue() : null;
         OAuthAuthorizationToken authToken = new OAuthAuthorizationToken(vendorId, token);
-
-        OAuthAccessToken accessToken = service.requestAccessToken(session.getStudyIdentifier(), session.getHealthCode(),
-                authToken);
+        
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        OAuthAccessToken accessToken = service.requestAccessToken(study, session.getHealthCode(), authToken);
        
         return okResult(accessToken);
     }
@@ -44,10 +44,10 @@ public class OAuthController extends BaseController {
     public Result getHealthCodesGrantingAccess(String studyIdentifier, String vendorId, String offsetKey, String pageSizeKey) {
         getAuthenticatedSession(Roles.WORKER);
         
-        StudyIdentifier studyId = new StudyIdentifierImpl(studyIdentifier);
+        Study study = studyService.getStudy(studyIdentifier);
         int pageSize = BridgeUtils.getIntOrDefault(pageSizeKey, BridgeConstants.API_DEFAULT_PAGE_SIZE);
         
-        ForwardCursorPagedResourceList<String> page = service.getHealthCodesGrantingAccess(studyId, vendorId, pageSize,
+        ForwardCursorPagedResourceList<String> page = service.getHealthCodesGrantingAccess(study, vendorId, pageSize,
                 offsetKey);
         
         return okResult(page);
@@ -56,9 +56,8 @@ public class OAuthController extends BaseController {
     public Result getAccessToken(String studyIdentifier, String vendorId, String healthCode) {
         getAuthenticatedSession(Roles.WORKER);
         
-        StudyIdentifier studyId = new StudyIdentifierImpl(studyIdentifier);
-        
-        OAuthAccessToken accessToken = service.getAccessToken(studyId, vendorId, healthCode);
+        Study study = studyService.getStudy(studyIdentifier);
+        OAuthAccessToken accessToken = service.getAccessToken(study, vendorId, healthCode);
         
         return okResult(accessToken);
     }

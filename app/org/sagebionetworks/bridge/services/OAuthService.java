@@ -18,23 +18,15 @@ import org.sagebionetworks.bridge.models.oauth.OAuthAccessToken;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class OAuthService {
-
-    private StudyService studyService;
     
     private OAuthAccessGrantDao grantDao;
     
     private OAuthProviderService providerService;
-    
-    @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
-    }
     
     @Autowired
     final void setOAuthAccessGrantDao(OAuthAccessGrantDao grantDao) {
@@ -46,16 +38,17 @@ public class OAuthService {
         this.providerService = providerService;
     }
     
+    // Accessor to be mocked in tests
     protected DateTime getDateTime() {
         return DateTime.now(DateTimeZone.UTC);
     }
     
-    public ForwardCursorPagedResourceList<String> getHealthCodesGrantingAccess(StudyIdentifier studyId,
-            String vendorId, int pageSize, String offsetKey) {
-        checkNotNull(studyId);
+    public ForwardCursorPagedResourceList<String> getHealthCodesGrantingAccess(Study study, String vendorId,
+            int pageSize, String offsetKey) {
+        checkNotNull(study);
         checkNotNull(vendorId);
         
-        ForwardCursorPagedResourceList<OAuthAccessGrant> list = grantDao.getAccessGrants(studyId, vendorId,
+        ForwardCursorPagedResourceList<OAuthAccessGrant> list = grantDao.getAccessGrants(study, vendorId,
                 offsetKey, pageSize);
 
         List<String> healthCodes = list.getItems().stream().map(OAuthAccessGrant::getHealthCode)
@@ -66,55 +59,59 @@ public class OAuthService {
                 .withRequestParam(OFFSET_KEY, offsetKey);
     }
     
-    public OAuthAccessToken requestAccessToken(StudyIdentifier studyId, String healthCode, OAuthAuthorizationToken authToken) {
-        checkNotNull(studyId);
+    public OAuthAccessToken requestAccessToken(Study study, String healthCode, OAuthAuthorizationToken authToken) {
+        checkNotNull(study);
         checkNotNull(healthCode);
         checkNotNull(authToken);
         
-        return retrieveAccessToken(studyId, authToken.getVendorId(), healthCode, authToken);
+        return retrieveAccessToken(study, authToken.getVendorId(), healthCode, authToken);
     }
     
-    public OAuthAccessToken getAccessToken(StudyIdentifier studyId, String vendorId, String healthCode) {
-        checkNotNull(studyId);
+    public OAuthAccessToken getAccessToken(Study study, String vendorId, String healthCode) {
+        checkNotNull(study);
         checkNotNull(vendorId);
         checkNotNull(healthCode);
         
-        return retrieveAccessToken(studyId, vendorId, healthCode, null);
+        return retrieveAccessToken(study, vendorId, healthCode, null);
     }
     
-    private OAuthAccessToken retrieveAccessToken(StudyIdentifier studyId, String vendorId, String healthCode,
+    private OAuthAccessToken retrieveAccessToken(Study study, String vendorId, String healthCode,
             OAuthAuthorizationToken authToken) {
-        checkNotNull(studyId);
+        checkNotNull(study);
         checkNotNull(vendorId);
         checkNotNull(healthCode);
         
-        Study study = studyService.getStudy(studyId);
         OAuthProvider provider = study.getOAuthProviders().get(vendorId);
         if (provider == null) {
             throw new EntityNotFoundException(OAuthProvider.class);
         }
         OAuthAccessGrant grant = null;
         
+        // If client has submitted an authorization token, we always refresh the grant
         if (authToken != null && authToken.getAuthToken() != null) {
             grant = providerService.requestAccessGrant(provider, authToken);
         } else {
-            grant = grantDao.getAccessGrant(studyId, vendorId, healthCode);
+            // If not, start first by seeing if a grant has been saved
+            grant = grantDao.getAccessGrant(study.getStudyIdentifier(), vendorId, healthCode);
         }
         try {
+            // If no grant was saved or successfully returned from a grant, it's not found.
             if (grant == null) {
                 throw new EntityNotFoundException(OAuthAccessGrant.class);
             } else if (getDateTime().isAfter(grant.getExpiresOn())) {
+                // If there's a grant record, but it has expired, attempt to refresh it
                 grant = providerService.refreshAccessGrant(provider, vendorId, grant.getRefreshToken());
             }
         } catch(Exception e) {
+            // any error, delete the grant because it is in an unknown and probably bad state.
             if (grant != null) {
-                grantDao.deleteAccessGrant(studyId, vendorId, healthCode);
+                grantDao.deleteAccessGrant(study.getStudyIdentifier(), vendorId, healthCode);
             }
             throw e;
         }
         grant.setVendorId(vendorId);
         grant.setHealthCode(healthCode);
-        grantDao.saveAccessGrant(studyId, grant);
+        grantDao.saveAccessGrant(study.getStudyIdentifier(), grant);
         return getTokenForGrant(grant);
     }
     

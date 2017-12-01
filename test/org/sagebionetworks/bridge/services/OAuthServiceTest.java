@@ -55,9 +55,6 @@ public class OAuthServiceTest {
     private OAuthService service;
     
     @Mock
-    private StudyService mockStudyService;
-    
-    @Mock
     private OAuthAccessGrantDao mockGrantDao;
     
     @Mock
@@ -70,7 +67,6 @@ public class OAuthServiceTest {
     
     @Before
     public void before() {
-        service.setStudyService(mockStudyService);
         service.setOAuthAccessGrantDao(mockGrantDao);
         service.setOAuthProviderService(mockProviderService);
         
@@ -78,8 +74,8 @@ public class OAuthServiceTest {
         providers.put("vendorId", PROVIDER);
         
         study = Study.create();
+        study.setIdentifier(TestConstants.TEST_STUDY.getIdentifier());
         study.setOAuthProviders(providers);
-        when(mockStudyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(study);
         
         when(service.getDateTime()).thenReturn(NOW);
     }
@@ -141,7 +137,7 @@ public class OAuthServiceTest {
     public void requestCurrentGrant() {
         setupDaoWithCurrentGrant();
         
-        OAuthAccessToken token = service.requestAccessToken(TestConstants.TEST_STUDY, HEALTH_CODE, NO_AUTH_TOKEN);
+        OAuthAccessToken token = service.requestAccessToken(study, HEALTH_CODE, NO_AUTH_TOKEN);
         
         assertAccessToken(token);
         verify(mockGrantDao).getAccessGrant(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
@@ -156,7 +152,7 @@ public class OAuthServiceTest {
         setupDaoWithExpiredGrant(); 
         setupValidRefreshCall();
         
-        OAuthAccessToken token = service.requestAccessToken(TestConstants.TEST_STUDY, HEALTH_CODE, NO_AUTH_TOKEN);
+        OAuthAccessToken token = service.requestAccessToken(study, HEALTH_CODE, NO_AUTH_TOKEN);
         
         assertAccessToken(token);
         verify(mockGrantDao).getAccessGrant(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
@@ -173,7 +169,7 @@ public class OAuthServiceTest {
         setupInvalidRefreshCall();
         
         try {
-            service.requestAccessToken(TestConstants.TEST_STUDY, HEALTH_CODE, NO_AUTH_TOKEN);
+            service.requestAccessToken(study, HEALTH_CODE, NO_AUTH_TOKEN);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
             
@@ -189,7 +185,7 @@ public class OAuthServiceTest {
     public void requestNoGrantValidAuthToken() {
         setupValidGrantCall();
         
-        OAuthAccessToken token = service.requestAccessToken(TestConstants.TEST_STUDY, HEALTH_CODE, AUTH_TOKEN);
+        OAuthAccessToken token = service.requestAccessToken(study, HEALTH_CODE, AUTH_TOKEN);
         
         assertAccessToken(token);
         verify(mockProviderService).requestAccessGrant(PROVIDER, AUTH_TOKEN);
@@ -203,7 +199,7 @@ public class OAuthServiceTest {
     public void requestNoGrantInvalidAuthToken() {
         setupInvalidGrantCall();
         try {
-            service.requestAccessToken(TestConstants.TEST_STUDY, HEALTH_CODE, AUTH_TOKEN);
+            service.requestAccessToken(study, HEALTH_CODE, AUTH_TOKEN);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
             
@@ -219,7 +215,7 @@ public class OAuthServiceTest {
     public void getCurrentGrant() {
         setupDaoWithCurrentGrant();
         
-        OAuthAccessToken token = service.getAccessToken(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
+        OAuthAccessToken token = service.getAccessToken(study, VENDOR_ID, HEALTH_CODE);
         
         assertAccessToken(token);
         verify(mockGrantDao).getAccessGrant(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
@@ -234,7 +230,7 @@ public class OAuthServiceTest {
         setupDaoWithExpiredGrant(); 
         setupValidRefreshCall();
 
-        OAuthAccessToken token = service.getAccessToken(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
+        OAuthAccessToken token = service.getAccessToken(study, VENDOR_ID, HEALTH_CODE);
         
         assertAccessToken(token);
         verify(mockGrantDao).getAccessGrant(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
@@ -250,12 +246,12 @@ public class OAuthServiceTest {
         setupDaoWithExpiredGrant(); 
         setupInvalidRefreshCall();
 
-        service.getAccessToken(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
+        service.getAccessToken(study, VENDOR_ID, HEALTH_CODE);
     }
     
     @Test(expected = EntityNotFoundException.class)
     public void getNoGrant() {
-        service.getAccessToken(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
+        service.getAccessToken(study, VENDOR_ID, HEALTH_CODE);
     }
     
     @Test
@@ -266,12 +262,12 @@ public class OAuthServiceTest {
         ForwardCursorPagedResourceList<OAuthAccessGrant> page = new ForwardCursorPagedResourceList<>(items, "nextPageOffset")
                 .withRequestParam("offsetKey", "offsetKey");
         
-        when(mockGrantDao.getAccessGrants(TestConstants.TEST_STUDY, VENDOR_ID, "offsetKey", 30)).thenReturn(page);
+        when(mockGrantDao.getAccessGrants(study, VENDOR_ID, "offsetKey", 30)).thenReturn(page);
         
-        ForwardCursorPagedResourceList<String> results = service.getHealthCodesGrantingAccess(TestConstants.TEST_STUDY,
-                VENDOR_ID, 30, "offsetKey");
+        ForwardCursorPagedResourceList<String> results = service.getHealthCodesGrantingAccess(study, VENDOR_ID, 30,
+                "offsetKey");
         
-        verify(mockGrantDao).getAccessGrants(TestConstants.TEST_STUDY, VENDOR_ID, "offsetKey", 30);
+        verify(mockGrantDao).getAccessGrants(study, VENDOR_ID, "offsetKey", 30);
         // Just verify a couple of fields to verify this is the page returned
         assertEquals("nextPageOffset", results.getNextPageOffsetKey());
         assertEquals(2, results.getItems().size());

@@ -7,6 +7,9 @@ import org.joda.time.DateTime;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * A representation of the access grant as returned through the API to consumers. 
+ */
 public final class OAuthAccessToken {
     private final String vendorId;
     private final String accessToken;

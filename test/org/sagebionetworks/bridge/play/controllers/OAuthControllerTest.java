@@ -87,7 +87,10 @@ public class OAuthControllerTest {
         session.setStudyIdentifier(TEST_STUDY);
         session.setParticipant(new StudyParticipant.Builder().withHealthCode(HEALTH_CODE).build());
         
+        when(mockStudy.getStudyIdentifier()).thenReturn(TEST_STUDY);
+        
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(mockStudy);
+        when(mockStudyService.getStudy(TEST_STUDY.getIdentifier())).thenReturn(mockStudy);
     }
     
     @Test(expected = NotAuthenticatedException.class)
@@ -118,7 +121,7 @@ public class OAuthControllerTest {
         TestUtils.mockPlayContextWithJson(authToken);
         
         OAuthAccessToken accessToken = new OAuthAccessToken(VENDOR_ID, ACCESS_TOKEN, EXPIRES_ON, PROVIDER_USER_ID);
-        when(mockOauthService.requestAccessToken(eq(TEST_STUDY), eq(HEALTH_CODE), any()))
+        when(mockOauthService.requestAccessToken(eq(mockStudy), eq(HEALTH_CODE), any()))
                 .thenReturn(accessToken);
         
         Result result = controller.requestAccessToken(VENDOR_ID);
@@ -127,7 +130,7 @@ public class OAuthControllerTest {
         OAuthAccessToken returned = TestUtils.getResponsePayload(result, OAuthAccessToken.class);
         assertEquals(accessToken, returned);
         
-        verify(mockOauthService).requestAccessToken(eq(TEST_STUDY), eq(HEALTH_CODE), authTokenCaptor.capture());
+        verify(mockOauthService).requestAccessToken(eq(mockStudy), eq(HEALTH_CODE), authTokenCaptor.capture());
         OAuthAuthorizationToken captured = authTokenCaptor.getValue();
         assertEquals(AUTH_TOKEN, captured.getAuthToken());
         assertEquals(VENDOR_ID, captured.getVendorId());
@@ -140,7 +143,7 @@ public class OAuthControllerTest {
         TestUtils.mockPlayContextWithJson("{}");
         
         OAuthAccessToken accessToken = new OAuthAccessToken(VENDOR_ID, ACCESS_TOKEN, EXPIRES_ON, PROVIDER_USER_ID);
-        when(mockOauthService.requestAccessToken(eq(TEST_STUDY), eq(HEALTH_CODE), any()))
+        when(mockOauthService.requestAccessToken(eq(mockStudy), eq(HEALTH_CODE), any()))
                 .thenReturn(accessToken);
         
         Result result = controller.requestAccessToken(VENDOR_ID);
@@ -149,7 +152,7 @@ public class OAuthControllerTest {
         OAuthAccessToken returned = TestUtils.getResponsePayload(result, OAuthAccessToken.class);
         assertEquals(accessToken, returned);
         
-        verify(mockOauthService).requestAccessToken(eq(TEST_STUDY), eq(HEALTH_CODE), authTokenCaptor.capture());
+        verify(mockOauthService).requestAccessToken(eq(mockStudy), eq(HEALTH_CODE), authTokenCaptor.capture());
         OAuthAuthorizationToken captured = authTokenCaptor.getValue();
         assertNull(captured.getAuthToken());
         assertEquals(VENDOR_ID, captured.getVendorId());
@@ -162,13 +165,13 @@ public class OAuthControllerTest {
         
         ForwardCursorPagedResourceList<String> page = new ForwardCursorPagedResourceList<>(HEALTH_CODE_LIST,
                 NEXT_PAGE_OFFSET_KEY);
-        when(mockOauthService.getHealthCodesGrantingAccess(TEST_STUDY, VENDOR_ID, BridgeConstants.API_DEFAULT_PAGE_SIZE,
+        when(mockOauthService.getHealthCodesGrantingAccess(mockStudy, VENDOR_ID, BridgeConstants.API_DEFAULT_PAGE_SIZE,
                 null)).thenReturn(page);
         
         Result result = controller.getHealthCodesGrantingAccess(TEST_STUDY_IDENTIFIER, VENDOR_ID, null, null);
         assertEquals(200, result.status());
         
-        verify(mockOauthService).getHealthCodesGrantingAccess(TEST_STUDY, VENDOR_ID,
+        verify(mockOauthService).getHealthCodesGrantingAccess(mockStudy, VENDOR_ID,
                 BridgeConstants.API_DEFAULT_PAGE_SIZE, null);
         
         ForwardCursorPagedResourceList<String> returned = TestUtils.getResponsePayload(result,
@@ -192,12 +195,12 @@ public class OAuthControllerTest {
         
         ForwardCursorPagedResourceList<String> page = new ForwardCursorPagedResourceList<>(HEALTH_CODE_LIST,
                 NEXT_PAGE_OFFSET_KEY).withRequestParam(OFFSET_KEY, OFFSET_KEY);
-        when(mockOauthService.getHealthCodesGrantingAccess(TEST_STUDY, VENDOR_ID, 20, OFFSET_KEY)).thenReturn(page);
+        when(mockOauthService.getHealthCodesGrantingAccess(mockStudy, VENDOR_ID, 20, OFFSET_KEY)).thenReturn(page);
         
         Result result = controller.getHealthCodesGrantingAccess(TEST_STUDY_IDENTIFIER, VENDOR_ID, OFFSET_KEY, "20");
         assertEquals(200, result.status());
         
-        verify(mockOauthService).getHealthCodesGrantingAccess(TEST_STUDY, VENDOR_ID, 20, OFFSET_KEY);
+        verify(mockOauthService).getHealthCodesGrantingAccess(mockStudy, VENDOR_ID, 20, OFFSET_KEY);
         
         ForwardCursorPagedResourceList<String> returned = TestUtils.getResponsePayload(result,
                 new TypeReference<ForwardCursorPagedResourceList<String>>() {});
@@ -221,7 +224,7 @@ public class OAuthControllerTest {
 
         OAuthAccessToken accessToken = new OAuthAccessToken(VENDOR_ID, ACCESS_TOKEN, EXPIRES_ON, PROVIDER_USER_ID);
         
-        when(mockOauthService.getAccessToken(TEST_STUDY, VENDOR_ID, HEALTH_CODE)).thenReturn(accessToken);
+        when(mockOauthService.getAccessToken(mockStudy, VENDOR_ID, HEALTH_CODE)).thenReturn(accessToken);
         
         Result result = controller.getAccessToken(TEST_STUDY_IDENTIFIER, VENDOR_ID, HEALTH_CODE);
         assertEquals(200, result.status());
@@ -229,6 +232,6 @@ public class OAuthControllerTest {
         OAuthAccessToken returned = TestUtils.getResponsePayload(result, OAuthAccessToken.class);
         assertEquals(accessToken, returned);
         
-        verify(mockOauthService).getAccessToken(TEST_STUDY, VENDOR_ID, HEALTH_CODE);
+        verify(mockOauthService).getAccessToken(mockStudy, VENDOR_ID, HEALTH_CODE);
     }
 }

@@ -4,9 +4,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.AbstractMap;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
@@ -38,7 +43,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 /**
- * So far, this has been straightforward enough to skip a dedicated OAuth library. 
+ * Service that specifically works for Fitbit API. We may eventually choose an OAuth library if the 
+ * implementations vary. 
  */
 @Component
 class OAuthProviderService {
@@ -67,11 +73,12 @@ class OAuthProviderService {
     private static final String REFRESH_TOKEN_VALUE = "refresh_token";
     private static final String SERVICE_ERROR_MSG = "Error retrieving access token";
     private static final String PROVIDER_USER_ID = "user_id";
-   
     private static final Set<String> INVALID_OR_EXPIRED_ERRORS = Sets.newHashSet("invalid_token", "expired_token", "invalid_grant");
     private static final Set<String> INVALID_CLIENT_ERRORS = Sets.newHashSet("invalid_client");
 
-    // Simple container for the response, parsed before closing the stream
+    /**
+     * Simple container for the response, parsed before closing the stream.
+     */
     static class Response {
         private final int status;
         private final JsonNode body;
@@ -92,8 +99,7 @@ class OAuthProviderService {
         return DateTime.now(DateTimeZone.UTC);
     }
 
-    // There are separate methods for each call to enable test mocking
-
+    // There are separate methods for each HTTP call to enable test mocking
     protected OAuthProviderService.Response executeGrantRequest(HttpPost client) {
         return executeInternal(client);
     }
@@ -106,7 +112,7 @@ class OAuthProviderService {
         try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
             CloseableHttpResponse response = httpclient.execute(client);
             int statusCode = response.getStatusLine().getStatusCode();
-            JsonNode body = responseToJSON(response);
+            JsonNode body = BridgeObjectMapper.get().readTree(response.getEntity().getContent());
             return new Response(statusCode, body);
         } catch (IOException e) {
             LOG.error(SERVICE_ERROR_MSG, e);
@@ -114,6 +120,9 @@ class OAuthProviderService {
         }
     }
 
+    /**
+     * Request an access grant token.
+     */
     OAuthAccessGrant requestAccessGrant(OAuthProvider provider, OAuthAuthorizationToken authToken) {
         checkNotNull(provider);
         checkNotNull(authToken);
@@ -137,9 +146,7 @@ class OAuthProviderService {
     }
     
     /**
-     * In cases where the expiration clearly indicates the grant has expired, you can attempt to refresh directly. If
-     * you were to call the access grant call, it would determine the same state, and make the refresh call in two
-     * requests.
+     * Refresh the access grant token.
      */
     OAuthAccessGrant refreshAccessGrant(OAuthProvider provider, String vendorId, String refreshToken) {
         checkNotNull(provider);
@@ -173,16 +180,30 @@ class OAuthProviderService {
     protected OAuthAccessGrant handleResponse(Response response, String vendorId) {
         int statusCode = response.getStatusCode();
         
+        // Note: this is an interpretation of the errors. It may not be what we finally want, but it was based
+        // on initial conversations with client team about what would work for them. For example, returning 401 
+        // here may trigger behavior that indicates the user needs to sign in to the client, so we avoid that.
+        
+        // Invalid client errors indicate that we have not written this service correctly.
         if (statusCode == 401 && isErrorType(response, INVALID_CLIENT_ERRORS)) {
             LOG.error(String.format(LOG_ERROR_MSG, response.getStatusCode(), response.getBody()));
             throw new BridgeServiceException(SERVICE_ERROR_MSG);
-        } else if (statusCode == 401 || isErrorType(response, INVALID_OR_EXPIRED_ERRORS)) {
+        } 
+        // If it's a 401 (unauthorized) or the tokens are invalid/expired, we report a 404 (no grant).
+        else if (statusCode == 401 || isErrorType(response, INVALID_OR_EXPIRED_ERRORS)) {
             throw new EntityNotFoundException(OAuthAccessGrant.class);
-        } else if (statusCode == 403) {
+        } 
+        // Other 403 exceptions indicate a permissions issue, possibly based on scope or something else
+        // that Bridge doesn't control.
+        else if (statusCode == 403) {
             throw new UnauthorizedException(jsonToErrorMessage(response.getBody()));
-        } else if (statusCode > 399 && statusCode < 500) {
+        } 
+        // Other bad request, are bad requests... possibly due to input from the client
+        else if (statusCode > 399 && statusCode < 500) {
             throw new BadRequestException(jsonToErrorMessage(response.getBody()));
-        } else if (statusCode != 200) {
+        } 
+        // And everything, for now, can be treated as Bridge server error.
+        else if (statusCode != 200) {
             LOG.error(String.format(LOG_ERROR_MSG, response.getStatusCode(), response.getBody()));
             throw new BridgeServiceException(SERVICE_ERROR_MSG);
         }
@@ -209,45 +230,31 @@ class OAuthProviderService {
         grant.setProviderUserId(providerUserId);
         return grant;
     }
-
-    protected JsonNode responseToJSON(CloseableHttpResponse response) throws IOException {
-        return BridgeObjectMapper.get().readTree(response.getEntity().getContent());
-    }
-
+    
     protected String jsonToErrorMessage(JsonNode node) {
+        List<String> messages = jsonTo(node, AbstractMap.SimpleEntry::getValue);
+        return BridgeUtils.SPACE_JOINER.join(messages);
+    }
+    
+    private boolean isErrorType(Response response, Set<String> errorTypes) {
+        List<String> responseErrorTypes = jsonTo(response.getBody(), AbstractMap.SimpleEntry::getKey);
+        return !Collections.disjoint(errorTypes, responseErrorTypes);
+    }
+    
+    protected List<String> jsonTo(JsonNode node,
+            Function<? super SimpleEntry<String, String>, ? extends String> mapField) {
+        List<AbstractMap.SimpleEntry<String,String>> list = Lists.newArrayList();
         if (node.has(ERRORS_PROP_NAME)) {
             ArrayNode errors = (ArrayNode) node.get(ERRORS_PROP_NAME);
-            List<String> errorMessages = Lists.newArrayListWithCapacity(errors.size());
-            for (int i = 0; i < errors.size(); i++) {
-                JsonNode error = errors.get(i);
+            errors.forEach((error) -> {
                 if (error.has(MESSAGE_PROP_NAME)) {
+                    String type = error.get(ERROR_TYPE_PROP_NAME).textValue();
                     String message = error.get(MESSAGE_PROP_NAME).textValue();
-                    errorMessages.add(message);
+                    list.add(new AbstractMap.SimpleEntry<>(type, message));
                 }
-            }
-            return BridgeUtils.SPACE_JOINER.join(errorMessages);
+            });
         }
-        // No error messages? Something is odd here.
-        return "Error JSON not returned from OAuth provider";
-    }
-
-    private boolean isErrorType(Response response, Set<String> errorTypes) {
-        if (response.getStatusCode() != 200) {
-            JsonNode node = response.getBody();
-            if (node.has(ERRORS_PROP_NAME)) {
-                ArrayNode errors = (ArrayNode) node.get(ERRORS_PROP_NAME);
-                for (int i = 0; i < errors.size(); i++) {
-                    JsonNode error = errors.get(i);
-                    if (error.has(ERROR_TYPE_PROP_NAME)) {
-                        String type = error.get(ERROR_TYPE_PROP_NAME).textValue();
-                        if (errorTypes.contains(type)) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
+        return list.stream().map(mapField).collect(Collectors.toList());        
     }
 
     /**

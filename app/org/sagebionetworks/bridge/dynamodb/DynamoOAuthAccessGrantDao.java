@@ -31,7 +31,7 @@ public class DynamoOAuthAccessGrantDao implements OAuthAccessGrantDao {
     private DynamoDBMapper mapper;
 
     @Resource(name = "oauthAccessGrantMapper")
-    final void setDdbMapper(DynamoDBMapper mapper) {
+    final void setOAuthAccessGrantMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
     }
     

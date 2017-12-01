@@ -510,8 +510,8 @@ public class TestUtils {
         return BridgeObjectMapper.get().readValue(Helpers.contentAsString(result), clazz);
     }
     
-    public static <T> T getResponsePayload(Result result, TypeReference<T> typeRef) throws Exception {
-        return BridgeObjectMapper.get().readValue(Helpers.contentAsString(result), typeRef);
+    public static <T> T getResponsePayload(Result result, TypeReference<T> ref) throws Exception {
+        return BridgeObjectMapper.get().readValue(Helpers.contentAsString(result), ref);
     }
     
     public static Criteria createCriteria(Integer minAppVersion, Integer maxAppVersion, Set<String> allOfGroups, Set<String> noneOfGroups) {
