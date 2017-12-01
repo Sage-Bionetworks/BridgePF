@@ -3,9 +3,13 @@ package org.sagebionetworks.bridge.models.oauth;
 import java.util.Objects;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.json.DateTimeDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeSerializer;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * A representation of the access grant as returned through the API to consumers. 
@@ -33,6 +37,8 @@ public final class OAuthAccessToken {
         return accessToken;
     }
 
+    @JsonSerialize(using = DateTimeSerializer.class)
+    @JsonDeserialize(using = DateTimeDeserializer.class)
     public DateTime getExpiresOn() {
         return expiresOn;
     }

@@ -15,7 +15,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -59,7 +58,8 @@ public class OAuthControllerTest {
     private static final String VENDOR_ID = "vendorId";
     private static final String PROVIDER_USER_ID = "providerUserId";
     private static final List<String> HEALTH_CODE_LIST = Lists.newArrayList("a", "b", "c");
-    private static final DateTime EXPIRES_ON = DateTime.now(DateTimeZone.UTC);
+    // Set an offset so we can verify it exists.
+    private static final DateTime EXPIRES_ON = DateTime.parse("2017-11-28T14:20:22.123-03:00");
     
     @Spy
     private OAuthController controller;
@@ -151,6 +151,8 @@ public class OAuthControllerTest {
         
         OAuthAccessToken returned = TestUtils.getResponsePayload(result, OAuthAccessToken.class);
         assertEquals(accessToken, returned);
+        // verify that the time zone is preserved
+        assertEquals("2017-11-28T14:20:22.123-03:00", returned.getExpiresOn().toString());
         
         verify(mockOauthService).requestAccessToken(eq(mockStudy), eq(HEALTH_CODE), authTokenCaptor.capture());
         OAuthAuthorizationToken captured = authTokenCaptor.getValue();
@@ -231,6 +233,8 @@ public class OAuthControllerTest {
         
         OAuthAccessToken returned = TestUtils.getResponsePayload(result, OAuthAccessToken.class);
         assertEquals(accessToken, returned);
+        // verify that the time zone is preserved
+        assertEquals("2017-11-28T14:20:22.123-03:00", returned.getExpiresOn().toString());
         
         verify(mockOauthService).getAccessToken(mockStudy, VENDOR_ID, HEALTH_CODE);
     }

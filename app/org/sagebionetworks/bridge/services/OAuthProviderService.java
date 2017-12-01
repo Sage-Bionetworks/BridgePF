@@ -221,6 +221,8 @@ class OAuthProviderService {
         // Pull expiration back one minute to protect against clock skew between client and server
         DateTime createdOn = getDateTime();
         DateTime expiresOn = createdOn.plusSeconds(expiresInSeconds).minusMinutes(1);
+        
+        System.out.println(createdOn.withZone(DateTimeZone.forOffsetHours(-8)) + " - " + expiresOn.withZone(DateTimeZone.forOffsetHours(-8)));
 
         OAuthAccessGrant grant = OAuthAccessGrant.create();
         grant.setAccessToken(accessToken);

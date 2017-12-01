@@ -87,14 +87,14 @@ public class OAuthService {
         }
         OAuthAccessGrant grant = null;
         
-        // If client has submitted an authorization token, we always refresh the grant
-        if (authToken != null && authToken.getAuthToken() != null) {
-            grant = providerService.requestAccessGrant(provider, authToken);
-        } else {
-            // If not, start first by seeing if a grant has been saved
-            grant = grantDao.getAccessGrant(study.getStudyIdentifier(), vendorId, healthCode);
-        }
         try {
+            // If client has submitted an authorization token, we always refresh the grant
+            if (authToken != null && authToken.getAuthToken() != null) {
+                grant = providerService.requestAccessGrant(provider, authToken);
+            } else {
+                // If not, start first by seeing if a grant has been saved
+                grant = grantDao.getAccessGrant(study.getStudyIdentifier(), vendorId, healthCode);
+            }
             // If no grant was saved or successfully returned from a grant, it's not found.
             if (grant == null) {
                 throw new EntityNotFoundException(OAuthAccessGrant.class);
@@ -104,9 +104,7 @@ public class OAuthService {
             }
         } catch(Exception e) {
             // any error, delete the grant because it is in an unknown and probably bad state.
-            if (grant != null) {
-                grantDao.deleteAccessGrant(study.getStudyIdentifier(), vendorId, healthCode);
-            }
+            grantDao.deleteAccessGrant(study.getStudyIdentifier(), vendorId, healthCode);
             throw e;
         }
         grant.setVendorId(vendorId);
