@@ -15,6 +15,7 @@ public class DynamoOAuthAccessGrant implements OAuthAccessGrant {
     private String refreshToken;
     private long createdOn;
     private long expiresOn;
+    private String providerUserId;
     
     @DynamoDBHashKey
     public String getKey() {
@@ -84,5 +85,15 @@ public class DynamoOAuthAccessGrant implements OAuthAccessGrant {
     @Override
     public void setExpiresOn(long expiresOn) {
         this.expiresOn = expiresOn;
+    }
+
+    @Override
+    public String getProviderUserId() {
+        return providerUserId;
+    }
+
+    @Override
+    public void setProviderUserId(String providerUserId) {
+        this.providerUserId = providerUserId;
     }
 }

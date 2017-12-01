@@ -22,11 +22,14 @@ import com.google.common.collect.Sets;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoOAuthAccessGrantDaoTest {
     
-    private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("TestClass");
-    private static final String VENDOR_ID = "vendorId";
-    private static final String HEALTH_CODE = "healthCode";
     private static final long CREATED_ON = DateTime.now().minusDays(1).getMillis();
     private static final long EXPIRES_ON = DateTime.now().plusDays(1).getMillis();
+    private static final String ACCESS_TOKEN = "anAccessToken";
+    private static final String HEALTH_CODE = "healthCode";
+    private static final String PROVIDER_USER_ID = "providerUserId";
+    private static final String REFRESH_TOKEN = "aRefreshToken";
+    private static final String VENDOR_ID = "vendorId";
+    private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("TestClass");
 
     @Autowired
     public DynamoOAuthAccessGrantDao dao;
@@ -35,20 +38,22 @@ public class DynamoOAuthAccessGrantDaoTest {
     public void canCRUD() {
         OAuthAccessGrant grant = OAuthAccessGrant.create();
         grant.setHealthCode(HEALTH_CODE);
-        grant.setAccessToken("anAccessToken");
-        grant.setRefreshToken("aRefreshToken");
+        grant.setAccessToken(ACCESS_TOKEN);
+        grant.setRefreshToken(REFRESH_TOKEN);
         grant.setCreatedOn(CREATED_ON);
         grant.setExpiresOn(EXPIRES_ON);
         grant.setVendorId(VENDOR_ID);
+        grant.setProviderUserId(PROVIDER_USER_ID);
         
         dao.saveAccessGrant(STUDY_ID, grant);
         
         OAuthAccessGrant persisted = dao.getAccessGrant(STUDY_ID, VENDOR_ID, HEALTH_CODE);
         assertEquals(HEALTH_CODE, persisted.getHealthCode());
-        assertEquals("anAccessToken", persisted.getAccessToken());
-        assertEquals("aRefreshToken", persisted.getRefreshToken());
+        assertEquals(ACCESS_TOKEN, persisted.getAccessToken());
+        assertEquals(REFRESH_TOKEN, persisted.getRefreshToken());
         assertEquals(CREATED_ON, persisted.getCreatedOn());
         assertEquals(EXPIRES_ON, persisted.getExpiresOn());
+        assertEquals(PROVIDER_USER_ID, persisted.getProviderUserId());
         
         persisted.setAccessToken("anotherAccessToken");
         persisted.setRefreshToken("anotherRefreshToken");

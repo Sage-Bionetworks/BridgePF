@@ -2,9 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +30,7 @@ import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -41,38 +40,39 @@ import com.google.common.collect.Sets;
 /**
  * So far, this has been straightforward enough to skip a dedicated OAuth library. 
  */
-public class OAuthProviderService {
+@Component
+class OAuthProviderService {
     private static final Logger LOG = LoggerFactory.getLogger(OAuthProviderService.class);
     
     @FunctionalInterface
-    public static interface GrantProvider {
+    static interface GrantProvider {
         public OAuthAccessGrant grant();
     }
     
-    private static final String MESSAGE_PROP_NAME = "message";
+    private static final String ACCESS_TOKEN_PROP_NAME = "access_token";
+    private static final String AUTHORIZATION_CODE_VALUE = "authorization_code";
+    private static final String AUTHORIZATION_PROP_NAME = "Authorization";
+    private static final String CLIENT_ID_PROP_NAME = "clientId";
+    private static final String CODE_PROP_NAME = "code";
+    private static final String CONTENT_TYPE_PROP_NAME = "Content-Type";
     private static final String ERROR_TYPE_PROP_NAME = "errorType";
     private static final String ERRORS_PROP_NAME = "errors";
-    private static final String CONTENT_TYPE_PROP_NAME = "Content-Type";
-    private static final String AUTHORIZATION_PROP_NAME = "Authorization";
-    private static final String REFRESH_TOKEN_PROP_NAME = "refresh_token";
-    private static final String REDIRECT_URI_PROP_NAME = "redirect_uri";
-    private static final String CODE_PROP_NAME = "code";
-    private static final String GRANT_TYPE_PROP_NAME = "grant_type";
-    private static final String CLIENT_ID_PROP_NAME = "clientId";
     private static final String EXPIRES_IN_PROP_NAME = "expires_in";
-    private static final String ACCESS_TOKEN_PROP_NAME = "access_token";
-    
-    private static final String REFRESH_TOKEN_VALUE = "refresh_token";
     private static final String FORM_ENCODING_VALUE = "application/x-www-form-urlencoded";
-    private static final String AUTHORIZATION_CODE_VALUE = "authorization_code";
-
-    private static final String SERVICE_ERROR_MSG = "Error retrieving access token";
+    private static final String GRANT_TYPE_PROP_NAME = "grant_type";
     private static final String LOG_ERROR_MSG = "Error retrieving access token, statusCode=%s, body=%s";
-    
+    private static final String MESSAGE_PROP_NAME = "message";
+    private static final String REDIRECT_URI_PROP_NAME = "redirect_uri";
+    private static final String REFRESH_TOKEN_PROP_NAME = "refresh_token";
+    private static final String REFRESH_TOKEN_VALUE = "refresh_token";
+    private static final String SERVICE_ERROR_MSG = "Error retrieving access token";
+    private static final String PROVIDER_USER_ID = "user_id";
+   
     private static final Set<String> INVALID_OR_EXPIRED_ERRORS = Sets.newHashSet("invalid_token", "expired_token", "invalid_grant");
+    private static final Set<String> INVALID_CLIENT_ERRORS = Sets.newHashSet("invalid_client");
 
     // Simple container for the response, parsed before closing the stream
-    public static class Response {
+    static class Response {
         private final int status;
         private final JsonNode body;
         public Response(int status, JsonNode body) {
@@ -87,6 +87,7 @@ public class OAuthProviderService {
         }
     }
 
+    // accessor so time can be mocked in unit tests
     protected DateTime getDateTime() {
         return DateTime.now(DateTimeZone.UTC);
     }
@@ -113,7 +114,7 @@ public class OAuthProviderService {
         }
     }
 
-    public OAuthAccessGrant makeAccessGrantCall(OAuthProvider provider, OAuthAuthorizationToken authToken) {
+    OAuthAccessGrant requestAccessGrant(OAuthProvider provider, OAuthAuthorizationToken authToken) {
         checkNotNull(provider);
         checkNotNull(authToken);
 
@@ -140,7 +141,7 @@ public class OAuthProviderService {
      * you were to call the access grant call, it would determine the same state, and make the refresh call in two
      * requests.
      */
-    public OAuthAccessGrant makeRefreshAccessGrantCall(OAuthProvider provider, String vendorId, String refreshToken) {
+    OAuthAccessGrant refreshAccessGrant(OAuthProvider provider, String vendorId, String refreshToken) {
         checkNotNull(provider);
         checkNotNull(vendorId);
         
@@ -171,8 +172,11 @@ public class OAuthProviderService {
 
     protected OAuthAccessGrant handleResponse(Response response, String vendorId) {
         int statusCode = response.getStatusCode();
-
-        if (statusCode == 401 || isInvalidOrExpired(response)) {
+        
+        if (statusCode == 401 && isErrorType(response, INVALID_CLIENT_ERRORS)) {
+            LOG.error(String.format(LOG_ERROR_MSG, response.getStatusCode(), response.getBody()));
+            throw new BridgeServiceException(SERVICE_ERROR_MSG);
+        } else if (statusCode == 401 || isErrorType(response, INVALID_OR_EXPIRED_ERRORS)) {
             throw new EntityNotFoundException(OAuthAccessGrant.class);
         } else if (statusCode == 403) {
             throw new UnauthorizedException(jsonToErrorMessage(response.getBody()));
@@ -182,7 +186,6 @@ public class OAuthProviderService {
             LOG.error(String.format(LOG_ERROR_MSG, response.getStatusCode(), response.getBody()));
             throw new BridgeServiceException(SERVICE_ERROR_MSG);
         }
-
         OAuthAccessGrant grant = jsonToGrant(response.getBody());
         grant.setVendorId(vendorId);
         return grant;
@@ -191,9 +194,10 @@ public class OAuthProviderService {
     protected OAuthAccessGrant jsonToGrant(JsonNode node) {
         String accessToken = node.get(ACCESS_TOKEN_PROP_NAME).textValue();
         String refreshToken = node.get(REFRESH_TOKEN_PROP_NAME).textValue();
+        String providerUserId = node.get(PROVIDER_USER_ID).textValue();
         int expiresInSeconds = node.get(EXPIRES_IN_PROP_NAME).intValue();
 
-        // Pull expiration back one minute to protect against running over expiration time
+        // Pull expiration back one minute to protect against clock skew between client and server
         DateTime createdOn = getDateTime();
         DateTime expiresOn = createdOn.plusSeconds(expiresInSeconds).minusMinutes(1);
 
@@ -202,17 +206,12 @@ public class OAuthProviderService {
         grant.setRefreshToken(refreshToken);
         grant.setCreatedOn(createdOn.getMillis());
         grant.setExpiresOn(expiresOn.getMillis());
+        grant.setProviderUserId(providerUserId);
         return grant;
     }
 
     protected JsonNode responseToJSON(CloseableHttpResponse response) throws IOException {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
-        StringBuilder sb = new StringBuilder();
-        String output;
-        while ((output = reader.readLine()) != null) {
-            sb.append(output);
-        }
-        return BridgeObjectMapper.get().readTree(sb.toString());
+        return BridgeObjectMapper.get().readTree(response.getEntity().getContent());
     }
 
     protected String jsonToErrorMessage(JsonNode node) {
@@ -232,7 +231,7 @@ public class OAuthProviderService {
         return "Error JSON not returned from OAuth provider";
     }
 
-    private boolean isInvalidOrExpired(Response response) {
+    private boolean isErrorType(Response response, Set<String> errorTypes) {
         if (response.getStatusCode() != 200) {
             JsonNode node = response.getBody();
             if (node.has(ERRORS_PROP_NAME)) {
@@ -241,7 +240,7 @@ public class OAuthProviderService {
                     JsonNode error = errors.get(i);
                     if (error.has(ERROR_TYPE_PROP_NAME)) {
                         String type = error.get(ERROR_TYPE_PROP_NAME).textValue();
-                        if (INVALID_OR_EXPIRED_ERRORS.contains(type)) {
+                        if (errorTypes.contains(type)) {
                             return true;
                         }
                     }

@@ -81,7 +81,6 @@ import org.sagebionetworks.bridge.hibernate.HibernateAccount;
 import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.s3.S3Helper;
-import org.sagebionetworks.bridge.services.OAuthProviderService;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
 import org.sagebionetworks.bridge.upload.InitRecordHandler;
 import org.sagebionetworks.bridge.upload.ParseJsonHandler;
@@ -377,11 +376,6 @@ public class BridgeSpringConfig {
         return dynamoUtils.getMapper(DynamoOAuthAccessGrant.class);
     }
     
-    @Bean(name = "oauthProviderDao")
-    public OAuthProviderService oauthProviderDao() {
-        return new OAuthProviderService();
-    }
-
     @Bean(name = "uploadHealthCodeRequestedOnIndex")
     @Autowired
     public DynamoIndexHelper uploadHealthCodeRequestedOnIndex(AmazonDynamoDBClient dynamoDBClient, DynamoUtils dynamoUtils,

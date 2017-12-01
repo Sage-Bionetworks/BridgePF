@@ -12,7 +12,6 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.dao.OAuthAccessGrantDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessGrant;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessToken;
@@ -30,7 +29,7 @@ public class OAuthService {
     
     private OAuthAccessGrantDao grantDao;
     
-    private OAuthProviderService providerDao;
+    private OAuthProviderService providerService;
     
     @Autowired
     final void setStudyService(StudyService studyService) {
@@ -43,8 +42,8 @@ public class OAuthService {
     }
     
     @Autowired
-    final void setOAuthProviderDao(OAuthProviderService providerDao) {
-        this.providerDao = providerDao;
+    final void setOAuthProviderService(OAuthProviderService providerService) {
+        this.providerService = providerService;
     }
     
     protected DateTime getDateTime() {
@@ -97,15 +96,15 @@ public class OAuthService {
         OAuthAccessGrant grant = null;
         
         if (authToken != null && authToken.getAuthToken() != null) {
-            grant = providerDao.makeAccessGrantCall(provider, authToken);
+            grant = providerService.requestAccessGrant(provider, authToken);
         } else {
-            grant = grantDao.getAccessGrant(studyId, vendorId, healthCode);    
+            grant = grantDao.getAccessGrant(studyId, vendorId, healthCode);
         }
         try {
             if (grant == null) {
                 throw new EntityNotFoundException(OAuthAccessGrant.class);
             } else if (getDateTime().isAfter(grant.getExpiresOn())) {
-                grant = providerDao.makeRefreshAccessGrantCall(provider, vendorId, grant.getRefreshToken());
+                grant = providerService.refreshAccessGrant(provider, vendorId, grant.getRefreshToken());
             }
         } catch(Exception e) {
             if (grant != null) {
@@ -121,6 +120,6 @@ public class OAuthService {
     
     private OAuthAccessToken getTokenForGrant(OAuthAccessGrant grant) {
         DateTime expiresOn = new DateTime(grant.getExpiresOn(), DateTimeZone.UTC);
-        return new OAuthAccessToken(grant.getVendorId(), grant.getAccessToken(), expiresOn);
+        return new OAuthAccessToken(grant.getVendorId(), grant.getAccessToken(), expiresOn, grant.getProviderUserId());
     }
 }

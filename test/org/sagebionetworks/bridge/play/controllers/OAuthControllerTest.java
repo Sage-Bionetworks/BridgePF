@@ -57,6 +57,7 @@ public class OAuthControllerTest {
     private static final String ACCESS_TOKEN = "accessToken";
     private static final String HEALTH_CODE = "healthCode";
     private static final String VENDOR_ID = "vendorId";
+    private static final String PROVIDER_USER_ID = "providerUserId";
     private static final List<String> HEALTH_CODE_LIST = Lists.newArrayList("a", "b", "c");
     private static final DateTime EXPIRES_ON = DateTime.now(DateTimeZone.UTC);
     
@@ -116,7 +117,7 @@ public class OAuthControllerTest {
         OAuthAuthorizationToken authToken = new OAuthAuthorizationToken(null, AUTH_TOKEN);
         TestUtils.mockPlayContextWithJson(authToken);
         
-        OAuthAccessToken accessToken = new OAuthAccessToken(VENDOR_ID, ACCESS_TOKEN, EXPIRES_ON);
+        OAuthAccessToken accessToken = new OAuthAccessToken(VENDOR_ID, ACCESS_TOKEN, EXPIRES_ON, PROVIDER_USER_ID);
         when(mockOauthService.requestAccessToken(eq(TEST_STUDY), eq(HEALTH_CODE), any()))
                 .thenReturn(accessToken);
         
@@ -138,7 +139,7 @@ public class OAuthControllerTest {
 
         TestUtils.mockPlayContextWithJson("{}");
         
-        OAuthAccessToken accessToken = new OAuthAccessToken(VENDOR_ID, ACCESS_TOKEN, EXPIRES_ON);
+        OAuthAccessToken accessToken = new OAuthAccessToken(VENDOR_ID, ACCESS_TOKEN, EXPIRES_ON, PROVIDER_USER_ID);
         when(mockOauthService.requestAccessToken(eq(TEST_STUDY), eq(HEALTH_CODE), any()))
                 .thenReturn(accessToken);
         
@@ -218,7 +219,7 @@ public class OAuthControllerTest {
         session.setParticipant(new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.WORKER)).build());
         doReturn(session).when(controller).getAuthenticatedSession(Roles.WORKER);
 
-        OAuthAccessToken accessToken = new OAuthAccessToken(VENDOR_ID, ACCESS_TOKEN, EXPIRES_ON);
+        OAuthAccessToken accessToken = new OAuthAccessToken(VENDOR_ID, ACCESS_TOKEN, EXPIRES_ON, PROVIDER_USER_ID);
         
         when(mockOauthService.getAccessToken(TEST_STUDY, VENDOR_ID, HEALTH_CODE)).thenReturn(accessToken);
         

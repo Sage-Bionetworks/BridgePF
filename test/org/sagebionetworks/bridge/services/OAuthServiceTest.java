@@ -61,7 +61,7 @@ public class OAuthServiceTest {
     private OAuthAccessGrantDao mockGrantDao;
     
     @Mock
-    private OAuthProviderService mockProviderDao;
+    private OAuthProviderService mockProviderService;
     
     @Captor
     private ArgumentCaptor<OAuthAccessGrant> grantCaptor;
@@ -72,7 +72,7 @@ public class OAuthServiceTest {
     public void before() {
         service.setStudyService(mockStudyService);
         service.setOAuthAccessGrantDao(mockGrantDao);
-        service.setOAuthProviderDao(mockProviderDao);
+        service.setOAuthProviderService(mockProviderService);
         
         Map<String,OAuthProvider> providers = new HashMap<String,OAuthProvider>();
         providers.put("vendorId", PROVIDER);
@@ -94,29 +94,31 @@ public class OAuthServiceTest {
         return grant;
     }
     
-    private void setupCurrentGrant() {
+    private void setupDaoWithCurrentGrant() {
         OAuthAccessGrant grant = createGrant(EXPIRES_ON);
         when(mockGrantDao.getAccessGrant(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE)).thenReturn(grant);
     }
-    private void setupExpiredGrant() {
+    private void setupDaoWithExpiredGrant() {
         OAuthAccessGrant grant = createGrant(EXPIRES_ON.minusHours(4));
         when(mockGrantDao.getAccessGrant(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE)).thenReturn(grant);
     }
     
-    private void setupValidAuthToken() {
+    private void setupValidGrantCall() {
         OAuthAccessGrant grant = createGrant(EXPIRES_ON);
-        when(mockProviderDao.makeAccessGrantCall(PROVIDER, AUTH_TOKEN)).thenReturn(grant);
+        when(mockProviderService.requestAccessGrant(PROVIDER, AUTH_TOKEN)).thenReturn(grant);
     }
-    private void setupInvalidAuthToken() {
-        when(mockProviderDao.makeAccessGrantCall(PROVIDER, AUTH_TOKEN)).thenThrow(new EntityNotFoundException(OAuthAccessGrant.class));
+    private void setupInvalidGrantCall() {
+        when(mockProviderService.requestAccessGrant(PROVIDER, AUTH_TOKEN))
+                .thenThrow(new EntityNotFoundException(OAuthAccessGrant.class));
     }
     
-    private void setupValidRefreshToken() {
+    private void setupValidRefreshCall() {
         OAuthAccessGrant grant = createGrant(EXPIRES_ON);
-        when(mockProviderDao.makeRefreshAccessGrantCall(PROVIDER, VENDOR_ID, REFRESH_TOKEN)).thenReturn(grant);
+        when(mockProviderService.refreshAccessGrant(PROVIDER, VENDOR_ID, REFRESH_TOKEN)).thenReturn(grant);
     }
-    private void setupInvalidRefreshToken() {
-        when(mockProviderDao.makeRefreshAccessGrantCall(PROVIDER, VENDOR_ID, REFRESH_TOKEN)).thenThrow(new EntityNotFoundException(OAuthAccessGrant.class));
+    private void setupInvalidRefreshCall() {
+        when(mockProviderService.refreshAccessGrant(PROVIDER, VENDOR_ID, REFRESH_TOKEN))
+                .thenThrow(new EntityNotFoundException(OAuthAccessGrant.class));
     }
     
     private void assertAccessToken(OAuthAccessToken authToken) {
@@ -137,7 +139,7 @@ public class OAuthServiceTest {
     
     @Test
     public void requestCurrentGrant() {
-        setupCurrentGrant();
+        setupDaoWithCurrentGrant();
         
         OAuthAccessToken token = service.requestAccessToken(TestConstants.TEST_STUDY, HEALTH_CODE, NO_AUTH_TOKEN);
         
@@ -145,29 +147,30 @@ public class OAuthServiceTest {
         verify(mockGrantDao).getAccessGrant(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
         verify(mockGrantDao).saveAccessGrant(eq(TestConstants.TEST_STUDY), grantCaptor.capture());
         verifyNoMoreInteractions(mockGrantDao);
-        verifyNoMoreInteractions(mockProviderDao);
+        verifyNoMoreInteractions(mockProviderService);
         assertGrant(grantCaptor.getValue());
     }
     
     @Test
     public void requestExpiredGrantValidRefreshToken() {
-        setupExpiredGrant(); 
-        setupValidRefreshToken();
+        setupDaoWithExpiredGrant(); 
+        setupValidRefreshCall();
         
         OAuthAccessToken token = service.requestAccessToken(TestConstants.TEST_STUDY, HEALTH_CODE, NO_AUTH_TOKEN);
         
         assertAccessToken(token);
         verify(mockGrantDao).getAccessGrant(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
-        verify(mockProviderDao).makeRefreshAccessGrantCall(PROVIDER, VENDOR_ID, REFRESH_TOKEN);
+        verify(mockProviderService).refreshAccessGrant(PROVIDER, VENDOR_ID, REFRESH_TOKEN);
         verify(mockGrantDao).saveAccessGrant(eq(TestConstants.TEST_STUDY), grantCaptor.capture());
         verifyNoMoreInteractions(mockGrantDao);
-        verifyNoMoreInteractions(mockProviderDao);
+        verifyNoMoreInteractions(mockProviderService);
         assertGrant(grantCaptor.getValue());
     }
-    @Test()
+    
+    @Test
     public void requestExpiredGrantInvalidRefreshToken() {
-        setupExpiredGrant(); 
-        setupInvalidRefreshToken();
+        setupDaoWithExpiredGrant(); 
+        setupInvalidRefreshCall();
         
         try {
             service.requestAccessToken(TestConstants.TEST_STUDY, HEALTH_CODE, NO_AUTH_TOKEN);
@@ -176,66 +179,45 @@ public class OAuthServiceTest {
             
         }
         verify(mockGrantDao).getAccessGrant(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
-        verify(mockProviderDao).makeRefreshAccessGrantCall(PROVIDER, VENDOR_ID, REFRESH_TOKEN);
+        verify(mockProviderService).refreshAccessGrant(PROVIDER, VENDOR_ID, REFRESH_TOKEN);
         verify(mockGrantDao).deleteAccessGrant(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
         verifyNoMoreInteractions(mockGrantDao);
-        verifyNoMoreInteractions(mockProviderDao);
-    }
-    
-    @Test
-    public void requestExpiredGrantValidAuthTokenInvalidRefreshToken() {
-        setupExpiredGrant(); 
-        setupValidAuthToken();
-        setupInvalidRefreshToken();
-
-        service.requestAccessToken(TestConstants.TEST_STUDY, HEALTH_CODE, AUTH_TOKEN);
-        
-        verify(mockProviderDao).makeAccessGrantCall(PROVIDER, AUTH_TOKEN);
-        verify(mockGrantDao).saveAccessGrant(eq(TestConstants.TEST_STUDY), grantCaptor.capture());
-        verifyNoMoreInteractions(mockGrantDao);
-        verifyNoMoreInteractions(mockProviderDao);
-        assertGrant(grantCaptor.getValue());
+        verifyNoMoreInteractions(mockProviderService);
     }
     
     @Test
     public void requestNoGrantValidAuthToken() {
-        setupValidAuthToken();
+        setupValidGrantCall();
         
         OAuthAccessToken token = service.requestAccessToken(TestConstants.TEST_STUDY, HEALTH_CODE, AUTH_TOKEN);
         
         assertAccessToken(token);
-        verify(mockProviderDao).makeAccessGrantCall(PROVIDER, AUTH_TOKEN);
+        verify(mockProviderService).requestAccessGrant(PROVIDER, AUTH_TOKEN);
         verify(mockGrantDao).saveAccessGrant(eq(TestConstants.TEST_STUDY), grantCaptor.capture());
         verifyNoMoreInteractions(mockGrantDao);
-        verifyNoMoreInteractions(mockProviderDao);
+        verifyNoMoreInteractions(mockProviderService);
         assertGrant(grantCaptor.getValue());
     }
+    
     @Test
     public void requestNoGrantInvalidAuthToken() {
-        setupInvalidAuthToken();
+        setupInvalidGrantCall();
         try {
             service.requestAccessToken(TestConstants.TEST_STUDY, HEALTH_CODE, AUTH_TOKEN);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
             
         }
-        verify(mockProviderDao).makeAccessGrantCall(PROVIDER, AUTH_TOKEN);
+        verify(mockProviderService).requestAccessGrant(PROVIDER, AUTH_TOKEN);
         verifyNoMoreInteractions(mockGrantDao);
-        verifyNoMoreInteractions(mockProviderDao);
+        verifyNoMoreInteractions(mockProviderService);
     }
-    @Test(expected = EntityNotFoundException.class)
-    public void requestNoGrantInvalidAuthTokenInvalidRefreshToken() {
-        setupInvalidAuthToken();
-        setupInvalidRefreshToken();
-        
-        service.requestAccessToken(TestConstants.TEST_STUDY, HEALTH_CODE, AUTH_TOKEN);
-    }
-    
+
     // getAccessToken tests
     
     @Test
     public void getCurrentGrant() {
-        setupCurrentGrant();
+        setupDaoWithCurrentGrant();
         
         OAuthAccessToken token = service.getAccessToken(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
         
@@ -243,30 +225,30 @@ public class OAuthServiceTest {
         verify(mockGrantDao).getAccessGrant(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
         verify(mockGrantDao).saveAccessGrant(eq(TestConstants.TEST_STUDY), grantCaptor.capture());
         verifyNoMoreInteractions(mockGrantDao);
-        verifyNoMoreInteractions(mockProviderDao);
+        verifyNoMoreInteractions(mockProviderService);
         assertGrant(grantCaptor.getValue());
     }
     
     @Test
     public void getExpiredGrantValidRefreshToken() {
-        setupExpiredGrant(); 
-        setupValidRefreshToken();
+        setupDaoWithExpiredGrant(); 
+        setupValidRefreshCall();
 
         OAuthAccessToken token = service.getAccessToken(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
         
         assertAccessToken(token);
         verify(mockGrantDao).getAccessGrant(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
         verify(mockGrantDao).saveAccessGrant(eq(TestConstants.TEST_STUDY), grantCaptor.capture());
-        verify(mockProviderDao).makeRefreshAccessGrantCall(PROVIDER, VENDOR_ID, REFRESH_TOKEN);
+        verify(mockProviderService).refreshAccessGrant(PROVIDER, VENDOR_ID, REFRESH_TOKEN);
         verifyNoMoreInteractions(mockGrantDao);
-        verifyNoMoreInteractions(mockProviderDao);
+        verifyNoMoreInteractions(mockProviderService);
         assertGrant(grantCaptor.getValue());
     }
     
     @Test(expected = EntityNotFoundException.class)
     public void getExpiredGrantInvalidRefreshToken() {
-        setupExpiredGrant(); 
-        setupInvalidRefreshToken();
+        setupDaoWithExpiredGrant(); 
+        setupInvalidRefreshCall();
 
         service.getAccessToken(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
     }

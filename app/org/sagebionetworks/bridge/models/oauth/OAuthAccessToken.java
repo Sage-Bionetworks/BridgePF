@@ -11,13 +11,15 @@ public final class OAuthAccessToken {
     private final String vendorId;
     private final String accessToken;
     private final DateTime expiresOn;
+    private final String providerUserId;
     
     @JsonCreator
     public OAuthAccessToken(@JsonProperty("vendorId") String vendorId, @JsonProperty("accessToken") String accessToken,
-            @JsonProperty("expiresOn") DateTime expiresOn) {
+            @JsonProperty("expiresOn") DateTime expiresOn, @JsonProperty("providerUserId") String providerUserId) {
         this.vendorId = vendorId;
         this.accessToken = accessToken;
         this.expiresOn = expiresOn;
+        this.providerUserId = providerUserId;
     }
     
     public String getVendorId() {
@@ -31,10 +33,14 @@ public final class OAuthAccessToken {
     public DateTime getExpiresOn() {
         return expiresOn;
     }
+    
+    public String getProviderUserId() {
+        return providerUserId;
+    }
 
     @Override
     public int hashCode() {
-        return Objects.hash(vendorId, accessToken, expiresOn);
+        return Objects.hash(vendorId, accessToken, expiresOn, providerUserId);
     }
 
     @Override
@@ -46,12 +52,13 @@ public final class OAuthAccessToken {
         OAuthAccessToken other = (OAuthAccessToken) obj;
         return Objects.equals(vendorId, other.vendorId)
                 && Objects.equals(accessToken, other.accessToken)
-                && Objects.equals(expiresOn, other.expiresOn);
+                && Objects.equals(expiresOn, other.expiresOn)
+                && Objects.equals(providerUserId, other.providerUserId);
     }
 
     @Override
     public String toString() {
         return "OAuthAccessToken [vendorId=" + vendorId + ", accessToken=" + accessToken + 
-                ", expiresOn=" + expiresOn + "]";
+                ", expiresOn=" + expiresOn + ", providerUserId=" + providerUserId + "]";
     }
 }

@@ -160,7 +160,7 @@ public class DynamoStudyTest {
         assertEquals("clientId", providerNode.get("clientId").textValue());
         assertEquals("secret", providerNode.get("secret").textValue());
         assertEquals("endpoint", providerNode.get("endpoint").textValue());
-        assertEquals("callbackUrl", providerNode.get("callbackUrl").textValue());
+        assertEquals(OAuthProviderTest.CALLBACK_URL, providerNode.get("callbackUrl").textValue());
         assertEquals("OAuthProvider", providerNode.get("type").textValue());
         
         // Deserialize back to a POJO and verify.

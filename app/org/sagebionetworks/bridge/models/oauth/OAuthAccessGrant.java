@@ -50,4 +50,10 @@ public interface OAuthAccessGrant extends BridgeEntity {
     public long getExpiresOn();
     public void setExpiresOn(long expiresOn);
     
+    /**
+     * The identifier used by the service provider to identify the user.
+     */
+    public String getProviderUserId();
+    public void setProviderUserId(String providerUserId);
+    
 }
