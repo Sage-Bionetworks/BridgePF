@@ -195,6 +195,16 @@ public class OAuthServiceTest {
         assertGrant(grantCaptor.getValue());
     }
     
+    @Test(expected = EntityNotFoundException.class)
+    public void getHealthCodesThrowsExceptionOnIncorrectOAuthProvider() {
+        service.getHealthCodesGrantingAccess(study, "notAVendor", 50, null);
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void getHealthCodesThrowsExceptionOnIncorrectOAuthProvider2() {
+        service.getHealthCodesGrantingAccess(study, "notAVendor", 50, null);
+    }
+    
     @Test
     public void requestNoGrantInvalidAuthToken() {
         setupInvalidGrantCall();
@@ -205,6 +215,7 @@ public class OAuthServiceTest {
             
         }
         verify(mockProviderService).requestAccessGrant(PROVIDER, AUTH_TOKEN);
+        verify(mockGrantDao).deleteAccessGrant(study.getStudyIdentifier(), VENDOR_ID, HEALTH_CODE);
         verifyNoMoreInteractions(mockGrantDao);
         verifyNoMoreInteractions(mockProviderService);
     }

@@ -48,6 +48,11 @@ public class OAuthService {
         checkNotNull(study);
         checkNotNull(vendorId);
         
+        // Verify the provider exists
+        OAuthProvider provider = study.getOAuthProviders().get(vendorId);
+        if (provider == null) {
+            throw new EntityNotFoundException(OAuthProvider.class);
+        }
         ForwardCursorPagedResourceList<OAuthAccessGrant> list = grantDao.getAccessGrants(study, vendorId,
                 offsetKey, pageSize);
 

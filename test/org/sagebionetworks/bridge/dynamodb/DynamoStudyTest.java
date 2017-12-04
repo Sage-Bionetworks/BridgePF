@@ -156,7 +156,7 @@ public class DynamoStudyTest {
         assertEquals("test-metadata-field", oneMetadataFieldDefNode.get("name").textValue());
         assertEquals("int", oneMetadataFieldDefNode.get("type").textValue());
 
-        JsonNode providerNode = node.get("oauthProviders").get("myProvider");
+        JsonNode providerNode = node.get("oAuthProviders").get("myProvider");
         assertEquals("clientId", providerNode.get("clientId").textValue());
         assertEquals("secret", providerNode.get("secret").textValue());
         assertEquals("endpoint", providerNode.get("endpoint").textValue());
