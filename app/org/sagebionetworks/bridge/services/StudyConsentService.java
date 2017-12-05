@@ -121,6 +121,7 @@ public class StudyConsentService {
 
         long createdOn = DateUtils.getCurrentMillisFromEpoch();
         String storagePath = subpopGuid.getGuid() + "." + createdOn;
+        logger.info("Accessing bucket: " + CONSENTS_BUCKET + " with storagePath: " + storagePath);
         try {
             s3Helper.writeBytesToS3(CONSENTS_BUCKET, storagePath, sanitizedContent.getBytes());
             StudyConsent consent = studyConsentDao.addConsent(subpopGuid, storagePath, createdOn);
