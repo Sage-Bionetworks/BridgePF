@@ -10,10 +10,12 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.RequestInfo;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
@@ -82,11 +84,11 @@ public class AuthenticationController extends BaseController {
         return okResult(UserSessionInfo.toJSON(session));
     }
     
-    public Result signIn() throws Exception {
+    public Result signInV4() throws Exception {
         return signInWithRetry(5);
     }
 
-    public Result reauthenticate() throws Exception {
+    public Result reauthenticateV4() throws Exception {
         SignIn signInRequest = parseJson(request(), SignIn.class);
 
         if (isBlank(signInRequest.getStudyId())) {
@@ -96,12 +98,27 @@ public class AuthenticationController extends BaseController {
         verifySupportedVersionOrThrowException(study);
         
         CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
-        
         UserSession session = authenticationService.reauthenticate(study, context, signInRequest);
         
         logAuthenticationSuccess(session);
         
         return okResult(UserSessionInfo.toJSON(session));
+    }
+    
+    public Result signInV3() throws Exception {
+        try {
+            return signInV4();
+        } catch(UnauthorizedException e) {
+            throw new EntityNotFoundException(Account.class);
+        }
+    }
+
+    public Result reauthenticateV3() throws Exception {
+        try {
+            return reauthenticateV4();
+        } catch(UnauthorizedException e) {
+            throw new EntityNotFoundException(Account.class);
+        }
     }
     
     @BodyParser.Of(BodyParser.Empty.class)

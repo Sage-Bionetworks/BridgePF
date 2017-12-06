@@ -8,9 +8,9 @@ GET    /.well-known/assetlinks.json            @org.sagebionetworks.bridge.play.
 GET    /.well-known/apple-app-site-association @org.sagebionetworks.bridge.play.controllers.ApplicationController.appleAppLinks
 
 # Authentication
-POST   /v3/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signIn
+POST   /v3/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signInV3
 POST   /v3/auth/signOut                 @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signOut
-POST   /v3/auth/reauth                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.reauthenticate
+POST   /v3/auth/reauth                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.reauthenticateV3
 POST   /v3/auth/requestResetPassword    @org.sagebionetworks.bridge.play.controllers.AuthenticationController.requestResetPassword
 POST   /v3/auth/resetPassword           @org.sagebionetworks.bridge.play.controllers.AuthenticationController.resetPassword
 POST   /v3/auth/signUp                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signUp
@@ -20,6 +20,8 @@ POST   /v3/auth/email                   @org.sagebionetworks.bridge.play.control
 POST   /v3/auth/email/signIn            @org.sagebionetworks.bridge.play.controllers.AuthenticationController.emailSignIn
 POST   /v3/auth/phone                   @org.sagebionetworks.bridge.play.controllers.AuthenticationController.requestPhoneSignIn
 POST   /v3/auth/phone/signIn            @org.sagebionetworks.bridge.play.controllers.AuthenticationController.phoneSignIn
+POST   /v4/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signInV4
+POST   /v4/auth/reauth                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.reauthenticateV4
 
 # OAuth
 POST /v3/oauth/:vendorId    @org.sagebionetworks.bridge.play.controllers.OAuthController.requestAccessToken(vendorId: String)
@@ -281,7 +283,7 @@ POST   /fphs/externalIds  @org.sagebionetworks.bridge.play.controllers.FPHSContr
 # OLD API ----------------------------------------------------------------------------------------------------
 
 # API - Authentication
-POST   /api/v1/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signIn
+POST   /api/v1/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signInV3
 GET    /api/v1/auth/signOut                 @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signOut
 POST   /api/v1/auth/requestResetPassword    @org.sagebionetworks.bridge.play.controllers.AuthenticationController.requestResetPassword
 POST   /api/v1/auth/resetPassword           @org.sagebionetworks.bridge.play.controllers.AuthenticationController.resetPassword

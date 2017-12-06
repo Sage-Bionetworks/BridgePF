@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -200,8 +201,16 @@ public class HibernateAccountDao implements AccountDao {
     private Account authenticateInternal(HibernateAccount hibernateAccount, PasswordAlgorithm algorithm,
             String hash, String credentialValue, String credentialName) {
 
+        // First check and throw an entity not found exception if the password is wrong.
         verifyCredential(hibernateAccount.getId(), credentialName, algorithm, hash, credentialValue);
-
+        
+        // Password successful, you can now leak further information about the account through other exceptions.
+        if (hibernateAccount.getStatus() == AccountStatus.UNVERIFIED) {
+            throw new UnauthorizedException("Email or phone number have not been verified");
+        } else if (hibernateAccount.getStatus() == AccountStatus.DISABLED) {
+            throw new AccountDisabledException();
+        }
+        
         // Unmarshall account
         validateHealthCode(hibernateAccount, false);
         Account account = unmarshallAccount(hibernateAccount);
@@ -376,11 +385,8 @@ public class HibernateAccountDao implements AccountDao {
     private HibernateAccount fetchHibernateAccount(SignIn signIn) {
         // Fetch account
         HibernateAccount hibernateAccount = getHibernateAccount(signIn.getAccountId());
-        if (hibernateAccount == null || hibernateAccount.getStatus() == AccountStatus.UNVERIFIED) {
+        if (hibernateAccount == null) {
             throw new EntityNotFoundException(Account.class);
-        }
-        if (hibernateAccount.getStatus() == AccountStatus.DISABLED) {
-            throw new AccountDisabledException();
         }
         return hibernateAccount;
     }
