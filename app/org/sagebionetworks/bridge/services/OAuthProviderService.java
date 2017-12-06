@@ -205,7 +205,7 @@ class OAuthProviderService {
         // And everything, for now, can be treated as Bridge server error.
         else if (statusCode != 200) {
             LOG.error(String.format(LOG_ERROR_MSG, response.getStatusCode(), response.getBody()));
-            throw new BridgeServiceException(SERVICE_ERROR_MSG);
+            throw new BridgeServiceException(SERVICE_ERROR_MSG, response.getStatusCode());
         }
         OAuthAccessGrant grant = jsonToGrant(response.getBody());
         grant.setVendorId(vendorId);

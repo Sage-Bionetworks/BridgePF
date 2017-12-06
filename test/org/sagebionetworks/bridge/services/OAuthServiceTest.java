@@ -23,6 +23,7 @@ import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.OAuthAccessGrantDao;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessGrant;
@@ -104,8 +105,11 @@ public class OAuthServiceTest {
         when(mockProviderService.requestAccessGrant(PROVIDER, AUTH_TOKEN)).thenReturn(grant);
     }
     private void setupInvalidGrantCall() {
+        setupInvalidGrantCall(new EntityNotFoundException(OAuthAccessGrant.class));
+    }
+    private void setupInvalidGrantCall(BridgeServiceException e) {
         when(mockProviderService.requestAccessGrant(PROVIDER, AUTH_TOKEN))
-                .thenThrow(new EntityNotFoundException(OAuthAccessGrant.class));
+                .thenThrow(e);
     }
     
     private void setupValidRefreshCall() {
@@ -283,5 +287,19 @@ public class OAuthServiceTest {
         assertEquals("nextPageOffset", results.getNextPageOffsetKey());
         assertEquals(2, results.getItems().size());
     }
-
+    
+    @Test
+    public void transientProviderErrorDoesNotDeleteGrant() {
+        setupInvalidGrantCall(new BridgeServiceException("Temporary error", 503));
+        
+        try {
+            service.requestAccessToken(study, HEALTH_CODE, AUTH_TOKEN);
+            fail("Should have thrown exception");
+        } catch(BridgeServiceException e) {
+            
+        }
+        verify(mockProviderService).requestAccessGrant(PROVIDER, AUTH_TOKEN);
+        verifyNoMoreInteractions(mockGrantDao);
+        verifyNoMoreInteractions(mockProviderService);
+    }
 }
