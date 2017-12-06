@@ -88,7 +88,7 @@ public class AuthenticationController extends BaseController {
         return signInWithRetry(5);
     }
 
-    public Result reauthenticateV4() throws Exception {
+    public Result reauthenticate() throws Exception {
         SignIn signInRequest = parseJson(request(), SignIn.class);
 
         if (isBlank(signInRequest.getStudyId())) {
@@ -113,14 +113,6 @@ public class AuthenticationController extends BaseController {
         }
     }
 
-    public Result reauthenticateV3() throws Exception {
-        try {
-            return reauthenticateV4();
-        } catch(UnauthorizedException e) {
-            throw new EntityNotFoundException(Account.class);
-        }
-    }
-    
     @BodyParser.Of(BodyParser.Empty.class)
     public Result signOut() throws Exception {
         final UserSession session = getSessionIfItExists();
