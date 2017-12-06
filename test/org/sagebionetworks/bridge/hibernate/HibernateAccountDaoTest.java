@@ -37,6 +37,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -413,7 +414,7 @@ public class HibernateAccountDaoTest {
         dao.authenticate(STUDY, PASSWORD_SIGNIN);
     }
 
-    @Test(expected = EntityNotFoundException.class)
+    @Test(expected = UnauthorizedException.class)
     public void authenticateAccountUnverified() throws Exception {
         // mock hibernate
         HibernateAccount hibernateAccount = makeValidHibernateAccount(true, false);
@@ -504,7 +505,7 @@ public class HibernateAccountDaoTest {
         dao.reauthenticate(STUDY, REAUTH_SIGNIN);
     }
     
-    @Test(expected = EntityNotFoundException.class)
+    @Test(expected = UnauthorizedException.class)
     public void reauthenticateAccountUnverified() throws Exception {
         // mock hibernate
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, true);
@@ -534,6 +535,19 @@ public class HibernateAccountDaoTest {
 
         // execute
         dao.authenticate(STUDY, PASSWORD_SIGNIN);
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void failedSignInOfDisabledAccountDoesNotIndicateAccountExists() throws Exception {
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(true, false);
+        hibernateAccount.setStatus(AccountStatus.DISABLED);
+        
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any())).thenReturn(
+                ImmutableList.of(hibernateAccount));
+        
+        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withEmail(EMAIL).withPassword("bad password").build();
+        dao.authenticate(STUDY, signIn);
     }
     
     // branch coverage

@@ -227,7 +227,7 @@ public class AuthenticationService {
         checkNotNull(signIn);
 
         Validate.entityThrowingException(SignInValidator.PASSWORD_SIGNIN, signIn);
-
+        
         Account account = accountDao.authenticate(study, signIn);
 
         UserSession session = getSessionFromAccount(study, context, account);
@@ -237,7 +237,8 @@ public class AuthenticationService {
         return session;
     }
     
-    public UserSession reauthenticate(Study study, CriteriaContext context, SignIn signIn) throws EntityNotFoundException {
+    public UserSession reauthenticate(Study study, CriteriaContext context, SignIn signIn)
+            throws EntityNotFoundException {
         checkNotNull(study);
         checkNotNull(context);
         checkNotNull(signIn);

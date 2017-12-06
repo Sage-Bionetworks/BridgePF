@@ -48,6 +48,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -88,6 +89,8 @@ public class AuthenticationControllerMockTest {
             .withPhone(TestConstants.PHONE).build();
     private static final SignIn PHONE_SIGN_IN = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING)
             .withPhone(TestConstants.PHONE).withToken(TEST_TOKEN).build();
+    private static final SignIn REAUTH_REQUEST = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING)
+            .withEmail(TEST_EMAIL).withReauthToken(TEST_TOKEN).build();
 
     AuthenticationController controller;
 
@@ -206,7 +209,7 @@ public class AuthenticationControllerMockTest {
         mockPlayContextWithJson(TestUtils.createJson(
                 "{'email':'email@email.com','reauthToken':'abc'}"));
         
-        controller.reauthenticate();
+        controller.reauthenticateV3();
     }
     
     @Test
@@ -218,7 +221,7 @@ public class AuthenticationControllerMockTest {
                     "{'study':'study-key','email':'email@email.com','reauthToken':'abc'}"));
             when(authenticationService.reauthenticate(any(), any(), any())).thenReturn(userSession);
             
-            Result result = controller.reauthenticate();
+            Result result = controller.reauthenticateV3();
             assertEquals(200, result.status());
             
             verify(authenticationService).reauthenticate(any(), any(), signInCaptor.capture());
@@ -401,7 +404,7 @@ public class AuthenticationControllerMockTest {
 
         // execute and validate
         try {
-            Result result = controller.signIn();
+            Result result = controller.signInV3();
             if (shouldThrow) {
                 fail("expected exception");
             }
@@ -473,7 +476,7 @@ public class AuthenticationControllerMockTest {
 
         // execute and validate
         try {
-            Result result = controller.signIn();
+            Result result = controller.signInV3();
             if (shouldThrow) {
                 fail("expected exception");
             }
@@ -608,7 +611,7 @@ public class AuthenticationControllerMockTest {
         mockPlayContextWithJson(json, headers);
         study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
         
-        controller.signIn();
+        controller.signInV3();
     }
     
     @Test(expected = UnsupportedVersionException.class)
@@ -801,6 +804,42 @@ public class AuthenticationControllerMockTest {
         when(studyService.getStudy((String)any())).thenThrow(new EntityNotFoundException(Study.class));
         
         controller.phoneSignIn();
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void signInV3ThrowsNotFound() throws Exception {
+        mockPlayContextWithJson(PHONE_SIGN_IN);
+        
+        when(authenticationService.signIn(any(), any(), any())).thenThrow(new UnauthorizedException());
+        
+        controller.signInV3();
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void signInV4ThrowsUnauthoried() throws Exception {
+        mockPlayContextWithJson(PHONE_SIGN_IN);
+        
+        when(authenticationService.signIn(any(), any(), any())).thenThrow(new UnauthorizedException());
+        
+        controller.signInV4();
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void reauthenticateV3ThrowsNotFound() throws Exception {
+        mockPlayContextWithJson(REAUTH_REQUEST);
+        
+        when(authenticationService.reauthenticate(any(), any(), any())).thenThrow(new UnauthorizedException());
+        
+        controller.reauthenticateV3();
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void reauthenticateV4ThrowsUnauthoried() throws Exception {
+        mockPlayContextWithJson(REAUTH_REQUEST);
+        
+        when(authenticationService.reauthenticate(any(), any(), any())).thenThrow(new UnauthorizedException());
+        
+        controller.reauthenticateV4();
     }
     
     private void mockSignInWithEmailPayload() throws Exception {
