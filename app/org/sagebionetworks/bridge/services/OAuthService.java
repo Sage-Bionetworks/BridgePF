@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.dao.OAuthAccessGrantDao;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessGrant;
@@ -107,9 +108,12 @@ public class OAuthService {
                 // If there's a grant record, but it has expired, attempt to refresh it
                 grant = providerService.refreshAccessGrant(provider, vendorId, grant.getRefreshToken());
             }
-        } catch(Exception e) {
-            // any error, delete the grant because it is in an unknown and probably bad state.
-            grantDao.deleteAccessGrant(study.getStudyIdentifier(), vendorId, healthCode);
+        } catch(BridgeServiceException e) {
+            // 502, 503, and 504 are potentially transient errors, but other server errors, delete the grant.
+            // It is in an unknown state.
+            if (e.getStatusCode() < 502 || e.getStatusCode() > 504) {
+                grantDao.deleteAccessGrant(study.getStudyIdentifier(), vendorId, healthCode);
+            }
             throw e;
         }
         grant.setVendorId(vendorId);
