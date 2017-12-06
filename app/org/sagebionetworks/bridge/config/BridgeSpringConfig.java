@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoCompoundActivityDefinition;
 import org.sagebionetworks.bridge.dynamodb.DynamoNamingHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoNotificationRegistration;
 import org.sagebionetworks.bridge.dynamodb.DynamoNotificationTopic;
+import org.sagebionetworks.bridge.dynamodb.DynamoOAuthAccessGrant;
 import org.sagebionetworks.bridge.dynamodb.DynamoTopicSubscription;
 
 import org.hibernate.SessionFactory;
@@ -367,6 +368,12 @@ public class BridgeSpringConfig {
     @Autowired
     public DynamoDBMapper topicSubscriptionMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoTopicSubscription.class);
+    }
+    
+    @Bean(name = "oauthAccessGrantMapper")
+    @Autowired
+    public DynamoDBMapper oauthAccessGrantMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoOAuthAccessGrant.class);
     }
     
     @Bean(name = "uploadHealthCodeRequestedOnIndex")

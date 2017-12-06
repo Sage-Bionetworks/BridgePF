@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
+import org.sagebionetworks.bridge.models.studies.OAuthProviderTest;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
@@ -24,6 +25,7 @@ import com.google.common.collect.Sets;
 public class StudyValidatorTest {
 
     private static final StudyValidator INSTANCE = StudyValidator.INSTANCE;
+    private static final String CALLBACK_URL = OAuthProviderTest.CALLBACK_URL;
     private static final String APP_ID = "appID";
     private static final String PATHS = "paths";
     private static final String NAMESPACE = "namespace";
@@ -379,21 +381,21 @@ public class StudyValidatorTest {
     
     @Test
     public void oauthProviderRequiresClientId() {
-        OAuthProvider provider = new OAuthProvider(null, "secret", "endpoint", "callbackUrl");
+        OAuthProvider provider = new OAuthProvider(null, "secret", "endpoint", CALLBACK_URL);
         study.getOAuthProviders().put("vendor", provider);
         assertValidatorMessage(INSTANCE, study, "oauthProviders[vendor].clientId", "is required");
     }
 
     @Test
     public void oauthProviderRequiresSecret() {
-        OAuthProvider provider = new OAuthProvider("clientId", null, "endpoint", "callbackUrl");
+        OAuthProvider provider = new OAuthProvider("clientId", null, "endpoint", CALLBACK_URL);
         study.getOAuthProviders().put("vendor", provider);
         assertValidatorMessage(INSTANCE, study, "oauthProviders[vendor].secret", "is required");
     }
     
     @Test
     public void oauthProviderRequiresEndpoint() {
-        OAuthProvider provider = new OAuthProvider("clientId", "secret", null, "callbackUrl");
+        OAuthProvider provider = new OAuthProvider("clientId", "secret", null, CALLBACK_URL);
         study.getOAuthProviders().put("vendor", provider);
         assertValidatorMessage(INSTANCE, study, "oauthProviders[vendor].endpoint", "is required");
     }
