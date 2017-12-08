@@ -38,6 +38,7 @@ import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -442,8 +443,12 @@ public class AuthenticationServiceTest {
         cachedSession.setInternalSessionToken("cachedInternalSessionToken");
         cacheProvider.setUserSession(cachedSession);
         
-        UserSession session = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
-        
+        UserSession session = null;
+        try {
+            authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
+        } catch(ConsentRequiredException e) {
+            session = e.getUserSession();
+        }
         assertEquals(cachedSession.getSessionToken(), session.getSessionToken());
         assertEquals(cachedSession.getInternalSessionToken(), session.getInternalSessionToken());
         // but the rest is updated.  
