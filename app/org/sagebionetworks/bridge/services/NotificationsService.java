@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeUtils.SEMICOLON_SPACE_JOINER;
 
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 
@@ -42,20 +43,20 @@ import com.google.common.collect.Maps;
  */
 @Component
 public class NotificationsService {
-    private static final String SMS_TYPE_TRANSACTIONAL = "Transactional";
+    private static Logger LOG = LoggerFactory.getLogger(NotificationsService.class);
+    
     /**
      * 11 character label as to who sent the SMS message. Only in some supported countries (not US):
      * https://support.twilio.com/hc/en-us/articles/223133767-International-support-for-Alphanumeric-Sender-ID
      */
-    private static final String SENDER_ID = "AWS.SNS.SMS.SenderID";
+    public static final String SENDER_ID = "AWS.SNS.SMS.SenderID";
     /**
      * SMS type (Promotional or Transactional).
      */
-    private static final String SMS_TYPE = "AWS.SNS.SMS.SMSType";
-
-
-    private static Logger LOG = LoggerFactory.getLogger(NotificationsService.class);
+    public static final String SMS_TYPE = "AWS.SNS.SMS.SMSType";
     
+    private static final String SMS_TYPE_TRANSACTIONAL = "Transactional";
+        
     private StudyService studyService;
     
     private NotificationRegistrationDao notificationRegistrationDao;
@@ -188,11 +189,12 @@ public class NotificationsService {
     
     public void sendSMSMessage(StudyIdentifier studyId, Phone phone, String message) {
         checkNotNull(studyId);
+        checkNotNull(phone);
         checkNotNull(message);
         
-        // Limited to 140 characters (Java is UTF-16, so two bytes per character, assuming for now that 
-        // SNS converts these to ASCII, requires integration testing
-        if (message.length() > BridgeConstants.SMS_CHARACTER_LIMIT) {
+        // Limited to 140 bytes in GSM. We can test the length in ASCII (GSM is not a supported encoding in the 
+        // JDK) and this is a rough approximation as both are 7-bit encodings.
+        if (message.getBytes(Charset.forName("US-ASCII")).length > BridgeConstants.SMS_CHARACTER_LIMIT) {
             throw new BridgeServiceException("SMS message cannot be longer than 140 UTF-8/ASCII characters.");
         }
         
@@ -209,7 +211,7 @@ public class NotificationsService {
 
         LOG.debug("Sent SMS message, study=" + studyId.getIdentifier() + ", message ID=" + result.getMessageId());
     }
-    
+
     private MessageAttributeValue attribute(String value) {
         return new MessageAttributeValue().withStringValue(value).withDataType("String");
     }

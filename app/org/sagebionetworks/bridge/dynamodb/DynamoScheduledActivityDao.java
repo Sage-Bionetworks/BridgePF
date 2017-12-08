@@ -173,7 +173,7 @@ public class DynamoScheduledActivityDao implements ScheduledActivityDao {
         List<ScheduledActivity> results = Lists.newArrayListWithCapacity(itemsToLoad.size());
         for (List<Object> list : resultMap.values()) {
             for (Object oneResult : list) {
-                ScheduledActivity activity = (ScheduledActivity)oneResult;    
+                ScheduledActivity activity = (ScheduledActivity)oneResult;
                 activity.setTimeZone(scheduledOnStart.getZone());
                 results.add(activity);
             }

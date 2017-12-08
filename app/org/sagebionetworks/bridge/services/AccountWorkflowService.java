@@ -7,6 +7,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.io.IOException;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -15,16 +16,18 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.Email;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -38,7 +41,7 @@ public class AccountWorkflowService {
     private static final String BASE_URL = BridgeConfigFactory.getConfig().get("webservices.url");
     private static final String EXP_WINDOW_TOKEN = "expirationWindow";
     private static final String URL_TOKEN = "url";
-    private static final int EXPIRE_IN_SECONDS = 60*60*2;
+    static final int EXPIRE_IN_SECONDS = 60*60*2;
     
     private static class VerificationData {
         private final String studyId;
@@ -65,6 +68,8 @@ public class AccountWorkflowService {
     private AccountDao accountDao;
     
     private CacheProvider cacheProvider;
+    
+    private NotificationsService notificationsService;
 
     @Autowired
     public final void setStudyService(StudyService studyService) {
@@ -86,43 +91,48 @@ public class AccountWorkflowService {
         this.cacheProvider = cacheProvider;
     }
     
+    @Autowired
+    public final void setNotificationsService(NotificationsService notificationsService) {
+        this.notificationsService = notificationsService;
+    }
+    
     /**
      * Send email verification token as part of creating an account that requires an email address be
      * verified. We assume that an account has been created and that email verification should be sent
      * (neither is verified in this method).
      */
-    public void sendEmailVerificationToken(Study study, String userId, String email) {
+    public void sendEmailVerificationToken(Study study, String userId, String recipientEmail) {
         checkNotNull(study);
         checkArgument(isNotBlank(userId));
-        checkArgument(isNotBlank(email));
-
-        String sptoken = createTimeLimitedToken();
         
-        saveVerification(sptoken, new VerificationData(study.getIdentifier(), userId));
-        
-        String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
-        String url = String.format(VERIFY_EMAIL_URL, BASE_URL, studyId, sptoken);
-        
-        BasicEmailProvider provider = new BasicEmailProvider.Builder()
-            .withStudy(study)
-            .withEmailTemplate(study.getVerifyEmailTemplate())
-            .withRecipientEmail(email)
-            .withToken(URL_TOKEN, url).build();
-        sendMailService.sendEmail(provider);         
+        if (recipientEmail != null) {
+            String sptoken = createTimeLimitedToken();
+            
+            saveVerification(sptoken, new VerificationData(study.getIdentifier(), userId));
+            
+            String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
+            String url = String.format(VERIFY_EMAIL_URL, BASE_URL, studyId, sptoken);
+            
+            BasicEmailProvider provider = new BasicEmailProvider.Builder()
+                .withStudy(study)
+                .withEmailTemplate(study.getVerifyEmailTemplate())
+                .withRecipientEmail(recipientEmail)
+                .withToken(URL_TOKEN, url).build();
+            sendMailService.sendEmail(provider);         
+        }
     }
     
     /**
      * Send another email verification token. This creates and sends a new verification token 
      * starting with the user's email address.
      */
-    public void resendEmailVerificationToken(StudyIdentifier studyIdentifier, Email email) {
-        checkNotNull(studyIdentifier);
-        checkNotNull(email);
+    public void resendEmailVerificationToken(AccountId accountId) {
+        checkNotNull(accountId);
         
-        Study study = studyService.getStudy(studyIdentifier);
-        Account account = accountDao.getAccountWithEmail(study, email.getEmail());
+        Study study = studyService.getStudy(accountId.getStudyId());
+        Account account = accountDao.getAccount(accountId);
         if (account != null) {
-            sendEmailVerificationToken(study, account.getId(), email.getEmail());
+            sendEmailVerificationToken(study, account.getId(), account.getEmail());
         }
     }
     
@@ -143,7 +153,7 @@ public class AccountWorkflowService {
         }
         Study study = studyService.getStudy(data.getStudyId());
 
-        Account account = accountDao.getAccount(study, data.getUserId());
+        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), data.getUserId()));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
@@ -155,11 +165,18 @@ public class AccountWorkflowService {
      * provide a link to reset the password if desired. The workflow of this email then merges 
      * with the workflow to reset a password.
      */
-    public void notifyAccountExists(Study study, Email email) {
+    public void notifyAccountExists(Study study, AccountId accountId) {
         checkNotNull(study);
-        checkNotNull(email);
+        checkNotNull(accountId);
         
-        sendPasswordResetRelatedEmail(study, email, study.getAccountExistsTemplate());
+        Account account = accountDao.getAccount(accountId);
+        if (account.getEmail() != null && account.getEmailVerified()) {
+            sendPasswordResetRelatedEmail(study, account.getEmail(), study.getAccountExistsTemplate());    
+        } else if (account.getPhone() != null && account.getPhoneVerified()) {
+            String appName = (study.getShortName() != null) ? study.getShortName() : "Bridge";
+            String message = "Account for " + appName + " already exists. Reset password: ";
+            sendPasswordResetRelatedSMS(study, account.getPhone(), message);
+        }
     }
     
     /**
@@ -168,21 +185,27 @@ public class AccountWorkflowService {
      * the email does not map to an account, in order to prevent account enumeration 
      * attacks.
      */
-    public void requestResetPassword(Study study, Email email) {
-        checkNotNull(study);
-        checkNotNull(email);
+    public void requestResetPassword(Study study, AccountId accountId) {
+        checkNotNull(accountId);
+        checkArgument(study.getIdentifier().equals(accountId.getStudyId()));
         
-        Account account = accountDao.getAccountWithEmail(study, email.getEmail());
+        Account account = accountDao.getAccount(accountId);
         if (account != null) {
-            sendPasswordResetRelatedEmail(study, email, study.getResetPasswordTemplate());    
+            if (account.getEmail() != null && account.getEmailVerified()) {
+                sendPasswordResetRelatedEmail(study, account.getEmail(), study.getResetPasswordTemplate());    
+            } else if (account.getPhone() != null && account.getPhoneVerified()) {
+                String appName = (study.getShortName() != null) ? study.getShortName() : "Bridge";
+                String message = "Reset " + appName + " password: ";
+                sendPasswordResetRelatedSMS(study, account.getPhone(), message);
+            }
         }
     }
-
-    private void sendPasswordResetRelatedEmail(Study study, Email email, EmailTemplate template) {
+    
+    private void sendPasswordResetRelatedEmail(Study study, String email, EmailTemplate template) {
         String sptoken = createTimeLimitedToken();
         
         String cacheKey = sptoken + ":" + study.getIdentifier();
-        cacheProvider.setString(cacheKey, email.getEmail(), EXPIRE_IN_SECONDS);
+        cacheProvider.setString(cacheKey, email, EXPIRE_IN_SECONDS);
         
         String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
         String url = String.format(RESET_PASSWORD_URL, BASE_URL, studyId, sptoken);
@@ -190,10 +213,21 @@ public class AccountWorkflowService {
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
             .withStudy(study)
             .withEmailTemplate(template)
-            .withRecipientEmail(email.getEmail())
+            .withRecipientEmail(email)
             .withToken(URL_TOKEN, url)
             .withToken(EXP_WINDOW_TOKEN, Integer.toString(EXPIRE_IN_SECONDS/60/60)).build();
         sendMailService.sendEmail(provider);
+    }
+    
+    private void sendPasswordResetRelatedSMS(Study study, Phone phone, String message) {
+        String sptoken = createTimeLimitedToken();        
+        String cacheKey = sptoken + ":phone:" + study.getIdentifier();
+        cacheProvider.setString(cacheKey, getPhoneString(phone), EXPIRE_IN_SECONDS);
+        
+        String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
+        String url = String.format(RESET_PASSWORD_URL, BASE_URL, studyId, sptoken);
+        
+        notificationsService.sendSMSMessage(study.getStudyIdentifier(), phone, message + url);
     }
 
     /**
@@ -204,16 +238,28 @@ public class AccountWorkflowService {
     public void resetPassword(PasswordReset passwordReset) {
         checkNotNull(passwordReset);
         
-        String cacheKey = passwordReset.getSptoken() + ":" + passwordReset.getStudyIdentifier();
-        String email = cacheProvider.getString(cacheKey);
+        // This pathway is unusual as the account may have an email address or a phone number, so test for both.
+        String emailCacheKey = passwordReset.getSptoken() + ":" + passwordReset.getStudyIdentifier();
+        String phoneCacheKey = passwordReset.getSptoken() + ":phone:" + passwordReset.getStudyIdentifier();
         
-        if (email == null) {
+        String email = cacheProvider.getString(emailCacheKey);
+        String phoneJson = cacheProvider.getString(phoneCacheKey);
+        if (email == null && phoneJson == null) {
             throw new BadRequestException(PASSWORD_RESET_TOKEN_EXPIRED);
         }
-        cacheProvider.removeString(cacheKey);
+        cacheProvider.removeString(emailCacheKey);
+        cacheProvider.removeString(phoneCacheKey);
         
         Study study = studyService.getStudy(passwordReset.getStudyIdentifier());
-        Account account = accountDao.getAccountWithEmail(study, email);
+        AccountId accountId = null;
+        if (email != null) {
+            accountId = AccountId.forEmail(study.getIdentifier(), email);
+        } else if (phoneJson != null) {
+            accountId = AccountId.forPhone(study.getIdentifier(), getPhone(phoneJson));
+        } else {
+            throw new BridgeServiceException("Could not reset password");
+        }
+        Account account = accountDao.getAccount(accountId);
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
@@ -246,7 +292,23 @@ public class AccountWorkflowService {
         return null;
     }    
     
+    private String getPhoneString(Phone phone) {
+        try {
+            return BridgeObjectMapper.get().writeValueAsString(phone);
+        } catch (JsonProcessingException e) {
+            throw new BridgeServiceException(e);
+        }
+    }
+    
+    private Phone getPhone(String json) {
+        try {
+            return BridgeObjectMapper.get().readValue(json, Phone.class);
+        } catch (IOException e) {
+            throw new BridgeServiceException(e);
+        }
+    }
+    
     protected String createTimeLimitedToken() {
-        return BridgeUtils.generateGuid().replaceAll("-", "");
+        return SecureTokenGenerator.INSTANCE.nextToken();
     }
 }

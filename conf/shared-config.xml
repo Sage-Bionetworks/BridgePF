@@ -210,4 +210,8 @@
     <bean id="IntentControllerProxied" parent="proxiedController">
         <property name="targetName" value="intentController" />
     </bean>
+
+    <bean id="OAuthControllerProxied" parent="proxiedController">
+        <property name="targetName" value="oauthController" />
+    </bean>
 </beans>

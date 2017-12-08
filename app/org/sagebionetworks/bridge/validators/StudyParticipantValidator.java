@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.Set;
 
@@ -35,24 +36,29 @@ public class StudyParticipantValidator implements Validator {
         StudyParticipant participant = (StudyParticipant)object;
         
         if (isNew) {
-            if (isBlank(participant.getEmail())) {
-                errors.rejectValue("email", "is required");
-            } else if (!EMAIL_VALIDATOR.isValid(participant.getEmail())){
-                errors.rejectValue("email", "must be a valid email address");
+            Phone phone = participant.getPhone();
+            String email = participant.getEmail();
+            if (isBlank(email) && phone == null) {
+                errors.reject("email or phone is required");
+            }
+            // If provided, phone must be valid
+            if (phone != null && !Phone.isValid(phone)) {
+                errors.rejectValue("phone", "does not appear to be a phone number");
+            }
+            // If provided, email must be valid
+            if (isNotBlank(email) && !EMAIL_VALIDATOR.isValid(email)) {
+                errors.rejectValue("email", "does not appear to be an email address");
             }
             if (study.isExternalIdRequiredOnSignup() && isBlank(participant.getExternalId())) {
                 errors.rejectValue("externalId", "is required");
             }
-            // Validate phone number. We currently don't allow phone number to be updated, so only do this
-            // on a new account.
-            Phone phone = participant.getPhone();
-            if (phone != null && !Phone.isValid(phone)) {
-                errors.rejectValue("phone", "does not appear to be a phone number");
-            }
-            // This validation logic is also performed for reset password requests.
+            // Password is optional, but validation is applied if supplied, any time it is 
+            // supplied (such as in the password reset workflow).
             String password = participant.getPassword();
-            PasswordPolicy passwordPolicy = study.getPasswordPolicy();
-            ValidatorUtils.validatePassword(errors, passwordPolicy, password);
+            if (password != null) {
+                PasswordPolicy passwordPolicy = study.getPasswordPolicy();
+                ValidatorUtils.validatePassword(errors, passwordPolicy, password);
+            }
         } else {
             if (isBlank(participant.getId())) {
                 errors.rejectValue("id", "is required");

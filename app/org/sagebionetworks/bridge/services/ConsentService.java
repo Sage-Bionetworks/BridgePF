@@ -20,6 +20,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
@@ -53,7 +54,6 @@ public class ConsentService {
     private StudyConsentService studyConsentService;
     private ActivityEventService activityEventService;
     private SubpopulationService subpopService;
-    private StudyService studyService;
     private String consentTemplate;
     
     @Value("classpath:study-defaults/consent-page.xhtml")
@@ -86,10 +86,6 @@ public class ConsentService {
     final void setSubpopulationService(SubpopulationService subpopService) {
         this.subpopService = subpopService;
     }
-    @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
-    }
     
     /**
      * Get the user's active consent signature (a signature that has not been withdrawn).
@@ -107,7 +103,7 @@ public class ConsentService {
         // This will throw an EntityNotFoundException if the subpopulation is not in the user's study
         subpopService.getSubpopulation(study, subpopGuid);
         
-        Account account = accountDao.getAccount(study, userId);
+        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), userId));
         ConsentSignature signature = account.getActiveConsentSignature(subpopGuid);
         if (signature == null) {
             throw new EntityNotFoundException(ConsentSignature.class);    
@@ -151,7 +147,7 @@ public class ConsentService {
         
         // If there's a signature to the current and active consent, user cannot consent again. They can sign
         // any other consent, including more recent consents.
-        Account account = accountDao.getAccount(study, participant.getId());
+        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), participant.getId()));
         ConsentSignature active = account.getActiveConsentSignature(subpopGuid);
         if (active != null && active.getConsentCreatedOn() == studyConsent.getCreatedOn()) {
             throw new EntityAlreadyExistsException(ConsentSignature.class, null);
@@ -174,7 +170,7 @@ public class ConsentService {
         optionsService.setEnum(study, participant.getHealthCode(), SHARING_SCOPE, sharingScope);
         
         // Send email, if required.
-        if (sendEmail) {
+        if (sendEmail && participant.getEmail() != null) {
             MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, participant.getTimeZone(),
                     participant.getEmail(), withConsentCreatedOnSignature, sharingScope,
                     studyConsent.getDocumentContent(), consentTemplate);
@@ -193,8 +189,7 @@ public class ConsentService {
     public Map<SubpopulationGuid,ConsentStatus> getConsentStatuses(CriteriaContext context) {
         checkNotNull(context);
         
-        Study study = studyService.getStudy(context.getStudyIdentifier());
-        Account account = accountDao.getAccount(study, context.getUserId());
+        Account account = accountDao.getAccount(context.getAccountId());
         
         ImmutableMap.Builder<SubpopulationGuid, ConsentStatus> builder = new ImmutableMap.Builder<>();
         for (Subpopulation subpop : subpopService.getSubpopulationForUser(context)) {
@@ -227,7 +222,7 @@ public class ConsentService {
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
         
-        Account account = accountDao.getAccount(study, participant.getId());
+        Account account = accountDao.getAccount(context.getAccountId());
         
         String externalId = participant.getExternalId();
         
@@ -236,9 +231,11 @@ public class ConsentService {
         }
         accountDao.updateAccount(account);
         
-        MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account, withdrawal,
-                withdrewOn);
-        sendMailService.sendEmail(consentEmail);
+        if (account.getEmail() != null) {
+            MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account, withdrawal,
+                    withdrewOn);
+            sendMailService.sendEmail(consentEmail);
+        }
         
         Map<SubpopulationGuid,ConsentStatus> statuses = getConsentStatuses(context);
         
@@ -262,7 +259,7 @@ public class ConsentService {
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
 
-        Account account = accountDao.getAccount(study, context.getUserId());
+        Account account = accountDao.getAccount(context.getAccountId());
         
         // Do this first, as it directly impacts the export of data, and if nothing else, we'd like this to succeed.
         optionsService.setEnum(study.getStudyIdentifier(), account.getHealthCode(), SHARING_SCOPE, SharingScope.NO_SHARING);
@@ -273,9 +270,12 @@ public class ConsentService {
         accountDao.updateAccount(account);
         
         String externalId = optionsService.getOptions(account.getHealthCode()).getString(EXTERNAL_IDENTIFIER);
-        MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account, withdrawal,
-                withdrewOn);
-        sendMailService.sendEmail(consentEmail);
+        
+        if (account.getEmail() != null) {
+            MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account, withdrawal,
+                    withdrewOn);
+            sendMailService.sendEmail(consentEmail);
+        }
         
         // But we don't need to query, we know these are all withdraw.
         return getConsentStatuses(context);
@@ -298,9 +298,11 @@ public class ConsentService {
         
         String htmlTemplate = studyConsentService.getActiveConsent(subpop).getDocumentContent();
         
-        MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, participant.getTimeZone(),
-                participant.getEmail(), consentSignature, sharingScope, htmlTemplate, consentTemplate);
-        sendMailService.sendEmail(consentEmail);
+        if (participant.getEmail() != null) {
+            MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, participant.getTimeZone(),
+                    participant.getEmail(), consentSignature, sharingScope, htmlTemplate, consentTemplate);
+            sendMailService.sendEmail(consentEmail);
+        }
     }
 
     private boolean withdrawSignatures(Account account, SubpopulationGuid subpopGuid, long withdrewOn) {

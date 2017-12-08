@@ -1,12 +1,14 @@
 # Top level views
-GET    /                           @org.sagebionetworks.bridge.play.controllers.ApplicationController.loadApp
-GET    /index.html                 @org.sagebionetworks.bridge.play.controllers.ApplicationController.loadApp
-GET    /mobile/verifyEmail.html    @org.sagebionetworks.bridge.play.controllers.ApplicationController.verifyEmail(study: String ?= "api")
-GET    /mobile/resetPassword.html  @org.sagebionetworks.bridge.play.controllers.ApplicationController.resetPassword(study: String ?= "api")
-GET    /mobile/startSession.html   @org.sagebionetworks.bridge.play.controllers.ApplicationController.startSession(study: String ?= null, email: String ?= null, token: String ?= null)
+GET    /                                       @org.sagebionetworks.bridge.play.controllers.ApplicationController.loadApp
+GET    /index.html                             @org.sagebionetworks.bridge.play.controllers.ApplicationController.loadApp
+GET    /mobile/verifyEmail.html                @org.sagebionetworks.bridge.play.controllers.ApplicationController.verifyEmail(study: String ?= "api")
+GET    /mobile/resetPassword.html              @org.sagebionetworks.bridge.play.controllers.ApplicationController.resetPassword(study: String ?= "api")
+GET    /mobile/startSession.html               @org.sagebionetworks.bridge.play.controllers.ApplicationController.startSession(study: String ?= null, email: String ?= null, token: String ?= null)
+GET    /.well-known/assetlinks.json            @org.sagebionetworks.bridge.play.controllers.ApplicationController.androidAppLinks
+GET    /.well-known/apple-app-site-association @org.sagebionetworks.bridge.play.controllers.ApplicationController.appleAppLinks
 
 # Authentication
-POST   /v3/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signIn
+POST   /v3/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signInV3
 POST   /v3/auth/signOut                 @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signOut
 POST   /v3/auth/reauth                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.reauthenticate
 POST   /v3/auth/requestResetPassword    @org.sagebionetworks.bridge.play.controllers.AuthenticationController.requestResetPassword
@@ -16,6 +18,12 @@ POST   /v3/auth/verifyEmail             @org.sagebionetworks.bridge.play.control
 POST   /v3/auth/resendEmailVerification @org.sagebionetworks.bridge.play.controllers.AuthenticationController.resendEmailVerification
 POST   /v3/auth/email                   @org.sagebionetworks.bridge.play.controllers.AuthenticationController.requestEmailSignIn
 POST   /v3/auth/email/signIn            @org.sagebionetworks.bridge.play.controllers.AuthenticationController.emailSignIn
+POST   /v3/auth/phone                   @org.sagebionetworks.bridge.play.controllers.AuthenticationController.requestPhoneSignIn
+POST   /v3/auth/phone/signIn            @org.sagebionetworks.bridge.play.controllers.AuthenticationController.phoneSignIn
+POST   /v4/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signInV4
+
+# OAuth
+POST /v3/oauth/:vendorId    @org.sagebionetworks.bridge.play.controllers.OAuthController.requestAccessToken(vendorId: String)
 
 # Compound Activity Definitions
 GET    /v3/compoundactivitydefinitions @org.sagebionetworks.bridge.play.controllers.CompoundActivityDefinitionController.getAllCompoundActivityDefinitionsInStudy
@@ -175,20 +183,20 @@ POST   /v3/uploads/:uploadId/complete  @org.sagebionetworks.bridge.play.controll
 GET    /v3/uploadstatuses/:uploadId    @org.sagebionetworks.bridge.play.controllers.UploadController.getValidationStatus(uploadId: String)
 
 # Upload Schemas
-GET    /v3/uploadschemas                           @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemasForStudy
-POST   /v3/uploadschemas                           @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.createOrUpdateUploadSchema
-POST   /v4/uploadschemas                           @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.createSchemaRevisionV4
+GET    /v3/uploadschemas                               @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemasForStudy
+POST   /v3/uploadschemas                               @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.createOrUpdateUploadSchema
+POST   /v4/uploadschemas                               @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.createSchemaRevisionV4
 POST   /v4/uploadschemas/:schemaId/revisions/:revision @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.updateSchemaRevisionV4(schemaId: String, revision: Int)
-GET    /v3/uploadschemas/:schemaId                 @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemaAllRevisions(schemaId: String)
-GET    /v3/uploadschemas/:schemaId/recent          @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchema(schemaId: String)
-GET    /v3/uploadschemas/:schemaId/revisions/:rev  @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemaByIdAndRev(schemaId: String, rev: Int)
+GET    /v3/uploadschemas/:schemaId                     @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemaAllRevisions(schemaId: String)
+GET    /v3/uploadschemas/:schemaId/recent              @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchema(schemaId: String)
+GET    /v3/uploadschemas/:schemaId/revisions/:rev      @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemaByIdAndRev(schemaId: String, rev: Int)
 
 # Schedule Plans
-GET    /v3/scheduleplans                  @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.getSchedulePlans
-POST   /v3/scheduleplans                  @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.createSchedulePlan
-GET    /v3/scheduleplans/:guid            @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.getSchedulePlan(guid: String)
-POST   /v3/scheduleplans/:guid            @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.updateSchedulePlan(guid: String)
-DELETE /v3/scheduleplans/:guid            @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.deleteSchedulePlan(guid: String)
+GET    /v3/scheduleplans        @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.getSchedulePlans
+POST   /v3/scheduleplans        @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.createSchedulePlan
+GET    /v3/scheduleplans/:guid  @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.getSchedulePlan(guid: String)
+POST   /v3/scheduleplans/:guid  @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.updateSchedulePlan(guid: String)
+DELETE /v3/scheduleplans/:guid  @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.deleteSchedulePlan(guid: String)
 
 # Activity Events
 GET    /v1/activityevents @org.sagebionetworks.bridge.play.controllers.ActivityEventController.getSelfActivityEvents
@@ -223,8 +231,8 @@ DELETE /v3/appconfigs/:guid  @org.sagebionetworks.bridge.play.controllers.AppCon
 POST   /v3/itp @org.sagebionetworks.bridge.play.controllers.IntentController.submitIntentToParticipate
 
 # Bridge Exporter
-POST /v3/recordexportstatuses      @org.sagebionetworks.bridge.play.controllers.HealthDataController.updateRecordsStatus
-POST /v3/recordExportStatuses      @org.sagebionetworks.bridge.play.controllers.HealthDataController.updateRecordsStatus
+POST /v3/recordexportstatuses  @org.sagebionetworks.bridge.play.controllers.HealthDataController.updateRecordsStatus
+POST /v3/recordExportStatuses  @org.sagebionetworks.bridge.play.controllers.HealthDataController.updateRecordsStatus
 
 # Studies
 GET    /v3/studies                     @org.sagebionetworks.bridge.play.controllers.StudyController.getAllStudies(format: String ?= null, summary: String ?= null)
@@ -253,6 +261,8 @@ POST   /v3/studies/:studyId/reports/:identifier                         @org.sag
 GET    /v3/studies/:studyId/uploads                                     @org.sagebionetworks.bridge.play.controllers.StudyController.getUploadsForStudy(studyId: String, startTime: String ?= null, endTime: String ?= null, pageSize: java.lang.Integer ?= null, offsetKey: String ?= null)
 GET    /v3/studies/:studyId/participants                                @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipantsForWorker(studyId: String, offsetBy: String ?= null, pageSize: String ?= null, emailFilter: String ?= null, startDate: String ?= null, endDate: String ?= null, startTime: String ?= null, endTime: String ?= null)
 GET    /v3/studies/:studyId/participants/:userId                        @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipantForWorker(studyId: String, userId: String)
+GET    /v3/studies/:studyId/oauth/:vendorId                             @org.sagebionetworks.bridge.play.controllers.OAuthController.getHealthCodesGrantingAccess(studyId: String, vendorId: String, offsetKey: String ?= null, pageSize: String ?= null)
+GET    /v3/studies/:studyId/oauth/:vendorId/:healthCode                 @org.sagebionetworks.bridge.play.controllers.OAuthController.getAccessToken(studyId: String, vendorId: String, healthCode: String)
 
 # Admin APIs for across studies
 POST   /v3/studies/:studyId/users                                       @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUserWithStudyId(studyId: String)
@@ -275,7 +285,7 @@ POST   /fphs/externalIds  @org.sagebionetworks.bridge.play.controllers.FPHSContr
 # OLD API ----------------------------------------------------------------------------------------------------
 
 # API - Authentication
-POST   /api/v1/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signIn
+POST   /api/v1/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signInV3
 GET    /api/v1/auth/signOut                 @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signOut
 POST   /api/v1/auth/requestResetPassword    @org.sagebionetworks.bridge.play.controllers.AuthenticationController.requestResetPassword
 POST   /api/v1/auth/resetPassword           @org.sagebionetworks.bridge.play.controllers.AuthenticationController.resetPassword

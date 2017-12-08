@@ -26,10 +26,10 @@ public class ForwardCursorPagedResourceListTest {
     @Test
     public void canSerialize() throws Exception {
         List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
-        accounts.add(new AccountSummary("firstName1", "lastName1", "email1@email.com", "id", DateTime.now(),
-                AccountStatus.DISABLED, TestConstants.TEST_STUDY));
-        accounts.add(new AccountSummary("firstName2", "lastName2", "email2@email.com", "id2", DateTime.now(),
-                AccountStatus.ENABLED, TestConstants.TEST_STUDY));
+        accounts.add(new AccountSummary("firstName1", "lastName1", "email1@email.com", TestConstants.PHONE, "id",
+                DateTime.now(), AccountStatus.DISABLED, TestConstants.TEST_STUDY));
+        accounts.add(new AccountSummary("firstName2", "lastName2", "email2@email.com", TestConstants.PHONE, "id2",
+                DateTime.now(), AccountStatus.ENABLED, TestConstants.TEST_STUDY));
         
         DateTime startTime = DateTime.parse("2016-02-03T10:10:10.000-08:00");
         DateTime endTime = DateTime.parse("2016-02-23T14:14:14.000-08:00");

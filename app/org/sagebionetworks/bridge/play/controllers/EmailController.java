@@ -7,6 +7,7 @@ import java.util.Map;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import org.apache.commons.lang3.StringUtils;
@@ -64,7 +65,8 @@ public class EmailController extends BaseController {
             }
             
             // This should always return a healthCode under normal circumstances.
-            String healthCode = accountDao.getHealthCodeForEmail(study, email);
+            AccountId accountId = AccountId.forEmail(study.getIdentifier(), email);
+            String healthCode = accountDao.getHealthCodeForAccount(accountId);
             if (healthCode == null) {
                 throw new BadRequestException("Email not found.");
             }

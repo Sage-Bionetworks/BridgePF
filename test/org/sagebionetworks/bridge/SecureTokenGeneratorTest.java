@@ -2,20 +2,15 @@ package org.sagebionetworks.bridge;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-
-import java.security.SecureRandom;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
-public class StringIdGeneratorTest {
+public class SecureTokenGeneratorTest {
 
-    @Mock
-    private SecureRandom random;
-    
     @Test
     public void testNoArgConstructor() {
         String value = SecureTokenGenerator.INSTANCE.nextToken();
@@ -27,6 +22,13 @@ public class StringIdGeneratorTest {
     @Test
     public void nextStringDifferent() {
         assertNotEquals(SecureTokenGenerator.INSTANCE.nextToken(), SecureTokenGenerator.INSTANCE.nextToken());
+    }
+    
+    @Test
+    public void phoneCodeString() {
+        String token = SecureTokenGenerator.PHONE_CODE_INSTANCE.nextToken();
+        assertEquals(6, token.length());
+        assertTrue(token.matches("^\\d+$")); // composed only of digits
     }
     
 }

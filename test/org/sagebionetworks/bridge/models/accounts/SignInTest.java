@@ -1,9 +1,10 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import org.junit.Test;
-
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
@@ -34,6 +35,24 @@ public class SignInTest {
     }
     
     @Test
+    public void canSerialize() throws Exception {
+        // We set up tests with this object so verify it creates the correct JSON
+        SignIn signIn = new SignIn.Builder().withEmail("email@email.com")
+                .withPassword("password").withPhone(TestConstants.PHONE)
+                .withReauthToken("reauthToken").withStudy("study-key")
+                .withToken("token").build();
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(signIn);
+        assertEquals("email@email.com", node.get("email").textValue());
+        assertEquals("password", node.get("password").textValue());
+        assertEquals(TestConstants.PHONE.getNumber(), node.get("phone").get("number").textValue());
+        assertEquals(TestConstants.PHONE.getRegionCode(), node.get("phone").get("regionCode").textValue());
+        assertEquals("reauthToken", node.get("reauthToken").textValue());
+        assertEquals("study-key", node.get("study").textValue());
+        assertEquals("token", node.get("token").textValue());
+    }
+    
+    @Test
     public void preferUsernameOverEmailForBackwardsCompatibility() throws Exception {
         String json = "{\"username\":\"aName\",\"email\":\"email@email.com\",\"password\":\"password\"}";
 
@@ -60,7 +79,8 @@ public class SignInTest {
                 "'password':'passwordValue',"+
                 "'study':'studyValue',"+
                 "'token':'tokenValue',"+
-                "'phone':{'number':'4082588569','regionCode':'US'},"+
+                "'phone':{'number':'"+TestConstants.PHONE.getNumber()+"',"+
+                    "'regionCode':'"+TestConstants.PHONE.getRegionCode()+"'},"+
                 "'reauthToken':'reauthTokenValue'"+
                 "}"));
         
@@ -69,8 +89,8 @@ public class SignInTest {
         assertEquals("passwordValue", signIn.getPassword());
         assertEquals("studyValue", signIn.getStudyId());
         assertEquals("tokenValue", signIn.getToken());
-        assertEquals("+14082588569", signIn.getPhone().getNumber());
-        assertEquals("US", signIn.getPhone().getRegionCode());
+        assertEquals(TestConstants.PHONE.getNumber(), signIn.getPhone().getNumber());
+        assertEquals(TestConstants.PHONE.getRegionCode(), signIn.getPhone().getRegionCode());
         assertEquals("reauthTokenValue", signIn.getReauthToken());
     }
     
@@ -89,5 +109,37 @@ public class SignInTest {
         assertEquals("studyValue", signIn.getStudyId());
         assertEquals("tokenValue", signIn.getToken());
         assertEquals("reauthTokenValue", signIn.getReauthToken());
-    }  
+    }
+    
+    @Test
+    public void signInAccountIdWithEmail() {
+        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER).withEmail("email")
+                .withPassword("password").build();
+        AccountId accountId = signIn.getAccountId();
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, accountId.getStudyId());
+        assertEquals("email", accountId.getEmail());
+    }
+    
+    @Test
+    public void signInAccountIdWithPhone() {
+        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withPhone(TestConstants.PHONE).withPassword("password").build();
+        AccountId accountId = signIn.getAccountId();
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, accountId.getStudyId());
+        assertEquals(TestConstants.PHONE.getNumber(), accountId.getPhone().getNumber());
+    }
+    
+    @Test
+    public void signInAccountIncomplete() {
+        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withPassword("password").build();
+        // SignIn should be validated to hold either email or phone before we 
+        // retrieve accountId 
+        try {
+            signIn.getAccountId();
+            fail("Should have thrown an exception");
+        } catch(IllegalArgumentException e) {
+            assertEquals("SignIn not constructed with enough information to retrieve an account", e.getMessage());
+        }
+    }
 }

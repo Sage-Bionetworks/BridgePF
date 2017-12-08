@@ -5,6 +5,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyObject;
 import static org.mockito.Mockito.anySet;
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
@@ -23,12 +24,15 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
@@ -123,6 +127,8 @@ public class UserAdminServiceMockTest {
         doReturn(new IdentifierHolder("ABC")).when(participantService).createParticipant(anyObject(), anySet(),
                 anyObject(), anyBoolean());
         doReturn(session).when(authenticationService).getSession(anyObject(), anyObject());
+        doReturn(new StudyParticipant.Builder().withId("ABC").build()).when(participantService).getParticipant(any(),
+                anyString(), anyBoolean());
     }
     
     private void addConsentStatus(Map<SubpopulationGuid,ConsentStatus> statuses, String guid) {
@@ -135,8 +141,39 @@ public class UserAdminServiceMockTest {
     public void creatingUserConsentsToAllRequiredConsents() {
         Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
+        
+        Map<SubpopulationGuid,ConsentStatus> statuses = Maps.newHashMap();
+        statuses.put(SubpopulationGuid.create("foo1"), TestConstants.REQUIRED_SIGNED_CURRENT);
+        statuses.put(SubpopulationGuid.create("foo2"), TestConstants.REQUIRED_SIGNED_OBSOLETE);
+        when(consentService.getConsentStatuses(any())).thenReturn(statuses);
+        
+        service.createUser(study, participant, null, true, true);
+        
+        verify(participantService).createParticipant(study, Sets.newHashSet(Roles.ADMIN), participant, false);
+        verify(authenticationService).signIn(eq(study), contextCaptor.capture(), signInCaptor.capture());
+        
+        CriteriaContext context = contextCaptor.getValue();
+        assertEquals(study.getStudyIdentifier(), context.getStudyIdentifier());
+        
+        verify(consentService).consentToResearch(eq(study), eq(SubpopulationGuid.create("foo1")), any(StudyParticipant.class), any(),
+                eq(SharingScope.NO_SHARING), eq(false));
+        verify(consentService).consentToResearch(eq(study), eq(SubpopulationGuid.create("foo2")), any(StudyParticipant.class), any(),
+                eq(SharingScope.NO_SHARING), eq(false));
 
-        UserSession session = service.createUser(study, participant, null, true, true);
+        SignIn signIn = signInCaptor.getValue();
+        assertEquals(participant.getEmail(), signIn.getEmail());
+        assertEquals(participant.getPassword(), signIn.getPassword());
+        
+        verify(consentService).getConsentStatuses(context);
+    }
+    
+    @Test
+    public void creatingUserWithPhone() {
+        Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
+        StudyParticipant participant = new StudyParticipant.Builder().withPhone(TestConstants.PHONE)
+                .withPassword("password").build();
+
+        service.createUser(study, participant, null, true, true);
         
         verify(participantService).createParticipant(study, Sets.newHashSet(Roles.ADMIN), participant, false);
         verify(authenticationService).signIn(eq(study), contextCaptor.capture(), signInCaptor.capture());
@@ -145,12 +182,18 @@ public class UserAdminServiceMockTest {
         assertEquals(study.getStudyIdentifier(), context.getStudyIdentifier());
         
         SignIn signIn = signInCaptor.getValue();
-        assertEquals(participant.getEmail(), signIn.getEmail());
+        assertEquals(participant.getPhone(), signIn.getPhone());
         assertEquals(participant.getPassword(), signIn.getPassword());
         
-        for (SubpopulationGuid guid : session.getConsentStatuses().keySet()) {
-            verify(consentService).consentToResearch(eq(study), eq(guid), any(StudyParticipant.class), any(), eq(SharingScope.NO_SHARING), eq(false));
-        }
+        verify(consentService).getConsentStatuses(context);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void creatingUserWithoutEmailOrPhoneProhibited() {
+        Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
+        StudyParticipant participant = new StudyParticipant.Builder().withPassword("password").build();
+
+        service.createUser(study, participant, null, true, true);
     }
     
     @Test
@@ -177,9 +220,11 @@ public class UserAdminServiceMockTest {
     public void deleteUser() {
         Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
         
+        AccountId accountId = AccountId.forId(study.getIdentifier(),  "userId");
+        
         doReturn("userId").when(account).getId();
         doReturn("healthCode").when(account).getHealthCode();
-        doReturn(account).when(accountDao).getAccount(study, "userId");
+        doReturn(account).when(accountDao).getAccount(accountId);
         
         doReturn(lookup).when(participantOptionsService).getOptions("healthCode");
         doReturn("externalId").when(lookup).getString(EXTERNAL_IDENTIFIER);
@@ -195,7 +240,7 @@ public class UserAdminServiceMockTest {
         verify(activityEventService).deleteActivityEvents("healthCode");
         verify(externalIdService).unassignExternalId(study, "externalId", "healthCode");
         verify(participantOptionsService).deleteAllParticipantOptions("healthCode");
-        verify(accountDao).deleteAccount(study, "userId");
+        verify(accountDao).deleteAccount(accountId);
     }
     
 }

@@ -43,8 +43,8 @@ import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -325,10 +325,10 @@ public class ParticipantService {
         checkNotNull(study);
         checkArgument(isNotBlank(userId));
 
-        Account account = getAccountThrowingException(study, userId);
+        // Don't throw an exception here, you'd be exposing that an email/phone number is in the system.
+        AccountId accountId = AccountId.forId(study.getIdentifier(), userId);
 
-        Email email = new Email(study.getIdentifier(), account.getEmail());
-        accountDao.requestResetPassword(study, email);
+        accountDao.requestResetPassword(study, accountId);
     }
 
     public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(Study study, String userId,
@@ -367,8 +367,7 @@ public class ParticipantService {
         checkArgument(isNotBlank(userId));
 
         StudyParticipant participant = getParticipant(study, userId, false);
-        Email email = new Email(study.getIdentifier(), participant.getEmail());
-        accountDao.resendEmailVerificationToken(study.getStudyIdentifier(), email);
+        accountDao.resendEmailVerificationToken(AccountId.forEmail(study.getIdentifier(), participant.getEmail()));
     }
 
     public void withdrawAllConsents(Study study, String userId, Withdrawal withdrawal, long withdrewOn) {
@@ -509,7 +508,7 @@ public class ParticipantService {
     }
 
     private Account getAccountThrowingException(Study study, String id) {
-        Account account = accountDao.getAccount(study, id);
+        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), id));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }

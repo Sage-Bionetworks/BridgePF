@@ -2,12 +2,14 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.STUDY;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.EMAIL;
+import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.EMAIL_OR_PHONE;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.PASSWORD;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.PHONE;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.TOKEN;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.REAUTH;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.EnumSet;
 
@@ -29,14 +31,21 @@ public class SignInValidator implements Validator {
     /** Sign in using token sent through SMS. */
     public static final SignInValidator PHONE_SIGNIN = new SignInValidator(EnumSet.of(STUDY, PHONE, TOKEN));
 
+    /** Request a reset password link via email or SMS. */
+    public static final SignInValidator REQUEST_RESET_PASSWORD = new SignInValidator(EnumSet.of(STUDY, EMAIL_OR_PHONE));
+    
+    /** The basics of a sign in that must be present for the admin create user API. */
+    public static final SignInValidator MINIMAL = new SignInValidator(EnumSet.of(STUDY, EMAIL_OR_PHONE));
+    
     /** Sign in using an email and password. */
-    public static final SignInValidator PASSWORD_SIGNIN = new SignInValidator(EnumSet.of(STUDY, EMAIL, PASSWORD));
+    public static final SignInValidator PASSWORD_SIGNIN = new SignInValidator(EnumSet.of(STUDY, EMAIL_OR_PHONE, PASSWORD));
     /** Reauthentication. */
-    public static final SignInValidator REAUTH_SIGNIN = new SignInValidator(EnumSet.of(STUDY, EMAIL, REAUTH));
+    public static final SignInValidator REAUTH_SIGNIN = new SignInValidator(EnumSet.of(STUDY, EMAIL_OR_PHONE, REAUTH));
     
     static enum RequiredFields {
         STUDY,
         EMAIL,
+        EMAIL_OR_PHONE,
         PASSWORD,
         PHONE,
         TOKEN,
@@ -66,6 +75,16 @@ public class SignInValidator implements Validator {
         }
         if (requiredFields.contains(PASSWORD) && isBlank(signIn.getPassword())) {
             errors.rejectValue("password", "is required");
+        }
+        if (requiredFields.contains(EMAIL_OR_PHONE)) {
+            if (isBlank(signIn.getEmail()) && signIn.getPhone() == null) {
+                errors.reject("email or phone is required");
+            } else if (isNotBlank(signIn.getEmail()) && signIn.getPhone() != null) {
+                errors.reject("email or phone is required, but not both");
+            }
+            if (signIn.getPhone() != null && !Phone.isValid(signIn.getPhone())) {
+                errors.rejectValue("phone", "does not appear to be a phone number");
+            }
         }
         if (requiredFields.contains(TOKEN) && isBlank(signIn.getToken())) {
             errors.rejectValue("token", "is required");

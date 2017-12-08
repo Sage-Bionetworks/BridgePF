@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope.NO_SHARING;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
@@ -15,6 +16,7 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
@@ -24,6 +26,8 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.validators.SignInValidator;
+import org.sagebionetworks.bridge.validators.Validate;
 
 import com.google.common.collect.Sets;
 
@@ -116,50 +120,54 @@ public class UserAdminService {
             boolean signUserIn, boolean consentUser) {
         checkNotNull(study, "Study cannot be null");
         checkNotNull(participant, "Participant cannot be null");
-        checkNotNull(participant.getEmail(), "Sign up email cannot be null");
         
-        IdentifierHolder identifier = participantService.createParticipant(study, ADMIN_ROLE, participant, false);
-
-        // We don't filter users by any of these filtering criteria in the admin API.
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withUserId(identifier.getIdentifier())
-                .withStudyIdentifier(study.getStudyIdentifier()).build();
+        // Validate study + email or phone. This is the minimum we need to create a functional account.
+        SignIn signIn = new SignIn.Builder().withStudy(study.getIdentifier()).withEmail(participant.getEmail())
+                .withPhone(participant.getPhone()).withPassword(participant.getPassword()).build();
+        Validate.entityThrowingException(SignInValidator.MINIMAL, signIn);
         
-        UserSession newUserSession = null;
+        IdentifierHolder identifier = null;
         try {
-            SignIn signIn = new SignIn.Builder().withStudy(study.getIdentifier()).withEmail(participant.getEmail())
-                    .withPassword(participant.getPassword()).build();
-            newUserSession = authenticationService.signIn(study, context, signIn);
+            identifier = participantService.createParticipant(study, ADMIN_ROLE, participant, false);
+            StudyParticipant updatedParticipant = participantService.getParticipant(study, identifier.getIdentifier(), false);
+            
+            // We don't filter users by any of these filtering criteria in the admin API.
+            CriteriaContext context = new CriteriaContext.Builder()
+                    .withUserId(identifier.getIdentifier())
+                    .withStudyIdentifier(study.getStudyIdentifier()).build();
             
             if (consentUser) {
-                String name = String.format("[Signature for %s]", participant.getEmail());
+                String name = String.format("[Signature for %s]", updatedParticipant.getEmail());
                 ConsentSignature signature = new ConsentSignature.Builder().withName(name)
                         .withBirthdate("1989-08-19").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
                 
                 if (subpopGuid != null) {
-                    consentService.consentToResearch(study, subpopGuid, newUserSession.getParticipant(), signature, NO_SHARING, false);
+                    consentService.consentToResearch(study, subpopGuid, updatedParticipant, signature, NO_SHARING, false);
                 } else {
-                    for (ConsentStatus consentStatus : newUserSession.getConsentStatuses().values()) {
+                    Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
+                    for (ConsentStatus consentStatus : statuses.values()) {
                         if (consentStatus.isRequired()) {
                             SubpopulationGuid guid = SubpopulationGuid.create(consentStatus.getSubpopulationGuid());
-                            consentService.consentToResearch(study, guid, newUserSession.getParticipant(), signature, NO_SHARING, false);
+                            consentService.consentToResearch(study, guid, updatedParticipant, signature, NO_SHARING, false);
                         }
                     }
                 }
-                newUserSession = authenticationService.getSession(study, context);
             }
-            if (!signUserIn) {
-                authenticationService.signOut(newUserSession);
-                newUserSession.setAuthenticated(false);
+            if (signUserIn) {
+                return authenticationService.signIn(study, context, signIn);
             }
-            return newUserSession;
-        } catch (RuntimeException ex) {
+            // Return a session *without* signing in because we have 3 sign in pathways that we want to test. In this case
+            // we're creating a session but not authenticating you which is only a thing that's useful for tests.
+            UserSession session = authenticationService.getSession(study, context);
+            session.setAuthenticated(false);
+            return session;
+        } catch(RuntimeException e) {
             // Created the account, but failed to process the account properly. To avoid leaving behind a bunch of test
             // accounts, delete this account.
-            if (newUserSession != null) {
-                deleteUser(study, newUserSession.getId());    
+            if (identifier != null) {
+                deleteUser(study, identifier.getIdentifier());    
             }
-            throw ex;
+            throw e;
         }
     }
 
@@ -175,7 +183,8 @@ public class UserAdminService {
         checkNotNull(study);
         checkArgument(StringUtils.isNotBlank(id));
         
-        Account account = accountDao.getAccount(study, id);
+        AccountId accountId = AccountId.forId(study.getIdentifier(), id);
+        Account account = accountDao.getAccount(accountId);
         if (account != null) {
             // remove this first so if account is partially deleted, re-authenticating will pick
             // up accurate information about the state of the account (as we can recover it)
@@ -196,7 +205,7 @@ public class UserAdminService {
                 externalIdService.unassignExternalId(study, externalId, healthCode);    
             }
             optionsService.deleteAllParticipantOptions(healthCode);
-            accountDao.deleteAccount(study, account.getId());
+            accountDao.deleteAccount(accountId);
         }
     }
 }

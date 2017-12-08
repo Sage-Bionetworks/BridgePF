@@ -58,8 +58,6 @@ public class ScheduledActivityService {
     };
     
     private static final String EITHER_BOTH_DATES_OR_NEITHER = "Only one date of a date range provided (both scheduledOnStart and scheduledOnEnd required)";
-
-    private static final String AMBIGUOUS_TIMEZONE_ERROR = "scheduledOnStart and scheduledOnEnd must be in the same time zone";
     
     private static final String INVALID_TIME_RANGE = "scheduledOnStart later in time than scheduledOnEnd";
 
@@ -164,11 +162,6 @@ public class ScheduledActivityService {
         }
         if (scheduledOnStart.isAfter(scheduledOnEnd)) {
             throw new BadRequestException(INVALID_TIME_RANGE);
-        }
-
-        DateTimeZone timezone = scheduledOnStart.getZone();
-        if (!timezone.equals(scheduledOnEnd.getZone())) {
-            throw new BadRequestException(AMBIGUOUS_TIMEZONE_ERROR);
         }
         return new RangeTuple<>(scheduledOnStart, scheduledOnEnd);
     }

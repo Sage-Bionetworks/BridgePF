@@ -45,6 +45,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
@@ -228,8 +229,8 @@ public class AuthenticationServiceTest {
 
     @Test(expected = InvalidEntityException.class)
     public void requestPasswordResetFailsOnEmptyString() throws Exception {
-        Email email = new Email(TEST_STUDY_IDENTIFIER, "");
-        authService.requestResetPassword(study, email);
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).build();
+        authService.requestResetPassword(study, signIn);
     }
     
     @Test(expected = BadRequestException.class)
@@ -320,7 +321,7 @@ public class AuthenticationServiceTest {
 
         IdentifierHolder holder = authService.signUp(study, participant, false);
         
-        Account account = accountDao.getAccount(study, holder.getIdentifier());
+        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), holder.getIdentifier()));
         
         Set<String> persistedGroups = optionsService.getOptions(account.getHealthCode()).getStringSet(DATA_GROUPS);
         assertEquals(groups, persistedGroups);
@@ -360,10 +361,10 @@ public class AuthenticationServiceTest {
         // Second sign up
         authService.signUp(testUser.getStudy(), testUser.getStudyParticipant(), false);
         
-        ArgumentCaptor<Email> emailCaptor = ArgumentCaptor.forClass(Email.class);
-        verify(accountWorkflowServiceSpy).notifyAccountExists(eq(testUser.getStudy()), emailCaptor.capture());
-        assertEquals(testUser.getStudyIdentifier(), emailCaptor.getValue().getStudyIdentifier());
-        assertEquals(testUser.getEmail(), emailCaptor.getValue().getEmail());
+        ArgumentCaptor<AccountId> accountIdCaptor = ArgumentCaptor.forClass(AccountId.class);
+        verify(accountWorkflowServiceSpy).notifyAccountExists(eq(testUser.getStudy()), accountIdCaptor.capture());
+        assertEquals(testUser.getStudyIdentifier().getIdentifier(), accountIdCaptor.getValue().getStudyId());
+        assertEquals(testUser.getId(), accountIdCaptor.getValue().getId());
     }
     
     @Test
@@ -374,8 +375,9 @@ public class AuthenticationServiceTest {
     
     @Test
     public void requestResetPasswordLooksSuccessfulWhenNoAccount() throws Exception {
-        Email email = new Email(TEST_STUDY_IDENTIFIER, "notarealaccount@sagebase.org");
-        authService.requestResetPassword(study, email);
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).withEmail("notarealaccount@sagebase.org")
+                .build();
+        authService.requestResetPassword(study, signIn);
     }
     
     // Consent statuses passed on to sessionInfo

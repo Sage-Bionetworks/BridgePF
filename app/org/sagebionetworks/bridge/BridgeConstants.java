@@ -68,6 +68,9 @@ public class BridgeConstants {
     // 5 hrs
     public static final int BRIDGE_VIEW_EXPIRE_IN_SECONDS = 5 * 60 * 60;
     
+    // 3 minutes
+    public static final int APP_LINKS_EXPIRE_IN_SECONDS = 3* 60;
+    
     // 1 minute
     public static final int BRIDGE_STUDY_EMAIL_STATUS_IN_SECONDS = 60;
 
@@ -99,8 +102,8 @@ public class BridgeConstants {
     public static final int SMS_CHARACTER_LIMIT = 140;
     
     /**
-     * This whitelist adds a few additional tags and attributes that are used by the CKEDITOR options we have 
-     * displayed in the UI.
+     * This whitelist adds a few additional tags and attributes that are used by the CKEDITOR options 
+     * we have displayed in the UI.
      */
     public static final Whitelist CKEDITOR_WHITELIST = Whitelist.relaxed()
             .addTags("hr", "s", "caption")

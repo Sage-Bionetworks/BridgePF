@@ -35,6 +35,7 @@ import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -72,6 +73,8 @@ public class StudyReportControllerTest {
     private static final String OTHER_PARTICIPANT_HEALTH_CODE = "ABC";
 
     private static final String OTHER_PARTICIPANT_ID = "userId";
+    
+    private static final AccountId OTHER_ACCOUNT_ID = AccountId.forId(TEST_STUDY_IDENTIFIER, OTHER_PARTICIPANT_ID);
 
     private static final String HEALTH_CODE = "healthCode";
     
@@ -128,7 +131,7 @@ public class StudyReportControllerTest {
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
                 .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
         
-        doReturn(mockOtherAccount).when(mockAccountDao).getAccount(study, OTHER_PARTICIPANT_ID);
+        doReturn(mockOtherAccount).when(mockAccountDao).getAccount(OTHER_ACCOUNT_ID);
         
         ConsentStatus status = new ConsentStatus.Builder().withName("Name").withGuid(SubpopulationGuid.create("GUID"))
                 .withConsented(true).withRequired(true).withSignedMostRecentConsent(true).build();

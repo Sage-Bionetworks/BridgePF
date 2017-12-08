@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.models.accounts;
 
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonDeserialize(builder = SignIn.Builder.class)
@@ -23,6 +25,9 @@ public final class SignIn implements BridgeEntity {
         this.reauthToken = reauthToken;
     }
     
+    // Serializing this property as study allows us to use SignIn to construct the JSON payload that we 
+    // are accepting from clients, which is useful for tests to avoid manually constructing the JSON string.
+    @JsonProperty("study")
     public String getStudyId() {
         return studyId;
     }
@@ -45,6 +50,16 @@ public final class SignIn implements BridgeEntity {
     
     public String getReauthToken() {
         return reauthToken;
+    }
+    
+    @JsonIgnore
+    public AccountId getAccountId() {
+        if (email != null) {
+            return AccountId.forEmail(studyId, email);
+        } else if (phone != null) {
+            return AccountId.forPhone(studyId, phone);
+        }
+        throw new IllegalArgumentException("SignIn not constructed with enough information to retrieve an account");
     }
     
     public static class Builder {

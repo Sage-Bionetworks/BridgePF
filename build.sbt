@@ -18,7 +18,7 @@ libraryDependencies ++= Seq(
   cache,
   filters,
   // Sage packages
-  "org.sagebionetworks" % "bridge-base" % "2.7.6",
+  "org.sagebionetworks" % "bridge-base" % "2.7.7",
   "org.sagebionetworks" % "synapseJavaClient" % "161.0-4-g843de2c",
   // AWS
   "com.amazonaws" % "aws-java-sdk-s3" % "1.11.198",
@@ -49,6 +49,7 @@ libraryDependencies ++= Seq(
   "com.fasterxml.jackson.core" % "jackson-core" % "2.7.3",
   "com.fasterxml.jackson.core" % "jackson-databind" % "2.7.3",
   "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % "2.7.3",
+  
   // Guava
   "com.google.guava" % "guava" % "18.0",
   // Guice

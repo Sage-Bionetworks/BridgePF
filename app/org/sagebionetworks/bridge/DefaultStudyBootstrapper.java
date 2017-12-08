@@ -54,6 +54,7 @@ public class DefaultStudyBootstrapper {
         } catch (EntityNotFoundException e) {
             Study study = Study.create();
             study.setName("Test Study");
+            study.setShortName("TestStudy");
             study.setIdentifier(BridgeConstants.API_STUDY_ID_STRING);
             study.setSponsorName("Sage Bionetworks");
             study.setMinAgeOfConsent(18);
@@ -74,6 +75,7 @@ public class DefaultStudyBootstrapper {
         } catch (EntityNotFoundException e) {
             Study study = Study.create();
             study.setName("Shared Module Library");
+            study.setShortName("SharedLib");
             study.setSponsorName("Sage Bionetworks");
             study.setIdentifier(BridgeConstants.SHARED_STUDY_ID_STRING);
             study.setSupportEmail("bridgeit@sagebridge.org");

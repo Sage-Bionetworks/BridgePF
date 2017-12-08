@@ -6,6 +6,8 @@ import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Resource;
+
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
@@ -53,7 +55,7 @@ public class UserProfileController extends BaseController {
     public final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
     }
-    @Autowired
+    @Resource(name = "genericViewCache")
     public final void setViewCache(ViewCache viewCache) {
         this.viewCache = viewCache;
     }
