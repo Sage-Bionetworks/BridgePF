@@ -51,7 +51,7 @@ public class ViewCache {
      */
     public <T> String getView(ViewCacheKey<T> key, Supplier<T> supplier) {
         try {
-            String value = cache.getString(key.getKey());
+            String value = cache.getObject(key.getKey(), String.class);
             if (value == null) {
                 value = cacheView(key, supplier);
             } else {
@@ -69,7 +69,7 @@ public class ViewCache {
      */
     public <T> void removeView(ViewCacheKey<T> key) {
         logger.debug("Deleting JSON for '" +key.getKey() +"'");
-        cache.removeString(key.getKey());
+        cache.removeObject(key.getKey());
     }
     
     /**
@@ -88,7 +88,7 @@ public class ViewCache {
         logger.debug("Caching JSON for " +key.getKey()+"'");
         T object = supplier.get();
         String value = objectMapper.writeValueAsString(object);
-        cache.setString(key.getKey(), value, cachePeriod);
+        cache.setObject(key.getKey(), value, cachePeriod);
         return value;
     }
     

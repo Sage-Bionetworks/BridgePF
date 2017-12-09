@@ -189,12 +189,12 @@ public class AuthenticationServiceMockTest {
         
         service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
         
-        verify(cacheProvider).getString(stringCaptor.capture());
+        verify(cacheProvider).getObject(stringCaptor.capture(), eq(String.class));
         assertEquals(CACHE_KEY, stringCaptor.getValue());
         
         verify(accountDao).getAccount(SIGN_IN_REQUEST_WITH_EMAIL.getAccountId());
         
-        verify(cacheProvider).setString(eq(CACHE_KEY), stringCaptor.capture(), eq(300));
+        verify(cacheProvider).setObject(eq(CACHE_KEY), stringCaptor.capture(), eq(300));
         assertNotNull(stringCaptor.getValue());
 
         verify(sendMailService).sendEmail(providerCaptor.capture());
@@ -216,12 +216,12 @@ public class AuthenticationServiceMockTest {
     public void requestEmailSignInTwiceReturnsSameToken() throws Exception {
         // In this case, where there is a value and an account, we do't generate a new one,
         // we just send the message again.
-        doReturn("something").when(cacheProvider).getString(CACHE_KEY);
+        doReturn("something").when(cacheProvider).getObject(CACHE_KEY, String.class);
         doReturn(account).when(accountDao).getAccount(any());
         
         service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
         
-        verify(cacheProvider, never()).setString(any(), any(), anyInt());
+        verify(cacheProvider, never()).setObject(any(), any(), anyInt());
         verify(sendMailService).sendEmail(providerCaptor.capture());
         
         MimeTypeEmailProvider provider = providerCaptor.getValue();
@@ -258,7 +258,7 @@ public class AuthenticationServiceMockTest {
         
         service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
 
-        verify(cacheProvider, never()).setString(eq(CACHE_KEY), any(), eq(60));
+        verify(cacheProvider, never()).setObject(eq(CACHE_KEY), any(), eq(60));
         verify(sendMailService, never()).sendEmail(any());
     }
 
@@ -266,7 +266,7 @@ public class AuthenticationServiceMockTest {
     public void emailSignIn() {
         account.setReauthToken(REAUTH_TOKEN);
         account.setStatus(AccountStatus.UNVERIFIED);
-        doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
+        doReturn(TOKEN).when(cacheProvider).getObject(CACHE_KEY, String.class);
         doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
@@ -278,12 +278,12 @@ public class AuthenticationServiceMockTest {
         verify(accountDao, never()).changePassword(eq(account), any());
         verify(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
         verify(accountDao).verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
-        verify(cacheProvider).removeString(CACHE_KEY);
+        verify(cacheProvider).removeObject(CACHE_KEY);
     }
     
     @Test(expected = AuthenticationFailedException.class)
     public void emailSignInTokenWrong() {
-        doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
+        doReturn(TOKEN).when(cacheProvider).getObject(CACHE_KEY, String.class);
         doReturn(account).when(accountDao).getAccount(ACCOUNT_ID);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
         
@@ -295,7 +295,7 @@ public class AuthenticationServiceMockTest {
     
     @Test(expected = AuthenticationFailedException.class)
     public void emailSignInTokenNotSet() {
-        doReturn(null).when(cacheProvider).getString(CACHE_KEY);
+        doReturn(null).when(cacheProvider).getObject(CACHE_KEY, String.class);
         doReturn(account).when(accountDao).getAccount(ACCOUNT_ID);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
         
@@ -357,7 +357,7 @@ public class AuthenticationServiceMockTest {
         
         doReturn(participant).when(participantService).getParticipant(study, account, false);
         study.setIdentifier(STUDY_ID);
-        doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
+        doReturn(TOKEN).when(cacheProvider).getObject(CACHE_KEY, String.class);
         doReturn(study).when(studyService).getStudy(STUDY_ID);
         doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
         account.setStatus(AccountStatus.DISABLED);
@@ -372,7 +372,7 @@ public class AuthenticationServiceMockTest {
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
         doReturn(participant).when(participantService).getParticipant(study, account, false);
         study.setIdentifier(STUDY_ID);
-        doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
+        doReturn(TOKEN).when(cacheProvider).getObject(CACHE_KEY, String.class);
         doReturn(study).when(studyService).getStudy(STUDY_ID);
         doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
         
@@ -491,8 +491,8 @@ public class AuthenticationServiceMockTest {
         
         service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
         
-        verify(cacheProvider).getString(cacheKey);
-        verify(cacheProvider).setString(cacheKey, "123456", 300);
+        verify(cacheProvider).getObject(cacheKey, String.class);
+        verify(cacheProvider).setObject(cacheKey, "123456", 300);
         verify(notificationsService).sendSMSMessage(study.getStudyIdentifier(), TestConstants.PHONE,
                 "Enter 123-456 to sign in to AppName");
     }
@@ -502,7 +502,7 @@ public class AuthenticationServiceMockTest {
         // This should fail silently, or we risk giving away information about accounts in the system.
         service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
         
-        verify(cacheProvider, never()).setString(any(), any(), anyInt());
+        verify(cacheProvider, never()).setObject(any(), any(), anyInt());
         verify(notificationsService, never()).sendSMSMessage(any(), any(), any());
     }    
     
@@ -513,7 +513,7 @@ public class AuthenticationServiceMockTest {
                 .withEmail(RECIPIENT_EMAIL).withFirstName("Test").withLastName("Tester").build();
         
         String cacheKey = TestConstants.PHONE.getNumber() + ":api:phoneSignInRequest";
-        when(cacheProvider.getString(cacheKey)).thenReturn(TOKEN);
+        when(cacheProvider.getObject(cacheKey, String.class)).thenReturn(TOKEN);
         when(accountDao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_PHONE)).thenReturn(account);
         when(participantService.getParticipant(study, account, false)).thenReturn(participant);
         when(consentService.getConsentStatuses(any())).thenReturn(CONSENTED_STATUS_MAP);
@@ -525,7 +525,7 @@ public class AuthenticationServiceMockTest {
         assertEquals("Tester", session.getParticipant().getLastName());
         
         // this doesn't pass if our mock calls above aren't executed, but verify these:
-        verify(cacheProvider).removeString(cacheKey);
+        verify(cacheProvider).removeObject(cacheKey);
         verify(accountDao).verifyChannel(ChannelType.PHONE, account);
     }
 
