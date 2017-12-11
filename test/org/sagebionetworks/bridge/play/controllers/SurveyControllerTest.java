@@ -109,7 +109,7 @@ public class SurveyControllerTest {
         viewCache.setCachePeriod(BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
         
         CacheProvider provider = mock(CacheProvider.class);
-        when(provider.getString(anyString())).thenAnswer(new Answer<String>() {
+        when(provider.getObject(anyString(), eq(String.class))).thenAnswer(new Answer<String>() {
             @Override
             public String answer(InvocationOnMock invocation) throws Throwable {
                 String key = invocation.getArgumentAt(0, String.class);
@@ -124,7 +124,7 @@ public class SurveyControllerTest {
                 cacheMap.put(key, value);
                 return null;
             }
-        }).when(provider).setString(anyString(), anyString(), anyInt());
+        }).when(provider).setObject(anyString(), anyString(), anyInt());
         doAnswer(new Answer<Void>() {
             @Override
             public Void answer(InvocationOnMock invocation) throws Throwable {
@@ -132,7 +132,7 @@ public class SurveyControllerTest {
                 cacheMap.remove(key);
                 return null;
             }
-        }).when(provider).removeString(anyString());
+        }).when(provider).removeObject(anyString());
         viewCache.setCacheProvider(provider);
         
         studyService = mock(StudyService.class);
