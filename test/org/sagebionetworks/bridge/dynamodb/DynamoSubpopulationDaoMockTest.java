@@ -125,41 +125,15 @@ public class DynamoSubpopulationDaoMockTest {
     }
     
     @Test
-    public void getSubpopulationsForUserRetrievesCriteria() {
-        CriteriaContext context = createContext();
-        
-        List<Subpopulation> subpops = dao.getSubpopulationsForUser(context);
-        Subpopulation subpop = subpops.get(0);
-        Criteria criteria = subpop.getCriteria();
-        assertEquals(CRITERIA, criteria);
-        
-        verify(criteriaDao).getCriteria(criteria.getKey());
-        verifyNoMoreInteractions(criteriaDao);
-    }
-
-    @Test
-    public void getSubpopulationsForUserConstructsCriteriaIfNotSaved() {
-        when(criteriaDao.getCriteria(any())).thenReturn(null);
-        CriteriaContext context = createContext();
-        
-        List<Subpopulation> subpops = dao.getSubpopulationsForUser(context);
-        Subpopulation subpop = subpops.get(0);
-        Criteria criteria = subpop.getCriteria();
-        assertNotNull(criteria);
-        
-        verify(criteriaDao).getCriteria(criteria.getKey());
-    }
-
-    @Test
     public void physicalDeleteSubpopulationDeletesCriteria() {
-        dao.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, true);
+        dao.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, true, false);
         
         verify(criteriaDao).deleteCriteria(createSubpopulation().getCriteria().getKey());
     }
     
     @Test
     public void logicalDeleteSubpopulationDoesNotDeleteCriteria() {
-        dao.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, false);
+        dao.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, false, false);
         
         verify(criteriaDao, never()).deleteCriteria(createSubpopulation().getCriteria().getKey());
     }
@@ -224,14 +198,6 @@ public class DynamoSubpopulationDaoMockTest {
         
         // In this case it actually returns a criteria object.
         verify(criteriaDao).getCriteria(list.get(0).getCriteria().getKey());
-    }
-    
-    @Test
-    public void deleteAllSubpopulationsDeletesCriteria() {
-        // There's one subpopulation
-        dao.deleteAllSubpopulations(TEST_STUDY);
-        
-        verify(criteriaDao).deleteCriteria(createSubpopulation().getCriteria().getKey());
     }
     
     @Test

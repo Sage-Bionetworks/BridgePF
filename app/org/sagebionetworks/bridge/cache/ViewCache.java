@@ -81,7 +81,7 @@ public class ViewCache {
      */
     public <T> ViewCacheKey<T> getCacheKey(Class<T> clazz, String... identifiers) {
         String id = COLON_JOINER.join(identifiers);
-        return new ViewCacheKey<T>(RedisKey.VIEW.getRedisKey(id + ":" + clazz.getName()));
+        return new ViewCacheKey<T>(RedisKey.VIEW.getRedisKey(id + ":" + clazz.getSimpleName()));
     }
     
     private <T> String cacheView(ViewCacheKey<T> key, Supplier<T> supplier) throws JsonProcessingException {

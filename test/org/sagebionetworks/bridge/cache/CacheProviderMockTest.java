@@ -13,7 +13,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -178,7 +177,9 @@ public class CacheProviderMockTest {
     public void testGetUserSessionByUserId() throws Exception {
         CacheProvider mockCacheProvider = spy(cacheProvider);
         mockCacheProvider.getUserSessionByUserId(USER_ID);
-        verify(mockCacheProvider, times(1)).getObject(SESSION_TOKEN, UserSession.class);
+        
+        verify(jedisOps).get("userId:session:user");
+        verify(jedisOps).get("sessionToken:session");
     }
 
     @Test
