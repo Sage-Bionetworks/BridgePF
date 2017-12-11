@@ -54,6 +54,15 @@ public class IntentToParticipate implements BridgeEntity {
         private String osName;
         private ConsentSignature consentSignature;
         
+        public Builder copyOf(IntentToParticipate intent) {
+            this.study = intent.study;
+            this.phone = intent.phone;
+            this.subpopGuid = intent.subpopGuid;
+            this.scope = intent.scope;
+            this.osName = intent.osName;
+            this.consentSignature = intent.consentSignature;
+            return this;
+        }
         public Builder withStudy(String study) {
             this.study = study;
             return this;

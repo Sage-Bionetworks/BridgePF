@@ -72,4 +72,23 @@ public class IntentToParticipateTest {
         assertEquals("US", deserPhone.getRegionCode());
         assertEquals(PHONE.getNationalFormat(), deserPhone.getNationalFormat());
     }
+    
+    @Test
+    public void canCopy() throws Exception {
+        ConsentSignature consentSignature = new ConsentSignature.Builder().withName("Consent Name")
+                .withBirthdate("1980-10-10").withImageData("image-data").withImageMimeType("image/png")
+                .withSignedOn(TIMESTAMP).withConsentCreatedOn(TIMESTAMP).build();
+        
+        IntentToParticipate itp = new IntentToParticipate.Builder().withStudy("study").withPhone(PHONE)
+                .withSubpopGuid("subpopGuid").withScope(SharingScope.ALL_QUALIFIED_RESEARCHERS).withOsName("iOS")
+                .withConsentSignature(consentSignature).build();
+
+        IntentToParticipate copy = new IntentToParticipate.Builder().copyOf(itp).build();
+        assertEquals(itp.getStudy(), copy.getStudy());
+        assertEquals(itp.getPhone().getNumber(), copy.getPhone().getNumber());
+        assertEquals(itp.getSubpopGuid(), copy.getSubpopGuid());
+        assertEquals(itp.getScope(), copy.getScope());
+        assertEquals(itp.getOsName(), copy.getOsName());
+        assertEquals(itp.getConsentSignature(), copy.getConsentSignature());
+    }
 }
