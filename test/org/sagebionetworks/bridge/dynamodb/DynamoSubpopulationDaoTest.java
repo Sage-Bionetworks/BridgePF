@@ -23,9 +23,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -38,11 +36,6 @@ import com.google.common.collect.Sets;
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoSubpopulationDaoTest {
-    
-    private static final String SUBPOP_1 = "Subpop 1";
-    private static final String SUBPOP_2 = "Subpop 2";
-    private static final String SUBPOP_3 = "Subpop 3";
-    private static final String SUBPOP_4 = "Subpop 4";
 
     StudyIdentifier studyId;
     
@@ -306,15 +299,5 @@ public class DynamoSubpopulationDaoTest {
         subpop.setCriteria(criteria);
         
         return dao.createSubpopulation(subpop);
-    }
-    
-    private CriteriaContext criteriaContext(int version, String tag) {
-        CriteriaContext.Builder builder = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.fromUserAgentCache("app/"+version+" (Unknown iPhone; iPhone OS/9.0.2) BridgeSDK/4"))
-                .withStudyIdentifier(studyId);
-        if (tag != null) {
-            builder.withUserDataGroups(Sets.newHashSet(tag));    
-        }
-        return builder.build();
     }
 }

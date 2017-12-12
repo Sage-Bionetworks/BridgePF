@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import org.joda.time.DateTime;
@@ -47,6 +48,8 @@ import org.sagebionetworks.bridge.redis.RedisKey;
 
 import redis.clients.jedis.JedisPool;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -282,6 +285,22 @@ public class CacheProviderMockTest {
         OAuthProvider returned = cacheProvider.getObject(CACHE_KEY, OAuthProvider.class);
         assertEquals(provider, returned);
         verify(jedisOps).get(CACHE_KEY);
+    }
+    
+    @Test
+    public void getObjectWithTypeReference() throws Exception {
+        OAuthProvider provider1 = new OAuthProvider("clientId1", "secret1", "endpoint1", "callbackUrl1");
+        OAuthProvider provider2 = new OAuthProvider("clientId2", "secret2", "endpoint2", "callbackUrl2");
+        List<OAuthProvider> providers = Lists.newArrayList(provider1, provider2);
+        String ser = BridgeObjectMapper.get().writeValueAsString(providers);
+        when(jedisOps.get(CACHE_KEY)).thenReturn(ser);
+        
+        TypeReference<List<OAuthProvider>> typeRef = new TypeReference<List<OAuthProvider>>() {};
+        
+        List<OAuthProvider> returned = cacheProvider.getObject(CACHE_KEY, typeRef);
+        assertEquals(provider1, returned.get(0));
+        assertEquals(provider2, returned.get(1));
+        assertEquals(2, returned.size());
     }
     
     @Test

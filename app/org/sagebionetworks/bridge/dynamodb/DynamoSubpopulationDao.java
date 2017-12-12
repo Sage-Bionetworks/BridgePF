@@ -157,7 +157,8 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     }
 
     @Override
-    public void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid, boolean physicalDelete, boolean allowDeleteOfDefault) {
+    public void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid, boolean physicalDelete,
+            boolean allowDeleteOfDefault) {
         Subpopulation subpop = getSubpopulation(studyId, subpopGuid);
         if (subpop == null || (!physicalDelete && subpop.isDeleted())) {
             throw new EntityNotFoundException(Subpopulation.class);

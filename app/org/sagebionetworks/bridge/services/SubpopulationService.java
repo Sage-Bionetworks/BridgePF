@@ -35,6 +35,8 @@ import org.sagebionetworks.bridge.validators.Validate;
 @Component
 public class SubpopulationService {
 
+    private static final TypeReference<List<Subpopulation>> SURVEY_LIST_REF = new TypeReference<List<Subpopulation>>() {};
+
     private SubpopulationDao subpopDao;
     private StudyConsentDao studyConsentDao;
     private StudyConsentService studyConsentService;
@@ -167,9 +169,7 @@ public class SubpopulationService {
     public List<Subpopulation> getSubpopulations(StudyIdentifier studyId) {
         checkNotNull(studyId);
         
-        TypeReference<List<Subpopulation>> typeRef = new TypeReference<List<Subpopulation>>() {};
-        
-        List<Subpopulation> subpops = cacheProvider.getObject(getListKey(studyId), typeRef);
+        List<Subpopulation> subpops = cacheProvider.getObject(getListKey(studyId), SURVEY_LIST_REF);
         if (subpops == null) {
             subpops = subpopDao.getSubpopulations(studyId, true, false);
             cacheProvider.setObject(getListKey(studyId), subpops);
@@ -196,10 +196,10 @@ public class SubpopulationService {
     }
     
     /**
-     * Get all subpopulations for a user that match the provided CriteriaContext information. Returns an empty
-     * list if no subpopulations match.
+     * Get all subpopulations for a user that match the provided CriteriaContext information. 
+     * Returns an empty list if no subpopulations match.
      */
-    public List<Subpopulation> getSubpopulationForUser(CriteriaContext context) {
+    public List<Subpopulation> getSubpopulationsForUser(CriteriaContext context) {
         checkNotNull(context);
         
         List<Subpopulation> subpops = getSubpopulations(context.getStudyIdentifier());

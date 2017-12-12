@@ -28,9 +28,8 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
-import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.Criteria;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -138,6 +137,33 @@ public class DynamoSubpopulationDaoMockTest {
         verify(criteriaDao, never()).deleteCriteria(createSubpopulation().getCriteria().getKey());
     }
     
+    @Test(expected = BadRequestException.class)
+    public void doNotAllowDeleteOfDefault() {
+        Subpopulation defaultSubpop = Subpopulation.create();
+        defaultSubpop.setGuid(SUBPOP_GUID);
+        defaultSubpop.setDefaultGroup(true);
+        
+        doReturn(defaultSubpop).when(dao).getSubpopulation(TEST_STUDY, SUBPOP_GUID);
+        doReturn(Criteria.create()).when(criteriaDao).getCriteria(any());
+        
+        dao.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, true, false);
+    }
+    
+    @Test
+    public void allowDeleteOfDefault() {
+        Subpopulation defaultSubpop = Subpopulation.create();
+        defaultSubpop.setGuid(SUBPOP_GUID);
+        defaultSubpop.setDefaultGroup(true);
+        
+        doReturn(defaultSubpop).when(dao).getSubpopulation(TEST_STUDY, SUBPOP_GUID);
+        doReturn(Criteria.create()).when(criteriaDao).getCriteria(any());
+        
+        dao.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, true, true);
+        verify(studyConsentDao).deleteAllConsents(SUBPOP_GUID);
+        verify(criteriaDao).deleteCriteria(defaultSubpop.getCriteria().getKey());
+        verify(mapper).delete(defaultSubpop);
+    }
+    
     @Test
     public void updateSubpopulationUpdatesCriteriaFromSubpop() {
         // This subpopulation has the criteria fields, but no object
@@ -218,14 +244,6 @@ public class DynamoSubpopulationDaoMockTest {
         List<Subpopulation> subpops = dao.getSubpopulations(TEST_STUDY, false, true);
         Criteria retrievedCriteria = subpops.get(0).getCriteria();
         assertEquals(CRITERIA, retrievedCriteria);
-    }
-    
-    private CriteriaContext createContext() {
-        return new CriteriaContext.Builder()
-                .withStudyIdentifier(TEST_STUDY)
-                .withUserDataGroups(CRITERIA.getAllOfGroups())
-                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .build();
     }
     
     private Subpopulation createSubpopulation() {
