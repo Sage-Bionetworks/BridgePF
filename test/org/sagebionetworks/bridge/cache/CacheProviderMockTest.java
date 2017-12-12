@@ -179,7 +179,8 @@ public class CacheProviderMockTest {
         CacheProvider mockCacheProvider = spy(cacheProvider);
         mockCacheProvider.getUserSessionByUserId(USER_ID);
         
-        verify(mockCacheProvider, times(1)).getUserSession(SESSION_TOKEN);
+        verify(jedisOps).get("userId:session:user");
+        verify(jedisOps).get("sessionToken:session");
     }
 
     @Test
