@@ -178,7 +178,9 @@ public class CacheProviderMockTest {
     public void testGetUserSessionByUserId() throws Exception {
         CacheProvider mockCacheProvider = spy(cacheProvider);
         mockCacheProvider.getUserSessionByUserId(USER_ID);
-        verify(mockCacheProvider, times(1)).getObject(SESSION_TOKEN, UserSession.class);
+        
+        verify(jedisOps).get("userId:session:user");
+        verify(jedisOps).get("sessionToken:session");
     }
 
     @Test
