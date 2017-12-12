@@ -6,6 +6,7 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -190,13 +191,13 @@ public class CacheProvider {
     public void setStudy(Study study) {
         checkNotNull(study);
         String redisKey = RedisKey.STUDY.getRedisKey(study.getIdentifier());
-        setObject(redisKey, study);
+        setObject(redisKey, study, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
     }
 
     public Study getStudy(String identifier) {
         checkNotNull(identifier);
         String redisKey = RedisKey.STUDY.getRedisKey(identifier);
-        return getObject(redisKey, Study.class);
+        return getObject(redisKey, Study.class, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
     }
 
     public void removeStudy(String identifier) {
