@@ -69,7 +69,7 @@ public class SubpopulationService {
     }
     
     private String getListKey(StudyIdentifier studyId) {
-        return studyId.getIdentifier() + ":" + studyId.getIdentifier() + ":SubpopulationList";
+        return studyId.getIdentifier() + ":SubpopulationList";
     }
     
     private String getSubpopKey(Subpopulation subpop) {
@@ -154,8 +154,8 @@ public class SubpopulationService {
         Validate.entityThrowingException(validator, subpop);
         
         Subpopulation updated = subpopDao.updateSubpopulation(subpop);
-        cacheProvider.removeObject(getListKey(study.getStudyIdentifier()));
         cacheProvider.removeObject(getSubpopKey(updated));
+        cacheProvider.removeObject(getListKey(study.getStudyIdentifier()));
         return updated;
     }
     

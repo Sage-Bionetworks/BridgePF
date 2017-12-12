@@ -24,7 +24,6 @@ import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -53,7 +52,7 @@ import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -65,7 +64,7 @@ public class SubpopulationServiceTest {
     private static final String SUBPOP_4 = "Subpop 4";
     
     private static final Criteria CRITERIA = TestUtils.createCriteria(2, 10, 
-            Sets.newHashSet("a", "b"), Sets.newHashSet("c", "d"));
+            ImmutableSet.of("a", "b"), ImmutableSet.of("c", "d"));
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("AAA");
     private static final long CONSENT_CREATED_ON = DateTime.now().getMillis();
     
@@ -109,7 +108,7 @@ public class SubpopulationServiceTest {
         subpop = Subpopulation.create();
         subpop.setGuidString(BridgeUtils.generateGuid());
         
-        Set<String> dataGroups = Sets.newHashSet("group1","group2");
+        Set<String> dataGroups = ImmutableSet.of("group1","group2");
         when(study.getDataGroups()).thenReturn(dataGroups);
         when(study.getIdentifier()).thenReturn(TEST_STUDY_IDENTIFIER);
         when(study.getStudyIdentifier()).thenReturn(TEST_STUDY);
@@ -173,7 +172,7 @@ public class SubpopulationServiceTest {
         
         ArgumentCaptor<StudyConsentForm> captor = ArgumentCaptor.forClass(StudyConsentForm.class);
         
-        when(studyConsentService.getAllConsents(defaultGuid)).thenReturn(Lists.newArrayList());
+        when(studyConsentService.getAllConsents(defaultGuid)).thenReturn(ImmutableList.of());
         when(studyConsentService.addConsent(eq(defaultGuid), any())).thenReturn(view);
         when(subpopDao.createDefaultSubpopulation(study.getStudyIdentifier())).thenReturn(subpop);
         
@@ -194,7 +193,7 @@ public class SubpopulationServiceTest {
         
         SubpopulationGuid defaultGuid = SubpopulationGuid.create("test-study");
         Subpopulation subpop = Subpopulation.create();
-        when(studyConsentService.getAllConsents(defaultGuid)).thenReturn(Lists.newArrayList(new DynamoStudyConsent1()));
+        when(studyConsentService.getAllConsents(defaultGuid)).thenReturn(ImmutableList.of(new DynamoStudyConsent1()));
         when(subpopDao.createDefaultSubpopulation(study.getStudyIdentifier())).thenReturn(subpop);
         
         Subpopulation returnValue = service.createDefaultSubpopulation(study);
@@ -269,8 +268,7 @@ public class SubpopulationServiceTest {
         Subpopulation subpop2 = Subpopulation.create();
         subpop2.setName("Name 2");
 
-        List<Subpopulation> list = Lists.newArrayList(subpop1, subpop2); 
-        when(subpopDao.getSubpopulations(TEST_STUDY, true, false)).thenReturn(list);
+        when(subpopDao.getSubpopulations(TEST_STUDY, true, false)).thenReturn(ImmutableList.of(subpop1, subpop2));
         
         List<Subpopulation> results = service.getSubpopulations(TEST_STUDY);
         assertEquals(2, results.size());
@@ -302,9 +300,8 @@ public class SubpopulationServiceTest {
     public void getSubpopulationsForUserRetrievesCriteria() {
         Subpopulation subpop = Subpopulation.create();
         subpop.setCriteria(CRITERIA);
-        List<Subpopulation> list = Lists.newArrayList(subpop);
         
-        when(subpopDao.getSubpopulations(TEST_STUDY, true, false)).thenReturn(list);
+        when(subpopDao.getSubpopulations(TEST_STUDY, true, false)).thenReturn(ImmutableList.of(subpop));
         
         CriteriaContext context = createContext();
         
@@ -318,10 +315,7 @@ public class SubpopulationServiceTest {
 
     @Test
     public void getSubpopulationsForUserConstructsCriteriaIfNotSaved() {
-        Subpopulation subpop = Subpopulation.create();
-        List<Subpopulation> list = Lists.newArrayList(subpop);
-        
-        when(subpopDao.getSubpopulations(TEST_STUDY, true, false)).thenReturn(list);
+        when(subpopDao.getSubpopulations(TEST_STUDY, true, false)).thenReturn(ImmutableList.of(subpop));
         CriteriaContext context = createContext();
         
         List<Subpopulation> subpops = service.getSubpopulationsForUser(context);
@@ -339,23 +333,23 @@ public class SubpopulationServiceTest {
         Subpopulation subpop3 = createSubpop(SUBPOP_3, null, null, "group1"); // match group1, specificity 1
         Subpopulation subpop4 = createSubpop(SUBPOP_4, null, null, null); // match anything, specificity 0
         when(subpopDao.getSubpopulations(TEST_STUDY, true, false)).thenReturn(
-                Lists.newArrayList(subpop1, subpop2, subpop3, subpop4));
+                ImmutableList.of(subpop1, subpop2, subpop3, subpop4));
         
         // version 12, no tags == Subpop 4
         List<Subpopulation> results = service.getSubpopulationsForUser(criteriaContext(12, null));
-        assertEquals(Sets.newHashSet(subpop4), Sets.newHashSet(results));
+        assertEquals(ImmutableSet.of(subpop4), Sets.newHashSet(results));
         
         // version 12, tag group1 == Subpops 3, 4
         results = service.getSubpopulationsForUser(criteriaContext(12, "group1"));
-        assertEquals(Sets.newHashSet(subpop3, subpop4), Sets.newHashSet(results));
+        assertEquals(ImmutableSet.of(subpop3, subpop4), Sets.newHashSet(results));
         
         // version 4, no tag == Subpops 2, 4
         results = service.getSubpopulationsForUser(criteriaContext(4, null));
-        assertEquals(Sets.newHashSet(subpop2, subpop4), Sets.newHashSet(results));
+        assertEquals(ImmutableSet.of(subpop2, subpop4), Sets.newHashSet(results));
         
         // version 4, tag group1 == Subpops 1,2,3,4, returns 1 in this case (most specific)
         results = service.getSubpopulationsForUser(criteriaContext(4, "group1"));
-        assertEquals(Sets.newHashSet(subpop1, subpop2, subpop3, subpop4), Sets.newHashSet(results));
+        assertEquals(ImmutableSet.of(subpop1, subpop2, subpop3, subpop4), Sets.newHashSet(results));
     }
     
     @Test
@@ -404,7 +398,7 @@ public class SubpopulationServiceTest {
         verify(subpopDao).deleteSubpopulation(TEST_STUDY, subpop1.getGuid(), true, true);
         verify(subpopDao).deleteSubpopulation(TEST_STUDY, subpop2.getGuid(), true, true);
         verify(cacheProvider).removeObject(subpop1.getGuidString() + ":api:Subpopulation");
-        verify(cacheProvider, times(2)).removeObject("api:api:SubpopulationList");
+        verify(cacheProvider, times(2)).removeObject("api:SubpopulationList");
     }
     
     private CriteriaContext createContext() {
@@ -420,7 +414,7 @@ public class SubpopulationServiceTest {
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/"+version+" (Unknown iPhone; iPhone OS/9.0.2) BridgeSDK/4"))
                 .withStudyIdentifier(TEST_STUDY);
         if (tag != null) {
-            builder.withUserDataGroups(Sets.newHashSet(tag));    
+            builder.withUserDataGroups(ImmutableSet.of(tag));    
         }
         return builder.build();
     }
@@ -439,7 +433,7 @@ public class SubpopulationServiceTest {
             criteria.setMaxAppVersion(OperatingSystem.IOS, max);
         }
         if (group != null) {
-            criteria.setAllOfGroups(Sets.newHashSet(group));
+            criteria.setAllOfGroups(ImmutableSet.of(group));
         }
         subpop.setCriteria(criteria);
         return subpop;
