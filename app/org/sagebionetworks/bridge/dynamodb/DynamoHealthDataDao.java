@@ -40,7 +40,7 @@ public class DynamoHealthDataDao implements HealthDataDao {
      * DynamoDB Index reference for the healthCode index. This is needed because the DynamoDB mapper does allow queries
      * using global secondary indices. This is configured by Spring
      */
-    @Resource(name = "healthDataHealthCodeIndex")
+    @Resource(name = "healthDataHealthCodeCreatedOnIndex")
     public void setHealthCodeIndex(DynamoIndexHelper healthCodeIndex) {
         this.healthCodeIndex = healthCodeIndex;
     }
