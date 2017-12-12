@@ -100,7 +100,7 @@ public class BridgeConstants {
      * SNS converts these to ASCII.
      */
     public static final int SMS_CHARACTER_LIMIT = 140;
-    
+
     /**
      * This whitelist adds a few additional tags and attributes that are used by the CKEDITOR options 
      * we have displayed in the UI.

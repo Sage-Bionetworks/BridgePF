@@ -4,7 +4,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.models.OperatingSystem;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
@@ -35,6 +38,8 @@ public class IntentService {
     
     private NotificationsService notificationsService;
     
+    private AccountDao accountDao;
+    
     @Autowired
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
@@ -60,10 +65,20 @@ public class IntentService {
         this.notificationsService = notificationsService;
     }
     
+    @Autowired
+    final void setAccountDao(AccountDao accountDao) {
+        this.accountDao = accountDao;
+    }
+    
     public void submitIntentToParticipate(IntentToParticipate intent) {
         Validate.entityThrowingException(IntentToParticipateValidator.INSTANCE, intent);
         
-        // TODO: if the account exists, we should return. 
+        // If the account exists, do nothing.
+        AccountId accountId = AccountId.forPhone(intent.getStudy(), intent.getPhone());
+        Account account = accountDao.getAccount(accountId);
+        if (account != null) {
+            return;
+        }
         
         // validate study exists
         Study study = studyService.getStudy(intent.getStudy());

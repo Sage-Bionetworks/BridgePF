@@ -47,6 +47,7 @@ public class IntentControllerTest {
         // reasons, but it is not part of the consent signature. Controller transfers it to the ITP.
         IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP);
         JsonNode node = BridgeObjectMapper.get().valueToTree(intent);
+        ((ObjectNode)node).remove("scope");
         ((ObjectNode)node.get("consentSignature")).put("scope", "all_qualified_researchers");
         
         TestUtils.mockPlayContextWithJson(node.toString());

@@ -19,7 +19,11 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -55,6 +59,9 @@ public class IntentServiceTest {
     @Mock
     Study mockStudy;
     
+    @Mock
+    AccountDao accountDao;
+    
     @Captor
     ArgumentCaptor<SubpopulationGuid> subpopGuidCaptor;
 
@@ -72,6 +79,7 @@ public class IntentServiceTest {
         service.setConsentService(mockConsentService);
         service.setCacheProvider(mockCacheProvider);
         service.setNotificationsService(mockNotificationsService);
+        service.setAccountDao(accountDao);
     }
     
     @Test
@@ -145,6 +153,24 @@ public class IntentServiceTest {
         verify(mockNotificationsService, never()).sendSMSMessage(mockStudy, intent.getPhone(), "this-is-a-link");
     }
     
+    @Test
+    public void submitIntentToParticipateAccountExists() {
+        IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP);
+        
+        AccountId accountId = AccountId.forPhone(intent.getStudy(), intent.getPhone()); 
+        
+        Account account = new GenericAccount();
+        when(accountDao.getAccount(accountId)).thenReturn(account);
+        
+        service.submitIntentToParticipate(intent);
+        
+        // None of this happens...
+        verifyNoMoreInteractions(mockStudyService);
+        verifyNoMoreInteractions(mockSubpopService);
+        verifyNoMoreInteractions(mockCacheProvider);
+        verifyNoMoreInteractions(mockNotificationsService);
+    }
+
     @Test
     public void registerIntentToParticipate() {
         Subpopulation subpopA = Subpopulation.create();
