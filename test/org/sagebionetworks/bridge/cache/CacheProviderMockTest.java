@@ -39,6 +39,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.redis.JedisOps;
@@ -53,6 +54,7 @@ import com.google.common.collect.Sets;
 @RunWith(MockitoJUnitRunner.class)
 public class CacheProviderMockTest {
 
+    private static final String CACHE_KEY = "key";
     private static final Encryptor ENCRYPTOR = new AesGcmEncryptor(BridgeConfigFactory.getConfig().getProperty("bridge.healthcode.redis.key"));
     private static final String USER_ID = "userId";
     private static final String SESSION_TOKEN = "sessionToken";
@@ -176,7 +178,7 @@ public class CacheProviderMockTest {
     public void testGetUserSessionByUserId() throws Exception {
         CacheProvider mockCacheProvider = spy(cacheProvider);
         mockCacheProvider.getUserSessionByUserId(USER_ID);
-        verify(mockCacheProvider, times(1)).getUserSession(SESSION_TOKEN);
+        verify(mockCacheProvider, times(1)).getObject(SESSION_TOKEN, UserSession.class);
     }
 
     @Test
@@ -220,18 +222,18 @@ public class CacheProviderMockTest {
         assertTrue(json != null && json.length() > 0);
 
         final String cacheKey = study.getIdentifier() + ":Study";
-        simpleCacheProvider.setString(cacheKey, json, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
+        simpleCacheProvider.setObject(cacheKey, json, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
 
-        String cachedString = simpleCacheProvider.getString(cacheKey);
+        String cachedString = simpleCacheProvider.getObject(cacheKey, String.class);
         assertEquals(json, cachedString);
 
         // Remove something that's not the key
-        simpleCacheProvider.removeString(cacheKey+"2");
-        cachedString = simpleCacheProvider.getString(cacheKey);
+        simpleCacheProvider.removeObject(cacheKey+"2");
+        cachedString = simpleCacheProvider.getObject(cacheKey, String.class);
         assertEquals(json, cachedString);
 
-        simpleCacheProvider.removeString(cacheKey);
-        cachedString = simpleCacheProvider.getString(cacheKey);
+        simpleCacheProvider.removeObject(cacheKey);
+        cachedString = simpleCacheProvider.getObject(cacheKey, String.class);
         assertNull(cachedString);
     }
 
@@ -269,6 +271,82 @@ public class CacheProviderMockTest {
 
         assertSession(json);
     }
+    
+    @Test
+    public void getObject() throws Exception {
+        OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint", "callbackUrl");
+        String ser = BridgeObjectMapper.get().writeValueAsString(provider);
+        when(jedisOps.get(CACHE_KEY)).thenReturn(ser);
+        
+        OAuthProvider returned = cacheProvider.getObject(CACHE_KEY, OAuthProvider.class);
+        assertEquals(provider, returned);
+        verify(jedisOps).get(CACHE_KEY);
+    }
+    
+    @Test
+    public void getObjectWithReexpire() throws Exception {
+        OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint", "callbackUrl");
+        String ser = BridgeObjectMapper.get().writeValueAsString(provider);
+        when(jedisOps.get(CACHE_KEY)).thenReturn(ser);
+        
+        OAuthProvider returned = cacheProvider.getObject(CACHE_KEY, OAuthProvider.class, 100);
+        assertEquals(provider, returned);
+        verify(jedisOps).get(CACHE_KEY);
+        verify(jedisOps).expire(CACHE_KEY, 100);
+    }
+    
+    @Test
+    public void setObject() throws Exception {
+        OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint", "callbackUrl");
+        String ser = BridgeObjectMapper.get().writeValueAsString(provider);
+        when(jedisOps.set(CACHE_KEY, ser)).thenReturn("OK");
+        
+        cacheProvider.setObject(CACHE_KEY, provider);
+        verify(jedisOps).set(CACHE_KEY, ser);
+    }
+    
+    @Test
+    public void setObjectWithExpire() throws Exception {
+        OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint", "callbackUrl");
+        String ser = BridgeObjectMapper.get().writeValueAsString(provider);
+        when(jedisOps.setex(CACHE_KEY, 100, ser)).thenReturn("OK");
+        
+        cacheProvider.setObject(CACHE_KEY, provider, 100);
+        verify(jedisOps).setex(CACHE_KEY, 100, ser);
+    }
+
+    @Test
+    public void getObjectOfString() throws Exception {
+        String ser = BridgeObjectMapper.get().writeValueAsString("Test");
+        when(jedisOps.get(CACHE_KEY)).thenReturn(ser);
+        
+        String result = cacheProvider.getObject(CACHE_KEY, String.class);
+        assertEquals("Test", result);
+        verify(jedisOps).get(CACHE_KEY);
+    }
+    
+    @Test
+    public void getObjectWithReexpireOfString() throws Exception {
+        String ser = BridgeObjectMapper.get().writeValueAsString("Test");
+        when(jedisOps.get(CACHE_KEY)).thenReturn(ser);
+        
+        String result = cacheProvider.getObject(CACHE_KEY, String.class, 100);
+        assertEquals("Test", result);
+        verify(jedisOps).expire(CACHE_KEY, 100);
+    }
+    
+    @Test
+    public void setObjectWithReexpireOfString() {
+        when(jedisOps.set(CACHE_KEY, "\"test\"")).thenReturn("OK");
+        
+        cacheProvider.setObject(CACHE_KEY, "test");
+        verify(jedisOps).set(CACHE_KEY, "\"test\"");
+    }
+    
+    @Test
+    public void setObjectOfString() {
+    }
+    
 
     private void assertSession(String json) {
         JedisOps jedisOps = mock(JedisOps.class);
