@@ -15,6 +15,10 @@ import java.util.List;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
+import com.amazonaws.services.dynamodbv2.document.Index;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.ItemCollection;
+import com.amazonaws.services.dynamodbv2.document.internal.IteratorSupport;
 import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
@@ -53,25 +57,30 @@ public class DynamoHealthDataDaoTest {
         when(mockMapper.batchDelete(arg.capture())).thenReturn(Collections.<DynamoDBMapper.FailedBatch>emptyList());
 
         // mock index helper
-        DynamoHealthDataRecord record = new DynamoHealthDataRecord();
-        record.setHealthCode("test health code");
-        record.setId("test ID");
-        List<HealthDataRecord> mockResult = Collections.<HealthDataRecord>singletonList(record);
-
-        DynamoIndexHelper mockIndex = mock(DynamoIndexHelper.class);
-        when(mockIndex.queryKeys(HealthDataRecord.class, "healthCode", "test health code", null)).thenReturn(mockResult);
-
+        ItemCollection mockItemCollection = mock(ItemCollection.class);
+        IteratorSupport mockIteratorSupport = mock(IteratorSupport.class);
+        Item mockItem = new Item().with("healthCode", "test health code").with("id", "test ID");
+        
+        when(mockItemCollection.iterator()).thenReturn(mockIteratorSupport);
+        when(mockIteratorSupport.hasNext()).thenReturn(true, false);
+        when(mockIteratorSupport.next()).thenReturn(mockItem);
+        
+        DynamoIndexHelper mockIndexHelper = mock(DynamoIndexHelper.class);
+        Index mockIndex = mock(Index.class);
+        when(mockIndexHelper.getIndex()).thenReturn(mockIndex);
+        when(mockIndex.query("healthCode", "test health code"))
+                .thenReturn(mockItemCollection);
+        
         // set up and execute
         DynamoHealthDataDao dao = new DynamoHealthDataDao();
         dao.setMapper(mockMapper);
-        dao.setHealthCodeIndex(mockIndex);
+        dao.setHealthCodeIndex(mockIndexHelper);
         int numDeleted = dao.deleteRecordsForHealthCode("test health code");
         assertEquals(1, numDeleted);
 
         // validate intermediate results
         List<HealthDataRecord> recordKeyList = arg.getValue();
         assertEquals(1, recordKeyList.size());
-        assertEquals("test health code", recordKeyList.get(0).getHealthCode());
         assertEquals("test ID", recordKeyList.get(0).getId());
     }
 
@@ -89,18 +98,24 @@ public class DynamoHealthDataDaoTest {
         when(mockMapper.batchDelete(arg.capture())).thenReturn(Collections.singletonList(failure));
 
         // mock index helper
-        DynamoHealthDataRecord record = new DynamoHealthDataRecord();
-        record.setHealthCode("test health code");
-        record.setId("error record");
-        List<HealthDataRecord> mockResult = Collections.<HealthDataRecord>singletonList(record);
-
-        DynamoIndexHelper mockIndex = mock(DynamoIndexHelper.class);
-        when(mockIndex.queryKeys(HealthDataRecord.class, "healthCode", "test health code", null)).thenReturn(mockResult);
+        ItemCollection mockItemCollection = mock(ItemCollection.class);
+        IteratorSupport mockIteratorSupport = mock(IteratorSupport.class);
+        Item mockItem = new Item().with("healthCode", "test health code").with("id", "error record");
+        
+        when(mockItemCollection.iterator()).thenReturn(mockIteratorSupport);
+        when(mockIteratorSupport.hasNext()).thenReturn(true, false);
+        when(mockIteratorSupport.next()).thenReturn(mockItem);
+        
+        DynamoIndexHelper mockIndexHelper = mock(DynamoIndexHelper.class);
+        Index mockIndex = mock(Index.class);
+        when(mockIndexHelper.getIndex()).thenReturn(mockIndex);
+        when(mockIndex.query("healthCode", "test health code"))
+                .thenReturn(mockItemCollection);
 
         // set up
         DynamoHealthDataDao dao = new DynamoHealthDataDao();
         dao.setMapper(mockMapper);
-        dao.setHealthCodeIndex(mockIndex);
+        dao.setHealthCodeIndex(mockIndexHelper);
 
         // execute and validate exception
         Exception thrownEx = null;
@@ -115,7 +130,6 @@ public class DynamoHealthDataDaoTest {
         // validate intermediate results
         List<HealthDataRecord> recordKeyList = arg.getValue();
         assertEquals(1, recordKeyList.size());
-        assertEquals("test health code", recordKeyList.get(0).getHealthCode());
         assertEquals("error record", recordKeyList.get(0).getId());
     }
 
