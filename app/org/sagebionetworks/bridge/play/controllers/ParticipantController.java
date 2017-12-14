@@ -103,27 +103,27 @@ public class ParticipantController extends BaseController {
         return okResult(UserSessionInfo.toJSON(session));
     }
     
-    public Result getParticipants(String offsetByString, String pageSizeString, String emailFilter,
+    public Result getParticipants(String offsetByString, String pageSizeString, String emailFilter, String phoneFilter,
             String startDateString, String endDateString, String startTimeString, String endTimeString) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        return getParticipantsInternal(study, offsetByString, pageSizeString, emailFilter, startDateString,
+        return getParticipantsInternal(study, offsetByString, pageSizeString, emailFilter, phoneFilter, startDateString,
                 endDateString, startTimeString, endTimeString);
     }
 
     public Result getParticipantsForWorker(String studyId, String offsetByString, String pageSizeString, String emailFilter,
-            String startDateString, String endDateString, String startTimeString, String endTimeString) {
+            String phoneFilter, String startDateString, String endDateString, String startTimeString, String endTimeString) {
         getAuthenticatedSession(WORKER);
         
         Study study = studyService.getStudy(studyId);
-        return getParticipantsInternal(study, offsetByString, pageSizeString, emailFilter, startDateString,
+        return getParticipantsInternal(study, offsetByString, pageSizeString, emailFilter, phoneFilter, startDateString,
                 endDateString, startTimeString, endTimeString);
     }
     
     private Result getParticipantsInternal(Study study, String offsetByString, String pageSizeString,
-            String emailFilter, String startDateString, String endDateString, String startTimeString,
-            String endTimeString) {
+            String emailFilter, String phoneFilter, String startDateString, String endDateString,
+            String startTimeString, String endTimeString) {
         
         int offsetBy = getIntOrDefault(offsetByString, 0);
         int pageSize = getIntOrDefault(pageSizeString, API_DEFAULT_PAGE_SIZE);
@@ -140,7 +140,7 @@ public class ParticipantController extends BaseController {
             endTime = DateUtils.getDateTimeOrDefault(endDateString, null);
         }
         PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, offsetBy, pageSize,
-                emailFilter, startTime, endTime);
+                emailFilter, phoneFilter, startTime, endTime);
         
         // Similarly, we will return startTime/endTime in the top-level request parameter properties as 
         // startDate/endDate while transitioning, to maintain backwards compatibility.
