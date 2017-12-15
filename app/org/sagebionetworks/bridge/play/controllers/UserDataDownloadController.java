@@ -7,6 +7,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+
+import play.mvc.BodyParser;
 import play.mvc.Result;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -31,6 +33,7 @@ public class UserDataDownloadController extends BaseController {
      * Play handler for requesting user data. User must be authenticated and consented. (Otherwise, they couldn't have
      * any data to download to begin with.)
      */
+    @BodyParser.Of(BodyParser.Empty.class)
     public Result requestUserData(String startDate, String endDate) throws JsonProcessingException {
         UserSession session = getAuthenticatedAndConsentedSession();
         StudyIdentifier studyIdentifier = session.getStudyIdentifier();
