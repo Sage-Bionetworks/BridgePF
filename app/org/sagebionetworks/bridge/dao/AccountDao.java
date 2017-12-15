@@ -136,6 +136,9 @@ public interface AccountDao {
      *      number of records to return (or the number of remaining records if less than the pageSize).
      * @param emailFilter
      *      a substring that will be matched (ignoring case) against the email addresses of the accounts.
+     * @param phoneFilter
+     *      a substring that will be matched (ignoring case) against the phone number of the account. String will be 
+     *      converted to E164 format for comparison against the stored phone number.
      * @param startDate
      *      a date and time on or after which the account should have been created in order to match the query.
      * @param endDate
@@ -145,7 +148,7 @@ public interface AccountDao {
      *      about the request and the total number of records.
      */
     PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize,
-            String emailFilter, DateTime startDate, DateTime endDate);
+            String emailFilter, String phoneFilter, DateTime startDate, DateTime endDate);
     
     /**
      * For MailChimp, and other external systems, we need a way to get a healthCode for a given email.
