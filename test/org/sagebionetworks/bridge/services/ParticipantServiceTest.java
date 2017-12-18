@@ -466,7 +466,11 @@ public class ParticipantServiceTest {
         participantService.signUserOut(STUDY, ID);
         
         verify(accountDao).getAccount(ACCOUNT_ID);
+        verify(accountDao).signOut(accountIdCaptor.capture());
         verify(cacheProvider).removeSessionByUserId("userId");
+        
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, accountIdCaptor.getValue().getStudyId());
+        assertEquals("userId", accountIdCaptor.getValue().getId());
     }
     
     @Test

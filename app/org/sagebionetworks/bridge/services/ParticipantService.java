@@ -229,6 +229,10 @@ public class ParticipantService {
         checkArgument(isNotBlank(email));
 
         Account account = getAccountThrowingException(study, email);
+        
+        AccountId accountId = AccountId.forId(study.getIdentifier(), account.getId());
+        accountDao.signOut(accountId);
+        
         cacheProvider.removeSessionByUserId(account.getId());
     }
 
