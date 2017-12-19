@@ -20,6 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -58,6 +59,9 @@ public class DynamoSubpopulationDaoMockTest {
     
     @Mock
     private CriteriaDao criteriaDao;
+    
+    @Captor
+    private ArgumentCaptor<Subpopulation> subpopCaptor;
 
     @SuppressWarnings("unchecked")
     @Before
@@ -147,6 +151,18 @@ public class DynamoSubpopulationDaoMockTest {
         doReturn(Criteria.create()).when(criteriaDao).getCriteria(any());
         
         dao.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, true, false);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void doNotAllowLogicalDeleteOfDefault() {
+        Subpopulation defaultSubpop = Subpopulation.create();
+        defaultSubpop.setGuid(SUBPOP_GUID);
+        defaultSubpop.setDefaultGroup(true);
+        
+        doReturn(defaultSubpop).when(dao).getSubpopulation(TEST_STUDY, SUBPOP_GUID);
+        doReturn(Criteria.create()).when(criteriaDao).getCriteria(any());
+        
+        dao.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, false, false);
     }
     
     @Test
