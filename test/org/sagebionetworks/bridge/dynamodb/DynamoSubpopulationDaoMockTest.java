@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -178,6 +179,24 @@ public class DynamoSubpopulationDaoMockTest {
         verify(studyConsentDao).deleteAllConsents(SUBPOP_GUID);
         verify(criteriaDao).deleteCriteria(defaultSubpop.getCriteria().getKey());
         verify(mapper).delete(defaultSubpop);
+    }
+    
+    // This doesn't happen in the code, but for test coverage, you could logically delete
+    // the default subpop if the flag is set to allow it.
+    @Test
+    public void allowLogicalDeleteOfDefault() {
+        Subpopulation defaultSubpop = Subpopulation.create();
+        defaultSubpop.setGuid(SUBPOP_GUID);
+        defaultSubpop.setDefaultGroup(true);
+        
+        doReturn(defaultSubpop).when(dao).getSubpopulation(TEST_STUDY, SUBPOP_GUID);
+        doReturn(Criteria.create()).when(criteriaDao).getCriteria(any());
+        
+        dao.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, false, true);
+        
+        verify(mapper).save(subpopCaptor.capture());
+        Subpopulation subpop = subpopCaptor.getValue();
+        assertTrue(subpop.isDeleted());
     }
     
     @Test
