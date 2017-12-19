@@ -393,12 +393,12 @@ public class BridgeUtilsTest {
                 BridgeUtils.toSynapseFriendlyName("This (is a).-_ synapse Friendly Name3 "));
     }
     
-    @Test
-    public void nullToSynapseFriendlyName() {
+    @Test(expected = NullPointerException.class)
+    public void nullToSynapseFriendlyNameThrowsException() {
         assertEquals("", BridgeUtils.toSynapseFriendlyName(null));
     }
     
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void emptyStringToSynapseFriendlyName() {
         assertEquals("", BridgeUtils.toSynapseFriendlyName("  #"));
     }

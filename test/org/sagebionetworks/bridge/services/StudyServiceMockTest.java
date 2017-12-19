@@ -499,8 +499,8 @@ public class StudyServiceMockTest {
         verify(service).createStudy(study);
         verify(service).createSynapseProjectTeam(TEST_ADMIN_IDS, study);
         
-        assertTrue(projectCaptor.getValue().getName().contains(TEST_PROJECT_NAME));
-        assertTrue(teamCaptor.getValue().getName().contains(TEST_TEAM_NAME));
+        assertTrue(projectCaptor.getValue().getName().startsWith(TEST_PROJECT_NAME));
+        assertTrue(teamCaptor.getValue().getName().startsWith(TEST_TEAM_NAME));
     }
 
     @Test (expected = BadRequestException.class)
@@ -705,6 +705,32 @@ public class StudyServiceMockTest {
         service.createStudyAndUsers(mockStudyAndUsers);
     }
 
+    @Test(expected = BadRequestException.class)
+    public void createStudyAndUserNullStudyName() throws Exception {
+        // mock
+        Study study = getTestStudy();
+        study.setExternalIdRequiredOnSignup(false);
+        study.setSynapseProjectId(null);
+        study.setSynapseDataAccessTeamId(null);
+        study.setExternalIdValidationEnabled(false);
+        study.setName(null); // This is not a good name...
+
+        service.createSynapseProjectTeam(ImmutableList.of(TEST_IDENTIFIER), study);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void createStudyAndUserBadStudyName() throws Exception {
+        // mock
+        Study study = getTestStudy();
+        study.setExternalIdRequiredOnSignup(false);
+        study.setSynapseProjectId(null);
+        study.setSynapseDataAccessTeamId(null);
+        study.setExternalIdValidationEnabled(false);
+        study.setName("# # "); // This is not a good name...
+
+        service.createSynapseProjectTeam(ImmutableList.of(TEST_IDENTIFIER), study);
+    }
+    
     @Test
     public void createStudyAndUserThrowExceptionLogged() throws SynapseException {
         // mock

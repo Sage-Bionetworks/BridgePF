@@ -391,8 +391,12 @@ public class StudyService {
         // doesn't conflict with an existing name. Also, Synapse names can only contain a certain 
         // subset of characters.
         String nameScopingToken = SecureTokenGenerator.NAME_SCOPE_INSTANCE.nextToken();
-        String synapseName = BridgeUtils.toSynapseFriendlyName(study.getName());
-        
+        String synapseName = null;
+        try {
+            synapseName = BridgeUtils.toSynapseFriendlyName(study.getName());    
+        } catch(NullPointerException | IllegalArgumentException e) {
+            throw new BadRequestException("Study name is invalid Synapse name: " + study.getName());
+        }
         // create synapse project and team
         Team team = new Team();
         team.setName(synapseName + " Access Team "+nameScopingToken);
