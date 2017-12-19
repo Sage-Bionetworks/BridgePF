@@ -109,7 +109,7 @@ public class UserAdminServiceTest {
     
     @Test
     public void canCreateUserWithoutConsentingOrSigningUserIn() {
-        UserSession session = userAdminService.createUser(study, participant, null, false, false);
+        session = userAdminService.createUser(study, participant, null, false, false);
         assertFalse(session.isAuthenticated());
 
         session = authService.signIn(study, TEST_CONTEXT, new SignIn.Builder().withStudy(study.getIdentifier())

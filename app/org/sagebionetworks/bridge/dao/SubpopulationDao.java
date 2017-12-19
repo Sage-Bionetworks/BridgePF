@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -40,12 +39,6 @@ public interface SubpopulationDao {
     Subpopulation getSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid);
     
     /**
-     * Get all subpopulations for a user that match the provided ScheduleContext information. Returns an empty
-     * list if no subpopulations match (which can be considered an error in the design of the study).
-     */
-    List<Subpopulation> getSubpopulationsForUser(CriteriaContext context);
-    
-    /**
      * Update a subpopulation.
      */
     Subpopulation updateSubpopulation(Subpopulation subpop);
@@ -55,15 +48,11 @@ public interface SubpopulationDao {
      * one has signed a consent for this subpopulation and need to keep the consent document around.
      *
      * @param physicalDelete physically delete this subpopulation from the database. This is only done via an
-     *      admin-api for the purposes of cleanup after integration tests. 
+     *      admin-api for the purposes of cleanup after integration tests.
+     * @param allowDeleteOfDefault allow the service to delete the default subpopulation, as part of deleting
+     *      a study. 
      */
-    void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid, boolean physicalDelete);
-    
-    /**
-     * Delete all subpopulations. This is a physical delete and not a logical delete, and is not exposed 
-     * in the API. This deletes everything, including the default subpopulation. This is used when 
-     * deleting a study, as part of a test, for example.
-     */
-    void deleteAllSubpopulations(StudyIdentifier studyId);
+    void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid, boolean physicalDelete,
+            boolean allowDeleteOfDefault);
     
 }

@@ -23,14 +23,10 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
-import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.StudyConsentService;
@@ -40,11 +36,6 @@ import com.google.common.collect.Sets;
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DynamoSubpopulationDaoTest {
-    
-    private static final String SUBPOP_1 = "Subpop 1";
-    private static final String SUBPOP_2 = "Subpop 2";
-    private static final String SUBPOP_3 = "Subpop 3";
-    private static final String SUBPOP_4 = "Subpop 4";
 
     StudyIdentifier studyId;
     
@@ -61,7 +52,10 @@ public class DynamoSubpopulationDaoTest {
     
     @After
     public void after() {
-        dao.deleteAllSubpopulations(studyId);
+        List<Subpopulation> subpopulations = dao.getSubpopulations(studyId, false, true);
+        for (Subpopulation subpop : subpopulations) {
+            dao.deleteSubpopulation(studyId, subpop.getGuid(), true, true);
+        }
         assertTrue(dao.getSubpopulations(studyId, false, true).isEmpty());
     }
     
@@ -114,7 +108,7 @@ public class DynamoSubpopulationDaoTest {
         assertEquals(1, allSubpops.size());
         
         // Logical delete works...
-        dao.deleteSubpopulation(studyId, finalSubpop.getGuid(), false);
+        dao.deleteSubpopulation(studyId, finalSubpop.getGuid(), false, false);
         Subpopulation deletedSubpop = dao.getSubpopulation(studyId, finalSubpop.getGuid());
         assertTrue(deletedSubpop.isDeleted());
         
@@ -185,35 +179,11 @@ public class DynamoSubpopulationDaoTest {
         
         // Cannot delete a required subpopulation
         try {
-            dao.deleteSubpopulation(studyId, subpop.getGuid(), false);
+            dao.deleteSubpopulation(studyId, subpop.getGuid(), false, false);
             fail("Should have thrown exception");
         } catch(BadRequestException e) {
             assertEquals("Cannot delete the default subpopulation for a study.", e.getMessage());
         }
-    }
-    
-    @Test
-    public void getSubpopulationsForUser() {
-        Subpopulation subpop1 = createSubpop(SUBPOP_1, 0, 6, "group1"); // match up to version 6 and data group1, specificity 3
-        Subpopulation subpop2 = createSubpop(SUBPOP_2, null, 6, null); // match version 0-6, specificity 2
-        Subpopulation subpop3 = createSubpop(SUBPOP_3, null, null, "group1"); // match group1, specificity 1
-        Subpopulation subpop4 = createSubpop(SUBPOP_4, null, null, null); // match anything, specificity 0
-        
-        // version 12, no tags == Subpop 4
-        List<Subpopulation> results = dao.getSubpopulationsForUser(criteriaContext(12, null));
-        assertEquals(Sets.newHashSet(subpop4), Sets.newHashSet(results));
-        
-        // version 12, tag group1 == Subpops 3, 4
-        results = dao.getSubpopulationsForUser(criteriaContext(12, "group1"));
-        assertEquals(Sets.newHashSet(subpop3, subpop4), Sets.newHashSet(results));
-        
-        // version 4, no tag == Subpops 2, 4
-        results = dao.getSubpopulationsForUser(criteriaContext(4, null));
-        assertEquals(Sets.newHashSet(subpop2, subpop4), Sets.newHashSet(results));
-        
-        // version 4, tag group1 == Subpops 1,2,3,4, returns 1 in this case (most specific)
-        results = dao.getSubpopulationsForUser(criteriaContext(4, "group1"));
-        assertEquals(Sets.newHashSet(subpop1, subpop2, subpop3, subpop4), Sets.newHashSet(results));
     }
     
     @Test
@@ -250,7 +220,7 @@ public class DynamoSubpopulationDaoTest {
     @Test(expected = EntityNotFoundException.class)
     public void cannotUpdateASubpopThatIsDeleted() {
         Subpopulation subpop = createSubpop("Name", null, null, null);
-        dao.deleteSubpopulation(studyId, subpop.getGuid(), false);
+        dao.deleteSubpopulation(studyId, subpop.getGuid(), false, false);
         
         // This should now throw ENFE
         dao.updateSubpopulation(subpop);
@@ -276,90 +246,35 @@ public class DynamoSubpopulationDaoTest {
     
     @Test(expected=EntityNotFoundException.class)
     public void deleteNotExistingSubpopulationThrowsException() {
-        dao.deleteSubpopulation(studyId, SubpopulationGuid.create("guidDoesNotExist"), false);
-    }
-    
-    /**
-     * When there are no subpopulations at all, then we create and return a default 
-     * subpopulation. This is necessary for migration and for bootstrapping initial 
-     * studies.
-     */
-    @Test
-    public void getSubpopulationsForUserReturnsNoSubpopulations() {
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withStudyIdentifier(studyId)
-                .build();
-        List<Subpopulation> results = dao.getSubpopulationsForUser(context);
-        
-        assertEquals(1, results.size());
-        assertEquals("Default Consent Group", results.get(0).getName());
-    }
-    
-    /**
-     * Here the research designer has created an error when creating subpopulations 
-     * such that there's no match for this user... in this case, we want to return null.
-     */
-    @Test
-    public void getSubpopulationsForUserDoesNotMatchSubpopulationReturnsNull() {
-        createSubpop("Name of unmatcheable subpopulation", null, null, "unmatcheableGroup");
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withStudyIdentifier(studyId)
-                .build();
-        List<Subpopulation> results = dao.getSubpopulationsForUser(context);
-        assertTrue(results.isEmpty());
+        dao.deleteSubpopulation(studyId, SubpopulationGuid.create("guidDoesNotExist"), false, false);
     }
     
     @Test
     public void canPermanentlyDeleteOneSubpopulation() {
         Subpopulation subpop = createSubpop("Name", null, null, null);
         
-        dao.deleteSubpopulation(studyId, subpop.getGuid(), true);
+        dao.deleteSubpopulation(studyId, subpop.getGuid(), true, false);
         
         // This requests all subpopulations including the just-deleted subpopulation
         List<Subpopulation> subpops = dao.getSubpopulations(studyId, false, true);
         assertEquals(0, subpops.size());
     }
     
-    @Test
-    public void deleteAllSubpopulationsDeletesConsents() {
-        Subpopulation subpop = createSubpop("Name", null, null, null);
-        
-        // Consents are created at the service level for this subpopulation, so there's 
-        // no default created. We create a consent.
-        StudyConsentForm form = new StudyConsentForm("<p>Document content.</p>");
-        studyConsentService.addConsent(subpop.getGuid(), form);
-        
-        // There is now a consent, as we expect
-        List<StudyConsent> consents = studyConsentService.getAllConsents(subpop.getGuid());
-        assertFalse(consents.isEmpty());
-        
-        // Delete all subpopulations and verify they are all deleted
-        dao.deleteAllSubpopulations(studyId);
-        List<Subpopulation> subpopulations = dao.getSubpopulations(studyId, false, true);
-        assertTrue(subpopulations.isEmpty());
-        
-        // As a consequence, consents have all been deleted as well
-        consents = studyConsentService.getAllConsents(subpop.getGuid());
-        assertTrue(consents.isEmpty());
-    }
-    
     @Test(expected = EntityNotFoundException.class)
     public void logicallyDeletingLogicallyDeletedSubpopThrowsNotFoundException() {
         Subpopulation subpop = createSubpop("Name", null, null, null);
-        dao.deleteSubpopulation(studyId, subpop.getGuid(), false);
+        dao.deleteSubpopulation(studyId, subpop.getGuid(), false, false);
         
         // This should just appear to not exist and throw a 404 exception
-        dao.deleteSubpopulation(studyId, subpop.getGuid(), false);
+        dao.deleteSubpopulation(studyId, subpop.getGuid(), false, false);
     }
     
     @Test
     public void physicallyDeletingLogicallyDeletedSubpopWorks() {
         Subpopulation subpop = createSubpop("Name", null, null, null);
-        dao.deleteSubpopulation(studyId, subpop.getGuid(), false);
+        dao.deleteSubpopulation(studyId, subpop.getGuid(), false, false);
         
-        dao.deleteSubpopulation(studyId, subpop.getGuid(), true);
+        dao.deleteSubpopulation(studyId, subpop.getGuid(), true, false);
         
         List<Subpopulation> allSubpops = dao.getSubpopulations(studyId, false, true);
         assertTrue(allSubpops.isEmpty());
@@ -384,15 +299,5 @@ public class DynamoSubpopulationDaoTest {
         subpop.setCriteria(criteria);
         
         return dao.createSubpopulation(subpop);
-    }
-    
-    private CriteriaContext criteriaContext(int version, String tag) {
-        CriteriaContext.Builder builder = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.fromUserAgentCache("app/"+version+" (Unknown iPhone; iPhone OS/9.0.2) BridgeSDK/4"))
-                .withStudyIdentifier(studyId);
-        if (tag != null) {
-            builder.withUserDataGroups(Sets.newHashSet(tag));    
-        }
-        return builder.build();
     }
 }

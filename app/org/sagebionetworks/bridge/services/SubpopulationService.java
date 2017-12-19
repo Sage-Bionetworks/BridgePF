@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableList;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -12,11 +13,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
@@ -30,10 +35,13 @@ import org.sagebionetworks.bridge.validators.Validate;
 @Component
 public class SubpopulationService {
 
+    private static final TypeReference<List<Subpopulation>> SURVEY_LIST_REF = new TypeReference<List<Subpopulation>>() {};
+
     private SubpopulationDao subpopDao;
     private StudyConsentDao studyConsentDao;
     private StudyConsentService studyConsentService;
     private StudyConsentForm defaultConsentDocument;
+    private CacheProvider cacheProvider;
     
     @Autowired
     final void setSubpopulationDao(SubpopulationDao subpopDao) {
@@ -47,6 +55,10 @@ public class SubpopulationService {
     final void setStudyConsentService(StudyConsentService studyConsentService) {
         this.studyConsentService = studyConsentService;
     }
+    @Autowired
+    final void setCacheProvider(CacheProvider cacheProvider) {
+        this.cacheProvider = cacheProvider;
+    }
     @Value("classpath:study-defaults/consent-body.xhtml")
     final void setDefaultConsentDocument(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultConsentDocument = new StudyConsentForm(IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8));
@@ -54,6 +66,18 @@ public class SubpopulationService {
     // For testing to stub out this object rather than loading from disk
     final void setDefaultConsentForm(StudyConsentForm form) {
         this.defaultConsentDocument = form;
+    }
+    
+    private String getListKey(StudyIdentifier studyId) {
+        return studyId.getIdentifier() + ":SubpopulationList";
+    }
+    
+    private String getSubpopKey(Subpopulation subpop) {
+        return getSubpopKey(subpop.getStudyIdentifier(), subpop.getGuid());
+    }
+    
+    private String getSubpopKey(String studyId, SubpopulationGuid subpopGuid) {
+        return subpopGuid.getGuid()  + ":" + studyId + ":Subpopulation";
     }
     
     /**
@@ -78,6 +102,7 @@ public class SubpopulationService {
         StudyConsentView view = studyConsentService.addConsent(subpop.getGuid(), defaultConsentDocument);
         studyConsentService.publishConsent(study, subpop, view.getCreatedOn());
         
+        cacheProvider.removeObject(getListKey(study.getStudyIdentifier()));
         return created;
     }
     
@@ -95,6 +120,8 @@ public class SubpopulationService {
             StudyConsentView view = studyConsentService.addConsent(subpopGuid, defaultConsentDocument);
             studyConsentService.publishConsent(study, created, view.getCreatedOn());
         }
+        
+        cacheProvider.removeObject(getListKey(study.getStudyIdentifier()));
         return created;
     }
     
@@ -126,7 +153,10 @@ public class SubpopulationService {
         Validator validator = new SubpopulationValidator(study.getDataGroups());
         Validate.entityThrowingException(validator, subpop);
         
-        return subpopDao.updateSubpopulation(subpop);
+        Subpopulation updated = subpopDao.updateSubpopulation(subpop);
+        cacheProvider.removeObject(getSubpopKey(updated));
+        cacheProvider.removeObject(getListKey(study.getStudyIdentifier()));
+        return updated;
     }
     
     /**
@@ -139,7 +169,12 @@ public class SubpopulationService {
     public List<Subpopulation> getSubpopulations(StudyIdentifier studyId) {
         checkNotNull(studyId);
         
-        return subpopDao.getSubpopulations(studyId, true, false);
+        List<Subpopulation> subpops = cacheProvider.getObject(getListKey(studyId), SURVEY_LIST_REF);
+        if (subpops == null) {
+            subpops = subpopDao.getSubpopulations(studyId, true, false);
+            cacheProvider.setObject(getListKey(studyId), subpops);
+        }
+        return subpops;
     }
     
     /**
@@ -152,20 +187,26 @@ public class SubpopulationService {
         checkNotNull(studyId);
         checkNotNull(subpopGuid);
         
-        return subpopDao.getSubpopulation(studyId, subpopGuid);
+        Subpopulation subpop = cacheProvider.getObject(getSubpopKey(studyId.getIdentifier(), subpopGuid), Subpopulation.class);
+        if (subpop == null) {
+            subpop = subpopDao.getSubpopulation(studyId, subpopGuid);
+            cacheProvider.setObject(getSubpopKey(subpop), subpop);
+        }
+        return subpop;
     }
     
     /**
-     * Get a subpopulation that matches the most specific criteria defined for a subpopulation. 
-     * That is, the populations are sorted by the amount of criteria that are defined to match that 
-     * population, and the first one that matches is returned.
-     * @param context
-     * @return
+     * Get all subpopulations for a user that match the provided CriteriaContext information. 
+     * Returns an empty list if no subpopulations match.
      */
-    public List<Subpopulation> getSubpopulationForUser(CriteriaContext context) {
+    public List<Subpopulation> getSubpopulationsForUser(CriteriaContext context) {
         checkNotNull(context);
         
-        return subpopDao.getSubpopulationsForUser(context);
+        List<Subpopulation> subpops = getSubpopulations(context.getStudyIdentifier());
+
+        return subpops.stream().filter(subpop -> {
+            return CriteriaUtils.matchCriteria(context, subpop.getCriteria());
+        }).collect(toImmutableList());
     }
 
     /**
@@ -180,17 +221,27 @@ public class SubpopulationService {
         checkNotNull(subpopGuid);
         
         // Will throw EntityNotFoundException if the subpopulation is not in the study
-        subpopDao.deleteSubpopulation(studyId, subpopGuid, physicalDelete);
+        subpopDao.deleteSubpopulation(studyId, subpopGuid, physicalDelete, false);
+        cacheProvider.removeObject(getSubpopKey(studyId.getIdentifier(), subpopGuid));
+        cacheProvider.removeObject(getListKey(studyId));
     }
     
     /**
-     * Delete all the subpopulations for a study (being deleted).
-     * @param studyId
+     * Delete all subpopulations. This is a physical delete and not a logical delete, and is not exposed 
+     * in the API. This deletes everything, including the default subpopulation. This is used when 
+     * deleting a study, as part of a test, for example.
      */
     public void deleteAllSubpopulations(StudyIdentifier studyId) {
         checkNotNull(studyId);
         
-        subpopDao.deleteAllSubpopulations(studyId);
+        List<Subpopulation> subpops = getSubpopulations(studyId);
+        if (!subpops.isEmpty()) {
+            for (Subpopulation subpop : subpops) {
+                subpopDao.deleteSubpopulation(studyId, subpop.getGuid(), true, true);
+                cacheProvider.removeObject(getSubpopKey(subpop));
+                cacheProvider.removeObject(getListKey(studyId));
+            }
+        }
     }
 
 }

@@ -19,8 +19,6 @@ import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Criteria;
-import org.sagebionetworks.bridge.models.CriteriaContext;
-import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -28,7 +26,6 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.google.common.collect.ImmutableList;
 
 @Component
@@ -160,22 +157,13 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     }
 
     @Override
-    public List<Subpopulation> getSubpopulationsForUser(CriteriaContext context) {
-        // criteria are loaded by this method
-        List<Subpopulation> subpops = getSubpopulations(context.getStudyIdentifier(), true, false);
-
-        return subpops.stream().filter(subpop -> {
-            return CriteriaUtils.matchCriteria(context, subpop.getCriteria());
-        }).collect(toImmutableList());
-    }
-    
-    @Override
-    public void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid, boolean physicalDelete) {
+    public void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid, boolean physicalDelete,
+            boolean allowDeleteOfDefault) {
         Subpopulation subpop = getSubpopulation(studyId, subpopGuid);
         if (subpop == null || (!physicalDelete && subpop.isDeleted())) {
             throw new EntityNotFoundException(Subpopulation.class);
         }
-        if (subpop.isDefaultGroup()) {
+        if (!allowDeleteOfDefault && subpop.isDefaultGroup()) {
             throw new BadRequestException("Cannot delete the default subpopulation for a study.");
         }
         if (physicalDelete) {
@@ -185,19 +173,6 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         } else {
             subpop.setDeleted(true);
             mapper.save(subpop);
-        }
-    }
-
-    @Override
-    public void deleteAllSubpopulations(StudyIdentifier studyId) {
-        List<Subpopulation> subpops = getSubpopulations(studyId, false, true);
-        if (!subpops.isEmpty()) {
-            for (Subpopulation subpop : subpops) {
-                studyConsentDao.deleteAllConsents(subpop.getGuid());
-                criteriaDao.deleteCriteria(subpop.getCriteria().getKey());
-            }
-            List<FailedBatch> failures = mapper.batchDelete(subpops);
-            BridgeUtils.ifFailuresThrowException(failures);
         }
     }
     
