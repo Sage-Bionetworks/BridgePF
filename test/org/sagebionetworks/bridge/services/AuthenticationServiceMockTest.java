@@ -191,6 +191,7 @@ public class AuthenticationServiceMockTest {
                 .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
         doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
         doReturn(participant).when(participantService).getParticipant(study, account, false);
+        // Does not through consent required exception, despite being unconsented, because user has DEVELOPER role. 
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
         
         UserSession retrieved = service.signIn(study, CONTEXT, EMAIL_PASSWORD_SIGN_IN);
@@ -224,6 +225,7 @@ public class AuthenticationServiceMockTest {
                 .copyOf(PARTICIPANT).withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
         doReturn(account).when(accountDao).authenticate(study, PHONE_PASSWORD_SIGN_IN);
         doReturn(participant).when(participantService).getParticipant(study, account, false);
+        // Does not through consent required exception, despite being unconsented, because user has RESEARCHER role. 
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
         
         UserSession retrieved = service.signIn(study, CONTEXT, PHONE_PASSWORD_SIGN_IN);
@@ -432,7 +434,7 @@ public class AuthenticationServiceMockTest {
         
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
         doReturn(participant).when(participantService).getParticipant(study, account, false);
-        doReturn(TOKEN).when(cacheProvider).getString(CACHE_KEY);
+        doReturn(TOKEN).when(cacheProvider).getObject(CACHE_KEY, String.class);
         doReturn(study).when(studyService).getStudy(STUDY_ID);
         doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
         

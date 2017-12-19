@@ -55,10 +55,10 @@ public class AuthenticationController extends BaseController {
         try {
             session = authenticationService.emailSignIn(context, signInRequest);
         } catch(ConsentRequiredException e) {
-            logAuthenticationSuccess(e.getUserSession());
+            setCookieAndRecordMetrics(e.getUserSession());
             throw e;
         }
-        logAuthenticationSuccess(session);
+        setCookieAndRecordMetrics(session);
 
         return okResult(UserSessionInfo.toJSON(session));
     }
@@ -86,10 +86,10 @@ public class AuthenticationController extends BaseController {
         try {
             session = authenticationService.phoneSignIn(context, signInRequest);
         } catch(ConsentRequiredException e) {
-            logAuthenticationSuccess(e.getUserSession());
+            setCookieAndRecordMetrics(e.getUserSession());
             throw e;
         }
-        logAuthenticationSuccess(session);
+        setCookieAndRecordMetrics(session);
 
         return okResult(UserSessionInfo.toJSON(session));
     }
@@ -110,7 +110,7 @@ public class AuthenticationController extends BaseController {
         CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
         UserSession session = authenticationService.reauthenticate(study, context, signInRequest);
         
-        logAuthenticationSuccess(session);
+        setCookieAndRecordMetrics(session);
         
         return okResult(UserSessionInfo.toJSON(session));
     }
@@ -194,7 +194,7 @@ public class AuthenticationController extends BaseController {
             try {
                 session = authenticationService.signIn(study, context, signIn);
             } catch(ConsentRequiredException e) {
-                logAuthenticationSuccess(e.getUserSession());
+                setCookieAndRecordMetrics(e.getUserSession());
                 throw e;
             } catch(ConcurrentModificationException e) {
                 if (retryCounter > 0) {
@@ -205,12 +205,12 @@ public class AuthenticationController extends BaseController {
                 throw e;
             }
         }
-        logAuthenticationSuccess(session);
+        setCookieAndRecordMetrics(session);
 
         return okResult(UserSessionInfo.toJSON(session));
     }
 
-    private void logAuthenticationSuccess(UserSession session) {
+    private void setCookieAndRecordMetrics(UserSession session) {
         writeSessionInfoToMetrics(session);  
         // We have removed the cookie in the past, only to find out that clients were unknowingly
         // depending on the cookie to preserve the session token. So it remains.
