@@ -183,7 +183,7 @@ public class ParticipantControllerTest {
         
         when(authService.getSession(eq(study), any())).thenReturn(session);
         
-        when(mockParticipantService.getPagedAccountSummaries(eq(study), anyInt(), anyInt(), any(), any(), any())).thenReturn(page);
+        when(mockParticipantService.getPagedAccountSummaries(eq(study), anyInt(), anyInt(), any(), any(), any(), any())).thenReturn(page);
         
         controller.setParticipantService(mockParticipantService);
         controller.setStudyService(mockStudyService);
@@ -201,38 +201,40 @@ public class ParticipantControllerTest {
     
     @Test
     public void getParticipants() throws Exception {
-        Result result = controller.getParticipants("10", "20", "foo", START_TIME.toString(), END_TIME.toString(), null, null);
+        Result result = controller.getParticipants("10", "20", "emailSubstring", "phoneSubstring",
+                START_TIME.toString(), END_TIME.toString(), null, null);
         
         verifyPagedResourceListParameters(result);
         
         // DateTime instances don't seem to be equal unless you use the library's equality methods, which
         // verification does not do. So capture and compare that way.
-        verify(mockParticipantService).getPagedAccountSummaries(eq(study), eq(10), eq(20), eq("foo"),
-                startTimeCaptor.capture(), endTimeCaptor.capture());
+        verify(mockParticipantService).getPagedAccountSummaries(eq(study), eq(10), eq(20), eq("emailSubstring"),
+                eq("phoneSubstring"), startTimeCaptor.capture(), endTimeCaptor.capture());
         assertEquals(START_TIME.toString(), startTimeCaptor.getValue().toString());
         assertEquals(END_TIME.toString(), endTimeCaptor.getValue().toString());
     }
     
     @Test
     public void getParticipantsWithStartTimeEndTime() throws Exception {
-        Result result = controller.getParticipants("10", "20", "foo", null, null, START_TIME.toString(), END_TIME.toString());
+        Result result = controller.getParticipants("10", "20", "emailSubstring", "phoneSubstring", null, null,
+                START_TIME.toString(), END_TIME.toString());
         
         verifyPagedResourceListParameters(result);
         
         // DateTime instances don't seem to be equal unless you use the library's equality methods, which
         // verification does not do. So capture and compare that way.
-        verify(mockParticipantService).getPagedAccountSummaries(eq(study), eq(10), eq(20), eq("foo"),
-                startTimeCaptor.capture(), endTimeCaptor.capture());
+        verify(mockParticipantService).getPagedAccountSummaries(eq(study), eq(10), eq(20), eq("emailSubstring"),
+                eq("phoneSubstring"), startTimeCaptor.capture(), endTimeCaptor.capture());
         assertEquals(START_TIME.toString(), startTimeCaptor.getValue().toString());
         assertEquals(END_TIME.toString(), endTimeCaptor.getValue().toString());
     }
     
     @Test(expected = BadRequestException.class)
     public void oddParametersUseDefaults() throws Exception {
-        controller.getParticipants("asdf", "qwer", null, null, null, null, null);
+        controller.getParticipants("asdf", "qwer", null, null, null, null, null, null);
         
         // paging with defaults
-        verify(mockParticipantService).getPagedAccountSummaries(study, 0, API_DEFAULT_PAGE_SIZE, null, null, null);
+        verify(mockParticipantService).getPagedAccountSummaries(study, 0, API_DEFAULT_PAGE_SIZE, null, null, null, null);
     }
 
     @Test
@@ -310,10 +312,10 @@ public class ParticipantControllerTest {
     
     @Test
     public void nullParametersUseDefaults() throws Exception {
-        controller.getParticipants(null, null, null, null, null,null, null);
+        controller.getParticipants(null, null, null, null, null, null,null, null);
 
         // paging with defaults
-        verify(mockParticipantService).getPagedAccountSummaries(study, 0, API_DEFAULT_PAGE_SIZE, null, null, null);
+        verify(mockParticipantService).getPagedAccountSummaries(study, 0, API_DEFAULT_PAGE_SIZE, null, null, null, null);
     }
     
     @Test
@@ -758,7 +760,8 @@ public class ParticipantControllerTest {
         DateTime start = DateTime.now();
         DateTime end = DateTime.now();
         
-        controller.getParticipantsForWorker(study.getIdentifier(), "10", "20", "foo", start.toString(), end.toString(), null, null);
+        controller.getParticipantsForWorker(study.getIdentifier(), "10", "20", "emailSubstring", "phoneSubstring",
+                start.toString(), end.toString(), null, null);
     }
     
     @Test(expected = UnauthorizedException.class)
@@ -773,14 +776,15 @@ public class ParticipantControllerTest {
         
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
         
-        Result result = controller.getParticipantsForWorker(study.getIdentifier(), "10", "20", "foo", START_TIME.toString(), END_TIME.toString(), null, null);
+        Result result = controller.getParticipantsForWorker(study.getIdentifier(), "10", "20", "emailSubstring",
+                "phoneSubstring", START_TIME.toString(), END_TIME.toString(), null, null);
 
         verifyPagedResourceListParameters(result);
         
         // DateTime instances don't seem to be equal unless you use the library's equality methods, which
         // verification does not do. So capture and compare that way.
-        verify(mockParticipantService).getPagedAccountSummaries(eq(study), eq(10), eq(20), eq("foo"),
-                startTimeCaptor.capture(), endTimeCaptor.capture());
+        verify(mockParticipantService).getPagedAccountSummaries(eq(study), eq(10), eq(20), eq("emailSubstring"),
+                eq("phoneSubstring"), startTimeCaptor.capture(), endTimeCaptor.capture());
         assertEquals(START_TIME.toString(), startTimeCaptor.getValue().toString());
         assertEquals(END_TIME.toString(), endTimeCaptor.getValue().toString());
     }
@@ -792,14 +796,15 @@ public class ParticipantControllerTest {
         
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
         
-        Result result = controller.getParticipantsForWorker(study.getIdentifier(), "10", "20", "foo", null, null, START_TIME.toString(), END_TIME.toString());
+        Result result = controller.getParticipantsForWorker(study.getIdentifier(), "10", "20", "emailSubstring",
+                "phoneSubstring", null, null, START_TIME.toString(), END_TIME.toString());
         
         verifyPagedResourceListParameters(result);
         
         // DateTime instances don't seem to be equal unless you use the library's equality methods, which
         // verification does not do. So capture and compare that way.
-        verify(mockParticipantService).getPagedAccountSummaries(eq(study), eq(10), eq(20), eq("foo"),
-                startTimeCaptor.capture(), endTimeCaptor.capture());
+        verify(mockParticipantService).getPagedAccountSummaries(eq(study), eq(10), eq(20), eq("emailSubstring"),
+                eq("phoneSubstring"), startTimeCaptor.capture(), endTimeCaptor.capture());
         assertEquals(START_TIME.toString(), startTimeCaptor.getValue().toString());
         assertEquals(END_TIME.toString(), endTimeCaptor.getValue().toString());
     }

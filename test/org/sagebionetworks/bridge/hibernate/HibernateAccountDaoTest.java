@@ -1131,7 +1131,7 @@ public class HibernateAccountDaoTest {
 
         // execute and validate
         PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(STUDY, 10, 5,
-                null, null, null);
+                null, null, null, null);
         assertEquals(10, accountSummaryResourceList.getRequestParams().get("offsetBy"));
         assertEquals(5, accountSummaryResourceList.getRequestParams().get("pageSize"));
         assertEquals((Integer)12, accountSummaryResourceList.getTotal());
@@ -1174,20 +1174,23 @@ public class HibernateAccountDaoTest {
 
         // execute and validate - Just validate filters and query, since everything else is tested in getPaged().
         PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(STUDY, 10, 5,
-                EMAIL, startDate, endDate);
+                EMAIL, PHONE.getNationalFormat(), startDate, endDate);
 
         Map<String, Object> paramsMap = accountSummaryResourceList.getRequestParams();
-        assertEquals(5, paramsMap.size());
+        assertEquals(6, paramsMap.size());
         assertEquals(5, paramsMap.get("pageSize"));
         assertEquals(10, paramsMap.get("offsetBy"));
         assertEquals(EMAIL, paramsMap.get("emailFilter"));
+        assertEquals(PHONE.getNationalFormat(), paramsMap.get("phoneFilter"));
         assertEquals(startDate.toString(), paramsMap.get("startTime"));
         assertEquals(endDate.toString(), paramsMap.get("endTime"));
 
+        String phoneString = PHONE.getNationalFormat().replaceAll("\\D*","");
+
         // verify hibernate calls
-        String expectedQueryString = "from HibernateAccount where studyId='" + 
-                TestConstants.TEST_STUDY_IDENTIFIER + "' and email like '%" + EMAIL + "%' and createdOn >= " + 
-                startDate.getMillis() + " and createdOn <= " + endDate.getMillis();
+        String expectedQueryString = "from HibernateAccount where studyId='" + TestConstants.TEST_STUDY_IDENTIFIER
+                + "' and email like '%" + EMAIL + "%' and phone.number like '%" + phoneString + "%' and createdOn >= "
+                + startDate.getMillis() + " and createdOn <= " + endDate.getMillis();
         String expectedGetQueryString = HibernateAccountDao.ACCOUNT_SUMMARY_QUERY_PREFIX + expectedQueryString;
         verify(mockHibernateHelper).queryGet(expectedGetQueryString, 10, 5, HibernateAccount.class);
         verify(mockHibernateHelper).queryCount(expectedQueryString);

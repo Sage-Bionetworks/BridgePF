@@ -205,7 +205,7 @@ public class AccountWorkflowService {
         String sptoken = createTimeLimitedToken();
         
         String cacheKey = sptoken + ":" + study.getIdentifier();
-        cacheProvider.setString(cacheKey, email, EXPIRE_IN_SECONDS);
+        cacheProvider.setObject(cacheKey, email, EXPIRE_IN_SECONDS);
         
         String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
         String url = String.format(RESET_PASSWORD_URL, BASE_URL, studyId, sptoken);
@@ -222,7 +222,7 @@ public class AccountWorkflowService {
     private void sendPasswordResetRelatedSMS(Study study, Phone phone, String message) {
         String sptoken = createTimeLimitedToken();        
         String cacheKey = sptoken + ":phone:" + study.getIdentifier();
-        cacheProvider.setString(cacheKey, getPhoneString(phone), EXPIRE_IN_SECONDS);
+        cacheProvider.setObject(cacheKey, getPhoneString(phone), EXPIRE_IN_SECONDS);
         
         String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
         String url = String.format(RESET_PASSWORD_URL, BASE_URL, studyId, sptoken);
@@ -242,13 +242,13 @@ public class AccountWorkflowService {
         String emailCacheKey = passwordReset.getSptoken() + ":" + passwordReset.getStudyIdentifier();
         String phoneCacheKey = passwordReset.getSptoken() + ":phone:" + passwordReset.getStudyIdentifier();
         
-        String email = cacheProvider.getString(emailCacheKey);
-        String phoneJson = cacheProvider.getString(phoneCacheKey);
+        String email = cacheProvider.getObject(emailCacheKey, String.class);
+        String phoneJson = cacheProvider.getObject(phoneCacheKey, String.class);
         if (email == null && phoneJson == null) {
             throw new BadRequestException(PASSWORD_RESET_TOKEN_EXPIRED);
         }
-        cacheProvider.removeString(emailCacheKey);
-        cacheProvider.removeString(phoneCacheKey);
+        cacheProvider.removeObject(emailCacheKey);
+        cacheProvider.removeObject(phoneCacheKey);
         
         Study study = studyService.getStudy(passwordReset.getStudyIdentifier());
         AccountId accountId = null;
@@ -271,7 +271,7 @@ public class AccountWorkflowService {
         checkNotNull(data);
                  
         try {
-            cacheProvider.setString(sptoken, BridgeObjectMapper.get().writeValueAsString(data), EXPIRE_IN_SECONDS);
+            cacheProvider.setObject(sptoken, BridgeObjectMapper.get().writeValueAsString(data), EXPIRE_IN_SECONDS);
         } catch (IOException e) {
             throw new BridgeServiceException(e);
         }
@@ -280,10 +280,10 @@ public class AccountWorkflowService {
     private VerificationData restoreVerification(String sptoken) {
         checkArgument(isNotBlank(sptoken));
                  
-        String json = cacheProvider.getString(sptoken);
+        String json = cacheProvider.getObject(sptoken, String.class);
         if (json != null) {
             try {
-                cacheProvider.removeString(sptoken);
+                cacheProvider.removeObject(sptoken);
                 return BridgeObjectMapper.get().readValue(json, VerificationData.class);
             } catch (IOException e) {
                 throw new BridgeServiceException(e);

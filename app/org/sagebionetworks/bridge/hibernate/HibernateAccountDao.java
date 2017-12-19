@@ -327,9 +327,9 @@ public class HibernateAccountDao implements AccountDao {
             // Account can conflict because studyId + email or studyId + phone has been used for an 
             // existing account. 
             AccountId accountId = null;
-            if (account.getEmail() != null) {
+            if (hibernateAccount.getEmail() != null) {
                 accountId = AccountId.forEmail(study.getIdentifier(), account.getEmail());
-            } else if (account.getPhone() != null) {
+            } else if (hibernateAccount.getPhone() != null) {
                 accountId = AccountId.forPhone(study.getIdentifier(), account.getPhone());
             }
             HibernateAccount otherAccount = getHibernateAccount(accountId);
@@ -473,8 +473,8 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize,
-            String emailFilter, DateTime startTime, DateTime endTime) {
-        // Note: emailFilter can be any substring, not just prefix/suffix
+            String emailFilter, String phoneFilter, DateTime startTime, DateTime endTime) {
+        // Note: emailFilter can be any substring, not just prefix/suffix. Same with phone.
         // Note: start- and endTime are inclusive.
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("from HibernateAccount where studyId='");
@@ -483,6 +483,12 @@ public class HibernateAccountDao implements AccountDao {
         if (StringUtils.isNotBlank(emailFilter)) {
             queryBuilder.append(" and email like '%");
             queryBuilder.append(emailFilter);
+            queryBuilder.append("%'");
+        }
+        if (StringUtils.isNotBlank(phoneFilter)) {
+            String phoneString = phoneFilter.replaceAll("\\D*", "");
+            queryBuilder.append(" and phone.number like '%");
+            queryBuilder.append(phoneString);
             queryBuilder.append("%'");
         }
         if (startTime != null) {
@@ -512,6 +518,7 @@ public class HibernateAccountDao implements AccountDao {
                 .withRequestParam(ResourceList.OFFSET_BY, offsetBy)
                 .withRequestParam(ResourceList.PAGE_SIZE, pageSize)
                 .withRequestParam(ResourceList.EMAIL_FILTER, emailFilter)
+                .withRequestParam(ResourceList.PHONE_FILTER, phoneFilter)
                 .withRequestParam(ResourceList.START_TIME, startTime)
                 .withRequestParam(ResourceList.END_TIME, endTime);
     }

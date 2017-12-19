@@ -209,7 +209,7 @@ public class ParticipantService {
     }
 
     public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize,
-            String emailFilter, DateTime startTime, DateTime endTime) {
+            String emailFilter, String phoneFilter, DateTime startTime, DateTime endTime) {
         checkNotNull(study);
         if (offsetBy < 0) {
             throw new BadRequestException("offsetBy cannot be less than 0");
@@ -221,7 +221,7 @@ public class ParticipantService {
         if (startTime != null && endTime != null && startTime.getMillis() >= endTime.getMillis()) {
             throw new BadRequestException(DATE_RANGE_ERROR);
         }
-        return accountDao.getPagedAccountSummaries(study, offsetBy, pageSize, emailFilter, startTime, endTime);
+        return accountDao.getPagedAccountSummaries(study, offsetBy, pageSize, emailFilter, phoneFilter, startTime, endTime);
     }
 
     public void signUserOut(Study study, String email) {
@@ -229,6 +229,10 @@ public class ParticipantService {
         checkArgument(isNotBlank(email));
 
         Account account = getAccountThrowingException(study, email);
+        
+        AccountId accountId = AccountId.forId(study.getIdentifier(), account.getId());
+        accountDao.signOut(accountId);
+        
         cacheProvider.removeSessionByUserId(account.getId());
     }
 
@@ -293,7 +297,7 @@ public class ParticipantService {
     private void throwExceptionIfLimitMetOrExceeded(Study study) {
         // It's sufficient to get minimum number of records the total if for all records
         PagedResourceList<AccountSummary> summaries = getPagedAccountSummaries(study, 0,
-                BridgeConstants.API_MINIMUM_PAGE_SIZE, null, null, null);
+                BridgeConstants.API_MINIMUM_PAGE_SIZE, null, null, null, null);
         if (summaries.getTotal() >= study.getAccountLimit()) {
             throw new LimitExceededException(String.format(BridgeConstants.MAX_USERS_ERROR, study.getAccountLimit()));
         }
@@ -367,7 +371,9 @@ public class ParticipantService {
         checkArgument(isNotBlank(userId));
 
         StudyParticipant participant = getParticipant(study, userId, false);
-        accountDao.resendEmailVerificationToken(AccountId.forEmail(study.getIdentifier(), participant.getEmail()));
+        if (participant.getEmail() != null) {
+            accountDao.resendEmailVerificationToken(AccountId.forEmail(study.getIdentifier(), participant.getEmail()));
+        }
     }
 
     public void withdrawAllConsents(Study study, String userId, Withdrawal withdrawal, long withdrewOn) {

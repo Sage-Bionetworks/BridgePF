@@ -8,9 +8,12 @@ import java.util.stream.Collectors;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
+import com.amazonaws.services.dynamodbv2.document.Index;
+import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.google.common.collect.Lists;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -40,7 +43,7 @@ public class DynamoHealthDataDao implements HealthDataDao {
      * DynamoDB Index reference for the healthCode index. This is needed because the DynamoDB mapper does allow queries
      * using global secondary indices. This is configured by Spring
      */
-    @Resource(name = "healthDataHealthCodeIndex")
+    @Resource(name = "healthDataHealthCodeCreatedOnIndex")
     public void setHealthCodeIndex(DynamoIndexHelper healthCodeIndex) {
         this.healthCodeIndex = healthCodeIndex;
     }
@@ -73,9 +76,17 @@ public class DynamoHealthDataDao implements HealthDataDao {
     /** {@inheritDoc} */
     @Override
     public int deleteRecordsForHealthCode(@Nonnull String healthCode) {
-        // query for the keys we need to delete
-        List<HealthDataRecord> keysToDelete = healthCodeIndex.queryKeys(HealthDataRecord.class, "healthCode",
-                healthCode, null);
+        // query for the keys we need to delete. The index returns all fields which are
+        // not correctly deserialized by IndexHelper, so do it manually.
+        Index index = healthCodeIndex.getIndex();
+        Iterable<Item> iter = index.query("healthCode", healthCode);
+        
+        List<DynamoHealthDataRecord> keysToDelete = Lists.newArrayList();
+        for (Item item : iter) {
+            DynamoHealthDataRecord oneRecord = new DynamoHealthDataRecord();
+            oneRecord.setId(item.getString("id"));
+            keysToDelete.add(oneRecord);
+        }
 
         // and then delete
         List<DynamoDBMapper.FailedBatch> failureList = mapper.batchDelete(keysToDelete);
