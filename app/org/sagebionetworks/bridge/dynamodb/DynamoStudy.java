@@ -16,6 +16,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConvertedJson;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
@@ -519,6 +520,7 @@ public final class DynamoStudy implements Study {
         this.accountLimit = accountLimit;
     }
     
+    @JsonProperty("oAuthProviders")
     @DynamoDBTypeConverted(converter = OAuthProviderMapMarshaller.class)
     @Override
     public Map<String, OAuthProvider> getOAuthProviders() {

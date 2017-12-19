@@ -11,6 +11,8 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class OAuthProviderTest {
     
+    public static final String CALLBACK_URL = "https://docs.sagebridge.org/crf-module/";
+
     @Test
     public void hashCodeEquals() {
         EqualsVerifier.forClass(OAuthProvider.class).allFieldsShouldBeUsed().verify();
@@ -18,13 +20,13 @@ public class OAuthProviderTest {
     
     @Test
     public void canSerialize() throws Exception {
-        OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint", "callbackUrl");
+        OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint", CALLBACK_URL);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(provider);
         assertEquals("clientId", node.get("clientId").textValue());
         assertEquals("secret", node.get("secret").textValue());
         assertEquals("endpoint", node.get("endpoint").textValue());
-        assertEquals("callbackUrl", node.get("callbackUrl").textValue());
+        assertEquals(CALLBACK_URL, node.get("callbackUrl").textValue());
         assertEquals("OAuthProvider", node.get("type").textValue());
         assertEquals(5, node.size());
         
@@ -32,6 +34,6 @@ public class OAuthProviderTest {
         assertEquals("clientId", deser.getClientId());
         assertEquals("secret", deser.getSecret());
         assertEquals("endpoint", deser.getEndpoint());
-        assertEquals("callbackUrl", deser.getCallbackUrl());
+        assertEquals(CALLBACK_URL, deser.getCallbackUrl());
     }
 }

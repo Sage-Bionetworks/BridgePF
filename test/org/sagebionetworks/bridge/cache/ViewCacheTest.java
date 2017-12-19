@@ -45,7 +45,7 @@ public class ViewCacheTest {
         
         ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
         CacheProvider provider = mock(CacheProvider.class);
-        when(provider.getString(cacheKey.getKey())).thenReturn(null);
+        when(provider.getObject(cacheKey.getKey(), String.class)).thenReturn(null);
         cache.setCacheProvider(provider);
         
         String json = cache.getView(cacheKey, new Supplier<Study>() {
@@ -69,7 +69,7 @@ public class ViewCacheTest {
         ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
         
         CacheProvider provider = mock(CacheProvider.class);
-        when(provider.getString(cacheKey.getKey())).thenReturn(null);
+        when(provider.getObject(cacheKey.getKey(), String.class)).thenReturn(null);
         cache.setCacheProvider(provider);
         
         // It doesn't get wrapped or transformed or anything
@@ -95,7 +95,7 @@ public class ViewCacheTest {
         
         ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
         CacheProvider provider = mock(CacheProvider.class);
-        when(provider.getString(cacheKey.getKey())).thenReturn(originalStudyJson);
+        when(provider.getObject(cacheKey.getKey(), String.class)).thenReturn(originalStudyJson);
         cache.setCacheProvider(provider);
         
         String json = cache.getView(cacheKey, new Supplier<Study>() {
@@ -163,7 +163,7 @@ public class ViewCacheTest {
         
         // The string from this mapper doesn't have the "type" attribute, so if this passes, we
         // can be confident that the right mapper has been used.
-        verify(provider).setString(cacheKey.getKey(), mapper.writeValueAsString(survey), 1000);
+        verify(provider).setObject(cacheKey.getKey(), mapper.writeValueAsString(survey), 1000);
     }
     
     private CacheProvider getSimpleCacheProvider(final String cacheKey, final String originalStudyJson) {
@@ -172,16 +172,31 @@ public class ViewCacheTest {
             {
                 map.put(cacheKey, originalStudyJson);
             }
-            public String getString(String cacheKey) {
-                return map.get(cacheKey);
+            public <T> T getObject(String cacheKey, Class<T> clazz) {
+                try {
+                    return BridgeObjectMapper.get().readValue(map.get(cacheKey), clazz);    
+                } catch(Exception e) {
+                    return null;
+                }
             }
-            public void setString(String cacheKey, String value, int secondsUntilExpire) {
-                map.put(cacheKey, value);
+            public void setObject(String cacheKey, Object object) {
+                try {
+                    String ser = BridgeObjectMapper.get().writeValueAsString(object);
+                    map.put(cacheKey, ser);
+                } catch(Exception e) {
+                }
             }
-            public void removeString(String cacheKey) {
+            public void setObject(String cacheKey, Object object, int secondsUntilExpire) {
+                try {
+                    String ser = BridgeObjectMapper.get().writeValueAsString(object);
+                    map.put(cacheKey, ser);
+                } catch(Exception e) {
+                }
+            }
+            public void removeObject(String cacheKey) {
                 map.remove(cacheKey);
             }
-        };   
+        };
     }
     
 }

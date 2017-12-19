@@ -53,13 +53,13 @@ public class EmailVerificationService {
     
     private EmailVerificationStatus cacheAndReturn(String emailAddress, EmailVerificationStatus status) {
         String key = getVerifiedAddressKey(emailAddress);
-        cacheProvider.setString(key, status.name(), VERIFIED_EMAIL_CACHE_IN_SECONDS);
+        cacheProvider.setObject(key, status.name(), VERIFIED_EMAIL_CACHE_IN_SECONDS);
         return status;
     }
     
     public boolean isVerified(String emailAddress) {
         String key = getVerifiedAddressKey(emailAddress);
-        String value = cacheProvider.getString(key);
+        String value = cacheProvider.getObject(key, String.class);
         if (value == null) {
             EmailVerificationStatus status = getEmailStatus(emailAddress);
             value = cacheAndReturn(emailAddress, status).name();

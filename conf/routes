@@ -8,7 +8,7 @@ GET    /.well-known/assetlinks.json            @org.sagebionetworks.bridge.play.
 GET    /.well-known/apple-app-site-association @org.sagebionetworks.bridge.play.controllers.ApplicationController.appleAppLinks
 
 # Authentication
-POST   /v3/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signIn
+POST   /v3/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signInV3
 POST   /v3/auth/signOut                 @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signOut
 POST   /v3/auth/reauth                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.reauthenticate
 POST   /v3/auth/requestResetPassword    @org.sagebionetworks.bridge.play.controllers.AuthenticationController.requestResetPassword
@@ -20,7 +20,10 @@ POST   /v3/auth/email                   @org.sagebionetworks.bridge.play.control
 POST   /v3/auth/email/signIn            @org.sagebionetworks.bridge.play.controllers.AuthenticationController.emailSignIn
 POST   /v3/auth/phone                   @org.sagebionetworks.bridge.play.controllers.AuthenticationController.requestPhoneSignIn
 POST   /v3/auth/phone/signIn            @org.sagebionetworks.bridge.play.controllers.AuthenticationController.phoneSignIn
+POST   /v4/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signInV4
 
+# OAuth
+POST /v3/oauth/:vendorId    @org.sagebionetworks.bridge.play.controllers.OAuthController.requestAccessToken(vendorId: String)
 
 # Compound Activity Definitions
 GET    /v3/compoundactivitydefinitions @org.sagebionetworks.bridge.play.controllers.CompoundActivityDefinitionController.getAllCompoundActivityDefinitionsInStudy
@@ -65,7 +68,7 @@ POST   /v4/participants/:userId/reports/:identifier       @org.sagebionetworks.b
 DELETE /v4/participants/:userId/reports/:identifier       @org.sagebionetworks.bridge.play.controllers.ParticipantReportController.deleteParticipantReport(userId: String, identifier: String)
 
 # Participants Researcher APIs
-GET    /v3/participants                                                @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipants(offsetBy: String ?= null, pageSize: String ?= null, emailFilter: String ?= null, startDate: String ?= null, endDate: String ?= null, startTime: String ?= null, endTime: String ?= null)
+GET    /v3/participants                                                @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipants(offsetBy: String ?= null, pageSize: String ?= null, emailFilter: String ?= null, phoneFilter: String ?= null, startDate: String ?= null, endDate: String ?= null, startTime: String ?= null, endTime: String ?= null)
 POST   /v3/participants                                                @org.sagebionetworks.bridge.play.controllers.ParticipantController.createParticipant
 GET    /v3/participants/self                                           @org.sagebionetworks.bridge.play.controllers.ParticipantController.getSelfParticipant
 POST   /v3/participants/self                                           @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateSelfParticipant
@@ -253,8 +256,10 @@ GET    /v3/studies/:studyId/uploadschemas/:schemaId/revisions/:revision @org.sag
 GET    /v3/studies/:studyId/reports/:identifier                         @org.sagebionetworks.bridge.play.controllers.StudyReportController.getPublicStudyReport(studyId: String, identifier: String, startDate: String ?= null, endDate: String ?= null)
 POST   /v3/studies/:studyId/reports/:identifier                         @org.sagebionetworks.bridge.play.controllers.StudyReportController.saveStudyReportForWorker(studyId: String, identifier: String)
 GET    /v3/studies/:studyId/uploads                                     @org.sagebionetworks.bridge.play.controllers.StudyController.getUploadsForStudy(studyId: String, startTime: String ?= null, endTime: String ?= null, pageSize: java.lang.Integer ?= null, offsetKey: String ?= null)
-GET    /v3/studies/:studyId/participants                                @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipantsForWorker(studyId: String, offsetBy: String ?= null, pageSize: String ?= null, emailFilter: String ?= null, startDate: String ?= null, endDate: String ?= null, startTime: String ?= null, endTime: String ?= null)
+GET    /v3/studies/:studyId/participants                                @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipantsForWorker(studyId: String, offsetBy: String ?= null, pageSize: String ?= null, emailFilter: String ?= null, phoneFilter: String ?= null, startDate: String ?= null, endDate: String ?= null, startTime: String ?= null, endTime: String ?= null)
 GET    /v3/studies/:studyId/participants/:userId                        @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipantForWorker(studyId: String, userId: String)
+GET    /v3/studies/:studyId/oauth/:vendorId                             @org.sagebionetworks.bridge.play.controllers.OAuthController.getHealthCodesGrantingAccess(studyId: String, vendorId: String, offsetKey: String ?= null, pageSize: String ?= null)
+GET    /v3/studies/:studyId/oauth/:vendorId/:healthCode                 @org.sagebionetworks.bridge.play.controllers.OAuthController.getAccessToken(studyId: String, vendorId: String, healthCode: String)
 
 # Admin APIs for across studies
 POST   /v3/studies/:studyId/users                                       @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUserWithStudyId(studyId: String)
@@ -277,7 +282,7 @@ POST   /fphs/externalIds  @org.sagebionetworks.bridge.play.controllers.FPHSContr
 # OLD API ----------------------------------------------------------------------------------------------------
 
 # API - Authentication
-POST   /api/v1/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signIn
+POST   /api/v1/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signInV3
 GET    /api/v1/auth/signOut                 @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signOut
 POST   /api/v1/auth/requestResetPassword    @org.sagebionetworks.bridge.play.controllers.AuthenticationController.requestResetPassword
 POST   /api/v1/auth/resetPassword           @org.sagebionetworks.bridge.play.controllers.AuthenticationController.resetPassword

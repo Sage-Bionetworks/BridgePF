@@ -227,7 +227,7 @@ public class AuthenticationService {
         checkNotNull(signIn);
 
         Validate.entityThrowingException(SignInValidator.PASSWORD_SIGNIN, signIn);
-
+        
         Account account = accountDao.authenticate(study, signIn);
 
         UserSession session = getSessionFromAccount(study, context, account);
@@ -237,7 +237,8 @@ public class AuthenticationService {
         return session;
     }
     
-    public UserSession reauthenticate(Study study, CriteriaContext context, SignIn signIn) throws EntityNotFoundException {
+    public UserSession reauthenticate(Study study, CriteriaContext context, SignIn signIn)
+            throws EntityNotFoundException {
         checkNotNull(study);
         checkNotNull(context);
         checkNotNull(signIn);
@@ -364,10 +365,10 @@ public class AuthenticationService {
             }
             return;
         }
-        String token = cacheProvider.getString(cacheKey);
+        String token = cacheProvider.getObject(cacheKey, String.class);
         if (token == null) {
             token = tokenSupplier.get();
-            cacheProvider.setString(cacheKey, token, SESSION_SIGNIN_TIMEOUT);
+            cacheProvider.setObject(cacheKey, token, SESSION_SIGNIN_TIMEOUT);
         }
 
         messageSender.accept(study, token);
@@ -381,12 +382,12 @@ public class AuthenticationService {
         Study study = studyService.getStudy(signIn.getStudyId());
         String cacheKey = cacheKeySupplier.get();
         
-        String storedToken = cacheProvider.getString(cacheKey);
+        String storedToken = cacheProvider.getObject(cacheKey, String.class);
         if (storedToken == null || !storedToken.equals(signIn.getToken())) {
             throw new AuthenticationFailedException();
         }
         // Consume the key regardless of what happens
-        cacheProvider.removeString(cacheKey);
+        cacheProvider.removeObject(cacheKey);
         
         Account account = accountDao.getAccountAfterAuthentication(signIn.getAccountId());
         if (account.getStatus() == AccountStatus.DISABLED) {

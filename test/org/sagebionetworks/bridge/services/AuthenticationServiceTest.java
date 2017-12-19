@@ -63,7 +63,7 @@ import com.google.common.collect.Sets;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class AuthenticationServiceTest {
     
-    private static final Set<Roles> CALLER_ROLES = Sets.newHashSet();
+    private static   final Set<Roles> CALLER_ROLES = Sets.newHashSet();
     private static final Set<String> ORIGINAL_DATA_GROUPS = Sets.newHashSet("group1");
     private static final Set<String> UPDATED_DATA_GROUPS = Sets.newHashSet("sdk-int-1","sdk-int-2","group1");
     

@@ -77,7 +77,7 @@ public class EmailVerificationServiceTest {
         verify(sesClient).getIdentityVerificationAttributes(getCaptor.capture());
         assertEquals(EMAIL_ADDRESS, getCaptor.getValue().getIdentities().get(0));
 
-        verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY), eq("VERIFIED"), anyInt());
+        verify(cacheProvider).setObject(eq(EMAIL_ADDRESS_KEY), eq("VERIFIED"), anyInt());
     }
     
     @Test
@@ -91,7 +91,7 @@ public class EmailVerificationServiceTest {
         verify(sesClient).getIdentityVerificationAttributes(getCaptor.capture());
         assertEquals(EMAIL_ADDRESS, getCaptor.getValue().getIdentities().get(0));
 
-        verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY), eq("UNVERIFIED"), anyInt());
+        verify(cacheProvider).setObject(eq(EMAIL_ADDRESS_KEY), eq("UNVERIFIED"), anyInt());
     }
     
     @Test
@@ -108,7 +108,7 @@ public class EmailVerificationServiceTest {
         assertEquals(EMAIL_ADDRESS, verifyCaptor.getValue().getEmailAddress());
         assertEquals(EMAIL_ADDRESS, getCaptor.getValue().getIdentities().get(0));
         
-        verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY), eq("PENDING"), anyInt());
+        verify(cacheProvider).setObject(eq(EMAIL_ADDRESS_KEY), eq("PENDING"), anyInt());
     }
     
     @Test
@@ -123,7 +123,7 @@ public class EmailVerificationServiceTest {
         verify(sesClient).verifyEmailIdentity(verifyCaptor.capture());
         assertEquals(EMAIL_ADDRESS, verifyCaptor.getValue().getEmailAddress());
         
-        verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY), eq("PENDING"), anyInt());
+        verify(cacheProvider).setObject(eq(EMAIL_ADDRESS_KEY), eq("PENDING"), anyInt());
     }
     
     @Test
@@ -134,7 +134,7 @@ public class EmailVerificationServiceTest {
 
         verify(sesClient).getIdentityVerificationAttributes(any());
         assertEquals(EmailVerificationStatus.VERIFIED, status);
-        verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY), eq("VERIFIED"), anyInt());
+        verify(cacheProvider).setObject(eq(EMAIL_ADDRESS_KEY), eq("VERIFIED"), anyInt());
     }
     
     @Test
@@ -151,7 +151,7 @@ public class EmailVerificationServiceTest {
         verify(sesClient).getIdentityVerificationAttributes(any());
         assertEquals(EmailVerificationStatus.UNVERIFIED, status);
         
-        verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY), eq("UNVERIFIED"), anyInt());        
+        verify(cacheProvider).setObject(eq(EMAIL_ADDRESS_KEY), eq("UNVERIFIED"), anyInt());        
     }
     
     @Test
@@ -169,7 +169,7 @@ public class EmailVerificationServiceTest {
         verify(sesClient).getIdentityVerificationAttributes(any());
         assertEquals(EmailVerificationStatus.UNVERIFIED, status);
         
-        verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY), eq("UNVERIFIED"), anyInt());        
+        verify(cacheProvider).setObject(eq(EMAIL_ADDRESS_KEY), eq("UNVERIFIED"), anyInt());        
     }
     
     @Test
@@ -179,24 +179,24 @@ public class EmailVerificationServiceTest {
 
         verify(sesClient).verifyEmailIdentity(any());
         
-        verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY), eq("PENDING"), anyInt()); 
+        verify(cacheProvider).setObject(eq(EMAIL_ADDRESS_KEY), eq("PENDING"), anyInt()); 
     }
     
     @Test
     public void isVerifiedAndCached() throws Exception {
-        when(cacheProvider.getString(EMAIL_ADDRESS_KEY)).thenReturn("VERIFIED");
+        when(cacheProvider.getObject(EMAIL_ADDRESS_KEY, String.class)).thenReturn("VERIFIED");
         assertTrue(service.isVerified(EMAIL_ADDRESS));
     }
     
     @Test
     public void isPendingAndCached() throws Exception {
-        when(cacheProvider.getString(EMAIL_ADDRESS_KEY)).thenReturn("PENDING");
+        when(cacheProvider.getObject(EMAIL_ADDRESS_KEY, String.class)).thenReturn("PENDING");
         assertFalse(service.isVerified(EMAIL_ADDRESS));
     }
     
     @Test
     public void isUnverifiedAndCached() throws Exception {
-        when(cacheProvider.getString(EMAIL_ADDRESS_KEY)).thenReturn("UNVERIFIED");
+        when(cacheProvider.getObject(EMAIL_ADDRESS_KEY, String.class)).thenReturn("UNVERIFIED");
         assertFalse(service.isVerified(EMAIL_ADDRESS));
     }
     
@@ -206,8 +206,7 @@ public class EmailVerificationServiceTest {
         
         assertTrue(service.isVerified(EMAIL_ADDRESS));
         
-        verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY),
-                eq("VERIFIED"), anyInt());
+        verify(cacheProvider).setObject(eq(EMAIL_ADDRESS_KEY), eq("VERIFIED"), anyInt());
     }
     
     @Test
@@ -216,8 +215,7 @@ public class EmailVerificationServiceTest {
         
         assertFalse(service.isVerified(EMAIL_ADDRESS));
         
-        verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY),
-                eq("PENDING"), anyInt());
+        verify(cacheProvider).setObject(eq(EMAIL_ADDRESS_KEY), eq("PENDING"), anyInt());
     }
     
     @Test
@@ -226,8 +224,7 @@ public class EmailVerificationServiceTest {
         
         assertFalse(service.isVerified(EMAIL_ADDRESS));
         
-        verify(cacheProvider).setString(eq(EMAIL_ADDRESS_KEY),
-                eq("UNVERIFIED"), anyInt());
+        verify(cacheProvider).setObject(eq(EMAIL_ADDRESS_KEY), eq("UNVERIFIED"), anyInt());
     }
 
 }

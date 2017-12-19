@@ -2,10 +2,12 @@ package org.sagebionetworks.bridge.models.studies;
 
 import java.util.Objects;
 
+import org.sagebionetworks.bridge.models.BridgeEntity;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class OAuthProvider {
+public final class OAuthProvider implements BridgeEntity {
     private final String clientId;
     private final String secret;
     private final String endpoint;
@@ -45,11 +47,11 @@ public final class OAuthProvider {
         return Objects.equals(clientId, other.clientId) 
                && Objects.equals(endpoint, other.endpoint) 
                && Objects.equals(secret, other.secret)
-               && Objects.equals(callbackUrl,  other.callbackUrl);
+               && Objects.equals(callbackUrl, other.callbackUrl);
     }
     @Override
     public String toString() {
-        return "OAuthProvider [clientId=" + clientId + ", endpoint=" + endpoint + ", secret=REDACTED, callbackUrl="
-                + callbackUrl + "]";
+        return "OAuthProvider [clientId=" + clientId + ", endpoint=" + endpoint + ", callbackUrl=" + callbackUrl
+                + ", secret=REDACTED]";
     }
 }

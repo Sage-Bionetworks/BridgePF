@@ -90,8 +90,8 @@ public class ParticipantServiceTest {
     private static final Set<String> STUDY_PROFILE_ATTRS = BridgeUtils.commaListToOrderedSet("attr1,attr2");
     private static final Set<String> STUDY_DATA_GROUPS = BridgeUtils.commaListToOrderedSet("group1,group2");
     private static final long CONSENT_PUBLICATION_DATE = DateTime.now().getMillis();
+    private static final Phone PHONE = TestConstants.PHONE;
     private static final Study STUDY = new DynamoStudy();
-    private static final Phone PHONE = new Phone("4082585869", "US");
     static {
         STUDY.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         STUDY.setHealthCodeExportEnabled(true);
@@ -328,41 +328,41 @@ public class ParticipantServiceTest {
     
     @Test
     public void getPagedAccountSummaries() {
-        participantService.getPagedAccountSummaries(STUDY, 1100, 50, "foo", START_DATE, END_DATE);
+        participantService.getPagedAccountSummaries(STUDY, 1100, 50, "foo", "bar", START_DATE, END_DATE);
         
-        verify(accountDao).getPagedAccountSummaries(STUDY, 1100, 50, "foo", START_DATE, END_DATE); 
+        verify(accountDao).getPagedAccountSummaries(STUDY, 1100, 50, "foo", "bar", START_DATE, END_DATE); 
     }
     
     @Test(expected = NullPointerException.class)
     public void getPagedAccountSummariesWithBadStudy() {
-        participantService.getPagedAccountSummaries(null, 0, 100, null, null, null);
+        participantService.getPagedAccountSummaries(null, 0, 100, null, null, null, null);
     }
     
     @Test(expected = BadRequestException.class)
     public void getPagedAccountSummariesWithNegativeOffsetBy() {
-        participantService.getPagedAccountSummaries(STUDY, -1, 100, null, null, null);
+        participantService.getPagedAccountSummaries(STUDY, -1, 100, null, null, null, null);
     }
 
     @Test(expected = BadRequestException.class)
     public void getPagedAccountSummariesWithNegativePageSize() {
-        participantService.getPagedAccountSummaries(STUDY, 0, -100, null, null, null);
+        participantService.getPagedAccountSummaries(STUDY, 0, -100, null, null, null, null);
     }
     
     @Test(expected = BadRequestException.class)
     public void getPagedAccountSummariesWithBadDateRange() {
-        participantService.getPagedAccountSummaries(STUDY, 0, -100, null, END_DATE, START_DATE);
+        participantService.getPagedAccountSummaries(STUDY, 0, -100, null, null, END_DATE, START_DATE);
     }
     
     @Test
-    public void getPagedAccountSummariesWithoutEmailFilterOK() {
-        participantService.getPagedAccountSummaries(STUDY, 1100, 50, null, null, null);
+    public void getPagedAccountSummariesWithoutEmailOrPhoneFilterOK() {
+        participantService.getPagedAccountSummaries(STUDY, 1100, 50, null, null, null, null);
         
-        verify(accountDao).getPagedAccountSummaries(STUDY, 1100, 50, null, null, null); 
+        verify(accountDao).getPagedAccountSummaries(STUDY, 1100, 50, null, null, null, null); 
     }
     
     @Test(expected = BadRequestException.class)
     public void getPagedAccountSummariesWithTooLargePageSize() {
-        participantService.getPagedAccountSummaries(STUDY, 0, 251, null, null, null);
+        participantService.getPagedAccountSummaries(STUDY, 0, 251, null, null, null, null);
     }
     
     @Test(expected = EntityNotFoundException.class)
@@ -466,7 +466,11 @@ public class ParticipantServiceTest {
         participantService.signUserOut(STUDY, ID);
         
         verify(accountDao).getAccount(ACCOUNT_ID);
+        verify(accountDao).signOut(accountIdCaptor.capture());
         verify(cacheProvider).removeSessionByUserId("userId");
+        
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, accountIdCaptor.getValue().getStudyId());
+        assertEquals("userId", accountIdCaptor.getValue().getId());
     }
     
     @Test
@@ -903,7 +907,7 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval();
         STUDY.setAccountLimit(10);
         when(accountSummaries.getTotal()).thenReturn(9);
-        when(accountDao.getPagedAccountSummaries(STUDY, 0, BridgeConstants.API_MINIMUM_PAGE_SIZE, null, null, null))
+        when(accountDao.getPagedAccountSummaries(STUDY, 0, BridgeConstants.API_MINIMUM_PAGE_SIZE, null, null, null, null))
                 .thenReturn(accountSummaries);
         
         participantService.createParticipant(STUDY,  CALLER_ROLES, PARTICIPANT, false);
@@ -913,7 +917,7 @@ public class ParticipantServiceTest {
     public void throwLimitExceededExactlyException() {
         STUDY.setAccountLimit(10);
         when(accountSummaries.getTotal()).thenReturn(10);
-        when(accountDao.getPagedAccountSummaries(STUDY, 0, BridgeConstants.API_MINIMUM_PAGE_SIZE, null, null, null))
+        when(accountDao.getPagedAccountSummaries(STUDY, 0, BridgeConstants.API_MINIMUM_PAGE_SIZE, null, null, null, null))
                 .thenReturn(accountSummaries);
         
         try {
@@ -928,7 +932,7 @@ public class ParticipantServiceTest {
     public void throwLimitExceededException() {
         STUDY.setAccountLimit(10);
         when(accountSummaries.getTotal()).thenReturn(13);
-        when(accountDao.getPagedAccountSummaries(STUDY, 0, BridgeConstants.API_MINIMUM_PAGE_SIZE, null, null, null))
+        when(accountDao.getPagedAccountSummaries(STUDY, 0, BridgeConstants.API_MINIMUM_PAGE_SIZE, null, null, null, null))
                 .thenReturn(accountSummaries);
         
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);

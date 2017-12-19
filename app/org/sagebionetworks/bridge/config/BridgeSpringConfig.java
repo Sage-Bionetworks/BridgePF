@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoCompoundActivityDefinition;
 import org.sagebionetworks.bridge.dynamodb.DynamoNamingHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoNotificationRegistration;
 import org.sagebionetworks.bridge.dynamodb.DynamoNotificationTopic;
+import org.sagebionetworks.bridge.dynamodb.DynamoOAuthAccessGrant;
 import org.sagebionetworks.bridge.dynamodb.DynamoTopicSubscription;
 
 import org.hibernate.SessionFactory;
@@ -369,6 +370,12 @@ public class BridgeSpringConfig {
         return dynamoUtils.getMapper(DynamoTopicSubscription.class);
     }
     
+    @Bean(name = "oauthAccessGrantMapper")
+    @Autowired
+    public DynamoDBMapper oauthAccessGrantMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoOAuthAccessGrant.class);
+    }
+    
     @Bean(name = "uploadHealthCodeRequestedOnIndex")
     @Autowired
     public DynamoIndexHelper uploadHealthCodeRequestedOnIndex(AmazonDynamoDBClient dynamoDBClient, DynamoUtils dynamoUtils,
@@ -388,14 +395,6 @@ public class BridgeSpringConfig {
     public DynamoIndexHelper uploadStudyIdRequestedOnIndex(AmazonDynamoDBClient dynamoDBClient, DynamoUtils dynamoUtils,
             DynamoNamingHelper dynamoNamingHelper) {
         return DynamoIndexHelper.create(DynamoUpload2.class, "studyId-requestedOn-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
-    }
-    
-    @Bean(name = "healthDataHealthCodeIndex")
-    @Autowired
-    public DynamoIndexHelper healthDataHealthCodeIndex(AmazonDynamoDBClient dynamoDBClient,
-                                                       DynamoUtils dynamoUtils,
-                                                       DynamoNamingHelper dynamoNamingHelper) {
-        return DynamoIndexHelper.create(DynamoHealthDataRecord.class, "healthCode-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
     }
 
     @Bean(name = "healthDataHealthCodeCreatedOnIndex")

@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -200,8 +201,16 @@ public class HibernateAccountDao implements AccountDao {
     private Account authenticateInternal(HibernateAccount hibernateAccount, PasswordAlgorithm algorithm,
             String hash, String credentialValue, String credentialName) {
 
+        // First check and throw an entity not found exception if the password is wrong.
         verifyCredential(hibernateAccount.getId(), credentialName, algorithm, hash, credentialValue);
-
+        
+        // Password successful, you can now leak further information about the account through other exceptions.
+        if (hibernateAccount.getStatus() == AccountStatus.UNVERIFIED) {
+            throw new UnauthorizedException("Email or phone number have not been verified");
+        } else if (hibernateAccount.getStatus() == AccountStatus.DISABLED) {
+            throw new AccountDisabledException();
+        }
+        
         // Unmarshall account
         validateHealthCode(hibernateAccount, false);
         Account account = unmarshallAccount(hibernateAccount);
@@ -318,9 +327,9 @@ public class HibernateAccountDao implements AccountDao {
             // Account can conflict because studyId + email or studyId + phone has been used for an 
             // existing account. 
             AccountId accountId = null;
-            if (account.getEmail() != null) {
+            if (hibernateAccount.getEmail() != null) {
                 accountId = AccountId.forEmail(study.getIdentifier(), account.getEmail());
-            } else if (account.getPhone() != null) {
+            } else if (hibernateAccount.getPhone() != null) {
                 accountId = AccountId.forPhone(study.getIdentifier(), account.getPhone());
             }
             HibernateAccount otherAccount = getHibernateAccount(accountId);
@@ -376,11 +385,8 @@ public class HibernateAccountDao implements AccountDao {
     private HibernateAccount fetchHibernateAccount(SignIn signIn) {
         // Fetch account
         HibernateAccount hibernateAccount = getHibernateAccount(signIn.getAccountId());
-        if (hibernateAccount == null || hibernateAccount.getStatus() == AccountStatus.UNVERIFIED) {
+        if (hibernateAccount == null) {
             throw new EntityNotFoundException(Account.class);
-        }
-        if (hibernateAccount.getStatus() == AccountStatus.DISABLED) {
-            throw new AccountDisabledException();
         }
         return hibernateAccount;
     }
@@ -467,8 +473,8 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize,
-            String emailFilter, DateTime startTime, DateTime endTime) {
-        // Note: emailFilter can be any substring, not just prefix/suffix
+            String emailFilter, String phoneFilter, DateTime startTime, DateTime endTime) {
+        // Note: emailFilter can be any substring, not just prefix/suffix. Same with phone.
         // Note: start- and endTime are inclusive.
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("from HibernateAccount where studyId='");
@@ -477,6 +483,12 @@ public class HibernateAccountDao implements AccountDao {
         if (StringUtils.isNotBlank(emailFilter)) {
             queryBuilder.append(" and email like '%");
             queryBuilder.append(emailFilter);
+            queryBuilder.append("%'");
+        }
+        if (StringUtils.isNotBlank(phoneFilter)) {
+            String phoneString = phoneFilter.replaceAll("\\D*", "");
+            queryBuilder.append(" and phone.number like '%");
+            queryBuilder.append(phoneString);
             queryBuilder.append("%'");
         }
         if (startTime != null) {
@@ -506,6 +518,7 @@ public class HibernateAccountDao implements AccountDao {
                 .withRequestParam(ResourceList.OFFSET_BY, offsetBy)
                 .withRequestParam(ResourceList.PAGE_SIZE, pageSize)
                 .withRequestParam(ResourceList.EMAIL_FILTER, emailFilter)
+                .withRequestParam(ResourceList.PHONE_FILTER, phoneFilter)
                 .withRequestParam(ResourceList.START_TIME, startTime)
                 .withRequestParam(ResourceList.END_TIME, endTime);
     }

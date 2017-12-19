@@ -29,6 +29,7 @@ public class ResourceList<T> {
     public static final String OFFSET_BY = "offsetBy";
     public static final String OFFSET_KEY = "offsetKey";
     public static final String PAGE_SIZE = "pageSize";
+    public static final String PHONE_FILTER = "phoneFilter";
     public static final String REPORT_TYPE = "reportType";
     public static final String SCHEDULED_ON_END = "scheduledOnEnd";
     public static final String SCHEDULED_ON_START = "scheduledOnStart";
