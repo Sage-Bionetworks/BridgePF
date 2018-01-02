@@ -13,6 +13,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -154,7 +155,14 @@ public class UserAdminService {
                 }
             }
             if (signUserIn) {
-                return authenticationService.signIn(study, context, signIn);
+                // We do ignore consent state here as our intention may be to create a user who is signed in but not
+                // consented.
+                try {
+                    return authenticationService.signIn(study, context, signIn);    
+                } catch(ConsentRequiredException e) {
+                    return e.getUserSession();
+                }
+                
             }
             // Return a session *without* signing in because we have 3 sign in pathways that we want to test. In this case
             // we're creating a session but not authenticating you which is only a thing that's useful for tests.

@@ -138,7 +138,7 @@ public class ViewCacheTest {
         ViewCache cache = new ViewCache();
         
         ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, "mostRandom", "leastRandom");
-        assertEquals("mostRandom:leastRandom:org.sagebionetworks.bridge.models.studies.Study:view", cacheKey.getKey());
+        assertEquals("mostRandom:leastRandom:Study:view", cacheKey.getKey());
     }
     
     @Test

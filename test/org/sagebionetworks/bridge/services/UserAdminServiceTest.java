@@ -20,6 +20,7 @@ import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
+import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -109,16 +110,21 @@ public class UserAdminServiceTest {
     
     @Test
     public void canCreateUserWithoutConsentingOrSigningUserIn() {
-        UserSession session = userAdminService.createUser(study, participant, null, false, false);
+        session = userAdminService.createUser(study, participant, null, false, false);
         assertFalse(session.isAuthenticated());
-
-        session = authService.signIn(study, TEST_CONTEXT, new SignIn.Builder().withStudy(study.getIdentifier())
-                .withEmail(participant.getEmail()).withPassword(participant.getPassword()).build());
-        assertFalse(session.doesConsent());
+        
+        try {
+            session = authService.signIn(study, TEST_CONTEXT, new SignIn.Builder().withStudy(study.getIdentifier())
+                    .withEmail(participant.getEmail()).withPassword(participant.getPassword()).build());
+            fail("Should have thrown exception");
+        } catch (ConsentRequiredException e) {
+            assertFalse(e.getUserSession().doesConsent());    
+        }
     }
 
     @Test
     public void cannotCreateUserWithSameEmail() {
+        
         session = userAdminService.createUser(study, participant, null, true, false);
         try {
             userAdminService.createUser(study, participant, null, false, false);

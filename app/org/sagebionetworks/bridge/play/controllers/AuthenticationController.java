@@ -5,7 +5,6 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -52,9 +51,14 @@ public class AuthenticationController extends BaseController {
         verifySupportedVersionOrThrowException(study);
         
         CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
-        
-        UserSession session = authenticationService.emailSignIn(context, signInRequest);
-        logAuthenticationSuccess(session);
+        UserSession session = null;
+        try {
+            session = authenticationService.emailSignIn(context, signInRequest);
+        } catch(ConsentRequiredException e) {
+            setCookieAndRecordMetrics(e.getUserSession());
+            throw e;
+        }
+        setCookieAndRecordMetrics(session);
 
         return okResult(UserSessionInfo.toJSON(session));
     }
@@ -78,8 +82,14 @@ public class AuthenticationController extends BaseController {
         
         CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
         
-        UserSession session = authenticationService.phoneSignIn(context, signInRequest);
-        logAuthenticationSuccess(session);
+        UserSession session = null;
+        try {
+            session = authenticationService.phoneSignIn(context, signInRequest);
+        } catch(ConsentRequiredException e) {
+            setCookieAndRecordMetrics(e.getUserSession());
+            throw e;
+        }
+        setCookieAndRecordMetrics(session);
 
         return okResult(UserSessionInfo.toJSON(session));
     }
@@ -100,7 +110,7 @@ public class AuthenticationController extends BaseController {
         CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
         UserSession session = authenticationService.reauthenticate(study, context, signInRequest);
         
-        logAuthenticationSuccess(session);
+        setCookieAndRecordMetrics(session);
         
         return okResult(UserSessionInfo.toJSON(session));
     }
@@ -185,7 +195,10 @@ public class AuthenticationController extends BaseController {
             
             try {
                 session = authenticationService.signIn(study, context, signIn);
-            } catch (ConcurrentModificationException e) {
+            } catch(ConsentRequiredException e) {
+                setCookieAndRecordMetrics(e.getUserSession());
+                throw e;
+            } catch(ConcurrentModificationException e) {
                 if (retryCounter > 0) {
                     final long retryDelayInMillis = 200;
                     Thread.sleep(retryDelayInMillis);
@@ -194,17 +207,12 @@ public class AuthenticationController extends BaseController {
                 throw e;
             }
         }
-        logAuthenticationSuccess(session);
+        setCookieAndRecordMetrics(session);
 
-        // You can proceed if 1) you're some kind of system administrator (developer, researcher), or 2)
-        // you've consented to research.
-        if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
-            throw new ConsentRequiredException(session);
-        }
         return okResult(UserSessionInfo.toJSON(session));
     }
 
-    private void logAuthenticationSuccess(UserSession session) {
+    private void setCookieAndRecordMetrics(UserSession session) {
         writeSessionInfoToMetrics(session);  
         // We have removed the cookie in the past, only to find out that clients were unknowingly
         // depending on the cookie to preserve the session token. So it remains.

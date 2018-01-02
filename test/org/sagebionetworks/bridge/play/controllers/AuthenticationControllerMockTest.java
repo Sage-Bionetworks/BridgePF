@@ -85,6 +85,10 @@ public class AuthenticationControllerMockTest {
     private static final String TEST_STUDY_ID_STRING = "study-key";
     private static final StudyIdentifier TEST_STUDY_ID = new StudyIdentifierImpl(TEST_STUDY_ID_STRING);
     private static final String TEST_TOKEN = "verify-token";
+    private static final SignIn EMAIL_PASSWORD_SIGN_IN_REQUEST = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING)
+            .withEmail(TEST_EMAIL).withPassword(TEST_PASSWORD).build();
+    private static final SignIn EMAIL_SIGN_IN_REQUEST = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING)
+            .withEmail(TEST_EMAIL).withToken(TEST_TOKEN).build();
     private static final SignIn PHONE_SIGN_IN_REQUEST = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING)
             .withPhone(TestConstants.PHONE).build();
     private static final SignIn PHONE_SIGN_IN = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING)
@@ -390,67 +394,25 @@ public class AuthenticationControllerMockTest {
         controller.signUp();
     }
 
-    private void signInExistingSession(boolean isConsented, Roles role, boolean shouldThrow) throws Exception {
+    @Test
+    public void signInExistingSession() throws Exception {
         response = mockPlayContext();
         // mock getSessionToken and getMetrics
         doReturn(TEST_SESSION_TOKEN).when(controller).getSessionToken();
 
         // mock AuthenticationService
-        ConsentStatus consentStatus = (isConsented) ? TestConstants.REQUIRED_SIGNED_CURRENT : null;
-        UserSession session = createSession(consentStatus, role);
+        ConsentStatus consentStatus = TestConstants.REQUIRED_SIGNED_CURRENT;
+        UserSession session = createSession(consentStatus, null);
         when(authenticationService.getSession(TEST_SESSION_TOKEN)).thenReturn(session);
 
         // execute and validate
-        try {
-            Result result = controller.signInV3();
-            if (shouldThrow) {
-                fail("expected exception");
-            }
-            assertSessionInPlayResult(result);
-        } catch (ConsentRequiredException ex) {
-            if (!shouldThrow) {
-                throw ex;
-            }
-        }
+        Result result = controller.signInV3();
+        assertSessionInPlayResult(result);
         verifyCommonLoggingForSignIns();    
-    }
-    @Test
-    public void signInExistingSession() throws Exception {
-        signInExistingSession(true, null, false);
-    }
-
-    @Test
-    public void signInExistingSessionUnconsented() throws Exception {
-        signInExistingSession(false, null, true);
-    }
-
-    @Test
-    public void signInExistingSessionUnconsentedAdmin() throws Exception {
-        signInExistingSession(false, Roles.ADMIN, false);
-    }
-
-    @Test
-    public void signInExistingSessionUnconsentedDeveloper() throws Exception {
-        signInExistingSession(false, Roles.DEVELOPER, false);
-    }
-
-    @Test
-    public void signInExistingSessionUnconsentedResearcher() throws Exception {
-        signInExistingSession(false, Roles.RESEARCHER, false);
-    }
-
-    @Test
-    public void signInExistingSessionUnconsentedTestUser() throws Exception {
-        signInExistingSession(false, Roles.TEST_USERS, true);
-    }
-
-    @Test
-    public void signInExistingSessionUnconsentedWorker() throws Exception {
-        signInExistingSession(false, Roles.WORKER, false);
     }
 
     @SuppressWarnings("static-access")
-    private void signInNewSession(boolean isConsented, Roles role, boolean shouldThrow) throws Exception {
+    private void signInNewSession(boolean isConsented, Roles role) throws Exception {
         // mock getSessionToken and getMetrics
         doReturn(null).when(controller).getSessionToken();
 
@@ -473,31 +435,21 @@ public class AuthenticationControllerMockTest {
         when(authenticationService.signIn(same(study), any(), signInCaptor.capture())).thenReturn(session);
 
         // execute and validate
-        try {
-            Result result = controller.signInV3();
-            if (shouldThrow) {
-                fail("expected exception");
-            }
-            assertSessionInPlayResult(result);
-            
-            Http.Response mockResponse = controller.response();
+        Result result = controller.signInV3();
+        assertSessionInPlayResult(result);
+        
+        Http.Response mockResponse = controller.response();
 
-            verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
-            verify(mockResponse).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
-                    BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
-            
-            RequestInfo requestInfo = requestInfoCaptor.getValue();
-            assertEquals("spId", requestInfo.getUserId());
-            assertEquals(TEST_STUDY_ID, requestInfo.getStudyIdentifier());
-            assertTrue(requestInfo.getSignedInOn() != null);
-            assertEquals(TestConstants.USER_DATA_GROUPS, requestInfo.getUserDataGroups());
-            assertNotNull(requestInfo.getSignedInOn());
-            
-        } catch (ConsentRequiredException ex) {
-            if (!shouldThrow) {
-                throw ex;
-            }
-        }
+        verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
+        verify(mockResponse).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
+        
+        RequestInfo requestInfo = requestInfoCaptor.getValue();
+        assertEquals("spId", requestInfo.getUserId());
+        assertEquals(TEST_STUDY_ID, requestInfo.getStudyIdentifier());
+        assertTrue(requestInfo.getSignedInOn() != null);
+        assertEquals(TestConstants.USER_DATA_GROUPS, requestInfo.getUserDataGroups());
+        assertNotNull(requestInfo.getSignedInOn());
         verifyCommonLoggingForSignIns();
 
         // validate signIn
@@ -508,37 +460,7 @@ public class AuthenticationControllerMockTest {
 
     @Test
     public void signInNewSession() throws Exception {
-        signInNewSession(true, null, false);
-    }
-
-    @Test
-    public void signInNewSessionUnconsented() throws Exception {
-        signInNewSession(false, null, true);
-    }
-
-    @Test
-    public void signInNewSessionUnconsentedAdmin() throws Exception {
-        signInNewSession(false, Roles.ADMIN, false);
-    }
-
-    @Test
-    public void signInNewSessionUnconsentedDeveloper() throws Exception {
-        signInNewSession(false, Roles.DEVELOPER, false);
-    }
-
-    @Test
-    public void signInNewSessionUnconsentedResearcher() throws Exception {
-        signInNewSession(false, Roles.RESEARCHER, false);
-    }
-
-    @Test
-    public void signInNewSessionUnconsentedTestUser() throws Exception {
-        signInNewSession(false, Roles.TEST_USERS, true);
-    }
-
-    @Test
-    public void signInNewSessionUnconsentedWorker() throws Exception {
-        signInNewSession(false, Roles.WORKER, false);
+        signInNewSession(true, null);
     }
 
     @Test
@@ -875,6 +797,45 @@ public class AuthenticationControllerMockTest {
         when(authenticationService.signIn(any(), any(), any())).thenThrow(new UnauthorizedException());
         
         controller.signInV4();
+    }
+    
+    @Test
+    public void unconsentedSignInSetsCookie() throws Exception {
+        response = mockPlayContextWithJson(EMAIL_PASSWORD_SIGN_IN_REQUEST);
+        when(authenticationService.signIn(any(), any(), any())).thenThrow(new ConsentRequiredException(userSession));
+        
+        try {
+            controller.signInV4();
+            fail("Should have thrown exeption");
+        } catch(ConsentRequiredException e) {
+        }
+        verifyCommonLoggingForSignIns();
+    }
+    
+    @Test
+    public void unconsentedEmailSignInSetsCookie() throws Exception {
+        response = mockPlayContextWithJson(EMAIL_SIGN_IN_REQUEST);
+        when(authenticationService.emailSignIn(any(), any())).thenThrow(new ConsentRequiredException(userSession));
+        
+        try {
+            controller.emailSignIn();
+            fail("Should have thrown exeption");
+        } catch(ConsentRequiredException e) {
+        }
+        verifyCommonLoggingForSignIns();
+    }
+    
+    @Test
+    public void unconsentedPhoneSignInSetsCookie() throws Exception {
+        response = mockPlayContextWithJson(PHONE_SIGN_IN_REQUEST);
+        when(authenticationService.phoneSignIn(any(), any())).thenThrow(new ConsentRequiredException(userSession));
+        
+        try {
+            controller.phoneSignIn();
+            fail("Should have thrown exeption");
+        } catch(ConsentRequiredException e) {
+        }
+        verifyCommonLoggingForSignIns();
     }
     
     private void mockSignInWithEmailPayload() throws Exception {
