@@ -192,7 +192,7 @@ public class ConsentService {
         Account account = accountDao.getAccount(context.getAccountId());
         
         ImmutableMap.Builder<SubpopulationGuid, ConsentStatus> builder = new ImmutableMap.Builder<>();
-        for (Subpopulation subpop : subpopService.getSubpopulationForUser(context)) {
+        for (Subpopulation subpop : subpopService.getSubpopulationsForUser(context)) {
             
             ConsentSignature signature = account.getActiveConsentSignature(subpop.getGuid());
             boolean hasConsented = (signature != null);

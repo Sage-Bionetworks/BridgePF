@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.redis.RedisKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -212,6 +213,21 @@ public class CacheProvider {
             String ser = jedisOps.get(cacheKey);
             if (ser != null) {
                 return bridgeObjectMapper.readValue(ser, clazz);
+            }
+        } catch (Throwable e) {
+            promptToStartRedisIfLocal(e);
+            throw new BridgeServiceException(e);
+        }
+        return null;
+    }
+    
+    public <T> T getObject(String cacheKey, TypeReference<T> typeRef) {
+        checkNotNull(cacheKey);
+        checkNotNull(typeRef);
+        try {
+            String ser = jedisOps.get(cacheKey);
+            if (ser != null) {
+                return bridgeObjectMapper.readValue(ser, typeRef);
             }
         } catch (Throwable e) {
             promptToStartRedisIfLocal(e);

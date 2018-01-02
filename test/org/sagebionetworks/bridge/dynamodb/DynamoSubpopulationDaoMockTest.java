@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -20,6 +21,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -28,9 +30,8 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
-import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.Criteria;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -59,6 +60,9 @@ public class DynamoSubpopulationDaoMockTest {
     
     @Mock
     private CriteriaDao criteriaDao;
+    
+    @Captor
+    private ArgumentCaptor<Subpopulation> subpopCaptor;
 
     @SuppressWarnings("unchecked")
     @Before
@@ -125,43 +129,74 @@ public class DynamoSubpopulationDaoMockTest {
     }
     
     @Test
-    public void getSubpopulationsForUserRetrievesCriteria() {
-        CriteriaContext context = createContext();
-        
-        List<Subpopulation> subpops = dao.getSubpopulationsForUser(context);
-        Subpopulation subpop = subpops.get(0);
-        Criteria criteria = subpop.getCriteria();
-        assertEquals(CRITERIA, criteria);
-        
-        verify(criteriaDao).getCriteria(criteria.getKey());
-        verifyNoMoreInteractions(criteriaDao);
-    }
-
-    @Test
-    public void getSubpopulationsForUserConstructsCriteriaIfNotSaved() {
-        when(criteriaDao.getCriteria(any())).thenReturn(null);
-        CriteriaContext context = createContext();
-        
-        List<Subpopulation> subpops = dao.getSubpopulationsForUser(context);
-        Subpopulation subpop = subpops.get(0);
-        Criteria criteria = subpop.getCriteria();
-        assertNotNull(criteria);
-        
-        verify(criteriaDao).getCriteria(criteria.getKey());
-    }
-
-    @Test
     public void physicalDeleteSubpopulationDeletesCriteria() {
-        dao.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, true);
+        dao.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, true, false);
         
         verify(criteriaDao).deleteCriteria(createSubpopulation().getCriteria().getKey());
     }
     
     @Test
     public void logicalDeleteSubpopulationDoesNotDeleteCriteria() {
-        dao.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, false);
+        dao.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, false, false);
         
         verify(criteriaDao, never()).deleteCriteria(createSubpopulation().getCriteria().getKey());
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void doNotAllowDeleteOfDefault() {
+        Subpopulation defaultSubpop = Subpopulation.create();
+        defaultSubpop.setGuid(SUBPOP_GUID);
+        defaultSubpop.setDefaultGroup(true);
+        
+        doReturn(defaultSubpop).when(dao).getSubpopulation(TEST_STUDY, SUBPOP_GUID);
+        doReturn(Criteria.create()).when(criteriaDao).getCriteria(any());
+        
+        dao.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, true, false);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void doNotAllowLogicalDeleteOfDefault() {
+        Subpopulation defaultSubpop = Subpopulation.create();
+        defaultSubpop.setGuid(SUBPOP_GUID);
+        defaultSubpop.setDefaultGroup(true);
+        
+        doReturn(defaultSubpop).when(dao).getSubpopulation(TEST_STUDY, SUBPOP_GUID);
+        doReturn(Criteria.create()).when(criteriaDao).getCriteria(any());
+        
+        dao.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, false, false);
+    }
+    
+    @Test
+    public void allowDeleteOfDefault() {
+        Subpopulation defaultSubpop = Subpopulation.create();
+        defaultSubpop.setGuid(SUBPOP_GUID);
+        defaultSubpop.setDefaultGroup(true);
+        
+        doReturn(defaultSubpop).when(dao).getSubpopulation(TEST_STUDY, SUBPOP_GUID);
+        doReturn(Criteria.create()).when(criteriaDao).getCriteria(any());
+        
+        dao.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, true, true);
+        verify(studyConsentDao).deleteAllConsents(SUBPOP_GUID);
+        verify(criteriaDao).deleteCriteria(defaultSubpop.getCriteria().getKey());
+        verify(mapper).delete(defaultSubpop);
+    }
+    
+    // This doesn't happen in the code, but for test coverage, you could logically delete
+    // the default subpop if the flag is set to allow it.
+    @Test
+    public void allowLogicalDeleteOfDefault() {
+        Subpopulation defaultSubpop = Subpopulation.create();
+        defaultSubpop.setGuid(SUBPOP_GUID);
+        defaultSubpop.setDefaultGroup(true);
+        
+        doReturn(defaultSubpop).when(dao).getSubpopulation(TEST_STUDY, SUBPOP_GUID);
+        doReturn(Criteria.create()).when(criteriaDao).getCriteria(any());
+        
+        dao.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, false, true);
+        
+        verify(mapper).save(subpopCaptor.capture());
+        Subpopulation subpop = subpopCaptor.getValue();
+        assertTrue(subpop.isDeleted());
     }
     
     @Test
@@ -227,14 +262,6 @@ public class DynamoSubpopulationDaoMockTest {
     }
     
     @Test
-    public void deleteAllSubpopulationsDeletesCriteria() {
-        // There's one subpopulation
-        dao.deleteAllSubpopulations(TEST_STUDY);
-        
-        verify(criteriaDao).deleteCriteria(createSubpopulation().getCriteria().getKey());
-    }
-    
-    @Test
     public void criteriaTableTakesPrecedenceOnGet() {
         reset(criteriaDao);
         doReturn(CRITERIA).when(criteriaDao).getCriteria(any());
@@ -252,14 +279,6 @@ public class DynamoSubpopulationDaoMockTest {
         List<Subpopulation> subpops = dao.getSubpopulations(TEST_STUDY, false, true);
         Criteria retrievedCriteria = subpops.get(0).getCriteria();
         assertEquals(CRITERIA, retrievedCriteria);
-    }
-    
-    private CriteriaContext createContext() {
-        return new CriteriaContext.Builder()
-                .withStudyIdentifier(TEST_STUDY)
-                .withUserDataGroups(CRITERIA.getAllOfGroups())
-                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .build();
     }
     
     private Subpopulation createSubpopulation() {
