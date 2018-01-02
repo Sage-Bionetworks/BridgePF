@@ -23,7 +23,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
-
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -57,6 +57,7 @@ import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AuthenticationServiceMockTest {
@@ -168,6 +169,30 @@ public class AuthenticationServiceMockTest {
         account.setReauthToken(REAUTH_TOKEN);
         doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
+        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        
+        UserSession retrieved = service.signIn(study, CONTEXT, EMAIL_PASSWORD_SIGN_IN);
+        assertEquals(REAUTH_TOKEN, retrieved.getReauthToken());
+    }
+    
+    @Test(expected = ConsentRequiredException.class)
+    public void unconsentedSignInWithEmail() throws Exception {
+        doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
+        doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        
+        service.signIn(study, CONTEXT, EMAIL_PASSWORD_SIGN_IN);
+    }
+    
+    @Test
+    public void adminSignInWithEmail() throws Exception {
+        account.setReauthToken(REAUTH_TOKEN);
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
+        doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
+        doReturn(participant).when(participantService).getParticipant(study, account, false);
+        // Does not throw consent required exception, despite being unconsented, because user has DEVELOPER role. 
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
         
         UserSession retrieved = service.signIn(study, CONTEXT, EMAIL_PASSWORD_SIGN_IN);
         assertEquals(REAUTH_TOKEN, retrieved.getReauthToken());
@@ -178,6 +203,30 @@ public class AuthenticationServiceMockTest {
         account.setReauthToken(REAUTH_TOKEN);
         doReturn(account).when(accountDao).authenticate(study, PHONE_PASSWORD_SIGN_IN);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
+        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        
+        UserSession retrieved = service.signIn(study, CONTEXT, PHONE_PASSWORD_SIGN_IN);
+        assertEquals(REAUTH_TOKEN, retrieved.getReauthToken());
+    }
+    
+    @Test(expected = ConsentRequiredException.class)
+    public void unconsentedSignInWithPhone() throws Exception {
+        doReturn(account).when(accountDao).authenticate(study, PHONE_PASSWORD_SIGN_IN);
+        doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        
+        service.signIn(study, CONTEXT, PHONE_PASSWORD_SIGN_IN);
+    }
+    
+    @Test
+    public void adminSignInWithPhone() throws Exception {
+        account.setReauthToken(REAUTH_TOKEN);
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .copyOf(PARTICIPANT).withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
+        doReturn(account).when(accountDao).authenticate(study, PHONE_PASSWORD_SIGN_IN);
+        doReturn(participant).when(participantService).getParticipant(study, account, false);
+        // Does not throw consent required exception, despite being unconsented, because user has RESEARCHER role. 
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
         
         UserSession retrieved = service.signIn(study, CONTEXT, PHONE_PASSWORD_SIGN_IN);
         assertEquals(REAUTH_TOKEN, retrieved.getReauthToken());
@@ -372,6 +421,19 @@ public class AuthenticationServiceMockTest {
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
         doReturn(participant).when(participantService).getParticipant(study, account, false);
         study.setIdentifier(STUDY_ID);
+        doReturn(TOKEN).when(cacheProvider).getObject(CACHE_KEY, String.class);
+        doReturn(study).when(studyService).getStudy(STUDY_ID);
+        doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
+        
+        service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+    }
+    
+    @Test
+    public void emailSignInAdminOK() {
+        StudyParticipant participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.ADMIN)).build();
+        
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        doReturn(participant).when(participantService).getParticipant(study, account, false);
         doReturn(TOKEN).when(cacheProvider).getObject(CACHE_KEY, String.class);
         doReturn(study).when(studyService).getStudy(STUDY_ID);
         doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
