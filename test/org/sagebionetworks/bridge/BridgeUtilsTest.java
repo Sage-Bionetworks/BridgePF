@@ -395,12 +395,12 @@ public class BridgeUtilsTest {
     
     @Test(expected = NullPointerException.class)
     public void nullToSynapseFriendlyNameThrowsException() {
-        assertEquals("", BridgeUtils.toSynapseFriendlyName(null));
+        BridgeUtils.toSynapseFriendlyName(null);
     }
     
     @Test(expected = IllegalArgumentException.class)
     public void emptyStringToSynapseFriendlyName() {
-        assertEquals("", BridgeUtils.toSynapseFriendlyName("  #"));
+        BridgeUtils.toSynapseFriendlyName("  #");
     }
     
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.

@@ -35,6 +35,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseClientException;
@@ -73,8 +74,9 @@ import org.sagebionetworks.bridge.validators.StudyValidator;
 @RunWith(MockitoJUnitRunner.class)
 public class StudyServiceMockTest {
     private static final Long TEST_USER_ID = Long.parseLong("3348228"); // test user exists in synapse
-    private static final String TEST_PROJECT_NAME = "Test Study StudyServiceMockTest Project";
-    private static final String TEST_TEAM_NAME = "Test Study StudyServiceMockTest Access Team";
+    private static final String TEST_NAME_SCOPING_TOKEN = "qwerty";
+    private static final String TEST_PROJECT_NAME = "Test Study StudyServiceMockTest Project " + TEST_NAME_SCOPING_TOKEN;
+    private static final String TEST_TEAM_NAME = "Test Study StudyServiceMockTest Access Team " + TEST_NAME_SCOPING_TOKEN;
     private static final String TEST_TEAM_ID = "1234";
     private static final String TEST_PROJECT_ID = "synapseProjectId";
 
@@ -119,7 +121,9 @@ public class StudyServiceMockTest {
     @Captor
     private ArgumentCaptor<Team> teamCaptor;
 
+    @Spy
     private StudyService service;
+    
     private Study study;
     private Team mockTeam;
     private Project mockProject;
@@ -127,7 +131,6 @@ public class StudyServiceMockTest {
 
     @Before
     public void before() {
-        service = spy(new StudyService());
         service.setCompoundActivityDefinitionService(compoundActivityDefinitionService);
         service.setNotificationTopicService(topicService);
         service.setUploadCertificateService(uploadCertService);
@@ -138,6 +141,8 @@ public class StudyServiceMockTest {
         service.setEmailVerificationService(emailVerificationService);
         service.setSynapseClient(mockSynapseClient);
         service.setParticipantService(participantService);
+        
+        when(service.getNameScopingToken()).thenReturn(TEST_NAME_SCOPING_TOKEN);
         
         study = getTestStudy();
         when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
@@ -499,8 +504,8 @@ public class StudyServiceMockTest {
         verify(service).createStudy(study);
         verify(service).createSynapseProjectTeam(TEST_ADMIN_IDS, study);
         
-        assertTrue(projectCaptor.getValue().getName().startsWith(TEST_PROJECT_NAME));
-        assertTrue(teamCaptor.getValue().getName().startsWith(TEST_TEAM_NAME));
+        assertEquals(TEST_PROJECT_NAME, projectCaptor.getValue().getName());
+        assertEquals(TEST_TEAM_NAME, teamCaptor.getValue().getName());
     }
 
     @Test (expected = BadRequestException.class)
