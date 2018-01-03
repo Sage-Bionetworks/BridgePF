@@ -68,6 +68,7 @@ import com.google.common.collect.Sets;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class AuthenticationServiceTest {
     
+    private static final String PASSWORD = "P@ssword`1";
     private static final Set<Roles> CALLER_ROLES = Sets.newHashSet();
     private static final Set<String> ORIGINAL_DATA_GROUPS = Sets.newHashSet("group1");
     private static final Set<String> UPDATED_DATA_GROUPS = Sets.newHashSet("sdk-int-1","sdk-int-2","group1");
@@ -147,8 +148,9 @@ public class AuthenticationServiceTest {
     public void signUpWithIntentToParticipate() throws Exception {
         String email = TestUtils.makeRandomTestEmail(AuthenticationServiceTest.class);
         StudyParticipant participant = new StudyParticipant.Builder()
+                .withPhone(TestConstants.PHONE)
                 .withEmail(email)
-                .withPassword("P@ssword`1").build();
+                .withPassword(PASSWORD).build();
         IdentifierHolder holder = null;
         try {
             IntentToParticipate intent = new IntentToParticipate.Builder()
@@ -170,8 +172,8 @@ public class AuthenticationServiceTest {
                     .build();
             
             // You should be able to sign in, and be consented. No exception.
-            SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER).withEmail(email)
-                    .withPassword("P@ssword`1").build();
+            SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                    .withEmail(email).withPassword(PASSWORD).build();
             authService.signIn(study, context, signIn);
         } finally {
             if (holder != null) {
@@ -467,7 +469,7 @@ public class AuthenticationServiceTest {
         String email = TestUtils.makeRandomTestEmail(AuthenticationServiceTest.class);
         Set<Roles> roles = Sets.newHashSet(Roles.DEVELOPER, Roles.RESEARCHER);
         StudyParticipant participant = new StudyParticipant.Builder()
-                .withEmail(email).withPassword("P@ssword`1").withRoles(roles).build();
+                .withEmail(email).withPassword(PASSWORD).withRoles(roles).build();
         
         IdentifierHolder idHolder = authService.signUp(study, participant, false);
         
