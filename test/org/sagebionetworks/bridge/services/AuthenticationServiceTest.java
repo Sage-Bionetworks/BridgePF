@@ -156,7 +156,7 @@ public class AuthenticationServiceTest {
             IntentToParticipate intent = new IntentToParticipate.Builder()
                     .withScope(SharingScope.NO_SHARING)
                     .withPhone(TestConstants.PHONE)
-                    .withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                    .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
                     .withOsName(OperatingSystem.ANDROID)
                     .withConsentSignature(new ConsentSignature.Builder()
                             .withName("Name")

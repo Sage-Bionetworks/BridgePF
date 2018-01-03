@@ -247,7 +247,7 @@ public class TestUtils {
                 .withImageData("image-data")
                 .withImageMimeType("image/png").build();
         IntentToParticipate itp = new IntentToParticipate.Builder()
-                .withStudy("studyId")
+                .withStudyId("studyId")
                 .withScope(SharingScope.SPONSORS_AND_PARTNERS)
                 .withPhone(TestConstants.PHONE)
                 .withSubpopGuid("subpopGuid")

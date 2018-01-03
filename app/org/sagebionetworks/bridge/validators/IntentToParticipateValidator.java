@@ -21,8 +21,8 @@ public class IntentToParticipateValidator implements Validator {
     public void validate(Object object, Errors errors) {
         IntentToParticipate intent = (IntentToParticipate)object;
         
-        if (isBlank(intent.getStudy())) {
-            errors.rejectValue("study", "is required");
+        if (isBlank(intent.getStudyId())) {
+            errors.rejectValue("studyId", "is required");
         }
         if (isBlank(intent.getSubpopGuid())) {
             errors.rejectValue("subpopGuid", "is required");

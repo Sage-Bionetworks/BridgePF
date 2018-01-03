@@ -23,7 +23,7 @@ public class IntentToParticipateValidatorTest {
     
     private IntentToParticipate.Builder builder() {
         return new IntentToParticipate.Builder()
-                .withStudy(STUDY)
+                .withStudyId(STUDY)
                 .withPhone(TestConstants.PHONE)
                 .withSubpopGuid(SUBPOP_GUID)
                 .withScope(SCOPE)
@@ -39,8 +39,8 @@ public class IntentToParticipateValidatorTest {
     
     @Test
     public void studyRequired() {
-        IntentToParticipate intent = builder().withStudy(null).build();
-        assertValidatorMessage(INSTANCE, intent, "study", "is required");
+        IntentToParticipate intent = builder().withStudyId(null).build();
+        assertValidatorMessage(INSTANCE, intent, "studyId", "is required");
     }
     
     @Test

@@ -10,16 +10,16 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonDeserialize(builder = IntentToParticipate.Builder.class)
 public class IntentToParticipate implements BridgeEntity {
-    private final String study;
+    private final String studyId;
     private final Phone phone;
     private final String subpopGuid;
     private final SharingScope scope;
     private final String osName;
     private final ConsentSignature consentSignature;
     
-    private IntentToParticipate(String study, Phone phone, String subpopGuid, SharingScope scope, String osName,
+    private IntentToParticipate(String studyId, Phone phone, String subpopGuid, SharingScope scope, String osName,
             ConsentSignature consentSignature) {
-        this.study = study;
+        this.studyId = studyId;
         this.phone = phone;
         this.subpopGuid = subpopGuid;
         this.scope = scope;
@@ -27,8 +27,8 @@ public class IntentToParticipate implements BridgeEntity {
         this.consentSignature = consentSignature;
     }
 
-    public String getStudy() {
-        return study;
+    public String getStudyId() {
+        return studyId;
     }
     public Phone getPhone() {
         return phone;
@@ -47,7 +47,7 @@ public class IntentToParticipate implements BridgeEntity {
     }
     
     public static class Builder {
-        private String study;
+        private String studyId;
         private Phone phone;
         private String subpopGuid;
         private SharingScope scope;
@@ -55,7 +55,7 @@ public class IntentToParticipate implements BridgeEntity {
         private ConsentSignature consentSignature;
         
         public Builder copyOf(IntentToParticipate intent) {
-            this.study = intent.study;
+            this.studyId = intent.studyId;
             this.phone = intent.phone;
             this.subpopGuid = intent.subpopGuid;
             this.scope = intent.scope;
@@ -63,8 +63,8 @@ public class IntentToParticipate implements BridgeEntity {
             this.consentSignature = intent.consentSignature;
             return this;
         }
-        public Builder withStudy(String study) {
-            this.study = study;
+        public Builder withStudyId(String studyId) {
+            this.studyId = studyId;
             return this;
         }
         public Builder withPhone(Phone phone) {
@@ -92,7 +92,7 @@ public class IntentToParticipate implements BridgeEntity {
             if (OperatingSystem.SYNONYMS.containsKey(osName)) {
                 osName = OperatingSystem.SYNONYMS.get(osName);
             }
-            return new IntentToParticipate(study, phone, subpopGuid, scope, osName, consentSignature);
+            return new IntentToParticipate(studyId, phone, subpopGuid, scope, osName, consentSignature);
         }
     }
 }

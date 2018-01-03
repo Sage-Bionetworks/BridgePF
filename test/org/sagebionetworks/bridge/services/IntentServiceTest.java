@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
@@ -91,7 +92,7 @@ public class IntentServiceTest {
         
         when(mockStudy.getIdentifier()).thenReturn("testStudy");
         when(mockStudy.getInstallLinks()).thenReturn(installLinks);
-        when(mockStudyService.getStudy(intent.getStudy())).thenReturn(mockStudy);
+        when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
         
         String cacheKey = "subpopGuid:"+TestConstants.PHONE.getNumber()+":testStudy:itp";
         
@@ -106,12 +107,20 @@ public class IntentServiceTest {
         verify(mockNotificationsService).sendSMSMessage(mockStudy, intent.getPhone(), "this-is-a-link");
     }
     
+    @Test(expected = InvalidEntityException.class)
+    public void submitIntentToParticipateInvalid() {
+        IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP);
+        IntentToParticipate invalid = new IntentToParticipate.Builder().copyOf(intent).withPhone(null).build();
+        
+        service.submitIntentToParticipate(invalid);
+    }
+    
     @Test
     public void submitIntentToParticipateWithoutInstallLinks() {
         IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP);
         
         when(mockStudy.getIdentifier()).thenReturn("testStudy");
-        when(mockStudyService.getStudy(intent.getStudy())).thenReturn(mockStudy);
+        when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
         
         String cacheKey = "subpopGuid:"+TestConstants.PHONE.getNumber()+":testStudy:itp";
         
@@ -139,7 +148,7 @@ public class IntentServiceTest {
         
         when(mockStudy.getIdentifier()).thenReturn("testStudy");
         when(mockStudy.getInstallLinks()).thenReturn(installLinks);
-        when(mockStudyService.getStudy(intent.getStudy())).thenReturn(mockStudy);
+        when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
         when(mockCacheProvider.getObject(cacheKey, IntentToParticipate.class))
                 .thenReturn(intent);
 
@@ -157,7 +166,7 @@ public class IntentServiceTest {
     public void submitIntentToParticipateAccountExists() {
         IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP);
         
-        AccountId accountId = AccountId.forPhone(intent.getStudy(), intent.getPhone()); 
+        AccountId accountId = AccountId.forPhone(intent.getStudyId(), intent.getPhone()); 
         
         Account account = new GenericAccount();
         when(accountDao.getAccount(accountId)).thenReturn(account);
@@ -182,7 +191,7 @@ public class IntentServiceTest {
                 .withOsName("Android")
                 .withPhone(TestConstants.PHONE)
                 .withScope(SharingScope.NO_SHARING)
-                .withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
                 .withSubpopGuid("BBB")
                 .withConsentSignature(new ConsentSignature.Builder()
                         .withName("Test Name")

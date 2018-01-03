@@ -74,14 +74,14 @@ public class IntentService {
         Validate.entityThrowingException(IntentToParticipateValidator.INSTANCE, intent);
         
         // If the account exists, do nothing.
-        AccountId accountId = AccountId.forPhone(intent.getStudy(), intent.getPhone());
+        AccountId accountId = AccountId.forPhone(intent.getStudyId(), intent.getPhone());
         Account account = accountDao.getAccount(accountId);
         if (account != null) {
             return;
         }
         
         // validate study exists
-        Study study = studyService.getStudy(intent.getStudy());
+        Study study = studyService.getStudy(intent.getStudyId());
 
         // validate subpopulation exists
         SubpopulationGuid guid = SubpopulationGuid.create(intent.getSubpopGuid());
