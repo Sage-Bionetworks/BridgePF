@@ -8,8 +8,6 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
-import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -26,30 +24,12 @@ public interface AccountDao {
     /**
      * Verify an email address using a supplied, one-time token for verification.
      */
-    void verifyEmail(EmailVerification verification);
+    void verifyEmail(Account account);
     
     /**
      * Set the verified flag for the channel (email or phone) to true, and enable the account (if needed).
      */
     void verifyChannel(AuthenticationService.ChannelType channelType, Account account);
-    
-    /**
-     * Sign up sends an email address with a link that includes a one-time token for verification. That email
-     * can be resent by calling this method.
-     */
-    void resendEmailVerificationToken(AccountId accountId);
-    
-    /**
-     * Request that an email be sent to the account holder with a link to reset a password, including a 
-     * one-time verification token. 
-     */
-    void requestResetPassword(Study study, AccountId accountId);
-    
-    /**
-     * Reset a password, supplying a new password and the one-time verification token that was sent via email 
-     * to the account holder.
-     */
-    void resetPassword(PasswordReset passwordReset);
     
     /**
      * Call to change a password without a password reset workflow.
@@ -95,7 +75,7 @@ public interface AccountDao {
      * Create an account. The account object should initially be retrieved from the 
      * constructAccount() factory method. Returns the created account's ID.
      */
-    String createAccount(Study study, Account account, boolean sendVerifyEmail);
+    String createAccount(Study study, Account account);
     
     /**
      * Save account changes. Account should have been retrieved from the getAccount() method 

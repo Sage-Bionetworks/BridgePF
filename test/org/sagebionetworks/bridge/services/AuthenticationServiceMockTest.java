@@ -493,7 +493,7 @@ public class AuthenticationServiceMockTest {
         
         service.requestResetPassword(study, signIn);
         
-        verify(accountDao).requestResetPassword(study, signIn.getAccountId());
+        verify(accountWorkflowService).requestResetPassword(study, signIn.getAccountId());
     }
     
     @Test

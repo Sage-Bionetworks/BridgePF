@@ -40,11 +40,9 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
-import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -52,7 +50,6 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 
@@ -69,15 +66,8 @@ public class HibernateAccountDao implements AccountDao {
     static final String EMAIL_QUERY = "from HibernateAccount where studyId='%s' and email='%s'";
     static final String PHONE_QUERY = "from HibernateAccount where studyId='%s' and phone.number='%s' and phone.regionCode='%s'";
     
-    private AccountWorkflowService accountWorkflowService;
     private HealthCodeService healthCodeService;
     private HibernateHelper hibernateHelper;
-
-    /** Service that handles email verification, password reset, etc. */
-    @Autowired
-    public final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService){
-        this.accountWorkflowService = accountWorkflowService;
-    }
 
     /** Health code service, because this DAO is expected to generate health codes for new accounts. */
     @Autowired
@@ -93,8 +83,7 @@ public class HibernateAccountDao implements AccountDao {
 
     /** {@inheritDoc} */
     @Override
-    public void verifyEmail(EmailVerification verification) {
-        Account account = accountWorkflowService.verifyEmail(verification);
+    public void verifyEmail(Account account) {
         verifyChannel(EMAIL, account);
     }
     
@@ -141,23 +130,6 @@ public class HibernateAccountDao implements AccountDao {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public void resendEmailVerificationToken(AccountId accountId) {
-        accountWorkflowService.resendEmailVerificationToken(accountId);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void requestResetPassword(Study study, AccountId accountId) {
-        accountWorkflowService.requestResetPassword(study, accountId);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void resetPassword(PasswordReset passwordReset) {
-        accountWorkflowService.resetPassword(passwordReset);
-    }
 
     /** {@inheritDoc} */
     @Override
@@ -293,14 +265,9 @@ public class HibernateAccountDao implements AccountDao {
 
     /** {@inheritDoc} */
     @Override
-    public String createAccount(Study study, Account account, boolean sendVerifyEmail) {
+    public String createAccount(Study study, Account account) {
         String accountId = BridgeUtils.generateGuid();
-        createAccountForMigration(study, account, accountId, sendVerifyEmail);
-
-        // send verify email
-        if (sendVerifyEmail) {
-            accountWorkflowService.sendEmailVerificationToken(study, accountId, account.getEmail());
-        }
+        createAccountForMigration(study, account, accountId);
 
         return accountId;
     }
@@ -310,7 +277,7 @@ public class HibernateAccountDao implements AccountDao {
      * happen outside of this method. This is used during migration so that Stormpath does ID generation and so we
      * don't verify email twice.
      */
-    public void createAccountForMigration(Study study, Account account, String id, boolean sendVerifyEmail) {
+    public void createAccountForMigration(Study study, Account account, String id) {
         // Initial creation of account. Fill in basic initial parameters.
         HibernateAccount hibernateAccount = marshallAccount(account);
         hibernateAccount.setId(id);
@@ -318,7 +285,6 @@ public class HibernateAccountDao implements AccountDao {
         hibernateAccount.setCreatedOn(DateUtils.getCurrentMillisFromEpoch());
         hibernateAccount.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         hibernateAccount.setPasswordModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        hibernateAccount.setStatus(sendVerifyEmail ? AccountStatus.UNVERIFIED : AccountStatus.ENABLED);
 
         // Create account
         try {

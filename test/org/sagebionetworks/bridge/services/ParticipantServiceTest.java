@@ -6,7 +6,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
@@ -182,6 +181,9 @@ public class ParticipantServiceTest {
     @Mock
     private ExternalIdService externalIdService;
     
+    @Mock
+    private AccountWorkflowService accountWorkflowService;
+    
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
     
@@ -225,12 +227,13 @@ public class ParticipantServiceTest {
         participantService.setUploadService(uploadService);
         participantService.setNotificationsService(notificationsService);
         participantService.setScheduledActivityService(scheduledActivityService);
+        participantService.setAccountWorkflowService(accountWorkflowService);
     }
     
     private void mockHealthCodeAndAccountRetrieval() {
         when(account.getId()).thenReturn(ID);
         when(accountDao.constructAccount(STUDY, EMAIL, PHONE, PASSWORD)).thenReturn(account);
-        when(accountDao.createAccount(same(STUDY), same(account), anyBoolean())).thenReturn(ID);
+        when(accountDao.createAccount(same(STUDY), same(account))).thenReturn(ID);
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
         when(account.getHealthCode()).thenReturn(HEALTH_CODE);
         when(account.getEmail()).thenReturn(EMAIL);
@@ -240,9 +243,10 @@ public class ParticipantServiceTest {
     @Test
     public void createParticipant() {
         STUDY.setExternalIdValidationEnabled(true);
+        STUDY.setEmailVerificationEnabled(true);
         mockHealthCodeAndAccountRetrieval();
         
-        IdentifierHolder idHolder = participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
+        IdentifierHolder idHolder = participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
         assertEquals(ID, idHolder.getIdentifier());
         
         verify(externalIdService).reserveExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
@@ -250,8 +254,9 @@ public class ParticipantServiceTest {
         
         verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PASSWORD);
         // suppress email (true) == sendEmail (false)
-        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
+        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture());
         verify(optionsService).setAllOptions(eq(STUDY.getStudyIdentifier()), eq(HEALTH_CODE), optionsCaptor.capture());
+        verify(accountWorkflowService).sendEmailVerificationToken(STUDY, ID, EMAIL);
         
         Map<ParticipantOption, String> options = optionsCaptor.getValue();
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS.name(), options.get(SHARING_SCOPE));
@@ -539,16 +544,6 @@ public class ParticipantServiceTest {
     }
     
     @Test
-    public void userCannotSetStatusOnCreate() {
-        verifyStatusCreate(Sets.newHashSet());
-    }
-    
-    @Test
-    public void noRoleCanSetStatusOnCreate() {
-        verifyStatusCreate(Sets.newHashSet(RESEARCHER, ADMIN, DEVELOPER));
-    }
-    
-    @Test
     public void userCannotChangeStatus() {
         verifyStatusUpdate(EnumSet.noneOf(Roles.class), false);
     }
@@ -734,7 +729,7 @@ public class ParticipantServiceTest {
         
         participantService.requestResetPassword(STUDY, ID);
         
-        verify(accountDao).requestResetPassword(eq(STUDY), eq(ACCOUNT_ID));
+        verify(accountWorkflowService).requestResetPassword(eq(STUDY), eq(ACCOUNT_ID));
     }
     
     public void requestResetPasswordNoAccountIsSilent() {
@@ -787,7 +782,7 @@ public class ParticipantServiceTest {
         
         participantService.resendEmailVerification(STUDY, ID);
         
-        verify(accountDao).resendEmailVerificationToken(accountIdCaptor.capture());
+        verify(accountWorkflowService).resendEmailVerificationToken(accountIdCaptor.capture());
         
         AccountId accountId = accountIdCaptor.getValue();
         assertEquals(STUDY.getIdentifier(), accountId.getStudyId());
@@ -938,21 +933,6 @@ public class ParticipantServiceTest {
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
     }
     
-    private void verifyStatusCreate(Set<Roles> callerRoles) {
-        mockHealthCodeAndAccountRetrieval();
-        
-        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
-                .withStatus(AccountStatus.ENABLED).build();
-        
-        participantService.createParticipant(STUDY, callerRoles, participant, false);
-        
-        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PASSWORD);
-        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
-        Account account = accountCaptor.getValue();
-        
-        verify(account, never()).setStatus(any());
-    }
-
     // There's no actual vs expected here because either we don't set it, or we set it and that's what we're verifying,
     // that it has been set. If the setter is not called, the existing status will be sent back to account store.
     private void verifyStatusUpdate(Set<Roles> roles, boolean canSetStatus) {
@@ -982,7 +962,7 @@ public class ParticipantServiceTest {
         participantService.createParticipant(STUDY, callerRoles, participant, false);
         
         verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PASSWORD);
-        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), eq(false));
+        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture());
         Account account = accountCaptor.getValue();
         
         if (rolesThatAreSet != null) {

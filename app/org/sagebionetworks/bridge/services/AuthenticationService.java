@@ -293,7 +293,8 @@ public class AuthenticationService {
         checkNotNull(verification);
 
         Validate.entityThrowingException(EmailVerificationValidator.INSTANCE, verification);
-        accountDao.verifyEmail(verification);
+        Account account = accountWorkflowService.verifyEmail(verification);
+        accountDao.verifyEmail(account);
     }
     
     public void resendEmailVerification(StudyIdentifier studyIdentifier, Email email) {
@@ -303,7 +304,7 @@ public class AuthenticationService {
         Validate.entityThrowingException(EmailValidator.INSTANCE, email);
         try {
             AccountId accountId = AccountId.forEmail(studyIdentifier.getIdentifier(), email.getEmail());
-            accountDao.resendEmailVerificationToken(accountId);    
+            accountWorkflowService.resendEmailVerificationToken(accountId);    
         } catch(EntityNotFoundException e) {
             // Suppress this. Otherwise it reveals if the account does not exist
             LOG.info("Resend email verification for unregistered email in study '"+studyIdentifier.getIdentifier()+"'");
@@ -317,7 +318,7 @@ public class AuthenticationService {
         // validate the data in signIn, then convert it to an account ID which we know will be valid.
         Validate.entityThrowingException(SignInValidator.REQUEST_RESET_PASSWORD, signIn);
         try {
-            accountDao.requestResetPassword(study, signIn.getAccountId());    
+            accountWorkflowService.requestResetPassword(study, signIn.getAccountId());    
         } catch(EntityNotFoundException e) {
             // Suppress this. Otherwise it reveals if the account does not exist
             LOG.info("Request reset password request for unregistered email in study '"+signIn.getStudyId()+"'");
@@ -329,7 +330,7 @@ public class AuthenticationService {
 
         Validate.entityThrowingException(passwordResetValidator, passwordReset);
         
-        accountDao.resetPassword(passwordReset);
+        accountWorkflowService.resetPassword(passwordReset);
     }
     
     protected String getEmailToken() {
