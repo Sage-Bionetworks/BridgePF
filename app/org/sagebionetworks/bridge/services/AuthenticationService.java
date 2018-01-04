@@ -122,6 +122,7 @@ public class AuthenticationService {
     final void setIntentToParticipateService(IntentService intentService) {
         this.intentService = intentService;
     }
+    @Autowired
     final void setNotificationsService(NotificationsService notificationsService) {
         this.notificationsService = notificationsService;
     }
@@ -146,6 +147,11 @@ public class AuthenticationService {
             String appName = (study.getShortName() != null) ? study.getShortName() : "Bridge";
             String message = "Enter " + formattedToken + " to sign in to " + appName;
             
+            System.out.println(notificationsService);
+            System.out.println(study);
+            System.out.println(study.getStudyIdentifier());
+            System.out.println(signIn);
+            System.out.println(signIn.getPhone());
             notificationsService.sendSMSMessage(study.getStudyIdentifier(), signIn.getPhone(), message);
         });
     }
