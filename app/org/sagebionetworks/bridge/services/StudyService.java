@@ -31,7 +31,9 @@ import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
 import org.sagebionetworks.client.exceptions.SynapseServerException;
-import org.sagebionetworks.repo.model.MembershipInvtnSubmission;
+import org.sagebionetworks.repo.model.ACCESS_TYPE;
+import org.sagebionetworks.repo.model.AccessControlList;
+import org.sagebionetworks.repo.model.MembershipInvitation;
 import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.ResourceAccess;
 import org.sagebionetworks.repo.model.Team;
@@ -47,6 +49,7 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.StudyDao;
@@ -81,7 +84,8 @@ public class StudyService {
     private static final String IDENTIFIER_PROPERTY = "identifier";
     private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
             BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
-
+    public static final Set<ACCESS_TYPE> READ_DOWNLOAD_ACCESS = ImmutableSet.of(ACCESS_TYPE.READ, ACCESS_TYPE.DOWNLOAD);
+    
     private CompoundActivityDefinitionService compoundActivityDefinitionService;
     private UploadCertificateService uploadCertService;
     private StudyDao studyDao;
@@ -295,14 +299,14 @@ public class StudyService {
         // then create users for that study
         // send verification email from both Bridge and Synapse as well
         for (StudyParticipant user: users) {
-            IdentifierHolder identifierHolder = participantService.createParticipant(study, user.getRoles(), user,true);
+            IdentifierHolder identifierHolder = participantService.createParticipant(study, user.getRoles(), user, false);
 
             NewUser synapseUser = new NewUser();
             synapseUser.setEmail(user.getEmail());
             try {
                 synapseClient.newAccountEmailValidation(synapseUser, SYNAPSE_REGISTER_END_POINT);
             } catch (SynapseServerException e) {
-                if (!"The email address provided is already used.".equals(e.getMessage())) {
+                if (!e.getMessage().contains("The email address provided is already used.")) {
                     throw e;
                 } else {
                     LOG.info("Email: " + user.getEmail() + " already exists in Synapse", e);
@@ -383,41 +387,39 @@ public class StudyService {
             }
         }
 
+        // Name in Synapse are globally unique, so we add a random token to the name to ensure it 
+        // doesn't conflict with an existing name. Also, Synapse names can only contain a certain 
+        // subset of characters.
+        String nameScopingToken = getNameScopingToken();
+        String synapseName = null;
+        try {
+            synapseName = BridgeUtils.toSynapseFriendlyName(study.getName());    
+        } catch(NullPointerException | IllegalArgumentException e) {
+            throw new BadRequestException("Study name is invalid Synapse name: " + study.getName());
+        }
         // create synapse project and team
         Team team = new Team();
-        team.setName(study.getName().trim().replaceAll("[\\s\\[\\]]", "_") + "AccessTeam");
+        team.setName(synapseName + " Access Team "+nameScopingToken);
         Project project = new Project();
-        project.setName(study.getName().trim().replaceAll("[\\s\\[\\]]", "_") + "Project");
+        project.setName(synapseName + " Project "+nameScopingToken);
 
         Team newTeam = synapseClient.createTeam(team);
-
         Project newProject = synapseClient.createEntity(project);
-
-        // modify project acl
-        org.sagebionetworks.repo.model.AccessControlList acl = synapseClient.getACL(newProject.getId());
-        // add exporter as admin
-        ResourceAccess toSet = new ResourceAccess();
-        toSet.setPrincipalId(Long.parseLong(EXPORTER_SYNAPSE_USER_ID));
-        toSet.setAccessType(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
-        acl.getResourceAccess().add(toSet);
-        // add users as admins
+        
+        // Add the exporter and individuals as admins 
+        AccessControlList projectACL = synapseClient.getACL(newProject.getId());
+        addAdminToACL(projectACL, EXPORTER_SYNAPSE_USER_ID); // add exporter as admin
         for (String synapseUserId : synapseUserIds) {
-            ResourceAccess toSetUser = new ResourceAccess();
-            toSetUser.setPrincipalId(Long.parseLong(synapseUserId)); // passed by user as parameter
-            toSetUser.setAccessType(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
-            acl.getResourceAccess().add(toSetUser);
+            addAdminToACL(projectACL, synapseUserId);
         }
-        // add team in project as well
-        ResourceAccess toSetTeam = new ResourceAccess();
-        toSetTeam.setPrincipalId(Long.parseLong(newTeam.getId())); // passed by user as parameter
-        toSetTeam.setAccessType(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
-        acl.getResourceAccess().add(toSetTeam);
+        // Add the team as a read/download team
+        addToACL(projectACL, newTeam.getId(), READ_DOWNLOAD_ACCESS);
+        synapseClient.updateACL(projectACL);
 
-        synapseClient.updateACL(acl);
-
+        // send invitation to target user for joining new team and grant admin permission to that user.
+        // Users added afterwards will have read/download rights through the access team.
         for (String synapseUserId : synapseUserIds) {
-            // send invitation to target user for joining new team and grant admin permission to that user
-            MembershipInvtnSubmission teamMemberInvitation = new MembershipInvtnSubmission();
+            MembershipInvitation teamMemberInvitation = new MembershipInvitation();
             teamMemberInvitation.setInviteeId(synapseUserId);
             teamMemberInvitation.setTeamId(newTeam.getId());
             synapseClient.createMembershipInvitation(teamMemberInvitation, null, null);
@@ -434,7 +436,22 @@ public class StudyService {
 
         return study;
     }
+    
+    protected String getNameScopingToken() {
+        return SecureTokenGenerator.NAME_SCOPE_INSTANCE.nextToken();
+    }
+    
+    private void addAdminToACL(AccessControlList acl, String principalId) {
+        addToACL(acl, principalId, ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
+    }
 
+    private void addToACL(AccessControlList acl, String principalId, Set<ACCESS_TYPE> accessTypes) {
+        ResourceAccess resource = new ResourceAccess();
+        resource.setPrincipalId(Long.parseLong(principalId));
+        resource.setAccessType(accessTypes);
+        acl.getResourceAccess().add(resource);
+    }
+    
     public Study updateStudy(Study study, boolean isAdminUpdate) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
 

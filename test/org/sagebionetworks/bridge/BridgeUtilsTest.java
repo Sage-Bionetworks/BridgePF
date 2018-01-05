@@ -387,6 +387,22 @@ public class BridgeUtilsTest {
         BridgeUtils.getLocalDateOrDefault("2017-05-10T05:05:10.000Z", null);
     }
     
+    @Test
+    public void toSynapseFriendlyName() {
+        assertEquals("This is a .-_ synapse Friendly Name3",
+                BridgeUtils.toSynapseFriendlyName("This (is a).-_ synapse Friendly Name3 "));
+    }
+    
+    @Test(expected = NullPointerException.class)
+    public void nullToSynapseFriendlyNameThrowsException() {
+        BridgeUtils.toSynapseFriendlyName(null);
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void emptyStringToSynapseFriendlyName() {
+        BridgeUtils.toSynapseFriendlyName("  #");
+    }
+    
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.
     private <T> void orderedSetsEqual(Set<T> first, Set<T> second) {
         assertEquals(first.size(), second.size());

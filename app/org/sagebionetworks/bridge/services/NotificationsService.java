@@ -44,18 +44,19 @@ import com.google.common.collect.Maps;
 @Component
 public class NotificationsService {
     private static Logger LOG = LoggerFactory.getLogger(NotificationsService.class);
-        
-    static final String SMS_TYPE_TRANSACTIONAL = "Transactional";
+    
     /**
      * 11 character label as to who sent the SMS message. Only in some supported countries (not US):
      * https://support.twilio.com/hc/en-us/articles/223133767-International-support-for-Alphanumeric-Sender-ID
      */
-    static final String SENDER_ID = "AWS.SNS.SMS.SenderID";
+    public static final String SENDER_ID = "AWS.SNS.SMS.SenderID";
     /**
      * SMS type (Promotional or Transactional).
      */
-    static final String SMS_TYPE = "AWS.SNS.SMS.SMSType";
+    public static final String SMS_TYPE = "AWS.SNS.SMS.SMSType";
     
+    private static final String SMS_TYPE_TRANSACTIONAL = "Transactional";
+        
     private StudyService studyService;
     
     private NotificationRegistrationDao notificationRegistrationDao;
