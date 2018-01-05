@@ -365,21 +365,21 @@ public class StudyValidatorTest {
         study.setExternalIdRequiredOnSignup(false);
         Validate.entityThrowingException(INSTANCE, study);
     }
-    
+
     @Test
-    public void nonPublicStudiesMustEnableExternalIdValdation() {
+    public void nonPublicStudiesWithoutExternalIdValdationIsValid() {
         study.setEmailVerificationEnabled(false);
         study.setExternalIdValidationEnabled(false);
-        assertValidatorMessage(INSTANCE, study, "externalIdValidationEnabled", "cannot be disabled if email verification has been disabled");
+        Validate.entityThrowingException(INSTANCE, study);
     }
     
     @Test
-    public void nonPublicStudiesMustRequireExternalIdOnSignUp() {
+    public void nonPublicStudiesWithoutExternalIdOnSignUpIsValid() {
         study.setEmailVerificationEnabled(false);
         study.setExternalIdRequiredOnSignup(false);
-        assertValidatorMessage(INSTANCE, study, "externalIdRequiredOnSignup", "cannot be disabled if email verification has been disabled");
+        Validate.entityThrowingException(INSTANCE, study);
     } 
-    
+
     @Test
     public void oauthProviderRequiresClientId() {
         OAuthProvider provider = new OAuthProvider(null, "secret", "endpoint", CALLBACK_URL);
