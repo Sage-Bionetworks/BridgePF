@@ -144,6 +144,17 @@ public class StudyValidator implements Validator {
         validateEmails(errors, study.getConsentNotificationEmail(), "consentNotificationEmail");
         validateDataGroupNamesAndFitForSynapseExport(errors, study.getDataGroups());
         
+        // Links in installedLinks are length-constrained by SMS.
+        if (!study.getInstallLinks().isEmpty()) {
+            for (Map.Entry<String,String> entry : study.getInstallLinks().entrySet()) {
+                if (StringUtils.isBlank(entry.getValue())) {
+                    errors.rejectValue("installLinks", "cannot be blank");
+                } else if (entry.getValue().length() > BridgeConstants.SMS_CHARACTER_LIMIT) {
+                    errors.rejectValue("installLinks", "cannot be longer than "+BridgeConstants.SMS_CHARACTER_LIMIT+" characters");
+                }
+            }
+        }        
+        
         for (Map.Entry<String, OAuthProvider> entry : study.getOAuthProviders().entrySet()) {
             String fieldName = "oauthProviders["+entry.getKey()+"]";
             OAuthProvider provider = entry.getValue();

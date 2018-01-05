@@ -7,6 +7,7 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
@@ -517,4 +518,20 @@ public class StudyValidatorTest {
         assertValidatorMessage(INSTANCE, study, "androidAppLinks[0]."+FINGERPRINTS+"[0]","is not a SHA 256 fingerprint");
     }
     
+    @Test
+    public void installAppLinksCannotBeNull() {
+        study.getInstallLinks().put("foo", "");
+        assertValidatorMessage(INSTANCE, study, "installLinks", "cannot be blank");
+    }
+    
+    @Test
+    public void installAppLinksCannotExceedSMSLength() {
+        String msg = "";
+        for (int i=0; i < BridgeConstants.SMS_CHARACTER_LIMIT; i++) {
+            msg += "A";
+        }
+        msg += "A";
+        study.getInstallLinks().put("foo", msg);
+        assertValidatorMessage(INSTANCE, study, "installLinks", "cannot be longer than "+BridgeConstants.SMS_CHARACTER_LIMIT+" characters");
+    }
 }

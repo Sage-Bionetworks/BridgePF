@@ -199,8 +199,8 @@ POST   /v3/scheduleplans/:guid  @org.sagebionetworks.bridge.play.controllers.Sch
 DELETE /v3/scheduleplans/:guid  @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.deleteSchedulePlan(guid: String)
 
 # Activity Events
-GET    /v1/activityevents  @org.sagebionetworks.bridge.play.controllers.ActivityEventController.getSelfActivityEvents
-POST   /v1/activityevents  @org.sagebionetworks.bridge.play.controllers.ActivityEventController.createCustomActivityEvent
+GET    /v1/activityevents @org.sagebionetworks.bridge.play.controllers.ActivityEventController.getSelfActivityEvents
+POST   /v1/activityevents @org.sagebionetworks.bridge.play.controllers.ActivityEventController.createCustomActivityEvent
 
 # Notifications
 GET    /v3/notifications                      @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.getAllRegistrations
@@ -226,6 +226,9 @@ GET    /v3/appconfigs/:guid  @org.sagebionetworks.bridge.play.controllers.AppCon
 POST   /v3/appconfigs        @org.sagebionetworks.bridge.play.controllers.AppConfigController.createAppConfig
 POST   /v3/appconfigs/:guid  @org.sagebionetworks.bridge.play.controllers.AppConfigController.updateAppConfig(guid: String)
 DELETE /v3/appconfigs/:guid  @org.sagebionetworks.bridge.play.controllers.AppConfigController.deleteAppConfig(guid: String)
+
+# Intent to Participant (ITP)
+POST   /v3/itp @org.sagebionetworks.bridge.play.controllers.IntentController.submitIntentToParticipate
 
 # Bridge Exporter
 POST /v3/recordexportstatuses  @org.sagebionetworks.bridge.play.controllers.HealthDataController.updateRecordsStatus

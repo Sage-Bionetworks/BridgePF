@@ -88,6 +88,7 @@ public final class DynamoStudy implements Study {
     private boolean externalIdRequiredOnSignup;
     private Map<String, Integer> minSupportedAppVersions;
     private Map<String, String> pushNotificationARNs;
+    private Map<String, String> installLinks;
     private Map<String, OAuthProvider> oauthProviders;
     private boolean disableExport;
     private List<AppleAppLink> appleAppLinks;
@@ -101,6 +102,7 @@ public final class DynamoStudy implements Study {
         dataGroups = new HashSet<>();
         minSupportedAppVersions = new HashMap<>();
         pushNotificationARNs = new HashMap<>();
+        installLinks = new HashMap<>();
         oauthProviders = new HashMap<>();
         appleAppLinks = new ArrayList<>();
         androidAppLinks = new ArrayList<>();
@@ -492,6 +494,17 @@ public final class DynamoStudy implements Study {
         this.pushNotificationARNs = (map == null) ? new HashMap<>() : map;
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public Map<String,String> getInstallLinks() {
+        return installLinks;
+    }
+
+    @Override
+    public void setInstallLinks(Map<String,String> map) {
+        this.installLinks = (map == null) ? new HashMap<>() : map;
+    }
+    
     @Override public boolean getDisableExport() {
         return this.disableExport;
     }
@@ -563,7 +576,7 @@ public final class DynamoStudy implements Study {
                 passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, emailSignInTemplate, accountExistsTemplate,
                 strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
                 externalIdValidationEnabled, emailSignInEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
-                pushNotificationARNs, disableExport, oauthProviders, appleAppLinks, androidAppLinks);
+                pushNotificationARNs, installLinks, disableExport, oauthProviders, appleAppLinks, androidAppLinks);
     }
 
     @Override
@@ -605,6 +618,7 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(externalIdRequiredOnSignup, other.externalIdRequiredOnSignup)
                 && Objects.equals(minSupportedAppVersions, other.minSupportedAppVersions)
                 && Objects.equals(pushNotificationARNs, other.pushNotificationARNs)
+                && Objects.equals(installLinks, other.installLinks)
                 && Objects.equals(disableExport, other.disableExport)
                 && Objects.equals(emailSignInTemplate, other.emailSignInTemplate)
                 && Objects.equals(emailSignInEnabled, other.emailSignInEnabled)
@@ -623,7 +637,7 @@ public final class DynamoStudy implements Study {
                         + "activityEventKeys=%s, dataGroups=%s, passwordPolicy=%s, verifyEmailTemplate=%s, "
                         + "resetPasswordTemplate=%s, strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, "
                         + "emailVerificationEnabled=%s, externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, "
-                        + "minSupportedAppVersions=%s, usesCustomExportSchedule=%s, pushNotificationARNs=%s, "
+                        + "minSupportedAppVersions=%s, usesCustomExportSchedule=%s, pushNotificationARNs=%s, installLinks=%s"
                         + "disableExport=%s, emailSignInTemplate=%s, emailSignInEnabled=%s, accountLimit=%s, oauthProviders=%s, "
                         + "appleAppLinks=%s, androidAppLinks=%s]",
                 name, shortName, active, sponsorName, identifier, minAgeOfConsent, studyIdExcludedInExport, supportEmail,
@@ -631,7 +645,7 @@ public final class DynamoStudy implements Study {
                 profileAttributes, taskIdentifiers, activityEventKeys, dataGroups, passwordPolicy, verifyEmailTemplate,
                 resetPasswordTemplate, strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
                 externalIdValidationEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
-                usesCustomExportSchedule, pushNotificationARNs, disableExport, emailSignInTemplate,
+                usesCustomExportSchedule, pushNotificationARNs, installLinks, disableExport, emailSignInTemplate,
                 emailSignInEnabled, accountLimit, oauthProviders, appleAppLinks, androidAppLinks);
     }
 }

@@ -502,7 +502,7 @@ public class AuthenticationServiceMockTest {
         StudyParticipant participant = new StudyParticipant.Builder().withEmail(RECIPIENT_EMAIL).withPassword(PASSWORD)
                 .build();
         
-        service.signUp(study, participant);
+        service.signUp(study, participant, false);
         
         verify(participantService).createParticipant(eq(study), eq(NO_CALLER_ROLES), participantCaptor.capture(), eq(true));
         StudyParticipant captured = participantCaptor.getValue();
@@ -516,7 +516,7 @@ public class AuthenticationServiceMockTest {
         StudyParticipant participant = new StudyParticipant.Builder().withPhone(TestConstants.PHONE)
                 .withPassword(PASSWORD).build();
         
-        service.signUp(study, participant);
+        service.signUp(study, participant, false);
         
         verify(participantService).createParticipant(eq(study), eq(NO_CALLER_ROLES), participantCaptor.capture(), eq(true));
         StudyParticipant captured = participantCaptor.getValue();
@@ -532,7 +532,7 @@ public class AuthenticationServiceMockTest {
         doThrow(new EntityAlreadyExistsException(StudyParticipant.class, "userId", "AAA")).when(participantService)
                 .createParticipant(study, NO_CALLER_ROLES, participant, true);
         
-        service.signUp(study, participant);
+        service.signUp(study, participant, false);
         
         ArgumentCaptor<AccountId> accountIdCaptor = ArgumentCaptor.forClass(AccountId.class);
         

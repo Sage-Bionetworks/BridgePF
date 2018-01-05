@@ -44,6 +44,7 @@ import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
@@ -63,6 +64,7 @@ import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -235,6 +237,23 @@ public class TestUtils {
         topic.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         topic.setTopicARN("atopicArn");
         return topic;
+    }
+    
+    public static final IntentToParticipate getIntentToParticipate(long timestamp) {
+        ConsentSignature consentSignature = new ConsentSignature.Builder()
+                .withName("Gladlight Stonewell")
+                .withBirthdate("1980-10-10")
+                .withConsentCreatedOn(timestamp)
+                .withImageData("image-data")
+                .withImageMimeType("image/png").build();
+        IntentToParticipate itp = new IntentToParticipate.Builder()
+                .withStudyId("studyId")
+                .withScope(SharingScope.SPONSORS_AND_PARTNERS)
+                .withPhone(TestConstants.PHONE)
+                .withSubpopGuid("subpopGuid")
+                .withConsentSignature(consentSignature)
+                .build();
+        return itp;
     }
     
     public static final NotificationRegistration getNotificationRegistration() {
