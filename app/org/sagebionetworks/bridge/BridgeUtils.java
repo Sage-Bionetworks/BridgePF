@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Integer.parseInt;
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -397,5 +398,13 @@ public class BridgeUtils {
         }
         throw new BridgeServiceException("Invalid activityType specified");    
     }
-
+    
+    public static String toSynapseFriendlyName(String input) {
+        checkNotNull(input);
+        
+        String value = input.replaceAll("[^a-zA-Z0-9\\.\\-_\\s]", " ").replaceAll("\\s+", " ").trim();
+        checkArgument(StringUtils.isNotBlank(value));
+        
+        return value; 
+    }
 }

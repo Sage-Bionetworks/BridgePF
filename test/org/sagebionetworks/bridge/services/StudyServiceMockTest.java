@@ -33,7 +33,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseClientException;
@@ -41,7 +43,7 @@ import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
 import org.sagebionetworks.client.exceptions.SynapseServerException;
 import org.sagebionetworks.repo.model.AccessControlList;
-import org.sagebionetworks.repo.model.MembershipInvtnSubmission;
+import org.sagebionetworks.repo.model.MembershipInvitation;
 import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.ResourceAccess;
 import org.sagebionetworks.repo.model.Team;
@@ -72,8 +74,9 @@ import org.sagebionetworks.bridge.validators.StudyValidator;
 @RunWith(MockitoJUnitRunner.class)
 public class StudyServiceMockTest {
     private static final Long TEST_USER_ID = Long.parseLong("3348228"); // test user exists in synapse
-    private static final String TEST_PROJECT_NAME = TEST_USER_ID.toString() + "Project";
-    private static final String TEST_TEAM_NAME = TEST_USER_ID.toString() + "Team";
+    private static final String TEST_NAME_SCOPING_TOKEN = "qwerty";
+    private static final String TEST_PROJECT_NAME = "Test Study StudyServiceMockTest Project " + TEST_NAME_SCOPING_TOKEN;
+    private static final String TEST_TEAM_NAME = "Test Study StudyServiceMockTest Access Team " + TEST_NAME_SCOPING_TOKEN;
     private static final String TEST_TEAM_ID = "1234";
     private static final String TEST_PROJECT_ID = "synapseProjectId";
 
@@ -109,19 +112,25 @@ public class StudyServiceMockTest {
     private EmailVerificationService emailVerificationService;
     @Mock
     private ParticipantService participantService;
-
+    @Mock
+    private AccessControlList mockAccessControlList;
     @Mock
     private SynapseClient mockSynapseClient;
+    @Captor
+    private ArgumentCaptor<Project> projectCaptor;
+    @Captor
+    private ArgumentCaptor<Team> teamCaptor;
 
+    @Spy
     private StudyService service;
+    
     private Study study;
     private Team mockTeam;
     private Project mockProject;
-    private MembershipInvtnSubmission mockTeamMemberInvitation;
+    private MembershipInvitation mockTeamMemberInvitation;
 
     @Before
     public void before() {
-        service = spy(new StudyService());
         service.setCompoundActivityDefinitionService(compoundActivityDefinitionService);
         service.setNotificationTopicService(topicService);
         service.setUploadCertificateService(uploadCertService);
@@ -133,19 +142,18 @@ public class StudyServiceMockTest {
         service.setSynapseClient(mockSynapseClient);
         service.setParticipantService(participantService);
         
+        when(service.getNameScopingToken()).thenReturn(TEST_NAME_SCOPING_TOKEN);
+        
         study = getTestStudy();
         when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
 
         // setup project and team
         mockTeam = new Team();
         mockProject = new Project();
-
-        mockProject.setName(TEST_PROJECT_NAME);
         mockProject.setId(TEST_PROJECT_ID);
-        mockTeam.setName(TEST_TEAM_NAME);
         mockTeam.setId(TEST_TEAM_ID);
 
-        mockTeamMemberInvitation = new MembershipInvtnSubmission();
+        mockTeamMemberInvitation = new MembershipInvitation();
         mockTeamMemberInvitation.setInviteeId(TEST_USER_ID.toString());
         mockTeamMemberInvitation.setTeamId(TEST_TEAM_ID);
     }
@@ -473,7 +481,12 @@ public class StudyServiceMockTest {
 
         // spy
         doReturn(study).when(service).createStudy(any());
-        doReturn(study).when(service).createSynapseProjectTeam(any(), any());
+        
+        // stub out use of synapse client so we can validate it, not just ignore it.
+        when(mockAccessControlList.getResourceAccess()).thenReturn(new HashSet<ResourceAccess>());
+        when(mockSynapseClient.createEntity(projectCaptor.capture())).thenReturn(mockProject);
+        when(mockSynapseClient.getACL(TEST_PROJECT_ID)).thenReturn(mockAccessControlList);
+        when(mockSynapseClient.createTeam(teamCaptor.capture())).thenReturn(mockTeam);
 
         // stub
         when(participantService.createParticipant(any(), any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
@@ -484,12 +497,15 @@ public class StudyServiceMockTest {
 
         // verify
         verify(participantService, times(2)).createParticipant(any(), any(), any(), anyBoolean());
-        verify(participantService).createParticipant(eq(study), eq(mockUser1.getRoles()), eq(mockUser1), eq(true));
-        verify(participantService).createParticipant(eq(study), eq(mockUser2.getRoles()), eq(mockUser2), eq(true));
+        verify(participantService).createParticipant(eq(study), eq(mockUser1.getRoles()), eq(mockUser1), eq(false));
+        verify(participantService).createParticipant(eq(study), eq(mockUser2.getRoles()), eq(mockUser2), eq(false));
         verify(participantService, times(2)).requestResetPassword(eq(study), eq(mockIdentifierHolder.getIdentifier()));
         verify(mockSynapseClient, times(2)).newAccountEmailValidation(any(), eq(SYNAPSE_REGISTER_END_POINT));
         verify(service).createStudy(study);
         verify(service).createSynapseProjectTeam(TEST_ADMIN_IDS, study);
+        
+        assertEquals(TEST_PROJECT_NAME, projectCaptor.getValue().getName());
+        assertEquals(TEST_TEAM_NAME, teamCaptor.getValue().getName());
     }
 
     @Test (expected = BadRequestException.class)
@@ -694,6 +710,32 @@ public class StudyServiceMockTest {
         service.createStudyAndUsers(mockStudyAndUsers);
     }
 
+    @Test(expected = BadRequestException.class)
+    public void createStudyAndUserNullStudyName() throws Exception {
+        // mock
+        Study study = getTestStudy();
+        study.setExternalIdRequiredOnSignup(false);
+        study.setSynapseProjectId(null);
+        study.setSynapseDataAccessTeamId(null);
+        study.setExternalIdValidationEnabled(false);
+        study.setName(null); // This is not a good name...
+
+        service.createSynapseProjectTeam(ImmutableList.of(TEST_IDENTIFIER), study);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void createStudyAndUserBadStudyName() throws Exception {
+        // mock
+        Study study = getTestStudy();
+        study.setExternalIdRequiredOnSignup(false);
+        study.setSynapseProjectId(null);
+        study.setSynapseDataAccessTeamId(null);
+        study.setExternalIdValidationEnabled(false);
+        study.setName("# # "); // This is not a good name...
+
+        service.createSynapseProjectTeam(ImmutableList.of(TEST_IDENTIFIER), study);
+    }
+    
     @Test
     public void createStudyAndUserThrowExceptionLogged() throws SynapseException {
         // mock
@@ -737,8 +779,8 @@ public class StudyServiceMockTest {
 
         // verify
         verify(participantService, times(2)).createParticipant(any(), any(), any(), anyBoolean());
-        verify(participantService).createParticipant(eq(study), eq(mockUser1.getRoles()), eq(mockUser1), eq(true));
-        verify(participantService).createParticipant(eq(study), eq(mockUser2.getRoles()), eq(mockUser2), eq(true));
+        verify(participantService).createParticipant(eq(study), eq(mockUser1.getRoles()), eq(mockUser1), eq(false));
+        verify(participantService).createParticipant(eq(study), eq(mockUser2.getRoles()), eq(mockUser2), eq(false));
         verify(participantService, times(2)).requestResetPassword(eq(study), eq(mockIdentifierHolder.getIdentifier()));
         verify(mockSynapseClient, times(2)).newAccountEmailValidation(any(), eq(SYNAPSE_REGISTER_END_POINT));
         verify(service).createStudy(study);
@@ -778,29 +820,32 @@ public class StudyServiceMockTest {
         AccessControlList capturedProjectAcl = argumentProjectAcl.getValue();
         Set<ResourceAccess> capturedProjectAclSet = capturedProjectAcl.getResourceAccess();
         assertNotNull(capturedProjectAclSet);
-        assertEquals(capturedProjectAclSet.size(), 3); // only has target user, exporter and team
+        assertEquals(3, capturedProjectAclSet.size()); // only has exporter and team
         // first verify exporter
         List<ResourceAccess> retListForExporter = capturedProjectAclSet.stream()
                 .filter(ra -> ra.getPrincipalId().equals(Long.parseLong(EXPORTER_SYNAPSE_USER_ID)))
                 .collect(Collectors.toList());
 
         assertNotNull(retListForExporter);
-        assertEquals(retListForExporter.size(), 1); // should only have one exporter info
+        assertEquals(1, retListForExporter.size()); // should only have one exporter info
         ResourceAccess capturedExporterRa = retListForExporter.get(0);
         assertNotNull(capturedExporterRa);
-        assertEquals(capturedExporterRa.getPrincipalId().toString(), EXPORTER_SYNAPSE_USER_ID);
-        assertEquals(capturedExporterRa.getAccessType(), ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
+        assertEquals(EXPORTER_SYNAPSE_USER_ID, capturedExporterRa.getPrincipalId().toString());
+        assertEquals(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS, capturedExporterRa.getAccessType());
+
+        assertEquals(EXPORTER_SYNAPSE_USER_ID, capturedExporterRa.getPrincipalId().toString());
+        assertEquals(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS, capturedExporterRa.getAccessType());
         // then verify target user
         List<ResourceAccess> retListForUser = capturedProjectAclSet.stream()
                 .filter(ra -> ra.getPrincipalId().equals(TEST_USER_ID))
                 .collect(Collectors.toList());
-
         assertNotNull(retListForUser);
-        assertEquals(retListForUser.size(), 1); // should only have one exporter info
+        assertEquals(1, retListForUser.size()); // should only have one exporter info
         ResourceAccess capturedUserRa = retListForUser.get(0);
         assertNotNull(capturedUserRa);
-        assertEquals(capturedUserRa.getPrincipalId(), TEST_USER_ID);
-        assertEquals(capturedUserRa.getAccessType(), ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
+        assertEquals(TEST_USER_ID, capturedUserRa.getPrincipalId());
+        assertEquals(ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS, capturedUserRa.getAccessType());
+        
         // then verify team
         List<ResourceAccess> retListForTeam = capturedProjectAclSet.stream()
                 .filter(ra -> ra.getPrincipalId().equals(Long.parseLong(TEST_TEAM_ID)))
@@ -810,8 +855,8 @@ public class StudyServiceMockTest {
         assertEquals(retListForTeam.size(), 1); // should only have one team info
         ResourceAccess capturedTeamRa = retListForTeam.get(0);
         assertNotNull(capturedTeamRa);
-        assertEquals(capturedTeamRa.getPrincipalId().toString(), TEST_TEAM_ID);
-        assertEquals(capturedTeamRa.getAccessType(), ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
+        assertEquals(TEST_TEAM_ID, capturedTeamRa.getPrincipalId().toString());
+        assertEquals(StudyService.READ_DOWNLOAD_ACCESS, capturedTeamRa.getAccessType());
 
         // invite user to team
         verify(mockSynapseClient).createMembershipInvitation(eq(mockTeamMemberInvitation), any(), any());
@@ -819,10 +864,10 @@ public class StudyServiceMockTest {
 
         // update study
         assertNotNull(retStudy);
-        assertEquals(retStudy.getIdentifier(), study.getIdentifier());
-        assertEquals(retStudy.getName(), study.getName());
-        assertEquals(retStudy.getSynapseProjectId(), TEST_PROJECT_ID);
-        assertEquals(retStudy.getSynapseDataAccessTeamId().toString(), TEST_TEAM_ID);
+        assertEquals(study.getIdentifier(), retStudy.getIdentifier());
+        assertEquals(study.getName(), retStudy.getName());
+        assertEquals(TEST_PROJECT_ID, retStudy.getSynapseProjectId());
+        assertEquals(TEST_TEAM_ID, retStudy.getSynapseDataAccessTeamId().toString());
     }
 
     @SuppressWarnings("unchecked")
