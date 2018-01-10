@@ -412,7 +412,8 @@ public class AuthenticationService {
         accountDao.verifyChannel(channelType, account);
 
         UserSession session = getSessionFromAccount(study, context, account);
-
+        cacheProvider.setUserSession(session);
+        
         if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
             throw new ConsentRequiredException(session);
         }
