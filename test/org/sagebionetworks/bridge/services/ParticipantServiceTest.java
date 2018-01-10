@@ -332,6 +332,50 @@ public class ParticipantServiceTest {
     }
     
     @Test
+    public void createParticipantEmailDisabledNoVerificationWanted() {
+        STUDY.setEmailVerificationEnabled(false);
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
+        
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+        verify(account).setStatus(AccountStatus.ENABLED);
+    }
+    
+    @Test
+    public void createParticipantEmailDisabledVerificationWanted() {
+        STUDY.setEmailVerificationEnabled(false);
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
+        
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+        verify(account).setStatus(AccountStatus.ENABLED);
+    }
+    
+    @Test
+    public void createParticipantEmailEnabledNoVerificationWanted() {
+        STUDY.setEmailVerificationEnabled(true);
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
+        
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+        verify(account).setStatus(AccountStatus.ENABLED);
+    }
+    
+    @Test
+    public void createParticipantEmailEnabledVerificationWanted() {
+        STUDY.setEmailVerificationEnabled(true);
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
+        
+        verify(accountWorkflowService).sendEmailVerificationToken(any(), any(), any());
+        verify(account).setStatus(AccountStatus.UNVERIFIED);
+    }
+    
+    @Test
     public void getPagedAccountSummaries() {
         participantService.getPagedAccountSummaries(STUDY, 1100, 50, "foo", "bar", START_DATE, END_DATE);
         

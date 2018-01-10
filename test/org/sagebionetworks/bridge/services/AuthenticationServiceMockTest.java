@@ -39,6 +39,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -599,4 +600,22 @@ public class AuthenticationServiceMockTest {
     public void phoneSignInFails() {
         service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
     }
+    
+    @Test
+    public void verifyEmail() {
+        EmailVerification ev = new EmailVerification("sptoken");
+        when(accountWorkflowService.verifyEmail(ev)).thenReturn(account);
+        
+        service.verifyEmail(ev);
+        
+        verify(accountWorkflowService).verifyEmail(ev);
+        verify(accountDao).verifyEmail(account);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void verifyEmailInvalid() {
+        EmailVerification ev = new EmailVerification(null);
+        service.verifyEmail(ev);
+    }
+
 }

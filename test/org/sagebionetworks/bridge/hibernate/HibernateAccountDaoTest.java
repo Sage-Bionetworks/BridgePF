@@ -693,19 +693,6 @@ public class HibernateAccountDaoTest {
     }
 
     @Test
-    public void createAccountVerifyEmail() {
-        dao.createAccount(STUDY, makeValidGenericAccount());
-        
-        // created account has account status unverified
-        ArgumentCaptor<HibernateAccount> createdHibernateAccountCaptor = ArgumentCaptor.forClass(
-                HibernateAccount.class);
-        verify(mockHibernateHelper).create(createdHibernateAccountCaptor.capture());
-
-        HibernateAccount createdHibernateAccount = createdHibernateAccountCaptor.getValue();
-        assertEquals(AccountStatus.UNVERIFIED, createdHibernateAccount.getStatus());
-    }
-
-    @Test
     public void createAccountForMigration() {
         // Most of this is tested in createAccountSuccess(). Just test that account ID is correctly propagated and that
         // email workflow is *not* called despite the flag.
