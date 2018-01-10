@@ -173,6 +173,7 @@ public class AuthenticationServiceMockTest {
         
         UserSession retrieved = service.signIn(study, CONTEXT, EMAIL_PASSWORD_SIGN_IN);
         assertEquals(REAUTH_TOKEN, retrieved.getReauthToken());
+        verify(cacheProvider).setUserSession(retrieved);
     }
     
     @Test(expected = ConsentRequiredException.class)
@@ -207,6 +208,7 @@ public class AuthenticationServiceMockTest {
         
         UserSession retrieved = service.signIn(study, CONTEXT, PHONE_PASSWORD_SIGN_IN);
         assertEquals(REAUTH_TOKEN, retrieved.getReauthToken());
+        verify(cacheProvider).setUserSession(retrieved);
     }
     
     @Test(expected = ConsentRequiredException.class)
@@ -328,6 +330,7 @@ public class AuthenticationServiceMockTest {
         verify(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
         verify(accountDao).verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
         verify(cacheProvider).removeObject(CACHE_KEY);
+        verify(cacheProvider).setUserSession(retSession);
     }
     
     @Test(expected = AuthenticationFailedException.class)
@@ -588,6 +591,7 @@ public class AuthenticationServiceMockTest {
         
         // this doesn't pass if our mock calls above aren't executed, but verify these:
         verify(cacheProvider).removeObject(cacheKey);
+        verify(cacheProvider).setUserSession(session);
         verify(accountDao).verifyChannel(ChannelType.PHONE, account);
     }
 
