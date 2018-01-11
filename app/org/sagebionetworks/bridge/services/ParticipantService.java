@@ -44,6 +44,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
@@ -91,6 +92,13 @@ public class ParticipantService {
 
     private ActivityEventService activityEventService;
 
+    private AccountWorkflowService accountWorkflowService;
+
+    @Autowired
+    public final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
+        this.accountWorkflowService = accountWorkflowService;
+    }
+    
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
@@ -241,7 +249,7 @@ public class ParticipantService {
      * triggering a reset password request.
      */
     public IdentifierHolder createParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant,
-            boolean sendVerifyEmail) {
+            boolean requestSendVerifyEmail) {
         checkNotNull(study);
         checkNotNull(callerRoles);
         checkNotNull(participant);
@@ -260,10 +268,18 @@ public class ParticipantService {
 
         updateAccountOptionsAndRoles(study, callerRoles, options, account, participant);
         
-        String accountId = accountDao.createAccount(study, account, sendVerifyEmail && study
-                .isEmailVerificationEnabled());
+        boolean sendVerifyEmail = requestSendVerifyEmail && study.isEmailVerificationEnabled();
+        
+        account.setStatus(sendVerifyEmail ? AccountStatus.UNVERIFIED : AccountStatus.ENABLED);
+        
+        String accountId = accountDao.createAccount(study, account);
+
         externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());
         optionsService.setAllOptions(study.getStudyIdentifier(), account.getHealthCode(), options);
+        // send verify email
+        if (sendVerifyEmail) {
+            accountWorkflowService.sendEmailVerificationToken(study, accountId, account.getEmail());
+        }
         return new IdentifierHolder(accountId);
     }
 
@@ -332,7 +348,7 @@ public class ParticipantService {
         // Don't throw an exception here, you'd be exposing that an email/phone number is in the system.
         AccountId accountId = AccountId.forId(study.getIdentifier(), userId);
 
-        accountDao.requestResetPassword(study, accountId);
+        accountWorkflowService.requestResetPassword(study, accountId);
     }
 
     public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(Study study, String userId,
@@ -372,7 +388,7 @@ public class ParticipantService {
 
         StudyParticipant participant = getParticipant(study, userId, false);
         if (participant.getEmail() != null) {
-            accountDao.resendEmailVerificationToken(AccountId.forEmail(study.getIdentifier(), participant.getEmail()));
+            accountWorkflowService.resendEmailVerificationToken(AccountId.forEmail(study.getIdentifier(), participant.getEmail()));
         }
     }
 

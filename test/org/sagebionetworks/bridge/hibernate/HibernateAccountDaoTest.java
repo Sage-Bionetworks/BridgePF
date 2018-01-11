@@ -43,19 +43,16 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.HealthIdImpl;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
-import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 
@@ -64,7 +61,6 @@ public class HibernateAccountDaoTest {
     private static final DateTime CREATED_ON = DateTime.parse("2017-05-19T11:03:50.224-0700");
     private static final String DUMMY_PASSWORD = "Aa!Aa!Aa!Aa!1";
     private static final String DUMMY_PASSWORD_HASH = "dummy-password-hash";
-    private static final String DUMMY_TOKEN = "dummy-token";
     private static final String EMAIL = "eggplant@example.com";
     private static final Phone PHONE = TestConstants.PHONE;
     private static final Phone OTHER_PHONE = new Phone("+12065881469", "US");
@@ -90,7 +86,6 @@ public class HibernateAccountDaoTest {
         STUDY.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
     }
 
-    private AccountWorkflowService mockAccountWorkflowService;
     private HealthCodeService mockHealthCodeService;
     private HibernateAccountDao dao;
     private HibernateHelper mockHibernateHelper;
@@ -107,11 +102,9 @@ public class HibernateAccountDaoTest {
 
     @Before
     public void before() {
-        mockAccountWorkflowService = mock(AccountWorkflowService.class);
         mockHealthCodeService = mock(HealthCodeService.class);
         mockHibernateHelper = mock(HibernateHelper.class);
         dao = new HibernateAccountDao();
-        dao.setAccountWorkflowService(mockAccountWorkflowService);
         dao.setHealthCodeService(mockHealthCodeService);
         dao.setHibernateHelper(mockHibernateHelper);
         
@@ -130,13 +123,10 @@ public class HibernateAccountDaoTest {
         account.setStatus(AccountStatus.UNVERIFIED);
         account.setEmailVerified(Boolean.FALSE);
         
-        when(mockAccountWorkflowService.verifyEmail(any())).thenReturn(account);
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
         
-        EmailVerification verification = new EmailVerification(DUMMY_TOKEN);
-        dao.verifyEmail(verification);
+        dao.verifyEmail(account);
         
-        verify(mockAccountWorkflowService).verifyEmail(verification);
         assertEquals(AccountStatus.ENABLED, hibernateAccount.getStatus());
         assertEquals(Boolean.TRUE, hibernateAccount.getEmailVerified());
         assertTrue(hibernateAccount.getModifiedOn() > 0L);
@@ -156,7 +146,6 @@ public class HibernateAccountDaoTest {
         account.setStatus(AccountStatus.UNVERIFIED);
         account.setEmailVerified(Boolean.FALSE);
         
-        when(mockAccountWorkflowService.verifyEmail(any())).thenReturn(account);
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
         
         dao.verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
@@ -180,7 +169,6 @@ public class HibernateAccountDaoTest {
         account.setStatus(AccountStatus.ENABLED);
         account.setEmailVerified(Boolean.TRUE);
         
-        when(mockAccountWorkflowService.verifyEmail(any())).thenReturn(account);
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
         
         dao.verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
@@ -227,7 +215,6 @@ public class HibernateAccountDaoTest {
         account.setStatus(AccountStatus.UNVERIFIED);
         account.setPhoneVerified(Boolean.FALSE);
         
-        when(mockAccountWorkflowService.verifyEmail(any())).thenReturn(account);
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
         
         dao.verifyChannel(AuthenticationService.ChannelType.PHONE, account);
@@ -251,7 +238,6 @@ public class HibernateAccountDaoTest {
         account.setStatus(AccountStatus.ENABLED);
         account.setPhoneVerified(Boolean.TRUE);
         
-        when(mockAccountWorkflowService.verifyEmail(any())).thenReturn(account);
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
         
         dao.verifyChannel(AuthenticationService.ChannelType.PHONE, account);
@@ -287,26 +273,6 @@ public class HibernateAccountDaoTest {
         assertNull(account.getPhoneVerified());
     }    
     
-    @Test
-    public void resendEmailVerificationToken() {
-        dao.resendEmailVerificationToken(ACCOUNT_ID_WITH_EMAIL);
-        verify(mockAccountWorkflowService).resendEmailVerificationToken(ACCOUNT_ID_WITH_EMAIL);
-    }
-
-    @Test
-    public void requestResetPassword() {
-        dao.requestResetPassword(STUDY, ACCOUNT_ID_WITH_EMAIL);
-        verify(mockAccountWorkflowService).requestResetPassword(STUDY, ACCOUNT_ID_WITH_EMAIL);
-    }
-
-    @Test
-    public void resetPassword() {
-        PasswordReset passwordReset = new PasswordReset(DUMMY_PASSWORD, DUMMY_TOKEN,
-                TestConstants.TEST_STUDY_IDENTIFIER);
-        dao.resetPassword(passwordReset);
-        verify(mockAccountWorkflowService).resetPassword(passwordReset);
-    }
-
     @Test
     public void changePasswordSuccess() throws Exception {
         // mock hibernate
@@ -704,10 +670,11 @@ public class HibernateAccountDaoTest {
         // Study passed into createAccount() takes precedence over StudyId in the Account object. To test this, make
         // the account have a different study.
         GenericAccount account = makeValidGenericAccount();
+        account.setStatus(AccountStatus.ENABLED);
         account.setStudyId(new StudyIdentifierImpl("wrong-study"));
 
         // execute - We generate a new account ID.
-        String daoOutputAcountId = dao.createAccount(STUDY, account, false);
+        String daoOutputAcountId = dao.createAccount(STUDY, account);
         assertNotNull(daoOutputAcountId);
         assertNotEquals(ACCOUNT_ID, daoOutputAcountId);
 
@@ -723,32 +690,13 @@ public class HibernateAccountDaoTest {
         assertEquals(MOCK_NOW_MILLIS, createdHibernateAccount.getModifiedOn().longValue());
         assertEquals(MOCK_NOW_MILLIS, createdHibernateAccount.getPasswordModifiedOn().longValue());
         assertEquals(AccountStatus.ENABLED, createdHibernateAccount.getStatus());
-
-        // don't call sendEmailVerificationToken
-        verify(mockAccountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
-    }
-
-    @Test
-    public void createAccountVerifyEmail() {
-        // Most of this is tested in createAccountSuccess(). Just test email workflow.
-        String accountId = dao.createAccount(STUDY, makeValidGenericAccount(), true);
-        verify(mockAccountWorkflowService).sendEmailVerificationToken(STUDY, accountId, EMAIL);
-
-        // created account has account status unverified
-        ArgumentCaptor<HibernateAccount> createdHibernateAccountCaptor = ArgumentCaptor.forClass(
-                HibernateAccount.class);
-        verify(mockHibernateHelper).create(createdHibernateAccountCaptor.capture());
-
-        HibernateAccount createdHibernateAccount = createdHibernateAccountCaptor.getValue();
-        assertEquals(AccountStatus.UNVERIFIED, createdHibernateAccount.getStatus());
     }
 
     @Test
     public void createAccountForMigration() {
         // Most of this is tested in createAccountSuccess(). Just test that account ID is correctly propagated and that
         // email workflow is *not* called despite the flag.
-        dao.createAccountForMigration(STUDY, makeValidGenericAccount(), ACCOUNT_ID, true);
-        verify(mockAccountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+        dao.createAccountForMigration(STUDY, makeValidGenericAccount(), ACCOUNT_ID);
 
         // created account has correct account ID account status unverified
         ArgumentCaptor<HibernateAccount> createdHibernateAccountCaptor = ArgumentCaptor.forClass(
@@ -774,7 +722,7 @@ public class HibernateAccountDaoTest {
 
         // execute
         try {
-            dao.createAccount(STUDY, makeValidGenericAccount(), false);
+            dao.createAccount(STUDY, makeValidGenericAccount());
             fail("expected exception");
         } catch (EntityAlreadyExistsException ex) {
             assertEquals(otherAccountId, ex.getEntity().get("userId"));
@@ -789,7 +737,7 @@ public class HibernateAccountDaoTest {
         doThrow(ConcurrentModificationException.class).when(mockHibernateHelper).create(any());
 
         // execute
-        dao.createAccount(STUDY, makeValidGenericAccount(), false);
+        dao.createAccount(STUDY, makeValidGenericAccount());
     }
 
     @Test
@@ -809,7 +757,7 @@ public class HibernateAccountDaoTest {
             GenericAccount account = makeValidGenericAccount();
             account.setEmail(null);
             account.setPhone(TestConstants.PHONE);
-            dao.createAccount(STUDY, account, false);
+            dao.createAccount(STUDY, account);
             fail("expected exception");
         } catch (EntityAlreadyExistsException ex) {
             assertEquals(otherAccountId, ex.getEntity().get("userId"));
@@ -1547,6 +1495,7 @@ public class HibernateAccountDaoTest {
         genericAccount.setId(ACCOUNT_ID);
         genericAccount.setStudyId(TestConstants.TEST_STUDY);
         genericAccount.setEmail(EMAIL);
+        genericAccount.setStatus(AccountStatus.UNVERIFIED);
         return genericAccount;
     }
 
