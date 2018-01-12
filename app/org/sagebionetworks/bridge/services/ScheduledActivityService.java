@@ -295,7 +295,8 @@ public class ScheduledActivityService {
                 throw new BadRequestException(String.format("Task #%s has no GUID", i));
             }
             if (byteLength(schActivity.getClientData()) > CLIENT_DATA_MAX_BYTES) {
-                throw new BadRequestException("Client data too large ("+CLIENT_DATA_MAX_BYTES+" bytes limit)");
+                throw new BadRequestException("Client data too large ("+CLIENT_DATA_MAX_BYTES+" bytes limit) for task "
+                        + schActivity.getGuid());
             }
             // This isn't returned to the client, so the exact time zone used does not matter.
             ScheduledActivity dbActivity = activityDao.getActivity(DateTimeZone.UTC, healthCode, schActivity.getGuid(), true);
