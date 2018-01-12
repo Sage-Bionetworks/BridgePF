@@ -20,7 +20,7 @@ POST   /v3/auth/email                   @org.sagebionetworks.bridge.play.control
 POST   /v3/auth/email/signIn            @org.sagebionetworks.bridge.play.controllers.AuthenticationController.emailSignIn
 POST   /v3/auth/phone                   @org.sagebionetworks.bridge.play.controllers.AuthenticationController.requestPhoneSignIn
 POST   /v3/auth/phone/signIn            @org.sagebionetworks.bridge.play.controllers.AuthenticationController.phoneSignIn
-POST   /v4/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signInV4
+POST   /v4/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signIn
 
 # OAuth
 POST /v3/oauth/:vendorId    @org.sagebionetworks.bridge.play.controllers.OAuthController.requestAccessToken(vendorId: String)

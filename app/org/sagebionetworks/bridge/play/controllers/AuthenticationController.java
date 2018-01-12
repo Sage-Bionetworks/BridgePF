@@ -6,7 +6,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -94,8 +93,24 @@ public class AuthenticationController extends BaseController {
         return okResult(UserSessionInfo.toJSON(session));
     }
     
-    public Result signInV4() throws Exception {
-        return signInWithRetry(5);
+    public Result signIn() throws Exception {
+        UserSession session = getSessionIfItExists();
+        if (session == null) {
+            SignIn signIn = parseJson(request(), SignIn.class);
+            Study study = studyService.getStudy(signIn.getStudyId());
+            verifySupportedVersionOrThrowException(study);
+
+            CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+            
+            try {
+                session = authenticationService.signIn(study, context, signIn);
+            } catch(ConsentRequiredException e) {
+                setCookieAndRecordMetrics(e.getUserSession());
+                throw e;
+            }
+        }
+        setCookieAndRecordMetrics(session);
+        return okResult(UserSessionInfo.toJSON(session));
     }
 
     public Result reauthenticate() throws Exception {
@@ -115,9 +130,12 @@ public class AuthenticationController extends BaseController {
         return okResult(UserSessionInfo.toJSON(session));
     }
     
+    @Deprecated
     public Result signInV3() throws Exception {
+        // Email based sign in with throw UnauthorizedException if email-only sign in is disabled.
+        // This maintains backwards compatibility for older clients.
         try {
-            return signInV4();
+            return signIn();
         } catch(UnauthorizedException e) {
             throw new EntityNotFoundException(Account.class);
         }
@@ -177,39 +195,6 @@ public class AuthenticationController extends BaseController {
         getStudyOrThrowException(json);
         authenticationService.resetPassword(passwordReset);
         return okResult("Password has been changed.");
-    }
-
-    /**
-     * Retries sign-in on lock.
-     *
-     * @param retryCounter the number of retries, excluding the initial try
-     */
-    private Result signInWithRetry(int retryCounter) throws Exception {
-        UserSession session = getSessionIfItExists();
-        if (session == null) {
-            SignIn signIn = parseJson(request(), SignIn.class);
-            Study study = studyService.getStudy(signIn.getStudyId());
-            verifySupportedVersionOrThrowException(study);
-
-            CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
-            
-            try {
-                session = authenticationService.signIn(study, context, signIn);
-            } catch(ConsentRequiredException e) {
-                setCookieAndRecordMetrics(e.getUserSession());
-                throw e;
-            } catch(ConcurrentModificationException e) {
-                if (retryCounter > 0) {
-                    final long retryDelayInMillis = 200;
-                    Thread.sleep(retryDelayInMillis);
-                    return signInWithRetry(retryCounter - 1);
-                }
-                throw e;
-            }
-        }
-        setCookieAndRecordMetrics(session);
-
-        return okResult(UserSessionInfo.toJSON(session));
     }
 
     private void setCookieAndRecordMetrics(UserSession session) {
