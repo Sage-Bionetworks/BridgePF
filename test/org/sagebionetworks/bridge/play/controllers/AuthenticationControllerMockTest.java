@@ -796,7 +796,7 @@ public class AuthenticationControllerMockTest {
         
         when(authenticationService.signIn(any(), any(), any())).thenThrow(new UnauthorizedException());
         
-        controller.signInV4();
+        controller.signIn();
     }
     
     @Test
@@ -805,7 +805,7 @@ public class AuthenticationControllerMockTest {
         when(authenticationService.signIn(any(), any(), any())).thenThrow(new ConsentRequiredException(userSession));
         
         try {
-            controller.signInV4();
+            controller.signIn();
             fail("Should have thrown exeption");
         } catch(ConsentRequiredException e) {
         }
