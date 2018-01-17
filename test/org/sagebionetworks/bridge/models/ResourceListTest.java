@@ -34,6 +34,7 @@ public class ResourceListTest {
         assertEquals(4, node.size());
         assertEquals(3, node.get("total").intValue());
         assertEquals(13, node.get("requestParams").get("test").intValue());
+        assertEquals(ResourceList.REQUEST_PARAMS, node.get("requestParams").get(ResourceList.TYPE).textValue());
         assertEquals(3, node.get("items").size());
         assertEquals("ResourceList", node.get("type").asText());
         
@@ -45,6 +46,7 @@ public class ResourceListTest {
         // This is deserialized as an integer, not a long, that is a property of the library. Looks the same in JSON.
         assertEquals((Integer)13, (Integer)deser.getRequestParams().get("test"));
         assertEquals((Integer)3, deser.getTotal());
+        assertEquals(ResourceList.REQUEST_PARAMS, deser.getRequestParams().get(ResourceList.TYPE));
     }
     
     @Test
@@ -132,7 +134,8 @@ public class ResourceListTest {
         list.withRequestParam("", "a");
         list.withRequestParam("  ", "a");
         
-        assertEquals(0, list.getRequestParams().size());
+        assertEquals(1, list.getRequestParams().size());
+        assertEquals(ResourceList.REQUEST_PARAMS, list.getRequestParams().get(ResourceList.TYPE));
     }
 
     @Test
@@ -141,7 +144,8 @@ public class ResourceListTest {
         ResourceList<String> list = new ResourceList<>(items);
         list.withRequestParam("a valid key", null);
         
-        assertEquals(0, list.getRequestParams().size());
+        assertEquals(1, list.getRequestParams().size());
+        assertEquals(ResourceList.REQUEST_PARAMS, list.getRequestParams().get(ResourceList.TYPE));
     }
     
     private ResourceList<String> makeResourceList() {

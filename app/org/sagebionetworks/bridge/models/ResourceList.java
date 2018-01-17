@@ -36,6 +36,8 @@ public class ResourceList<T> {
     public static final String START_DATE = "startDate";
     public static final String START_TIME = "startTime";
     public static final String TOTAL = "total";
+    public static final String TYPE = "type";
+    public static final String REQUEST_PARAMS = "RequestParams";
     
     protected static final String ITEMS = "items";
     
@@ -46,6 +48,7 @@ public class ResourceList<T> {
     public ResourceList(@JsonProperty(ITEMS) List<T> items) {
         checkNotNull(items);
         this.items = items;
+        this.requestParams.put(TYPE, REQUEST_PARAMS);
     }
     public List<T> getItems() {
         return items;

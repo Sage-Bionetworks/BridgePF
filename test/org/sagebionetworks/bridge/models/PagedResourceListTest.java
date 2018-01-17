@@ -54,6 +54,7 @@ public class PagedResourceListTest {
         assertEquals(startTime.toString(), rp.get("startTime").asText());
         assertEquals(endTime.toString(), rp.get("endTime").asText());
         assertEquals("filterString", rp.get("emailFilter").asText());
+        assertEquals(ResourceList.REQUEST_PARAMS, rp.get(ResourceList.TYPE).textValue());
                 
         ArrayNode items = (ArrayNode)node.get("items");
         assertEquals(2, items.size());

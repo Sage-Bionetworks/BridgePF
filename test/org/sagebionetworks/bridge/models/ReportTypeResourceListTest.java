@@ -36,6 +36,7 @@ public class ReportTypeResourceListTest {
         assertEquals("participant", node.get("reportType").asText());
         assertEquals(2, node.get("items").size());
         assertEquals("participant", node.get("requestParams").get("reportType").asText());
+        assertEquals(ResourceList.REQUEST_PARAMS, node.get("requestParams").get(ResourceList.TYPE).textValue());
         assertEquals("ReportTypeResourceList", node.get("type").asText());
         assertEquals("foo", node.get("items").get(0).get("identifier").asText());
         assertFalse(node.get("items").get(0).get("public").asBoolean());
