@@ -12,6 +12,7 @@ import org.joda.time.LocalDate;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
 /**
@@ -36,16 +37,19 @@ public class ResourceList<T> {
     public static final String START_DATE = "startDate";
     public static final String START_TIME = "startTime";
     public static final String TOTAL = "total";
+    public static final String TYPE = "type";
+    public static final String REQUEST_PARAMS = "RequestParams";
     
     protected static final String ITEMS = "items";
     
     private final List<T> items;
-    private Map<String,Object> requestParams = new HashMap<>();
+    private final Map<String,Object> requestParams = new HashMap<>();
 
     @JsonCreator
     public ResourceList(@JsonProperty(ITEMS) List<T> items) {
         checkNotNull(items);
         this.items = items;
+        this.requestParams.put(TYPE, REQUEST_PARAMS);
     }
     public List<T> getItems() {
         return items;
@@ -54,6 +58,8 @@ public class ResourceList<T> {
         return ImmutableMap.copyOf(requestParams);
     }
     public ResourceList<T> withRequestParam(String key, Object value) {
+        Preconditions.checkArgument(!ResourceList.TYPE.equals(key), "Cannot set the key 'type' on request params map");
+        
         if (isNotBlank(key) && value != null) {
             if (value instanceof DateTime) {
                 // For DateTime, forcing toString() here rather than using Jackson's serialization mechanism, 

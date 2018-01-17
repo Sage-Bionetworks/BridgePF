@@ -30,6 +30,7 @@ public class DateRangeResourceListTest {
         assertEquals("2016-02-23", node.get("endDate").asText());
         assertEquals("2016-02-03", node.get("requestParams").get("startDate").asText());
         assertEquals("2016-02-23", node.get("requestParams").get("endDate").asText());
+        assertEquals(ResourceList.REQUEST_PARAMS, node.get("requestParams").get(ResourceList.TYPE).asText());
         assertEquals("DateRangeResourceList", node.get("type").asText());
         assertEquals(3, node.get("items").size());
         assertEquals("1", node.get("items").get(0).asText());
@@ -47,6 +48,7 @@ public class DateRangeResourceListTest {
         assertEquals("3", list.getItems().get(2));
         assertEquals("2016-02-03", list.getRequestParams().get("startDate"));
         assertEquals("2016-02-23", list.getRequestParams().get("endDate"));
+        assertEquals(ResourceList.REQUEST_PARAMS, list.getRequestParams().get(ResourceList.TYPE));
     }
     
     @SuppressWarnings("deprecation")

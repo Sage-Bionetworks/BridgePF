@@ -39,6 +39,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -1125,13 +1126,14 @@ public class HibernateAccountDaoTest {
                 EMAIL, PHONE.getNationalFormat(), startDate, endDate);
 
         Map<String, Object> paramsMap = accountSummaryResourceList.getRequestParams();
-        assertEquals(6, paramsMap.size());
+        assertEquals(7, paramsMap.size());
         assertEquals(5, paramsMap.get("pageSize"));
         assertEquals(10, paramsMap.get("offsetBy"));
         assertEquals(EMAIL, paramsMap.get("emailFilter"));
         assertEquals(PHONE.getNationalFormat(), paramsMap.get("phoneFilter"));
         assertEquals(startDate.toString(), paramsMap.get("startTime"));
         assertEquals(endDate.toString(), paramsMap.get("endTime"));
+        assertEquals(ResourceList.REQUEST_PARAMS, paramsMap.get(ResourceList.TYPE));
 
         String phoneString = PHONE.getNationalFormat().replaceAll("\\D*","");
 

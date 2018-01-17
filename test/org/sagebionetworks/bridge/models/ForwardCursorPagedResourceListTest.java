@@ -64,6 +64,7 @@ public class ForwardCursorPagedResourceListTest {
         assertEquals("filterString", rp.get("emailFilter").asText());
         assertEquals(100, rp.get("pageSize").intValue());
         assertEquals("offsetKey", rp.get("offsetKey").asText());
+        assertEquals(ResourceList.REQUEST_PARAMS, rp.get(ResourceList.TYPE).textValue());
         
         ArrayNode items = (ArrayNode)node.get("items");
         assertEquals(2, items.size());

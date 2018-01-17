@@ -38,6 +38,7 @@ public class DateTimeRangeResourceListTest {
         assertEquals(6, node.size());
         assertEquals("2016-02-03T10:10:10.000-08:00", node.get("requestParams").get("startTime").asText());
         assertEquals("2016-02-23T14:14:14.000-08:00", node.get("requestParams").get("endTime").asText());
+        assertEquals(ResourceList.REQUEST_PARAMS, node.get("requestParams").get(ResourceList.TYPE).asText());
         
         // We never deserialize this on the server side (only in the SDK).
     }
