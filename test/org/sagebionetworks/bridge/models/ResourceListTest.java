@@ -148,11 +148,12 @@ public class ResourceListTest {
         assertEquals(ResourceList.REQUEST_PARAMS, list.getRequestParams().get(ResourceList.TYPE));
     }
     
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void cannnotChanngeRequestParamsType() {
         List<String> items = Lists.newArrayList("A","B","C");
         ResourceList<String> list = new ResourceList<>(items);
         list.withRequestParam("type", "not the right type");
+        assertEquals(ResourceList.REQUEST_PARAMS, list.getRequestParams().get(ResourceList.TYPE));
     }
     
     private ResourceList<String> makeResourceList() {
