@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -61,6 +62,7 @@ import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
@@ -438,6 +440,7 @@ public class ParticipantControllerTest {
         
         doReturn(participant).when(mockParticipantService).getParticipant(study, ID, false);
         doReturn(new UserSession(participant)).when(authService).getSession(eq(study), any());
+        doReturn(participant).when(mockParticipantService).getParticipant(study, ID, true);
         
         String json = MAPPER.writeValueAsString(participant);
         mockPlayContextWithJson(json);
@@ -485,6 +488,7 @@ public class ParticipantControllerTest {
                 .withStatus(AccountStatus.DISABLED)
                 .withExternalId("POWERS").build();
         doReturn(participant).when(mockParticipantService).getParticipant(study, ID, false);
+        doReturn(participant).when(mockParticipantService).getParticipant(study, ID, true);
         
         mockPlayContextWithJson(createJson("{'externalId':'simpleStringChange',"+
                 "'sharingScope':'no_sharing',"+
@@ -517,6 +521,41 @@ public class ParticipantControllerTest {
     }
     
     @Test
+    public void updateSelfParticipantReturnsParticipantAsSaved() throws Exception {
+        StudyParticipant originalParticipant = new StudyParticipant.Builder()
+                .withId(ID)
+                .withPhone(TestConstants.PHONE)
+                .withEmail(EMAIL).build();
+        doReturn(originalParticipant).when(mockParticipantService).getParticipant(eq(study), eq(ID), anyBoolean());
+        doReturn(new UserSession(originalParticipant)).when(authService).getSession(eq(study), any());
+        
+        // Simulate the case where the service does not update the participant, as can now happen. These
+        // updates are NOT returned from the service, the original participant is, and *that's* what should
+        // be used in the return from this controller, not the participant as submitted.
+        Phone updatedPhone = new Phone("408-258-8569", "US");
+        StudyParticipant updatedParticipant = new StudyParticipant.Builder()
+                .copyOf(TestUtils.getStudyParticipant(ParticipantControllerTest.class))
+                .withPhone(updatedPhone)
+                .withEmail("updated@email.com").build();
+        
+        String json = MAPPER.writeValueAsString(updatedParticipant);
+        mockPlayContextWithJson(json);
+
+        Result result = controller.updateSelfParticipant();
+        
+        assertEquals(200, result.status());
+        JsonNode node = TestUtils.getJson(result);
+        assertEquals("UserSessionInfo", node.get("type").textValue());
+        assertEquals(TestConstants.PHONE.getNumber(), node.get("phone").get("number").textValue());
+        assertEquals(EMAIL, node.get("email").textValue());
+        
+        // Verify sessionUpdateService was called with the participant as returned from the service,
+        // not as submitted
+        verify(cacheProvider).setUserSession(sessionCaptor.capture());
+        assertEquals(originalParticipant, sessionCaptor.getValue().getParticipant());
+    }
+    
+    @Test
     public void requestResetPassword() throws Exception {
         Result result = controller.requestResetPassword(ID);
         assertResult(result, 200, "Request to reset password sent to user.");
@@ -539,7 +578,7 @@ public class ParticipantControllerTest {
         // All values should be copied over here.
         StudyParticipant participant = TestUtils.getStudyParticipant(ParticipantControllerTest.class);
         participant = new StudyParticipant.Builder().copyOf(participant).withId(ID).build();
-        doReturn(participant).when(mockParticipantService).getParticipant(study, ID, false);
+        doReturn(participant).when(mockParticipantService).getParticipant(eq(study), eq(ID), anyBoolean());
         
         // Now change to some other ID
         participant = new StudyParticipant.Builder().copyOf(participant).withId("someOtherId").build();

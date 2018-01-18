@@ -10,12 +10,12 @@ import javax.persistence.PersistenceException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
-import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
+import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 
 /** Encapsulates common scenarios for using Hibernate to make it easier to use. */
 @Component
@@ -38,7 +38,7 @@ public class HibernateHelper {
         } catch (PersistenceException ex) {
             // If you try to create a row that already exists, Hibernate will throw a PersistenceException wrapped in a
             // ConstraintViolationException.
-            if (ex.getCause() instanceof ConstraintViolationException) {
+            if (ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
                 throw new ConcurrentModificationException(
                         "Attempting to write a new row that violates key constraints");
             } else {
@@ -113,8 +113,15 @@ public class HibernateHelper {
                 return null;
             });
         } catch (OptimisticLockException ex) {
-            throw new ConcurrentModificationException("Row has the wrong version number; it may have been saved in " +
-                    "the background.");
+            throw new ConcurrentModificationException("Row has the wrong version number; it may have " + 
+                    "been saved in the background.");
+        } catch (PersistenceException ex) {
+            if (ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
+                throw new ConstraintViolationException.Builder()
+                        .withMessage("Email or phone number conflicts with an existing account.").build();
+            } else {
+                throw ex;
+            }
         }
     }
 

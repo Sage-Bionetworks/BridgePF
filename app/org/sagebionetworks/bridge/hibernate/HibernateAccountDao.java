@@ -314,16 +314,14 @@ public class HibernateAccountDao implements AccountDao {
         String accountId = account.getId();
         HibernateAccount accountToUpdate = marshallAccount(account);
 
-        // Can't change study, email, phone, emailVerified, phoneVerified, createdOn, or passwordModifiedOn.
+        // The account being persisted should be a modified copy of a persisted account object. We retrieve a 
+        // Hibernate version of the account object to copy some fields not in the Account interface.
         HibernateAccount persistedAccount = hibernateHelper.getById(HibernateAccount.class, accountId);
         if (persistedAccount == null) {
             throw new EntityNotFoundException(Account.class, "Account " + accountId + " not found");
         }
+        // set invariants using setters exposed in the Account interface.
         accountToUpdate.setStudyId(persistedAccount.getStudyId());
-        accountToUpdate.setEmail(persistedAccount.getEmail());
-        accountToUpdate.setPhone(persistedAccount.getPhone());
-        accountToUpdate.setEmailVerified(persistedAccount.getEmailVerified());
-        accountToUpdate.setPhoneVerified(persistedAccount.getPhoneVerified());
         accountToUpdate.setCreatedOn(persistedAccount.getCreatedOn());
         accountToUpdate.setPasswordModifiedOn(persistedAccount.getPasswordModifiedOn());
 

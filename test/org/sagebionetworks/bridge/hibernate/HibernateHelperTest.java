@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
-import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.query.Query;
 import org.junit.Before;
 import org.junit.Test;
@@ -61,7 +60,7 @@ public class HibernateHelperTest {
     public void createConcurrentModificationException() {
         // mock session to throw - Need to mock the ConstraintViolationException, because the exception itself is
         // pretty heavy-weight.
-        PersistenceException ex = new PersistenceException(mock(ConstraintViolationException.class));
+        PersistenceException ex = new PersistenceException(mock(org.hibernate.exception.ConstraintViolationException.class));
         when(mockSession.save(any())).thenThrow(ex);
 
         // setup and execute
@@ -178,6 +177,27 @@ public class HibernateHelperTest {
         // handling tests, we're going to have the update() throw.
         Object testObj = new Object();
         doThrow(OptimisticLockException.class).when(mockSession).update(testObj);
+        helper.update(testObj);
+    }
+    
+    @Test(expected = PersistenceException.class)
+    public void updateWithPersistenceException() {
+        PersistenceException pe = new PersistenceException();
+        
+        Object testObj = new Object();
+        doThrow(pe).when(mockSession).update(testObj);
+        helper.update(testObj);
+    }
+    
+    @Test(expected = org.sagebionetworks.bridge.exceptions.ConstraintViolationException.class)
+    public void updateConcurrentModificationException() {
+        // mock session to throw - Need to mock the ConstraintViolationException, because the exception itself is
+        // pretty heavy-weight.
+        PersistenceException ex = new PersistenceException(mock(org.hibernate.exception.ConstraintViolationException.class));
+        doThrow(ex).when(mockSession).update(any());
+
+        // setup and execute
+        Object testObj = new Object();
         helper.update(testObj);
     }
 

@@ -6,6 +6,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
@@ -80,6 +82,7 @@ import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -90,6 +93,7 @@ public class ParticipantServiceTest {
     private static final Set<String> STUDY_DATA_GROUPS = BridgeUtils.commaListToOrderedSet("group1,group2");
     private static final long CONSENT_PUBLICATION_DATE = DateTime.now().getMillis();
     private static final Phone PHONE = TestConstants.PHONE;
+    private static final Phone OTHER_PHONE = new Phone("4082588569", "US");
     private static final Study STUDY = new DynamoStudy();
     static {
         STUDY.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
@@ -230,14 +234,19 @@ public class ParticipantServiceTest {
         participantService.setAccountWorkflowService(accountWorkflowService);
     }
     
-    private void mockHealthCodeAndAccountRetrieval() {
+    private void mockHealthCodeAndAccountRetrieval(String email, Phone phone) {
         when(account.getId()).thenReturn(ID);
-        when(accountDao.constructAccount(STUDY, EMAIL, PHONE, PASSWORD)).thenReturn(account);
+        when(accountDao.constructAccount(eq(STUDY), any(), any(), eq(PASSWORD))).thenReturn(account);
         when(accountDao.createAccount(same(STUDY), same(account))).thenReturn(ID);
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
         when(account.getHealthCode()).thenReturn(HEALTH_CODE);
-        when(account.getEmail()).thenReturn(EMAIL);
+        when(account.getEmail()).thenReturn(email);
+        when(account.getPhone()).thenReturn(phone);
         when(optionsService.getOptions(HEALTH_CODE)).thenReturn(lookup);
+    }
+    
+    private void mockHealthCodeAndAccountRetrieval() {
+        mockHealthCodeAndAccountRetrieval(EMAIL, PHONE);
     }
     
     @Test
@@ -276,11 +285,10 @@ public class ParticipantServiceTest {
         verify(account).setAttribute("can_be_recontacted", "true");
         verify(account).setRoles(USER_ROLES);
         verify(account).setClientData(TestUtils.getClientData());
-        // Not called on create
-        verify(account, never()).setStatus(AccountStatus.DISABLED);
+        verify(account).setStatus(AccountStatus.UNVERIFIED);
         
         // don't update cache
-        verify(cacheProvider, never()).removeSessionByUserId(ID);
+        verify(cacheProvider, never()).removeSessionByUserId(anyString());
     }
     
     // Or any other failure to reserve an externalId
@@ -340,6 +348,7 @@ public class ParticipantServiceTest {
         
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         verify(account).setStatus(AccountStatus.ENABLED);
+        verify(account).setEmailVerified(Boolean.TRUE);
     }
     
     @Test
@@ -351,6 +360,7 @@ public class ParticipantServiceTest {
         
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         verify(account).setStatus(AccountStatus.ENABLED);
+        verify(account).setEmailVerified(Boolean.TRUE);
     }
     
     @Test
@@ -362,6 +372,7 @@ public class ParticipantServiceTest {
         
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         verify(account).setStatus(AccountStatus.ENABLED);
+        verify(account).setEmailVerified(Boolean.TRUE);
     }
     
     @Test
@@ -373,6 +384,41 @@ public class ParticipantServiceTest {
         
         verify(accountWorkflowService).sendEmailVerificationToken(any(), any(), any());
         verify(account).setStatus(AccountStatus.UNVERIFIED);
+        verify(account).setEmailVerified(Boolean.FALSE);
+    }
+    
+    @Test
+    public void createParticipantWithPhoneEmailEnabledVerificationWanted() {
+        STUDY.setEmailVerificationEnabled(true);
+        mockHealthCodeAndAccountRetrieval(null, null);
+
+        StudyParticipant phoneOnly = new StudyParticipant.Builder()
+                .copyOf(PARTICIPANT).withEmail(null).build();
+        
+        participantService.createParticipant(STUDY, CALLER_ROLES, phoneOnly, true);
+        
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+        // The account will not be verified.
+        verify(account).setStatus(AccountStatus.UNVERIFIED);
+        verify(account).setPhone(PHONE);
+        verify(account).setPhoneVerified(Boolean.FALSE);
+    }
+    
+    @Test
+    public void createParticipantWithPhoneEmailEnabledVerificationNotWanted() {
+        STUDY.setEmailVerificationEnabled(true);
+        mockHealthCodeAndAccountRetrieval(null, null);
+
+        StudyParticipant phoneOnly = new StudyParticipant.Builder()
+                .copyOf(PARTICIPANT).withEmail(null).build();
+        
+        participantService.createParticipant(STUDY, CALLER_ROLES, phoneOnly, false);
+        
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+        // The account will not be verified.
+        verify(account).setStatus(AccountStatus.ENABLED);
+        verify(account).setPhone(PHONE);
+        verify(account).setPhoneVerified(Boolean.FALSE);
     }
     
     @Test
@@ -588,6 +634,20 @@ public class ParticipantServiceTest {
     }
     
     @Test
+    public void updateParticipantNoEmailOrPhoneChange() {
+        mockHealthCodeAndAccountRetrieval(); // Account will have same phone/email as participant
+        
+        participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
+        
+        // And so consequently, none of these are changed.
+        verify(account, never()).setEmail(anyString());
+        verify(account, never()).setEmailVerified(anyBoolean());
+        verify(account, never()).setPhone(any());
+        verify(account, never()).setPhoneVerified(anyBoolean());
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+    }
+    
+    @Test
     public void userCannotChangeStatus() {
         verifyStatusUpdate(EnumSet.noneOf(Roles.class), false);
     }
@@ -626,6 +686,127 @@ public class ParticipantServiceTest {
         verify(account, never()).setStatus(any());
     }
 
+    @Test
+    public void updateParticipantEmailCannotBeChanged() {
+        STUDY.setEmailVerificationEnabled(true);
+        mockHealthCodeAndAccountRetrieval("persisted@email.com", null);
+        when(account.getEmailVerified()).thenReturn(Boolean.TRUE);
+        
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withEmail("updated@email.com").withEmailVerified(Boolean.FALSE).build();
+        
+        participantService.updateParticipant(STUDY, ImmutableSet.of(), participant);
+        
+        verify(accountDao).updateAccount(accountCaptor.capture());
+        Account account = accountCaptor.getValue();
+        verify(account, never()).setEmail(anyString());
+        verify(account, never()).setEmailVerified(anyBoolean());
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(eq(STUDY), eq(ID), anyString());
+    }
+
+    @Test
+    public void updateParticipantEmailCanBeAddedWithVerification() {
+        STUDY.setEmailVerificationEnabled(true);
+        mockHealthCodeAndAccountRetrieval(null, PHONE);
+        
+        // Set emailVerified = true to test that this is always set to false, regardless of submitted object
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT).withEmail("updated@email.com")
+                .withEmailVerified(Boolean.TRUE).withEmailVerified(Boolean.FALSE).build();
+        
+        participantService.updateParticipant(STUDY, ImmutableSet.of(), participant);
+        
+        verify(accountDao).updateAccount(accountCaptor.capture());
+        Account account = accountCaptor.getValue();
+        verify(account).setEmail("updated@email.com");
+        verify(account).setEmailVerified(Boolean.FALSE);
+        verify(accountWorkflowService).sendEmailVerificationToken(STUDY, ID, "updated@email.com");
+    }
+
+    @Test
+    public void updateParticipantEmailCanBeAddedNoVerification() {
+        STUDY.setEmailVerificationEnabled(false);
+        mockHealthCodeAndAccountRetrieval(null, PHONE);
+        
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT).withEmail("updated@email.com")
+                .withEmailVerified(Boolean.TRUE).withEmailVerified(Boolean.TRUE).build();
+        
+        participantService.updateParticipant(STUDY, ImmutableSet.of(), participant);
+        
+        verify(accountDao).updateAccount(accountCaptor.capture());
+        Account account = accountCaptor.getValue();
+        verify(account).setEmail("updated@email.com");
+        verify(account).setEmailVerified(Boolean.FALSE);
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(eq(STUDY), eq(ID), anyString());
+    }
+    
+    @Test
+    public void updateParticipantEmailCannotBeDeleted() {
+        STUDY.setEmailVerificationEnabled(true);
+        mockHealthCodeAndAccountRetrieval(EMAIL, null);
+        
+        StudyParticipant noEmail = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withEmail(null).build();
+        
+        participantService.updateParticipant(STUDY, ImmutableSet.of(), noEmail);
+        
+        // You can't delete email, so we are going to completely ignore it
+        verify(accountDao).updateAccount(accountCaptor.capture());
+        Account account = accountCaptor.getValue();
+        verify(account, never()).setEmail(anyString());
+        verify(account, never()).setEmailVerified(anyBoolean());
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(eq(STUDY), eq(ID), anyString());
+    }
+    
+    @Test
+    public void updateParticipantPhoneCannotBeChanged() {
+        mockHealthCodeAndAccountRetrieval(EMAIL, PHONE);
+        when(account.getPhoneVerified()).thenReturn(Boolean.TRUE);
+        
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withPhone(OTHER_PHONE).withEmailVerified(Boolean.FALSE).build();
+        
+        participantService.updateParticipant(STUDY, ImmutableSet.of(), participant);
+        
+        verify(accountDao).updateAccount(accountCaptor.capture());
+        Account account = accountCaptor.getValue();
+        verify(account, never()).setPhone(any());
+        verify(account, never()).setPhoneVerified(anyBoolean());
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(eq(STUDY), eq(ID), anyString());
+    }
+
+    @Test
+    public void updateParticipantPhoneCanBeAdded() {
+        mockHealthCodeAndAccountRetrieval(EMAIL, null);
+        
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withPhone(OTHER_PHONE).build();
+        
+        participantService.updateParticipant(STUDY, ImmutableSet.of(), participant);
+        
+        verify(accountDao).updateAccount(accountCaptor.capture());
+        Account account = accountCaptor.getValue();
+        verify(account).setPhone(OTHER_PHONE);
+        verify(account).setPhoneVerified(Boolean.FALSE);
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(eq(STUDY), eq(ID), anyString());
+    }
+
+    @Test
+    public void updateParticipantPhoneCannotBeDeleted() {
+        mockHealthCodeAndAccountRetrieval(EMAIL, PHONE);
+        
+        StudyParticipant noPhone = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withPhone(null).build();
+        
+        participantService.updateParticipant(STUDY, ImmutableSet.of(), noPhone);
+        
+        // You can't delete email, so we are going to completely ignore it
+        verify(accountDao).updateAccount(accountCaptor.capture());
+        Account account = accountCaptor.getValue();
+        verify(account, never()).setPhone(any());
+        verify(account, never()).setPhoneVerified(anyBoolean());
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(eq(STUDY), eq(ID), anyString());
+    }
+    
     @Test
     public void userCannotCreateAnyRoles() {
         verifyRoleCreate(Sets.newHashSet(), null);

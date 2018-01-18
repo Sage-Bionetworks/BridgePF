@@ -486,8 +486,7 @@ public class AuthenticationServiceMockTest {
     
     @Test(expected = InvalidEntityException.class)
     public void requestResetInvalid() throws Exception {
-        SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID).withPhone(TestConstants.PHONE)
-                .withEmail(RECIPIENT_EMAIL).build();
+        SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID).build();
         service.requestResetPassword(study, signIn);
     }
     

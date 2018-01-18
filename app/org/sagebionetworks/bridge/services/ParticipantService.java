@@ -269,15 +269,26 @@ public class ParticipantService {
         updateAccountOptionsAndRoles(study, callerRoles, options, account, participant);
         
         boolean sendVerifyEmail = requestSendVerifyEmail && study.isEmailVerificationEnabled();
-        
-        account.setStatus(sendVerifyEmail ? AccountStatus.UNVERIFIED : AccountStatus.ENABLED);
+        if (sendVerifyEmail) {
+            account.setStatus(AccountStatus.UNVERIFIED);
+            account.setEmailVerified(Boolean.FALSE);
+        } else {
+            account.setStatus(AccountStatus.ENABLED);
+            if (account.getEmail() != null) {
+                account.setEmailVerified(Boolean.TRUE);
+            }
+            // If phone + password account, you will have to verify the number by signing in with it 
+            // before you can do things like requesting a password reset. See BRIDGE-2061.
+        }
         
         String accountId = accountDao.createAccount(study, account);
 
         externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());
         optionsService.setAllOptions(study.getStudyIdentifier(), account.getHealthCode(), options);
-        // send verify email
-        if (sendVerifyEmail) {
+        // send verify email. However even if that's desirable, don't try it if the account used a 
+        // phone number instead. The account is UNVERIFIED until the account signs in successfully with 
+        // a phone.
+        if (sendVerifyEmail && participant.getEmail() != null) {
             accountWorkflowService.sendEmailVerificationToken(study, accountId, account.getEmail());
         }
         return new IdentifierHolder(accountId);
@@ -291,6 +302,9 @@ public class ParticipantService {
         Validate.entityThrowingException(new StudyParticipantValidator(study, false), participant);
         
         Account account = getAccountThrowingException(study, participant.getId());
+        
+        boolean sendVerificationEmail = (account.getEmail() == null && participant.getEmail() != null);
+        
         Map<ParticipantOption, String> options = Maps.newHashMap();
 
         // Do this first because if the ID has been taken or is invalid, we do not want to update anything else.
@@ -308,6 +322,10 @@ public class ParticipantService {
         }
         accountDao.updateAccount(account);
         optionsService.setAllOptions(study.getStudyIdentifier(), account.getHealthCode(), options);
+        
+        if (study.isEmailVerificationEnabled() && sendVerificationEmail) {
+            accountWorkflowService.sendEmailVerificationToken(study, account.getId(), participant.getEmail());
+        }
     }
 
     private void throwExceptionIfLimitMetOrExceeded(Study study) {
@@ -331,6 +349,17 @@ public class ParticipantService {
         account.setFirstName(participant.getFirstName());
         account.setLastName(participant.getLastName());
         account.setClientData(participant.getClientData());
+        // If the existing value has not been set and a value is being provided, then set it, but otherwise,
+        // we do not update the fields.
+        if (account.getEmail() == null && participant.getEmail() != null) {
+            account.setEmail(participant.getEmail());
+            account.setEmailVerified(Boolean.FALSE);
+        }
+        if (account.getPhone() == null && participant.getPhone() != null) {
+            account.setPhone(participant.getPhone());
+            account.setPhoneVerified(Boolean.FALSE);
+        }
+
         for (String attribute : study.getUserProfileAttributes()) {
             String value = participant.getAttributes().get(attribute);
             account.setAttribute(attribute, value);

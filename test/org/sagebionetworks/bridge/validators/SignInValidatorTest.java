@@ -77,9 +77,10 @@ public class SignInValidatorTest {
         Validate.entityThrowingException(SignInValidator.PASSWORD_SIGNIN, signIn);
     }
     @Test
-    public void passwordSignInWithEmailAndPhoneInvalid() {
-        SignIn signIn = new SignIn.Builder().withEmail(EMAIL).withPhone(TestConstants.PHONE).build();
-        assertValidatorMessage(SignInValidator.PASSWORD_SIGNIN, signIn, "SignIn", "email or phone is required, but not both");
+    public void passwordSignInWithEmailAndPhoneOK() {
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).withEmail(EMAIL)
+                .withPhone(TestConstants.PHONE).withPassword(PASSWORD).build();
+        Validate.entityThrowingException(SignInValidator.PASSWORD_SIGNIN, signIn);
     }
     @Test
     public void passwordSignInWithInvalidPhoneInvalid() {
@@ -103,9 +104,10 @@ public class SignInValidatorTest {
         Validate.entityThrowingException(SignInValidator.REAUTH_SIGNIN, signIn);
     }
     @Test
-    public void reauthWithEmailAndPhoneInvalid() {
-        SignIn signIn = new SignIn.Builder().withEmail(EMAIL).withPhone(TestConstants.PHONE).build();
-        assertValidatorMessage(SignInValidator.REAUTH_SIGNIN, signIn, "SignIn", "email or phone is required, but not both");
+    public void reauthWithEmailAndPhoneOK() {
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).withReauthToken(REAUTH_TOKEN)
+                .withEmail(EMAIL).withPhone(TestConstants.PHONE).build();
+        Validate.entityThrowingException(SignInValidator.REAUTH_SIGNIN, signIn);
     }
     @Test
     public void reauthWithInvalidPhoneInvalid() {

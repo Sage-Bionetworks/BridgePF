@@ -9,7 +9,6 @@ import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFiel
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.REAUTH;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.EnumSet;
 
@@ -79,8 +78,6 @@ public class SignInValidator implements Validator {
         if (requiredFields.contains(EMAIL_OR_PHONE)) {
             if (isBlank(signIn.getEmail()) && signIn.getPhone() == null) {
                 errors.reject("email or phone is required");
-            } else if (isNotBlank(signIn.getEmail()) && signIn.getPhone() != null) {
-                errors.reject("email or phone is required, but not both");
             }
             if (signIn.getPhone() != null && !Phone.isValid(signIn.getPhone())) {
                 errors.rejectValue("phone", "does not appear to be a phone number");

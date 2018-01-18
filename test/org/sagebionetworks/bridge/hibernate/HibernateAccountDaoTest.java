@@ -777,7 +777,7 @@ public class HibernateAccountDaoTest {
         persistedAccount.setPasswordModifiedOn(5678L);
         persistedAccount.setPhone(PHONE);
         persistedAccount.setEmailVerified(Boolean.TRUE);
-        persistedAccount.setPhoneVerified(Boolean.TRUE);
+        persistedAccount.setPhoneVerified(Boolean.TRUE);        
 
         // Set a dummy modifiedOn to make sure we're overwriting it.
         persistedAccount.setModifiedOn(5678L);
@@ -798,13 +798,16 @@ public class HibernateAccountDaoTest {
         verify(mockHibernateHelper).update(updatedHibernateAccountCaptor.capture());
 
         HibernateAccount updatedHibernateAccount = updatedHibernateAccountCaptor.getValue();
+        
+        // Some fields now change, verify this
+        assertEquals(EMAIL, updatedHibernateAccount.getEmail());
+        assertEquals(OTHER_PHONE, updatedHibernateAccount.getPhone());
+        assertEquals(Boolean.FALSE, updatedHibernateAccount.getEmailVerified());
+        assertEquals(Boolean.FALSE, updatedHibernateAccount.getPhoneVerified());
+        
+        // Other fields cannot be changed, verify
         assertEquals(ACCOUNT_ID, updatedHibernateAccount.getId());
         assertEquals("persisted-study", updatedHibernateAccount.getStudyId());
-        assertEquals("persisted@example.com", updatedHibernateAccount.getEmail());
-        assertEquals(PHONE.getNationalFormat(),
-                updatedHibernateAccount.getPhone().getNationalFormat());
-        assertEquals(Boolean.TRUE, updatedHibernateAccount.getEmailVerified());
-        assertEquals(Boolean.TRUE, updatedHibernateAccount.getPhoneVerified());
         assertEquals(1234, updatedHibernateAccount.getCreatedOn().longValue());
         assertEquals(5678, updatedHibernateAccount.getPasswordModifiedOn().longValue());
         assertEquals(MOCK_NOW_MILLIS, updatedHibernateAccount.getModifiedOn().longValue());
