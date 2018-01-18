@@ -58,9 +58,7 @@ public class ResourceList<T> {
         return ImmutableMap.copyOf(requestParams);
     }
     public ResourceList<T> withRequestParam(String key, Object value) {
-        Preconditions.checkArgument(!ResourceList.TYPE.equals(key), "Cannot set the key 'type' on request params map");
-        
-        if (isNotBlank(key) && value != null) {
+        if (!ResourceList.TYPE.equals(key) && isNotBlank(key) && value != null) {
             if (value instanceof DateTime) {
                 // For DateTime, forcing toString() here rather than using Jackson's serialization mechanism, 
                 // ensures the string is in the timezone supplied by the user.
