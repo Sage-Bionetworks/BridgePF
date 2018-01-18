@@ -316,7 +316,7 @@ public class UploadService {
         
         ForwardCursorPagedResourceList<UploadView> page = new ForwardCursorPagedResourceList<>(views, list.getNextPageOffsetKey());
         for (Map.Entry<String,Object> entry : list.getRequestParams().entrySet()) {
-            page.withRequestParam(entry.getKey(), entry.getValue());    
+            page.withRequestParam(entry.getKey(), entry.getValue());
         }
         return page;
     }
