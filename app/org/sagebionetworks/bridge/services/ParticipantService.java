@@ -269,9 +269,16 @@ public class ParticipantService {
         updateAccountOptionsAndRoles(study, callerRoles, options, account, participant);
         
         boolean sendVerifyEmail = requestSendVerifyEmail && study.isEmailVerificationEnabled();
-        
-        account.setStatus(sendVerifyEmail ? AccountStatus.UNVERIFIED : AccountStatus.ENABLED);
-        
+
+        if (sendVerifyEmail) {
+            account.setStatus(AccountStatus.UNVERIFIED);
+        } else {
+            account.setStatus(AccountStatus.ENABLED);
+            if (participant.getEmail() != null) {
+                account.setEmailVerified(true);
+            }
+        }
+
         String accountId = accountDao.createAccount(study, account);
 
         externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());

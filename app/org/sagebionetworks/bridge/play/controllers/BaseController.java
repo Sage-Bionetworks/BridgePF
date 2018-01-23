@@ -381,9 +381,13 @@ public abstract class BaseController extends Controller {
      * Retrieves the metrics object from the cache. Can be null if the metrics is not in the cache.
      */
     Metrics getMetrics() {
-        final String requestId = RequestUtils.getRequestId(request());
-        final String cacheKey = Metrics.getCacheKey(requestId);
+        final String cacheKey = Metrics.getCacheKey(getRequestId());
         return (Metrics)Cache.get(cacheKey);
+    }
+
+    /** Helper method which abstracts away getting the request ID from the request. */
+    protected String getRequestId() {
+        return RequestUtils.getRequestId(request());
     }
 
     /** Writes the user's account ID, internal session ID, and study ID to the metrics. */

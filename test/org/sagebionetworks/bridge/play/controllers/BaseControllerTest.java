@@ -21,6 +21,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableMap;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
@@ -719,7 +720,14 @@ public class BaseControllerTest {
         assertEquals(UPLOADED_ON.withZone(MSK), info.getUploadedOn());
         assertEquals(SIGNED_IN_ON.withZone(MSK), info.getSignedInOn());
     }
-    
+
+    @Test
+    public void testGetRequestId() throws Exception {
+        mockHeader(BridgeConstants.X_REQUEST_ID_HEADER, "dummy-request-id");
+        BaseController controller = new SchedulePlanController();
+        assertEquals("dummy-request-id", controller.getRequestId());
+    }
+
     private BaseController setupForSessionTest(UserSession session) {
         BaseController controller = spy(new SchedulePlanController());
         doReturn(session).when(controller).getSessionIfItExists();
@@ -739,6 +747,7 @@ public class BaseControllerTest {
     private void mockHeader(String header, String value) throws Exception {
         Http.Request mockRequest = mock(Http.Request.class);
         when(mockRequest.getHeader(header)).thenReturn(value);
+        when(mockRequest.headers()).thenReturn(ImmutableMap.of(header, new String[] { value }));
         mockPlayContext(mockRequest);
     }
 
