@@ -5,10 +5,11 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import org.joda.time.LocalDate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
-import play.mvc.BodyParser;
 import play.mvc.Result;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -21,6 +22,8 @@ import org.sagebionetworks.bridge.services.UserDataDownloadService;
 /** Play controller for User Data Download requests. */
 @Controller
 public class UserDataDownloadController extends BaseController {
+    private static final Logger LOG = LoggerFactory.getLogger(UserDataDownloadController.class);
+
     private UserDataDownloadService userDataDownloadService;
 
     /** Service handler for User Data Download requests. */
@@ -33,7 +36,6 @@ public class UserDataDownloadController extends BaseController {
      * Play handler for requesting user data. User must be authenticated and consented. (Otherwise, they couldn't have
      * any data to download to begin with.)
      */
-    @BodyParser.Of(BodyParser.Empty.class)
     public Result requestUserData(String startDate, String endDate) throws JsonProcessingException {
         UserSession session = getAuthenticatedAndConsentedSession();
         StudyIdentifier studyIdentifier = session.getStudyIdentifier();
@@ -46,6 +48,7 @@ public class UserDataDownloadController extends BaseController {
         
         DateRange dateRange;
         if (isNotBlank(startDate) && isNotBlank(endDate)) {
+            LOG.warn("Deprecated UDD query param API called from request " + getRequestId());
             dateRange = new DateRange(LocalDate.parse(startDate), LocalDate.parse(endDate));
         } else {
             dateRange = parseJson(request(), DateRange.class);    

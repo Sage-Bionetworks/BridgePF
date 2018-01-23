@@ -232,7 +232,7 @@ public class ParticipantServiceTest {
     
     private void mockHealthCodeAndAccountRetrieval() {
         when(account.getId()).thenReturn(ID);
-        when(accountDao.constructAccount(STUDY, EMAIL, PHONE, PASSWORD)).thenReturn(account);
+        when(accountDao.constructAccount(any(), any(), any(), any())).thenReturn(account);
         when(accountDao.createAccount(same(STUDY), same(account))).thenReturn(ID);
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
         when(account.getHealthCode()).thenReturn(HEALTH_CODE);
@@ -276,9 +276,9 @@ public class ParticipantServiceTest {
         verify(account).setAttribute("can_be_recontacted", "true");
         verify(account).setRoles(USER_ROLES);
         verify(account).setClientData(TestUtils.getClientData());
-        // Not called on create
-        verify(account, never()).setStatus(AccountStatus.DISABLED);
-        
+        verify(account).setStatus(AccountStatus.UNVERIFIED);
+        verify(account, never()).setEmailVerified(any());
+
         // don't update cache
         verify(cacheProvider, never()).removeSessionByUserId(ID);
     }
@@ -340,6 +340,7 @@ public class ParticipantServiceTest {
         
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         verify(account).setStatus(AccountStatus.ENABLED);
+        verify(account).setEmailVerified(true);
     }
     
     @Test
@@ -351,6 +352,7 @@ public class ParticipantServiceTest {
         
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         verify(account).setStatus(AccountStatus.ENABLED);
+        verify(account).setEmailVerified(true);
     }
     
     @Test
@@ -362,6 +364,7 @@ public class ParticipantServiceTest {
         
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         verify(account).setStatus(AccountStatus.ENABLED);
+        verify(account).setEmailVerified(true);
     }
     
     @Test
@@ -373,8 +376,23 @@ public class ParticipantServiceTest {
         
         verify(accountWorkflowService).sendEmailVerificationToken(any(), any(), any());
         verify(account).setStatus(AccountStatus.UNVERIFIED);
+        verify(account, never()).setEmailVerified(any());
     }
-    
+
+    @Test
+    public void createParticipantPhoneNoEmailVerificationWanted() {
+        STUDY.setEmailVerificationEnabled(true);
+        mockHealthCodeAndAccountRetrieval();
+
+        // Make minimal phone participant.
+        StudyParticipant phoneParticipant = new StudyParticipant.Builder().withPhone(PHONE).build();
+        participantService.createParticipant(STUDY, CALLER_ROLES, phoneParticipant, false);
+
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+        verify(account).setStatus(AccountStatus.ENABLED);
+        verify(account, never()).setEmailVerified(any());
+    }
+
     @Test
     public void getPagedAccountSummaries() {
         participantService.getPagedAccountSummaries(STUDY, 1100, 50, "foo", "bar", START_DATE, END_DATE);

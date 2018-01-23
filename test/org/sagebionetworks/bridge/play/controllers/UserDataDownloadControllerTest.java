@@ -27,6 +27,8 @@ import org.sagebionetworks.bridge.services.UserDataDownloadService;
 
 @RunWith(MockitoJUnitRunner.class)
 public class UserDataDownloadControllerTest {
+    private static final String START_DATE = "2015-08-15";
+    private static final String END_DATE = "2015-08-19";
     private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("test-study");
     private static final String USER_ID = "test-user-id";
     private static final String EMAIL = "email@email.com";
@@ -47,22 +49,16 @@ public class UserDataDownloadControllerTest {
     public void before() throws Exception {
         controller.setUserDataDownloadService(mockService);
         doReturn(mockSession).when(controller).getAuthenticatedAndConsentedSession();
+        doReturn("dummy-request-id").when(controller).getRequestId();
+        doReturn(STUDY_ID).when(mockSession).getStudyIdentifier();
     }
     
     @Test
     public void test() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withEmail(EMAIL)
                 .withEmailVerified(Boolean.TRUE).build();
-        doReturn(STUDY_ID).when(mockSession).getStudyIdentifier();
         doReturn(participant).when(mockSession).getParticipant();
-        
-        // test strategy is to make sure args get pulled from the controller context and passed into the inner service
-        // mock request JSON
-        String dateRangeJsonText = "{\n" +
-                "   \"startDate\":\"2015-08-15\",\n" +
-                "   \"endDate\":\"2015-08-19\"\n" +
-                "}";
-        TestUtils.mockPlayContextWithJson(dateRangeJsonText);
+        mockWithJson();
 
         // execute and validate
         Result result = controller.requestUserData(null, null);
@@ -80,7 +76,6 @@ public class UserDataDownloadControllerTest {
     public void testQueryParameters() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withEmail(EMAIL)
                 .withEmailVerified(Boolean.TRUE).build();
-        doReturn(STUDY_ID).when(mockSession).getStudyIdentifier();
         doReturn(participant).when(mockSession).getParticipant();
         
         Result result = controller.requestUserData("2015-08-15", "2015-08-19");
@@ -97,19 +92,28 @@ public class UserDataDownloadControllerTest {
     @Test(expected = BadRequestException.class)
     public void throwExceptionIfAccountHasNoEmail() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).build();
-        doReturn(STUDY_ID).when(mockSession).getStudyIdentifier();
         doReturn(participant).when(mockSession).getParticipant();
+        mockWithJson();
 
-        controller.requestUserData("2015-08-15", "2015-08-19");
+        controller.requestUserData(null, null);
     }
     
     @Test(expected = BadRequestException.class)
     public void throwExceptionIfAccountEmailUnverified() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID)
                 .withEmail(EMAIL).withEmailVerified(Boolean.FALSE).build();
-        doReturn(STUDY_ID).when(mockSession).getStudyIdentifier();
         doReturn(participant).when(mockSession).getParticipant();
+        mockWithJson();
 
-        controller.requestUserData("2015-08-15", "2015-08-19");
+        controller.requestUserData(null, null);
+    }
+
+    private void mockWithJson() throws Exception {
+        // This isn't in the before(), because we don't want to mock the JSON body for the query params test.
+        String dateRangeJsonText = "{\n" +
+                "   \"startDate\":\"" + START_DATE + "\",\n" +
+                "   \"endDate\":\"" + END_DATE + "\"\n" +
+                "}";
+        TestUtils.mockPlayContextWithJson(dateRangeJsonText);
     }
 }
