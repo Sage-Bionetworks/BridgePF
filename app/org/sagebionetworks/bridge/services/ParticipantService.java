@@ -284,7 +284,7 @@ public class ParticipantService {
         externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());
         optionsService.setAllOptions(study.getStudyIdentifier(), account.getHealthCode(), options);
         // send verify email
-        if (sendVerifyEmail) {
+        if (sendVerifyEmail && !study.isAutoVerificationEmailSuppressed()) {
             accountWorkflowService.sendEmailVerificationToken(study, accountId, account.getEmail());
         }
         return new IdentifierHolder(accountId);

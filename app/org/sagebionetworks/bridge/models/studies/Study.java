@@ -72,6 +72,16 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     void setVersion(Long version);
 
     /**
+     * True if the automatic email verification email on sign-up should be suppressed. False if the email should be
+     * sent on sign-up. This is generally used in conjunction with email sign-in, where sending a separate email
+     * verification email would be redundant.
+     */
+    boolean isAutoVerificationEmailSuppressed();
+
+    /** @see #isAutoVerificationEmailSuppressed */
+    void setAutoVerificationEmailSuppressed(boolean autoVerificationEmailSuppressed);
+
+    /**
      * User must confirm that they are at least this many years old in order to
      * participate in the study. 
      */

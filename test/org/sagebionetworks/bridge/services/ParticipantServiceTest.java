@@ -371,10 +371,24 @@ public class ParticipantServiceTest {
     public void createParticipantEmailEnabledVerificationWanted() {
         STUDY.setEmailVerificationEnabled(true);
         mockHealthCodeAndAccountRetrieval();
-        
+
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
-        
+
         verify(accountWorkflowService).sendEmailVerificationToken(any(), any(), any());
+        verify(account).setStatus(AccountStatus.UNVERIFIED);
+        verify(account, never()).setEmailVerified(any());
+    }
+
+    @Test
+    public void createParticipantAutoVerificationEmailSuppressed() {
+        Study study = makeStudy();
+        study.setEmailVerificationEnabled(true);
+        study.setAutoVerificationEmailSuppressed(true);
+        mockHealthCodeAndAccountRetrieval();
+
+        participantService.createParticipant(study, CALLER_ROLES, PARTICIPANT, true);
+
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         verify(account).setStatus(AccountStatus.UNVERIFIED);
         verify(account, never()).setEmailVerified(any());
     }
@@ -1075,5 +1089,17 @@ public class ParticipantServiceTest {
         for (Map<ParticipantOption,String> optionsLookup : optionsCaptor.getAllValues()) {
             assertNull(optionsLookup.get(EXTERNAL_IDENTIFIER));
         }
+    }
+
+    // Makes a study instance, so tests can modify it without affecting other tests.
+    private static Study makeStudy() {
+        Study study = Study.create();
+        study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        study.setHealthCodeExportEnabled(true);
+        study.setUserProfileAttributes(STUDY_PROFILE_ATTRS);
+        study.setDataGroups(STUDY_DATA_GROUPS);
+        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        study.getUserProfileAttributes().add("can_be_recontacted");
+        return study;
     }
 }
