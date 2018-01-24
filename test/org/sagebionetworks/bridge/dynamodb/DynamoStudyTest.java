@@ -88,7 +88,8 @@ public class DynamoStudyTest {
         study.setAppleAppLinks(APPLE_APP_LINKS);
 
         final JsonNode node = BridgeObjectMapper.get().valueToTree(study);
-        
+
+        assertTrue(node.get("autoVerificationEmailSuppressed").booleanValue());
         assertEqualsAndNotNull(study.getConsentNotificationEmail(), node.get("consentNotificationEmail").asText());
         assertTrue(node.get("studyIdExcludedInExport").booleanValue());
         assertEqualsAndNotNull(study.getSupportEmail(), node.get("supportEmail").asText());
