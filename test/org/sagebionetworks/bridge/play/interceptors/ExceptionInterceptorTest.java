@@ -15,6 +15,7 @@ import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughputExceededExce
 import org.aopalliance.intercept.MethodInvocation;
 import org.junit.Before;
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -95,6 +96,8 @@ public class ExceptionInterceptorTest {
         when(invocation.proceed()).thenThrow(exception);
         
         Result result = (Result)interceptor.invoke(invocation);
+        TestUtils.assertResult(result, 412);
+        
         JsonNode node = new ObjectMapper().readTree(contentAsString(result));
 
         assertTrue(node.get("authenticated").booleanValue());
@@ -118,10 +121,6 @@ public class ExceptionInterceptorTest {
         assertEquals(0, node.get("consentStatuses").size());
         // And no further properties
         assertEquals(20, node.size());
-
-        // Don't use assertStatusCode(), because this returns a session, not an exception. Still want to verify the
-        // Result status code though.
-        assertEquals(412, result.status());
     }
     
     @Test

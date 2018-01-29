@@ -263,6 +263,7 @@ public class ScheduledActivityControllerTest {
         DateTime now = DateTime.parse("2011-05-13T12:37:31.985+03:00");
         
         Result result = controller.getScheduledActivities(now.toString(), null, null, null);
+        TestUtils.assertResult(result, 200);
         String output = Helpers.contentAsString(result);
 
         JsonNode results = BridgeObjectMapper.get().readTree(output);
@@ -278,6 +279,7 @@ public class ScheduledActivityControllerTest {
         DateTime now = DateTime.parse("2011-05-13T12:37:31.985+03:00");
         
         Result result = controller.getTasks(now.toString(), null, null);
+        TestUtils.assertResult(result, 200);
         String output = Helpers.contentAsString(result);
         
         // Verify that even without the writer, we are not leaking these values
@@ -299,7 +301,8 @@ public class ScheduledActivityControllerTest {
         // Until value is simply passed along as is to the scheduler.
         DateTime now = DateTime.parse("2011-05-13T12:37:31.985+03:00");
         
-        controller.getScheduledActivities(now.toString(), null, null, null);
+        Result result = controller.getScheduledActivities(now.toString(), null, null, null);
+        TestUtils.assertResult(result, 200);
         verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
         verifyNoMoreInteractions(scheduledActivityService);
         assertEquals(now, contextCaptor.getValue().getEndsOn());
@@ -315,7 +318,9 @@ public class ScheduledActivityControllerTest {
             .withZone(DateTimeZone.forOffsetHours(3)).plusDays(3)
             .withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59).withMillisOfSecond(0);
         
-        controller.getScheduledActivities(null, "+03:00", "3", null);
+        Result result = controller.getScheduledActivities(null, "+03:00", "3", null);
+        TestUtils.assertResult(result, 200);
+        
         verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
         verifyNoMoreInteractions(scheduledActivityService);
         assertEquals(expectedEndsOn, contextCaptor.getValue().getEndsOn().withMillisOfSecond(0));
@@ -327,7 +332,9 @@ public class ScheduledActivityControllerTest {
     @SuppressWarnings("unchecked")
     @Test
     public void updateScheduledActivities() throws Exception {
-        controller.updateScheduledActivities();
+        Result result = controller.updateScheduledActivities();
+        TestUtils.assertResult(result, 200);
+
         verify(scheduledActivityService).updateScheduledActivities(anyString(), any(List.class));
         verifyNoMoreInteractions(scheduledActivityService);
     }
@@ -342,7 +349,9 @@ public class ScheduledActivityControllerTest {
     @SuppressWarnings("deprecation")
     @Test
     public void fullyInitializedSessionProvidesAccountCreatedOnInScheduleContext() throws Exception {
-        controller.getScheduledActivities(null, "-07:00", "3", null);
+        Result result = controller.getScheduledActivities(null, "-07:00", "3", null);
+        TestUtils.assertResult(result, 200);
+        
         verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
         ScheduleContext context = contextCaptor.getValue();
         assertEquals(ACCOUNT_CREATED_ON.withZone(DateTimeZone.UTC), context.getAccountCreatedOn());
@@ -354,7 +363,7 @@ public class ScheduledActivityControllerTest {
                 eq(ACTIVITY_GUID), any(null), any(null), eq(null), eq(BridgeConstants.API_DEFAULT_PAGE_SIZE));
         
         Result result = controller.getActivityHistory(ACTIVITY_GUID, null, null, null, null, null);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
 
         verify(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE), eq(ACTIVITY_GUID), eq(null),
                 eq(null), eq(null), eq(BridgeConstants.API_DEFAULT_PAGE_SIZE));
@@ -371,7 +380,7 @@ public class ScheduledActivityControllerTest {
         
         Result result = controller.getActivityHistoryV3("tasks", "referentGuid", STARTS_ON.toString(),
                 ENDS_ON.toString(), "offsetKey", "20");
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         ForwardCursorPagedResourceList<ScheduledActivity> page = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), FORWARD_CURSOR_PAGED_ACTIVITIES_REF);
@@ -386,8 +395,9 @@ public class ScheduledActivityControllerTest {
     
     @Test
     public void getActivityHistoryV3SetsNullDefaults() throws Exception {
-        controller.getActivityHistoryV3("wrongtypes", null, null, null, null, null);
-        
+        Result result = controller.getActivityHistoryV3("wrongtypes", null, null, null, null, null);
+        TestUtils.assertResult(result, 200);
+
         verify(scheduledActivityService).getActivityHistory(eq(HEALTH_CODE), eq(null), eq(null),
                 startsOnCaptor.capture(), endsOnCaptor.capture(), eq(null), eq(BridgeConstants.API_DEFAULT_PAGE_SIZE));
         assertNull(startsOnCaptor.getValue());
@@ -401,7 +411,7 @@ public class ScheduledActivityControllerTest {
         
         Result result = controller.getActivityHistory(ACTIVITY_GUID, STARTS_ON.toString(),
                 ENDS_ON.toString(), OFFSET_BY, null, PAGE_SIZE);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         ForwardCursorPagedResourceList<ScheduledActivity> page = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), FORWARD_CURSOR_PAGED_ACTIVITIES_REF);
@@ -427,7 +437,7 @@ public class ScheduledActivityControllerTest {
 
         Result result = controller.getActivityHistory(ACTIVITY_GUID, STARTS_ON.toString(),
                 ENDS_ON.toString(), null, OFFSET_BY, PAGE_SIZE);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         ForwardCursorPagedResourceList<ScheduledActivity> page = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), FORWARD_CURSOR_PAGED_ACTIVITIES_REF);
@@ -459,7 +469,7 @@ public class ScheduledActivityControllerTest {
         TestUtils.mockPlayContextWithJson(json);
         
         Result result = controller.updateScheduledActivities();
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         verify(scheduledActivityService).updateScheduledActivities(eq(HEALTH_CODE), activitiesCaptor.capture());
         
@@ -474,7 +484,7 @@ public class ScheduledActivityControllerTest {
         DateTime endsOn = DateTime.now(zone).plusDays(7);
         
         Result result = controller.getScheduledActivitiesByDateRange(startsOn.toString(), endsOn.toString());
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals(startsOn.toString(), node.get("startTime").asText());

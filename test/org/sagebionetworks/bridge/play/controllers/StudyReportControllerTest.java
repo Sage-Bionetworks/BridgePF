@@ -221,7 +221,8 @@ public class StudyReportControllerTest {
         doReturn(index).when(mockReportService).getReportIndex(key);
         
         Result result = controller.getStudyReportIndex(REPORT_ID);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
+
         ReportIndex deserIndex = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result), ReportIndex.class);
         assertEquals(REPORT_ID, deserIndex.getIdentifier());
         assertTrue(deserIndex.isPublic());
@@ -235,7 +236,6 @@ public class StudyReportControllerTest {
                 REPORT_ID, START_DATE, END_DATE);
         
         Result result = controller.getStudyReport(REPORT_ID, START_DATE.toString(), END_DATE.toString());
-        assertEquals(200, result.status());
         assertResult(result);
     }
     
@@ -246,7 +246,6 @@ public class StudyReportControllerTest {
                 REPORT_ID, null, null);
         
         Result result = controller.getStudyReport(REPORT_ID, null, null);
-        assertEquals(200, result.status());
         assertResult(result);
     }
     
@@ -305,14 +304,13 @@ public class StudyReportControllerTest {
         TestUtils.mockPlayContextWithJson("{\"public\":true}");
         
         Result result = controller.updateStudyReportIndex(REPORT_ID);
+        TestUtils.assertResult(result, 200, "Report index updated.");
         
         verify(mockReportService).updateReportIndex(eq(ReportType.STUDY), reportDataIndex.capture());
         ReportIndex index = reportDataIndex.getValue();
         assertTrue(index.isPublic());
         assertEquals(REPORT_ID, index.getIdentifier());
         assertEquals("api:STUDY", index.getKey());
-        
-        TestUtils.assertResult(result, 200, "Report index updated.");
     }
     
     @Test
@@ -330,8 +328,8 @@ public class StudyReportControllerTest {
         
         Result result = controller.getPublicStudyReport(
                 TEST_STUDY.getIdentifier(), REPORT_ID, START_DATE.toString(), END_DATE.toString());
-        
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
+
         DateRangeResourceList<? extends ReportData> reportData = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), REPORT_REF);
         assertEquals(2, reportData.getItems().size());
@@ -382,10 +380,10 @@ public class StudyReportControllerTest {
         doReturn(index).when(mockReportService).getReportIndex(key);
         
         Result result = controller.getStudyReportV4(REPORT_ID, START_TIME.toString(), END_TIME.toString(), OFFSET_KEY, PAGE_SIZE);
+        TestUtils.assertResult(result, 200);
         
         verify(mockReportService).getStudyReportV4(TEST_STUDY, REPORT_ID, START_TIME, END_TIME,
                 OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
-        assertEquals(200, result.status());
         
         ForwardCursorPagedResourceList<ReportData> page = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), ReportData.PAGED_REPORT_DATA);        
@@ -415,10 +413,10 @@ public class StudyReportControllerTest {
         
         Result result = controller.getPublicStudyReportV4(TEST_STUDY.getIdentifier(), REPORT_ID, START_TIME.toString(),
                 END_TIME.toString(), OFFSET_KEY, PAGE_SIZE);
+        TestUtils.assertResult(result, 200);
         
         verify(mockReportService).getStudyReportV4(TEST_STUDY, REPORT_ID, START_TIME, END_TIME,
                 OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
-        assertEquals(200, result.status());
         
         ForwardCursorPagedResourceList<ReportData> page = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), ReportData.PAGED_REPORT_DATA);        
@@ -431,6 +429,8 @@ public class StudyReportControllerTest {
     }
     
     private void assertResult(Result result) throws Exception {
+        TestUtils.assertResult(result, 200);
+
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals("2015-01-02", node.get("startDate").asText());
         assertEquals("2015-02-02", node.get("endDate").asText());

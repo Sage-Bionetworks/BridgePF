@@ -54,7 +54,7 @@ public class UploadSchemaControllerTest {
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.createSchemaRevisionV4();
-        assertEquals(201, result.status());
+        TestUtils.assertResult(result, 201);
         assertSchemaInResult(result);
         assertSchemaInArgCaptor(createdSchemaCaptor);
     }
@@ -70,7 +70,7 @@ public class UploadSchemaControllerTest {
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.createOrUpdateUploadSchema();
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         assertSchemaInResult(result);
         assertSchemaInArgCaptor(createdSchemaArgCaptor);
     }
@@ -84,7 +84,7 @@ public class UploadSchemaControllerTest {
         UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.deleteAllRevisionsOfUploadSchema(TestConstants.TEST_STUDY_IDENTIFIER,
                 "delete-schema");
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200, "Schemas have been deleted.");
         verify(mockSvc).deleteUploadSchemaById(TestConstants.TEST_STUDY, "delete-schema");
     }
 
@@ -98,7 +98,7 @@ public class UploadSchemaControllerTest {
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.getUploadSchema(TEST_SCHEMA_ID);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         assertSchemaInResult(result);
     }
 
@@ -112,7 +112,7 @@ public class UploadSchemaControllerTest {
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.getUploadSchemaByIdAndRev(TEST_SCHEMA_ID, 1);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         assertSchemaInResult(result);
     }
 
@@ -127,7 +127,7 @@ public class UploadSchemaControllerTest {
         UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.getUploadSchemaByStudyAndSchemaAndRev(TestConstants.TEST_STUDY_IDENTIFIER,
                 TEST_SCHEMA_ID, 1);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
 
         // Unlike the other methods, this also returns study ID
         String resultJson = Helpers.contentAsString(result);
@@ -146,7 +146,7 @@ public class UploadSchemaControllerTest {
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.getUploadSchemasForStudy();
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
 
         String resultJson = Helpers.contentAsString(result);
         JsonNode resultNode = BridgeObjectMapper.get().readTree(resultJson);
@@ -178,7 +178,7 @@ public class UploadSchemaControllerTest {
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.getUploadSchemaAllRevisions(schemaId);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
 
         String resultJson = Helpers.contentAsString(result);
         JsonNode resultNode = BridgeObjectMapper.get().readTree(resultJson);
@@ -216,7 +216,7 @@ public class UploadSchemaControllerTest {
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc);
         Result result = controller.updateSchemaRevisionV4(TEST_SCHEMA_ID, 1);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         assertSchemaInResult(result);
         assertSchemaInArgCaptor(updatedSchemaCaptor);
     }

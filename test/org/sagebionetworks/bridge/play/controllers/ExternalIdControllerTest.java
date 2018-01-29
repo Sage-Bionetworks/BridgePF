@@ -102,6 +102,7 @@ public class ExternalIdControllerTest {
         
         // execute the controller
         Result result = controller.getExternalIds(null, null, null, null);
+        assertResult(result, 200);
         String content = Helpers.contentAsString(result);
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> deserPage =  MAPPER.readValue(content, PAGE_REF);

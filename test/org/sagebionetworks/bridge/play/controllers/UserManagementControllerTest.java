@@ -29,6 +29,7 @@ import play.mvc.Result;
 import play.test.Helpers;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -91,7 +92,7 @@ public class UserManagementControllerTest {
     public void createdResponseReturnsJSONPayload() throws Exception {
         Result result = controller.createUser();
 
-        assertEquals(201, result.status());
+        TestUtils.assertResult(result, 201);
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
 
         assertEquals("UserSessionInfo", node.get("type").asText());
@@ -103,7 +104,7 @@ public class UserManagementControllerTest {
         // same study id as above test
         Result result = controller.createUserWithStudyId(TEST_STUDY_IDENTIFIER);
 
-        assertEquals(201, result.status());
+        TestUtils.assertResult(result, 201);
     }
     
     @Test

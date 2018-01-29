@@ -67,7 +67,7 @@ public class EntityAlreadyExistsExceptionTest {
         
         Result result = (Result)interceptor.invoke(invocation);
         
-        assertEquals(409, result.status());
+        TestUtils.assertResult(result, 409);
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         
         assertEquals("ExternalIdentifier already exists.", node.get("message").asText());

@@ -125,7 +125,7 @@ public class OAuthControllerTest {
                 .thenReturn(accessToken);
         
         Result result = controller.requestAccessToken(VENDOR_ID);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         OAuthAccessToken returned = TestUtils.getResponsePayload(result, OAuthAccessToken.class);
         assertEquals(accessToken, returned);
@@ -147,7 +147,7 @@ public class OAuthControllerTest {
                 .thenReturn(accessToken);
         
         Result result = controller.requestAccessToken(VENDOR_ID);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         OAuthAccessToken returned = TestUtils.getResponsePayload(result, OAuthAccessToken.class);
         assertEquals(accessToken, returned);
@@ -171,7 +171,7 @@ public class OAuthControllerTest {
                 null)).thenReturn(page);
         
         Result result = controller.getHealthCodesGrantingAccess(TEST_STUDY_IDENTIFIER, VENDOR_ID, null, null);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         verify(mockOauthService).getHealthCodesGrantingAccess(mockStudy, VENDOR_ID,
                 BridgeConstants.API_DEFAULT_PAGE_SIZE, null);
@@ -200,7 +200,7 @@ public class OAuthControllerTest {
         when(mockOauthService.getHealthCodesGrantingAccess(mockStudy, VENDOR_ID, 20, OFFSET_KEY)).thenReturn(page);
         
         Result result = controller.getHealthCodesGrantingAccess(TEST_STUDY_IDENTIFIER, VENDOR_ID, OFFSET_KEY, "20");
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         verify(mockOauthService).getHealthCodesGrantingAccess(mockStudy, VENDOR_ID, 20, OFFSET_KEY);
         
@@ -229,7 +229,7 @@ public class OAuthControllerTest {
         when(mockOauthService.getAccessToken(mockStudy, VENDOR_ID, HEALTH_CODE)).thenReturn(accessToken);
         
         Result result = controller.getAccessToken(TEST_STUDY_IDENTIFIER, VENDOR_ID, HEALTH_CODE);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         OAuthAccessToken returned = TestUtils.getResponsePayload(result, OAuthAccessToken.class);
         assertEquals(accessToken, returned);

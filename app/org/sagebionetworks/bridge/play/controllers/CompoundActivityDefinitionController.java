@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import java.io.IOException;
 import java.util.List;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -25,13 +26,13 @@ public class CompoundActivityDefinitionController extends BaseController {
     }
 
     /** Creates a compound activity definition. */
-    public Result createCompoundActivityDefinition() throws JsonProcessingException {
+    public Result createCompoundActivityDefinition() throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(Roles.DEVELOPER);
 
         CompoundActivityDefinition requestDef = parseJson(request(), CompoundActivityDefinition.class);
         CompoundActivityDefinition createdDef = compoundActivityDefService.createCompoundActivityDefinition(
                 session.getStudyIdentifier(), requestDef);
-        return created(CompoundActivityDefinition.PUBLIC_DEFINITION_WRITER.writeValueAsString(createdDef));
+        return createdResult(CompoundActivityDefinition.PUBLIC_DEFINITION_WRITER, createdDef);
     }
 
     /** Deletes a compound activity definition. */
@@ -43,31 +44,31 @@ public class CompoundActivityDefinitionController extends BaseController {
     }
 
     /** List all compound activity definitions in a study. */
-    public Result getAllCompoundActivityDefinitionsInStudy() throws JsonProcessingException {
+    public Result getAllCompoundActivityDefinitionsInStudy() throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(Roles.DEVELOPER);
 
         List<CompoundActivityDefinition> defList = compoundActivityDefService.getAllCompoundActivityDefinitionsInStudy(
                 session.getStudyIdentifier());
         ResourceList<CompoundActivityDefinition> defResourceList = new ResourceList<>(defList);
-        return ok(CompoundActivityDefinition.PUBLIC_DEFINITION_WRITER.writeValueAsString(defResourceList));
+        return okResult(CompoundActivityDefinition.PUBLIC_DEFINITION_WRITER, defResourceList);
     }
 
     /** Get a compound activity definition by ID. */
-    public Result getCompoundActivityDefinition(String taskId) throws JsonProcessingException {
+    public Result getCompoundActivityDefinition(String taskId) throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(Roles.DEVELOPER);
 
         CompoundActivityDefinition def = compoundActivityDefService.getCompoundActivityDefinition(
                 session.getStudyIdentifier(), taskId);
-        return ok(CompoundActivityDefinition.PUBLIC_DEFINITION_WRITER.writeValueAsString(def));
+        return okResult(CompoundActivityDefinition.PUBLIC_DEFINITION_WRITER, def);
     }
 
     /** Update a compound activity definition. */
-    public Result updateCompoundActivityDefinition(String taskId) throws JsonProcessingException {
+    public Result updateCompoundActivityDefinition(String taskId) throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(Roles.DEVELOPER);
 
         CompoundActivityDefinition requestDef = parseJson(request(), CompoundActivityDefinition.class);
         CompoundActivityDefinition updatedDef = compoundActivityDefService.updateCompoundActivityDefinition(
                 session.getStudyIdentifier(), taskId, requestDef);
-        return ok(CompoundActivityDefinition.PUBLIC_DEFINITION_WRITER.writeValueAsString(updatedDef));
+        return okResult(CompoundActivityDefinition.PUBLIC_DEFINITION_WRITER, updatedDef);
     }
 }

@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import play.mvc.Result;
 
+import java.io.IOException;
 import java.util.List;
 
 import static org.sagebionetworks.bridge.Roles.WORKER;
@@ -33,7 +34,7 @@ public class HealthDataController extends BaseController {
      * upload API. This is most beneficial for small data sets, like simple surveys. This API returns the health data
      * record produced from this submission, which includes the record ID.
      */
-    public Result submitHealthData() throws JsonProcessingException {
+    public Result submitHealthData() throws JsonProcessingException, IOException {
         // Submit health data.
         UserSession session = getAuthenticatedAndConsentedSession();
         HealthDataSubmission healthDataSubmission = parseJson(request(), HealthDataSubmission.class);
@@ -52,7 +53,7 @@ public class HealthDataController extends BaseController {
         cacheProvider.updateRequestInfo(requestInfo);
 
         // Return the record produced by this submission. Filter out Health Code, of course.
-        return created(HealthDataRecord.PUBLIC_RECORD_WRITER.writeValueAsString(savedRecord));
+        return createdResult(HealthDataRecord.PUBLIC_RECORD_WRITER, savedRecord);
     }
 
     public Result updateRecordsStatus() throws JsonProcessingException{

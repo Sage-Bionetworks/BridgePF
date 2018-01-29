@@ -186,7 +186,7 @@ public class AuthenticationControllerMockTest {
         doReturn(userSession).when(authenticationService).emailSignIn(any(CriteriaContext.class), any(SignIn.class));
         
         Result result = controller.emailSignIn();
-        assertEquals(200, result.status());
+        assertResult(result, 200);
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertTrue(node.get("authenticated").booleanValue());
      
@@ -224,7 +224,7 @@ public class AuthenticationControllerMockTest {
             when(authenticationService.reauthenticate(any(), any(), any())).thenReturn(userSession);
             
             Result result = controller.reauthenticate();
-            assertEquals(200, result.status());
+            assertResult(result, 200);
             
             verify(authenticationService).reauthenticate(any(), any(), signInCaptor.capture());
             SignIn signIn = signInCaptor.getValue();
@@ -476,7 +476,7 @@ public class AuthenticationControllerMockTest {
 
         // execute and validate
         Result result = controller.signOut();
-        assertEquals(HttpStatus.SC_OK, result.status());
+        assertResult(result, 200);
         
         @SuppressWarnings("static-access")
         Http.Response mockResponse = controller.response();
@@ -493,7 +493,7 @@ public class AuthenticationControllerMockTest {
 
         // execute and validate
         Result result = controller.signOut();
-        assertEquals(HttpStatus.SC_OK, result.status());
+        assertResult(result, 200);
 
         // No session, so no check on metrics or AuthService.signOut()
     }
@@ -741,7 +741,7 @@ public class AuthenticationControllerMockTest {
         when(authenticationService.phoneSignIn(any(), any())).thenReturn(userSession);
         
         Result result = controller.phoneSignIn();
-        assertEquals(200, result.status());
+        assertResult(result, 200);
         
         // Returns user session.
         JsonNode node = TestUtils.getJson(result);
@@ -853,8 +853,7 @@ public class AuthenticationControllerMockTest {
     }
 
     private static void assertSessionInPlayResult(Result result) throws Exception {
-        assertEquals(HttpStatus.SC_OK, result.status());
-
+        assertResult(result, 200);
         // test only a few key values
         String resultString = Helpers.contentAsString(result);
         JsonNode resultNode = BridgeObjectMapper.get().readTree(resultString);
