@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
@@ -17,6 +18,7 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -301,16 +303,56 @@ public class AuthenticationService {
         return null;
     }
     
+    private SignIn getSignInByExistingIdentifier(SignIn signIn) {
+        AccountId accountId = AccountId.forEmail(signIn.getStudyId(), signIn.getEmail());
+        Account account = accountDao.getAccount(accountId);
+        if (account != null) {
+            return new SignIn.Builder().copyOf(signIn).withPhone(null).build();
+        }
+        return new SignIn.Builder().copyOf(signIn).withEmail(null).build();
+    }
+    
     public StudyParticipant updateIdentifiers(Study study, CriteriaContext context, SignIn signIn) {
         checkNotNull(study);
         checkNotNull(context);
         checkNotNull(signIn);
         
+        // validate
+        Validate.entityThrowingException(SignInValidator.UPDATE_IDENTIFIERS, signIn);
         
+        // create signIn with the active credential (we must probe to determine this)
+        SignIn signInWithExistingIdentifier = getSignInByExistingIdentifier(signIn);
         
-        return null;
+        // Authentication/reauthenticate.
+        Account account = null;
+        if (StringUtils.isNotBlank(signIn.getReauthToken())) {
+            account = accountDao.reauthenticate(study, signInWithExistingIdentifier);
+        } else {
+            account = accountDao.authenticate(study, signInWithExistingIdentifier);
+        }
+        
+        // if neither identifier is empty, there's nothing to do
+        if (account.getEmail() != null && account.getPhone() != null) {
+            throw new BadRequestException("Account already has an email and phone number");
+        }
+        // update the missing credential
+        if (account.getPhone() == null) {
+            account.setPhone(signIn.getPhone());
+            account.setPhoneVerified(Boolean.FALSE);
+        }
+        if (account.getEmail() == null) {
+            account.setEmail(signIn.getEmail());
+            account.setEmailVerified(!study.isEmailVerificationEnabled());
+            
+            if (study.isEmailVerificationEnabled() && !study.isAutoVerificationEmailSuppressed()) {
+                accountWorkflowService.sendEmailVerificationToken(study, account.getId(), account.getEmail());
+            }
+        }
+        accountDao.updateAccount(account);
+        
+        return participantService.getParticipant(study, account, false);
     }
-
+    
     public void verifyEmail(EmailVerification verification) {
         checkNotNull(verification);
 

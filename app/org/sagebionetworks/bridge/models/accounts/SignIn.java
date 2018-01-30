@@ -71,6 +71,16 @@ public final class SignIn implements BridgeEntity {
         private String token;
         private String reauthToken;
         
+        public Builder copyOf(SignIn signIn) {
+            this.email = signIn.email;
+            this.phone = signIn.phone;
+            this.password = signIn.password;
+            this.studyId = signIn.studyId;
+            this.token = signIn.token;
+            this.reauthToken = signIn.reauthToken;
+            return this;
+            
+        }
         public Builder withUsername(String username) {
             this.username = username;    
             return this;

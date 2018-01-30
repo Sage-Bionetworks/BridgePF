@@ -2,9 +2,10 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.STUDY;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.EMAIL;
+import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.EMAIL_AND_PHONE;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.EMAIL_OR_PHONE;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.PASSWORD;
-import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.PASSWORD_OR_REAUTH;
+import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.PASSWORD_XOR_REAUTH;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.PHONE;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.TOKEN;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.REAUTH;
@@ -43,17 +44,18 @@ public class SignInValidator implements Validator {
     /** Reauthentication. */
     public static final SignInValidator REAUTH_SIGNIN = new SignInValidator(EnumSet.of(STUDY, EMAIL_OR_PHONE, REAUTH));
     /** Add email or phone to an existing account. */
-    public static final SignInValidator UPDATE_IDENTIFIERS = new SignInValidator(EnumSet.of(STUDY, EMAIL_OR_PHONE, PASSWORD_OR_REAUTH));
+    public static final SignInValidator UPDATE_IDENTIFIERS = new SignInValidator(EnumSet.of(STUDY, EMAIL_AND_PHONE, PASSWORD_XOR_REAUTH));
     
     static enum RequiredFields {
         STUDY,
         EMAIL,
+        EMAIL_AND_PHONE,
         EMAIL_OR_PHONE,
         PASSWORD,
         PHONE,
         TOKEN,
         REAUTH,
-        PASSWORD_OR_REAUTH
+        PASSWORD_XOR_REAUTH
     }
     
     private final EnumSet<RequiredFields> requiredFields;
@@ -81,6 +83,7 @@ public class SignInValidator implements Validator {
             errors.rejectValue("password", "is required");
         }
         if (requiredFields.contains(EMAIL_OR_PHONE)) {
+            // Either phone or email must be present, but not both
             if (isBlank(signIn.getEmail()) && signIn.getPhone() == null) {
                 errors.reject("email or phone is required");
             } else if (isNotBlank(signIn.getEmail()) && signIn.getPhone() != null) {
@@ -90,7 +93,17 @@ public class SignInValidator implements Validator {
                 errors.rejectValue("phone", "does not appear to be a phone number");
             }
         }
-        if (requiredFields.contains(PASSWORD_OR_REAUTH)) {
+        if (requiredFields.contains(EMAIL_AND_PHONE)) {
+            // Both need to be present, one to identify the account, the other to update
+            if (isBlank(signIn.getEmail()) || signIn.getPhone() == null) {
+                errors.reject("email and phone are both required");
+            }
+            if (signIn.getPhone() != null && !Phone.isValid(signIn.getPhone())) {
+                errors.rejectValue("phone", "does not appear to be a phone number");
+            }
+        }
+        if (requiredFields.contains(PASSWORD_XOR_REAUTH)) {
+            // Either password or reauth token must be present, but not both
             if (isBlank(signIn.getPassword()) && isBlank(signIn.getReauthToken())) {
                 errors.reject("password or reauthToken is required");
             } else if (isNotBlank(signIn.getPassword()) && isNotBlank(signIn.getReauthToken())) {
