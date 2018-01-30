@@ -43,12 +43,11 @@ import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import org.apache.commons.lang3.StringUtils;
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.map.JsonMappingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import play.api.mvc.ActionBuilder;
 import play.cache.Cache;
 import play.libs.Json;
 import play.mvc.Controller;
@@ -58,6 +57,8 @@ import play.mvc.Http.Request;
 import play.mvc.Result;
 
 import com.amazonaws.util.Throwables;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -317,8 +318,7 @@ public abstract class BaseController extends Controller {
     }
     
     Result okResult(ObjectWriter writer, Object object) throws JsonGenerationException, JsonMappingException, IOException {
-        String jsonString = writer.writeValueAsString(object);
-        return okResult(BridgeObjectMapper.get().readTree(jsonString));
+        return ok( writer.writeValueAsString(object) ).as(BridgeConstants.JSON_MIME_TYPE);
     }
     
     Result createdResult(String message)  {
@@ -330,8 +330,7 @@ public abstract class BaseController extends Controller {
     }
     
     Result createdResult(ObjectWriter writer, Object object) throws JsonGenerationException, JsonMappingException, IOException {
-        String jsonString = writer.writeValueAsString(object);
-        return createdResult(BridgeObjectMapper.get().readTree(jsonString));
+        return created( writer.writeValueAsString(object) ).as(BridgeConstants.JSON_MIME_TYPE);
     }
     
     Result acceptedResult(String message) {
