@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFiel
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.EMAIL;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.EMAIL_OR_PHONE;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.PASSWORD;
+import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.PASSWORD_OR_REAUTH;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.PHONE;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.TOKEN;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.REAUTH;
@@ -41,6 +42,8 @@ public class SignInValidator implements Validator {
     public static final SignInValidator PASSWORD_SIGNIN = new SignInValidator(EnumSet.of(STUDY, EMAIL_OR_PHONE, PASSWORD));
     /** Reauthentication. */
     public static final SignInValidator REAUTH_SIGNIN = new SignInValidator(EnumSet.of(STUDY, EMAIL_OR_PHONE, REAUTH));
+    /** Add email or phone to an existing account. */
+    public static final SignInValidator UPDATE_IDENTIFIERS = new SignInValidator(EnumSet.of(STUDY, EMAIL_OR_PHONE, PASSWORD_OR_REAUTH));
     
     static enum RequiredFields {
         STUDY,
@@ -49,7 +52,8 @@ public class SignInValidator implements Validator {
         PASSWORD,
         PHONE,
         TOKEN,
-        REAUTH
+        REAUTH,
+        PASSWORD_OR_REAUTH
     }
     
     private final EnumSet<RequiredFields> requiredFields;
@@ -84,6 +88,13 @@ public class SignInValidator implements Validator {
             }
             if (signIn.getPhone() != null && !Phone.isValid(signIn.getPhone())) {
                 errors.rejectValue("phone", "does not appear to be a phone number");
+            }
+        }
+        if (requiredFields.contains(PASSWORD_OR_REAUTH)) {
+            if (isBlank(signIn.getPassword()) && isBlank(signIn.getReauthToken())) {
+                errors.reject("password or reauthToken is required");
+            } else if (isNotBlank(signIn.getPassword()) && isNotBlank(signIn.getReauthToken())) {
+                errors.reject("password or reauthToken is required, but not both");
             }
         }
         if (requiredFields.contains(TOKEN) && isBlank(signIn.getToken())) {

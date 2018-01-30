@@ -20,6 +20,7 @@ POST   /v3/auth/email                   @org.sagebionetworks.bridge.play.control
 POST   /v3/auth/email/signIn            @org.sagebionetworks.bridge.play.controllers.AuthenticationController.emailSignIn
 POST   /v3/auth/phone                   @org.sagebionetworks.bridge.play.controllers.AuthenticationController.requestPhoneSignIn
 POST   /v3/auth/phone/signIn            @org.sagebionetworks.bridge.play.controllers.AuthenticationController.phoneSignIn
+POST   /v3/auth/identifiers             @org.sagebionetworks.bridge.play.controllers.AuthenticationController.updateIdentifiers
 POST   /v4/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signIn
 
 # OAuth

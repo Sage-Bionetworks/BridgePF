@@ -161,6 +161,25 @@ public class AuthenticationController extends BaseController {
         authenticationService.signUp(study, participant, checkForConsent);
         return createdResult("Signed up.");
     }
+    
+    public Result updateIdentifiers() throws Exception {
+        UserSession session = getAuthenticatedAndConsentedSession();
+        
+        SignIn signIn = parseJson(request(), SignIn.class);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        verifySupportedVersionOrThrowException(study);
+
+        CriteriaContext context = getCriteriaContext(session);
+        try {
+            StudyParticipant participant = authenticationService.updateIdentifiers(study, context, signIn);
+            sessionUpdateService.updateParticipant(session, context, participant);
+        } catch(ConsentRequiredException e) {
+            setCookieAndRecordMetrics(e.getUserSession());
+            throw e;
+        }
+        setCookieAndRecordMetrics(session);
+        return okResult(UserSessionInfo.toJSON(session));
+    }
 
     public Result verifyEmail() throws Exception {
         EmailVerification emailVerification = parseJson(request(), EmailVerification.class);
@@ -197,7 +216,7 @@ public class AuthenticationController extends BaseController {
         return okResult("Password has been changed.");
     }
 
-    private void setCookieAndRecordMetrics(UserSession session) {
+    protected void setCookieAndRecordMetrics(UserSession session) {
         writeSessionInfoToMetrics(session);  
         // We have removed the cookie in the past, only to find out that clients were unknowingly
         // depending on the cookie to preserve the session token. So it remains.

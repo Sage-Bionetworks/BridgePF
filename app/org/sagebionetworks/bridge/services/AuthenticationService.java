@@ -300,6 +300,16 @@ public class AuthenticationService {
         }
         return null;
     }
+    
+    public StudyParticipant updateIdentifiers(Study study, CriteriaContext context, SignIn signIn) {
+        checkNotNull(study);
+        checkNotNull(context);
+        checkNotNull(signIn);
+        
+        
+        
+        return null;
+    }
 
     public void verifyEmail(EmailVerification verification) {
         checkNotNull(verification);
