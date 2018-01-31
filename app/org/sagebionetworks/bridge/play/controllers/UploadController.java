@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import java.io.IOException;
+
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -42,7 +44,7 @@ public class UploadController extends BaseController {
     }
 
     /** Gets validation status and messages for the given upload ID. */
-    public Result getValidationStatus(String uploadId) throws JsonProcessingException {
+    public Result getValidationStatus(String uploadId) throws JsonProcessingException, IOException {
         UserSession session = getSessionEitherConsentedOrInRole(Roles.RESEARCHER);
         
         // If not a researcher, validate that this user owns the upload
@@ -56,7 +58,7 @@ public class UploadController extends BaseController {
         UploadValidationStatus validationStatus = uploadService.getUploadValidationStatus(uploadId);
         
         // Upload validation status may contain the health data record. Use the filter to filter out health code.
-        return ok(HealthDataRecord.PUBLIC_RECORD_WRITER.writeValueAsString(validationStatus));
+        return okResult(HealthDataRecord.PUBLIC_RECORD_WRITER, validationStatus);
     }
     
     public Result upload() throws Exception {
@@ -131,6 +133,6 @@ public class UploadController extends BaseController {
         }
 
         // Upload validation status may contain the health data record. Use the filter to filter out health code.
-        return ok(HealthDataRecord.PUBLIC_RECORD_WRITER.writeValueAsString(validationStatus));
+        return okResult(HealthDataRecord.PUBLIC_RECORD_WRITER, validationStatus);
     }
 }

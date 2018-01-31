@@ -128,13 +128,18 @@ public class TestUtils {
     }
     
     public static void assertResult(Result result, int statusCode, String message) throws Exception {
+        assertResult(result, statusCode);
+        
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         String resultMessage = node.get("message").asText();
-        assertEquals(statusCode, result.status());
-        assertEquals("application/json", result.contentType());
         assertEquals(message, resultMessage);
     }
 
+    public static void assertResult(Result result, int statusCode) throws Exception {
+        assertEquals(BridgeConstants.JSON_MIME_TYPE, result.header("Content-Type"));
+        assertEquals(statusCode, result.status());
+    }
+    
     public static Map<SubpopulationGuid,ConsentStatus> toMap(ConsentStatus... statuses) {
         return TestUtils.toMap(Lists.newArrayList(statuses));
     }

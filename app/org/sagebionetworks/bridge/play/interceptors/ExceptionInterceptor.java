@@ -65,7 +65,7 @@ public class ExceptionInterceptor implements MethodInterceptor {
             ConsentRequiredException cre = (ConsentRequiredException)throwable;
             
             JsonNode info = UserSessionInfo.toJSON(cre.getUserSession());
-            return Results.status(cre.getStatusCode(), info.toString());
+            return Results.status(cre.getStatusCode(), info);
         }
         ObjectNode node = BridgeObjectMapper.get().valueToTree(throwable);
         final int status = getStatusCode(throwable);

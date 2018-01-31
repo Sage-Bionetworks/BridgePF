@@ -22,7 +22,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -96,6 +96,7 @@ public class StudyConsentControllerTest {
         when(studyConsentService.getAllConsents(SUBPOP_GUID)).thenReturn(consents);
         
         Result result = controller.getAllConsentsV2(GUID);
+        TestUtils.assertResult(result, 200);
         
         // Do not need to extensively verify, just verify contents are returned in ResourceList
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
@@ -110,6 +111,7 @@ public class StudyConsentControllerTest {
         when(studyConsentService.getActiveConsent(any())).thenReturn(view);
         
         Result result = controller.getActiveConsentV2(GUID);
+        TestUtils.assertResult(result, 200);
         
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals("<document/>", node.get("documentContent").asText());
@@ -123,6 +125,7 @@ public class StudyConsentControllerTest {
         when(studyConsentService.getMostRecentConsent(SUBPOP_GUID)).thenReturn(view);
         
         Result result = controller.getMostRecentConsentV2(GUID);
+        TestUtils.assertResult(result, 200);
         
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals("<document/>", node.get("documentContent").asText());
@@ -136,6 +139,7 @@ public class StudyConsentControllerTest {
         when(studyConsentService.getConsent(SUBPOP_GUID, DateTime.parse(DATETIME_STRING).getMillis())).thenReturn(view);
         
         Result result = controller.getConsentV2(GUID, DATETIME_STRING);
+        TestUtils.assertResult(result, 200);
         
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals("<document/>", node.get("documentContent").asText());
@@ -152,6 +156,7 @@ public class StudyConsentControllerTest {
         when(studyConsentService.addConsent(eq(SUBPOP_GUID), any())).thenReturn(view);
         
         Result result = controller.addConsentV2(GUID);
+        TestUtils.assertResult(result, 201);
         
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals("<document/>", node.get("documentContent").asText());
@@ -164,7 +169,6 @@ public class StudyConsentControllerTest {
         when(studyService.getStudy(STUDY_ID)).thenReturn(STUDY);
         
         Result result = controller.publishConsentV2(GUID, DATETIME_STRING);
-        
         assertResult(result, 200, "Consent document set as active.");
 
         verify(studyConsentService).publishConsent(STUDY, subpopulation, DateTime.parse(DATETIME_STRING).getMillis());

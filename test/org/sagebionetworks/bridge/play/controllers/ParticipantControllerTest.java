@@ -246,7 +246,7 @@ public class ParticipantControllerTest {
         when(mockParticipantService.getParticipant(study, ID, true)).thenReturn(studyParticipant);
         
         Result result = controller.getParticipant(ID);
-        assertEquals(result.contentType(), "application/json");
+        TestUtils.assertResult(result, 200);
         
         // StudyParticipant will encrypt the healthCode when you ask for it, so validate the
         // JSON itself.
@@ -263,6 +263,8 @@ public class ParticipantControllerTest {
         when(mockParticipantService.getParticipant(study, ID, true)).thenReturn(studyParticipant);
         
         Result result = controller.getParticipant(ID);
+        TestUtils.assertResult(result, 200);
+        
         String json = Helpers.contentAsString(result);
         StudyParticipant retrievedParticipant = MAPPER.readValue(json, StudyParticipant.class);
         
@@ -272,8 +274,9 @@ public class ParticipantControllerTest {
     
     @Test
     public void signUserOut() throws Exception {
-        controller.signOut(ID);
-        
+        Result result = controller.signOut(ID);
+        TestUtils.assertResult(result, 200, "User signed out.");
+
         verify(mockParticipantService).signUserOut(study, ID);
     }
 
@@ -325,7 +328,7 @@ public class ParticipantControllerTest {
         
         Result result = controller.createParticipant();
 
-        assertEquals(201, result.status());
+        assertResult(result, 201);
         String id = MAPPER.readTree(Helpers.contentAsString(result)).get("identifier").asText();
         assertEquals(holder.getIdentifier(), id);
         
@@ -353,6 +356,7 @@ public class ParticipantControllerTest {
         
         doReturn(requestInfo).when(cacheProvider).getRequestInfo("userId");
         Result result = controller.getRequestInfo("userId");
+        assertResult(result, 200);
         
         // serialization was tested separately... just validate the object is there
         RequestInfo info = MAPPER.readValue(Helpers.contentAsString(result), RequestInfo.class);
@@ -364,7 +368,7 @@ public class ParticipantControllerTest {
         // There is no request info.
         Result result = controller.getRequestInfo("userId");
         
-        assertEquals(200, result.status());
+        assertResult(result, 200);
         RequestInfo info = MAPPER.readValue(Helpers.contentAsString(result), RequestInfo.class);
         assertNotNull(info); // values are all null, but object is returned
     }
@@ -401,7 +405,8 @@ public class ParticipantControllerTest {
     public void updateParticipantWithMismatchedIdsUsesURL() throws Exception {
         mockPlayContextWithJson(createJson("{'id':'id2'}"));
         
-        controller.updateParticipant("id1");
+        Result result = controller.updateParticipant("id1");
+        assertResult(result, 200, "Participant updated.");
         
         verify(mockParticipantService).updateParticipant(eq(study), eq(CALLER_ROLES), participantCaptor.capture());
         
@@ -418,7 +423,7 @@ public class ParticipantControllerTest {
         when(mockParticipantService.getParticipant(study, ID, false)).thenReturn(studyParticipant);
 
         Result result = controller.getSelfParticipant();
-        assertEquals("application/json", result.contentType());
+        assertResult(result, 200);
         
         verify(mockParticipantService).getParticipant(study, ID, false);
         
@@ -444,7 +449,7 @@ public class ParticipantControllerTest {
 
         Result result = controller.updateSelfParticipant();
         
-        assertEquals(200, result.status());
+        assertResult(result, 200);
         JsonNode node = TestUtils.getJson(result);
         assertEquals("UserSessionInfo", node.get("type").asText());
         assertNull(node.get("healthCode"));
@@ -495,7 +500,7 @@ public class ParticipantControllerTest {
                 "'roles':['admin']}"));
         
         Result result = controller.updateSelfParticipant();
-        assertEquals(200, result.status());
+        assertResult(result, 200);
         JsonNode node = TestUtils.getJson(result);
         assertEquals("UserSessionInfo", node.get("type").asText());
 
@@ -547,8 +552,9 @@ public class ParticipantControllerTest {
         TestUtils.mockPlayContextWithJson(json);
 
         Result result = controller.updateSelfParticipant();
+        assertResult(result, 200);
+        
         JsonNode node = TestUtils.getJson(result);
-        assertEquals(200, result.status());
         assertEquals("UserSessionInfo", node.get("type").asText());
         
         // verify the object is passed to service, one field is sufficient
@@ -566,7 +572,7 @@ public class ParticipantControllerTest {
         
         Result result = controller.getActivityHistoryV2(ID, ACTIVITY_GUID, START_TIME.toString(), END_TIME.toString(),
                 "200", null, "77");
-        assertEquals(200, result.status());
+        assertResult(result, 200);
         ForwardCursorPagedResourceList<ScheduledActivity> page = MAPPER.readValue(Helpers.contentAsString(result),
                 FORWARD_CURSOR_PAGED_ACTIVITIES_REF);
         
@@ -594,7 +600,7 @@ public class ParticipantControllerTest {
         
         Result result = controller.getActivityHistoryV2(ID, ACTIVITY_GUID, START_TIME.toString(), END_TIME.toString(),
                 null, "200", "77");
-        assertEquals(200, result.status());
+        assertResult(result, 200);
         ForwardCursorPagedResourceList<ScheduledActivity> page = MAPPER.readValue(Helpers.contentAsString(result),
                 FORWARD_CURSOR_PAGED_ACTIVITIES_REF);
         
@@ -618,7 +624,7 @@ public class ParticipantControllerTest {
                 eq(study), eq(ID), eq(ACTIVITY_GUID), any(), any(), eq(null), eq(API_DEFAULT_PAGE_SIZE));
         
         Result result = controller.getActivityHistoryV2(ID, ACTIVITY_GUID, null, null, null, null, null);
-        assertEquals(200, result.status());
+        assertResult(result, 200);
         ForwardCursorPagedResourceList<ScheduledActivity> page = MAPPER.readValue(Helpers.contentAsString(result),
                 FORWARD_CURSOR_PAGED_ACTIVITIES_REF);
         
@@ -643,14 +649,16 @@ public class ParticipantControllerTest {
 
     @Test
     public void resendEmailVerification() throws Exception {
-        controller.resendEmailVerification(ID);
-        
+        Result result = controller.resendEmailVerification(ID);
+        assertResult(result, 200, "Email verification request has been resent to user.");
+
         verify(mockParticipantService).resendEmailVerification(study, ID);
     }
     
     @Test
     public void resendConsentAgreement() throws Exception {
-        controller.resendConsentAgreement(ID, SUBPOP_GUID);
+        Result result = controller.resendConsentAgreement(ID, SUBPOP_GUID);
+        assertResult(result, 200, "Consent agreement resent to user.");
         
         verify(mockParticipantService).resendConsentAgreement(study, SubpopulationGuid.create(SUBPOP_GUID), ID);
     }
@@ -700,7 +708,7 @@ public class ParticipantControllerTest {
         doReturn(uploads).when(mockParticipantService).getUploads(study, ID, startTime, endTime, 10, "abc");
         
         Result result = controller.getUploads(ID, startTime.toString(), endTime.toString(), 10, "abc");
-        assertEquals(200, result.status());
+        assertResult(result, 200);
         
         verify(mockParticipantService).getUploads(study, ID, startTime, endTime, 10, "abc");
         
@@ -720,7 +728,7 @@ public class ParticipantControllerTest {
         doReturn(uploads).when(mockParticipantService).getUploads(study, ID, null, null, null, null);
         
         Result result = controller.getUploads(ID, null, null, null, null);
-        assertEquals(200, result.status());
+        assertResult(result, 200);
         
         verify(mockParticipantService).getUploads(study, ID, null, null, null, null);
     }
@@ -731,7 +739,7 @@ public class ParticipantControllerTest {
         doReturn(list).when(mockParticipantService).listRegistrations(study, ID);
         
         Result result = controller.getNotificationRegistrations(ID);
-        assertEquals(200, result.status());
+        assertResult(result, 200);
         JsonNode node = TestUtils.getJson(result);
         assertEquals(0, node.get("items").size());
         assertEquals("ResourceList", node.get("type").asText());
@@ -746,7 +754,7 @@ public class ParticipantControllerTest {
         TestUtils.mockPlayContextWithJson(message);
         Result result = controller.sendNotification(ID);
         
-        TestUtils.assertResult(result, 202, "Message has been sent to external notification service.");
+        assertResult(result, 202, "Message has been sent to external notification service.");
         
         verify(mockParticipantService).sendNotification(eq(study), eq(ID), messageCaptor.capture());
         NotificationMessage captured = messageCaptor.getValue();
@@ -821,7 +829,7 @@ public class ParticipantControllerTest {
         when(mockParticipantService.getParticipant(study, ID, true)).thenReturn(foundParticipant);
         
         Result result = controller.getParticipantForWorker(study.getIdentifier(), ID);
-        assertEquals(200, result.status());
+        assertResult(result, 200);
 
         JsonNode participantNode = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals("healthCode", participantNode.get("healthCode").textValue());
@@ -836,7 +844,7 @@ public class ParticipantControllerTest {
         
         Result result = controller.getActivityHistoryV3(ID, "surveys", "referentGuid", START_TIME.toString(), END_TIME.toString(),
                 "offsetKey", "15");
-        assertEquals(200, result.status());
+        assertResult(result, 200);
 
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals(15, node.get("requestParams").get("pageSize").intValue());
@@ -855,7 +863,8 @@ public class ParticipantControllerTest {
     
     @Test
     public void getActivityHistoryV3DefaultsToNulls() throws Exception {
-        controller.getActivityHistoryV3(ID, "badtypes", null, null, null, null, null);
+        Result result = controller.getActivityHistoryV3(ID, "badtypes", null, null, null, null, null);
+        assertResult(result, 200);
         
         verify(mockParticipantService).getActivityHistory(eq(study), eq(ID), eq(null),
                 eq(null), startTimeCaptor.capture(), endTimeCaptor.capture(), eq(null), eq(BridgeConstants.API_DEFAULT_PAGE_SIZE));
@@ -865,6 +874,8 @@ public class ParticipantControllerTest {
     
     @SuppressWarnings("deprecation")
     private <T> void verifyPagedResourceListParameters(Result result) throws Exception {
+        assertResult(result, 200);
+        
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals(START_TIME.toString(), node.get("startTime").asText());
         assertEquals(END_TIME.toString(), node.get("endTime").asText());

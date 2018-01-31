@@ -87,18 +87,22 @@ public class ApplicationControllerMockTest {
     }
     
     @Test
-    public void verifyEmailWorks() {
+    public void verifyEmailWorks() throws Exception {
         Result result = controller.verifyEmail("test-study");
         
+        assertEquals("text/html; charset=utf-8", result.header("Content-Type"));
+        assertEquals(200, result.status());
         verify(studyService).getStudy("test-study");
         String html = Helpers.contentAsString(result);
         assertTrue(html.contains("Your email address has now been verified."));
     }
     
     @Test
-    public void resetPasswordWorks() {
+    public void resetPasswordWorks() throws Exception {
         Result result = controller.resetPassword("test-study");
         
+        assertEquals("text/html; charset=utf-8", result.header("Content-Type"));
+        assertEquals(200, result.status());
         verify(studyService).getStudy("test-study");
         String html = Helpers.contentAsString(result);
         assertTrue(html.contains("Password is required and must be entered twice."));
@@ -116,6 +120,7 @@ public class ApplicationControllerMockTest {
         
         Result result = controller.startSession("test-study", "email", "token");
 
+        TestUtils.assertResult(result, 200);
         verify(authenticationService).emailSignIn(contextCaptor.capture(), signInCaptor.capture());
         
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
@@ -144,7 +149,7 @@ public class ApplicationControllerMockTest {
         study2.getAndroidAppLinks().add(TestConstants.ANDROID_APP_LINK_4);
         
         Result result = controller.androidAppLinks();
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         JsonNode node = TestUtils.getJson(result);
         assertEquals(TestConstants.ANDROID_APP_LINK, getLinkAtIndex(node, 0));
@@ -171,7 +176,7 @@ public class ApplicationControllerMockTest {
         study2.getAppleAppLinks().add(TestConstants.APPLE_APP_LINK_4);
 
         Result result = controller.appleAppLinks();
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         JsonNode node = TestUtils.getJson(result);
         JsonNode applinks = node.get("applinks");

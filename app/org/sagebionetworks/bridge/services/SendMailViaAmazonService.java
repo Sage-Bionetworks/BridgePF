@@ -64,7 +64,7 @@ public class SendMailViaAmazonService implements SendMailService {
             String fullSenderEmail = provider.getMimeTypeEmail().getSenderAddress();
             MimeTypeEmail email = provider.getMimeTypeEmail();
             for (String recipient: email.getRecipientAddresses()) {
-                sendEmail(fullSenderEmail, recipient, email);
+                sendEmail(fullSenderEmail, recipient, email, provider.getStudy().getIdentifier(), provider.getClass());
             }
         } catch (MessageRejectedException ex) {
             // This happens if the sender email is not verified in SES. In general, it's not useful to app users to
@@ -77,7 +77,8 @@ public class SendMailViaAmazonService implements SendMailService {
         }
     }
 
-    private void sendEmail(String senderEmail, String recipient, MimeTypeEmail email)
+    private void sendEmail(String senderEmail, String recipient, MimeTypeEmail email, String studyId,
+            Class<? extends MimeTypeEmailProvider> providerClass)
             throws AmazonClientException, MessagingException, IOException {
         
         Session mailSession = Session.getInstance(new Properties(), null);
@@ -105,7 +106,8 @@ public class SendMailViaAmazonService implements SendMailService {
         emailClient.setRegion(REGION);
         SendRawEmailResult result = emailClient.sendRawEmail(req);
 
-        logger.info(String.format("Sent email to SES with message ID %s", result.getMessageId()));
+        logger.info("Sent email to SES with messageID " + result.getMessageId() + " with type " +
+                        providerClass.getSimpleName() + " for study " + studyId);
     }
     
 }

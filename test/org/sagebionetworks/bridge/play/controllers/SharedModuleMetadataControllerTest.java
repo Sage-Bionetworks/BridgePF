@@ -78,7 +78,7 @@ public class SharedModuleMetadataControllerTest {
         // setup, execute, and validate
         TestUtils.mockPlayContextWithJson(METADATA_JSON_TEXT);
         Result result = controller.createMetadata();
-        assertEquals(201, result.status());
+        TestUtils.assertResult(result, 201);
         assertMetadataInResult(result);
         assertMetadataInArgCaptor(svcInputMetadataCaptor);
 
@@ -90,7 +90,7 @@ public class SharedModuleMetadataControllerTest {
     public void deleteByIdAllVersions() throws Exception {
         // setup, execute, and validate
         Result result = controller.deleteMetadataByIdAllVersions(MODULE_ID);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
 
         // verify backend
         verify(mockSvc).deleteMetadataByIdAllVersions(MODULE_ID);
@@ -103,7 +103,7 @@ public class SharedModuleMetadataControllerTest {
     public void deleteByIdAndVersion() throws Exception {
         // setup, execute, and validate
         Result result = controller.deleteMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
 
         // verify backend
         verify(mockSvc).deleteMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION);
@@ -119,7 +119,7 @@ public class SharedModuleMetadataControllerTest {
 
         // setup, execute, and validate
         Result result = controller.getMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         assertMetadataInResult(result);
 
         verify(controller, times(0)).getAuthenticatedSession(any());
@@ -132,7 +132,7 @@ public class SharedModuleMetadataControllerTest {
 
         // setup, execute, and validate
         Result result = controller.getMetadataByIdLatestVersion(MODULE_ID);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         assertMetadataInResult(result);
 
         verify(controller, times(0)).getAuthenticatedSession(any());
@@ -146,7 +146,7 @@ public class SharedModuleMetadataControllerTest {
 
         // setup, execute, and validate
         Result result = controller.queryAllMetadata("true", "true", "foo='bar'", "foo,bar,baz");
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         assertMetadataListInResult(result);
 
         verify(controller, times(0)).getAuthenticatedSession(any());
@@ -160,7 +160,7 @@ public class SharedModuleMetadataControllerTest {
 
         // setup, execute, and validate
         Result result = controller.queryMetadataById(MODULE_ID, "true", "true", "foo='bar'", "foo,bar,baz");
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         assertMetadataListInResult(result);
 
         verify(controller, times(0)).getAuthenticatedSession(any());
@@ -186,7 +186,7 @@ public class SharedModuleMetadataControllerTest {
         // setup, execute, and validate
         TestUtils.mockPlayContextWithJson(METADATA_JSON_TEXT);
         Result result = controller.updateMetadata(MODULE_ID, MODULE_VERSION);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         assertMetadataInResult(result);
         assertMetadataInArgCaptor(svcInputMetadataCaptor);
 

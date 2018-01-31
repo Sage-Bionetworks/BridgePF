@@ -91,7 +91,7 @@ public class CompoundActivityDefinitionControllerTest {
 
         // execute and validate
         Result result = controller.createCompoundActivityDefinition();
-        assertEquals(201, result.status());
+        TestUtils.assertResult(result, 201);
         CompoundActivityDefinition controllerOutput = getDefFromResult(result);
         assertEquals(TASK_ID, controllerOutput.getTaskId());
         assertNull(controllerOutput.getStudyId());
@@ -105,7 +105,7 @@ public class CompoundActivityDefinitionControllerTest {
     public void delete() throws Exception {
         // execute and validate
         Result result = controller.deleteCompoundActivityDefinition(TASK_ID);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         String resultJsonText = Helpers.contentAsString(result);
         JsonNode resultJsonNode = BridgeObjectMapper.get().readTree(resultJsonText);
         assertEquals("Compound activity definition has been deleted.", resultJsonNode.get("message").textValue());
@@ -126,7 +126,7 @@ public class CompoundActivityDefinitionControllerTest {
 
         // execute and validate
         Result result = controller.getAllCompoundActivityDefinitionsInStudy();
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
 
         String controllerOutputJsonText = Helpers.contentAsString(result);
         ResourceList<CompoundActivityDefinition> controllerOutputResourceList = BridgeObjectMapper.get().readValue(
@@ -150,7 +150,7 @@ public class CompoundActivityDefinitionControllerTest {
 
         // execute and validate
         Result result = controller.getCompoundActivityDefinition(TASK_ID);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         CompoundActivityDefinition controllerOutput = getDefFromResult(result);
         assertEquals(TASK_ID, controllerOutput.getTaskId());
         assertNull(controllerOutput.getStudyId());
@@ -177,7 +177,7 @@ public class CompoundActivityDefinitionControllerTest {
 
         // execute and validate
         Result result = controller.updateCompoundActivityDefinition(TASK_ID);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         CompoundActivityDefinition controllerOutput = getDefFromResult(result);
         assertEquals(TASK_ID, controllerOutput.getTaskId());
         assertNull(controllerOutput.getStudyId());

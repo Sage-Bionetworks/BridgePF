@@ -82,7 +82,7 @@ public class BridgeConstants {
 
     public static final String ASSETS_HOST = "assets.sagebridge.org";
     
-    public static final String JSON_MIME_TYPE = "application/json; charset=UTF-8";
+    public static final String JSON_MIME_TYPE = "application/json; charset=utf-8";
 
     /** Per-request metrics expires in the cache after 120 seconds. */
     public static final int METRICS_EXPIRE_SECONDS = 2 * 60;

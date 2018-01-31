@@ -124,7 +124,7 @@ public class StudyController extends BaseController {
             List<Study> activeStudiesSummary = studies.stream()
                     .filter(s -> s.isActive()).collect(Collectors.toList());
             Collections.sort(activeStudiesSummary, STUDY_COMPARATOR);
-            return ok(Study.STUDY_LIST_WRITER.writeValueAsString(new ResourceList<Study>(activeStudiesSummary)));
+            return okResult(Study.STUDY_LIST_WRITER, new ResourceList<Study>(activeStudiesSummary));
         }
         getAuthenticatedSession(ADMIN);
 

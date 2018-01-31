@@ -15,6 +15,7 @@ import play.test.Helpers;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleImportStatus;
@@ -50,7 +51,6 @@ public class SharedModuleControllerTest {
 
         // setup, execute, and validate
         Result result = controller.importModuleByIdAndVersion(MODULE_ID, MODULE_VERSION);
-        assertEquals(200, result.status());
         assertStatus(result);
 
         // validate permissions
@@ -65,7 +65,6 @@ public class SharedModuleControllerTest {
 
         // setup, execute, and validate
         Result result = controller.importModuleByIdLatestPublishedVersion(MODULE_ID);
-        assertEquals(200, result.status());
         assertStatus(result);
 
         // validate permissions
@@ -73,6 +72,7 @@ public class SharedModuleControllerTest {
     }
 
     private static void assertStatus(Result result) throws Exception {
+        TestUtils.assertResult(result, 200);
         String jsonText = Helpers.contentAsString(result);
         JsonNode jsonNode = BridgeObjectMapper.get().readTree(jsonText);
         assertEquals("schema", jsonNode.get("moduleType").textValue());

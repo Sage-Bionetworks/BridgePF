@@ -62,8 +62,8 @@ public class ScheduledActivityController extends BaseController {
         List<ScheduledActivity> scheduledActivities = getScheduledActivitiesInternalV3(untilString, offset, daysAhead,
                 minimumPerScheduleString);
         
-        return ok(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER
-                .writeValueAsString(new ResourceList<ScheduledActivity>(scheduledActivities)));
+        return okResult(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER,
+                new ResourceList<ScheduledActivity>(scheduledActivities));
     }
 
     public Result getActivityHistory(String activityGuid, String scheduledOnStartString,
@@ -103,7 +103,7 @@ public class ScheduledActivityController extends BaseController {
                 session.getHealthCode(), activityType, referentGuid, scheduledOnStart, scheduledOnEnd, offsetKey,
                 pageSize);
         
-        return ok(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(page));
+        return okResult(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER, page);
     }
     
     public Result getScheduledActivitiesByDateRange(String startTimeString, String endTimeString) throws Exception {
@@ -127,7 +127,7 @@ public class ScheduledActivityController extends BaseController {
         DateTimeRangeResourceList<ScheduledActivity> results = new DateTimeRangeResourceList<>(scheduledActivities)
                 .withRequestParam(ResourceList.START_TIME, startsOn)
                 .withRequestParam(ResourceList.END_TIME, endsOn);
-        return ok(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(results));
+        return okResult(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER, results);
     }
 
     public Result updateScheduledActivities() throws Exception {

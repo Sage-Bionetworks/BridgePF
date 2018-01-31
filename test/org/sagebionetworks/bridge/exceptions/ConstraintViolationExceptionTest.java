@@ -45,8 +45,7 @@ public class ConstraintViolationExceptionTest {
         doThrow(e).when(invocation).proceed();
         
         Result result = (Result)interceptor.invoke(invocation);
-        
-        assertEquals(409, result.status());
+        TestUtils.assertResult(result, 409);
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         
         assertEquals("Referenced in survey", node.get("message").asText());
@@ -85,8 +84,8 @@ public class ConstraintViolationExceptionTest {
         doThrow(e).when(invocation).proceed();
         
         Result result = (Result)interceptor.invoke(invocation);
-        
-        assertEquals(409, result.status());
+
+        TestUtils.assertResult(result, 409);
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         
         assertEquals(5, node.size());

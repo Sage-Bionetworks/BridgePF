@@ -252,6 +252,8 @@ public class StudyControllerTest {
 
         // execute
         Result result = controller.createStudyAndUsers();
+        TestUtils.assertResult(result, 201);
+        
         String versionHolderStr = Helpers.contentAsString(result);
         VersionHolder versionHolder = BridgeObjectMapper.get().readValue(versionHolderStr, VersionHolder.class);
 
@@ -262,7 +264,6 @@ public class StudyControllerTest {
         assertEquals(mockUsers, capObj.getUsers());
         assertEquals(adminIds, capObj.getAdminIds());
         assertEquals(study.getVersion(), versionHolder.getVersion());
-        assertEquals(201, result.status());
     }
 
 
@@ -277,6 +278,7 @@ public class StudyControllerTest {
         doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
 
         Result result = controller.createSynapse();
+        TestUtils.assertResult(result, 201);
         String synapseIds = Helpers.contentAsString(result);
 
         // verify
@@ -287,7 +289,6 @@ public class StudyControllerTest {
         assertEquals(TEST_PROJECT_ID, synapse.get("projectId").asText());
         assertEquals(TEST_TEAM_ID.longValue(), synapse.get("teamId").asLong());
         assertEquals(SynapseProjectIdTeamIdHolder.class.getName(), "org.sagebionetworks.bridge.models.studies." + synapse.get("type").asText());
-        assertEquals(201, result.status());
     }
 
     @Test
@@ -300,6 +301,8 @@ public class StudyControllerTest {
         when(mockSession.getParticipant()).thenReturn(participant);
         
         Result result = controller.getStudyPublicKeyAsPem();
+        TestUtils.assertResult(result, 200);
+
         String pemFile = Helpers.contentAsString(result);
         
         JsonNode node = BridgeObjectMapper.get().readTree(pemFile);
@@ -312,6 +315,7 @@ public class StudyControllerTest {
         doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
         
         Result result = controller.getEmailStatus();
+        TestUtils.assertResult(result, 200);
         
         verify(mockVerificationService).getEmailStatus(EMAIL_ADDRESS);
         EmailVerificationStatusHolder status = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
@@ -326,6 +330,7 @@ public class StudyControllerTest {
         when(mockVerificationService.verifyEmailAddress(EMAIL_ADDRESS)).thenReturn(EmailVerificationStatus.VERIFIED);
         
         Result result = controller.verifyEmail();
+        TestUtils.assertResult(result, 200);
         
         verify(mockVerificationService).verifyEmailAddress(EMAIL_ADDRESS);
         EmailVerificationStatusHolder status = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
@@ -370,7 +375,7 @@ public class StudyControllerTest {
         doReturn(uploads).when(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
         
         Result result = controller.getUploads(startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         verify(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
         verify(mockStudyService, never()).getStudy(studyId.toString());
@@ -433,7 +438,7 @@ public class StudyControllerTest {
 
         Result result = controller.getUploadsForStudy(studyId.getIdentifier(), startTime.toString(), endTime.toString(),
                 API_MAXIMUM_PAGE_SIZE, null);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
 
         verify(mockUploadService).getStudyUploads(studyId, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
 
@@ -453,7 +458,8 @@ public class StudyControllerTest {
         doReturn(studies).when(mockStudyService).getStudies();
         
         Result result = controller.getAllStudies("summary", null);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
+
         assertFalse(Helpers.contentAsString(result).contains("healthCodeExportEnabled"));
 
         // Throw an exception if the code makes it this far.
@@ -466,7 +472,8 @@ public class StudyControllerTest {
         doReturn(studies).when(mockStudyService).getStudies();
         
         Result result = controller.getAllStudies(null, "true");
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
+
         assertFalse(Helpers.contentAsString(result).contains("healthCodeExportEnabled"));
         
         // Throw an exception if the code makes it this far.
@@ -486,7 +493,8 @@ public class StudyControllerTest {
         doReturn(studies).when(mockStudyService).getStudies();
 
         Result result = controller.getAllStudies("summary", null);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
+
         // only active studies will be returned
         byte[] body = JavaResultExtractor.getBody(result, 0L);
         JsonNode recordJsonNode = DefaultObjectMapper.INSTANCE.readTree(body);
@@ -507,7 +515,8 @@ public class StudyControllerTest {
         doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
         
         Result result = controller.getAllStudies(null, "false");
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
+
         assertTrue(Helpers.contentAsString(result).contains("healthCodeExportEnabled"));
     }
         
@@ -519,7 +528,7 @@ public class StudyControllerTest {
         doReturn(session).when(controller).getSessionIfItExists();
         
         Result result = controller.getCurrentStudy();
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         Study study = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result), Study.class);
         assertEquals(EMAIL_ADDRESS, study.getSupportEmail());        

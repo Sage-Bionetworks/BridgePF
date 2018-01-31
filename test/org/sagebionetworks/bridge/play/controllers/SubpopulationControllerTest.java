@@ -95,8 +95,8 @@ public class SubpopulationControllerTest {
         when(subpopService.getSubpopulations(study.getStudyIdentifier())).thenReturn(list);
         
         Result result = controller.getAllSubpopulations();
-        
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
+
         String json = Helpers.contentAsString(result);
         
         ResourceList<Subpopulation> rList = BridgeObjectMapper.get().readValue(json, subpopType);
@@ -117,7 +117,8 @@ public class SubpopulationControllerTest {
         doReturn(createdSubpop).when(subpopService).createSubpopulation(eq(study), captor.capture());
 
         Result result = controller.createSubpopulation();
-        assertEquals(201, result.status());
+        TestUtils.assertResult(result, 201);
+
         String responseJSON = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(responseJSON);
         assertEquals("AAA", node.get("guid").asText());
@@ -146,7 +147,8 @@ public class SubpopulationControllerTest {
         doReturn(createdSubpop).when(subpopService).updateSubpopulation(eq(study), captor.capture());
 
         Result result = controller.updateSubpopulation("AAA");
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
+
         String responseJSON = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(responseJSON);
         assertEquals("AAA", node.get("guid").asText());
@@ -174,10 +176,10 @@ public class SubpopulationControllerTest {
         doReturn(subpop).when(subpopService).getSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID);
         
         Result result = controller.getSubpopulation(SUBPOP_GUID.getGuid());
-        
+        TestUtils.assertResult(result, 200);
+
         // Serialization has been tested elsewhere, we're not testing it all here, we're just
         // verifying the object is returned in the API
-        assertEquals(200, result.status());
         String json = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         assertEquals("Subpopulation", node.get("type").asText());

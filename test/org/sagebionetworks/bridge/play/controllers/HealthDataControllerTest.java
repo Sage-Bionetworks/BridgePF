@@ -126,7 +126,7 @@ public class HealthDataControllerTest {
 
         // execute and validate - Just check record ID. Health Code is filtered out.
         Result result = controller.submitHealthData();
-        assertEquals(201, result.status());
+        TestUtils.assertResult(result, 201);
         HealthDataRecord controllerRecord = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
                 HealthDataRecord.class);
         assertEquals(TEST_RECORD_ID, controllerRecord.getId());
@@ -182,6 +182,7 @@ public class HealthDataControllerTest {
 
         // execute and validate
         Result result = controller.updateRecordsStatus();
+        TestUtils.assertResult(result, 200, "Update exporter status to: " + ImmutableList.of(TEST_RECORD_ID) + " complete.");
 
         // first verify if it calls the service
         verify(healthDataService).updateRecordsWithExporterStatus(anyVararg());
@@ -190,8 +191,5 @@ public class HealthDataControllerTest {
         RecordExportStatusRequest capturedRequest = requestArgumentCaptor.getValue();
         assertEquals(TEST_RECORD_ID, capturedRequest.getRecordIds().get(0));
         assertEquals(TEST_STATUS, capturedRequest.getSynapseExporterStatus());
-
-        // finally, verify the return result
-        TestUtils.assertResult(result, 200, "Update exporter status to: " + ImmutableList.of(TEST_RECORD_ID) + " complete.");
     }
 }
