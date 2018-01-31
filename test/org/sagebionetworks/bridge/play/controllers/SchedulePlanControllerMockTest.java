@@ -119,7 +119,7 @@ public class SchedulePlanControllerMockTest {
         when(mockSchedulePlanService.getSchedulePlans(any(), eq(study.getStudyIdentifier()))).thenReturn(plans);
         
         Result result = controller.getSchedulePlans();
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         verify(mockSchedulePlanService).getSchedulePlans(any(), eq(study.getStudyIdentifier()));
         
@@ -136,7 +136,7 @@ public class SchedulePlanControllerMockTest {
         when(mockSchedulePlanService.getSchedulePlan(study.getStudyIdentifier(), "GGG")).thenReturn(plan);
         
         Result result = controller.getSchedulePlan("GGG");
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         verify(mockSchedulePlanService).getSchedulePlan(study.getStudyIdentifier(), "GGG");
         
@@ -145,9 +145,9 @@ public class SchedulePlanControllerMockTest {
     }
     
     @Test
-    public void deleteSchedulePlan() {
+    public void deleteSchedulePlan() throws Exception {
         Result result = controller.deleteSchedulePlan("GGG");
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200, "Schedule plan deleted.");
         
         verify(mockSchedulePlanService).deleteSchedulePlan(study.getStudyIdentifier(), "GGG");
     }

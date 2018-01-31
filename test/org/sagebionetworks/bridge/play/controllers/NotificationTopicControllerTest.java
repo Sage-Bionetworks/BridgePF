@@ -79,7 +79,7 @@ public class NotificationTopicControllerTest {
         doReturn(Lists.newArrayList(topic)).when(mockTopicService).listTopics(TEST_STUDY);
 
         Result result = controller.getAllTopics();
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
 
         JsonNode node = getResultNode(result);
         assertEquals(1, node.get("items").size());
@@ -97,9 +97,9 @@ public class NotificationTopicControllerTest {
         doReturn(topic).when(mockTopicService).createTopic(any());
 
         Result result = controller.createTopic();
-
+        TestUtils.assertResult(result, 201);
+        
         JsonNode node = getResultNode(result);
-        assertEquals(201, result.status());
         assertEquals("topicGuid", node.get("guid").asText());
         assertEquals("GuidHolder", node.get("type").asText());
 
@@ -115,7 +115,8 @@ public class NotificationTopicControllerTest {
         doReturn(topic).when(mockTopicService).getTopic(TEST_STUDY, GUID);
 
         Result result = controller.getTopic(GUID);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
+        
         JsonNode node = getResultNode(result);
         assertEquals("NotificationTopic", node.get("type").asText());
 
@@ -133,6 +134,7 @@ public class NotificationTopicControllerTest {
         mockPlayContextWithJson(topic);
 
         Result result = controller.updateTopic(GUID);
+        TestUtils.assertResult(result, 200);
 
         JsonNode node = getResultNode(result);
         assertEquals("GuidHolder", node.get("type").asText());
@@ -144,9 +146,9 @@ public class NotificationTopicControllerTest {
     }
 
     @Test
-    public void deleteTopic() {
+    public void deleteTopic() throws Exception {
         Result result = controller.deleteTopic(GUID);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
 
         verify(mockTopicService).deleteTopic(TEST_STUDY, GUID);
     }
@@ -166,7 +168,7 @@ public class NotificationTopicControllerTest {
         TestUtils.mockPlayContextWithJson(message);
 
         Result result = controller.sendNotification(GUID);
-        assertEquals(202, result.status());
+        TestUtils.assertResult(result, 202);
 
         verify(mockTopicService).sendNotification(eq(TEST_STUDY), eq(GUID), messageCaptor.capture());
         NotificationMessage captured = messageCaptor.getValue();

@@ -107,12 +107,12 @@ public class FPHSControllerTest {
     @Test
     public void verifyOK() throws Exception {
         Result result = controller.verifyExternalIdentifier("foo");
+        assertResult(result, 200);
         JsonNode node = resultToJson(result);
         
         // No session is required
         verifyNoMoreInteractions(authenticationService);
         assertEquals("foo", node.get("externalId").asText());
-        assertEquals(200, result.status());
     }
     
     @Test
@@ -182,6 +182,8 @@ public class FPHSControllerTest {
                 .withRoles(Sets.newHashSet(Roles.ADMIN)).build());
         
         Result result = controller.getExternalIdentifiers();
+        assertResult(result, 200);
+        
         JsonNode node = resultToJson(result);
         
         assertEquals(2, node.get("items").size());
@@ -217,13 +219,12 @@ public class FPHSControllerTest {
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(Sets.newHashSet(Roles.ADMIN)).build());
         Result result = controller.addExternalIdentifiers();
+        assertResult(result, 201, "External identifiers added.");
         
         ArgumentCaptor<List> captor = ArgumentCaptor.forClass(List.class);
         verify(fphsService).addExternalIdentifiers(captor.capture());
         
         List<FPHSExternalIdentifier> passedList = (List<FPHSExternalIdentifier>)captor.getValue();
         assertEquals(2, passedList.size());
-        
-        assertResult(result, 201, "External identifiers added.");
     }
 }

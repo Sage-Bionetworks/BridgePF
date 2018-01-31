@@ -236,6 +236,8 @@ public class SurveyControllerTest {
 
         // execute and validate
         Result result = controller.getAllSurveysMostRecentlyPublishedVersionForStudy(API_STUDY_ID.getIdentifier());
+        TestUtils.assertResult(result, 200);
+        
         String resultStr = Helpers.contentAsString(result);
         ResourceList<Survey> resultSurveyResourceList = BridgeObjectMapper.get().readValue(resultStr,
                 TYPE_REF_SURVEY_LIST);
@@ -346,6 +348,8 @@ public class SurveyControllerTest {
 
         // execute and validate
         Result result = controller.getSurvey(SURVEY_GUID, CREATED_ON.toString());
+        TestUtils.assertResult(result, 200);
+        
         String resultStr = Helpers.contentAsString(result);
         Survey resultSurvey = BridgeObjectMapper.get().readValue(resultStr, Survey.class);
         assertEquals("test-survey", resultSurvey.getGuid());
@@ -356,8 +360,9 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
         when(service.getSurveyMostRecentVersion(API_STUDY_ID, SURVEY_GUID)).thenReturn(getSurvey(false));
         
-        controller.getSurveyMostRecentVersion(SURVEY_GUID);
-        
+        Result result = controller.getSurveyMostRecentVersion(SURVEY_GUID);
+        TestUtils.assertResult(result, 200);
+
         verify(service).getSurveyMostRecentVersion(API_STUDY_ID, SURVEY_GUID);
         verifyNoMoreInteractions(service);
     }
@@ -385,8 +390,9 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
         when(service.getSurveyMostRecentlyPublishedVersion(API_STUDY_ID, SURVEY_GUID)).thenReturn(getSurvey(false));
         
-        controller.getSurveyMostRecentlyPublishedVersion(SURVEY_GUID);
-        
+        Result result = controller.getSurveyMostRecentlyPublishedVersion(SURVEY_GUID);
+        TestUtils.assertResult(result, 200);
+
         verify(service).getSurveyMostRecentlyPublishedVersion(API_STUDY_ID, SURVEY_GUID);
         verifyNoMoreInteractions(service);
     }
@@ -412,7 +418,8 @@ public class SurveyControllerTest {
         Survey survey = getSurvey(false);
         when(service.getSurvey(KEYS)).thenReturn(survey);
         
-        controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
+        Result result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
+        TestUtils.assertResult(result, 200, "Survey deleted.");
 
         verify(service).getSurvey(KEYS);
         verify(service).deleteSurvey(survey);
@@ -426,7 +433,8 @@ public class SurveyControllerTest {
         Survey survey = getSurvey(false);
         when(service.getSurvey(KEYS)).thenReturn(survey);
         
-        controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "true");
+        Result result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "true");
+        TestUtils.assertResult(result, 200, "Survey deleted.");
         
         verify(service).getSurvey(KEYS);
         verify(service).deleteSurvey(survey);
@@ -440,7 +448,8 @@ public class SurveyControllerTest {
         Survey survey = getSurvey(false);
         when(service.getSurvey(KEYS)).thenReturn(survey);
         
-        controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "true");
+        Result result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "true");
+        TestUtils.assertResult(result, 200, "Survey deleted.");
         
         verify(service).getSurvey(KEYS);
         verify(service).deleteSurveyPermanently(API_STUDY_ID, survey);
@@ -469,7 +478,8 @@ public class SurveyControllerTest {
         
         when(service.getSurvey(KEYS)).thenThrow(new EntityNotFoundException(Survey.class));
         
-        controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
+        Result result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
+        TestUtils.assertResult(result, 200, "Survey deleted.");        
     }
     
     @Test
@@ -494,7 +504,8 @@ public class SurveyControllerTest {
         
         when(service.getSurveyAllVersions(API_STUDY_ID, SURVEY_GUID)).thenReturn(getSurveys(3, false));
         
-        controller.getSurveyAllVersions(SURVEY_GUID);
+        Result result = controller.getSurveyAllVersions(SURVEY_GUID);
+        TestUtils.assertResult(result, 200);
         
         verify(service).getSurveyAllVersions(API_STUDY_ID, SURVEY_GUID);
         verifyNoMoreInteractions(service);
@@ -525,7 +536,8 @@ public class SurveyControllerTest {
         survey.setCreatedOn(DateTime.now().getMillis());
         when(service.createSurvey(any(Survey.class))).thenReturn(survey);
         
-        controller.createSurvey();
+        Result result = controller.createSurvey();
+        TestUtils.assertResult(result, 201);
 
         verify(service).createSurvey(any(Survey.class));
         verifyNoMoreInteractions(service);
@@ -542,8 +554,9 @@ public class SurveyControllerTest {
         when(service.getSurvey(KEYS)).thenReturn(survey);
         when(service.versionSurvey(any(Survey.class))).thenReturn(survey);
         
-        controller.versionSurvey(SURVEY_GUID, CREATED_ON.toString());
-
+        Result result = controller.versionSurvey(SURVEY_GUID, CREATED_ON.toString());
+        TestUtils.assertResult(result, 201);
+        
         verify(service).getSurvey(KEYS);
         verify(service).versionSurvey(survey);
         verifyNoMoreInteractions(service);
@@ -574,7 +587,8 @@ public class SurveyControllerTest {
         when(service.getSurvey(KEYS)).thenReturn(survey);
         when(service.updateSurvey(any(Survey.class))).thenReturn(survey);
         
-        controller.updateSurvey(SURVEY_GUID, CREATED_ON.toString());
+        Result result = controller.updateSurvey(SURVEY_GUID, CREATED_ON.toString());
+        TestUtils.assertResult(result, 200);
         
         verify(service).getSurvey(KEYS);
         verify(service).updateSurvey(any(Survey.class));
@@ -606,7 +620,8 @@ public class SurveyControllerTest {
         when(service.getSurvey(KEYS)).thenReturn(survey);
         when(service.publishSurvey(eq(TEST_STUDY), any(Survey.class), anyBoolean())).thenReturn(survey);
 
-        controller.publishSurvey(SURVEY_GUID, CREATED_ON.toString(), null);
+        Result result = controller.publishSurvey(SURVEY_GUID, CREATED_ON.toString(), null);
+        TestUtils.assertResult(result, 200);
         
         verify(service).getSurvey(KEYS);
         verify(service).publishSurvey(TEST_STUDY, survey, false);
@@ -621,8 +636,9 @@ public class SurveyControllerTest {
         when(service.getSurvey(KEYS)).thenReturn(survey);
         when(service.publishSurvey(eq(TEST_STUDY), any(Survey.class), anyBoolean())).thenReturn(survey);
 
-        controller.publishSurvey(SURVEY_GUID, CREATED_ON.toString(), "true");
-
+        Result result = controller.publishSurvey(SURVEY_GUID, CREATED_ON.toString(), "true");
+        TestUtils.assertResult(result, 200);
+        
         verify(service).getSurvey(KEYS);
         verify(service).publishSurvey(TEST_STUDY, survey, true);
         verifyNoMoreInteractions(service);
@@ -700,7 +716,8 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, null, CONSENTED, null);
         when(service.getSurvey(KEYS)).thenReturn(getSurvey(false));
         
-        controller.getSurveyForUser(SURVEY_GUID, CREATED_ON.toString());
+        Result result = controller.getSurveyForUser(SURVEY_GUID, CREATED_ON.toString());
+        TestUtils.assertResult(result, 200);
         
         try {
             setupContext(SECONDSTUDY_STUDY_ID, null, CONSENTED, null);
@@ -716,7 +733,8 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, null, CONSENTED, null);
         when(service.getSurveyMostRecentlyPublishedVersion(API_STUDY_ID, SURVEY_GUID)).thenReturn(getSurvey(false));
         
-        controller.getSurveyMostRecentlyPublishedVersionForUser(SURVEY_GUID);
+        Result result = controller.getSurveyMostRecentlyPublishedVersionForUser(SURVEY_GUID);
+        TestUtils.assertResult(result, 200);
         
         try {
             setupContext(SECONDSTUDY_STUDY_ID, null, CONSENTED, null);
@@ -733,7 +751,8 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
         
         when(service.getSurvey(KEYS)).thenReturn(getSurvey(false));
-        controller.getSurvey(SURVEY_GUID, CREATED_ON.toString());
+        Result result = controller.getSurvey(SURVEY_GUID, CREATED_ON.toString());
+        TestUtils.assertResult(result, 200);
         
         try {
             setupContext(SECONDSTUDY_STUDY_ID, DEVELOPER, UNCONSENTED, null);
@@ -750,7 +769,8 @@ public class SurveyControllerTest {
         
         when(service.getSurveyMostRecentVersion(API_STUDY_ID, SURVEY_GUID)).thenReturn(getSurvey(false));
         when(service.getSurveyMostRecentVersion(API_STUDY_ID, SURVEY_GUID)).thenReturn(getSurvey(false));
-        controller.getSurveyMostRecentVersion(SURVEY_GUID);
+        Result result = controller.getSurveyMostRecentVersion(SURVEY_GUID);
+        TestUtils.assertResult(result, 200);
         
         try {
             setupContext(SECONDSTUDY_STUDY_ID, DEVELOPER, UNCONSENTED, null);
@@ -767,7 +787,8 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
         
         when(service.getSurveyMostRecentlyPublishedVersion(API_STUDY_ID, SURVEY_GUID)).thenReturn(getSurvey(false));
-        controller.getSurveyMostRecentlyPublishedVersion(SURVEY_GUID);
+        Result result = controller.getSurveyMostRecentlyPublishedVersion(SURVEY_GUID);
+        TestUtils.assertResult(result, 200);
         
         try {
             setupContext(SECONDSTUDY_STUDY_ID, DEVELOPER, UNCONSENTED, null);
@@ -817,7 +838,8 @@ public class SurveyControllerTest {
                 Survey.class, SURVEY_GUID, CREATED_ON.toString(), "api"), () -> { return survey; });
         
         // Verify this call hits the cache not the service
-        controller.getSurvey(SURVEY_GUID, CREATED_ON.toString());
+        Result result = controller.getSurvey(SURVEY_GUID, CREATED_ON.toString());
+        TestUtils.assertResult(result, 200);        
         verifyNoMoreInteractions(service);
 
         // Now mock the service because the *next* call (publish/delete/etc) will require it. The 

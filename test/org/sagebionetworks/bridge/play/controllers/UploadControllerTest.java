@@ -269,7 +269,7 @@ public class UploadControllerTest {
     }
 
     private static void validateValidationStatus(Result result) throws Exception {
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
 
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals(UPLOAD_ID, node.get("id").textValue());

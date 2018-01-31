@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
+import java.io.IOException;
 import java.util.List;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -42,7 +43,7 @@ public class UploadSchemaController extends BaseController {
 
         UploadSchema uploadSchema = parseJson(request(), UploadSchema.class);
         UploadSchema createdSchema = uploadSchemaService.createSchemaRevisionV4(studyId, uploadSchema);
-        return created(UploadSchema.PUBLIC_SCHEMA_WRITER.writeValueAsString(createdSchema));
+        return createdResult(UploadSchema.PUBLIC_SCHEMA_WRITER, createdSchema);
     }
 
     /**
@@ -52,13 +53,13 @@ public class UploadSchemaController extends BaseController {
      *
      * @return Play result, with the created or updated schema in JSON format
      */
-    public Result createOrUpdateUploadSchema() throws JsonProcessingException {
+    public Result createOrUpdateUploadSchema() throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
         UploadSchema uploadSchema = parseJson(request(), UploadSchema.class);
         UploadSchema createdSchema = uploadSchemaService.createOrUpdateUploadSchema(studyId, uploadSchema);
-        return ok(UploadSchema.PUBLIC_SCHEMA_WRITER.writeValueAsString(createdSchema));
+        return okResult(UploadSchema.PUBLIC_SCHEMA_WRITER, createdSchema);
     }
 
     /**
@@ -86,12 +87,12 @@ public class UploadSchemaController extends BaseController {
      *         schema ID to fetch
      * @return Play result with the fetched schema in JSON format
      */
-    public Result getUploadSchema(String schemaId) throws JsonProcessingException {
+    public Result getUploadSchema(String schemaId) throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
         UploadSchema uploadSchema = uploadSchemaService.getUploadSchema(studyId, schemaId);
-        return ok(UploadSchema.PUBLIC_SCHEMA_WRITER.writeValueAsString(uploadSchema));
+        return okResult(UploadSchema.PUBLIC_SCHEMA_WRITER, uploadSchema);
     }
     
     /**
@@ -101,13 +102,13 @@ public class UploadSchemaController extends BaseController {
      *         schema ID to fetch
      * @return Play result with an array of all revisions of the fetched schema in JSON format
      */
-    public Result getUploadSchemaAllRevisions(String schemaId) throws JsonProcessingException {
+    public Result getUploadSchemaAllRevisions(String schemaId) throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
         List<UploadSchema> uploadSchemas = uploadSchemaService.getUploadSchemaAllRevisions(studyId, schemaId);
         ResourceList<UploadSchema> uploadSchemaResourceList = new ResourceList<>(uploadSchemas);
-        return ok(UploadSchema.PUBLIC_SCHEMA_WRITER.writeValueAsString(uploadSchemaResourceList));
+        return okResult(UploadSchema.PUBLIC_SCHEMA_WRITER, uploadSchemaResourceList);
     }
 
     /**
@@ -120,12 +121,12 @@ public class UploadSchemaController extends BaseController {
      *         revision number of the schema to fetch, must be positive
      * @return Play result with the fetched schema in JSON format
      */
-    public Result getUploadSchemaByIdAndRev(String schemaId, int rev) throws JsonProcessingException {
+    public Result getUploadSchemaByIdAndRev(String schemaId, int rev) throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
         UploadSchema uploadSchema = uploadSchemaService.getUploadSchemaByIdAndRev(studyId, schemaId, rev);
-        return ok(UploadSchema.PUBLIC_SCHEMA_WRITER.writeValueAsString(uploadSchema));
+        return okResult(UploadSchema.PUBLIC_SCHEMA_WRITER, uploadSchema);
     }
 
     /**
@@ -158,7 +159,7 @@ public class UploadSchemaController extends BaseController {
 
         List<UploadSchema> schemaList = uploadSchemaService.getUploadSchemasForStudy(studyId);
         ResourceList<UploadSchema> schemaResourceList = new ResourceList<>(schemaList);
-        return ok(UploadSchema.PUBLIC_SCHEMA_WRITER.writeValueAsString(schemaResourceList));
+        return okResult(UploadSchema.PUBLIC_SCHEMA_WRITER, schemaResourceList);
     }
 
     /**
@@ -171,13 +172,13 @@ public class UploadSchemaController extends BaseController {
      *         schema revision to update
      * @return Play result, with the updated schema
      */
-    public Result updateSchemaRevisionV4(String schemaId, int revision) throws JsonProcessingException {
+    public Result updateSchemaRevisionV4(String schemaId, int revision) throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
         UploadSchema uploadSchema = parseJson(request(), UploadSchema.class);
         UploadSchema updatedSchema = uploadSchemaService.updateSchemaRevisionV4(studyId, schemaId, revision,
                 uploadSchema);
-        return ok(UploadSchema.PUBLIC_SCHEMA_WRITER.writeValueAsString(updatedSchema));
+        return okResult(UploadSchema.PUBLIC_SCHEMA_WRITER, updatedSchema);
     }
 }

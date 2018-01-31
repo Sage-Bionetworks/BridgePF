@@ -180,7 +180,7 @@ public class ConsentControllerMockedTest {
     public void testChangeSharingScope() throws Exception {
         Result result = controller.changeSharingScope(SharingScope.NO_SHARING, "message");
         
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result,  200);
         JsonNode node = TestUtils.getJson(result);
         assertEquals("no_sharing", node.get("sharingScope").asText());
         assertFalse(node.get("dataSharing").asBoolean());
@@ -197,7 +197,8 @@ public class ConsentControllerMockedTest {
         when(consentService.getConsentSignature(study, DEFAULT_SUBPOP_GUID, session.getId())).thenReturn(sig);
 
         Result result = controller.getConsentSignature();
-
+        TestUtils.assertResult(result,  200);
+        
         String json = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
 
@@ -223,6 +224,7 @@ public class ConsentControllerMockedTest {
 
         // This signs the default consent
         Result result = controller.giveV2();
+        TestUtils.assertResult(result,  201);
         
         assertConsentInSession(result, SharingScope.NO_SHARING, DEFAULT_SUBPOP_GUID);
 
@@ -243,6 +245,7 @@ public class ConsentControllerMockedTest {
         when(consentService.getConsentStatuses(any())).thenAnswer(createAnswer(true, DEFAULT_SUBPOP_GUID));
         
         Result result = controller.giveV2();
+        TestUtils.assertResult(result,  201);
         
         assertConsentInSession(result, SharingScope.NO_SHARING, DEFAULT_SUBPOP_GUID);
         
@@ -262,6 +265,7 @@ public class ConsentControllerMockedTest {
                 anyInt())).thenAnswer(createAnswer(false, SUBPOP_GUID));
 
         Result result = controller.withdrawConsent();
+        TestUtils.assertResult(result,  200);
         
         assertWithdrawnInSession(result, SharingScope.NO_SHARING, DEFAULT_SUBPOP_GUID);
         
@@ -284,6 +288,7 @@ public class ConsentControllerMockedTest {
                 anyInt())).thenAnswer(createAnswer(false, DEFAULT_SUBPOP_GUID));
 
         Result result = controller.withdrawConsent();
+        TestUtils.assertResult(result,  200);
         
         assertWithdrawnInSession(result, SharingScope.NO_SHARING, DEFAULT_SUBPOP_GUID);
         
@@ -299,7 +304,8 @@ public class ConsentControllerMockedTest {
         when(consentService.getConsentSignature(study, SUBPOP_GUID, session.getId())).thenReturn(sig);
 
         Result result = controller.getConsentSignatureV2(SUBPOP_GUID.getGuid());
-
+        TestUtils.assertResult(result,  200);
+        
         String json = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
 
@@ -587,7 +593,7 @@ public class ConsentControllerMockedTest {
     public void dataSharingSuspendedUpdatesSession() throws Exception {
         Result result = controller.suspendDataSharing();
 
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         JsonNode node = TestUtils.getJson(result);
         assertEquals("no_sharing", node.get("sharingScope").asText());
         assertFalse(node.get("dataSharing").asBoolean());
@@ -600,7 +606,7 @@ public class ConsentControllerMockedTest {
     public void dataSharingResumedUpdatesSession() throws Exception {
         Result result = controller.resumeDataSharing();
 
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         JsonNode node = TestUtils.getJson(result);
         assertEquals("sponsors_and_partners", node.get("sharingScope").asText());
         assertTrue(node.get("dataSharing").asBoolean());
@@ -609,7 +615,7 @@ public class ConsentControllerMockedTest {
     }
     
     private void assertConsentInSession(Result result, SharingScope scope, SubpopulationGuid subpopGuid) throws Exception {
-        assertEquals(201, result.status());
+        TestUtils.assertResult(result, 201);
         JsonNode node = TestUtils.getJson(result);
         assertEquals(USER_ID, node.get("id").asText());
         assertEquals(scope.name().toLowerCase(), node.get("sharingScope").asText());
@@ -620,7 +626,7 @@ public class ConsentControllerMockedTest {
     }
     
     private void assertWithdrawnInSession(Result result, SharingScope sharingScope, SubpopulationGuid subpopGuid) throws Exception {
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         JsonNode node = TestUtils.getJson(result);
 
         assertEquals(USER_ID, node.get("id").asText());

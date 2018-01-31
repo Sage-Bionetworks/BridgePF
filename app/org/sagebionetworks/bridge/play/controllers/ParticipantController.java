@@ -276,7 +276,7 @@ public class ParticipantController extends BaseController {
         ForwardCursorPagedResourceList<ScheduledActivity> page = participantService.getActivityHistory(study, userId,
                 activityType, referentGuid, scheduledOnStart, scheduledOnEnd, offsetKey, pageSize);
         
-        return ok(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(page));
+        return okResult(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER, page);
     }
     
     public Result deleteActivities(String userId) throws Exception {

@@ -178,8 +178,8 @@ public class ParticipantReportControllerTest {
                 REPORT_ID, HEALTH_CODE, START_DATE, END_DATE);
         
         Result result = controller.getParticipantReportForSelf(REPORT_ID, START_DATE.toString(), END_DATE.toString());
-        assertEquals(200, result.status());
-        assertResult(result);
+        TestUtils.assertResult(result, 200);
+        assertResultContent(result);
     }
     
     @Test
@@ -191,7 +191,7 @@ public class ParticipantReportControllerTest {
         
         Result result = controller.getParticipantReportForSelfV4(REPORT_ID, START_TIME.toString(), END_TIME.toString(),
                 OFFSET_KEY, PAGE_SIZE);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         ForwardCursorPagedResourceList<ReportData> page = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), ReportData.PAGED_REPORT_DATA);
@@ -211,7 +211,7 @@ public class ParticipantReportControllerTest {
         TestUtils.mockPlayContextWithJson(json);
         
         Result result = controller.saveParticipantReportForSelf(REPORT_ID);
-        assertEquals(201, result.status());
+        TestUtils.assertResult(result, 201);
         
         verify(mockReportService).saveParticipantReport(eq(session.getStudyIdentifier()), eq(REPORT_ID),
                 eq(HEALTH_CODE), reportDataCaptor.capture());
@@ -231,8 +231,9 @@ public class ParticipantReportControllerTest {
                 REPORT_ID, HEALTH_CODE, null, null);
         
         Result result = controller.getParticipantReportForSelf(REPORT_ID, null, null);
-        assertEquals(200, result.status());
-        assertResult(result);
+        TestUtils.assertResult(result, 200);
+
+        assertResultContent(result);
     }
 
     @Test
@@ -249,7 +250,7 @@ public class ParticipantReportControllerTest {
         
         Result result = controller.getParticipantReportV4(OTHER_PARTICIPANT_ID, REPORT_ID, START_TIME.toString(),
                 END_TIME.toString(), OFFSET_KEY, PAGE_SIZE);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         ForwardCursorPagedResourceList<ReportData> page = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), ReportData.PAGED_REPORT_DATA);
@@ -276,8 +277,8 @@ public class ParticipantReportControllerTest {
         
         Result result = controller.getParticipantReport(OTHER_PARTICIPANT_ID, REPORT_ID, START_DATE.toString(),
                 END_DATE.toString());
-        assertEquals(200, result.status());
-        assertResult(result);
+        TestUtils.assertResult(result, 200);
+        assertResultContent(result);
     }
     
     @Test
@@ -342,7 +343,7 @@ public class ParticipantReportControllerTest {
     @Test
     public void getParticipantReportIndices() throws Exception {
         Result result = controller.listParticipantReportIndices();
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         ReportTypeResourceList<ReportIndex> results = BridgeObjectMapper.get().readValue(
                 Helpers.contentAsString(result),
@@ -381,12 +382,14 @@ public class ParticipantReportControllerTest {
     }
     
     @Test
-    public void adminCanDeleteParticipantIndex() {
+    public void adminCanDeleteParticipantIndex() throws Exception {
         StudyParticipant regularUser = new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(Sets.newHashSet(Roles.ADMIN)).build();
             session.setParticipant(regularUser);
         
-        controller.deleteParticipantReportIndex(REPORT_ID);
+        Result result = controller.deleteParticipantReportIndex(REPORT_ID);
+        TestUtils.assertResult(result, 200, "Report index deleted.");
+        
         verify(mockReportService).deleteParticipantReportIndex(TEST_STUDY, REPORT_ID);
     }
     
@@ -395,7 +398,7 @@ public class ParticipantReportControllerTest {
         controller.deleteParticipantReportIndex(REPORT_ID);
     }
     
-    private void assertResult(Result result) throws Exception {
+    private void assertResultContent(Result result) throws Exception {
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals("2015-01-02", node.get("startDate").asText());
         assertEquals("2015-02-02", node.get("endDate").asText());

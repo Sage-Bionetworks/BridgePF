@@ -89,6 +89,8 @@ public class ScheduleControllerTest {
     @Test
     public void getSchedules() throws Exception {
         Result result = controller.getSchedules();
+        TestUtils.assertResult(result, 200);
+        
         String content = Helpers.contentAsString(result);
         
         JsonNode node = BridgeObjectMapper.get().readTree(content);
@@ -134,7 +136,8 @@ public class ScheduleControllerTest {
         controller.setSchedulePlanService(schedulePlanService);
         
         Result result = controller.getSchedulesV3();
-        
+        TestUtils.assertResult(result, 200);
+
         String content = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(content);
         ArrayNode array = (ArrayNode)node.get("items");

@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -46,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import play.api.mvc.ActionBuilder;
 import play.cache.Cache;
 import play.libs.Json;
 import play.mvc.Controller;
@@ -55,8 +57,11 @@ import play.mvc.Http.Request;
 import play.mvc.Result;
 
 import com.amazonaws.util.Throwables;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
@@ -312,12 +317,20 @@ public abstract class BaseController extends Controller {
         return ok((JsonNode)MAPPER.valueToTree(new ResourceList<T>(list)));
     }
     
+    Result okResult(ObjectWriter writer, Object object) throws JsonGenerationException, JsonMappingException, IOException {
+        return ok( writer.writeValueAsString(object) ).as(BridgeConstants.JSON_MIME_TYPE);
+    }
+    
     Result createdResult(String message)  {
         return created(Json.toJson(new StatusMessage(message)));
     }
     
     Result createdResult(Object obj) {
         return created((JsonNode)MAPPER.valueToTree(obj));
+    }
+    
+    Result createdResult(ObjectWriter writer, Object object) throws JsonGenerationException, JsonMappingException, IOException {
+        return created( writer.writeValueAsString(object) ).as(BridgeConstants.JSON_MIME_TYPE);
     }
     
     Result acceptedResult(String message) {

@@ -93,10 +93,10 @@ public class NotificationRegistrationControllerTest {
         doReturn(createRegList()).when(mockNotificationService).listRegistrations(HEALTH_CODE);
         
         Result result = controller.getAllRegistrations();
+        TestUtils.assertResult(result,  200);
         
         verify(mockNotificationService).listRegistrations(HEALTH_CODE);
         
-        assertEquals(200, result.status());
         ResourceList<NotificationRegistration> list = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
                 new TypeReference<ResourceList<NotificationRegistration>>() {});
 
@@ -118,8 +118,7 @@ public class NotificationRegistrationControllerTest {
         TestUtils.mockPlayContextWithJson(json);
         
         Result result = controller.createRegistration();
-        
-        assertEquals(201, result.status());
+        TestUtils.assertResult(result, 201);
         
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals(GUID, node.get("guid").asText());
@@ -141,8 +140,7 @@ public class NotificationRegistrationControllerTest {
         TestUtils.mockPlayContextWithJson(json);
         
         Result result = controller.updateRegistration(GUID);
-        
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals(GUID, node.get("guid").asText());
@@ -161,10 +159,10 @@ public class NotificationRegistrationControllerTest {
         doReturn(createRegList().get(0)).when(mockNotificationService).getRegistration(HEALTH_CODE, GUID);
         
         Result result = controller.getRegistration(GUID);
+        TestUtils.assertResult(result, 200);
         
         verify(mockNotificationService).getRegistration(HEALTH_CODE, GUID);
         
-        assertEquals(200, result.status());
         NotificationRegistration registration = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
                 NotificationRegistration.class);
         verifyRegistration(registration);
@@ -173,9 +171,9 @@ public class NotificationRegistrationControllerTest {
     @Test
     public void deleteRegistration() throws Exception {
         Result result = controller.deleteRegistration(GUID);
+        TestUtils.assertResult(result, 200, "Push notification registration deleted.");
         
         verify(mockNotificationService).deleteRegistration(HEALTH_CODE, GUID);
-        TestUtils.assertResult(result, 200, "Push notification registration deleted.");
     }
 
     @Test
@@ -188,7 +186,7 @@ public class NotificationRegistrationControllerTest {
         TestUtils.mockPlayContext();
 
         Result result = controller.getSubscriptionStatuses(GUID);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         ResourceList<SubscriptionStatus> statuses = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
                 new TypeReference<ResourceList<SubscriptionStatus>>() {});
@@ -208,7 +206,7 @@ public class NotificationRegistrationControllerTest {
         TestUtils.mockPlayContextWithJson(TestUtils.getSubscriptionRequest());
         
         Result result = controller.subscribe(GUID);
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         ResourceList<SubscriptionStatus> statuses = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
                 new TypeReference<ResourceList<SubscriptionStatus>>() {});
@@ -223,7 +221,6 @@ public class NotificationRegistrationControllerTest {
         assertEquals("registrationGuid", stringCaptor.getValue());
         assertEquals(Sets.newHashSet("topicA", "topicB"), stringSetCaptor.getValue());
     }
-
 
     private void verifyRegistration(NotificationRegistration reg) {
         assertNull(reg.getHealthCode());

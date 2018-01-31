@@ -151,7 +151,7 @@ public class UserProfileControllerTest {
         doReturn(participant).when(participantService).getParticipant(study, ID, false);
         
         Result result = controller.getUserProfile();
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         JsonNode node = TestUtils.getJson(result);
         
@@ -177,7 +177,7 @@ public class UserProfileControllerTest {
         doReturn(participant).when(participantService).getParticipant(study, ID, false);
         
         Result result = controller.getUserProfile();
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         JsonNode node = TestUtils.getJson(result);
         verify(participantService).getParticipant(study, ID, false);
@@ -208,7 +208,7 @@ public class UserProfileControllerTest {
         
         Result result = controller.updateUserProfile();
         
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         JsonNode node = TestUtils.getJson(result);
         assertEquals("First", node.get("firstName").asText());
         assertEquals("Last", node.get("lastName").asText());
@@ -237,7 +237,7 @@ public class UserProfileControllerTest {
                 
         Result result = controller.createExternalIdentifier();
         
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         JsonNode node = TestUtils.getJson(result);
         assertEquals("ABC-123-XYZ", node.get("externalId").asText());
         
@@ -260,7 +260,7 @@ public class UserProfileControllerTest {
         TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"group1\"]}");
         
         Result result = controller.updateDataGroups();
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         JsonNode node = TestUtils.getJson(result);
         assertEquals("First", node.get("firstName").asText());
@@ -310,6 +310,7 @@ public class UserProfileControllerTest {
         when(optionsService.getOptions(HEALTH_CODE)).thenReturn(lookup);
         
         Result result = controller.getDataGroups();
+        TestUtils.assertResult(result, 200);
         
         JsonNode node = TestUtils.getJson(result);
         
@@ -333,7 +334,7 @@ public class UserProfileControllerTest {
         TestUtils.mockPlayContextWithJson("{}");
         
         Result result = controller.updateDataGroups();
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         
         JsonNode node = TestUtils.getJson(result);
         assertEquals("First", node.get("firstName").asText());

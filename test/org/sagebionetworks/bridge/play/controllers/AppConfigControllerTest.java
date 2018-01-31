@@ -27,6 +27,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -80,7 +81,7 @@ public class AppConfigControllerTest {
         
         Result result = controller.getSelfAppConfig();
         
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         AppConfig found = getResponsePayload(result, AppConfig.class);
         assertEquals(appConfig.getGuid(), found.getGuid());
         
@@ -100,7 +101,7 @@ public class AppConfigControllerTest {
         
         Result result = controller.getAppConfigs();
         
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         ResourceList<AppConfig> results = getResponsePayload(result, ResourceList.class);
         assertEquals(2, results.getItems().size());
         
@@ -114,7 +115,7 @@ public class AppConfigControllerTest {
         
         Result result = controller.getAppConfig(GUID);
 
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         AppConfig resultConfig = getResponsePayload(result, AppConfig.class);
         assertEquals(appConfig.getGuid(), resultConfig.getGuid());
         
@@ -128,7 +129,7 @@ public class AppConfigControllerTest {
         
         Result result = controller.createAppConfig();
         
-        assertEquals(201, result.status());
+        TestUtils.assertResult(result, 201);
         AppConfig resultConfig = getResponsePayload(result, AppConfig.class);
         assertEquals(appConfig.getGuid(), resultConfig.getGuid());
         
@@ -142,7 +143,7 @@ public class AppConfigControllerTest {
         
         Result result = controller.updateAppConfig(GUID);
         
-        assertEquals(200, result.status());
+        TestUtils.assertResult(result, 200);
         AppConfig resultConfig = getResponsePayload(result, AppConfig.class);
         assertEquals(appConfig.getGuid(), resultConfig.getGuid());
         

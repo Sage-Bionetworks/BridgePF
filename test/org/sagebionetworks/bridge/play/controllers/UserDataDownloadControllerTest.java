@@ -62,7 +62,7 @@ public class UserDataDownloadControllerTest {
 
         // execute and validate
         Result result = controller.requestUserData(null, null);
-        assertEquals(202, result.status());
+        TestUtils.assertResult(result, 202);
 
         verify(mockService).requestUserData(eq(STUDY_ID), eq(USER_ID), dateRangeCaptor.capture());
         
@@ -79,7 +79,7 @@ public class UserDataDownloadControllerTest {
         doReturn(participant).when(mockSession).getParticipant();
         
         Result result = controller.requestUserData("2015-08-15", "2015-08-19");
-        assertEquals(202, result.status());
+        TestUtils.assertResult(result, 202);
 
         verify(mockService).requestUserData(eq(STUDY_ID), eq(USER_ID), dateRangeCaptor.capture());
         

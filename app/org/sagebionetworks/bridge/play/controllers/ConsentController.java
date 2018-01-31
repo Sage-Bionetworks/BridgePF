@@ -93,7 +93,7 @@ public class ConsentController extends BaseController {
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
         ConsentSignature sig = consentService.getConsentSignature(study, SubpopulationGuid.create(guid), session.getId());
-        return ok(ConsentSignature.SIGNATURE_WRITER.writeValueAsString(sig));
+        return okResult(ConsentSignature.SIGNATURE_WRITER, sig);
     }
     
     public Result giveV3(String guid) throws Exception {
