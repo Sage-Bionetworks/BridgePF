@@ -47,6 +47,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
+import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
@@ -61,6 +62,7 @@ import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
+import org.sagebionetworks.bridge.validators.IdentifierUpdateValidator;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -313,7 +315,7 @@ public class ParticipantService {
                 account.setStatus(participant.getStatus());
             }
         }
-        accountDao.updateAccount(account);
+        accountDao.updateAccount(account, false);
         optionsService.setAllOptions(study.getStudyIdentifier(), account.getHealthCode(), options);
     }
 
@@ -493,6 +495,61 @@ public class ParticipantService {
 
         return activityEventService.getActivityEventList(account.getHealthCode());
     }
+    
+    public StudyParticipant updateIdentifiers(Study study, CriteriaContext context, IdentifierUpdate update) {
+        checkNotNull(study);
+        checkNotNull(context);
+        checkNotNull(update);
+        
+        // Validate
+        Validate.entityThrowingException(IdentifierUpdateValidator.INSTANCE, update);
+        
+        // Sign in. The caller is known to be consented
+        Account account = null;
+        // These throw exceptions for not found, disabled, and not yet verified.
+        if (update.getSignInOrReauthenticate().getReauthToken() != null) {
+            account = accountDao.reauthenticate(study, update.getSignInOrReauthenticate());
+        } else {
+            account = accountDao.authenticate(study, update.getSignInOrReauthenticate());
+        }
+        
+        // Verify the account matches the current caller
+        if (!account.getId().equals(context.getUserId())) {
+            throw new EntityNotFoundException(Account.class);
+        }
+        
+        // reload account, or you will get an optimistic lock exception
+        account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), account.getId()));
+        
+        // Update if account has an empty field and there's an update
+        boolean sendEmailVerification = false;
+        boolean accountUpdated = false;
+        if (update.getPhoneUpdate() != null && account.getPhone() == null) {
+            account.setPhone(update.getPhoneUpdate());
+            account.setPhoneVerified(false);
+            accountUpdated = true;
+        }
+        if (update.getEmailUpdate() != null && account.getEmail() == null) {
+            account.setEmail(update.getEmailUpdate());
+            account.setEmailVerified( !study.isEmailVerificationEnabled() );
+            sendEmailVerification = true;
+            accountUpdated = true;
+        }
+        // save 
+        if (accountUpdated) {
+            accountDao.updateAccount(account, true); // the only place this is true!   
+        }
+        if (sendEmailVerification && 
+            study.isEmailVerificationEnabled() && 
+            !study.isAutoVerificationEmailSuppressed()) {
+            accountWorkflowService.sendEmailVerificationToken(study, account.getId(), account.getEmail());
+        }
+        
+        // return updated StudyParticipant
+        return getParticipant(study, account.getId(), false);
+    }
+     
+    
     private CriteriaContext getCriteriaContextForParticipant(Study study, StudyParticipant participant) {
         RequestInfo info = cacheProvider.getRequestInfo(participant.getId());
         ClientInfo clientInfo = (info == null) ? null : info.getClientInfo();

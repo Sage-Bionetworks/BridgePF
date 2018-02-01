@@ -7,6 +7,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -164,7 +165,7 @@ public class ConsentServiceMockTest {
 
         // verify consents were set on account properly
         ArgumentCaptor<Account> updatedAccountCaptor = ArgumentCaptor.forClass(Account.class);
-        verify(accountDao).updateAccount(updatedAccountCaptor.capture());
+        verify(accountDao).updateAccount(updatedAccountCaptor.capture(), eq(false));
 
         Account updatedAccount = updatedAccountCaptor.getValue();
         List<ConsentSignature> updatedConsentList = updatedAccount.getConsentSignatureHistory(SUBPOP_GUID);
@@ -250,7 +251,7 @@ public class ConsentServiceMockTest {
         ArgumentCaptor<MimeTypeEmailProvider> emailCaptor = ArgumentCaptor.forClass(MimeTypeEmailProvider.class);
         
         verify(accountDao, times(2)).getAccount(context.getAccountId());
-        verify(accountDao).updateAccount(captor.capture());
+        verify(accountDao).updateAccount(captor.capture(), eq(false));
         // It happens twice because we do it the first time to set up the test properly
         //verify(account, times(2)).getConsentSignatures(setterCaptor.capture());
         verify(sendMailService).sendEmail(emailCaptor.capture());
@@ -299,7 +300,7 @@ public class ConsentServiceMockTest {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
         consentService.withdrawConsent(study, SUBPOP_GUID, participant, context, new Withdrawal("For reasons."), SIGNED_ON);
         
-        verify(accountDao).updateAccount(account);
+        verify(accountDao).updateAccount(account, false);
         verify(sendMailService).sendEmail(any(MimeTypeEmailProvider.class));
         
         // Contents of call are tested in prior test where participant is used
@@ -326,7 +327,7 @@ public class ConsentServiceMockTest {
 
         ArgumentCaptor<Account> accountCaptor = ArgumentCaptor.forClass(Account.class);
         
-        verify(accountDao).updateAccount(accountCaptor.capture());
+        verify(accountDao).updateAccount(accountCaptor.capture(), eq(false));
         verify(optionsService).setEnum(study.getStudyIdentifier(), HEALTH_CODE, SHARING_SCOPE, SharingScope.NO_SHARING);
         verify(sendMailService).sendEmail(any(MimeTypeEmailProvider.class));
         
@@ -359,7 +360,7 @@ public class ConsentServiceMockTest {
 
         ArgumentCaptor<Account> accountCaptor = ArgumentCaptor.forClass(Account.class);
         
-        verify(accountDao).updateAccount(accountCaptor.capture());
+        verify(accountDao).updateAccount(accountCaptor.capture(), eq(false));
         verify(optionsService).setEnum(study.getStudyIdentifier(), HEALTH_CODE, SHARING_SCOPE, SharingScope.NO_SHARING);
         verify(sendMailService, never()).sendEmail(any(MimeTypeEmailProvider.class));
         

@@ -24,10 +24,8 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-import org.apache.http.HttpStatus;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.junit.After;
@@ -63,11 +61,9 @@ import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -97,11 +93,7 @@ public class AuthenticationControllerMockTest {
             .withPhone(TestConstants.PHONE).build();
     private static final SignIn PHONE_SIGN_IN = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING)
             .withPhone(TestConstants.PHONE).withToken(TEST_TOKEN).build();
-    private static final SignIn ADD_EMAIL_SIGN_IN = new SignIn.Builder().withEmail(TEST_EMAIL)
-            .withPassword(TEST_PASSWORD).build();
-    private static final SignIn ADD_PHONE_SIGN_IN = new SignIn.Builder().withPhone(TestConstants.PHONE)
-            .withReauthToken(REAUTH_TOKEN).build();
-
+    
     AuthenticationController controller;
 
     @Mock
@@ -410,6 +402,7 @@ public class AuthenticationControllerMockTest {
         controller.signUp();
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void signInExistingSession() throws Exception {
         response = mockPlayContext();
@@ -427,7 +420,7 @@ public class AuthenticationControllerMockTest {
         verifyCommonLoggingForSignIns();    
     }
 
-    @SuppressWarnings("static-access")
+    @SuppressWarnings({ "static-access", "deprecation" })
     private void signInNewSession(boolean isConsented, Roles role) throws Exception {
         // mock getSessionToken and getMetrics
         doReturn(null).when(controller).getSessionToken();
@@ -537,6 +530,7 @@ public class AuthenticationControllerMockTest {
         assertEquals(TEST_TOKEN, emailVerify.getSptoken());
     }
     
+    @SuppressWarnings("deprecation")
     @Test(expected = UnsupportedVersionException.class)
     public void signInBlockedByVersionKillSwitch() throws Exception {
         Map<String,String[]> headers = new ImmutableMap.Builder<String,String[]>()
@@ -797,6 +791,7 @@ public class AuthenticationControllerMockTest {
         controller.phoneSignIn();
     }
     
+    @SuppressWarnings("deprecation")
     @Test(expected = EntityNotFoundException.class)
     public void signInV3ThrowsNotFound() throws Exception {
         mockPlayContextWithJson(PHONE_SIGN_IN);
@@ -853,48 +848,6 @@ public class AuthenticationControllerMockTest {
         }
         verifyCommonLoggingForSignIns();
     }
-    
-    @Test
-    public void updateIdentifiers() throws Exception {
-        response = mockPlayContextWithJson(ADD_EMAIL_SIGN_IN);
-        doReturn(userSession).when(controller).getAuthenticatedAndConsentedSession();
-        
-        when(authenticationService.updateIdentifiers(eq(study), any(), any())).thenReturn(participant);
-        
-        Result result = controller.updateIdentifiers();
-        assertEquals(200, result.status());
-        assertEquals("application/json; charset=utf-8", result.header("Content-Type"));
-        
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
-        assertEquals(TEST_ACCOUNT_ID, node.get("id").textValue());
-        
-        verify(authenticationService).updateIdentifiers(eq(study), contextCaptor.capture(), signInCaptor.capture());
-        verify(controller).setCookieAndRecordMetrics(userSession);
-        
-        assertEquals(TEST_EMAIL, signInCaptor.getValue().getEmail());
-        assertEquals(TEST_PASSWORD, signInCaptor.getValue().getPassword());
-        assertEquals(TEST_STUDY_ID_STRING, contextCaptor.getValue().getStudyIdentifier().getIdentifier());
-        assertEquals(TEST_ACCOUNT_ID, contextCaptor.getValue().getAccountId().getId());
-    }
-    
-    @Test(expected = NotAuthenticatedException.class)
-    public void updateIdentifierRequiresAuthentication() throws Exception {
-        response = mockPlayContextWithJson(ADD_PHONE_SIGN_IN);
-        
-        controller.updateIdentifiers();
-    }
-    
-    @Test(expected = ConsentRequiredException.class)
-    public void updateIdentifierChecksConsent() throws Exception {
-        response = mockPlayContextWithJson(ADD_PHONE_SIGN_IN);
-        
-        userSession.setConsentStatuses(BridgeConstants.UNCONSENTED_STATUS_MAP);
-        userSession.setAuthenticated(true);
-        doReturn(userSession).when(controller).getSessionIfItExists();
-
-        controller.updateIdentifiers();
-    }
-    
     private void mockSignInWithEmailPayload() throws Exception {
         Map<String, String[]> headers = new ImmutableMap.Builder<String, String[]>()
                 .put("User-Agent", new String[] { "App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4" }).build();

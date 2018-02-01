@@ -37,6 +37,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
+import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
@@ -63,6 +64,7 @@ public class ParticipantController extends BaseController {
     public Result getSelfParticipant() throws Exception {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
+        verifySupportedVersionOrThrowException(study);
         
         StudyParticipant participant = participantService.getParticipant(study, session.getId(), false);
         
@@ -74,6 +76,7 @@ public class ParticipantController extends BaseController {
     public Result updateSelfParticipant() throws Exception {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
+        verifySupportedVersionOrThrowException(study);
         
         // By copying only values that were included in the JSON onto the existing StudyParticipant,
         // we allow clients to only send back partial JSON to update the user. This has been the 
@@ -99,6 +102,21 @@ public class ParticipantController extends BaseController {
                 .build();
         
         sessionUpdateService.updateParticipant(session, context, updated);
+        
+        return okResult(UserSessionInfo.toJSON(session));
+    }
+    
+    public Result updateIdentifiers() throws Exception {
+        UserSession session = getAuthenticatedSession();
+        
+        IdentifierUpdate update = parseJson(request(), IdentifierUpdate.class);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        verifySupportedVersionOrThrowException(study);
+
+        CriteriaContext context = getCriteriaContext(session);
+        
+        StudyParticipant participant = participantService.updateIdentifiers(study, context, update);
+        sessionUpdateService.updateParticipant(session, context, participant);
         
         return okResult(UserSessionInfo.toJSON(session));
     }

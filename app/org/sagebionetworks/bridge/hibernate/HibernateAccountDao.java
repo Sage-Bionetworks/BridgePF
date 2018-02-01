@@ -310,7 +310,7 @@ public class HibernateAccountDao implements AccountDao {
 
     /** {@inheritDoc} */
     @Override
-    public void updateAccount(Account account) {
+    public void updateAccount(Account account, boolean allowIdentifierUpdates) {
         String accountId = account.getId();
         HibernateAccount accountToUpdate = marshallAccount(account);
 
@@ -320,12 +320,14 @@ public class HibernateAccountDao implements AccountDao {
             throw new EntityNotFoundException(Account.class, "Account " + accountId + " not found");
         }
         accountToUpdate.setStudyId(persistedAccount.getStudyId());
-        accountToUpdate.setEmail(persistedAccount.getEmail());
-        accountToUpdate.setPhone(persistedAccount.getPhone());
-        accountToUpdate.setEmailVerified(persistedAccount.getEmailVerified());
-        accountToUpdate.setPhoneVerified(persistedAccount.getPhoneVerified());
         accountToUpdate.setCreatedOn(persistedAccount.getCreatedOn());
         accountToUpdate.setPasswordModifiedOn(persistedAccount.getPasswordModifiedOn());
+        if (!allowIdentifierUpdates) {
+            accountToUpdate.setEmail(persistedAccount.getEmail());
+            accountToUpdate.setPhone(persistedAccount.getPhone());
+            accountToUpdate.setEmailVerified(persistedAccount.getEmailVerified());
+            accountToUpdate.setPhoneVerified(persistedAccount.getPhoneVerified());
+        }
 
         // Update modifiedOn.
         accountToUpdate.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
@@ -589,7 +591,7 @@ public class HibernateAccountDao implements AccountDao {
             // authentication pathway, we don't save here because we will save the account after we rotate 
             // the reauthentication token.
             if (doSave) {
-                hibernateHelper.update(hibernateAccount);    
+                hibernateHelper.update(hibernateAccount);
             }
         }
     }

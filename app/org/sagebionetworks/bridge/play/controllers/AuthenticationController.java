@@ -162,25 +162,6 @@ public class AuthenticationController extends BaseController {
         return createdResult("Signed up.");
     }
     
-    public Result updateIdentifiers() throws Exception {
-        UserSession session = getAuthenticatedAndConsentedSession();
-        
-        SignIn signIn = parseJson(request(), SignIn.class);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
-        verifySupportedVersionOrThrowException(study);
-
-        CriteriaContext context = getCriteriaContext(session);
-        try {
-            StudyParticipant participant = authenticationService.updateIdentifiers(study, context, signIn);
-            sessionUpdateService.updateParticipant(session, context, participant);
-        } catch(ConsentRequiredException e) {
-            setCookieAndRecordMetrics(e.getUserSession());
-            throw e;
-        }
-        setCookieAndRecordMetrics(session);
-        return okResult(UserSessionInfo.toJSON(session));
-    }
-
     public Result verifyEmail() throws Exception {
         EmailVerification emailVerification = parseJson(request(), EmailVerification.class);
 

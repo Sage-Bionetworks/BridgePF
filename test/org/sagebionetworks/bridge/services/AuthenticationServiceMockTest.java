@@ -85,7 +85,7 @@ public class AuthenticationServiceMockTest {
             .withReauthToken(TOKEN).build();
     
     private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
-            .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+            .withUserId(USER_ID).withStudyIdentifier(TestConstants.TEST_STUDY).build();
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder().build();
     private static final AccountId ACCOUNT_ID = AccountId.forId(STUDY_ID, USER_ID);
     private static final AccountId ACCOUNT_ID_WITH_PHONE = AccountId.forPhone(STUDY_ID, TestConstants.PHONE);
@@ -137,7 +137,8 @@ public class AuthenticationServiceMockTest {
         study.setName("Sender");
         
         account = new GenericAccount();
-        
+        ((GenericAccount)account).setId(USER_ID);
+
         service.setCacheProvider(cacheProvider);
         service.setBridgeConfig(config);
         service.setConsentService(consentService);

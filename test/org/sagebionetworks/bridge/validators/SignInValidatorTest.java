@@ -144,31 +144,4 @@ public class SignInValidatorTest {
         assertValidatorMessage(SignInValidator.MINIMAL, EMPTY_SIGNIN, "SignIn", "email or phone is required");
         assertValidatorMessage(SignInValidator.MINIMAL, EMPTY_SIGNIN, "study", "is required");
     }
-    
-    @Test
-    public void updateIdentifiersEmailOnlyInvalidOK() {
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).withEmail(EMAIL).withPassword(PASSWORD).build();
-        assertValidatorMessage(SignInValidator.UPDATE_IDENTIFIERS, signIn, "SignIn", "email and phone are both required");
-    }
-    @Test
-    public void updateIdentifiersPhoneOnlyInvalid() {
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).withPhone(TestConstants.PHONE).withPassword(PASSWORD).build();
-        assertValidatorMessage(SignInValidator.UPDATE_IDENTIFIERS, signIn, "SignIn", "email and phone are both required");
-    }
-    @Test
-    public void updateIdentifiersReauthTokenOK() {
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).withEmail(EMAIL).withPhone(TestConstants.PHONE).withReauthToken(REAUTH_TOKEN).build();
-        Validate.entityThrowingException(SignInValidator.UPDATE_IDENTIFIERS, signIn);
-    }
-    @Test
-    public void updateIdentifiersInvalid() {
-        assertValidatorMessage(SignInValidator.UPDATE_IDENTIFIERS, EMPTY_SIGNIN, "SignIn", "email and phone are both required");
-        assertValidatorMessage(SignInValidator.UPDATE_IDENTIFIERS, EMPTY_SIGNIN, "SignIn", "password or reauthToken is required");
-    }
-    @Test
-    public void updateIdentifiersPasswordAndReauthInvalid() {
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).withEmail(EMAIL)
-                .withPhone(TestConstants.PHONE).withReauthToken(REAUTH_TOKEN).withPassword(PASSWORD).build();
-        assertValidatorMessage(SignInValidator.UPDATE_IDENTIFIERS, signIn, "SignIn", "password or reauthToken is required, but not both");
-    }
 }

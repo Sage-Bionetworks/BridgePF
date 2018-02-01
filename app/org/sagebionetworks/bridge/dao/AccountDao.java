@@ -81,7 +81,7 @@ public interface AccountDao {
      * Save account changes. Account should have been retrieved from the getAccount() method 
      * (constructAccount() is not sufficient).
      */
-    void updateAccount(Account account);
+    void updateAccount(Account account, boolean allowIdentifierUpdates);
     
     /**
      * Get an account in the context of a study by the user's ID, email address, or phone 

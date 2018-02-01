@@ -790,7 +790,7 @@ public class HibernateAccountDaoTest {
         account.setPhone(OTHER_PHONE);
         account.setEmailVerified(Boolean.FALSE);
         account.setPhoneVerified(Boolean.FALSE);
-        dao.updateAccount(account);
+        dao.updateAccount(account, false);
 
         // verify hibernate update
         ArgumentCaptor<HibernateAccount> updatedHibernateAccountCaptor = ArgumentCaptor.forClass(
@@ -817,7 +817,7 @@ public class HibernateAccountDaoTest {
 
         // execute
         try {
-            dao.updateAccount(makeValidGenericAccount());
+            dao.updateAccount(makeValidGenericAccount(), false);
             fail("expected exception");
         } catch (EntityNotFoundException ex) {
             assertEquals("Account " + ACCOUNT_ID + " not found", ex.getMessage());

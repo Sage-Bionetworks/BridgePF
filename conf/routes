@@ -20,7 +20,6 @@ POST   /v3/auth/email                   @org.sagebionetworks.bridge.play.control
 POST   /v3/auth/email/signIn            @org.sagebionetworks.bridge.play.controllers.AuthenticationController.emailSignIn
 POST   /v3/auth/phone                   @org.sagebionetworks.bridge.play.controllers.AuthenticationController.requestPhoneSignIn
 POST   /v3/auth/phone/signIn            @org.sagebionetworks.bridge.play.controllers.AuthenticationController.phoneSignIn
-POST   /v3/auth/identifiers             @org.sagebionetworks.bridge.play.controllers.AuthenticationController.updateIdentifiers
 POST   /v4/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signIn
 
 # OAuth
@@ -69,10 +68,12 @@ POST   /v4/participants/:userId/reports/:identifier       @org.sagebionetworks.b
 DELETE /v4/participants/:userId/reports/:identifier       @org.sagebionetworks.bridge.play.controllers.ParticipantReportController.deleteParticipantReport(userId: String, identifier: String)
 
 # Participants Researcher APIs
-GET    /v3/participants                                                @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipants(offsetBy: String ?= null, pageSize: String ?= null, emailFilter: String ?= null, phoneFilter: String ?= null, startDate: String ?= null, endDate: String ?= null, startTime: String ?= null, endTime: String ?= null)
-POST   /v3/participants                                                @org.sagebionetworks.bridge.play.controllers.ParticipantController.createParticipant
-GET    /v3/participants/self                                           @org.sagebionetworks.bridge.play.controllers.ParticipantController.getSelfParticipant
-POST   /v3/participants/self                                           @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateSelfParticipant
+GET    /v3/participants                  @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipants(offsetBy: String ?= null, pageSize: String ?= null, emailFilter: String ?= null, phoneFilter: String ?= null, startDate: String ?= null, endDate: String ?= null, startTime: String ?= null, endTime: String ?= null)
+POST   /v3/participants                  @org.sagebionetworks.bridge.play.controllers.ParticipantController.createParticipant
+GET    /v3/participants/self             @org.sagebionetworks.bridge.play.controllers.ParticipantController.getSelfParticipant
+POST   /v3/participants/self             @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateSelfParticipant
+POST   /v3/participants/self/identifiers @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateIdentifiers
+
 GET    /v3/participants/:userId                                        @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipant(userId: String)
 POST   /v3/participants/:userId                                        @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateParticipant(userId: String)
 GET    /v3/participants/:userId/uploads                                @org.sagebionetworks.bridge.play.controllers.ParticipantController.getUploads(userId: String, startTime: String ?= null, endTime: String ?= null, pageSize: Integer ?= null, offsetKey: String ?= null)
