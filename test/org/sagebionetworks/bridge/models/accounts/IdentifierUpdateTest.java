@@ -25,7 +25,7 @@ public class IdentifierUpdateTest {
         JsonNode phoneNode = node.get("phoneUpdate");
         assertEquals(TestConstants.PHONE.getNationalFormat(), phoneNode.get("nationalFormat").textValue());
         
-        JsonNode signInNode = node.get("signInOrReauthenticate");
+        JsonNode signInNode = node.get("signIn");
         assertEquals(TestConstants.EMAIL, signInNode.get("email").textValue());
         assertEquals(TestConstants.PASSWORD, signInNode.get("password").textValue());
         
