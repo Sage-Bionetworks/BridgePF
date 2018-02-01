@@ -19,7 +19,7 @@ public class IdentifierUpdateValidator implements Validator {
     public void validate(Object object, Errors errors) {
         IdentifierUpdate update = (IdentifierUpdate)object;
         
-        SignIn signIn = update.getSignInOrReauthenticate();
+        SignIn signIn = update.getSignIn();
         if (signIn == null) {
             errors.reject("requires a signIn object");
         } else {

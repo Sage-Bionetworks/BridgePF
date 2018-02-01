@@ -7,20 +7,20 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class IdentifierUpdate implements BridgeEntity {
     
-    private final SignIn signInOrReauthenticate;
+    private final SignIn signIn;
     private final String emailUpdate;
     private final Phone phoneUpdate;
     
     @JsonCreator
-    public IdentifierUpdate(@JsonProperty("signInOrReauthenticate") SignIn signInOrReauthenticate,
-            @JsonProperty("emailUpdate") String emailUpdate, @JsonProperty("phoneUpdate") Phone phoneUpdate) {
-        this.signInOrReauthenticate = signInOrReauthenticate;
+    public IdentifierUpdate(@JsonProperty("signIn") SignIn signIn, @JsonProperty("emailUpdate") String emailUpdate,
+            @JsonProperty("phoneUpdate") Phone phoneUpdate) {
+        this.signIn = signIn;
         this.emailUpdate = emailUpdate;
         this.phoneUpdate = phoneUpdate;
     }
     
-    public SignIn getSignInOrReauthenticate() {
-        return signInOrReauthenticate;
+    public SignIn getSignIn() {
+        return signIn;
     }
 
     public String getEmailUpdate() {

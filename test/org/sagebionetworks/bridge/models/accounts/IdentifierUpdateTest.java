@@ -32,8 +32,8 @@ public class IdentifierUpdateTest {
         IdentifierUpdate deser = BridgeObjectMapper.get().readValue(node.toString(), IdentifierUpdate.class);
         assertEquals("updated@email.com", deser.getEmailUpdate());
         assertEquals(TestConstants.PHONE, deser.getPhoneUpdate());
-        assertEquals(TestConstants.EMAIL, deser.getSignInOrReauthenticate().getEmail());
-        assertEquals(TestConstants.PASSWORD, deser.getSignInOrReauthenticate().getPassword());
+        assertEquals(TestConstants.EMAIL, deser.getSignIn().getEmail());
+        assertEquals(TestConstants.PASSWORD, deser.getSignIn().getPassword());
     }
 
 }

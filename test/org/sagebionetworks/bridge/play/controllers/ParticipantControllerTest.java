@@ -911,8 +911,8 @@ public class ParticipantControllerTest {
         verify(mockParticipantService).updateIdentifiers(eq(study), contextCaptor.capture(), identifierUpdateCaptor.capture());
         
         IdentifierUpdate update = identifierUpdateCaptor.getValue();
-        assertEquals(EMAIL_PASSWORD_SIGN_IN_REQUEST.getEmail(), update.getSignInOrReauthenticate().getEmail());
-        assertEquals(EMAIL_PASSWORD_SIGN_IN_REQUEST.getPassword(), update.getSignInOrReauthenticate().getPassword());
+        assertEquals(EMAIL_PASSWORD_SIGN_IN_REQUEST.getEmail(), update.getSignIn().getEmail());
+        assertEquals(EMAIL_PASSWORD_SIGN_IN_REQUEST.getPassword(), update.getSignIn().getPassword());
         assertEquals(TestConstants.PHONE, update.getPhoneUpdate());
         assertNull(update.getEmailUpdate());
     }
@@ -933,8 +933,8 @@ public class ParticipantControllerTest {
         verify(mockParticipantService).updateIdentifiers(eq(study), contextCaptor.capture(), identifierUpdateCaptor.capture());
         
         IdentifierUpdate update = identifierUpdateCaptor.getValue();
-        assertEquals(PHONE_PASSWORD_SIGN_IN_REQUEST.getPhone(), update.getSignInOrReauthenticate().getPhone());
-        assertEquals(PHONE_PASSWORD_SIGN_IN_REQUEST.getPassword(), update.getSignInOrReauthenticate().getPassword());
+        assertEquals(PHONE_PASSWORD_SIGN_IN_REQUEST.getPhone(), update.getSignIn().getPhone());
+        assertEquals(PHONE_PASSWORD_SIGN_IN_REQUEST.getPassword(), update.getSignIn().getPassword());
         assertEquals(TestConstants.EMAIL, update.getEmailUpdate());
         assertNull(update.getPhoneUpdate());
     }

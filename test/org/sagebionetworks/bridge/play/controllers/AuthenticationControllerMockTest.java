@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
+import org.apache.http.HttpStatus;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.junit.After;
@@ -65,7 +66,6 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.AuthenticationService;
-import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import play.mvc.Http;
@@ -93,14 +93,11 @@ public class AuthenticationControllerMockTest {
             .withPhone(TestConstants.PHONE).build();
     private static final SignIn PHONE_SIGN_IN = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING)
             .withPhone(TestConstants.PHONE).withToken(TEST_TOKEN).build();
-    
+
     AuthenticationController controller;
 
     @Mock
     AuthenticationService authenticationService;
-    
-    @Mock
-    SessionUpdateService sessionUpdateService;
 
     private Study study;
     
@@ -134,8 +131,6 @@ public class AuthenticationControllerMockTest {
     // for verification
     Http.Response response;
     
-    StudyParticipant participant;
-    
     @Mock
     Metrics metrics;
     
@@ -146,14 +141,11 @@ public class AuthenticationControllerMockTest {
         controller = spy(new AuthenticationController());
         controller.setAuthenticationService(authenticationService);
         controller.setCacheProvider(cacheProvider);
-        controller.setSessionUpdateService(sessionUpdateService);
-        
-        participant = new StudyParticipant.Builder().withId(TEST_ACCOUNT_ID).build();
         
         userSession = new UserSession();
         userSession.setReauthToken(REAUTH_TOKEN);
         userSession.setSessionToken(TEST_SESSION_TOKEN);
-        userSession.setParticipant(participant);
+        userSession.setParticipant(new StudyParticipant.Builder().withId(TEST_ACCOUNT_ID).build());
         userSession.setInternalSessionToken(TEST_INTERNAL_SESSION_ID);
         userSession.setStudyIdentifier(TEST_STUDY_ID);
         
@@ -402,7 +394,6 @@ public class AuthenticationControllerMockTest {
         controller.signUp();
     }
 
-    @SuppressWarnings("deprecation")
     @Test
     public void signInExistingSession() throws Exception {
         response = mockPlayContext();
@@ -420,7 +411,7 @@ public class AuthenticationControllerMockTest {
         verifyCommonLoggingForSignIns();    
     }
 
-    @SuppressWarnings({ "static-access", "deprecation" })
+    @SuppressWarnings("static-access")
     private void signInNewSession(boolean isConsented, Roles role) throws Exception {
         // mock getSessionToken and getMetrics
         doReturn(null).when(controller).getSessionToken();
@@ -530,7 +521,6 @@ public class AuthenticationControllerMockTest {
         assertEquals(TEST_TOKEN, emailVerify.getSptoken());
     }
     
-    @SuppressWarnings("deprecation")
     @Test(expected = UnsupportedVersionException.class)
     public void signInBlockedByVersionKillSwitch() throws Exception {
         Map<String,String[]> headers = new ImmutableMap.Builder<String,String[]>()
@@ -791,7 +781,6 @@ public class AuthenticationControllerMockTest {
         controller.phoneSignIn();
     }
     
-    @SuppressWarnings("deprecation")
     @Test(expected = EntityNotFoundException.class)
     public void signInV3ThrowsNotFound() throws Exception {
         mockPlayContextWithJson(PHONE_SIGN_IN);
@@ -848,6 +837,7 @@ public class AuthenticationControllerMockTest {
         }
         verifyCommonLoggingForSignIns();
     }
+    
     private void mockSignInWithEmailPayload() throws Exception {
         Map<String, String[]> headers = new ImmutableMap.Builder<String, String[]>()
                 .put("User-Agent", new String[] { "App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4" }).build();

@@ -1,18 +1,14 @@
 package org.sagebionetworks.bridge;
 
-import java.util.Map;
 import java.util.Set;
 
 import org.joda.time.DateTimeZone;
 import org.jsoup.safety.Whitelist;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 public class BridgeConstants {
     public static final String MAX_USERS_ERROR = "While study is in evaluation mode, it may not exceed %s accounts.";
@@ -104,16 +100,6 @@ public class BridgeConstants {
      * SNS converts these to ASCII.
      */
     public static final int SMS_CHARACTER_LIMIT = 140;
-
-    public static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("ABC");
-    public static final ConsentStatus CONSENTED_STATUS = new ConsentStatus.Builder().withName("Name")
-            .withGuid(SUBPOP_GUID).withRequired(true).withConsented(true).build();
-    public static final ConsentStatus UNCONSENTED_STATUS = new ConsentStatus.Builder().withName("Name")
-            .withGuid(SUBPOP_GUID).withRequired(true).withConsented(false).build();
-    public static final Map<SubpopulationGuid, ConsentStatus> CONSENTED_STATUS_MAP = new ImmutableMap.Builder<SubpopulationGuid, ConsentStatus>()
-            .put(SUBPOP_GUID, CONSENTED_STATUS).build();
-    public static final Map<SubpopulationGuid, ConsentStatus> UNCONSENTED_STATUS_MAP = new ImmutableMap.Builder<SubpopulationGuid, ConsentStatus>()
-            .put(SUBPOP_GUID, UNCONSENTED_STATUS).build();
     
     /**
      * This whitelist adds a few additional tags and attributes that are used by the CKEDITOR options 

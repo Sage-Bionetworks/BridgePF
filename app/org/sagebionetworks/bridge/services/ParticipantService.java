@@ -504,13 +504,13 @@ public class ParticipantService {
         // Validate
         Validate.entityThrowingException(IdentifierUpdateValidator.INSTANCE, update);
         
-        // Sign in. The caller is known to be consented
+        // Sign in
         Account account = null;
         // These throw exceptions for not found, disabled, and not yet verified.
-        if (update.getSignInOrReauthenticate().getReauthToken() != null) {
-            account = accountDao.reauthenticate(study, update.getSignInOrReauthenticate());
+        if (update.getSignIn().getReauthToken() != null) {
+            account = accountDao.reauthenticate(study, update.getSignIn());
         } else {
-            account = accountDao.authenticate(study, update.getSignInOrReauthenticate());
+            account = accountDao.authenticate(study, update.getSignIn());
         }
         
         // Verify the account matches the current caller
@@ -537,7 +537,7 @@ public class ParticipantService {
         }
         // save 
         if (accountUpdated) {
-            accountDao.updateAccount(account, true); // the only place this is true!   
+            accountDao.updateAccount(account, true);   
         }
         if (sendEmailVerification && 
             study.isEmailVerificationEnabled() && 
@@ -545,7 +545,7 @@ public class ParticipantService {
             accountWorkflowService.sendEmailVerificationToken(study, account.getId(), account.getEmail());
         }
         
-        // return updated StudyParticipant
+        // return updated StudyParticipant to update and return session
         return getParticipant(study, account.getId(), false);
     }
      
