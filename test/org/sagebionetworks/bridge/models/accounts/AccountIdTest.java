@@ -27,6 +27,9 @@ public class AccountIdTest {
         
         assertTrue(AccountId.forEmail(TEST_STUDY_IDENTIFIER, "email")
                 .equals(AccountId.forEmail(TEST_STUDY_IDENTIFIER, "email")));
+        
+        assertTrue(AccountId.forHealthCode(TEST_STUDY_IDENTIFIER, "DEF-GHI")
+                .equals(AccountId.forHealthCode(TEST_STUDY_IDENTIFIER, "DEF-GHI")));
     }
     
     @Test
@@ -35,6 +38,7 @@ public class AccountIdTest {
         assertEquals("one", AccountId.forId(TEST_STUDY_IDENTIFIER, "one").getId());
         assertEquals("one", AccountId.forEmail(TEST_STUDY_IDENTIFIER, "one").getEmail());
         assertEquals(number, AccountId.forPhone(TEST_STUDY_IDENTIFIER, PHONE).getPhone().getNumber());
+        assertEquals("ABC-DEF", AccountId.forHealthCode(TEST_STUDY_IDENTIFIER, "ABC-DEF").getHealthCode());
     }
     
     @Test(expected = NullPointerException.class)
