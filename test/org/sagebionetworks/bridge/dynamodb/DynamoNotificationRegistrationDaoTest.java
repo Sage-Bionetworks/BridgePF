@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -150,7 +151,7 @@ public class DynamoNotificationRegistrationDaoTest {
         CreatePlatformEndpointRequest snsRequest = createPlatformEndpointRequestCaptor.getValue();
         assertEquals(PLATFORM_ARN, snsRequest.getPlatformApplicationArn());
         assertEquals(DEVICE_ID, snsRequest.getToken());
-        assertEquals(HEALTH_CODE, snsRequest.getCustomUserData());
+        assertNull(snsRequest.getCustomUserData());
         
         assertNotNull(result.getGuid());
         assertNotEquals(GUID, result.getGuid());
@@ -257,7 +258,7 @@ public class DynamoNotificationRegistrationDaoTest {
         Map<String,String> attributes = request.getAttributes();
         assertEquals(DEVICE_ID, attributes.get("Token"));
         assertEquals("true", attributes.get("Enabled"));
-        assertEquals(HEALTH_CODE, attributes.get("CustomUserData"));
+        assertNull(attributes.get("CustomUserData"));
         
         verify(mockMapper).save(notificationRegistrationCaptor.capture());
         NotificationRegistration persisted = notificationRegistrationCaptor.getValue();
