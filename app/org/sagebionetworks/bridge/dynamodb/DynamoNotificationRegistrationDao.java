@@ -33,7 +33,6 @@ import com.google.common.collect.Maps;
 @Component
 public class DynamoNotificationRegistrationDao implements NotificationRegistrationDao {
 
-    private static final String CUSTOM_USER_DATA = "CustomUserData";
     private static final String ENABLED = "Enabled";
     private static final String TOKEN = "Token";
 
@@ -94,7 +93,6 @@ public class DynamoNotificationRegistrationDao implements NotificationRegistrati
         // (If the client is submitting same data a second time, SNS quietly ignores it, returns same endpointARN.) 
         CreatePlatformEndpointRequest request = new CreatePlatformEndpointRequest()
                 .withToken(registration.getDeviceId())
-                .withCustomUserData(registration.getHealthCode())
                 .withPlatformApplicationArn(platformARN);
         CreatePlatformEndpointResult result = snsClient.createPlatformEndpoint(request);
         
@@ -186,7 +184,6 @@ public class DynamoNotificationRegistrationDao implements NotificationRegistrati
         SetEndpointAttributesRequest attrRequest = new SetEndpointAttributesRequest();
         attrRequest.addAttributesEntry(TOKEN, deviceToken);
         attrRequest.addAttributesEntry(ENABLED, Boolean.TRUE.toString());
-        attrRequest.addAttributesEntry(CUSTOM_USER_DATA, healthCode);
         snsClient.setEndpointAttributes(attrRequest);
     }
 }
