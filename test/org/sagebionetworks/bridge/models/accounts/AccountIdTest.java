@@ -57,6 +57,11 @@ public class AccountIdTest {
     }
     
     @Test(expected = NullPointerException.class)
+    public void healthCodeAccessorThrows() {
+        AccountId.forHealthCode(TEST_STUDY_IDENTIFIER, "one").getEmail();
+    }
+    
+    @Test(expected = NullPointerException.class)
     public void cannotCreateIdObjectWithNoEmail() {
         AccountId.forEmail(TEST_STUDY_IDENTIFIER, null);
     }
@@ -69,6 +74,11 @@ public class AccountIdTest {
     @Test(expected = NullPointerException.class)
     public void cannotCreateIdObjectWithNoPhone() {
         AccountId.forPhone(TEST_STUDY_IDENTIFIER, null);
+    }
+    
+    @Test(expected = NullPointerException.class)
+    public void cannotCreateIdObjectWithNoHealthCode() {
+        AccountId.forHealthCode(TEST_STUDY_IDENTIFIER, null);
     }
     
     @Test(expected = NullPointerException.class)
@@ -100,5 +110,6 @@ public class AccountIdTest {
         assertEquals("id", accountId.getId());
         assertNull(accountId.getEmail());
         assertNull(accountId.getPhone());
+        assertNull(accountId.getHealthCode());
     }
 }

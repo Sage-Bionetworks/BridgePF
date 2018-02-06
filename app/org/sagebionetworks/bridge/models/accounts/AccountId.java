@@ -38,7 +38,8 @@ public final class AccountId {
     private final String healthCode;
     private final boolean usePreconditions;
     
-    private AccountId(String studyId, String id, String email, Phone phone, String healthCode, boolean usePreconditions) {
+    private AccountId(String studyId, String id, String email, Phone phone, String healthCode,
+            boolean usePreconditions) {
         this.studyId = studyId;
         this.id = id;
         this.email = email;
@@ -48,7 +49,7 @@ public final class AccountId {
     }
     
     // It's important to guard against constructing AccountId with one of the identifying values, 
-    // then trying to retrieve a different value. Force a failue in this case until you get to 
+    // then trying to retrieve a different value. Force a failure in this case until you get to 
     // the DAO where these values are checked to determine the type of database query.
     
     public String getStudyId() {
