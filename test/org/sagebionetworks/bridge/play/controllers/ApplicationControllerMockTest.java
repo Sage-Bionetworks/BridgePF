@@ -120,19 +120,10 @@ public class ApplicationControllerMockTest {
         
         Result result = controller.startSession("test-study", "email", "token");
 
-        TestUtils.assertResult(result, 200);
-        verify(authenticationService).emailSignIn(contextCaptor.capture(), signInCaptor.capture());
+        assertEquals("text/html; charset=utf-8", result.header("Content-Type"));
+        assertEquals(200, result.status());
         
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
-        assertEquals("UserSessionInfo", node.get("type").asText());
-        assertEquals("ABC", node.get("sessionToken").asText());
-
-        CriteriaContext context = contextCaptor.getValue();
-        assertEquals("en", context.getLanguages().iterator().next());
-
-        SignIn signIn = signInCaptor.getValue();
-        assertEquals("email", signIn.getEmail());
-        assertEquals("token", signIn.getToken());
+        assertTrue(Helpers.contentAsString(result).contains("Please try again on your phone"));
     }
     
     @Test
