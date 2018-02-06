@@ -75,6 +75,7 @@ public class HibernateAccountDaoTest {
     private static final AccountId ACCOUNT_ID_WITH_ID = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, ACCOUNT_ID);
     private static final AccountId ACCOUNT_ID_WITH_EMAIL = AccountId.forEmail(TestConstants.TEST_STUDY_IDENTIFIER, EMAIL);
     private static final AccountId ACCOUNT_ID_WITH_PHONE = AccountId.forPhone(TestConstants.TEST_STUDY_IDENTIFIER, TestConstants.PHONE);
+    private static final AccountId ACCOUNT_ID_WITH_HEALTHCODE = AccountId.forHealthCode(TestConstants.TEST_STUDY_IDENTIFIER, HEALTH_CODE);
     
     private static final SignIn REAUTH_SIGNIN = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
             .withEmail(EMAIL).withReauthToken(REAUTH_TOKEN).build();
@@ -972,13 +973,61 @@ public class HibernateAccountDaoTest {
     
     @Test
     public void getByPhoneNotFoundAfterAuthentication() {
-        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId='"
-                + TestConstants.TEST_STUDY_IDENTIFIER + "' and phone='" + TestConstants.PHONE.getNumber() + 
-                "'", null, null, HibernateAccount.class)).thenReturn(ImmutableList.of());
+        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId='" + TestConstants.TEST_STUDY_IDENTIFIER
+                + "' and phone.number='" + TestConstants.PHONE.getNumber() + "' and phone.regionCode='"
+                + TestConstants.PHONE.getRegionCode() + "'", null, null, HibernateAccount.class))
+                        .thenReturn(ImmutableList.of());        
         
         Account account = dao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_PHONE);
         assertNull(account);
     }
+    
+    // ACCOUNT_ID_WITH_HEALTHCODE
+    @Test
+    public void getByHealthCode() throws Exception {
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
+        // mock hibernate
+        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId='" + TestConstants.TEST_STUDY_IDENTIFIER
+                + "' and healthCode='" + HEALTH_CODE + "'", null, null, HibernateAccount.class))
+                        .thenReturn(ImmutableList.of(hibernateAccount));
+
+        // execute and validate
+        Account account = dao.getAccount(ACCOUNT_ID_WITH_HEALTHCODE);
+        assertEquals(hibernateAccount.getEmail(), account.getEmail());
+    }
+    
+    @Test
+    public void getByHealthCodeNotFound() {
+        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId='" + TestConstants.TEST_STUDY_IDENTIFIER
+                + "' and healthCode='" + HEALTH_CODE + "'", null, null, HibernateAccount.class))
+                        .thenReturn(ImmutableList.of());
+        
+        Account account = dao.getAccount(ACCOUNT_ID_WITH_HEALTHCODE);
+        assertNull(account);
+    }
+
+    @Test
+    public void getByHealthCodeAfterAuthentication() throws Exception {
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
+        // mock hibernate
+        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId='" + TestConstants.TEST_STUDY_IDENTIFIER
+                + "' and healthCode='" + HEALTH_CODE + "'", null, null, HibernateAccount.class))
+                        .thenReturn(ImmutableList.of(hibernateAccount));
+
+        // execute and validate
+        Account account = dao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_HEALTHCODE);
+        assertEquals(hibernateAccount.getEmail(), account.getEmail());
+    }
+    
+    @Test
+    public void getByHealthCodeNotFoundAfterAuthentication() {
+        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId='" + TestConstants.TEST_STUDY_IDENTIFIER
+                + "' and healthCode='" + HEALTH_CODE + "'", null, null, HibernateAccount.class))
+                        .thenReturn(ImmutableList.of());
+        
+        Account account = dao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_HEALTHCODE);
+        assertNull(account);
+    }    
     
     @Test
     public void deleteWithoutId() throws Exception {
