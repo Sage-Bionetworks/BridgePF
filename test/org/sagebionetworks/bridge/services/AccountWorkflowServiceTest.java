@@ -1,10 +1,13 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.eq;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -28,12 +31,15 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.Phone;
+import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -41,16 +47,27 @@ import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 
+import com.google.common.collect.Iterables;
+
 @RunWith(MockitoJUnitRunner.class)
 public class AccountWorkflowServiceTest {
     
     private static final String SUPPORT_EMAIL = "support@support.com";
+    private static final String STUDY_ID = TestConstants.TEST_STUDY_IDENTIFIER;
     private static final String SPTOKEN = "sptoken";
     private static final String USER_ID = "userId";
     private static final String EMAIL = "email@email.com";
+    private static final String TOKEN = "ABC-DEF";
+    private static final String CACHE_KEY = "email@email.com:"+STUDY_ID+":signInRequest";
     private static final AccountId ACCOUNT_ID_WITH_ID = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
     private static final AccountId ACCOUNT_ID_WITH_EMAIL = AccountId.forEmail(TEST_STUDY_IDENTIFIER, EMAIL);
     private static final AccountId ACCOUNT_ID_WITH_PHONE = AccountId.forPhone(TEST_STUDY_IDENTIFIER, TestConstants.PHONE);
+    private static final SignIn SIGN_IN_REQUEST_WITH_PHONE = new SignIn.Builder().withStudy(STUDY_ID)
+            .withPhone(TestConstants.PHONE).build();
+    private static final SignIn SIGN_IN_REQUEST_WITH_EMAIL = new SignIn.Builder().withStudy(STUDY_ID)
+            .withEmail(EMAIL).build();
+    private static final SignIn SIGN_IN_WITH_PHONE = new SignIn.Builder().withStudy(STUDY_ID)
+            .withPhone(TestConstants.PHONE).withToken(TOKEN).build();
 
     @Mock
     private StudyService mockStudyService;
@@ -92,6 +109,7 @@ public class AccountWorkflowServiceTest {
         EmailTemplate verifyEmailTemplate = new EmailTemplate("VE ${studyName}", "Body ${url}", MimeType.TEXT);
         EmailTemplate resetPasswordTemplate = new EmailTemplate("RP ${studyName}", "Body ${url}", MimeType.TEXT);
         EmailTemplate accountExistsTemplate = new EmailTemplate("AE ${studyName}", "Body ${url}", MimeType.TEXT);
+        EmailTemplate emailSignInTemplate = new EmailTemplate("subject","${token}",MimeType.TEXT);
         
         study = Study.create();
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
@@ -101,12 +119,15 @@ public class AccountWorkflowServiceTest {
         study.setVerifyEmailTemplate(verifyEmailTemplate);
         study.setResetPasswordTemplate(resetPasswordTemplate);
         study.setAccountExistsTemplate(accountExistsTemplate);
-        
+        study.setEmailSignInTemplate(emailSignInTemplate);
+
         service.setAccountDao(mockAccountDao);
         service.setCacheProvider(mockCacheProvider);
         service.setSendMailService(mockSendMailService);
         service.setStudyService(mockStudyService);
         service.setNotificationsService(mockNotificationsService);
+        
+        
     }
     
     @Test
@@ -410,4 +431,122 @@ public class AccountWorkflowServiceTest {
         verify(mockCacheProvider).removeObject("sptoken:api");
         verify(mockAccountDao, never()).changePassword(mockAccount, "newPassword");
     }
+    
+    @Test
+    public void requestEmailSignIn() throws Exception {
+        study.setEmailSignInEnabled(true);
+        doReturn(mockAccount).when(mockAccountDao).getAccount(SIGN_IN_REQUEST_WITH_EMAIL.getAccountId());
+        doReturn(study).when(mockStudyService).getStudy(study.getIdentifier());
+        
+        service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
+        
+        verify(mockCacheProvider).getObject(stringCaptor.capture(), eq(String.class));
+        assertEquals(CACHE_KEY, stringCaptor.getValue());
+        
+        verify(mockAccountDao).getAccount(SIGN_IN_REQUEST_WITH_EMAIL.getAccountId());
+        
+        verify(mockCacheProvider).setObject(eq(CACHE_KEY), stringCaptor.capture(), eq(300));
+        assertNotNull(stringCaptor.getValue());
+
+        verify(mockSendMailService).sendEmail(emailProviderCaptor.capture());
+        
+        BasicEmailProvider provider = emailProviderCaptor.getValue();
+        assertEquals(21, provider.getTokenMap().get("token").length());
+        assertEquals(study, provider.getStudy());
+        assertEquals(EMAIL, Iterables.getFirst(provider.getRecipientEmails(), null));
+    }
+    
+    @Test
+    public void requestEmailSignInFailureDelays() throws Exception {
+        study.setEmailSignInEnabled(true);
+        service.getEmailSignInRequestInMillis().set(1000);
+        doReturn(null).when(mockAccountDao).getAccount(any());
+        doReturn(study).when(mockStudyService).getStudy(study.getIdentifier());
+                 
+        long start = System.currentTimeMillis();
+        service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
+        long total = System.currentTimeMillis()-start;
+        assertTrue(total >= 1000);
+        service.getEmailSignInRequestInMillis().set(0);
+    }    
+    
+    @Test(expected = InvalidEntityException.class)
+    public void emailSignInRequestMissingStudy() {
+        SignIn signInRequest = new SignIn.Builder().withEmail(EMAIL).withToken(TOKEN).build();
+
+        service.requestEmailSignIn(signInRequest);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void emailSignInRequestMissingEmail() {
+        SignIn signInRequest = new SignIn.Builder().withStudy(STUDY_ID).withToken(TOKEN).build();
+        
+        service.requestEmailSignIn(signInRequest);
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void requestEmailSignInDisabled() {
+        study.setEmailSignInEnabled(false);
+        doReturn(study).when(mockStudyService).getStudy(study.getIdentifier());
+        
+        service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
+    }
+    
+    @Test
+    public void requestEmailSignInTwiceReturnsSameToken() throws Exception {
+        // In this case, where there is a value and an account, we do't generate a new one,
+        // we just send the message again.
+        study.setEmailSignInEnabled(true);
+        doReturn("something").when(mockCacheProvider).getObject(CACHE_KEY, String.class);
+        doReturn(mockAccount).when(mockAccountDao).getAccount(any());
+        doReturn(study).when(mockStudyService).getStudy(study.getIdentifier());
+        
+        service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
+        
+        verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
+        verify(mockSendMailService).sendEmail(emailProviderCaptor.capture());
+        
+        MimeTypeEmailProvider provider = emailProviderCaptor.getValue();
+        assertEquals(EMAIL, provider.getMimeTypeEmail().getRecipientAddresses().get(0));
+        assertEquals(SUPPORT_EMAIL, provider.getPlainSenderEmail());
+        String bodyString = (String)provider.getMimeTypeEmail().getMessageParts().get(0).getContent();
+        assertEquals("something", bodyString);
+    }
+    
+    @Test
+    public void requestEmailSignInEmailNotRegistered() {
+        study.setEmailSignInEnabled(true);
+        doReturn(null).when(mockAccountDao).getAccount(ACCOUNT_ID_WITH_ID);
+        doReturn(study).when(mockStudyService).getStudy(study.getIdentifier());
+        
+        service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
+
+        verify(mockCacheProvider, never()).setObject(eq(CACHE_KEY), any(), eq(60));
+        verify(mockSendMailService, never()).sendEmail(any());
+    }
+    
+    @Test
+    public void requestPhoneSignIn() { 
+        study.setShortName("AppName");
+        String cacheKey = TestConstants.PHONE.getNumber() + ":api:phoneSignInRequest";
+        when(mockAccountDao.getAccount(SIGN_IN_WITH_PHONE.getAccountId())).thenReturn(mockAccount);
+        when(service.getPhoneToken()).thenReturn("123456");
+        doReturn(study).when(mockStudyService).getStudy(study.getIdentifier());
+        
+        service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
+        
+        verify(mockCacheProvider).getObject(cacheKey, String.class);
+        verify(mockCacheProvider).setObject(cacheKey, "123456", 300);
+        verify(mockNotificationsService).sendSMSMessage(study.getStudyIdentifier(), TestConstants.PHONE,
+                "Enter 123-456 to sign in to AppName");
+    }
+    
+    @Test
+    public void requestPhoneSignInFails() {
+        // This should fail silently, or we risk giving away information about accounts in the system.
+        service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
+        
+        verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
+        verify(mockNotificationsService, never()).sendSMSMessage(any(), any(), any());
+    }    
 }

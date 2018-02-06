@@ -4,24 +4,16 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
-import java.util.function.Supplier;
-
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
-import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -30,13 +22,11 @@ import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
-import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.validators.EmailValidator;
 import org.sagebionetworks.bridge.validators.EmailVerificationValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
@@ -59,24 +49,16 @@ public class AuthenticationService {
         PHONE;
     }
     
-    private static final String EMAIL_SIGNIN_REQUEST_KEY = "%s:%s:signInRequest";
-    private static final String PHONE_SIGNIN_REQUEST_KEY = "%s:%s:phoneSignInRequest";
-    private static final int SESSION_SIGNIN_TIMEOUT = 60*5; // 5 minutes
-    
     private CacheProvider cacheProvider;
     private BridgeConfig config;
     private ConsentService consentService;
     private ParticipantOptionsService optionsService;
     private AccountDao accountDao;
     private ParticipantService participantService;
-    private SendMailService sendMailService;
     private StudyService studyService;
     private PasswordResetValidator passwordResetValidator;
     private AccountWorkflowService accountWorkflowService;
     private IntentService intentService;
-    private NotificationsService notificationsService;
-    private final AtomicLong emailSignInRequestInMillis = new AtomicLong(200L);
-    private final AtomicLong phoneSignInRequestInMillis = new AtomicLong(200L);
 
     @Autowired
     final void setCacheProvider(CacheProvider cache) {
@@ -107,10 +89,6 @@ public class AuthenticationService {
         this.participantService = participantService;
     }
     @Autowired
-    final void setSendMailService(SendMailService sendMailService) {
-        this.sendMailService = sendMailService;
-    }
-    @Autowired
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
@@ -122,73 +100,19 @@ public class AuthenticationService {
     final void setIntentToParticipateService(IntentService intentService) {
         this.intentService = intentService;
     }
-    @Autowired
-    final void setNotificationsService(NotificationsService notificationsService) {
-        this.notificationsService = notificationsService;
-    }
-    final AtomicLong getEmailSignInRequestInMillis() {
-        return emailSignInRequestInMillis;
-    }
-    final AtomicLong getPhoneSignInRequestInMillis() {
-        return phoneSignInRequestInMillis;
-    }
-    
-    /**
-     * Request a token to be sent via SMS to the user, that can be used to start a session on the Bridge server.
-     */
-    public void requestPhoneSignIn(final SignIn signIn) {
-        requestChannelSignIn(ChannelType.PHONE, signIn, SignInValidator.PHONE_SIGNIN_REQUEST, phoneSignInRequestInMillis, () -> {
-            return getPhoneSignInCacheKey(signIn.getPhone(), signIn.getStudyId());
-        }, () -> {
-            return getPhoneToken();
-        }, (study, token) -> {
-            // Put a space in the token so it's easier to enter into the UI
-            String formattedToken = token.substring(0,3) + "-" + token.substring(3,6); 
-            String appName = (study.getShortName() != null) ? study.getShortName() : "Bridge";
-            String message = "Enter " + formattedToken + " to sign in to " + appName;
-            
-            notificationsService.sendSMSMessage(study.getStudyIdentifier(), signIn.getPhone(), message);
-        });
-    }
     
     /**
      * Sign in using a phone number and a token that was sent to that phone number via SMS. 
      */
     public UserSession phoneSignIn(CriteriaContext context, final SignIn signIn) {
-        return channelSignIn(ChannelType.PHONE, context, signIn, SignInValidator.PHONE_SIGNIN, () -> {
-            return getPhoneSignInCacheKey(signIn.getPhone(), signIn.getStudyId());
-        });
-    }
-    
-    /**
-     * Request a token to be sent via a link in an email message, that can be used to start a session on the Bridge server. 
-     * The installed application should intercept this link in order to complete the transaction within the app, where the 
-     * returned session can be captured. If the link is not captured, it retrieves a test page on the Bridge server as 
-     * configured by default. That test page will complete the transaction and return a session token.
-     */
-    public void requestEmailSignIn(final SignIn signIn) {
-        requestChannelSignIn(ChannelType.EMAIL, signIn, SignInValidator.EMAIL_SIGNIN_REQUEST, emailSignInRequestInMillis, () -> {
-            return getEmailSignInCacheKey(signIn.getEmail(), signIn.getStudyId());
-        }, () -> {
-            return getEmailToken();
-        }, (study, token) -> {
-            BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withEmailTemplate(study.getEmailSignInTemplate())
-                .withStudy(study)
-                .withRecipientEmail(signIn.getEmail())
-                .withToken("email", BridgeUtils.encodeURIComponent(signIn.getEmail()))
-                .withToken("token", token).build();
-            sendMailService.sendEmail(provider);
-        });
+        return channelSignIn(ChannelType.PHONE, context, signIn, SignInValidator.PHONE_SIGNIN);
     }
     
     /**
      * Sign in using an email address and a token that was supplied via a message to that email address. 
      */
     public UserSession emailSignIn(CriteriaContext context, final SignIn signIn) {
-        return channelSignIn(ChannelType.EMAIL, context, signIn, SignInValidator.EMAIL_SIGNIN, () -> {
-            return getEmailSignInCacheKey(signIn.getEmail(), signIn.getStudyId());
-        });
+        return channelSignIn(ChannelType.EMAIL, context, signIn, SignInValidator.EMAIL_SIGNIN);
     }
     
     /**
@@ -345,73 +269,22 @@ public class AuthenticationService {
         accountWorkflowService.resetPassword(passwordReset);
     }
     
-    protected String getEmailToken() {
-        return SecureTokenGenerator.INSTANCE.nextToken();
-    }
-    
-    protected String getPhoneToken() {
-        return SecureTokenGenerator.PHONE_CODE_INSTANCE.nextToken();
-    }
-
-    private void requestChannelSignIn(ChannelType channelType, SignIn signIn, Validator validator,
-            AtomicLong atomicLong, Supplier<String> cacheKeySupplier, Supplier<String> tokenSupplier,
-            BiConsumer<Study, String> messageSender) {
-        long startTime = System.currentTimeMillis();
-        Validate.entityThrowingException(validator, signIn);
-
-        // We use the study so it's existence is verified. We retrieve the account so we verify it
-        // exists as well. If the token is returned to the server, we can safely use the credentials 
-        // in the persisted SignIn object.        
-        Study study = studyService.getStudy(signIn.getStudyId());
-
-        // Do we want the same flag for phone? Do we want to eliminate this flag?
-        if (channelType == ChannelType.EMAIL && !study.isEmailSignInEnabled()) {
-            throw new UnauthorizedException("Email-based sign in not enabled for study: " + study.getName());
-        }
-
-        String cacheKey = cacheKeySupplier.get();
-        // check that the account exists, return quietly if not to prevent account enumeration attacks
-        if (accountDao.getAccount(signIn.getAccountId()) == null) {
-            try {
-                // The not found case returns *much* faster than the normal case. To prevent account enumeration 
-                // attacks, measure time of a successful case and delay for that period before returning.
-                TimeUnit.MILLISECONDS.sleep(atomicLong.get());            
-            } catch(InterruptedException e) {
-                // Just return, the thread was killed by the connection, the server died, etc.
-            }
-            return;
-        }
-        String token = cacheProvider.getObject(cacheKey, String.class);
-        if (token == null) {
-            token = tokenSupplier.get();
-            cacheProvider.setObject(cacheKey, token, SESSION_SIGNIN_TIMEOUT);
-        }
-
-        messageSender.accept(study, token);
-        atomicLong.set(System.currentTimeMillis()-startTime);
-    }
-    
     private UserSession channelSignIn(ChannelType channelType, CriteriaContext context, SignIn signIn,
-            Validator validator, Supplier<String> cacheKeySupplier) {
-        Validate.entityThrowingException(validator, signIn);
+            Validator validator) {
         
-        Study study = studyService.getStudy(signIn.getStudyId());
-        String cacheKey = cacheKeySupplier.get();
+        AccountId accountId = accountWorkflowService.channelSignIn(channelType, context, signIn, validator);
         
-        String storedToken = cacheProvider.getObject(cacheKey, String.class);
-        if (storedToken == null || !storedToken.equals(signIn.getToken())) {
-            throw new AuthenticationFailedException();
+        Account account = accountDao.getAccountAfterAuthentication(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
         }
-        // Consume the key regardless of what happens
-        cacheProvider.removeObject(cacheKey);
-        
-        Account account = accountDao.getAccountAfterAuthentication(signIn.getAccountId());
         if (account.getStatus() == AccountStatus.DISABLED) {
             throw new AccountDisabledException();
         }
         // Update account state before we create the session, so it's accurate...
         accountDao.verifyChannel(channelType, account);
 
+        Study study = studyService.getStudy(signIn.getStudyId());
         UserSession session = getSessionFromAccount(study, context, account);
         cacheProvider.setUserSession(session);
         
@@ -460,13 +333,5 @@ public class AuthenticationService {
         session.setConsentStatuses(consentService.getConsentStatuses(newContext));
         
         return session;
-    }
-    
-    private String getPhoneSignInCacheKey(Phone phone, String studyId) {
-        return String.format(PHONE_SIGNIN_REQUEST_KEY, phone.getNumber(), studyId);
-    }
-    
-    private String getEmailSignInCacheKey(String email, String studyId) {
-        return String.format(EMAIL_SIGNIN_REQUEST_KEY, email, studyId);
     }
 }

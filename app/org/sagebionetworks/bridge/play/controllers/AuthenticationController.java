@@ -22,6 +22,8 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.AccountWorkflowService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import play.mvc.BodyParser;
@@ -32,10 +34,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 @Controller
 public class AuthenticationController extends BaseController {
 
+    private AccountWorkflowService accountWorkflowService;
+    
+    @Autowired
+    final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
+        this.accountWorkflowService = accountWorkflowService;
+    }
+    
     public Result requestEmailSignIn() { 
         SignIn signInRequest = parseJson(request(), SignIn.class);
         
-        authenticationService.requestEmailSignIn(signInRequest);
+        accountWorkflowService.requestEmailSignIn(signInRequest);
         
         return acceptedResult("Email sent.");
     }
@@ -65,7 +74,7 @@ public class AuthenticationController extends BaseController {
     public Result requestPhoneSignIn() {
         SignIn signInRequest = parseJson(request(), SignIn.class);
         
-        authenticationService.requestPhoneSignIn(signInRequest);
+        accountWorkflowService.requestPhoneSignIn(signInRequest);
 
         return acceptedResult("Message sent.");
     }
