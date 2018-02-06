@@ -14,15 +14,9 @@ import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
 import org.sagebionetworks.bridge.models.AndroidAppSiteAssociation;
 import org.sagebionetworks.bridge.models.AppleAppSiteAssociation;
-import org.sagebionetworks.bridge.models.CriteriaContext;
-import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
 import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.stereotype.Controller;
 
 import com.google.common.collect.Lists;

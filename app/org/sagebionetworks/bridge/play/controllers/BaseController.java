@@ -47,7 +47,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import play.api.mvc.ActionBuilder;
 import play.cache.Cache;
 import play.libs.Json;
 import play.mvc.Controller;
