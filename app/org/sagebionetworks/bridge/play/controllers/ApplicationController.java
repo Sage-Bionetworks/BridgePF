@@ -64,9 +64,8 @@ public class ApplicationController extends BaseController {
     
     /**
      * If this page is loaded, it is because the mobile client did not intercept the 
-     * email sign in link. Change the behavior here so that instead of authenticating the user, 
-     * this simple shows an error message and keeps the link valid so the user can try again 
-     * on a phone.
+     * email sign in link. Show an error message and keeps the link valid so the user 
+     * can try again on a phone.
      */
     public Result startSession(String studyId, String email, String token) {
         Study study = studyService.getStudy(studyId);
