@@ -26,7 +26,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
-import org.apache.http.HttpStatus;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.junit.After;

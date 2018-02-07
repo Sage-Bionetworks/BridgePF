@@ -64,6 +64,7 @@ public class HibernateAccountDao implements AccountDao {
     static final String ACCOUNT_SUMMARY_QUERY_PREFIX = "select new " + HibernateAccount.class.getCanonicalName() +
             "(createdOn, studyId, firstName, lastName, email, phone, id, status) ";
     static final String EMAIL_QUERY = "from HibernateAccount where studyId='%s' and email='%s'";
+    static final String HEALTH_CODE_QUERY = "from HibernateAccount where studyId='%s' and healthCode='%s'";
     static final String PHONE_QUERY = "from HibernateAccount where studyId='%s' and phone.number='%s' and phone.regionCode='%s'";
     
     private HealthCodeService healthCodeService;
@@ -397,6 +398,8 @@ public class HibernateAccountDao implements AccountDao {
         String query = null;
         if (unguarded.getEmail() != null) {
             query = String.format(EMAIL_QUERY, unguarded.getStudyId(), unguarded.getEmail());
+        } else if (unguarded.getHealthCode() != null) {
+            query = String.format(HEALTH_CODE_QUERY, unguarded.getStudyId(), unguarded.getHealthCode());
         } else {
             query = String.format(PHONE_QUERY, unguarded.getStudyId(), unguarded.getPhone().getNumber(), unguarded.getPhone().getRegionCode());
         }

@@ -84,9 +84,9 @@ public interface AccountDao {
     void updateAccount(Account account, boolean allowIdentifierUpdates);
     
     /**
-     * Get an account in the context of a study by the user's ID, email address, or phone 
-     * number. Returns null if there is no account, it is up to callers to translate this 
-     * into the appropriate exception, if any. 
+     * Get an account in the context of a study by the user's ID, email address, health code,
+     * or phone number. Returns null if there is no account, it is up to callers to translate 
+     * this into the appropriate exception, if any. 
      */
     Account getAccount(AccountId accountId);
     
