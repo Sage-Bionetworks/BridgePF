@@ -16,7 +16,6 @@ import org.sagebionetworks.bridge.dao.SurveyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -178,9 +177,6 @@ public class SurveyService {
         Survey existing = surveyDao.getSurvey(keys);
         if (existing.isDeleted()) {
             throw new EntityNotFoundException(Survey.class);
-        }
-        if (existing.isPublished()) {
-            throw new PublishedSurveyException(existing);
         }
 
         // verify if a shared module refers to it

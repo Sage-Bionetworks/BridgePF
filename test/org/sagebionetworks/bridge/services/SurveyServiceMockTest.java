@@ -36,7 +36,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
@@ -176,17 +175,13 @@ public class SurveyServiceMockTest {
     }
 
     @Test
-    public void deleteSurveyFailsOnPublishedSurvey() {
+    public void deleteSurveySucceedsOnPublishedSurvey() {
         Survey survey = createSurvey();
         survey.setPublished(true);
         doReturn(survey).when(mockSurveyDao).getSurvey(any());
         
-        try {
-            service.deleteSurvey(survey);
-            fail("Should have thrown exception");
-        } catch(PublishedSurveyException e) {
-            verify(mockSurveyDao, never()).deleteSurvey(any());
-        }
+        service.deleteSurvey(survey);
+        verify(mockSurveyDao).deleteSurvey(survey);
     }
     
     @Test
