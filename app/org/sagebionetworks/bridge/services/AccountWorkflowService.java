@@ -55,6 +55,8 @@ public class AccountWorkflowService {
     private static final String EMAIL_SIGNIN_URL = "%s/mobile/startSession.html?email=%s&study=%s&token=%s";
     private static final String BASE_URL = BridgeConfigFactory.getConfig().get("webservices.url");
     private static final String EXP_WINDOW_TOKEN = "expirationWindow";
+    private static final String EMAIL_TOKEN = "email";
+    private static final String TOKEN_TOKEN = "token";
     private static final String URL_TOKEN = "url";
     private static final String EMAIL_SIGNIN_TOKEN = "emailSignInUrl"; 
     private static final String RESET_PASSWORD_TOKEN = "resetPasswordUrl";
@@ -335,9 +337,9 @@ public class AccountWorkflowService {
                 .withEmailTemplate(study.getEmailSignInTemplate())
                 .withStudy(study)
                 .withRecipientEmail(signIn.getEmail())
-                .withToken("email", BridgeUtils.encodeURIComponent(signIn.getEmail()))
-                .withToken("token", token)
-                .withToken("url", url).build();
+                .withToken(EMAIL_TOKEN, BridgeUtils.encodeURIComponent(signIn.getEmail()))
+                .withToken(TOKEN_TOKEN, token)
+                .withToken(URL_TOKEN, url).build();
             sendMailService.sendEmail(provider);
             return url;
         });
