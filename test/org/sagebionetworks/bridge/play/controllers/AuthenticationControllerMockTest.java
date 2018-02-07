@@ -64,6 +64,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -98,6 +99,9 @@ public class AuthenticationControllerMockTest {
     @Mock
     AuthenticationService authenticationService;
 
+    @Mock
+    AccountWorkflowService accountWorkflowService;
+    
     private Study study;
     
     @Mock
@@ -140,6 +144,7 @@ public class AuthenticationControllerMockTest {
         controller = spy(new AuthenticationController());
         controller.setAuthenticationService(authenticationService);
         controller.setCacheProvider(cacheProvider);
+        controller.setAccountWorkflowService(accountWorkflowService);
         
         userSession = new UserSession();
         userSession.setReauthToken(REAUTH_TOKEN);
@@ -171,7 +176,7 @@ public class AuthenticationControllerMockTest {
         Result result = controller.requestEmailSignIn();
         assertResult(result, 202, "Email sent.");
      
-        verify(authenticationService).requestEmailSignIn(signInCaptor.capture());
+        verify(accountWorkflowService).requestEmailSignIn(signInCaptor.capture());
         assertEquals("study-key", signInCaptor.getValue().getStudyId());
         assertEquals(TEST_EMAIL, signInCaptor.getValue().getEmail());
     }
@@ -726,7 +731,7 @@ public class AuthenticationControllerMockTest {
         Result result = controller.requestPhoneSignIn();
         assertResult(result, 202, "Message sent.");
         
-        verify(authenticationService).requestPhoneSignIn(signInCaptor.capture());
+        verify(accountWorkflowService).requestPhoneSignIn(signInCaptor.capture());
         
         SignIn captured = signInCaptor.getValue();
         assertEquals(TEST_STUDY_ID_STRING, captured.getStudyId());
