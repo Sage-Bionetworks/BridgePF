@@ -272,9 +272,11 @@ public class AuthenticationService {
     private UserSession channelSignIn(ChannelType channelType, CriteriaContext context, SignIn signIn,
             Validator validator) {
         
+        // Throws AuthenticationFailedException if the token is missing or incorrect
         AccountId accountId = accountWorkflowService.channelSignIn(channelType, context, signIn, validator);
         
         Account account = accountDao.getAccountAfterAuthentication(accountId);
+        // This should be unlikley, but if someone deleted the account while the token was outstanding
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }

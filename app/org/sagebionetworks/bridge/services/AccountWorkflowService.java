@@ -369,13 +369,21 @@ public class AccountWorkflowService {
         atomicLong.set(System.currentTimeMillis()-startTime);
     }
 
+    /**
+     * Attempts to validate a sign in request using a token that was stored and then sent 
+     * via SMS or an email message. 
+     * 
+     * @return AccountId the accountId of the account if the sign in is successful.
+     * @throws AuthenticationFailedException
+     *             if the token is missing or invalid (not a successful sign in attempt).
+     */
     public AccountId channelSignIn(ChannelType channelType, CriteriaContext context, SignIn signIn,
             Validator validator) {
         Validate.entityThrowingException(validator, signIn);
        
         String cacheKey = (channelType == ChannelType.EMAIL) ?
-                getPhoneSignInCacheKey(signIn.getPhone(), signIn.getStudyId()) :
-                getEmailSignInCacheKey(signIn.getEmail(), signIn.getStudyId());
+                getEmailSignInCacheKey(signIn.getEmail(), signIn.getStudyId()) :
+                getPhoneSignInCacheKey(signIn.getPhone(), signIn.getStudyId());
         
         String storedToken = cacheProvider.getObject(cacheKey, String.class);
         if (storedToken == null || !storedToken.equals(signIn.getToken())) {

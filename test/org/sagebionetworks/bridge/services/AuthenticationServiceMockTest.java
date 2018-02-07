@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -260,6 +261,7 @@ public class AuthenticationServiceMockTest {
         assertEquals(REAUTH_TOKEN, retSession.getReauthToken());
         verify(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
         verify(accountDao).verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
+        verify(cacheProvider).setUserSession(retSession);
     }
     
     @Test(expected = AuthenticationFailedException.class)
@@ -289,7 +291,7 @@ public class AuthenticationServiceMockTest {
         service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
     }
     
-    @Test(expected = ConsentRequiredException.class)
+    @Test
     public void emailSignInThrowsConsentRequired() {
         StudyParticipant participant = new StudyParticipant.Builder().withStatus(AccountStatus.DISABLED).build();
 
@@ -299,7 +301,12 @@ public class AuthenticationServiceMockTest {
         doReturn(participant).when(participantService).getParticipant(study, account, false);
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
         
-        service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+        try {
+            service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+            fail("Should have thrown exception");
+        } catch(ConsentRequiredException e) {
+            verify(cacheProvider).setUserSession(e.getUserSession());    
+        }
     }
     
     @Test
@@ -447,6 +454,25 @@ public class AuthenticationServiceMockTest {
                 CONTEXT, SIGN_IN_WITH_PHONE, SignInValidator.PHONE_SIGNIN);
         
         service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
+    }
+    
+    @Test
+    public void phoneSignInThrowsConsentRequired() {
+        // Put some stuff in participant to verify session is initialized
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(RECIPIENT_EMAIL).withFirstName("Test").withLastName("Tester").build();
+        doReturn(participant).when(participantService).getParticipant(study, account, false);
+        doReturn(SIGN_IN_WITH_PHONE.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.PHONE,
+                CONTEXT, SIGN_IN_WITH_PHONE, SignInValidator.PHONE_SIGNIN);
+        doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_PHONE.getAccountId());
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        
+        try {
+            service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
+            fail("Should have thrown exception");
+        } catch(ConsentRequiredException e) {
+            verify(cacheProvider).setUserSession(e.getUserSession());    
+        }
     }
     
     @Test
