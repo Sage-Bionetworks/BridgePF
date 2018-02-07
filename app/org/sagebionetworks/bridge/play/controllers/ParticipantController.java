@@ -64,7 +64,6 @@ public class ParticipantController extends BaseController {
     public Result getSelfParticipant() throws Exception {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        verifySupportedVersionOrThrowException(study);
         
         StudyParticipant participant = participantService.getParticipant(study, session.getId(), false);
         
@@ -76,7 +75,6 @@ public class ParticipantController extends BaseController {
     public Result updateSelfParticipant() throws Exception {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        verifySupportedVersionOrThrowException(study);
         
         // By copying only values that were included in the JSON onto the existing StudyParticipant,
         // we allow clients to only send back partial JSON to update the user. This has been the 
@@ -111,7 +109,6 @@ public class ParticipantController extends BaseController {
         
         IdentifierUpdate update = parseJson(request(), IdentifierUpdate.class);
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        verifySupportedVersionOrThrowException(study);
 
         CriteriaContext context = getCriteriaContext(session);
         

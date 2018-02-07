@@ -22,13 +22,23 @@ public class IdentifierUpdateValidatorTest {
     }
     
     @Test
-    public void signInErrorsNested() {
+    public void signInErrorsNestedSignIn() {
         // Sign in with no password
         SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
                 .withEmail(TestConstants.EMAIL).build();
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, "updated@email.com", null);
         assertValidatorMessage(IdentifierUpdateValidator.INSTANCE, update, "signIn.password", "is required");
+    }
+    
+    @Test
+    public void signInErrorsNestedReauthentication() {
+        // Reauthentication with no study
+        SignIn reauth = new SignIn.Builder().withEmail(TestConstants.EMAIL)
+                .withReauthToken("ABDC").build();
+        
+        IdentifierUpdate update = new IdentifierUpdate(reauth, null, TestConstants.PHONE);
+        assertValidatorMessage(IdentifierUpdateValidator.INSTANCE, update, "signIn.study", "is required");
     }
     
     @Test

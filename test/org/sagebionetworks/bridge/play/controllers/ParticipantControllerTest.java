@@ -136,7 +136,7 @@ public class ParticipantControllerTest {
     private AuthenticationService authService;
     
     @Mock
-    private CacheProvider cacheProvider;
+    private CacheProvider mockCacheProvider;
     
     @Captor
     private ArgumentCaptor<Map<ParticipantOption,String>> optionMapCaptor;
@@ -174,6 +174,8 @@ public class ParticipantControllerTest {
     
     private StudyParticipant participant;
     
+    private SessionUpdateService sessionUpdateService;
+    
     @Before
     public void before() throws Exception {
         study = new DynamoStudy();
@@ -210,10 +212,10 @@ public class ParticipantControllerTest {
         controller.setParticipantService(mockParticipantService);
         controller.setStudyService(mockStudyService);
         controller.setAuthenticationService(authService);
-        controller.setCacheProvider(cacheProvider);
+        controller.setCacheProvider(mockCacheProvider);
         
-        SessionUpdateService sessionUpdateService = new SessionUpdateService();
-        sessionUpdateService.setCacheProvider(cacheProvider);
+        sessionUpdateService = new SessionUpdateService();
+        sessionUpdateService.setCacheProvider(mockCacheProvider);
         sessionUpdateService.setConsentService(mockConsentService);
         
         controller.setSessionUpdateService(sessionUpdateService);
@@ -376,7 +378,7 @@ public class ParticipantControllerTest {
                 .withTimeZone(DateTimeZone.forOffsetHours(-7))
                 .withStudyIdentifier(new StudyIdentifierImpl("test-study")).build();
         
-        doReturn(requestInfo).when(cacheProvider).getRequestInfo("userId");
+        doReturn(requestInfo).when(mockCacheProvider).getRequestInfo("userId");
         Result result = controller.getRequestInfo("userId");
         assertResult(result, 200);
         
@@ -402,7 +404,7 @@ public class ParticipantControllerTest {
                 .withTimeZone(DateTimeZone.forOffsetHours(-7))
                 .withStudyIdentifier(new StudyIdentifierImpl("some-other-study")).build();
         
-        doReturn(requestInfo).when(cacheProvider).getRequestInfo("userId");
+        doReturn(requestInfo).when(mockCacheProvider).getRequestInfo("userId");
         controller.getRequestInfo("userId");
     }
     
@@ -477,7 +479,7 @@ public class ParticipantControllerTest {
         assertNull(node.get("healthCode"));
         
         // verify the object is passed to service, one field is sufficient
-        verify(cacheProvider).setUserSession(any());
+        verify(mockCacheProvider).setUserSession(any());
         verify(mockParticipantService).updateParticipant(eq(study), eq(NO_CALLER_ROLES), participantCaptor.capture());
 
         // Just test the different types and verify they are there.
@@ -909,6 +911,8 @@ public class ParticipantControllerTest {
         assertEquals(ID, node.get("id").textValue());
         
         verify(mockParticipantService).updateIdentifiers(eq(study), contextCaptor.capture(), identifierUpdateCaptor.capture());
+        verify(mockCacheProvider).setUserSession(sessionCaptor.capture());
+        assertEquals(participant.getId(), sessionCaptor.getValue().getId());
         
         IdentifierUpdate update = identifierUpdateCaptor.getValue();
         assertEquals(EMAIL_PASSWORD_SIGN_IN_REQUEST.getEmail(), update.getSignIn().getEmail());
