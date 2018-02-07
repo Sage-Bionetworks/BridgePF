@@ -1,13 +1,13 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -119,8 +119,8 @@ public class AccountWorkflowServiceTest {
     public void before() {
         EmailTemplate verifyEmailTemplate = new EmailTemplate("VE ${studyName}", "Body ${url}", MimeType.TEXT);
         EmailTemplate resetPasswordTemplate = new EmailTemplate("RP ${studyName}", "Body ${url}", MimeType.TEXT);
-        EmailTemplate accountExistsTemplate = new EmailTemplate("AE ${studyName}", "Body ${url}", MimeType.TEXT);
-        EmailTemplate emailSignInTemplate = new EmailTemplate("subject","${token}",MimeType.TEXT);
+        EmailTemplate accountExistsTemplate = new EmailTemplate("AE ${studyName}", "Body ${url} ${resetPasswordUrl} ${emailSignInUrl}", MimeType.TEXT);
+        EmailTemplate emailSignInTemplate = new EmailTemplate("subject","${token}", MimeType.TEXT);
         
         study = Study.create();
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
@@ -137,13 +137,11 @@ public class AccountWorkflowServiceTest {
         service.setSendMailService(mockSendMailService);
         service.setStudyService(mockStudyService);
         service.setNotificationsService(mockNotificationsService);
-        
-        
     }
     
     @Test
     public void sendEmailVerificationToken() throws Exception {
-        when(service.createTimeLimitedToken()).thenReturn("ABC");
+        when(service.getNextToken()).thenReturn("ABC");
         
         service.sendEmailVerificationToken(study, USER_ID, EMAIL);
         
@@ -228,31 +226,65 @@ public class AccountWorkflowServiceTest {
     
     @Test
     public void notifyAccountExistsForEmail() throws Exception {
+        // In this path email sign in is also enabled, so we will generate a link to sign in that can 
+        // be used in lieu of directing the user to a password reset.
+        study.setEmailSignInEnabled(true);
         AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
-        when(service.createTimeLimitedToken()).thenReturn("ABC");
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        when(service.getNextToken()).thenReturn("ABC");
         when(mockAccount.getEmail()).thenReturn(EMAIL);
         when(mockAccount.getEmailVerified()).thenReturn(Boolean.TRUE);
         when(mockAccountDao.getAccount(accountId)).thenReturn(mockAccount);
+        when(mockAccountDao.getAccount(AccountId.forEmail(TEST_STUDY_IDENTIFIER, EMAIL))).thenReturn(mockAccount);
         
         service.notifyAccountExists(study, accountId);
         
         verify(mockCacheProvider).setObject("ABC:api", EMAIL, 60*60*2);
         verify(mockSendMailService).sendEmail(emailProviderCaptor.capture());
+        
         MimeTypeEmailProvider provider = emailProviderCaptor.getValue();
         MimeTypeEmail email = provider.getMimeTypeEmail();
         assertEquals("\"This study name\" <support@support.com>", email.getSenderAddress());
         assertEquals(1, email.getRecipientAddresses().size());
         assertEquals(EMAIL, email.getRecipientAddresses().get(0));
         assertEquals("AE This study name", email.getSubject());
+        
         MimeBodyPart body = email.getMessageParts().get(0);
         String bodyString = (String)body.getContent();
+        System.out.println(bodyString);
         assertTrue(bodyString.contains("/mobile/resetPassword.html?study=api&sptoken=ABC"));
+        assertTrue(bodyString.contains("/mobile/startSession.html?email=email%40email.com&study=api&token=ABC"));
+        
+        // All the template variables have been replaced
+        assertFalse(bodyString.contains("${url}"));
+        assertFalse(bodyString.contains("${resetPasswordUrl}"));
+        assertFalse(bodyString.contains("${emailSignInUrl}"));
     }
+    
+    @Test
+    public void notifyAccountExistsForEmailWithoutEmailSignIn() throws Exception {
+        // A successful notification of an existing account where email sign in is not enabled. The 
+        // emailSignIn template variable will not be replace.
+        AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
+        when(service.getNextToken()).thenReturn("ABC");
+        when(mockAccount.getEmail()).thenReturn(EMAIL);
+        when(mockAccount.getEmailVerified()).thenReturn(Boolean.TRUE);
+        when(mockAccountDao.getAccount(accountId)).thenReturn(mockAccount);
+        
+        service.notifyAccountExists(study, accountId);
+        
+        verify(mockSendMailService).sendEmail(emailProviderCaptor.capture());
+        
+        MimeTypeEmailProvider provider = emailProviderCaptor.getValue();
+        String bodyString = (String) provider.getMimeTypeEmail().getMessageParts().get(0).getContent();
+        
+        assertTrue(bodyString.contains("${emailSignInUrl}"));
+    }    
     
     @Test
     public void notifyAccountExistsForPhone() throws Exception {
         AccountId accountId = AccountId.forPhone(TEST_STUDY_IDENTIFIER, TestConstants.PHONE);
-        when(service.createTimeLimitedToken()).thenReturn("ABC");
+        when(service.getNextToken()).thenReturn("ABC");
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
         when(mockAccount.getPhoneVerified()).thenReturn(Boolean.TRUE);
         when(mockAccountDao.getAccount(accountId)).thenReturn(mockAccount);
@@ -271,7 +303,7 @@ public class AccountWorkflowServiceTest {
     
     @Test
     public void requestResetPasswordWithEmail() throws Exception {
-        when(service.createTimeLimitedToken()).thenReturn("ABC");
+        when(service.getNextToken()).thenReturn("ABC");
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(mockAccount);
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
         when(mockAccount.getEmail()).thenReturn(EMAIL);
@@ -295,7 +327,7 @@ public class AccountWorkflowServiceTest {
     
     @Test
     public void requestResetPasswordWithPhone() throws Exception {
-        when(service.createTimeLimitedToken()).thenReturn("ABC");
+        when(service.getNextToken()).thenReturn("ABC");
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
@@ -345,7 +377,7 @@ public class AccountWorkflowServiceTest {
     
     @Test
     public void requestResetPasswordInvalidEmailFailsQuietly() throws Exception {
-        when(service.createTimeLimitedToken()).thenReturn("ABC");
+        when(service.getNextToken()).thenReturn("ABC");
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(null);
         
         service.requestResetPassword(study, ACCOUNT_ID_WITH_EMAIL);
@@ -356,7 +388,7 @@ public class AccountWorkflowServiceTest {
 
     @Test
     public void requestRestPasswordUnverifiedEmailFailsQuietly() throws Exception {
-        when(service.createTimeLimitedToken()).thenReturn("ABC");
+        when(service.getNextToken()).thenReturn("ABC");
         when(mockAccount.getEmail()).thenReturn(EMAIL);
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(mockAccount);
         
@@ -368,7 +400,7 @@ public class AccountWorkflowServiceTest {
     
     @Test
     public void requestRestPasswordUnverifiedPhoneFailsQuietly() throws Exception {
-        when(service.createTimeLimitedToken()).thenReturn("ABC");
+        when(service.getNextToken()).thenReturn("ABC");
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
         
@@ -446,8 +478,8 @@ public class AccountWorkflowServiceTest {
     @Test
     public void requestEmailSignIn() throws Exception {
         study.setEmailSignInEnabled(true);
-        doReturn(mockAccount).when(mockAccountDao).getAccount(SIGN_IN_REQUEST_WITH_EMAIL.getAccountId());
-        doReturn(study).when(mockStudyService).getStudy(study.getIdentifier());
+        when(mockAccountDao.getAccount(SIGN_IN_REQUEST_WITH_EMAIL.getAccountId())).thenReturn(mockAccount);
+        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
         
         service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
         
@@ -471,8 +503,8 @@ public class AccountWorkflowServiceTest {
     public void requestEmailSignInFailureDelays() throws Exception {
         study.setEmailSignInEnabled(true);
         service.getEmailSignInRequestInMillis().set(1000);
-        doReturn(null).when(mockAccountDao).getAccount(any());
-        doReturn(study).when(mockStudyService).getStudy(study.getIdentifier());
+        when(mockAccountDao.getAccount(any())).thenReturn(null);
+        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
                  
         long start = System.currentTimeMillis();
         service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
@@ -498,7 +530,7 @@ public class AccountWorkflowServiceTest {
     @Test(expected = UnauthorizedException.class)
     public void requestEmailSignInDisabled() {
         study.setEmailSignInEnabled(false);
-        doReturn(study).when(mockStudyService).getStudy(study.getIdentifier());
+        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
         
         service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
     }
@@ -508,9 +540,9 @@ public class AccountWorkflowServiceTest {
         // In this case, where there is a value and an account, we do't generate a new one,
         // we just send the message again.
         study.setEmailSignInEnabled(true);
-        doReturn("something").when(mockCacheProvider).getObject(CACHE_KEY, String.class);
-        doReturn(mockAccount).when(mockAccountDao).getAccount(any());
-        doReturn(study).when(mockStudyService).getStudy(study.getIdentifier());
+        when(mockCacheProvider.getObject(CACHE_KEY, String.class)).thenReturn("something");
+        when(mockAccountDao.getAccount(any())).thenReturn(mockAccount);
+        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
         
         service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
         
@@ -527,8 +559,8 @@ public class AccountWorkflowServiceTest {
     @Test
     public void requestEmailSignInEmailNotRegistered() {
         study.setEmailSignInEnabled(true);
-        doReturn(null).when(mockAccountDao).getAccount(ACCOUNT_ID_WITH_ID);
-        doReturn(study).when(mockStudyService).getStudy(study.getIdentifier());
+        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(null);
+        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
         
         service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
 
@@ -542,7 +574,7 @@ public class AccountWorkflowServiceTest {
         String cacheKey = TestConstants.PHONE.getNumber() + ":api:phoneSignInRequest";
         when(mockAccountDao.getAccount(SIGN_IN_WITH_PHONE.getAccountId())).thenReturn(mockAccount);
         when(service.getPhoneToken()).thenReturn("123456");
-        doReturn(study).when(mockStudyService).getStudy(study.getIdentifier());
+        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
         
         service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
         
@@ -626,5 +658,4 @@ public class AccountWorkflowServiceTest {
 
         service.channelSignIn(ChannelType.PHONE, CONTEXT, wrongPhoneSignIn, SignInValidator.PHONE_SIGNIN);
     }
-    
 }

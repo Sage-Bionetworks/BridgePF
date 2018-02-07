@@ -321,7 +321,20 @@ public class StudyValidatorTest {
     @Test
     public void requiresAccountExistsTemplateRequiresURL() {
         study.setAccountExistsTemplate(new EmailTemplate("subject", "body with no url", MimeType.HTML));
-        assertValidatorMessage(INSTANCE, study, "accountExistsTemplate.body", "must contain the ${url} template variable");
+        assertValidatorMessage(INSTANCE, study, "accountExistsTemplate.body",
+                "must contain the ${url}, ${emailSignInUrl}, or ${resetPasswordUrl} template variable");
+    }
+    
+    @Test
+    public void requiresAccountExistsTemplateOK() {
+        study.setAccountExistsTemplate(new EmailTemplate("subject", "${url}", MimeType.HTML));
+        Validate.entityThrowingException(INSTANCE, study);
+        
+        study.setAccountExistsTemplate(new EmailTemplate("subject", "${resetPasswordUrl}", MimeType.HTML));
+        Validate.entityThrowingException(INSTANCE, study);
+        
+        study.setAccountExistsTemplate(new EmailTemplate("subject", "${emailSignInUrl}", MimeType.HTML));
+        Validate.entityThrowingException(INSTANCE, study);
     }
     
     @Test

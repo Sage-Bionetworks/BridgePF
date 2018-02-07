@@ -125,7 +125,7 @@ public class StudyValidator implements Validator {
             validateTemplate(errors, study.getEmailSignInTemplate(), "emailSignInTemplate", "${token}");
         }
         if (study.getAccountExistsTemplate() != null) {
-            validateTemplate(errors, study.getAccountExistsTemplate(), "accountExistsTemplate", "${url}");
+            validateAccountExistsTemplate(errors, study.getAccountExistsTemplate(), "accountExistsTemplate");
         }
         
         for (String userProfileAttribute : study.getUserProfileAttributes()) {
@@ -281,6 +281,28 @@ public class StudyValidator implements Validator {
             } else {
                 if (!template.getBody().contains(requiredVariable)) {
                     errors.rejectValue("body", "must contain the "+requiredVariable+" template variable");
+                }
+            }
+            errors.popNestedPath();
+        }
+    }
+    
+    private void validateAccountExistsTemplate(Errors errors, EmailTemplate template, String fieldName) {
+        if (template == null) {
+            errors.rejectValue(fieldName, "is required");
+        } else {
+            errors.pushNestedPath(fieldName);
+            if (StringUtils.isBlank(template.getSubject())) {
+                errors.rejectValue("subject", "is required");
+            }
+            if (StringUtils.isBlank(template.getBody())) {
+                errors.rejectValue("body", "is required");
+            } else {
+                // Needs to have ${url} or ${emailSignInUrl} or ${resetPasswordUrl}
+                if (!template.getBody().contains("${url}") && 
+                    !template.getBody().contains("${emailSignInUrl}") && 
+                    !template.getBody().contains("${resetPasswordUrl}")) {
+                    errors.rejectValue("body", "must contain the ${url}, ${emailSignInUrl}, or ${resetPasswordUrl} template variable");
                 }
             }
             errors.popNestedPath();
