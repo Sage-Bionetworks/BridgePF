@@ -114,7 +114,7 @@ public class HibernateAccountDaoTest {
         when(mockHealthCodeService.createMapping(TestConstants.TEST_STUDY)).thenReturn(new HealthIdImpl(HEALTH_ID,
                 HEALTH_CODE));
 
-        // Most studies test this as enabled. A specific test disables it.
+        // Most studies test this as enabled. Specific tests disable it.
         STUDY.setReauthenticationEnabled(true);
     }
 

@@ -600,7 +600,7 @@ public class HibernateAccountDao implements AccountDao {
             // authentication pathway, we don't save here because we will save the account after we rotate 
             // the reauthentication token.
             if (doSave) {
-                hibernateHelper.update(hibernateAccount);
+                hibernateHelper.update(hibernateAccount);    
             }
         }
     }
