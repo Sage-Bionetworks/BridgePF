@@ -4,11 +4,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.same;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -65,9 +65,12 @@ import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
+import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
+import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.Phone;
+import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -136,6 +139,14 @@ public class ParticipantServiceTest {
     
     private static final DateTime START_DATE = DateTime.now();
     private static final DateTime END_DATE = START_DATE.plusDays(1);
+    private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
+            .withUserId(ID).withStudyIdentifier(TestConstants.TEST_STUDY).build();
+    private static final SignIn EMAIL_PASSWORD_SIGN_IN = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER).withEmail(EMAIL)
+            .withPassword(PASSWORD).build();
+    private static final SignIn PHONE_PASSWORD_SIGN_IN = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+            .withPhone(TestConstants.PHONE).withPassword(PASSWORD).build();
+    private static final SignIn REAUTH_REQUEST = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER).withEmail(EMAIL)
+            .withReauthToken("ASDF").build();
     
     private ParticipantService participantService;
     
@@ -153,9 +164,6 @@ public class ParticipantServiceTest {
     
     @Mock
     private ConsentService consentService;
-    
-    @Mock
-    private Account account;
     
     @Mock
     private ParticipantOptionsLookup lookup;
@@ -211,6 +219,8 @@ public class ParticipantServiceTest {
     @Captor
     ArgumentCaptor<AccountId> accountIdCaptor;
     
+    private Account account;
+    
     @Before
     public void before() {
         STUDY.setExternalIdValidationEnabled(false);
@@ -228,15 +238,26 @@ public class ParticipantServiceTest {
         participantService.setNotificationsService(notificationsService);
         participantService.setScheduledActivityService(scheduledActivityService);
         participantService.setAccountWorkflowService(accountWorkflowService);
+        
+        account = new GenericAccount();
     }
     
     private void mockHealthCodeAndAccountRetrieval() {
-        when(account.getId()).thenReturn(ID);
+        ((GenericAccount)account).setId(ID);
+        ((GenericAccount)account).setHealthCode(HEALTH_CODE);
+        account.setEmail(EMAIL);
         when(accountDao.constructAccount(any(), any(), any(), any())).thenReturn(account);
         when(accountDao.createAccount(same(STUDY), same(account))).thenReturn(ID);
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
-        when(account.getHealthCode()).thenReturn(HEALTH_CODE);
-        when(account.getEmail()).thenReturn(EMAIL);
+        when(optionsService.getOptions(HEALTH_CODE)).thenReturn(lookup);
+    }
+    
+    private void mockAccountNoEmail() {
+        ((GenericAccount)account).setId(ID);
+        ((GenericAccount)account).setHealthCode(HEALTH_CODE);
+        when(accountDao.constructAccount(any(), any(), any(), any())).thenReturn(account);
+        when(accountDao.createAccount(same(STUDY), same(account))).thenReturn(ID);
+        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
         when(optionsService.getOptions(HEALTH_CODE)).thenReturn(lookup);
     }
     
@@ -271,13 +292,13 @@ public class ParticipantServiceTest {
         assertTrue(options.get(LANGUAGES).contains("fr"));
         
         Account account = accountCaptor.getValue();
-        verify(account).setFirstName(FIRST_NAME);
-        verify(account).setLastName(LAST_NAME);
-        verify(account).setAttribute("can_be_recontacted", "true");
-        verify(account).setRoles(USER_ROLES);
-        verify(account).setClientData(TestUtils.getClientData());
-        verify(account).setStatus(AccountStatus.UNVERIFIED);
-        verify(account, never()).setEmailVerified(any());
+        assertEquals(FIRST_NAME, account.getFirstName());
+        assertEquals(LAST_NAME, account.getLastName());
+        assertEquals("true", account.getAttribute("can_be_recontacted"));
+        assertEquals(USER_ROLES, account.getRoles());
+        assertEquals(TestUtils.getClientData(), account.getClientData());
+        assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
+        assertNull(account.getEmailVerified());
 
         // don't update cache
         verify(cacheProvider, never()).removeSessionByUserId(ID);
@@ -339,8 +360,8 @@ public class ParticipantServiceTest {
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
         
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
-        verify(account).setStatus(AccountStatus.ENABLED);
-        verify(account).setEmailVerified(true);
+        assertEquals(AccountStatus.ENABLED, account.getStatus());
+        assertEquals(Boolean.TRUE, account.getEmailVerified());
     }
     
     @Test
@@ -351,8 +372,8 @@ public class ParticipantServiceTest {
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
         
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
-        verify(account).setStatus(AccountStatus.ENABLED);
-        verify(account).setEmailVerified(true);
+        assertEquals(AccountStatus.ENABLED, account.getStatus());
+        assertEquals(Boolean.TRUE, account.getEmailVerified());
     }
     
     @Test
@@ -363,8 +384,8 @@ public class ParticipantServiceTest {
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
         
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
-        verify(account).setStatus(AccountStatus.ENABLED);
-        verify(account).setEmailVerified(true);
+        assertEquals(AccountStatus.ENABLED, account.getStatus());
+        assertEquals(Boolean.TRUE, account.getEmailVerified());
     }
     
     @Test
@@ -375,8 +396,8 @@ public class ParticipantServiceTest {
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
 
         verify(accountWorkflowService).sendEmailVerificationToken(any(), any(), any());
-        verify(account).setStatus(AccountStatus.UNVERIFIED);
-        verify(account, never()).setEmailVerified(any());
+        assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
+        assertNull(account.getEmailVerified());
     }
 
     @Test
@@ -389,8 +410,8 @@ public class ParticipantServiceTest {
         participantService.createParticipant(study, CALLER_ROLES, PARTICIPANT, true);
 
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
-        verify(account).setStatus(AccountStatus.UNVERIFIED);
-        verify(account, never()).setEmailVerified(any());
+        assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
+        assertNull(account.getEmailVerified());
     }
 
     @Test
@@ -403,8 +424,8 @@ public class ParticipantServiceTest {
         participantService.createParticipant(STUDY, CALLER_ROLES, phoneParticipant, false);
 
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
-        verify(account).setStatus(AccountStatus.ENABLED);
-        verify(account, never()).setEmailVerified(any());
+        assertEquals(AccountStatus.ENABLED, account.getStatus());
+        assertNull(account.getEmailVerified());
     }
 
     @Test
@@ -457,22 +478,22 @@ public class ParticipantServiceTest {
     public void getStudyParticipant() {
         // A lot of mocks have to be set up first, this call aggregates almost everything we know about the user
         DateTime createdOn = DateTime.now();
-        when(account.getHealthCode()).thenReturn(HEALTH_CODE);
-        when(account.getStudyIdentifier()).thenReturn(STUDY.getStudyIdentifier());
-        when(account.getFirstName()).thenReturn(FIRST_NAME);
-        when(account.getLastName()).thenReturn(LAST_NAME);
-        when(account.getEmail()).thenReturn(EMAIL);
-        when(account.getPhone()).thenReturn(PHONE);
-        when(account.getEmailVerified()).thenReturn(Boolean.TRUE);
-        when(account.getPhoneVerified()).thenReturn(Boolean.FALSE);
-        when(account.getId()).thenReturn(ID);
-        when(account.getStatus()).thenReturn(AccountStatus.DISABLED);
-        when(account.getCreatedOn()).thenReturn(createdOn);
-        when(account.getAttribute("attr2")).thenReturn("anAttribute2");
+        ((GenericAccount)account).setHealthCode(HEALTH_CODE);
+        ((GenericAccount)account).setStudyId(STUDY.getStudyIdentifier());
+        ((GenericAccount)account).setId(ID);
+        ((GenericAccount)account).setCreatedOn(createdOn);
+        account.setFirstName(FIRST_NAME);
+        account.setLastName(LAST_NAME);
+        account.setEmail(EMAIL);
+        account.setPhone(PHONE);
+        account.setEmailVerified(Boolean.TRUE);
+        account.setPhoneVerified(Boolean.FALSE);
+        account.setStatus(AccountStatus.DISABLED);
+        account.setAttribute("attr2", "anAttribute2");
         List<ConsentSignature> sigs1 = Lists.newArrayList(new ConsentSignature.Builder()
                 .withName("Name 1").withBirthdate("1980-01-01").build());
-        when(account.getConsentSignatureHistory(SubpopulationGuid.create("guid1"))).thenReturn(sigs1);
-        when(account.getClientData()).thenReturn(TestUtils.getClientData());
+        account.setConsentSignatureHistory(SubpopulationGuid.create("guid1"), sigs1);
+        account.setClientData(TestUtils.getClientData());
         
         mockHealthCodeAndAccountRetrieval();
         
@@ -542,7 +563,7 @@ public class ParticipantServiceTest {
     @Test
     public void signOutUser() {
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
-        when(account.getId()).thenReturn("userId");
+        ((GenericAccount)account).setId("userId");
         
         participantService.signUserOut(STUDY, ID);
         
@@ -588,12 +609,12 @@ public class ParticipantServiceTest {
         assertNull(options.get(EXTERNAL_IDENTIFIER)); // can't set this
         assertNull(options.get(TIME_ZONE)); // can't set this
         
-        verify(accountDao).updateAccount(accountCaptor.capture());
+        verify(accountDao).updateAccount(accountCaptor.capture(), eq(false));
         Account account = accountCaptor.getValue();
-        verify(account).setFirstName(FIRST_NAME);
-        verify(account).setLastName(LAST_NAME);
-        verify(account).setAttribute("can_be_recontacted", "true");
-        verify(account).setClientData(TestUtils.getClientData());
+        assertEquals(FIRST_NAME, account.getFirstName());
+        assertEquals(LAST_NAME, account.getLastName());
+        assertEquals("true", account.getAttribute("can_be_recontacted"));
+        assertEquals(TestUtils.getClientData(), account.getClientData());
     }
     
     @Test(expected = InvalidEntityException.class)
@@ -614,7 +635,7 @@ public class ParticipantServiceTest {
             fail("Should have thrown exception.");
         } catch(EntityNotFoundException e) {
         }
-        verify(accountDao, never()).updateAccount(any());
+        verify(accountDao, never()).updateAccount(any(), eq(false));
         verifyNoMoreInteractions(optionsService);
         verifyNoMoreInteractions(externalIdService);
     }
@@ -647,15 +668,16 @@ public class ParticipantServiceTest {
     @Test
     public void notSettingStatusDoesntClearStatus() {
         mockHealthCodeAndAccountRetrieval();
+        account.setStatus(AccountStatus.ENABLED);
 
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withStatus(null).build();
 
         participantService.updateParticipant(STUDY, EnumSet.of(ADMIN), participant);
 
-        verify(accountDao).updateAccount(accountCaptor.capture());
+        verify(accountDao).updateAccount(accountCaptor.capture(), eq(false));
         Account account = accountCaptor.getValue();
-        verify(account, never()).setStatus(any());
+        assertEquals(AccountStatus.ENABLED, account.getStatus());
     }
 
     @Test
@@ -728,7 +750,7 @@ public class ParticipantServiceTest {
     
     @Test
     public void developerCannotDowngradeAdmin() {
-        doReturn(Sets.newHashSet(ADMIN)).when(account).getRoles();
+        account.setRoles(Sets.newHashSet(ADMIN));
         
         // developer can add the developer role, but they cannot remove the admin role
         verifyRoleUpdate(Sets.newHashSet(DEVELOPER), Sets.newHashSet(ADMIN, DEVELOPER));
@@ -736,7 +758,7 @@ public class ParticipantServiceTest {
     
     @Test
     public void developerCannotDowngradeResearcher() {
-        doReturn(Sets.newHashSet(RESEARCHER)).when(account).getRoles();
+        account.setRoles(Sets.newHashSet(RESEARCHER));
         
         // developer can add the developer role, but they cannot remove the researcher role
         verifyRoleUpdate(Sets.newHashSet(DEVELOPER), Sets.newHashSet(DEVELOPER, RESEARCHER));
@@ -744,7 +766,7 @@ public class ParticipantServiceTest {
     
     @Test
     public void researcherCanDowngradeResearcher() {
-        doReturn(Sets.newHashSet(RESEARCHER)).when(account).getRoles();
+        account.setRoles(Sets.newHashSet(RESEARCHER));
         
         // researcher can change a researcher to a developer
         verifyRoleUpdate(Sets.newHashSet(RESEARCHER), Sets.newHashSet(DEVELOPER), Sets.newHashSet(DEVELOPER));
@@ -752,7 +774,7 @@ public class ParticipantServiceTest {
     
     @Test
     public void adminCanChangeDeveloperToResearcher() {
-        doReturn(Sets.newHashSet(DEVELOPER)).when(account).getRoles();
+        account.setRoles(Sets.newHashSet(DEVELOPER));
         
         // admin can convert a developer to a researcher
         verifyRoleUpdate(Sets.newHashSet(ADMIN), Sets.newHashSet(RESEARCHER), Sets.newHashSet(RESEARCHER));
@@ -760,7 +782,7 @@ public class ParticipantServiceTest {
     
     @Test
     public void adminCanChangeResearcherToAdmin() {
-        doReturn(Sets.newHashSet(RESEARCHER)).when(account).getRoles();
+        account.setRoles(Sets.newHashSet(RESEARCHER));
         
         // admin can convert a researcher to an admin
         verifyRoleUpdate(Sets.newHashSet(ADMIN), Sets.newHashSet(ADMIN), Sets.newHashSet(ADMIN));
@@ -768,7 +790,7 @@ public class ParticipantServiceTest {
     
     @Test
     public void researcherCanUpgradeDeveloperRole() {
-        doReturn(Sets.newHashSet(DEVELOPER)).when(account).getRoles();
+        account.setRoles(Sets.newHashSet(DEVELOPER));
         
         // researcher can convert a developer to a researcher
         verifyRoleUpdate(Sets.newHashSet(RESEARCHER), Sets.newHashSet(RESEARCHER), Sets.newHashSet(RESEARCHER));
@@ -778,9 +800,7 @@ public class ParticipantServiceTest {
     public void getStudyParticipantWithAccount() throws Exception {
         mockHealthCodeAndAccountRetrieval();
         doReturn(lookup).when(optionsService).getOptions(HEALTH_CODE);
-        doReturn(EMAIL).when(account).getEmail();
-        doReturn(HEALTH_CODE).when(account).getHealthCode();
-        doReturn(TestUtils.getClientData()).when(account).getClientData();
+        account.setClientData(TestUtils.getClientData());
         
         StudyParticipant participant = participantService.getParticipant(STUDY, account, false);
         
@@ -808,6 +828,7 @@ public class ParticipantServiceTest {
         verify(accountWorkflowService).requestResetPassword(eq(STUDY), eq(ACCOUNT_ID));
     }
     
+    @Test
     public void requestResetPasswordNoAccountIsSilent() {
         participantService.requestResetPassword(STUDY, ID);
         
@@ -1009,6 +1030,143 @@ public class ParticipantServiceTest {
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
     }
     
+
+    @Test
+    public void updateIdentifiersEmailSignInUpdatePhone() {
+        // Verifies email-based sign in, phone update, account update, and an updated 
+        // participant is returned... the common happy path.
+        mockHealthCodeAndAccountRetrieval();
+        when(accountDao.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(accountDao.getAccount(any())).thenReturn(account);
+        
+        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, TestConstants.PHONE);
+        
+        StudyParticipant returned = participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        
+        assertEquals(TestConstants.PHONE, account.getPhone());
+        assertEquals(Boolean.FALSE, account.getPhoneVerified());
+        verify(accountDao).authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN);
+        verify(accountDao).updateAccount(account, true);
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+        assertEquals(PARTICIPANT.getId(), returned.getId());
+    }
+    
+    @Test
+    public void updateIdentifiersPhoneSignInUpdateEmail() {
+        // This flips the method of sign in to use a phone, and sends an email update. 
+        // Also tests the common path of creating unverified email address with verification email sent
+        mockAccountNoEmail();
+        when(accountDao.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(accountDao.getAccount(any())).thenReturn(account);
+        
+        STUDY.setEmailVerificationEnabled(true);
+        STUDY.setAutoVerificationEmailSuppressed(false);
+        
+        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, TestConstants.EMAIL, null);
+        
+        StudyParticipant returned = participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        
+        assertEquals(TestConstants.EMAIL, account.getEmail());
+        assertEquals(Boolean.FALSE, account.getEmailVerified());
+        verify(accountDao).authenticate(STUDY, PHONE_PASSWORD_SIGN_IN);
+        verify(accountDao).updateAccount(account, true);
+        verify(accountWorkflowService).sendEmailVerificationToken(STUDY, ID, TestConstants.EMAIL);
+        assertEquals(PARTICIPANT.getId(), returned.getId());
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void updateIdentifiersValidates() {
+        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null);
+        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+    }
+    
+    @Test
+    public void updateIdentifiersUsingReauthentication() {
+        mockHealthCodeAndAccountRetrieval();
+        when(accountDao.reauthenticate(STUDY, REAUTH_REQUEST)).thenReturn(account);
+        when(accountDao.getAccount(any())).thenReturn(account);
+        
+        IdentifierUpdate update = new IdentifierUpdate(REAUTH_REQUEST, null, TestConstants.PHONE);
+        
+        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        
+        verify(accountDao).reauthenticate(STUDY, REAUTH_REQUEST);
+    }
+
+    @Test
+    public void updateIdentifiersCreatesVerifiedEmailWithoutVerification() {
+        mockAccountNoEmail();
+        when(accountDao.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
+        
+        STUDY.setEmailVerificationEnabled(false);
+        STUDY.setAutoVerificationEmailSuppressed(false); // can be true or false, doesn't matter
+        
+        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, TestConstants.EMAIL, null);
+        
+        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        
+        assertEquals(TestConstants.EMAIL, account.getEmail());
+        assertEquals(Boolean.TRUE, account.getEmailVerified());
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+    }
+    
+    @Test
+    public void updateIdentifiersCreatesUnverifiedEmailWithoutVerification() {
+        mockAccountNoEmail();
+        when(accountDao.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(accountDao.getAccount(any())).thenReturn(account);
+        
+        STUDY.setEmailVerificationEnabled(true);
+        STUDY.setAutoVerificationEmailSuppressed(true);
+        
+        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, EMAIL, null);
+        
+        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        
+        assertEquals(EMAIL, account.getEmail());
+        assertEquals(Boolean.FALSE, account.getEmailVerified());
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+    }
+    
+    @Test
+    public void updateIdentifiersAuthenticatingToAnotherAccountInvalid() {
+        ((GenericAccount)account).setId("another-user-id");
+        
+        when(accountDao.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
+        
+        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, TestConstants.EMAIL, null);
+        
+        try {
+            participantService.updateIdentifiers(STUDY, CONTEXT, update);
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+            verify(accountDao, never()).updateAccount(any(), eq(false));
+        }
+    }
+    
+    @Test
+    public void updateIdentifiersDoNotOverwriteExistingIdentifiers() {
+        mockHealthCodeAndAccountRetrieval();
+        account.setEmailVerified(Boolean.TRUE);
+        account.setPhone(TestConstants.PHONE);
+        account.setPhoneVerified(Boolean.TRUE);
+        when(accountDao.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(accountDao.getAccount(any())).thenReturn(account);
+        
+        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "updated@email.com",
+                new Phone("4082588569", "US"));
+        
+        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        
+        // None of these have changed.
+        assertEquals(EMAIL, account.getEmail());
+        assertEquals(Boolean.TRUE, account.getEmailVerified());
+        assertEquals(TestConstants.PHONE, account.getPhone());
+        assertEquals(Boolean.TRUE, account.getPhoneVerified());
+        verify(accountDao, never()).updateAccount(any(), eq(false));
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+    }
+    
     // There's no actual vs expected here because either we don't set it, or we set it and that's what we're verifying,
     // that it has been set. If the setter is not called, the existing status will be sent back to account store.
     private void verifyStatusUpdate(Set<Roles> roles, boolean canSetStatus) {
@@ -1019,13 +1177,13 @@ public class ParticipantServiceTest {
         
         participantService.updateParticipant(STUDY, roles, participant);
 
-        verify(accountDao).updateAccount(accountCaptor.capture());
+        verify(accountDao).updateAccount(accountCaptor.capture(), eq(false));
         Account account = accountCaptor.getValue();
 
         if (canSetStatus) {
-            verify(account).setStatus(AccountStatus.ENABLED);
+            assertEquals(AccountStatus.ENABLED, account.getStatus());
         } else {
-            verify(account, never()).setStatus(any());
+            assertNull(account.getStatus());
         }
     }
 
@@ -1042,10 +1200,9 @@ public class ParticipantServiceTest {
         Account account = accountCaptor.getValue();
         
         if (rolesThatAreSet != null) {
-            verify(account).setRoles(rolesCaptor.capture());
-            assertEquals(rolesThatAreSet, rolesCaptor.getValue());
+            assertEquals(rolesThatAreSet, account.getRoles());
         } else {
-            verify(account, never()).setRoles(any());
+            assertEquals(Sets.newHashSet(), account.getRoles());
         }
     }
     
@@ -1056,14 +1213,13 @@ public class ParticipantServiceTest {
                 .withRoles(rolesThatAreSet).build();
         participantService.updateParticipant(STUDY, callerRoles, participant);
         
-        verify(accountDao).updateAccount(accountCaptor.capture());
+        verify(accountDao).updateAccount(accountCaptor.capture(), eq(false));
         Account account = accountCaptor.getValue();
         
         if (expected != null) {
-            verify(account).setRoles(rolesCaptor.capture());
-            assertEquals(expected, rolesCaptor.getValue());
+            assertEquals(expected, account.getRoles());
         } else {
-            verify(account, never()).setRoles(any());
+            assertEquals(Sets.newHashSet(), account.getRoles());
         }
     }
     
