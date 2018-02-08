@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -112,6 +113,9 @@ public class HibernateAccountDaoTest {
         
         when(mockHealthCodeService.createMapping(TestConstants.TEST_STUDY)).thenReturn(new HealthIdImpl(HEALTH_ID,
                 HEALTH_CODE));
+
+        // Most studies test this as enabled. A specific test disables it.
+        STUDY.setReauthenticationEnabled(true);
     }
 
     @Test
@@ -372,6 +376,26 @@ public class HibernateAccountDaoTest {
                 HibernateAccount.class);
         verifyCreatedHealthCode();
     }
+    
+    @Test
+    public void authenticateSuccessNoReauthentication() throws Exception {
+        STUDY.setReauthenticationEnabled(false);
+        
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(true, true);
+        String originalReauthHash = hibernateAccount.getReauthTokenHash();
+        
+        // mock hibernate
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any()))
+                .thenReturn(ImmutableList.of(hibernateAccount));
+
+        // execute and verify - Verify just ID, study, and email, and health code mapping is enough.
+        GenericAccount account = (GenericAccount) dao.authenticate(STUDY, PASSWORD_SIGNIN);
+        
+        // No reauthentication token rotation occurs
+        verify(mockHibernateHelper, never()).update(any());
+        assertNull(account.getReauthToken());
+        assertEquals(originalReauthHash, hibernateAccount.getReauthTokenHash());
+    }
 
     @Test(expected = EntityNotFoundException.class)
     public void authenticateAccountNotFound() throws Exception {
@@ -462,6 +486,20 @@ public class HibernateAccountDaoTest {
         assertNotEquals(originalReauthTokenHash, hibernateAccount.getReauthTokenHash());
         // This has been hashed
         assertNotEquals(account.getReauthToken(), hibernateAccount.getReauthTokenHash());
+    }
+    
+    @Test
+    public void reauthenticationDisabled() throws Exception {
+        STUDY.setReauthenticationEnabled(false);
+        
+        try {
+            dao.reauthenticate(STUDY, REAUTH_SIGNIN);
+            fail("Should have thrown exception");
+        } catch(UnauthorizedException e) {
+            
+        }
+        verify(mockHibernateHelper, never()).queryGet(any(), any(), any(), eq(HibernateAccount.class));
+        verify(mockHibernateHelper, never()).update(any());
     }
     
     @Test(expected = EntityNotFoundException.class)

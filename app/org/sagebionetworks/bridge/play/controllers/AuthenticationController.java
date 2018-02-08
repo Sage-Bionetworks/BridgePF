@@ -129,6 +129,9 @@ public class AuthenticationController extends BaseController {
             throw new BadRequestException("Study identifier is required.");
         }
         Study study = studyService.getStudy(signInRequest.getStudyId());
+        if (!study.isReauthenticationEnabled()) {
+            
+        }
         verifySupportedVersionOrThrowException(study);
         
         CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());

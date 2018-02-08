@@ -82,6 +82,14 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     void setAutoVerificationEmailSuppressed(boolean autoVerificationEmailSuppressed);
 
     /**
+     * True if we create and return a reauthentication token in the session that can be used to reauthenticate 
+     * without a password. False otherwise.
+     */
+    boolean isReauthenticationEnabled();
+    
+    void setReauthenticationEnabled(boolean reauthenticationEnabled);
+    
+    /**
      * User must confirm that they are at least this many years old in order to
      * participate in the study. 
      */
