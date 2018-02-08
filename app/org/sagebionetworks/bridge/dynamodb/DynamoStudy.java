@@ -87,6 +87,7 @@ public final class DynamoStudy implements Study {
     private boolean externalIdValidationEnabled;
     private boolean emailSignInEnabled;
     private boolean externalIdRequiredOnSignup;
+    private boolean reauthenticationEnabled;
     private Map<String, Integer> minSupportedAppVersions;
     private Map<String, String> pushNotificationARNs;
     private Map<String, String> installLinks;
@@ -185,6 +186,18 @@ public final class DynamoStudy implements Study {
         this.autoVerificationEmailSuppressed = autoVerificationEmailSuppressed;
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public boolean isReauthenticationEnabled() {
+        return reauthenticationEnabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setReauthenticationEnabled(boolean reauthenticationEnabled) {
+        this.reauthenticationEnabled = reauthenticationEnabled;
+    }
+    
     /** {@inheritDoc} */
     @Override
     public int getMinAgeOfConsent() {
@@ -590,7 +603,8 @@ public final class DynamoStudy implements Study {
                 passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, emailSignInTemplate, accountExistsTemplate,
                 strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
                 externalIdValidationEnabled, emailSignInEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
-                pushNotificationARNs, installLinks, disableExport, oauthProviders, appleAppLinks, androidAppLinks);
+                pushNotificationARNs, installLinks, disableExport, oauthProviders, appleAppLinks, androidAppLinks, 
+                reauthenticationEnabled);
     }
 
     @Override
@@ -640,7 +654,8 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(accountLimit, other.accountLimit)
                 && Objects.equals(oauthProviders, other.oauthProviders)
                 && Objects.equals(appleAppLinks, other.appleAppLinks)
-                && Objects.equals(androidAppLinks, other.androidAppLinks);
+                && Objects.equals(androidAppLinks, other.androidAppLinks)
+                && Objects.equals(reauthenticationEnabled,  other.reauthenticationEnabled);
     }
 
     @Override
@@ -655,7 +670,7 @@ public final class DynamoStudy implements Study {
                         + "emailVerificationEnabled=%s, externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, "
                         + "minSupportedAppVersions=%s, usesCustomExportSchedule=%s, pushNotificationARNs=%s, installLinks=%s"
                         + "disableExport=%s, emailSignInTemplate=%s, emailSignInEnabled=%s, accountLimit=%s, oauthProviders=%s, "
-                        + "appleAppLinks=%s, androidAppLinks=%s]",
+                        + "appleAppLinks=%s, androidAppLinks=%s, reauthenticationEnabled=%s]",
                 name, shortName, active, sponsorName, identifier, autoVerificationEmailSuppressed, minAgeOfConsent,
                 studyIdExcludedInExport, supportEmail,
                 synapseDataAccessTeamId, synapseProjectId, technicalEmail, uploadValidationStrictness, consentNotificationEmail, version,
@@ -663,6 +678,6 @@ public final class DynamoStudy implements Study {
                 resetPasswordTemplate, strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
                 externalIdValidationEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
                 usesCustomExportSchedule, pushNotificationARNs, installLinks, disableExport, emailSignInTemplate,
-                emailSignInEnabled, accountLimit, oauthProviders, appleAppLinks, androidAppLinks);
+                emailSignInEnabled, accountLimit, oauthProviders, appleAppLinks, androidAppLinks, reauthenticationEnabled);
     }
 }

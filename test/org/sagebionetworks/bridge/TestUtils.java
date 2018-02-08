@@ -435,6 +435,7 @@ public class TestUtils {
         study.setHealthCodeExportEnabled(true);
         study.setEmailVerificationEnabled(true);
         study.setExternalIdValidationEnabled(true);
+        study.setReauthenticationEnabled(true);
         study.setEmailSignInEnabled(true);
         study.setExternalIdRequiredOnSignup(true);
         study.setActive(true);
