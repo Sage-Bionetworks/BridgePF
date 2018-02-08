@@ -277,6 +277,15 @@ public class StudyValidatorTest {
     }
     
     @Test
+    public void emailSignTemplateOKWithTokenOrURL() {
+        study.setEmailSignInTemplate(new EmailTemplate("subject", "${token}", MimeType.HTML));
+        Validate.entityThrowingException(INSTANCE, study);
+        
+        study.setEmailSignInTemplate(new EmailTemplate("subject", "${url}", MimeType.HTML));
+        Validate.entityThrowingException(INSTANCE, study);
+    }
+    
+    @Test
     public void emailSignInTemplateNotRequired() {
         study.setEmailSignInTemplate(null);
         Validate.entityThrowingException(INSTANCE, study);
@@ -292,12 +301,6 @@ public class StudyValidatorTest {
     public void requiresEmailSignInTemplateWithBody() {
         study.setEmailSignInTemplate(new EmailTemplate("subject", null, MimeType.HTML));
         assertValidatorMessage(INSTANCE, study, "emailSignInTemplate.body", "is required");
-    }
-    
-    @Test
-    public void requiresEmailSignInTemplateRequiresToken() {
-        study.setEmailSignInTemplate(new EmailTemplate("subject", "body with no token", MimeType.HTML));
-        assertValidatorMessage(INSTANCE, study, "emailSignInTemplate.body", "must contain the ${token} template variable");
     }
     
     @Test

@@ -415,7 +415,7 @@ public class TestUtils {
         study.setStudyIdExcludedInExport(true);
         study.setVerifyEmailTemplate(new EmailTemplate("verifyEmail subject", "body with ${url}", MimeType.TEXT));
         study.setResetPasswordTemplate(new EmailTemplate("resetPassword subject", "body with ${url}", MimeType.TEXT));
-        study.setEmailSignInTemplate(new EmailTemplate("${studyName} link", "Follow link ${token}", MimeType.TEXT));
+        study.setEmailSignInTemplate(new EmailTemplate("${studyName} link", "Follow link ${url}", MimeType.TEXT));
         study.setAccountExistsTemplate(new EmailTemplate("accountExists subject", "body with ${url}", MimeType.TEXT));
         study.setIdentifier(id);
         study.setMinAgeOfConsent(18);
