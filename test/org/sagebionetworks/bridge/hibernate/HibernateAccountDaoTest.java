@@ -788,6 +788,7 @@ public class HibernateAccountDaoTest {
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(persistedAccount);
 
         GenericAccount account = makeValidGenericAccount();
+        account.setEmail(OTHER_EMAIL);
         account.setPhone(OTHER_PHONE);
         account.setEmailVerified(Boolean.FALSE);
         account.setPhoneVerified(Boolean.FALSE);
