@@ -155,7 +155,7 @@ public class StudyServiceTest {
 
         // these should have been changed
         assertEquals("${studyName} link", newStudy.getEmailSignInTemplate().getSubject());
-        assertEquals("Follow link ${token}", newStudy.getEmailSignInTemplate().getBody());
+        assertEquals("Follow link ${url}", newStudy.getEmailSignInTemplate().getBody());
         
         verify(mockCache).getStudy(newStudy.getIdentifier());
         verify(mockCache).setStudy(newStudy);

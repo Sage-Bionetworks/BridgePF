@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
+import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
 import static org.sagebionetworks.bridge.validators.SignInValidator.EMAIL_SIGNIN_REQUEST;
 import static org.sagebionetworks.bridge.validators.SignInValidator.PHONE_SIGNIN_REQUEST;
 
@@ -48,12 +50,12 @@ import org.springframework.validation.Validator;
 @Component
 public class AccountWorkflowService {
     
+    private static final String BASE_URL = BridgeConfigFactory.getConfig().get("webservices.url");
     private static final String PASSWORD_RESET_TOKEN_EXPIRED = "Password reset token has expired (or already been used).";
     private static final String VERIFY_EMAIL_TOKEN_EXPIRED = "Email verification token has expired (or already been used).";
-    private static final String RESET_PASSWORD_URL = "%s/mobile/resetPassword.html?study=%s&sptoken=%s";
-    private static final String VERIFY_EMAIL_URL = "%s/mobile/verifyEmail.html?study=%s&sptoken=%s";
-    private static final String EMAIL_SIGNIN_URL = "%s/mobile/startSession.html?email=%s&study=%s&token=%s";
-    private static final String BASE_URL = BridgeConfigFactory.getConfig().get("webservices.url");
+    private static final String RESET_PASSWORD_URL = "/mobile/resetPassword.html?study=%s&sptoken=%s";
+    private static final String VERIFY_EMAIL_URL = "/mobile/verifyEmail.html?study=%s&sptoken=%s";
+    private static final String EMAIL_SIGNIN_URL = "/mobile/%s/startSession.html?email=%s&study=%s&token=%s";
     private static final String EXP_WINDOW_TOKEN = "expirationWindow";
     private static final String EMAIL_TOKEN = "email";
     private static final String TOKEN_TOKEN = "token";
@@ -62,8 +64,10 @@ public class AccountWorkflowService {
     private static final String RESET_PASSWORD_TOKEN = "resetPasswordUrl";
     private static final String EMAIL_SIGNIN_REQUEST_KEY = "%s:%s:signInRequest";
     private static final String PHONE_SIGNIN_REQUEST_KEY = "%s:%s:phoneSignInRequest";
+    
     private final AtomicLong emailSignInRequestInMillis = new AtomicLong(200L);
     private final AtomicLong phoneSignInRequestInMillis = new AtomicLong(200L);
+    
     static final int EXPIRE_IN_SECONDS = 60*60*2; // 2 hours 
     static final int SESSION_SIGNIN_EXPIRE_IN_SECONDS = 60*5; // 5 minutes
     
@@ -205,8 +209,8 @@ public class AccountWorkflowService {
             String emailSignIn = null;
             if (study.isEmailSignInEnabled()) {
                 SignIn signIn = new SignIn.Builder().withEmail(account.getEmail()).withStudy(study.getIdentifier()).build();
-                emailSignIn = requestChannelSignIn(ChannelType.EMAIL, signIn, EMAIL_SIGNIN_REQUEST, emailSignInRequestInMillis, 
-                        EMAIL_CACHE_KEY_FUNC, () -> getNextToken(), (theStudy, token) -> {
+                emailSignIn = requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, EMAIL_CACHE_KEY_FUNC, emailSignInRequestInMillis, 
+                        signIn, () -> getNextToken(), (theStudy, token) -> {
                     return getEmailSignInURL(signIn.getEmail(), theStudy.getIdentifier(), token);
                 });
             }
@@ -252,7 +256,8 @@ public class AccountWorkflowService {
             .withStudy(study)
             .withEmailTemplate(template)
             .withRecipientEmail(email)
-            .withToken(URL_TOKEN, url) // for backwards compatibility
+            // for backwards compatibility; we now also set as passwordResetUrl
+            .withToken(URL_TOKEN, url) 
             .withToken(RESET_PASSWORD_TOKEN, url)
             .withToken(EMAIL_SIGNIN_TOKEN, emailSignIn)
             .withToken(EXP_WINDOW_TOKEN, Integer.toString(EXPIRE_IN_SECONDS/60/60)).build();
@@ -260,12 +265,12 @@ public class AccountWorkflowService {
     }
     
     private void sendPasswordResetRelatedSMS(Study study, Phone phone, String message) {
-        String sptoken = getNextToken();        
+        String sptoken = getNextToken();
         String cacheKey = sptoken + ":phone:" + study.getIdentifier();
         cacheProvider.setObject(cacheKey, getPhoneString(phone), EXPIRE_IN_SECONDS);
         
         String url = getResetPasswordURL(study, sptoken);
-        
+
         notificationsService.sendSMSMessage(study.getStudyIdentifier(), phone, message + url);
     }
 
@@ -309,9 +314,9 @@ public class AccountWorkflowService {
      * Request a token to be sent via SMS to the user, that can be used to start a session on the Bridge server.
      */
     public void requestPhoneSignIn(SignIn signIn) {
-        requestChannelSignIn(ChannelType.PHONE, signIn, PHONE_SIGNIN_REQUEST, phoneSignInRequestInMillis, 
-                PHONE_CACHE_KEY_FUNC, () -> getPhoneToken(), (study, token) -> {
-            // Put a space in the token so it's easier to enter into the UI. All this should
+        requestChannelSignIn(PHONE, PHONE_SIGNIN_REQUEST, PHONE_CACHE_KEY_FUNC, phoneSignInRequestInMillis, 
+                signIn, () -> getNextPhoneToken(), (study, token) -> {
+            // Put a dash in the token so it's easier to enter into the UI. All this should
             // eventually come from a template
             String formattedToken = token.substring(0,3) + "-" + token.substring(3,6); 
             String appName = (study.getShortName() != null) ? study.getShortName() : "Bridge";
@@ -329,10 +334,15 @@ public class AccountWorkflowService {
      * configured by default. That test page will complete the transaction and return a session token.
      */
     public void requestEmailSignIn(SignIn signIn) {
-        requestChannelSignIn(ChannelType.EMAIL, signIn, EMAIL_SIGNIN_REQUEST, emailSignInRequestInMillis, 
-                EMAIL_CACHE_KEY_FUNC, () -> getNextToken(), (study, token) -> {
+        requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, EMAIL_CACHE_KEY_FUNC, emailSignInRequestInMillis, 
+                signIn, () -> getNextToken(), (study, token) -> {
             String url = getEmailSignInURL(signIn.getEmail(), study.getIdentifier(), token);
             
+            // Email is URL encoded, which is probably a mistake. We're now providing an URL that's will be 
+            // opaque to the user, like the other APIs (where the templates just have a ${url} variable), but we 
+            // need to provide host/email/studyId/token variables for earlier versions of the email sign in template 
+            // that had the URL spelled out with substitutions. The email was encoded so it could be substituted 
+            // into that template.
             BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withEmailTemplate(study.getEmailSignInTemplate())
                 .withStudy(study)
@@ -345,8 +355,8 @@ public class AccountWorkflowService {
         });
     }
     
-    private String requestChannelSignIn(ChannelType channelType, SignIn signIn, Validator validator,
-            AtomicLong atomicLong, Function<SignIn, String> cacheKeySupplier, Supplier<String> tokenSupplier,
+    private String requestChannelSignIn(ChannelType channelType, Validator validator, Function<SignIn, String> cacheKeySupplier,
+            AtomicLong atomicLong, SignIn signIn, Supplier<String> tokenSupplier,
             BiFunction<Study, String, String> messageSender) {
         long startTime = System.currentTimeMillis();
         Validate.entityThrowingException(validator, signIn);
@@ -357,7 +367,7 @@ public class AccountWorkflowService {
         Study study = studyService.getStudy(signIn.getStudyId());
 
         // Do we want the same flag for phone? Do we want to eliminate this flag?
-        if (channelType == ChannelType.EMAIL && !study.isEmailSignInEnabled()) {
+        if (channelType == EMAIL && !study.isEmailSignInEnabled()) {
             throw new UnauthorizedException("Email-based sign in not enabled for study: " + study.getName());
         }
 
@@ -397,7 +407,7 @@ public class AccountWorkflowService {
             Validator validator) {
         Validate.entityThrowingException(validator, signIn);
        
-        String cacheKey = (channelType == ChannelType.EMAIL) ?
+        String cacheKey = (channelType == EMAIL) ?
                 EMAIL_CACHE_KEY_FUNC.apply(signIn) :
                 PHONE_CACHE_KEY_FUNC.apply(signIn);
 
@@ -459,7 +469,7 @@ public class AccountWorkflowService {
     }
     
     // Provided via accessor so it can be mocked for tests
-    protected String getPhoneToken() {
+    protected String getNextPhoneToken() {
         return SecureTokenGenerator.PHONE_CODE_INSTANCE.nextToken();
     }
     
@@ -472,17 +482,21 @@ public class AccountWorkflowService {
     };
 
     private String getEmailSignInURL(String email, String studyId, String token) {
-        return String.format(EMAIL_SIGNIN_URL, BASE_URL, BridgeUtils.encodeURIComponent(email),
-            BridgeUtils.encodeURIComponent(studyId), token);
+        return formatWithEncodedArgs(EMAIL_SIGNIN_URL, studyId, email, studyId, token);
     }
     
     private String getVerifyEmailURL(Study study, String sptoken) {
-        return String.format(VERIFY_EMAIL_URL, BASE_URL, BridgeUtils.encodeURIComponent(study.getIdentifier()),
-            sptoken);
+        return formatWithEncodedArgs(VERIFY_EMAIL_URL, study.getIdentifier(), sptoken);
     }
     
     private String getResetPasswordURL(Study study, String sptoken) {
-        return String.format(RESET_PASSWORD_URL, BASE_URL, BridgeUtils.encodeURIComponent(study.getIdentifier()),
-            sptoken);
+        return formatWithEncodedArgs(RESET_PASSWORD_URL, study.getIdentifier(), sptoken);
+    }
+    
+    private String formatWithEncodedArgs(String formatString, String... strings) {
+        for (int i=0; i < strings.length; i++) {
+            strings[i] = BridgeUtils.encodeURIComponent(strings[i]);
+        }
+        return BASE_URL + String.format(formatString, (Object[])strings);
     }
 }

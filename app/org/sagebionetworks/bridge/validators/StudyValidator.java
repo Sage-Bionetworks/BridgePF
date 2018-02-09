@@ -122,10 +122,11 @@ public class StudyValidator implements Validator {
         validateTemplate(errors, study.getResetPasswordTemplate(), "resetPasswordTemplate", "${url}");
         // Existing studies don't have the template, we use a default template. Okay to be missing.
         if (study.getEmailSignInTemplate() != null) {
-            validateEmailSignInTemplate(errors, study.getEmailSignInTemplate());
+            validateTemplate(errors, study.getEmailSignInTemplate(), "emailSignInTemplate", "${url}", "${token}");
         }
         if (study.getAccountExistsTemplate() != null) {
-            validateAccountExistsTemplate(errors, study.getAccountExistsTemplate());
+            validateTemplate(errors, study.getAccountExistsTemplate(), "accountExistsTemplate", "${url}",
+                    "${emailSignInUrl}", "${resetPasswordUrl}");
         }
         
         for (String userProfileAttribute : study.getUserProfileAttributes()) {
@@ -268,7 +269,7 @@ public class StudyValidator implements Validator {
         }
     }
     
-    private void validateTemplateBase(Errors errors, EmailTemplate template, String fieldName, Runnable bodyRules) {
+    private void validateTemplate(Errors errors, EmailTemplate template, String fieldName, String... templateVariables) {
         if (template == null) {
             errors.rejectValue(fieldName, "is required");
         } else {
@@ -279,39 +280,19 @@ public class StudyValidator implements Validator {
             if (StringUtils.isBlank(template.getBody())) {
                 errors.rejectValue("body", "is required");
             } else {
-                bodyRules.run();
+                boolean missingTemplateVariable = true;
+                for (int i=0; i < templateVariables.length; i++) {
+                    if (template.getBody().contains(templateVariables[i])) {
+                        missingTemplateVariable = false;
+                    }
+                }
+                if (missingTemplateVariable) {
+                    errors.rejectValue("body", "must contain one of these template variables: "
+                            + BridgeUtils.COMMA_SPACE_JOINER.join(templateVariables));
+                }
             }
             errors.popNestedPath();
-        }
-    }
-    
-    private void validateTemplate(Errors errors, EmailTemplate template, String fieldName, String requiredVariable) {
-        validateTemplateBase(errors, template, fieldName, () -> {
-            if (!template.getBody().contains(requiredVariable)) {
-                errors.rejectValue("body", "must contain the "+requiredVariable+" template variable");
-            }
-        });
-    }
-    
-    private void validateAccountExistsTemplate(Errors errors, EmailTemplate template) {
-        validateTemplateBase(errors, template, "accountExistsTemplate", () -> {
-            // Needs to have ${url} or ${emailSignInUrl} or ${resetPasswordUrl}
-            if (!template.getBody().contains("${url}") && 
-                !template.getBody().contains("${emailSignInUrl}") && 
-                !template.getBody().contains("${resetPasswordUrl}")) {
-                errors.rejectValue("body", "must contain the ${url}, ${emailSignInUrl}, or ${resetPasswordUrl} template variable");
-            }
-        });
-    }
-    
-    private void validateEmailSignInTemplate(Errors errors, EmailTemplate template) {
-        validateTemplateBase(errors, template, "emailSignInTemplate", () -> {
-            // Needs to have ${url} or ${emailSignInUrl} or ${resetPasswordUrl}
-            if (!template.getBody().contains("${url}") && 
-                !template.getBody().contains("${token}")) {
-                errors.rejectValue("body", "must contain the ${url} or ${token} template variable");
-            }
-        });
+        }        
     }
 
     private void validateDataGroupNamesAndFitForSynapseExport(Errors errors, Set<String> dataGroups) {

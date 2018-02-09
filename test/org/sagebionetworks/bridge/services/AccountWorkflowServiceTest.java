@@ -25,6 +25,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -251,9 +252,8 @@ public class AccountWorkflowServiceTest {
         
         MimeBodyPart body = email.getMessageParts().get(0);
         String bodyString = (String)body.getContent();
-        System.out.println(bodyString);
         assertTrue(bodyString.contains("/mobile/resetPassword.html?study=api&sptoken=ABC"));
-        assertTrue(bodyString.contains("/mobile/startSession.html?email=email%40email.com&study=api&token=ABC"));
+        assertTrue(bodyString.contains("/mobile/api/startSession.html?email=email%40email.com&study=api&token=ABC"));
         
         // All the template variables have been replaced
         assertFalse(bodyString.contains("${url}"));
@@ -495,6 +495,9 @@ public class AccountWorkflowServiceTest {
         
         BasicEmailProvider provider = emailProviderCaptor.getValue();
         assertEquals(21, provider.getTokenMap().get("token").length());
+        assertEquals(BridgeUtils.encodeURIComponent(EMAIL), provider.getTokenMap().get("email"));
+        // api exists in this portion of the URL, indicating variable substitution occurred
+        assertTrue(provider.getTokenMap().get("url").contains("/mobile/api/startSession.html"));
         assertEquals(study, provider.getStudy());
         assertEquals(EMAIL, Iterables.getFirst(provider.getRecipientEmails(), null));
     }
@@ -573,7 +576,7 @@ public class AccountWorkflowServiceTest {
         study.setShortName("AppName");
         String cacheKey = TestConstants.PHONE.getNumber() + ":api:phoneSignInRequest";
         when(mockAccountDao.getAccount(SIGN_IN_WITH_PHONE.getAccountId())).thenReturn(mockAccount);
-        when(service.getPhoneToken()).thenReturn("123456");
+        when(service.getNextPhoneToken()).thenReturn("123456");
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
         
         service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
