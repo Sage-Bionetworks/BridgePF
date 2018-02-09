@@ -163,7 +163,7 @@ public class ConsentService {
         List<ConsentSignature> consentListCopy = new ArrayList<>(account.getConsentSignatureHistory(subpopGuid));
         consentListCopy.add(withConsentCreatedOnSignature);
         account.setConsentSignatureHistory(subpopGuid, consentListCopy);
-        accountDao.updateAccount(account);
+        accountDao.updateAccount(account, false);
         
         // Publish an enrollment event, set sharing scope 
         activityEventService.publishEnrollmentEvent(participant.getHealthCode(), withConsentCreatedOnSignature);
@@ -229,7 +229,7 @@ public class ConsentService {
         if(!withdrawSignatures(account, subpopGuid, withdrewOn)) {
             throw new EntityNotFoundException(ConsentSignature.class);
         }
-        accountDao.updateAccount(account);
+        accountDao.updateAccount(account, false);
         
         if (account.getEmail() != null) {
             MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account, withdrawal,
@@ -267,7 +267,7 @@ public class ConsentService {
         for (SubpopulationGuid subpopGuid : account.getAllConsentSignatureHistories().keySet()) {
             withdrawSignatures(account, subpopGuid, withdrewOn);
         }
-        accountDao.updateAccount(account);
+        accountDao.updateAccount(account, false);
         
         String externalId = optionsService.getOptions(account.getHealthCode()).getString(EXTERNAL_IDENTIFIER);
         

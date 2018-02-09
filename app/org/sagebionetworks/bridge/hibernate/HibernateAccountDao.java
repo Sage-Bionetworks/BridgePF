@@ -159,19 +159,22 @@ public class HibernateAccountDao implements AccountDao {
     @Override
     public Account authenticate(Study study, SignIn signIn) {
         HibernateAccount hibernateAccount = fetchHibernateAccount(signIn);
-        return authenticateInternal(hibernateAccount, hibernateAccount.getPasswordAlgorithm(),
+        return authenticateInternal(study, hibernateAccount, hibernateAccount.getPasswordAlgorithm(),
                 hibernateAccount.getPasswordHash(), signIn.getPassword(), "password");
     }
 
     /** {@inheritDoc} */
     @Override
     public Account reauthenticate(Study study, SignIn signIn) {
+        if (!study.isReauthenticationEnabled()) {
+            throw new UnauthorizedException("Reauthentication is not enabled for study: " + study.getName());    
+        }
         HibernateAccount hibernateAccount = fetchHibernateAccount(signIn);
-        return authenticateInternal(hibernateAccount, hibernateAccount.getReauthTokenAlgorithm(),
+        return authenticateInternal(study, hibernateAccount, hibernateAccount.getReauthTokenAlgorithm(),
                 hibernateAccount.getReauthTokenHash(), signIn.getReauthToken(), "reauth token");
     }
     
-    private Account authenticateInternal(HibernateAccount hibernateAccount, PasswordAlgorithm algorithm,
+    private Account authenticateInternal(Study study, HibernateAccount hibernateAccount, PasswordAlgorithm algorithm,
             String hash, String credentialValue, String credentialName) {
 
         // First check and throw an entity not found exception if the password is wrong.
@@ -187,7 +190,12 @@ public class HibernateAccountDao implements AccountDao {
         // Unmarshall account
         validateHealthCode(hibernateAccount, false);
         Account account = unmarshallAccount(hibernateAccount);
-        updateReauthToken(hibernateAccount, account);
+        if (study.isReauthenticationEnabled()) {
+            updateReauthToken(hibernateAccount, account);    
+        } else {
+            // clear token in case it was created prior to introduction of the flag
+            account.setReauthToken(null);
+        }
         return account;
     }
 
@@ -311,7 +319,7 @@ public class HibernateAccountDao implements AccountDao {
 
     /** {@inheritDoc} */
     @Override
-    public void updateAccount(Account account) {
+    public void updateAccount(Account account, boolean allowIdentifierUpdates) {
         String accountId = account.getId();
         HibernateAccount accountToUpdate = marshallAccount(account);
 
@@ -321,12 +329,14 @@ public class HibernateAccountDao implements AccountDao {
             throw new EntityNotFoundException(Account.class, "Account " + accountId + " not found");
         }
         accountToUpdate.setStudyId(persistedAccount.getStudyId());
-        accountToUpdate.setEmail(persistedAccount.getEmail());
-        accountToUpdate.setPhone(persistedAccount.getPhone());
-        accountToUpdate.setEmailVerified(persistedAccount.getEmailVerified());
-        accountToUpdate.setPhoneVerified(persistedAccount.getPhoneVerified());
         accountToUpdate.setCreatedOn(persistedAccount.getCreatedOn());
         accountToUpdate.setPasswordModifiedOn(persistedAccount.getPasswordModifiedOn());
+        if (!allowIdentifierUpdates) {
+            accountToUpdate.setEmail(persistedAccount.getEmail());
+            accountToUpdate.setPhone(persistedAccount.getPhone());
+            accountToUpdate.setEmailVerified(persistedAccount.getEmailVerified());
+            accountToUpdate.setPhoneVerified(persistedAccount.getPhoneVerified());
+        }
 
         // Update modifiedOn.
         accountToUpdate.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());

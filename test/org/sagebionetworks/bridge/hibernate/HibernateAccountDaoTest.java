@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -65,6 +66,7 @@ public class HibernateAccountDaoTest {
     private static final String EMAIL = "eggplant@example.com";
     private static final Phone PHONE = TestConstants.PHONE;
     private static final Phone OTHER_PHONE = new Phone("+12065881469", "US");
+    private static final String OTHER_EMAIL = "other-email@example.com";
     private static final String HEALTH_CODE = "health-code";
     private static final String HEALTH_ID = "health-id";
     private static final long MOCK_NOW_MILLIS = DateTime.parse("2017-05-19T14:45:27.593-0700").getMillis();
@@ -112,6 +114,9 @@ public class HibernateAccountDaoTest {
         
         when(mockHealthCodeService.createMapping(TestConstants.TEST_STUDY)).thenReturn(new HealthIdImpl(HEALTH_ID,
                 HEALTH_CODE));
+
+        // Most studies test this as enabled. Specific tests disable it.
+        STUDY.setReauthenticationEnabled(true);
     }
 
     @Test
@@ -372,6 +377,26 @@ public class HibernateAccountDaoTest {
                 HibernateAccount.class);
         verifyCreatedHealthCode();
     }
+    
+    @Test
+    public void authenticateSuccessNoReauthentication() throws Exception {
+        STUDY.setReauthenticationEnabled(false);
+        
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(true, true);
+        String originalReauthHash = hibernateAccount.getReauthTokenHash();
+        
+        // mock hibernate
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any()))
+                .thenReturn(ImmutableList.of(hibernateAccount));
+
+        // execute and verify - Verify just ID, study, and email, and health code mapping is enough.
+        GenericAccount account = (GenericAccount) dao.authenticate(STUDY, PASSWORD_SIGNIN);
+        
+        // No reauthentication token rotation occurs
+        verify(mockHibernateHelper, never()).update(any());
+        assertNull(account.getReauthToken());
+        assertEquals(originalReauthHash, hibernateAccount.getReauthTokenHash());
+    }
 
     @Test(expected = EntityNotFoundException.class)
     public void authenticateAccountNotFound() throws Exception {
@@ -462,6 +487,20 @@ public class HibernateAccountDaoTest {
         assertNotEquals(originalReauthTokenHash, hibernateAccount.getReauthTokenHash());
         // This has been hashed
         assertNotEquals(account.getReauthToken(), hibernateAccount.getReauthTokenHash());
+    }
+    
+    @Test
+    public void reauthenticationDisabled() throws Exception {
+        STUDY.setReauthenticationEnabled(false);
+        
+        try {
+            dao.reauthenticate(STUDY, REAUTH_SIGNIN);
+            fail("Should have thrown exception");
+        } catch(UnauthorizedException e) {
+            
+        }
+        verify(mockHibernateHelper, never()).queryGet(any(), any(), any(), eq(HibernateAccount.class));
+        verify(mockHibernateHelper, never()).update(any());
     }
     
     @Test(expected = EntityNotFoundException.class)
@@ -786,12 +825,14 @@ public class HibernateAccountDaoTest {
         // mock hibernate
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(persistedAccount);
 
-        // execute
         GenericAccount account = makeValidGenericAccount();
+        account.setEmail(OTHER_EMAIL);
         account.setPhone(OTHER_PHONE);
         account.setEmailVerified(Boolean.FALSE);
         account.setPhoneVerified(Boolean.FALSE);
-        dao.updateAccount(account);
+        
+        // Execute. Identifiers not allows to change.
+        dao.updateAccount(account, false);
 
         // verify hibernate update
         ArgumentCaptor<HibernateAccount> updatedHibernateAccountCaptor = ArgumentCaptor.forClass(
@@ -818,11 +859,53 @@ public class HibernateAccountDaoTest {
 
         // execute
         try {
-            dao.updateAccount(makeValidGenericAccount());
+            dao.updateAccount(makeValidGenericAccount(), false);
             fail("expected exception");
         } catch (EntityNotFoundException ex) {
             assertEquals("Account " + ACCOUNT_ID + " not found", ex.getMessage());
         }
+    }
+    
+    @Test
+    public void updateAccountAllowsIdentifierUpdate() {
+        // This call will allow identifiers/verification status to be updated.
+        HibernateAccount persistedAccount = new HibernateAccount();
+        persistedAccount.setStudyId("persisted-study");
+        persistedAccount.setEmail("persisted@example.com");
+        persistedAccount.setCreatedOn(1234L);
+        persistedAccount.setPasswordModifiedOn(5678L);
+        persistedAccount.setPhone(PHONE);
+        persistedAccount.setEmailVerified(Boolean.TRUE);
+        persistedAccount.setPhoneVerified(Boolean.TRUE);
+
+        // Set a dummy modifiedOn to make sure we're overwriting it.
+        persistedAccount.setModifiedOn(5678L);
+
+        // mock hibernate
+        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(persistedAccount);
+
+        // execute
+        GenericAccount account = makeValidGenericAccount();
+        account.setEmail(OTHER_EMAIL);
+        account.setPhone(OTHER_PHONE);
+        account.setEmailVerified(Boolean.FALSE);
+        account.setPhoneVerified(Boolean.FALSE);
+        
+        // Identifiers ARE allowed to change here.
+        dao.updateAccount(account, true);
+
+        // Capture the update
+        ArgumentCaptor<HibernateAccount> updatedHibernateAccountCaptor = ArgumentCaptor.forClass(
+                HibernateAccount.class);
+        verify(mockHibernateHelper).update(updatedHibernateAccountCaptor.capture());
+
+        HibernateAccount updatedHibernateAccount = updatedHibernateAccountCaptor.getValue();
+        
+        assertEquals(OTHER_EMAIL, updatedHibernateAccount.getEmail());
+        assertEquals(OTHER_PHONE.getNationalFormat(),
+                updatedHibernateAccount.getPhone().getNationalFormat());
+        assertEquals(Boolean.FALSE, updatedHibernateAccount.getEmailVerified());
+        assertEquals(Boolean.FALSE, updatedHibernateAccount.getPhoneVerified());
     }
 
     @Test
