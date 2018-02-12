@@ -121,7 +121,7 @@ public class AccountWorkflowServiceTest {
         EmailTemplate verifyEmailTemplate = new EmailTemplate("VE ${studyName}", "Body ${url}", MimeType.TEXT);
         EmailTemplate resetPasswordTemplate = new EmailTemplate("RP ${studyName}", "Body ${url}", MimeType.TEXT);
         EmailTemplate accountExistsTemplate = new EmailTemplate("AE ${studyName}", "Body ${url} ${resetPasswordUrl} ${emailSignInUrl}", MimeType.TEXT);
-        EmailTemplate emailSignInTemplate = new EmailTemplate("subject","${token}", MimeType.TEXT);
+        EmailTemplate emailSignInTemplate = new EmailTemplate("subject","Body ${token}", MimeType.TEXT);
         
         study = Study.create();
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
@@ -264,7 +264,7 @@ public class AccountWorkflowServiceTest {
     @Test
     public void notifyAccountExistsForEmailWithoutEmailSignIn() throws Exception {
         // A successful notification of an existing account where email sign in is not enabled. The 
-        // emailSignIn template variable will not be replace.
+        // emailSignIn template variable will not be replaced.
         AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
         when(service.getNextToken()).thenReturn("ABC");
         when(mockAccount.getEmail()).thenReturn(EMAIL);
@@ -494,12 +494,16 @@ public class AccountWorkflowServiceTest {
         verify(mockSendMailService).sendEmail(emailProviderCaptor.capture());
         
         BasicEmailProvider provider = emailProviderCaptor.getValue();
-        assertEquals(21, provider.getTokenMap().get("token").length());
+        String token = provider.getTokenMap().get("token");
+        assertEquals(21, token.length());
         assertEquals(BridgeUtils.encodeURIComponent(EMAIL), provider.getTokenMap().get("email"));
         // api exists in this portion of the URL, indicating variable substitution occurred
         assertTrue(provider.getTokenMap().get("url").contains("/mobile/api/startSession.html"));
+        assertTrue(provider.getTokenMap().get("url").contains(token));
         assertEquals(study, provider.getStudy());
         assertEquals(EMAIL, Iterables.getFirst(provider.getRecipientEmails(), null));
+        assertEquals("Body " + provider.getTokenMap().get("token"),
+                provider.getMimeTypeEmail().getMessageParts().get(0).getContent());
     }
     
     @Test
@@ -556,7 +560,7 @@ public class AccountWorkflowServiceTest {
         assertEquals(EMAIL, provider.getMimeTypeEmail().getRecipientAddresses().get(0));
         assertEquals(SUPPORT_EMAIL, provider.getPlainSenderEmail());
         String bodyString = (String)provider.getMimeTypeEmail().getMessageParts().get(0).getContent();
-        assertEquals("something", bodyString);
+        assertEquals("Body something", bodyString);
     }
     
     @Test

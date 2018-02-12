@@ -296,6 +296,12 @@ public class StudyValidatorTest {
         study.setEmailSignInTemplate(new EmailTemplate(null, "body", MimeType.HTML));
         assertValidatorMessage(INSTANCE, study, "emailSignInTemplate.subject", "is required");
     }
+    
+    @Test
+    public void requiresEmailSignInTemplateRequiresToken() {
+        study.setEmailSignInTemplate(new EmailTemplate("subject", "body with no token", MimeType.HTML));
+        assertValidatorMessage(INSTANCE, study, "emailSignInTemplate.body", "must contain one of these template variables: ${url}, ${token}");
+    }    
 
     @Test
     public void requiresEmailSignInTemplateWithBody() {

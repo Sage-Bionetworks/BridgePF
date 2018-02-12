@@ -284,6 +284,7 @@ public class StudyValidator implements Validator {
                 for (int i=0; i < templateVariables.length; i++) {
                     if (template.getBody().contains(templateVariables[i])) {
                         missingTemplateVariable = false;
+                        break;
                     }
                 }
                 if (missingTemplateVariable) {
