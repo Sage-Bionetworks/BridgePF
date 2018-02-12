@@ -124,12 +124,13 @@ public class StudyController extends BaseController {
             List<Study> activeStudiesSummary = studies.stream()
                     .filter(s -> s.isActive()).collect(Collectors.toList());
             Collections.sort(activeStudiesSummary, STUDY_COMPARATOR);
-            return okResult(Study.STUDY_LIST_WRITER, new ResourceList<Study>(activeStudiesSummary));
+            return okResult(Study.STUDY_LIST_WRITER, new ResourceList<Study>(activeStudiesSummary)
+                    .withRequestParam("summary", true));
         }
         getAuthenticatedSession(ADMIN);
 
         // otherwise, return all studies including deactivated ones
-        return okResult(new ResourceList<>(studies));
+        return okResult(new ResourceList<>(studies).withRequestParam("summary", false));
     }
 
     public Result createStudy() throws Exception {
