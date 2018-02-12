@@ -60,6 +60,7 @@ public class BridgeUtils {
      * a study that used in most of our templates. The map is mutable. Variables include:
      * <ul>
      *  <li>studyName = study.getName()</li>
+     *  <li>studyShortName = study.getShortName()</li>
      *  <li>studyId = study.getIdentifier()</li>
      *  <li>sponsorName = study.getSponsorName()</li>
      *  <li>supportEmail = study.getSupportEmail()</li>
@@ -70,6 +71,7 @@ public class BridgeUtils {
     public static Map<String,String> studyTemplateVariables(Study study, Function<String,String> escaper) {
         Map<String,String> map = Maps.newHashMap();
         map.put("studyName", study.getName());
+        map.put("studyShortName", study.getShortName());
         map.put("studyId", study.getIdentifier());
         map.put("sponsorName", study.getSponsorName());
         map.put("supportEmail", study.getSupportEmail());

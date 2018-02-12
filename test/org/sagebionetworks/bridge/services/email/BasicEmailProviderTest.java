@@ -18,9 +18,10 @@ public class BasicEmailProviderTest {
     public void test() throws Exception {
         Study study = Study.create();
         study.setName("Study Name");
+        study.setShortName("ShortName");
         study.setSupportEmail("email@email.com,email2@email.com");
         
-        EmailTemplate template = new EmailTemplate("Subject ${url}", "Body ${url}", MimeType.HTML); 
+        EmailTemplate template = new EmailTemplate("Subject ${url}", "Body ${studyShortName} ${url}", MimeType.HTML);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
             .withStudy(study)
@@ -37,6 +38,6 @@ public class BasicEmailProviderTest {
         MimeBodyPart body = email.getMessageParts().get(0);
         
         String bodyString = (String)body.getContent();
-        assertEquals("Body some-url", bodyString);
+        assertEquals("Body ShortName some-url", bodyString);
     }
 }

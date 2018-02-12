@@ -37,6 +37,7 @@ public class BridgeUtilsTest {
     public void studyTemplateVariblesWorks() {
         Study study = Study.create();
         study.setName("name1");
+        study.setShortName("shortName");
         study.setIdentifier("identifier1");
         study.setSponsorName("sponsorName1");
         study.setSupportEmail("supportEmail1");
@@ -49,6 +50,7 @@ public class BridgeUtilsTest {
         map.put("thisMap", "isMutable");
         
         assertEquals("name2", map.get("studyName"));
+        assertEquals("shortName", map.get("studyShortName"));
         assertEquals("identifier2", map.get("studyId"));
         assertEquals("sponsorName2", map.get("sponsorName"));
         assertEquals("supportEmail2", map.get("supportEmail"));
