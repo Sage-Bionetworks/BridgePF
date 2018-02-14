@@ -79,6 +79,7 @@ public class ApplicationControllerMockTest {
         
         study = new DynamoStudy();
         study.setIdentifier("test-study");
+        study.setName("Test Study");
         study.setSupportEmail("support@email.com");
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         
@@ -96,7 +97,18 @@ public class ApplicationControllerMockTest {
         String html = Helpers.contentAsString(result);
         assertTrue(html.contains("Your email address has now been verified."));
     }
-    
+
+    @Test
+    public void verifyConsentNotificationEmailWorks() throws Exception {
+        Result result = controller.verifyConsentNotificationEmail("test-study");
+
+        assertEquals("text/html; charset=utf-8", result.header("Content-Type"));
+        assertEquals(200, result.status());
+        verify(studyService).getStudy("test-study");
+        String html = Helpers.contentAsString(result);
+        assertTrue(html.contains("The consent notification email address for study Test Study has now been verified."));
+    }
+
     @Test
     public void resetPasswordWorks() throws Exception {
         Result result = controller.resetPassword("test-study");

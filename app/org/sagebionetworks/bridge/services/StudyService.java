@@ -18,6 +18,8 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -51,13 +53,17 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
@@ -68,25 +74,33 @@ import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
+import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 @Component("studyService")
 public class StudyService {
-
     private static Logger LOG = LoggerFactory.getLogger(StudyService.class);
 
+    private static final String BASE_URL = BridgeConfigFactory.getConfig().get("webservices.url");
+    static final String CONFIG_KEY_SUPPORT_EMAIL_PLAIN = "support.email.plain";
+    private static final String CONSENT_NOTIFICATION_VERIFY_EMAIL_URL =
+            "%s/mobile/verifyConsentNotificationEmail.html?study=%s&sptoken=%s";
+    static final int CONSENT_NOTIFICATION_VERIFICATION_EXPIRE_IN_SECONDS = 60*60*24;
     static final String EXPORTER_SYNAPSE_USER_ID = BridgeConfigFactory.getConfig().getExporterSynapseId(); // copy-paste from website
     static final String SYNAPSE_REGISTER_END_POINT = "https://www.synapse.org/#!NewAccount:";
     private static final String STUDY_PROPERTY = "Study";
     private static final String TYPE_PROPERTY = "type";
+    private static final String URL_TOKEN = "url";
     private static final String IDENTIFIER_PROPERTY = "identifier";
     private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
             BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
     public static final Set<ACCESS_TYPE> READ_DOWNLOAD_ACCESS = ImmutableSet.of(ACCESS_TYPE.READ, ACCESS_TYPE.DOWNLOAD);
-    
+
+    private String bridgeSupportEmailPlain;
     private CompoundActivityDefinitionService compoundActivityDefinitionService;
+    private SendMailService sendMailService;
     private UploadCertificateService uploadCertService;
     private StudyDao studyDao;
     private StudyValidator validator;
@@ -97,6 +111,8 @@ public class StudyService {
     private SynapseClient synapseClient;
     private ParticipantService participantService;
 
+    private String consentNotificationEmailVerificationTemplate;
+    private String consentNotificationEmailVerificationTemplateSubject;
     private String defaultEmailVerificationTemplate;
     private String defaultEmailVerificationTemplateSubject;
     private String defaultResetPasswordTemplate;
@@ -105,7 +121,21 @@ public class StudyService {
     private String defaultEmailSignInTemplateSubject;
     private String defaultAccountExistsTemplate;
     private String defaultAccountExistsTemplateSubject;
-    
+
+    @Value("classpath:templates/consent-notification-email-verification.txt")
+    public final void setConsentNotificationEmailVerificationTemplate(org.springframework.core.io.Resource resource)
+            throws IOException {
+        this.consentNotificationEmailVerificationTemplate = IOUtils.toString(resource.getInputStream(),
+                StandardCharsets.UTF_8);
+    }
+
+    @Value("classpath:templates/consent-notification-email-verification-subject.txt")
+    public final void setConsentNotificationEmailVerificationTemplateSubject(
+            org.springframework.core.io.Resource resource) throws IOException {
+        this.consentNotificationEmailVerificationTemplateSubject = IOUtils.toString(resource.getInputStream(),
+                StandardCharsets.UTF_8);
+    }
+
     @Value("classpath:study-defaults/email-verification.txt")
     final void setDefaultEmailVerificationTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultEmailVerificationTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
@@ -139,11 +169,23 @@ public class StudyService {
         this.defaultAccountExistsTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
 
+    /** Bridge config. */
+    @Autowired
+    public final void setBridgeConfig(BridgeConfig bridgeConfig) {
+        this.bridgeSupportEmailPlain = bridgeConfig.get(CONFIG_KEY_SUPPORT_EMAIL_PLAIN);
+    }
+
     /** Compound activity definition service, used to clean up deleted studies. This is set by Spring. */
     @Autowired
     final void setCompoundActivityDefinitionService(
             CompoundActivityDefinitionService compoundActivityDefinitionService) {
         this.compoundActivityDefinitionService = compoundActivityDefinitionService;
+    }
+
+    /** Send mail service, used to send the consent notification email verification email. */
+    @Autowired
+    public final void setSendMailService(SendMailService sendMailService) {
+        this.sendMailService = sendMailService;
     }
 
     @Resource(name="uploadCertificateService")
@@ -330,6 +372,7 @@ public class StudyService {
         }
 
         study.setActive(true);
+        study.setConsentNotificationEmailVerified(false);
         study.setStudyIdExcludedInExport(true);
         study.getDataGroups().add(BridgeConstants.TEST_USER_GROUP);
         setDefaultsIfAbsent(study);
@@ -356,7 +399,9 @@ public class StudyService {
         study = studyDao.createStudy(study);
         
         emailVerificationService.verifyEmailAddress(study.getSupportEmail());
-        
+
+        sendConsentNotificationEmailVerificationToken(study);
+
         cacheProvider.setStudy(study);
 
         return study;
@@ -391,7 +436,7 @@ public class StudyService {
         // doesn't conflict with an existing name. Also, Synapse names can only contain a certain 
         // subset of characters.
         String nameScopingToken = getNameScopingToken();
-        String synapseName = null;
+        String synapseName;
         try {
             synapseName = BridgeUtils.toSynapseFriendlyName(study.getName());    
         } catch(NullPointerException | IllegalArgumentException e) {
@@ -480,13 +525,23 @@ public class StudyService {
         if (originalStudy.isActive() && !study.isActive()) {
             throw new BadRequestException("Study cannot be deleted through an update.");
         }
-        
+
         // With the introduction of the session verification email, studies won't have all the templates
         // that are normally required. So set it if someone tries to update a study, to a default value.
         setDefaultsIfAbsent(study);
         sanitizeHTML(study);
 
         Validate.entityThrowingException(validator, study);
+
+        if (originalStudy.isConsentNotificationEmailVerified() == null) {
+            // Studies before the introduction of the consentNotificationEmailVerified flag have it set to null. For
+            // backwards compatibility, treat this as "true". If these aren't actually verified, we'll handle it on a
+            // case-by-case basis.
+            study.setConsentNotificationEmailVerified(true);
+        } else if (!originalStudy.isConsentNotificationEmailVerified()) {
+            // You can't use the updateStudy() API to set consentNotificationEmailVerified from false to true.
+            study.setConsentNotificationEmailVerified(false);
+        }
 
         // Only admins can delete or modify upload metadata fields. Check this after validation, so we don't have to
         // deal with duplicates.
@@ -495,19 +550,28 @@ public class StudyService {
             checkUploadMetadataConstraints(originalStudy, study);
         }
 
-        // When the version is out of sync in the cache, then an exception is thrown and the study 
-        // is not updated in the cache. At least we can delete the study before this, so the next 
-        // time it should succeed. Have not figured out why they get out of sync.
-        cacheProvider.removeStudy(study.getIdentifier());
-        
-        Study updatedStudy = studyDao.updateStudy(study);
+        Study updatedStudy = updateAndCacheStudy(study);
         
         if (!originalStudy.getSupportEmail().equals(study.getSupportEmail())) {
             emailVerificationService.verifyEmailAddress(study.getSupportEmail());
         }
-        
+
+        if (!originalStudy.getConsentNotificationEmail().equals(study.getConsentNotificationEmail())) {
+            study.setConsentNotificationEmailVerified(false);
+            sendConsentNotificationEmailVerificationToken(study);
+        }
+
+        return updatedStudy;
+    }
+
+    // Helper method to save the study to the DAO and also update the cache.
+    private Study updateAndCacheStudy(Study study) {
+        // When the version is out of sync in the cache, then an exception is thrown and the study
+        // is not updated in the cache. At least we can delete the study before this, so the next
+        // time it should succeed. Have not figured out why they get out of sync.
+        cacheProvider.removeStudy(study.getIdentifier());
+        Study updatedStudy = studyDao.updateStudy(study);
         cacheProvider.setStudy(updatedStudy);
-        
         return updatedStudy;
     }
 
@@ -609,7 +673,6 @@ public class StudyService {
     /**
      * When the password policy or templates are not included, they are set to some sensible defaults.  
      * values. 
-     * @param study
      */
     private void setDefaultsIfAbsent(Study study) {
         if (study.getPasswordPolicy() == null) {
@@ -633,7 +696,6 @@ public class StudyService {
      * Email templates can contain HTML. Ensure the subject text has no markup and the markup in the body 
      * is safe for display in web-based email clients and a researcher UI. We clean this up before 
      * validation in case only unacceptable content was in the template. 
-     * @param study
      */
     protected void sanitizeHTML(Study study) {
         EmailTemplate template = study.getVerifyEmailTemplate();
@@ -653,7 +715,7 @@ public class StudyService {
         // Skip sanitization if there's no template. This can happen now as we'd rather see an error if the caller
         // doesn't include a template when updating.
         if (template == null) {
-            return template;
+            return null;
         }
         String subject = template.getSubject();
         if (StringUtils.isNotBlank(subject)) {
@@ -668,5 +730,121 @@ public class StudyService {
             }
         }
         return new EmailTemplate(subject, body, template.getMimeType());
+    }
+
+    /** Sends the email verification email for the given study's consent notification email. */
+    public void sendConsentNotificationEmailVerificationToken(StudyIdentifier studyId) {
+        Study study = getStudy(studyId);
+        sendConsentNotificationEmailVerificationToken(study);
+    }
+
+    // Helper method to send the consent notification email verification email.
+    private void sendConsentNotificationEmailVerificationToken(Study study) {
+        checkNotNull(study);
+        String email = study.getConsentNotificationEmail();
+
+        // Generate and save token.
+        String sptoken = createTimeLimitedToken();
+        saveVerification(sptoken, new VerificationData(study.getIdentifier(), email));
+
+        // Create and send verification email.
+        String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
+        String url = String.format(CONSENT_NOTIFICATION_VERIFY_EMAIL_URL, BASE_URL, studyId, sptoken);
+
+        EmailTemplate template = new EmailTemplate(consentNotificationEmailVerificationTemplateSubject,
+                consentNotificationEmailVerificationTemplate, MimeType.HTML);
+
+        BasicEmailProvider provider = new BasicEmailProvider.Builder().withStudy(study).withEmailTemplate(template)
+                .withOverrideSenderEmail(bridgeSupportEmailPlain).withRecipientEmail(email).withToken(URL_TOKEN, url)
+                .build();
+        sendMailService.sendEmail(provider);
+    }
+
+    /** Verifies the consent notification email with the given verification token. */
+    public void verifyConsentNotificationEmail(EmailVerification verification) {
+        // Verify input.
+        if (verification == null) {
+            throw new BadRequestException("verification body is required");
+        }
+        if (StringUtils.isBlank(verification.getSptoken())) {
+            throw new BadRequestException("verification token is required");
+        }
+
+        // Check token against the cache.
+        VerificationData data = restoreVerification(verification.getSptoken());
+        if (data == null) {
+            throw new BadRequestException("Email verification token has expired (or already been used).");
+        }
+
+        // Make sure the study's current consent notification email matches the email saved in the verification data.
+        // If the study's consent notification email is updated, the caller might still be using an older verification
+        // email.
+        Study study = getStudy(data.getStudyId());
+        if (!study.getConsentNotificationEmail().equals(data.getEmail())) {
+            throw new BadRequestException("Email verification token does not match consent notification email.");
+        }
+
+        // Set verified flag and update study.
+        study.setConsentNotificationEmailVerified(true);
+        updateAndCacheStudy(study);
+    }
+
+    // Creates a random token for consent notification email verification. Package-scoped so it can be mocked by unit
+    // tests.
+    String createTimeLimitedToken() {
+        return SecureTokenGenerator.INSTANCE.nextToken();
+    }
+
+    // Helper method to save consent notification email verification data from the cache.
+    private void saveVerification(String sptoken, VerificationData data) {
+        checkArgument(isNotBlank(sptoken));
+        checkNotNull(data);
+
+        try {
+            cacheProvider.setObject(sptoken, BridgeObjectMapper.get().writeValueAsString(data),
+                    CONSENT_NOTIFICATION_VERIFICATION_EXPIRE_IN_SECONDS);
+        } catch (IOException e) {
+            throw new BridgeServiceException(e);
+        }
+    }
+
+    // Helper method to fetch consent notification email verification data from the cache.
+    private VerificationData restoreVerification(String sptoken) {
+        checkArgument(isNotBlank(sptoken));
+
+        String json = cacheProvider.getObject(sptoken, String.class);
+        if (json != null) {
+            try {
+                cacheProvider.removeObject(sptoken);
+                return BridgeObjectMapper.get().readValue(json, VerificationData.class);
+            } catch (IOException e) {
+                throw new BridgeServiceException(e);
+            }
+        }
+        return null;
+    }
+
+    // Verification data for consent notification email.
+    private static class VerificationData {
+        private final String studyId;
+        private final String email;
+
+        @JsonCreator
+        VerificationData(@JsonProperty("studyId") String studyId, @JsonProperty("email") String email) {
+            checkArgument(isNotBlank(studyId));
+            checkArgument(isNotBlank(email));
+            this.studyId = studyId;
+            this.email = email;
+        }
+
+        // Study ID that we want to verify email for.
+        public String getStudyId() {
+            return studyId;
+        }
+
+        // Email address that we want to verify.
+        public String getEmail() {
+            return email;
+        }
     }
 }

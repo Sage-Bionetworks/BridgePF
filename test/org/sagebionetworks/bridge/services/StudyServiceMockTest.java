@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -11,6 +12,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -18,12 +20,15 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.services.StudyService.EXPORTER_SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.services.StudyService.SYNAPSE_REGISTER_END_POINT;
 
+import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -47,11 +52,13 @@ import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.ResourceAccess;
 import org.sagebionetworks.repo.model.Team;
 import org.sagebionetworks.repo.model.util.ModelConstants;
+import org.springframework.core.io.Resource;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -59,6 +66,7 @@ import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
@@ -66,8 +74,12 @@ import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
+import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
+import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -81,6 +93,7 @@ public class StudyServiceMockTest {
 
     // Don't use TestConstants.TEST_STUDY since this conflicts with the whitelist.
     private static final String TEST_STUDY_ID = "test-study";
+    private static final StudyIdentifier TEST_STUDY_IDENTIFIER = new StudyIdentifierImpl(TEST_STUDY_ID);
 
     private static final String TEST_USER_EMAIL = "test+user@email.com";
     private static final String TEST_USER_EMAIL_2 = "test+user+2@email.com";
@@ -92,12 +105,20 @@ public class StudyServiceMockTest {
     private static final String TEST_ADMIN_ID_2 = "3348228";
     private static final List<String> TEST_ADMIN_IDS = ImmutableList.of(TEST_ADMIN_ID_1, TEST_ADMIN_ID_2);
     private static final Set<String> EMPTY_SET = ImmutableSet.of();
+    private static final String SUPPORT_EMAIL = "bridgeit@sagebase.org";
+    private static final String VERIFICATION_TOKEN = "dummy-token";
+
+    @Mock
+    private BridgeConfig bridgeConfig;
 
     @Mock
     private CompoundActivityDefinitionService compoundActivityDefinitionService;
 
     @Mock
     private NotificationTopicService topicService;
+
+    @Mock
+    private SendMailService sendMailService;
 
     @Mock
     private UploadCertificateService uploadCertService;
@@ -129,9 +150,15 @@ public class StudyServiceMockTest {
     private MembershipInvitation mockTeamMemberInvitation;
 
     @Before
-    public void before() {
+    public void before() throws Exception {
+        // Mock config.
+        when(bridgeConfig.get(StudyService.CONFIG_KEY_SUPPORT_EMAIL_PLAIN)).thenReturn(SUPPORT_EMAIL);
+
+        // Set up service and dependencies.
+        service.setBridgeConfig(bridgeConfig);
         service.setCompoundActivityDefinitionService(compoundActivityDefinitionService);
         service.setNotificationTopicService(topicService);
+        service.setSendMailService(sendMailService);
         service.setUploadCertificateService(uploadCertService);
         service.setStudyDao(studyDao);
         service.setValidator(new StudyValidator());
@@ -140,11 +167,36 @@ public class StudyServiceMockTest {
         service.setEmailVerificationService(emailVerificationService);
         service.setSynapseClient(mockSynapseClient);
         service.setParticipantService(participantService);
-        
+
+        // Mock templates
+        service.setConsentNotificationEmailVerificationTemplateSubject(mockTemplateAsSpringResource(
+                "Verify your consent notification email"));
+        service.setConsentNotificationEmailVerificationTemplate(mockTemplateAsSpringResource(
+                "Click here ${url}"));
+
         when(service.getNameScopingToken()).thenReturn(TEST_NAME_SCOPING_TOKEN);
         
         study = getTestStudy();
         when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
+
+        when(studyDao.createStudy(any())).thenAnswer(invocation -> {
+            // Return the same study, except set version to 1.
+            Study study = invocation.getArgumentAt(0, Study.class);
+            study.setVersion(1L);
+            return study;
+        });
+
+        when(studyDao.updateStudy(any())).thenAnswer(invocation -> {
+            // Return the same study, except we increment the version.
+            Study study = invocation.getArgumentAt(0, Study.class);
+            Long oldVersion = study.getVersion();
+            study.setVersion(oldVersion != null ? oldVersion + 1 : 1);
+            return study;
+        });
+
+        // Spy StudyService.createTimeLimitedToken() to create a known token instead of a random one. This makes our
+        // tests easier.
+        doReturn(VERIFICATION_TOKEN).when(service).createTimeLimitedToken();
 
         // setup project and team
         mockTeam = new Team();
@@ -161,6 +213,229 @@ public class StudyServiceMockTest {
         Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
         study.setIdentifier(TEST_STUDY_ID);
         return study;
+    }
+
+    @Test
+    public void createStudySendsVerificationEmail() throws Exception {
+        // Create study.
+        Study study = getTestStudy();
+        String consentNotificationEmail = study.getConsentNotificationEmail();
+
+        // Execute. Verify study is created with ConsentNotificationEmailVerified=false.
+        service.createStudy(study);
+
+        ArgumentCaptor<Study> savedStudyCaptor = ArgumentCaptor.forClass(Study.class);
+        verify(studyDao).createStudy(savedStudyCaptor.capture());
+
+        Study savedStudy = savedStudyCaptor.getValue();
+        assertFalse(savedStudy.isConsentNotificationEmailVerified());
+
+        // Verify email verification email.
+        verifyEmailVerificationEmail(consentNotificationEmail);
+    }
+
+    @Test
+    public void updateStudyConsentNotificationEmailSendsVerificationEmail() throws Exception {
+        // Original study. ConsentNotificationEmailVerified is true.
+        Study originalStudy = getTestStudy();
+        originalStudy.setConsentNotificationEmailVerified(true);
+        when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(originalStudy);
+
+        // New study is the same as original study. Change consent notification email and study name.
+        Study newStudy = getTestStudy();
+        newStudy.setConsentNotificationEmail("different-email@example.com");
+        newStudy.setName("different-name");
+
+        // Execute. Verify the consent email change and study name change. The verified flag should now be false.
+        service.updateStudy(newStudy, false);
+
+        ArgumentCaptor<Study> savedStudyCaptor = ArgumentCaptor.forClass(Study.class);
+        verify(studyDao).updateStudy(savedStudyCaptor.capture());
+
+        Study savedStudy = savedStudyCaptor.getValue();
+        assertEquals("different-email@example.com", savedStudy.getConsentNotificationEmail());
+        assertFalse(savedStudy.isConsentNotificationEmailVerified());
+        assertEquals("different-name", savedStudy.getName());
+
+        // Verify email verification email.
+        verifyEmailVerificationEmail("different-email@example.com");
+    }
+
+    private void verifyEmailVerificationEmail(String consentNotificationEmail) throws Exception {
+        // Verify token in CacheProvider.
+        ArgumentCaptor<String> verificationDataCaptor = ArgumentCaptor.forClass(String.class);
+        verify(cacheProvider).setObject(eq(VERIFICATION_TOKEN), verificationDataCaptor.capture(),
+                eq(StudyService.CONSENT_NOTIFICATION_VERIFICATION_EXPIRE_IN_SECONDS));
+        JsonNode verificationData = BridgeObjectMapper.get().readTree(verificationDataCaptor.getValue());
+        assertEquals(TEST_STUDY_ID, verificationData.get("studyId").textValue());
+        assertEquals(consentNotificationEmail, verificationData.get("email").textValue());
+
+        // Verify sent email.
+        ArgumentCaptor<MimeTypeEmailProvider> emailProviderCaptor = ArgumentCaptor.forClass(
+                MimeTypeEmailProvider.class);
+        verify(sendMailService).sendEmail(emailProviderCaptor.capture());
+
+        MimeTypeEmail email = emailProviderCaptor.getValue().getMimeTypeEmail();
+        String body = (String) email.getMessageParts().get(0).getContent();
+        assertTrue(body.contains("/mobile/verifyConsentNotificationEmail.html?study="+ TEST_STUDY_ID + "&sptoken=" +
+                VERIFICATION_TOKEN));
+        assertTrue(email.getSenderAddress().contains(SUPPORT_EMAIL));
+
+        List<String> recipientList = email.getRecipientAddresses();
+        assertEquals(1, recipientList.size());
+        assertEquals(consentNotificationEmail, recipientList.get(0));
+    }
+
+    @Test
+    public void updateStudyWithSameConsentNotificationEmailDoesntSendVerification() {
+        // Original study. ConsentNotificationEmailVerified is true.
+        Study originalStudy = getTestStudy();
+        originalStudy.setConsentNotificationEmailVerified(true);
+        when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(originalStudy);
+
+        // New study is the same as original study. Make some inconsequential change to the study name.
+        Study newStudy = getTestStudy();
+        newStudy.setName("different-name");
+        newStudy.setConsentNotificationEmailVerified(true);
+
+        // Execute. Verify the study name change. Verified is still true.
+        service.updateStudy(newStudy, false);
+
+        ArgumentCaptor<Study> savedStudyCaptor = ArgumentCaptor.forClass(Study.class);
+        verify(studyDao).updateStudy(savedStudyCaptor.capture());
+
+        Study savedStudy = savedStudyCaptor.getValue();
+        assertTrue(savedStudy.isConsentNotificationEmailVerified());
+        assertEquals("different-name", savedStudy.getName());
+
+        // Verify we don't send email.
+        verify(sendMailService, never()).sendEmail(any());
+    }
+
+    @Test
+    public void updateStudyChangesNullConsentNotificationEmailVerifiedToTrue() {
+        // For backwards-compatibility, we flip the verified=null flag to true. This only happens for older studies
+        // that predate verification, most of which are confirmed working.
+        updateStudyConsentNotificationEmailVerified(null, null, true);
+    }
+
+    @Test
+    public void updateStudyCantFlipVerifiedFromFalseToTrue() {
+        updateStudyConsentNotificationEmailVerified(false, true, false);
+    }
+
+    @Test
+    public void updateStudyCanFlipVerifiedFromTrueToFalse() {
+        updateStudyConsentNotificationEmailVerified(true, false, false);
+    }
+
+    private void updateStudyConsentNotificationEmailVerified(Boolean oldValue, Boolean newValue,
+            Boolean expectedValue) {
+        // Original study
+        Study oldStudy = getTestStudy();
+        oldStudy.setConsentNotificationEmailVerified(oldValue);
+        when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(oldStudy);
+
+        // New study
+        Study newStudy = getTestStudy();
+        newStudy.setConsentNotificationEmailVerified(newValue);
+
+        // Update
+        service.updateStudy(newStudy, false);
+
+        // Verify result
+        ArgumentCaptor<Study> savedStudyCaptor = ArgumentCaptor.forClass(Study.class);
+        verify(studyDao).updateStudy(savedStudyCaptor.capture());
+
+        Study savedStudy = savedStudyCaptor.getValue();
+        assertEquals(expectedValue, savedStudy.isConsentNotificationEmailVerified());
+    }
+
+    @Test
+    public void sendConsentNotificationEmailVerificationToken() throws Exception {
+        // Mock getStudy().
+        Study study = getTestStudy();
+        when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
+
+        // Execute.
+        service.sendConsentNotificationEmailVerificationToken(TEST_STUDY_IDENTIFIER);
+
+        // Verify email verification email.
+        verifyEmailVerificationEmail(study.getConsentNotificationEmail());
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void verifyConsentNotificationEmailNullVerification() {
+        service.verifyConsentNotificationEmail(null);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void verifyConsentNotificationEmailNullToken() {
+        service.verifyConsentNotificationEmail(new EmailVerification(null));
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void verifyConsentNotificationEmailEmptyToken() {
+        service.verifyConsentNotificationEmail(new EmailVerification(""));
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void verifyConsentNotificationEmailBlankToken() {
+        service.verifyConsentNotificationEmail(new EmailVerification("   "));
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void verifyConsentNotificationEmailNullVerificationData() {
+        when(cacheProvider.getObject(VERIFICATION_TOKEN, String.class)).thenReturn(null);
+        service.verifyConsentNotificationEmail(new EmailVerification(VERIFICATION_TOKEN));
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void verifyConsentNotificationEmailMismatchedEmail() {
+        // Mock Cache Provider.
+        String verificationDataJson = "{\n" +
+                "   \"studyId\":\"" + TEST_STUDY_ID + "\",\n" +
+                "   \"email\":\"correct-email@example.com\"\n" +
+                "}";
+        when(cacheProvider.getObject(VERIFICATION_TOKEN, String.class)).thenReturn(verificationDataJson);
+
+        // Mock getStudy().
+        Study study = getTestStudy();
+        study.setConsentNotificationEmail("wrong-email@example.com");
+        when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
+
+        // Execute. Will throw.
+        service.verifyConsentNotificationEmail(new EmailVerification(VERIFICATION_TOKEN));
+    }
+
+    @Test
+    public void verifyConsentNotificationEmailSuccess() {
+        // Mock Cache Provider.
+        String verificationDataJson = "{\n" +
+                "   \"studyId\":\"" + TEST_STUDY_ID + "\",\n" +
+                "   \"email\":\"correct-email@example.com\"\n" +
+                "}";
+        when(cacheProvider.getObject(VERIFICATION_TOKEN, String.class)).thenReturn(verificationDataJson);
+
+        // Mock getting the study from the cache.
+        Study study = getTestStudy();
+        study.setConsentNotificationEmail("correct-email@example.com");
+        when(cacheProvider.getStudy(TEST_STUDY_ID)).thenReturn(study);
+
+        // Execute. Verify consentNotificationEmailVerified is now true.
+        service.verifyConsentNotificationEmail(new EmailVerification(VERIFICATION_TOKEN));
+
+        ArgumentCaptor<Study> savedStudyCaptor = ArgumentCaptor.forClass(Study.class);
+        verify(studyDao).updateStudy(savedStudyCaptor.capture());
+
+        Study savedStudy = savedStudyCaptor.getValue();
+        assertTrue(savedStudy.isConsentNotificationEmailVerified());
+
+        // Verify that we cached the study.
+        verify(cacheProvider).setStudy(savedStudy);
+
+        // Verify that we removed the used token.
+        verify(cacheProvider).removeObject(VERIFICATION_TOKEN);
     }
 
     @Test
@@ -482,7 +757,7 @@ public class StudyServiceMockTest {
         doReturn(study).when(service).createStudy(any());
         
         // stub out use of synapse client so we can validate it, not just ignore it.
-        when(mockAccessControlList.getResourceAccess()).thenReturn(new HashSet<ResourceAccess>());
+        when(mockAccessControlList.getResourceAccess()).thenReturn(new HashSet<>());
         when(mockSynapseClient.createEntity(projectCaptor.capture())).thenReturn(mockProject);
         when(mockSynapseClient.getACL(TEST_PROJECT_ID)).thenReturn(mockAccessControlList);
         when(mockSynapseClient.createTeam(teamCaptor.capture())).thenReturn(mockTeam);
@@ -908,7 +1183,6 @@ public class StudyServiceMockTest {
         Study study = getTestStudy();
         when(emailVerificationService.verifyEmailAddress(study.getSupportEmail()))
                 .thenReturn(EmailVerificationStatus.PENDING);
-        when(studyDao.createStudy(study)).thenReturn(study);
 
         service.createStudy(study);
 
@@ -992,5 +1266,12 @@ public class StudyServiceMockTest {
         assertEquals("${studyName} test", result.getSubject());
         assertEquals("<p>This should remove: </p>", result.getBody());
         assertEquals(MimeType.HTML, result.getMimeType());
+    }
+
+    private static Resource mockTemplateAsSpringResource(String content) throws Exception {
+        byte[] contentBytes = content.getBytes(Charsets.UTF_8);
+        Resource mockResource = mock(Resource.class);
+        when(mockResource.getInputStream()).thenReturn(new ByteArrayInputStream(contentBytes));
+        return mockResource;
     }
 }

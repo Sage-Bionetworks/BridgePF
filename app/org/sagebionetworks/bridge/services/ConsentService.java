@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import java.io.IOException;
@@ -223,20 +222,14 @@ public class ConsentService {
         checkArgument(withdrewOn > 0);
         
         Account account = accountDao.getAccount(context.getAccountId());
-        
-        String externalId = participant.getExternalId();
-        
+
         if(!withdrawSignatures(account, subpopGuid, withdrewOn)) {
             throw new EntityNotFoundException(ConsentSignature.class);
         }
         accountDao.updateAccount(account);
-        
-        if (account.getEmail() != null) {
-            MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account, withdrawal,
-                    withdrewOn);
-            sendMailService.sendEmail(consentEmail);
-        }
-        
+
+        sendWithdrawEmail(study, participant.getExternalId(), account, withdrawal, withdrewOn);
+
         Map<SubpopulationGuid,ConsentStatus> statuses = getConsentStatuses(context);
         
         if (!ConsentStatus.isUserConsented(statuses)) {
@@ -268,19 +261,32 @@ public class ConsentService {
             withdrawSignatures(account, subpopGuid, withdrewOn);
         }
         accountDao.updateAccount(account);
-        
-        String externalId = optionsService.getOptions(account.getHealthCode()).getString(EXTERNAL_IDENTIFIER);
-        
-        if (account.getEmail() != null) {
-            MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account, withdrawal,
-                    withdrewOn);
-            sendMailService.sendEmail(consentEmail);
-        }
-        
+
+        sendWithdrawEmail(study, participant.getExternalId(), account, withdrawal, withdrewOn);
+
         // But we don't need to query, we know these are all withdraw.
         return getConsentStatuses(context);
     }
-    
+
+    // Helper method, which abstracts away logic for sending withdraw notification email.
+    private void sendWithdrawEmail(Study study, String externalId, Account account, Withdrawal withdrawal,
+            long withdrewOn) {
+        if (account.getEmail() == null) {
+            // Withdraw email provider currently doesn't support non-email accounts. Skip.
+            return;
+        }
+
+        Boolean consentNotificationEmailVerified = study.isConsentNotificationEmailVerified();
+        if (consentNotificationEmailVerified != null && !consentNotificationEmailVerified) {
+            // For backwards-compatibility, a null value means the email is verified.
+            return;
+        }
+
+        MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account, withdrawal,
+                withdrewOn);
+        sendMailService.sendEmail(consentEmail);
+    }
+
     /**
      * Email the participant's signed consent agreement to the user's email address.
      * @param study

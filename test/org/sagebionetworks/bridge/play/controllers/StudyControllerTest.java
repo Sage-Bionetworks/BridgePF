@@ -54,6 +54,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DefaultObjectMapper;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
+import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
@@ -71,7 +72,7 @@ import org.sagebionetworks.bridge.services.UploadService;
 
 @RunWith(MockitoJUnitRunner.class)
 public class StudyControllerTest {
-
+    private static final String DUMMY_VERIFICATION_TOKEN = "dummy-token";
     private static final String EMAIL_ADDRESS = "foo@foo.com";
 
     private static final String PEM_TEXT = "-----BEGIN CERTIFICATE-----\nMIIExDCCA6ygAwIBAgIGBhCnnOuXMA0GCSqGSIb3DQEBBQUAMIGeMQswCQYDVQQG\nEwJVUzELMAkGA1UECAwCV0ExEDAOBgNVBAcMB1NlYXR0bGUxGTAXBgNVBAoMEFNh\nVlOwuuAxumMyIq5W4Dqk8SBcH9Y4qlk7\nEND CERTIFICATE-----";
@@ -96,8 +97,6 @@ public class StudyControllerTest {
     private UserSession mockSession;
     @Mock
     private UploadCertificateService mockUploadCertService;
-    @Mock
-    private Study mockStudy;
     @Mock
     private StudyService mockStudyService;
     @Mock
@@ -337,7 +336,39 @@ public class StudyControllerTest {
                 EmailVerificationStatusHolder.class);
         assertEquals(EmailVerificationStatus.VERIFIED, status.getStatus());
     }
-    
+
+    @Test
+    public void verifyConsentNotificationEmail() throws Exception {
+        // Mock request
+        String requestJsonString = "{\n" +
+                "   \"sptoken\":\"" + DUMMY_VERIFICATION_TOKEN + "\"\n" +
+                "}";
+        TestUtils.mockPlayContextWithJson(requestJsonString);
+
+        // Execute
+        Result result = controller.verifyConsentNotificationEmail();
+        TestUtils.assertResult(result, 200);
+
+        // Verify call to StudyService
+        ArgumentCaptor<EmailVerification> verificationCaptor = ArgumentCaptor.forClass(EmailVerification.class);
+        verify(mockStudyService).verifyConsentNotificationEmail(verificationCaptor.capture());
+        EmailVerification verification = verificationCaptor.getValue();
+        assertEquals(DUMMY_VERIFICATION_TOKEN, verification.getSptoken());
+    }
+
+    @Test
+    public void resendVerifyConsentEmail() throws Exception {
+        // Mock session
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
+
+        // Execute
+        Result result = controller.resendVerifyConsentNotificationEmail();
+        TestUtils.assertResult(result, 200);
+
+        // Verify call to StudyService
+        verify(mockStudyService).sendConsentNotificationEmailVerificationToken(studyId);
+    }
+
     @Test
     public void developerCanAccessCurrentStudy() throws Exception {
         testRoleAccessToCurrentStudy(DEVELOPER);

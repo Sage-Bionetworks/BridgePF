@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.models.CmsPublicKey;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
+import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -187,6 +188,24 @@ public class StudyController extends BaseController {
 
         EmailVerificationStatus status = emailVerificationService.getEmailStatus(study.getSupportEmail());
         return okResult(new EmailVerificationStatusHolder(status));
+    }
+
+    /** Resends the verification email for the current study's consent notification email. */
+    @BodyParser.Of(BodyParser.Empty.class)
+    public Result resendVerifyConsentNotificationEmail() {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        studyService.sendConsentNotificationEmailVerificationToken(session.getStudyIdentifier());
+        return okResult("Resending verification email for consent notification email.");
+    }
+
+    /**
+     * Verifies the consent notification email for the study. Since this comes in from an email with a token, you don't
+     * need to be authenticated. The token itself knows what study this is for.
+     */
+    public Result verifyConsentNotificationEmail() {
+        EmailVerification emailVerification = parseJson(request(), EmailVerification.class);
+        studyService.verifyConsentNotificationEmail(emailVerification);
+        return okResult("Consent notification email address verified.");
     }
 
     @BodyParser.Of(BodyParser.Empty.class)

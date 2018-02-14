@@ -187,6 +187,12 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     String getConsentNotificationEmail();
     void setConsentNotificationEmail(String email);
 
+    /** True if the consent notification email is verified. False if not. */
+    Boolean isConsentNotificationEmailVerified();
+
+    /** @see #isConsentNotificationEmailVerified */
+    void setConsentNotificationEmailVerified(Boolean verified);
+
     /**
      * Extension attributes that can be accepted on the UserProfile object for this study. These 
      * attributes will be exported with the participant roster. 
