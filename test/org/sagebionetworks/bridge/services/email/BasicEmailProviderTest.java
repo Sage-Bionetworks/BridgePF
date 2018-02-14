@@ -38,7 +38,7 @@ public class BasicEmailProviderTest {
             .withToken("url", "some-url").build();
 
         // Check provider attributes
-        assertEquals("Study Name <email@email.com>", provider.getFormattedSenderEmail());
+        assertEquals("Name <support@email.com>", provider.getFormattedSenderEmail());
 
         // Check email
         MimeTypeEmail email = provider.getMimeTypeEmail();
