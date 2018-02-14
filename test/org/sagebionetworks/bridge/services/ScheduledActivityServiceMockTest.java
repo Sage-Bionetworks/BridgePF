@@ -336,7 +336,7 @@ public class ScheduledActivityServiceMockTest {
     public void activityListsWithTooLargeClientDataRejected() throws Exception {
         JsonNode node = TestUtils.getClientData();
         ArrayNode array = JsonNodeFactory.instance.arrayNode();
-        for (int i=0; i < 35; i++) {
+        for (int i=0; i < 140; i++) {
             array.add(node);
         }
         

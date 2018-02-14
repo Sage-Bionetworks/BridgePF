@@ -122,10 +122,11 @@ public class StudyValidator implements Validator {
         validateTemplate(errors, study.getResetPasswordTemplate(), "resetPasswordTemplate", "${url}");
         // Existing studies don't have the template, we use a default template. Okay to be missing.
         if (study.getEmailSignInTemplate() != null) {
-            validateTemplate(errors, study.getEmailSignInTemplate(), "emailSignInTemplate", "${token}");
+            validateTemplate(errors, study.getEmailSignInTemplate(), "emailSignInTemplate", "${url}", "${token}");
         }
         if (study.getAccountExistsTemplate() != null) {
-            validateTemplate(errors, study.getAccountExistsTemplate(), "accountExistsTemplate", "${url}");
+            validateTemplate(errors, study.getAccountExistsTemplate(), "accountExistsTemplate", "${url}",
+                    "${emailSignInUrl}", "${resetPasswordUrl}");
         }
         
         for (String userProfileAttribute : study.getUserProfileAttributes()) {
@@ -268,7 +269,7 @@ public class StudyValidator implements Validator {
         }
     }
     
-    private void validateTemplate(Errors errors, EmailTemplate template, String fieldName, String requiredVariable) {
+    private void validateTemplate(Errors errors, EmailTemplate template, String fieldName, String... templateVariables) {
         if (template == null) {
             errors.rejectValue(fieldName, "is required");
         } else {
@@ -279,12 +280,20 @@ public class StudyValidator implements Validator {
             if (StringUtils.isBlank(template.getBody())) {
                 errors.rejectValue("body", "is required");
             } else {
-                if (!template.getBody().contains(requiredVariable)) {
-                    errors.rejectValue("body", "must contain the "+requiredVariable+" template variable");
+                boolean missingTemplateVariable = true;
+                for (int i=0; i < templateVariables.length; i++) {
+                    if (template.getBody().contains(templateVariables[i])) {
+                        missingTemplateVariable = false;
+                        break;
+                    }
+                }
+                if (missingTemplateVariable) {
+                    errors.rejectValue("body", "must contain one of these template variables: "
+                            + BridgeUtils.COMMA_SPACE_JOINER.join(templateVariables));
                 }
             }
             errors.popNestedPath();
-        }
+        }        
     }
 
     private void validateDataGroupNamesAndFitForSynapseExport(Errors errors, Set<String> dataGroups) {

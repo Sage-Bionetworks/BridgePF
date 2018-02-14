@@ -14,15 +14,9 @@ import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
 import org.sagebionetworks.bridge.models.AndroidAppSiteAssociation;
 import org.sagebionetworks.bridge.models.AppleAppSiteAssociation;
-import org.sagebionetworks.bridge.models.CriteriaContext;
-import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
 import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.stereotype.Controller;
 
 import com.google.common.collect.Lists;
@@ -57,7 +51,7 @@ public class ApplicationController extends BaseController {
     public Result verifyEmail(String studyId) {
         Study study = studyService.getStudy(studyId);
         return ok(views.html.verifyEmail.render(ASSETS_HOST, ASSETS_BUILD,
-                StringEscapeUtils.escapeHtml4(study.getName()), study.getSupportEmail()));
+                StringEscapeUtils.escapeHtml4(study.getName()), study.getSupportEmail(), study.getIdentifier()));
     }
 
     public Result resetPassword(String studyId) {
@@ -65,17 +59,17 @@ public class ApplicationController extends BaseController {
         String passwordDescription = BridgeUtils.passwordPolicyDescription(study.getPasswordPolicy());
         return ok(views.html.resetPassword.render(ASSETS_HOST, ASSETS_BUILD,
             StringEscapeUtils.escapeHtml4(study.getName()), study.getSupportEmail(), 
-            passwordDescription));
+            passwordDescription, study.getIdentifier()));
     }
     
+    /**
+     * If this page is loaded, it is because the mobile client did not intercept the 
+     * email sign in link. Show an error message and keeps the link valid so the user 
+     * can try again on a phone.
+     */
     public Result startSession(String studyId, String email, String token) {
-        SignIn signIn = new SignIn.Builder().withStudy(studyId).withEmail(email).withToken(token).build();
-        
-        StudyIdentifier studyIdentifier = new StudyIdentifierImpl(studyId);
-        CriteriaContext context = getCriteriaContext(studyIdentifier);
-        UserSession session = authenticationService.emailSignIn(context, signIn);
-        
-        return okResult(UserSessionInfo.toJSON(session));
+        Study study = studyService.getStudy(studyId);
+        return ok(views.html.startSession.render(ASSETS_HOST, ASSETS_BUILD, study.getName(), study.getIdentifier()));
     }
     
     public Result androidAppLinks() throws Exception {

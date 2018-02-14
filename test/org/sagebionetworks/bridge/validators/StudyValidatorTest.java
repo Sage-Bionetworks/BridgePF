@@ -83,13 +83,13 @@ public class StudyValidatorTest {
     @Test
     public void resetPasswordMustHaveUrlVariable() {
         study.setResetPasswordTemplate(new EmailTemplate("subject", "no url variable", MimeType.TEXT));
-        assertValidatorMessage(INSTANCE, study, "resetPasswordTemplate.body", "must contain the ${url} template variable");
+        assertValidatorMessage(INSTANCE, study, "resetPasswordTemplate.body", "must contain one of these template variables: ${url}");
     }
     
     @Test
     public void verifyEmailMustHaveUrlVariable() {
         study.setVerifyEmailTemplate(new EmailTemplate("subject", "no url variable", MimeType.TEXT));
-        assertValidatorMessage(INSTANCE, study, "verifyEmailTemplate.body", "must contain the ${url} template variable");
+        assertValidatorMessage(INSTANCE, study, "verifyEmailTemplate.body", "must contain one of these template variables: ${url}");
     }
 
     @Test
@@ -277,6 +277,15 @@ public class StudyValidatorTest {
     }
     
     @Test
+    public void emailSignTemplateOKWithTokenOrURL() {
+        study.setEmailSignInTemplate(new EmailTemplate("subject", "${token}", MimeType.HTML));
+        Validate.entityThrowingException(INSTANCE, study);
+        
+        study.setEmailSignInTemplate(new EmailTemplate("subject", "${url}", MimeType.HTML));
+        Validate.entityThrowingException(INSTANCE, study);
+    }
+    
+    @Test
     public void emailSignInTemplateNotRequired() {
         study.setEmailSignInTemplate(null);
         Validate.entityThrowingException(INSTANCE, study);
@@ -287,17 +296,17 @@ public class StudyValidatorTest {
         study.setEmailSignInTemplate(new EmailTemplate(null, "body", MimeType.HTML));
         assertValidatorMessage(INSTANCE, study, "emailSignInTemplate.subject", "is required");
     }
+    
+    @Test
+    public void requiresEmailSignInTemplateRequiresToken() {
+        study.setEmailSignInTemplate(new EmailTemplate("subject", "body with no token", MimeType.HTML));
+        assertValidatorMessage(INSTANCE, study, "emailSignInTemplate.body", "must contain one of these template variables: ${url}, ${token}");
+    }    
 
     @Test
     public void requiresEmailSignInTemplateWithBody() {
         study.setEmailSignInTemplate(new EmailTemplate("subject", null, MimeType.HTML));
         assertValidatorMessage(INSTANCE, study, "emailSignInTemplate.body", "is required");
-    }
-    
-    @Test
-    public void requiresEmailSignInTemplateRequiresToken() {
-        study.setEmailSignInTemplate(new EmailTemplate("subject", "body with no token", MimeType.HTML));
-        assertValidatorMessage(INSTANCE, study, "emailSignInTemplate.body", "must contain the ${token} template variable");
     }
     
     @Test
@@ -321,7 +330,20 @@ public class StudyValidatorTest {
     @Test
     public void requiresAccountExistsTemplateRequiresURL() {
         study.setAccountExistsTemplate(new EmailTemplate("subject", "body with no url", MimeType.HTML));
-        assertValidatorMessage(INSTANCE, study, "accountExistsTemplate.body", "must contain the ${url} template variable");
+        assertValidatorMessage(INSTANCE, study, "accountExistsTemplate.body",
+                "must contain one of these template variables: ${url}, ${emailSignInUrl}, ${resetPasswordUrl}");
+    }
+    
+    @Test
+    public void requiresAccountExistsTemplateOK() {
+        study.setAccountExistsTemplate(new EmailTemplate("subject", "${url}", MimeType.HTML));
+        Validate.entityThrowingException(INSTANCE, study);
+        
+        study.setAccountExistsTemplate(new EmailTemplate("subject", "${resetPasswordUrl}", MimeType.HTML));
+        Validate.entityThrowingException(INSTANCE, study);
+        
+        study.setAccountExistsTemplate(new EmailTemplate("subject", "${emailSignInUrl}", MimeType.HTML));
+        Validate.entityThrowingException(INSTANCE, study);
     }
     
     @Test

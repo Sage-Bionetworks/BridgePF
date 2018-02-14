@@ -80,7 +80,7 @@ public class SignatureBackfill extends AsyncBackfillTemplate {
                 callback.newRecords(getBackfillRecordFactory().createOnly(task, "Account " + summary.getId() + " not found."));
             } else if (processAccount(task, callback, study, account)) {
                 try {
-                    accountDao.updateAccount(account);
+                    accountDao.updateAccount(account, false);
                     callback.newRecords(getBackfillRecordFactory().createOnly(task, "Account " + summary.getId() + " updated."));
                 } catch(Exception e) {
                     e.printStackTrace();

@@ -43,6 +43,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -60,6 +61,7 @@ public class BridgeUtils {
      * a study that used in most of our templates. The map is mutable. Variables include:
      * <ul>
      *  <li>studyName = study.getName()</li>
+     *  <li>studyShortName = study.getShortName()</li>
      *  <li>studyId = study.getIdentifier()</li>
      *  <li>sponsorName = study.getSponsorName()</li>
      *  <li>supportEmail = study.getSupportEmail()</li>
@@ -70,11 +72,15 @@ public class BridgeUtils {
     public static Map<String,String> studyTemplateVariables(Study study, Function<String,String> escaper) {
         Map<String,String> map = Maps.newHashMap();
         map.put("studyName", study.getName());
+        map.put("studyShortName", study.getShortName());
         map.put("studyId", study.getIdentifier());
         map.put("sponsorName", study.getSponsorName());
-        map.put("supportEmail", study.getSupportEmail());
-        map.put("technicalEmail", study.getTechnicalEmail());
-        map.put("consentEmail", study.getConsentNotificationEmail());
+        map.put("supportEmail", 
+                Iterables.getFirst(commaListToOrderedSet(study.getSupportEmail()), ""));
+        map.put("technicalEmail", 
+                Iterables.getFirst(commaListToOrderedSet(study.getTechnicalEmail()), ""));
+        map.put("consentEmail", 
+                Iterables.getFirst(commaListToOrderedSet(study.getConsentNotificationEmail()), ""));
         if (escaper != null) {
             for (Map.Entry<String,String> entry : map.entrySet()) {
                 map.put(entry.getKey(), escaper.apply(entry.getValue()));

@@ -50,7 +50,7 @@ public class BridgeConstants {
     public static final String X_FORWARDED_FOR_HEADER = "X-Forwarded-For";
 
     /** Limit the total length of JSON string that is submitted as client data for a scheduled activity. */
-    public static final int CLIENT_DATA_MAX_BYTES = 2048;
+    public static final int CLIENT_DATA_MAX_BYTES = 8192;
 
     /** Used to cap the number of dupe records we fetch from DDB and the number of log messages we write. */
     public static final int DUPE_RECORDS_MAX_COUNT = 10;

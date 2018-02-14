@@ -155,7 +155,7 @@ public class StudyServiceTest {
 
         // these should have been changed
         assertEquals("${studyName} link", newStudy.getEmailSignInTemplate().getSubject());
-        assertEquals("Follow link ${token}", newStudy.getEmailSignInTemplate().getBody());
+        assertEquals("Follow link ${url}", newStudy.getEmailSignInTemplate().getBody());
         
         verify(mockCache).getStudy(newStudy.getIdentifier());
         verify(mockCache).setStudy(newStudy);
@@ -319,6 +319,7 @@ public class StudyServiceTest {
         assertFalse(study.isExternalIdValidationEnabled());
         assertFalse(study.isExternalIdRequiredOnSignup());
         assertFalse(study.isEmailSignInEnabled());
+        assertFalse(study.isReauthenticationEnabled());
         assertEquals(0, study.getAccountLimit());
     }
     
@@ -328,6 +329,7 @@ public class StudyServiceTest {
         assertTrue(study.isExternalIdValidationEnabled());
         assertTrue(study.isExternalIdRequiredOnSignup());
         assertTrue(study.isEmailSignInEnabled());
+        assertTrue(study.isReauthenticationEnabled());
         assertEquals(10, study.getAccountLimit());
     }
     
@@ -337,6 +339,7 @@ public class StudyServiceTest {
         study.setExternalIdValidationEnabled(false);
         study.setExternalIdRequiredOnSignup(false);
         study.setEmailSignInEnabled(false);
+        study.setReauthenticationEnabled(false);
         study.setAccountLimit(0);
     }
     
@@ -346,6 +349,7 @@ public class StudyServiceTest {
         study.setExternalIdValidationEnabled(true);
         study.setExternalIdRequiredOnSignup(true);
         study.setEmailSignInEnabled(true);
+        study.setReauthenticationEnabled(true);
         study.setAccountLimit(10);
     }
     

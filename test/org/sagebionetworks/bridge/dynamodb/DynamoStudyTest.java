@@ -125,6 +125,7 @@ public class DynamoStudyTest {
         assertTrue(node.get("externalIdValidationEnabled").asBoolean());
         assertTrue(node.get("externalIdRequiredOnSignup").asBoolean());
         assertTrue(node.get("emailSignInEnabled").asBoolean());
+        assertTrue(node.get("reauthenticationEnabled").booleanValue());
         assertEquals(0, node.get("accountLimit").asInt());
         assertFalse(node.get("disableExport").asBoolean());
         assertEqualsAndNotNull("Study", node.get("type").asText());

@@ -1,4 +1,4 @@
-@(assetsHost: String, assetsBuild: String, studyName: String, studySupportEmail: String)
+@(assetsHost: String, assetsBuild: String, studyName: String, studySupportEmail: String, studyId: String)
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,8 +12,10 @@
     <link href="//@assetsHost/mobile/styles/mobile.css" type="text/css" rel="stylesheet"/>
 </head>
 <body>
-
-<div class="logo_box"><img id="logo" onerror="this.style.visibility='hidden'"/></div>
+<div class="logo_box">
+    <img id="logo" onerror="this.style.display='none'"
+    	    src="//@assetsHost/mobile/images/@{studyId}.svg">
+</div>
 <div class="message" id="m1">Verifying...</div>
 <div class="message" id="m2"></div>
 
@@ -24,10 +26,6 @@ location.search.substr(1).split("&").forEach(function(item) {
 	var k = item.split("=")[0], v = decodeURIComponent(item.split("=")[1]); 
 	params[k] = v;
 });
-
-setTimeout(function() {
-    $("#logo").attr("src", "//" + window.assetsHost + "/mobile/images/"+params.study+".svg");
-}, 1);
 
 function success() {
     $("#m1").text("Your email address has now been verified.");
