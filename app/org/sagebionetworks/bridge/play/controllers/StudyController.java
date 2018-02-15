@@ -221,7 +221,7 @@ public class StudyController extends BaseController {
         }
 
         try {
-            return StudyEmailType.valueOf(typeStr);
+            return StudyEmailType.valueOf(typeStr.toUpperCase());
         } catch (IllegalArgumentException ex) {
             throw new BadRequestException("Unrecognized type \"" + typeStr + "\"");
         }

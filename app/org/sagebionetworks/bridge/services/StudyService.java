@@ -760,7 +760,7 @@ public class StudyService {
 
         // Create and send verification email.
         String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
-        String url = String.format(VERIFY_STUDY_EMAIL_URL, BASE_URL, studyId, token, type.toString());
+        String url = String.format(VERIFY_STUDY_EMAIL_URL, BASE_URL, studyId, token, type.toString().toLowerCase());
 
         EmailTemplate template = new EmailTemplate(studyEmailVerificationTemplateSubject,
                 studyEmailVerificationTemplate, MimeType.HTML);

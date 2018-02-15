@@ -368,7 +368,7 @@ public class StudyControllerTest {
         doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
 
         // Execute
-        Result result = controller.resendVerifyEmail(StudyEmailType.CONSENT_NOTIFICATION.toString());
+        Result result = controller.resendVerifyEmail(StudyEmailType.CONSENT_NOTIFICATION.toString().toLowerCase());
         TestUtils.assertResult(result, 200);
 
         // Verify call to StudyService
@@ -399,7 +399,7 @@ public class StudyControllerTest {
     public void verifyEmailSuccess() throws Exception {
         // Execute
         Result result = controller.verifyEmail(studyId.getIdentifier(), DUMMY_VERIFICATION_TOKEN,
-                StudyEmailType.CONSENT_NOTIFICATION.toString());
+                StudyEmailType.CONSENT_NOTIFICATION.toString().toLowerCase());
         TestUtils.assertResult(result, 200);
 
         // Verify call to StudyService

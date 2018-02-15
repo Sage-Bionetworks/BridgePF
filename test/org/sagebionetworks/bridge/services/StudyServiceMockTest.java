@@ -276,7 +276,7 @@ public class StudyServiceMockTest {
         MimeTypeEmail email = emailProviderCaptor.getValue().getMimeTypeEmail();
         String body = (String) email.getMessageParts().get(0).getContent();
         assertTrue(body.contains("/mobile/verifyStudyEmail.html?study="+ TEST_STUDY_ID + "&token=" +
-                VERIFICATION_TOKEN + "&type=CONSENT_NOTIFICATION"));
+                VERIFICATION_TOKEN + "&type=consent_notification"));
         assertTrue(email.getSenderAddress().contains(SUPPORT_EMAIL));
 
         List<String> recipientList = email.getRecipientAddresses();
