@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AppConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -23,6 +24,18 @@ public class AppConfigController extends BaseController {
     @Autowired
     final void setAppConfigService(AppConfigService appConfigService) {
         this.appConfigService = appConfigService;
+    }
+    
+    public Result getStudyAppConfig(String studyId) {
+        Study study = studyService.getStudy(studyId);
+        
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withClientInfo(getClientInfoFromUserAgentHeader())
+                .withStudyIdentifier(study.getStudyIdentifier())
+                .build();
+        AppConfig appConfig = appConfigService.getAppConfigForUser(context, true);
+        
+        return okResult(appConfig);            
     }
     
     public Result getSelfAppConfig() {
@@ -76,7 +89,7 @@ public class AppConfigController extends BaseController {
         UserSession session = getAuthenticatedSession(ADMIN);
         
         appConfigService.deleteAppConfig(session.getStudyIdentifier(), guid);
-        
+
         return okResult("App config deleted.");
     }
 }

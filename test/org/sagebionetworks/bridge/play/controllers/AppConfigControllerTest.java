@@ -27,14 +27,18 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AppConfigService;
+import org.sagebionetworks.bridge.services.StudyService;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.newrelic.agent.deps.com.google.common.collect.Lists;
 
@@ -43,6 +47,8 @@ import play.mvc.Result;
 @RunWith(MockitoJUnitRunner.class)
 public class AppConfigControllerTest {
     
+    private static final String TEST_UA = "CardioHealth/101 (Unknown iPhone; iOS/11.2.2) BridgeSDK/27";
+
     private static final String GUID = "guid";
     
     @Spy
@@ -51,17 +57,26 @@ public class AppConfigControllerTest {
     @Mock
     private AppConfigService mockService;
     
+    @Mock
+    private StudyService mockStudyService;
+    
     @Captor
     private ArgumentCaptor<CriteriaContext> contextCaptor;
+    
+    private Study study;
     
     private AppConfig appConfig;
     
     @Before
     public void before() {
         controller.setAppConfigService(mockService);
+        controller.setStudyService(mockStudyService);
         
         appConfig = AppConfig.create();
         appConfig.setGuid(BridgeUtils.generateGuid());
+        
+        study = Study.create();
+        study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         
         UserSession session = new UserSession();
         session.setStudyIdentifier(TEST_STUDY);
@@ -72,6 +87,26 @@ public class AppConfigControllerTest {
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+    }
+    
+    @Test
+    public void getStudyAppConfig() throws Exception {
+        // JSON payload here doesn't matter, it's a get request
+        mockPlayContextWithJson("{}", new ImmutableMap.Builder<String,String[]>()
+                .put("User-Agent", new String[] {TEST_UA})
+                .build());
+        
+        when(mockStudyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        when(mockService.getAppConfigForUser(contextCaptor.capture(), eq(true))).thenReturn(appConfig);
+        
+        Result result = controller.getStudyAppConfig("api");
+        TestUtils.assertResult(result, 200);
+        
+        CriteriaContext capturedContext = contextCaptor.getValue();
+        assertEquals(TestConstants.TEST_STUDY, capturedContext.getStudyIdentifier());
+        assertEquals("CardioHealth", capturedContext.getClientInfo().getAppName());
+        assertEquals(new Integer(101), capturedContext.getClientInfo().getAppVersion());
+        assertEquals("iPhone OS", capturedContext.getClientInfo().getOsName());        
     }
     
     @Test
