@@ -53,6 +53,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DefaultObjectMapper;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -526,6 +527,8 @@ public class StudyControllerTest {
         
         Result result = controller.getAllStudies("summary", null);
         TestUtils.assertResult(result, 200);
+        ResourceList<Study> list = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result), new TypeReference<ResourceList<Study>>() {});
+        assertTrue((Boolean)list.getRequestParams().get("summary"));
 
         assertFalse(Helpers.contentAsString(result).contains("healthCodeExportEnabled"));
 
@@ -583,6 +586,8 @@ public class StudyControllerTest {
         
         Result result = controller.getAllStudies(null, "false");
         TestUtils.assertResult(result, 200);
+        ResourceList<Study> list = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result), new TypeReference<ResourceList<Study>>() {});
+        assertFalse((Boolean)list.getRequestParams().get("summary"));
 
         assertTrue(Helpers.contentAsString(result).contains("healthCodeExportEnabled"));
     }
