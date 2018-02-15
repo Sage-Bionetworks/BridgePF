@@ -1,0 +1,13 @@
+<p>Hi,</p>
+
+<p>
+    You have registered this email address to receive notifications for your study ${studyName}. In order to proceed,
+    you must first confirm your email address by clicking the link below, or copying and pasting it into the address
+    bar of your browser:
+</p>
+
+<p>${url}</p>
+
+<p>
+    Once you confirm your email, you will be able to receive email notifications for your study.
+</p>

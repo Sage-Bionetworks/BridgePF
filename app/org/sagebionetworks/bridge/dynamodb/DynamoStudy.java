@@ -68,6 +68,7 @@ public final class DynamoStudy implements Study {
     private List<UploadFieldDefinition> uploadMetadataFieldDefinitions;
     private UploadValidationStrictness uploadValidationStrictness;
     private String consentNotificationEmail;
+    private Boolean consentNotificationEmailVerified;
     private int minAgeOfConsent;
     private int accountLimit;
     private Long version;
@@ -315,6 +316,18 @@ public final class DynamoStudy implements Study {
     @Override
     public void setConsentNotificationEmail(String consentNotificationEmail) {
         this.consentNotificationEmail = consentNotificationEmail;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Boolean isConsentNotificationEmailVerified() {
+        return consentNotificationEmailVerified;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setConsentNotificationEmailVerified(Boolean verified) {
+        this.consentNotificationEmailVerified = verified;
     }
 
     /** {@inheritDoc} */
@@ -598,7 +611,8 @@ public final class DynamoStudy implements Study {
         return Objects.hash(name, shortName, sponsorName, identifier, autoVerificationEmailSuppressed,
                 studyIdExcludedInExport, supportEmail,
                 synapseDataAccessTeamId, synapseProjectId, technicalEmail, usesCustomExportSchedule,
-                uploadMetadataFieldDefinitions, uploadValidationStrictness, consentNotificationEmail, minAgeOfConsent,
+                uploadMetadataFieldDefinitions, uploadValidationStrictness, consentNotificationEmail,
+                consentNotificationEmailVerified, minAgeOfConsent,
                 accountLimit, version, active, profileAttributes, taskIdentifiers, activityEventKeys, dataGroups,
                 passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, emailSignInTemplate, accountExistsTemplate,
                 strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
@@ -628,6 +642,7 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(active, other.active))
                 && Objects.equals(verifyEmailTemplate, other.verifyEmailTemplate)
                 && Objects.equals(consentNotificationEmail, other.consentNotificationEmail)
+                && Objects.equals(consentNotificationEmailVerified, other.consentNotificationEmailVerified)
                 && Objects.equals(resetPasswordTemplate, other.resetPasswordTemplate)
                 && Objects.equals(accountExistsTemplate, other.accountExistsTemplate)
                 && Objects.equals(version, other.version)
@@ -664,7 +679,8 @@ public final class DynamoStudy implements Study {
             "DynamoStudy [name=%s, shortName=%s, active=%s, sponsorName=%s, identifier=%s, "
                         + "autoVerificationEmailSuppressed=%b, minAgeOfConsent=%s, studyIdExcludedInExport=%b, "
                         + "supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, technicalEmail=%s, "
-                        + "uploadValidationStrictness=%s, consentNotificationEmail=%s, version=%s, userProfileAttributes=%s, taskIdentifiers=%s, "
+                        + "uploadValidationStrictness=%s, consentNotificationEmail=%s, "
+                        + "consentNotificationEmailVerified=%s, version=%s, userProfileAttributes=%s, taskIdentifiers=%s, "
                         + "activityEventKeys=%s, dataGroups=%s, passwordPolicy=%s, verifyEmailTemplate=%s, "
                         + "resetPasswordTemplate=%s, strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, "
                         + "emailVerificationEnabled=%s, externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, "
@@ -673,7 +689,8 @@ public final class DynamoStudy implements Study {
                         + "appleAppLinks=%s, androidAppLinks=%s, reauthenticationEnabled=%s]",
                 name, shortName, active, sponsorName, identifier, autoVerificationEmailSuppressed, minAgeOfConsent,
                 studyIdExcludedInExport, supportEmail,
-                synapseDataAccessTeamId, synapseProjectId, technicalEmail, uploadValidationStrictness, consentNotificationEmail, version,
+                synapseDataAccessTeamId, synapseProjectId, technicalEmail, uploadValidationStrictness,
+                consentNotificationEmail, consentNotificationEmailVerified, version,
                 profileAttributes, taskIdentifiers, activityEventKeys, dataGroups, passwordPolicy, verifyEmailTemplate,
                 resetPasswordTemplate, strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
                 externalIdValidationEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,

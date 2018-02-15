@@ -71,9 +71,14 @@ public class ConsentEmailProvider extends MimeTypeEmailProvider {
         final String sendFromEmail = getFormattedSenderEmail();
         builder.withSender(sendFromEmail);
 
-        // Must wrap in new list because set from BridgeUtils.commaListToSet() is immutable
-        Set<String> recipients = BridgeUtils.commaListToOrderedSet(getStudy().getConsentNotificationEmail());
-        builder.withRecipients(recipients);
+        // Check if consent notification email is verified. For backwards-compatibility, a null value means the email
+        // is verified.
+        Boolean consentNotificationEmailVerified = getStudy().isConsentNotificationEmailVerified();
+        if (consentNotificationEmailVerified == null || consentNotificationEmailVerified) {
+            // Must wrap in new list because set from BridgeUtils.commaListToSet() is immutable
+            Set<String> recipients = BridgeUtils.commaListToOrderedSet(getStudy().getConsentNotificationEmail());
+            builder.withRecipients(recipients);
+        }
         builder.withRecipient(userEmail);
 
         final String consentDoc = createSignedDocument();

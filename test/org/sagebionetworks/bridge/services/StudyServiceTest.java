@@ -8,7 +8,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import javax.annotation.Resource;
 
@@ -111,6 +110,7 @@ public class StudyServiceTest {
     public void crudStudy() {
         study = TestUtils.getValidStudy(StudyServiceTest.class);
         // verify this can be null, that's okay, and the flags are reset correctly on create
+        study.setConsentNotificationEmailVerified(true);
         study.setStudyIdExcludedInExport(false);
         study.setTaskIdentifiers(null);
         study.setUploadValidationStrictness(null);
@@ -123,6 +123,7 @@ public class StudyServiceTest {
         study = studyService.createStudy(study);
 
         // Verify that the flags are set correctly on create.
+        assertFalse(study.isConsentNotificationEmailVerified());
         assertNotNull("Version has been set", study.getVersion());
         assertTrue(study.isActive());
         assertFalse(study.isStrictUploadValidationEnabled());
@@ -130,7 +131,6 @@ public class StudyServiceTest {
         assertEquals(UploadValidationStrictness.REPORT, study.getUploadValidationStrictness());
 
         verify(mockCache).setStudy(study);
-        verifyNoMoreInteractions(mockCache);
         reset(mockCache);
         
         // A default, active consent should be created for the study.
@@ -159,19 +159,19 @@ public class StudyServiceTest {
         
         verify(mockCache).getStudy(newStudy.getIdentifier());
         verify(mockCache).setStudy(newStudy);
-        verifyNoMoreInteractions(mockCache);
         reset(mockCache);
 
         // make some (non-admin) updates
+        newStudy.setConsentNotificationEmailVerified(true);
         newStudy.setStrictUploadValidationEnabled(true);
         newStudy.setUploadValidationStrictness(UploadValidationStrictness.WARNING);
         Study updatedStudy = studyService.updateStudy(newStudy, false);
+        assertFalse(updatedStudy.isConsentNotificationEmailVerified());
         assertTrue(updatedStudy.isStrictUploadValidationEnabled());
         assertEquals(UploadValidationStrictness.WARNING, updatedStudy.getUploadValidationStrictness());
 
         verify(mockCache).removeStudy(updatedStudy.getIdentifier());
         verify(mockCache).setStudy(updatedStudy);
-        verifyNoMoreInteractions(mockCache);
         reset(mockCache);
 
         // delete study
@@ -179,7 +179,6 @@ public class StudyServiceTest {
         verify(mockCache).getStudy(study.getIdentifier());
         verify(mockCache).setStudy(updatedStudy);
         verify(mockCache).removeStudy(study.getIdentifier());
-        verifyNoMoreInteractions(mockCache);
 
         try {
             studyService.getStudy(study.getIdentifier());
