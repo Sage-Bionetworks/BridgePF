@@ -23,7 +23,6 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import org.apache.shiro.authc.SimpleAccount;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.junit.AfterClass;
