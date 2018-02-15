@@ -54,7 +54,6 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DefaultObjectMapper;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
@@ -66,6 +65,7 @@ import org.sagebionetworks.bridge.models.studies.SynapseProjectIdTeamIdHolder;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
 import org.sagebionetworks.bridge.services.EmailVerificationStatus;
+import org.sagebionetworks.bridge.services.StudyEmailType;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UploadCertificateService;
 import org.sagebionetworks.bridge.services.UploadService;
@@ -323,12 +323,12 @@ public class StudyControllerTest {
     }
     
     @Test
-    public void verifyEmail() throws Exception {
+    public void verifySenderEmail() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
         
         when(mockVerificationService.verifyEmailAddress(EMAIL_ADDRESS)).thenReturn(EmailVerificationStatus.VERIFIED);
         
-        Result result = controller.verifyEmail();
+        Result result = controller.verifySenderEmail();
         TestUtils.assertResult(result, 200);
         
         verify(mockVerificationService).verifyEmailAddress(EMAIL_ADDRESS);
@@ -337,36 +337,72 @@ public class StudyControllerTest {
         assertEquals(EmailVerificationStatus.VERIFIED, status.getStatus());
     }
 
-    @Test
-    public void verifyConsentNotificationEmail() throws Exception {
-        // Mock request
-        String requestJsonString = "{\n" +
-                "   \"sptoken\":\"" + DUMMY_VERIFICATION_TOKEN + "\"\n" +
-                "}";
-        TestUtils.mockPlayContextWithJson(requestJsonString);
+    @Test(expected = BadRequestException.class)
+    public void resendVerifyEmailNullType() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
+        controller.resendVerifyEmail(null);
+    }
 
-        // Execute
-        Result result = controller.verifyConsentNotificationEmail();
-        TestUtils.assertResult(result, 200);
+    @Test(expected = BadRequestException.class)
+    public void resendVerifyEmailEmptyType() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
+        controller.resendVerifyEmail("");
+    }
 
-        // Verify call to StudyService
-        ArgumentCaptor<EmailVerification> verificationCaptor = ArgumentCaptor.forClass(EmailVerification.class);
-        verify(mockStudyService).verifyConsentNotificationEmail(verificationCaptor.capture());
-        EmailVerification verification = verificationCaptor.getValue();
-        assertEquals(DUMMY_VERIFICATION_TOKEN, verification.getSptoken());
+    @Test(expected = BadRequestException.class)
+    public void resendVerifyEmailBlankType() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
+        controller.resendVerifyEmail("   ");
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void resendVerifyEmailInvalidType() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
+        controller.resendVerifyEmail("bad-type");
     }
 
     @Test
-    public void resendVerifyConsentEmail() throws Exception {
+    public void resendVerifyEmailSuccess() throws Exception {
         // Mock session
         doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
 
         // Execute
-        Result result = controller.resendVerifyConsentNotificationEmail();
+        Result result = controller.resendVerifyEmail(StudyEmailType.CONSENT_NOTIFICATION.toString());
         TestUtils.assertResult(result, 200);
 
         // Verify call to StudyService
-        verify(mockStudyService).sendConsentNotificationEmailVerificationToken(studyId);
+        verify(mockStudyService).sendVerifyEmail(studyId, StudyEmailType.CONSENT_NOTIFICATION);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void verifyEmailNullType() throws Exception {
+        controller.verifyEmail(studyId.getIdentifier(), DUMMY_VERIFICATION_TOKEN, null);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void verifyEmailEmptyType() throws Exception {
+        controller.verifyEmail(studyId.getIdentifier(), DUMMY_VERIFICATION_TOKEN, "");
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void verifyEmailBlankType() throws Exception {
+        controller.verifyEmail(studyId.getIdentifier(), DUMMY_VERIFICATION_TOKEN, "   ");
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void verifyEmailInvalidType() throws Exception {
+        controller.verifyEmail(studyId.getIdentifier(), DUMMY_VERIFICATION_TOKEN, "bad-type");
+    }
+
+    @Test
+    public void verifyEmailSuccess() throws Exception {
+        // Execute
+        Result result = controller.verifyEmail(studyId.getIdentifier(), DUMMY_VERIFICATION_TOKEN,
+                StudyEmailType.CONSENT_NOTIFICATION.toString());
+        TestUtils.assertResult(result, 200);
+
+        // Verify call to StudyService
+        verify(mockStudyService).verifyEmail(studyId, DUMMY_VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test

@@ -63,7 +63,6 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
@@ -85,9 +84,8 @@ public class StudyService {
 
     private static final String BASE_URL = BridgeConfigFactory.getConfig().get("webservices.url");
     static final String CONFIG_KEY_SUPPORT_EMAIL_PLAIN = "support.email.plain";
-    private static final String CONSENT_NOTIFICATION_VERIFY_EMAIL_URL =
-            "%s/mobile/verifyConsentNotificationEmail.html?study=%s&sptoken=%s";
-    static final int CONSENT_NOTIFICATION_VERIFICATION_EXPIRE_IN_SECONDS = 60*60*24;
+    private static final String VERIFY_STUDY_EMAIL_URL = "%s/mobile/verifyStudyEmail.html?study=%s&token=%s&type=%s";
+    static final int VERIFY_STUDY_EMAIL_EXPIRE_IN_SECONDS = 60*60*24;
     static final String EXPORTER_SYNAPSE_USER_ID = BridgeConfigFactory.getConfig().getExporterSynapseId(); // copy-paste from website
     static final String SYNAPSE_REGISTER_END_POINT = "https://www.synapse.org/#!NewAccount:";
     private static final String STUDY_PROPERTY = "Study";
@@ -111,8 +109,6 @@ public class StudyService {
     private SynapseClient synapseClient;
     private ParticipantService participantService;
 
-    private String consentNotificationEmailVerificationTemplate;
-    private String consentNotificationEmailVerificationTemplateSubject;
     private String defaultEmailVerificationTemplate;
     private String defaultEmailVerificationTemplateSubject;
     private String defaultResetPasswordTemplate;
@@ -121,20 +117,8 @@ public class StudyService {
     private String defaultEmailSignInTemplateSubject;
     private String defaultAccountExistsTemplate;
     private String defaultAccountExistsTemplateSubject;
-
-    @Value("classpath:templates/consent-notification-email-verification.txt")
-    public final void setConsentNotificationEmailVerificationTemplate(org.springframework.core.io.Resource resource)
-            throws IOException {
-        this.consentNotificationEmailVerificationTemplate = IOUtils.toString(resource.getInputStream(),
-                StandardCharsets.UTF_8);
-    }
-
-    @Value("classpath:templates/consent-notification-email-verification-subject.txt")
-    public final void setConsentNotificationEmailVerificationTemplateSubject(
-            org.springframework.core.io.Resource resource) throws IOException {
-        this.consentNotificationEmailVerificationTemplateSubject = IOUtils.toString(resource.getInputStream(),
-                StandardCharsets.UTF_8);
-    }
+    private String studyEmailVerificationTemplate;
+    private String studyEmailVerificationTemplateSubject;
 
     @Value("classpath:study-defaults/email-verification.txt")
     final void setDefaultEmailVerificationTemplate(org.springframework.core.io.Resource resource) throws IOException {
@@ -167,6 +151,19 @@ public class StudyService {
     @Value("classpath:study-defaults/account-exists-subject.txt")
     final void setDefaultAccountExistsTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultAccountExistsTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
+    }
+
+    @Value("classpath:templates/study-email-verification.txt")
+    public final void setStudyEmailVerificationTemplate(org.springframework.core.io.Resource resource)
+            throws IOException {
+        this.studyEmailVerificationTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
+    }
+
+    @Value("classpath:templates/study-email-verification-subject.txt")
+    public final void setStudyEmailVerificationTemplateSubject(
+            org.springframework.core.io.Resource resource) throws IOException {
+        this.studyEmailVerificationTemplateSubject = IOUtils.toString(resource.getInputStream(),
+                StandardCharsets.UTF_8);
     }
 
     /** Bridge config. */
@@ -400,7 +397,7 @@ public class StudyService {
         
         emailVerificationService.verifyEmailAddress(study.getSupportEmail());
 
-        sendConsentNotificationEmailVerificationToken(study);
+        sendVerifyEmail(study, StudyEmailType.CONSENT_NOTIFICATION);
 
         cacheProvider.setStudy(study);
 
@@ -559,7 +556,7 @@ public class StudyService {
 
         if (!originalStudy.getConsentNotificationEmail().equals(study.getConsentNotificationEmail())) {
             study.setConsentNotificationEmailVerified(false);
-            sendConsentNotificationEmailVerificationToken(study);
+            sendVerifyEmail(study, StudyEmailType.CONSENT_NOTIFICATION);
         }
 
         return updatedStudy;
@@ -733,27 +730,40 @@ public class StudyService {
         return new EmailTemplate(subject, body, template.getMimeType());
     }
 
-    /** Sends the email verification email for the given study's consent notification email. */
-    public void sendConsentNotificationEmailVerificationToken(StudyIdentifier studyId) {
+    /** Sends the email verification email for the given study's email. */
+    public void sendVerifyEmail(StudyIdentifier studyId, StudyEmailType type) {
         Study study = getStudy(studyId);
-        sendConsentNotificationEmailVerificationToken(study);
+        sendVerifyEmail(study, type);
     }
 
-    // Helper method to send the consent notification email verification email.
-    private void sendConsentNotificationEmailVerificationToken(Study study) {
+    // Helper method to send the email verification email.
+    private void sendVerifyEmail(Study study, StudyEmailType type) {
         checkNotNull(study);
-        String email = study.getConsentNotificationEmail();
+        if (type == null) {
+            throw new BadRequestException("Email type must be specified");
+        }
+
+        // Figure out which email we need to verify from type.
+        String email;
+        switch (type) {
+            case CONSENT_NOTIFICATION:
+                email = study.getConsentNotificationEmail();
+                break;
+            default:
+                // Impossible code path, but put it in for future-proofing.
+                throw new BadRequestException("Unrecognized email type \"" + type.toString() + "\"");
+        }
 
         // Generate and save token.
-        String sptoken = createTimeLimitedToken();
-        saveVerification(sptoken, new VerificationData(study.getIdentifier(), email));
+        String token = createTimeLimitedToken();
+        saveVerification(token, new VerificationData(study.getIdentifier(), email));
 
         // Create and send verification email.
         String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
-        String url = String.format(CONSENT_NOTIFICATION_VERIFY_EMAIL_URL, BASE_URL, studyId, sptoken);
+        String url = String.format(VERIFY_STUDY_EMAIL_URL, BASE_URL, studyId, token, type.toString());
 
-        EmailTemplate template = new EmailTemplate(consentNotificationEmailVerificationTemplateSubject,
-                consentNotificationEmailVerificationTemplate, MimeType.HTML);
+        EmailTemplate template = new EmailTemplate(studyEmailVerificationTemplateSubject,
+                studyEmailVerificationTemplate, MimeType.HTML);
 
         BasicEmailProvider provider = new BasicEmailProvider.Builder().withStudy(study).withEmailTemplate(template)
                 .withOverrideSenderEmail(bridgeSupportEmailPlain).withRecipientEmail(email).withToken(URL_TOKEN, url)
@@ -761,32 +771,57 @@ public class StudyService {
         sendMailService.sendEmail(provider);
     }
 
-    /** Verifies the consent notification email with the given verification token. */
-    public void verifyConsentNotificationEmail(EmailVerification verification) {
+    /** Verifies the email with the given verification token. */
+    public void verifyEmail(StudyIdentifier studyId, String token, StudyEmailType type) {
         // Verify input.
-        if (verification == null) {
-            throw new BadRequestException("verification body is required");
+        checkNotNull(studyId);
+        checkNotNull(studyId.getIdentifier());
+        if (StringUtils.isBlank(token)) {
+            throw new BadRequestException("Verification token must be specified");
         }
-        if (StringUtils.isBlank(verification.getSptoken())) {
-            throw new BadRequestException("verification token is required");
+        if (type == null) {
+            throw new BadRequestException("Email type must be specified");
         }
 
         // Check token against the cache.
-        VerificationData data = restoreVerification(verification.getSptoken());
+        VerificationData data = restoreVerification(token);
         if (data == null) {
             throw new BadRequestException("Email verification token has expired (or already been used).");
+        }
+
+        // Figure out which email we need to verify from type.
+        Study study = getStudy(studyId);
+        String email;
+        switch (type) {
+            case CONSENT_NOTIFICATION:
+                email = study.getConsentNotificationEmail();
+                break;
+            default:
+                // Impossible code path, but put it in for future-proofing.
+                throw new BadRequestException("Unrecognized email type \"" + type.toString() + "\"");
         }
 
         // Make sure the study's current consent notification email matches the email saved in the verification data.
         // If the study's consent notification email is updated, the caller might still be using an older verification
         // email.
-        Study study = getStudy(data.getStudyId());
-        if (!study.getConsentNotificationEmail().equals(data.getEmail())) {
+        if (!studyId.getIdentifier().equals(data.getStudyId())) {
+            throw new BadRequestException("Email verification token is for a different study.");
+        }
+        if (email == null || !email.equals(data.getEmail())) {
             throw new BadRequestException("Email verification token does not match consent notification email.");
         }
 
-        // Set verified flag and update study.
-        study.setConsentNotificationEmailVerified(true);
+        // Use type to determine which email to verify.
+        switch (type) {
+            case CONSENT_NOTIFICATION:
+                study.setConsentNotificationEmailVerified(true);
+                break;
+            default:
+                // Impossible code path, but put it in for future-proofing.
+                throw new BadRequestException("Unrecognized email type \"" + type.toString() + "\"");
+        }
+
+        // Update study.
         updateAndCacheStudy(study);
     }
 
@@ -803,7 +838,7 @@ public class StudyService {
 
         try {
             cacheProvider.setObject(sptoken, BridgeObjectMapper.get().writeValueAsString(data),
-                    CONSENT_NOTIFICATION_VERIFICATION_EXPIRE_IN_SECONDS);
+                    VERIFY_STUDY_EMAIL_EXPIRE_IN_SECONDS);
         } catch (IOException e) {
             throw new BridgeServiceException(e);
         }

@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>@studyName Consent Notification Email Verification</title>
+    <title>@studyName Email Verification</title>
     <script>
         window.assetsHost = "@assetsHost";
     </script>
@@ -30,25 +30,26 @@ setTimeout(function() {
 }, 1);
 
 function success() {
-    $("#m1").text("The consent notification email address for study @studyName has now been verified.");
-    $("#m2").html("You will now receive a copy of the signed consent document when a study participant joins the study.");
+    $("#m1").text("The email address for study @studyName has now been verified.");
 }
 function failure() {
-    $("#m1").text("The consent notification email address for study @studyName could not be verified.");
+    $("#m1").text("The email address for study @studyName could not be verified.");
     $("#m2").html("Please refresh the page; if the problem persists, contact Bridge support to receive further assistance.");
 }
 try {
     if (!params.study) {
         throw new Error("No study");
     }
+    if (!params.token) {
+        throw new Error("No token");
+    }
+    if (!params.type) {
+        throw new Error("No type");
+    }
     var p = $.ajax({
         type: "POST",
-        url: "/v3/studies/self/verifyConsentNotificationEmail",
-        data: JSON.stringify({"sptoken":params.sptoken, "study": params.study}),
-        contentType: "application/json, charset=utf-8",
-        dataType: "json"
+        url: "/v3/studies/" + params.study + "/emails/verify?token=" + params.token + "&type=" + params.type
     });
-	// The response in the success case is 412, accept terms of study
     p.done(success).fail(failure);
 } catch(e) { // happens if the query string is wrong.
     console.log(e);

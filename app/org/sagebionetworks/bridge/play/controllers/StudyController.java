@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -22,13 +23,13 @@ import play.mvc.BodyParser;
 import play.mvc.Result;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CmsPublicKey;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -39,6 +40,7 @@ import org.sagebionetworks.bridge.models.studies.SynapseProjectIdTeamIdHolder;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
 import org.sagebionetworks.bridge.services.EmailVerificationStatus;
+import org.sagebionetworks.bridge.services.StudyEmailType;
 import org.sagebionetworks.bridge.services.UploadCertificateService;
 import org.sagebionetworks.bridge.services.UploadService;
 
@@ -190,26 +192,42 @@ public class StudyController extends BaseController {
         return okResult(new EmailVerificationStatusHolder(status));
     }
 
-    /** Resends the verification email for the current study's consent notification email. */
+    /** Resends the verification email for the current study's email. */
     @BodyParser.Of(BodyParser.Empty.class)
-    public Result resendVerifyConsentNotificationEmail() {
+    public Result resendVerifyEmail(String type) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        studyService.sendConsentNotificationEmailVerificationToken(session.getStudyIdentifier());
+        StudyEmailType parsedType = parseEmailType(type);
+        studyService.sendVerifyEmail(session.getStudyIdentifier(), parsedType);
         return okResult("Resending verification email for consent notification email.");
     }
 
     /**
-     * Verifies the consent notification email for the study. Since this comes in from an email with a token, you don't
-     * need to be authenticated. The token itself knows what study this is for.
+     * Verifies the emails for the study. Since this comes in from an email with a token, you don't need to be
+     * authenticated. The token itself knows what study this is for.
      */
-    public Result verifyConsentNotificationEmail() {
-        EmailVerification emailVerification = parseJson(request(), EmailVerification.class);
-        studyService.verifyConsentNotificationEmail(emailVerification);
+    @BodyParser.Of(BodyParser.Empty.class)
+    public Result verifyEmail(String identifier, String token, String type) {
+        StudyEmailType parsedType = parseEmailType(type);
+        studyService.verifyEmail(new StudyIdentifierImpl(identifier), token, parsedType);
         return okResult("Consent notification email address verified.");
     }
 
+    // Helper method to parse and validate the email type for study email verification workflow. We do verification
+    // here so that the service can just deal with a clean enum.
+    private static StudyEmailType parseEmailType(String typeStr) {
+        if (StringUtils.isBlank(typeStr)) {
+            throw new BadRequestException("Email type must be specified");
+        }
+
+        try {
+            return StudyEmailType.valueOf(typeStr);
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Unrecognized type \"" + typeStr + "\"");
+        }
+    }
+
     @BodyParser.Of(BodyParser.Empty.class)
-    public Result verifyEmail() throws Exception {
+    public Result verifySenderEmail() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 

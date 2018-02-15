@@ -42,9 +42,9 @@ public class ApplicationController extends BaseController {
         return ok(views.html.index.render());
     }
 
-    public Result verifyConsentNotificationEmail(String studyId) {
+    public Result verifyStudyEmail(String studyId) {
         Study study = studyService.getStudy(studyId);
-        return ok(views.html.verifyConsentNotificationEmail.render(ASSETS_HOST, ASSETS_BUILD,
+        return ok(views.html.verifyStudyEmail.render(ASSETS_HOST, ASSETS_BUILD,
                 StringEscapeUtils.escapeHtml4(study.getName())));
     }
 

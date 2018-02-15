@@ -276,8 +276,7 @@ public class ConsentService {
             return;
         }
 
-        Boolean consentNotificationEmailVerified = study.isConsentNotificationEmailVerified();
-        if (consentNotificationEmailVerified != null && !consentNotificationEmailVerified) {
+        if (study.isConsentNotificationEmailVerified() == Boolean.FALSE) {
             // For backwards-compatibility, a null value means the email is verified.
             return;
         }

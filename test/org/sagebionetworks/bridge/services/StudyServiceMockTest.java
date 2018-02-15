@@ -66,7 +66,6 @@ import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
@@ -169,10 +168,9 @@ public class StudyServiceMockTest {
         service.setParticipantService(participantService);
 
         // Mock templates
-        service.setConsentNotificationEmailVerificationTemplateSubject(mockTemplateAsSpringResource(
-                "Verify your consent notification email"));
-        service.setConsentNotificationEmailVerificationTemplate(mockTemplateAsSpringResource(
-                "Click here ${url}"));
+        service.setStudyEmailVerificationTemplateSubject(mockTemplateAsSpringResource(
+                "Verify your study email"));
+        service.setStudyEmailVerificationTemplate(mockTemplateAsSpringResource("Click here ${url}"));
 
         when(service.getNameScopingToken()).thenReturn(TEST_NAME_SCOPING_TOKEN);
         
@@ -265,7 +263,7 @@ public class StudyServiceMockTest {
         // Verify token in CacheProvider.
         ArgumentCaptor<String> verificationDataCaptor = ArgumentCaptor.forClass(String.class);
         verify(cacheProvider).setObject(eq(VERIFICATION_TOKEN), verificationDataCaptor.capture(),
-                eq(StudyService.CONSENT_NOTIFICATION_VERIFICATION_EXPIRE_IN_SECONDS));
+                eq(StudyService.VERIFY_STUDY_EMAIL_EXPIRE_IN_SECONDS));
         JsonNode verificationData = BridgeObjectMapper.get().readTree(verificationDataCaptor.getValue());
         assertEquals(TEST_STUDY_ID, verificationData.get("studyId").textValue());
         assertEquals(consentNotificationEmail, verificationData.get("email").textValue());
@@ -277,8 +275,8 @@ public class StudyServiceMockTest {
 
         MimeTypeEmail email = emailProviderCaptor.getValue().getMimeTypeEmail();
         String body = (String) email.getMessageParts().get(0).getContent();
-        assertTrue(body.contains("/mobile/verifyConsentNotificationEmail.html?study="+ TEST_STUDY_ID + "&sptoken=" +
-                VERIFICATION_TOKEN));
+        assertTrue(body.contains("/mobile/verifyStudyEmail.html?study="+ TEST_STUDY_ID + "&token=" +
+                VERIFICATION_TOKEN + "&type=CONSENT_NOTIFICATION"));
         assertTrue(email.getSenderAddress().contains(SUPPORT_EMAIL));
 
         List<String> recipientList = email.getRecipientAddresses();
@@ -351,47 +349,88 @@ public class StudyServiceMockTest {
         assertEquals(expectedValue, savedStudy.isConsentNotificationEmailVerified());
     }
 
+    @Test(expected = BadRequestException.class)
+    public void sendVerifyEmailNullType() throws Exception {
+        service.sendVerifyEmail(TEST_STUDY_IDENTIFIER, null);
+    }
+
     @Test
-    public void sendConsentNotificationEmailVerificationToken() throws Exception {
+    public void sendVerifyEmailSuccess() throws Exception {
         // Mock getStudy().
         Study study = getTestStudy();
         when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
 
         // Execute.
-        service.sendConsentNotificationEmailVerificationToken(TEST_STUDY_IDENTIFIER);
+        service.sendVerifyEmail(TEST_STUDY_IDENTIFIER, StudyEmailType.CONSENT_NOTIFICATION);
 
         // Verify email verification email.
         verifyEmailVerificationEmail(study.getConsentNotificationEmail());
     }
 
     @Test(expected = BadRequestException.class)
-    public void verifyConsentNotificationEmailNullVerification() {
-        service.verifyConsentNotificationEmail(null);
+    public void verifyEmailNullToken() {
+        service.verifyEmail(TEST_STUDY_IDENTIFIER, null, StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expected = BadRequestException.class)
-    public void verifyConsentNotificationEmailNullToken() {
-        service.verifyConsentNotificationEmail(new EmailVerification(null));
+    public void verifyEmailEmptyToken() {
+        service.verifyEmail(TEST_STUDY_IDENTIFIER, "", StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expected = BadRequestException.class)
-    public void verifyConsentNotificationEmailEmptyToken() {
-        service.verifyConsentNotificationEmail(new EmailVerification(""));
+    public void verifyEmailBlankToken() {
+        service.verifyEmail(TEST_STUDY_IDENTIFIER, "   ", StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expected = BadRequestException.class)
-    public void verifyConsentNotificationEmailBlankToken() {
-        service.verifyConsentNotificationEmail(new EmailVerification("   "));
+    public void verifyEmailNullType() {
+        service.verifyEmail(TEST_STUDY_IDENTIFIER, VERIFICATION_TOKEN, null);
     }
 
     @Test(expected = BadRequestException.class)
-    public void verifyConsentNotificationEmailNullVerificationData() {
+    public void verifyEmailNullVerificationData() {
         when(cacheProvider.getObject(VERIFICATION_TOKEN, String.class)).thenReturn(null);
-        service.verifyConsentNotificationEmail(new EmailVerification(VERIFICATION_TOKEN));
+        service.verifyEmail(TEST_STUDY_IDENTIFIER, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expected = BadRequestException.class)
-    public void verifyConsentNotificationEmailMismatchedEmail() {
+    public void verifyEmailMismatchedStudy() {
+        // Mock Cache Provider.
+        String verificationDataJson = "{\n" +
+                "   \"studyId\":\"wrong-study\",\n" +
+                "   \"email\":\"correct-email@example.com\"\n" +
+                "}";
+        when(cacheProvider.getObject(VERIFICATION_TOKEN, String.class)).thenReturn(verificationDataJson);
+
+        // Mock getStudy().
+        Study study = getTestStudy();
+        study.setConsentNotificationEmail("correct-email@example.com");
+        when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
+
+        // Execute. Will throw.
+        service.verifyEmail(TEST_STUDY_IDENTIFIER, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void verifyEmailNoEmail() {
+        // Mock Cache Provider.
+        String verificationDataJson = "{\n" +
+                "   \"studyId\":\"" + TEST_STUDY_ID + "\",\n" +
+                "   \"email\":\"correct-email@example.com\"\n" +
+                "}";
+        when(cacheProvider.getObject(VERIFICATION_TOKEN, String.class)).thenReturn(verificationDataJson);
+
+        // Mock getStudy().
+        Study study = getTestStudy();
+        study.setConsentNotificationEmail(null);
+        when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
+
+        // Execute. Will throw.
+        service.verifyEmail(TEST_STUDY_IDENTIFIER, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void verifyEmailMismatchedEmail() {
         // Mock Cache Provider.
         String verificationDataJson = "{\n" +
                 "   \"studyId\":\"" + TEST_STUDY_ID + "\",\n" +
@@ -405,11 +444,11 @@ public class StudyServiceMockTest {
         when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
 
         // Execute. Will throw.
-        service.verifyConsentNotificationEmail(new EmailVerification(VERIFICATION_TOKEN));
+        service.verifyEmail(TEST_STUDY_IDENTIFIER, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test
-    public void verifyConsentNotificationEmailSuccess() {
+    public void verifyEmailSuccess() {
         // Mock Cache Provider.
         String verificationDataJson = "{\n" +
                 "   \"studyId\":\"" + TEST_STUDY_ID + "\",\n" +
@@ -423,7 +462,7 @@ public class StudyServiceMockTest {
         when(cacheProvider.getStudy(TEST_STUDY_ID)).thenReturn(study);
 
         // Execute. Verify consentNotificationEmailVerified is now true.
-        service.verifyConsentNotificationEmail(new EmailVerification(VERIFICATION_TOKEN));
+        service.verifyEmail(TEST_STUDY_IDENTIFIER, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
 
         ArgumentCaptor<Study> savedStudyCaptor = ArgumentCaptor.forClass(Study.class);
         verify(studyDao).updateStudy(savedStudyCaptor.capture());

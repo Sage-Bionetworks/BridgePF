@@ -99,14 +99,14 @@ public class ApplicationControllerMockTest {
     }
 
     @Test
-    public void verifyConsentNotificationEmailWorks() throws Exception {
-        Result result = controller.verifyConsentNotificationEmail("test-study");
+    public void verifStudyyEmailWorks() throws Exception {
+        Result result = controller.verifyStudyEmail("test-study");
 
         assertEquals("text/html; charset=utf-8", result.header("Content-Type"));
         assertEquals(200, result.status());
         verify(studyService).getStudy("test-study");
         String html = Helpers.contentAsString(result);
-        assertTrue(html.contains("The consent notification email address for study Test Study has now been verified."));
+        assertTrue(html.contains("The email address for study Test Study has now been verified."));
     }
 
     @Test
