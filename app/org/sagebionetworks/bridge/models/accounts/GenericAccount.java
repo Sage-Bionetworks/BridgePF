@@ -42,6 +42,10 @@ public class GenericAccount implements Account {
     private String lastName;
     private PasswordAlgorithm passwordAlgorithm;
     private String passwordHash;
+    private Long passwordModifiedOn;
+    private PasswordAlgorithm reauthTokenAlgorithm;
+    private String reauthTokenHash;
+    private Long reauthTokenModifiedOn;
     private String reauthToken;
     private Set<Roles> roleSet = ImmutableSet.of();
     private AccountStatus status;
@@ -95,6 +99,46 @@ public class GenericAccount implements Account {
     /** @see #getPasswordHash */
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
+    }
+    
+    /**
+     * The algorithm used to hash the password.
+     *
+     * @see PasswordAlgorithm
+     */
+    public PasswordAlgorithm getReauthTokenAlgorithm() {
+        return reauthTokenAlgorithm;
+    }
+
+    public Long getPasswordModifiedOn() {
+        return passwordModifiedOn;
+    }
+    
+    public void setPasswordModifiedOn(Long passwordModifiedOn) {
+        this.passwordModifiedOn = passwordModifiedOn;
+    }
+
+    /** @see #getPasswordAlgorithm */
+    public void setReauthTokenAlgorithm(PasswordAlgorithm reauthTokenAlgorithm) {
+        this.reauthTokenAlgorithm = reauthTokenAlgorithm;
+    }
+
+    /** The full reauth token hash, as used by {@link PasswordAlgorithm} to decode it. */
+    public String getReauthTokenHash() {
+        return reauthTokenHash;
+    }
+
+    /** @see #getReauthTokenHash */
+    public void setReauthTokenHash(String reauthTokenHash) {
+        this.reauthTokenHash = reauthTokenHash;
+    }
+
+    public Long getReauthTokenModifiedOn() {
+        return reauthTokenModifiedOn;
+    }
+    
+    public void setReauthTokenModifiedOn(Long reauthTokenModifiedOn) {
+        this.reauthTokenModifiedOn = reauthTokenModifiedOn;
     }
     
     /** The reauthentication token hash. */

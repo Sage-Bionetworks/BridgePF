@@ -101,4 +101,13 @@ public interface Account extends BridgeEntity {
      */
     JsonNode getClientData();
     void setClientData(JsonNode clientData);
+    
+    void setReauthTokenAlgorithm(PasswordAlgorithm algorithm);
+    PasswordAlgorithm getReauthTokenAlgorithm();
+    
+    void setReauthTokenHash(String reauthTokenHash);
+    String getReauthTokenHash();
+    
+    void setReauthTokenModifiedOn(Long reauthTokenModifiedOn);
+    Long getReauthTokenModifiedOn();
 }
