@@ -6,12 +6,15 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.Roles;
@@ -144,5 +147,56 @@ public class GenericAccountTest {
         account.setRoles(EnumSet.noneOf(Roles.class));
         assertTrue(account.getRoles().isEmpty());
         TestUtils.assertSetIsImmutable(account.getRoles(), Roles.TEST_USERS);
+    }
+    
+    @Test
+    public void dataGroups() {
+        GenericAccount account = new GenericAccount();
+        assertTrue(account.getDataGroups().isEmpty());
+        TestUtils.assertSetIsImmutable(account.getDataGroups(), "en");
+
+        // Set works.
+        account.setDataGroups(Sets.newHashSet("A","B"));
+        assertEquals(Sets.newHashSet("A","B"), account.getDataGroups());
+        TestUtils.assertSetIsImmutable(account.getDataGroups(), "C");
+
+        // Setting to null makes it an empty set.
+        account.setDataGroups(null);
+        assertTrue(account.getDataGroups().isEmpty());
+        TestUtils.assertSetIsImmutable(account.getDataGroups(), "C");
+
+        // Set to non-empty, then set to empty and verify that it works.
+        account.setDataGroups(Sets.newHashSet("A", "B"));
+        assertEquals(Sets.newHashSet("A", "B"), account.getDataGroups());
+
+        account.setDataGroups(Sets.newHashSet());
+        assertTrue(account.getRoles().isEmpty());
+        TestUtils.assertSetIsImmutable(account.getDataGroups(), "C");
+    }
+    
+    @Test
+    public void languages() {
+        LinkedHashSet<String> langs = new LinkedHashSet<>();
+        langs.add("en");
+        langs.add("fr");
+        
+        GenericAccount account = new GenericAccount();
+        assertTrue(account.getLanguages().isEmpty());
+        account.getLanguages().add("es");
+        assertTrue(account.getLanguages().isEmpty());
+
+        // Set works.
+        account.setLanguages(langs);
+        assertEquals(langs, account.getLanguages());
+        account.getLanguages().add("es");
+        assertEquals(langs, account.getLanguages());
+
+        // Setting to null makes it an empty set.
+        account.setLanguages(null);
+        assertTrue(account.getLanguages().isEmpty());
+
+        // Set to empty list, then set to empty and verify that it works.
+        account.setLanguages(Sets.newLinkedHashSet());
+        assertTrue(account.getLanguages().isEmpty());
     }
 }

@@ -145,7 +145,7 @@ public class UserProfileController extends BaseController {
         UserSession session = getAuthenticatedSession();
         
         Set<String> dataGroups = optionsService.getOptions(
-                session.getHealthCode()).getStringSet(DATA_GROUPS);
+                session.getStudyIdentifier(), session.getHealthCode()).getStringSet(DATA_GROUPS);
         
         ArrayNode array = JsonNodeFactory.instance.arrayNode();
         dataGroups.stream().forEach(array::add);

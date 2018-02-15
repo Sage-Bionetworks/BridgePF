@@ -207,12 +207,11 @@ public class UserAdminService {
 
             // Remove the externalId from the table even if validation is not enabled. If the study
             // turns it off/back on again, we want to track what has changed
-            ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
+            ParticipantOptionsLookup lookup = optionsService.getOptions(study.getStudyIdentifier(), healthCode);
             String externalId = lookup.getString(EXTERNAL_IDENTIFIER);
             if (externalId != null) {
                 externalIdService.unassignExternalId(study, externalId, healthCode);    
             }
-            optionsService.deleteAllParticipantOptions(healthCode);
             accountDao.deleteAccount(accountId);
         }
     }

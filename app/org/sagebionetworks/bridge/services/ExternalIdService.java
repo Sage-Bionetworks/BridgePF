@@ -84,7 +84,7 @@ public class ExternalIdService {
         checkNotNull(healthCode);
         
         if (study.isExternalIdValidationEnabled()) {
-            ParticipantOptionsLookup lookup = optionsService.getOptions(healthCode);
+            ParticipantOptionsLookup lookup = optionsService.getOptions(study.getStudyIdentifier(), healthCode);
             String existingExternalId = lookup.getString(EXTERNAL_IDENTIFIER);
 
             if (isBlank(existingExternalId)) {

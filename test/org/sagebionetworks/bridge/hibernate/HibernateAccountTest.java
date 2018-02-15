@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -14,6 +15,9 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public class HibernateAccountTest {
     @Test
@@ -132,4 +136,41 @@ public class HibernateAccountTest {
         assertEquals("id", account.getId());
         assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
     }
+    
+    @Test
+    public void dataGroups() {
+        HibernateAccount account = new HibernateAccount();
+        assertTrue(account.getDataGroups().isEmpty());
+
+        // Set works.
+        account.setDataGroups(Sets.newHashSet("A","B"));
+        assertEquals(Sets.newHashSet("A","B"), account.getDataGroups());
+
+        // Setting to null makes it an empty set.
+        account.setDataGroups(null);
+        assertTrue(account.getDataGroups().isEmpty());
+
+        account.setDataGroups(Sets.newHashSet());
+        assertTrue(account.getRoles().isEmpty());
+    }
+    
+    @Test
+    public void languages() {
+        // Hibernate cannot deal with the LinkedHashSet type, so we store languages as a list to 
+        // maintain their order. When transferred to an object implementing the Account class, these
+        // are transferred to a LinkedHashSet, which also ensures the languages are not duplicated in 
+        // the ordered set.
+        List<String> langs = Lists.newArrayList("en","fr");
+        
+        HibernateAccount account = new HibernateAccount();
+        assertTrue(account.getLanguages().isEmpty());
+        
+        // Set works.
+        account.setLanguages(langs);
+        assertEquals(langs, account.getLanguages());
+        
+        // Setting to null makes it an empty set.
+        account.setLanguages(null);
+        assertTrue(account.getLanguages().isEmpty());
+    }    
 }

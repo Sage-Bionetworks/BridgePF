@@ -269,7 +269,8 @@ public class ConsentService {
         }
         accountDao.updateAccount(account, false);
         
-        String externalId = optionsService.getOptions(account.getHealthCode()).getString(EXTERNAL_IDENTIFIER);
+        String externalId = optionsService.getOptions(study.getStudyIdentifier(), account.getHealthCode())
+                .getString(EXTERNAL_IDENTIFIER);
         
         if (account.getEmail() != null) {
             MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account, withdrawal,

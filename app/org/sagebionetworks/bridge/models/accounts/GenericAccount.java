@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -9,11 +10,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
-
+import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
@@ -48,6 +52,13 @@ public class GenericAccount implements Account {
     private StudyIdentifier studyId;
     private JsonNode clientData;
     private int version;
+    private DateTimeZone timeZone;
+    private SharingScope sharingScope;
+    private Boolean notifyByEmail;
+    private String externalId;
+    private Set<String> dataGroups;
+    private LinkedHashSet<String> languages;    
+    private int migrationVersion;
 
     /** {@inheritDoc} */
     @Override
@@ -311,5 +322,80 @@ public class GenericAccount implements Account {
     /** @see #getVersion */
     public void setVersion(int version) {
         this.version = version;
+    }
+    
+    /** {@inheritDoc} */
+    public DateTimeZone getTimeZone() {
+        return timeZone;
+    }
+
+    /** @see #getTimeZone */
+    public void setTimeZone(DateTimeZone timeZone) {
+        this.timeZone = timeZone;
+    }
+
+    /** {@inheritDoc} */
+    public SharingScope getSharingScope() {
+        return sharingScope;
+    }
+
+    /** @see #getSharingScope */
+    public void setSharingScope(SharingScope sharingScope) {
+        this.sharingScope = sharingScope;
+    }
+
+    /** {@inheritDoc} */
+    public Boolean getNotifyByEmail() {
+        return notifyByEmail;
+    }
+
+    /** @see #getNotifyByEmail */
+    public void setNotifyByEmail(Boolean notifyByEmail) {
+        this.notifyByEmail = notifyByEmail;
+    }
+    
+    /** {@inheritDoc} */
+    public String getExternalId() {
+        return externalId;
+    }
+
+    /** @see #getExternalId */
+    public void setExternalId(String externalId) {
+        this.externalId = externalId;
+    }
+
+    /** {@inheritDoc} */
+    public Set<String> getDataGroups() {
+        return (dataGroups == null) ? ImmutableSet.of() : ImmutableSet.copyOf(dataGroups);
+    }
+
+    /** @see #getDataGroups */
+    public void setDataGroups(Set<String> dataGroups) {
+        this.dataGroups = dataGroups;
+    }
+
+    /** {@inheritDoc} */
+    public LinkedHashSet<String> getLanguages() {
+        // Do not have an immutable structure, but can copy to provide something similar.
+        if (languages == null) {
+            return Sets.newLinkedHashSet();
+        } else {
+            return Sets.newLinkedHashSet(languages);
+        }
+    }
+
+    /** @see #getLanguages */
+    public void setLanguages(LinkedHashSet<String> languages) {
+        this.languages = languages;
+    }
+    
+    /** Migration version number, used to track the manual/programmatic migration of data in or out of this table. */
+    public int getMigrationVersion() {
+        return migrationVersion;
+    }
+
+    /** @see #getMigrationVersion */
+    public void setMigrationVersion(int migrationVersion) {
+        this.migrationVersion = migrationVersion;
     }
 }
