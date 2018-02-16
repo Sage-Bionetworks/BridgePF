@@ -22,6 +22,7 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.junit.AfterClass;
@@ -63,6 +64,7 @@ public class HibernateAccountDaoTest {
     private static final DateTime CREATED_ON = DateTime.parse("2017-05-19T11:03:50.224-0700");
     private static final String DUMMY_PASSWORD = "Aa!Aa!Aa!Aa!1";
     private static final String DUMMY_PASSWORD_HASH = "dummy-password-hash";
+    private static final String DUMMY_REAUTH_TOKEN_HASH = "dummy-reauth-token-hash";
     private static final String EMAIL = "eggplant@example.com";
     private static final Phone PHONE = TestConstants.PHONE;
     private static final Phone OTHER_PHONE = new Phone("+12065881469", "US");
@@ -853,6 +855,37 @@ public class HibernateAccountDaoTest {
     }
 
     @Test
+    public void updateDoesNotChangePasswordOrReauthToken() throws Exception {
+        HibernateAccount persistedAccount = makeValidHibernateAccount(true, true);
+        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(persistedAccount);
+        
+        GenericAccount account = new GenericAccount();
+        account.setId(ACCOUNT_ID);
+        account.setPasswordAlgorithm(PasswordAlgorithm.STORMPATH_HMAC_SHA_256);
+        account.setPasswordHash("bad password hash");
+        account.setPasswordModifiedOn(MOCK_NOW_MILLIS);
+        account.setReauthTokenAlgorithm(PasswordAlgorithm.STORMPATH_HMAC_SHA_256);
+        account.setReauthTokenHash("bad reauth token hash");
+        account.setReauthTokenModifiedOn(MOCK_NOW_MILLIS);
+        
+        dao.updateAccount(account, false);
+        
+        ArgumentCaptor<HibernateAccount> updatedHibernateAccountCaptor = ArgumentCaptor.forClass(
+                HibernateAccount.class);
+
+        verify(mockHibernateHelper).update(updatedHibernateAccountCaptor.capture());
+        
+        // These values were loaded, have not been changed, and were persisted as is.
+        HibernateAccount captured = updatedHibernateAccountCaptor.getValue();
+        assertEquals(persistedAccount.getPasswordAlgorithm(), captured.getPasswordAlgorithm());
+        assertEquals(persistedAccount.getPasswordHash(), captured.getPasswordHash());
+        assertEquals(persistedAccount.getPasswordModifiedOn(), captured.getPasswordModifiedOn());
+        assertEquals(persistedAccount.getReauthTokenAlgorithm(), captured.getReauthTokenAlgorithm());
+        assertEquals(persistedAccount.getReauthTokenHash(), captured.getReauthTokenHash());
+        assertEquals(persistedAccount.getReauthTokenModifiedOn(), captured.getReauthTokenModifiedOn());
+    }
+    
+    @Test
     public void updateAccountNotFound() {
         // mock hibernate
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(null);
@@ -1323,6 +1356,10 @@ public class HibernateAccountDaoTest {
         genericAccount.setLastName(LAST_NAME);
         genericAccount.setPasswordAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
         genericAccount.setPasswordHash(DUMMY_PASSWORD_HASH);
+        genericAccount.setPasswordModifiedOn(CREATED_ON.getMillis());
+        genericAccount.setReauthTokenAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
+        genericAccount.setReauthTokenHash(DUMMY_REAUTH_TOKEN_HASH);
+        genericAccount.setReauthTokenModifiedOn(CREATED_ON.getMillis());
         genericAccount.setRoles(EnumSet.of(Roles.DEVELOPER, Roles.TEST_USERS));
         genericAccount.setStatus(AccountStatus.ENABLED);
         genericAccount.setClientData(TestUtils.getClientData());
@@ -1369,6 +1406,10 @@ public class HibernateAccountDaoTest {
         assertEquals(LAST_NAME, hibernateAccount.getLastName());
         assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, hibernateAccount.getPasswordAlgorithm());
         assertEquals(DUMMY_PASSWORD_HASH, hibernateAccount.getPasswordHash());
+        assertEquals(new Long(CREATED_ON.getMillis()), hibernateAccount.getPasswordModifiedOn());
+        assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, hibernateAccount.getReauthTokenAlgorithm());
+        assertEquals(DUMMY_REAUTH_TOKEN_HASH, hibernateAccount.getReauthTokenHash());
+        assertEquals(new Long(CREATED_ON.getMillis()), hibernateAccount.getReauthTokenModifiedOn());
         assertEquals(EnumSet.of(Roles.DEVELOPER, Roles.TEST_USERS), hibernateAccount.getRoles());
         assertEquals(AccountStatus.ENABLED, hibernateAccount.getStatus());
         assertEquals(TestUtils.getClientData().toString(), hibernateAccount.getClientData());
@@ -1426,6 +1467,10 @@ public class HibernateAccountDaoTest {
         hibernateAccount.setLastName(LAST_NAME);
         hibernateAccount.setPasswordAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
         hibernateAccount.setPasswordHash(DUMMY_PASSWORD_HASH);
+        hibernateAccount.setPasswordModifiedOn(CREATED_ON.getMillis());
+        hibernateAccount.setReauthTokenAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
+        hibernateAccount.setReauthTokenHash(DUMMY_REAUTH_TOKEN_HASH);
+        hibernateAccount.setReauthTokenModifiedOn(CREATED_ON.getMillis());
         hibernateAccount.setRoles(EnumSet.of(Roles.DEVELOPER, Roles.TEST_USERS));
         hibernateAccount.setStatus(AccountStatus.ENABLED);
         hibernateAccount.setClientData(TestUtils.getClientData().toString());
@@ -1489,6 +1534,10 @@ public class HibernateAccountDaoTest {
         assertEquals(LAST_NAME, genericAccount.getLastName());
         assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, genericAccount.getPasswordAlgorithm());
         assertEquals(DUMMY_PASSWORD_HASH, genericAccount.getPasswordHash());
+        assertEquals(new Long(CREATED_ON.getMillis()), genericAccount.getPasswordModifiedOn());
+        assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, genericAccount.getReauthTokenAlgorithm());
+        assertEquals(DUMMY_REAUTH_TOKEN_HASH, genericAccount.getReauthTokenHash());
+        assertEquals(new Long(CREATED_ON.getMillis()), genericAccount.getReauthTokenModifiedOn());
         assertEquals(EnumSet.of(Roles.DEVELOPER, Roles.TEST_USERS), genericAccount.getRoles());
         assertEquals(AccountStatus.ENABLED, genericAccount.getStatus());
         assertEquals(TestUtils.getClientData(), genericAccount.getClientData());
