@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope.NO_SHARING;
 
 import java.util.Map;
@@ -20,7 +19,6 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
-import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -48,7 +46,6 @@ public class UserAdminService {
     private ScheduledActivityService scheduledActivityService;
     private ActivityEventService activityEventService;
     private CacheProvider cacheProvider;
-    private ParticipantOptionsService optionsService;
     private ExternalIdService externalIdService;
     private UploadService uploadService;
 
@@ -83,10 +80,6 @@ public class UserAdminService {
     @Autowired
     final void setCacheProvider(CacheProvider cache) {
         this.cacheProvider = cache;
-    }
-    @Autowired
-    final void setParticipantOptionsService(ParticipantOptionsService optionsService) {
-        this.optionsService = optionsService;
     }
     @Autowired
     final void setExternalIdService(ExternalIdService externalIdService) {

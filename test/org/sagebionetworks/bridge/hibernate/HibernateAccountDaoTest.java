@@ -14,17 +14,24 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.TIME_ZONE;
 
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.newrelic.agent.deps.com.google.common.collect.Maps;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -34,7 +41,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -66,13 +72,13 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.HealthCodeService;
-import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 
 public class HibernateAccountDaoTest {
     private static final String ACCOUNT_ID = "account-id";
     private static final DateTime CREATED_ON = DateTime.parse("2017-05-19T11:03:50.224-0700");
     private static final String DUMMY_PASSWORD = "Aa!Aa!Aa!Aa!1";
     private static final String DUMMY_PASSWORD_HASH = "dummy-password-hash";
+    private static final String DUMMY_REAUTH_TOKEN_HASH = "dummy-reauth-token-hash";
     private static final String EMAIL = "eggplant@example.com";
     private static final Phone PHONE = TestConstants.PHONE;
     private static final Phone OTHER_PHONE = new Phone("+12065881469", "US");
@@ -753,6 +759,7 @@ public class HibernateAccountDaoTest {
         assertEquals(MOCK_NOW_MILLIS, createdHibernateAccount.getModifiedOn().longValue());
         assertEquals(MOCK_NOW_MILLIS, createdHibernateAccount.getPasswordModifiedOn().longValue());
         assertEquals(AccountStatus.ENABLED, createdHibernateAccount.getStatus());
+        assertEquals(AccountDao.MIGRATION_VERSION, createdHibernateAccount.getMigrationVersion());
     }
 
     @Test
@@ -876,6 +883,37 @@ public class HibernateAccountDaoTest {
         assertEquals(MOCK_NOW_MILLIS, updatedHibernateAccount.getModifiedOn().longValue());
     }
 
+    @Test
+    public void updateDoesNotChangePasswordOrReauthToken() throws Exception {
+        HibernateAccount persistedAccount = makeValidHibernateAccount(true, true);
+        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(persistedAccount);
+        
+        GenericAccount account = new GenericAccount();
+        account.setId(ACCOUNT_ID);
+        account.setPasswordAlgorithm(PasswordAlgorithm.STORMPATH_HMAC_SHA_256);
+        account.setPasswordHash("bad password hash");
+        account.setPasswordModifiedOn(MOCK_NOW_MILLIS);
+        account.setReauthTokenAlgorithm(PasswordAlgorithm.STORMPATH_HMAC_SHA_256);
+        account.setReauthTokenHash("bad reauth token hash");
+        account.setReauthTokenModifiedOn(MOCK_NOW_MILLIS);
+        
+        dao.updateAccount(account, false);
+        
+        ArgumentCaptor<HibernateAccount> updatedHibernateAccountCaptor = ArgumentCaptor.forClass(
+                HibernateAccount.class);
+
+        verify(mockHibernateHelper).update(updatedHibernateAccountCaptor.capture());
+        
+        // These values were loaded, have not been changed, and were persisted as is.
+        HibernateAccount captured = updatedHibernateAccountCaptor.getValue();
+        assertEquals(persistedAccount.getPasswordAlgorithm(), captured.getPasswordAlgorithm());
+        assertEquals(persistedAccount.getPasswordHash(), captured.getPasswordHash());
+        assertEquals(persistedAccount.getPasswordModifiedOn(), captured.getPasswordModifiedOn());
+        assertEquals(persistedAccount.getReauthTokenAlgorithm(), captured.getReauthTokenAlgorithm());
+        assertEquals(persistedAccount.getReauthTokenHash(), captured.getReauthTokenHash());
+        assertEquals(persistedAccount.getReauthTokenModifiedOn(), captured.getReauthTokenModifiedOn());
+    }
+    
     @Test
     public void updateAccountNotFound() {
         // mock hibernate
@@ -1347,6 +1385,10 @@ public class HibernateAccountDaoTest {
         genericAccount.setLastName(LAST_NAME);
         genericAccount.setPasswordAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
         genericAccount.setPasswordHash(DUMMY_PASSWORD_HASH);
+        genericAccount.setPasswordModifiedOn(CREATED_ON.getMillis());
+        genericAccount.setReauthTokenAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
+        genericAccount.setReauthTokenHash(DUMMY_REAUTH_TOKEN_HASH);
+        genericAccount.setReauthTokenModifiedOn(CREATED_ON.getMillis());
         genericAccount.setRoles(EnumSet.of(Roles.DEVELOPER, Roles.TEST_USERS));
         genericAccount.setStatus(AccountStatus.ENABLED);
         genericAccount.setClientData(TestUtils.getClientData());
@@ -1400,11 +1442,15 @@ public class HibernateAccountDaoTest {
         assertEquals(LAST_NAME, hibernateAccount.getLastName());
         assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, hibernateAccount.getPasswordAlgorithm());
         assertEquals(DUMMY_PASSWORD_HASH, hibernateAccount.getPasswordHash());
+        assertEquals(new Long(CREATED_ON.getMillis()), hibernateAccount.getPasswordModifiedOn());
+        assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, hibernateAccount.getReauthTokenAlgorithm());
+        assertEquals(DUMMY_REAUTH_TOKEN_HASH, hibernateAccount.getReauthTokenHash());
+        assertEquals(new Long(CREATED_ON.getMillis()), hibernateAccount.getReauthTokenModifiedOn());
         assertEquals(EnumSet.of(Roles.DEVELOPER, Roles.TEST_USERS), hibernateAccount.getRoles());
         assertEquals(AccountStatus.ENABLED, hibernateAccount.getStatus());
         assertEquals(TestUtils.getClientData().toString(), hibernateAccount.getClientData());
         assertEquals(VERSION, hibernateAccount.getVersion());
-        assertEquals(DateTimeZone.forOffsetHours(-7), hibernateAccount.getTimeZone());
+        assertEquals("-07:00", hibernateAccount.getTimeZone());
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, hibernateAccount.getSharingScope());
         assertEquals(Boolean.TRUE, hibernateAccount.getNotifyByEmail());
         assertEquals(EXTERNAL_ID, hibernateAccount.getExternalId());
@@ -1464,11 +1510,15 @@ public class HibernateAccountDaoTest {
         hibernateAccount.setLastName(LAST_NAME);
         hibernateAccount.setPasswordAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
         hibernateAccount.setPasswordHash(DUMMY_PASSWORD_HASH);
+        hibernateAccount.setPasswordModifiedOn(CREATED_ON.getMillis());
+        hibernateAccount.setReauthTokenAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
+        hibernateAccount.setReauthTokenHash(DUMMY_REAUTH_TOKEN_HASH);
+        hibernateAccount.setReauthTokenModifiedOn(CREATED_ON.getMillis());
         hibernateAccount.setRoles(EnumSet.of(Roles.DEVELOPER, Roles.TEST_USERS));
         hibernateAccount.setStatus(AccountStatus.ENABLED);
         hibernateAccount.setClientData(TestUtils.getClientData().toString());
         hibernateAccount.setVersion(VERSION);
-        hibernateAccount.setTimeZone(DateTimeZone.forOffsetHours(-7));
+        hibernateAccount.setTimeZone("-07:00");
         hibernateAccount.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         hibernateAccount.setNotifyByEmail(true);
         hibernateAccount.setExternalId(EXTERNAL_ID);
@@ -1534,6 +1584,10 @@ public class HibernateAccountDaoTest {
         assertEquals(LAST_NAME, genericAccount.getLastName());
         assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, genericAccount.getPasswordAlgorithm());
         assertEquals(DUMMY_PASSWORD_HASH, genericAccount.getPasswordHash());
+        assertEquals(new Long(CREATED_ON.getMillis()), genericAccount.getPasswordModifiedOn());
+        assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, genericAccount.getReauthTokenAlgorithm());
+        assertEquals(DUMMY_REAUTH_TOKEN_HASH, genericAccount.getReauthTokenHash());
+        assertEquals(new Long(CREATED_ON.getMillis()), genericAccount.getReauthTokenModifiedOn());
         assertEquals(EnumSet.of(Roles.DEVELOPER, Roles.TEST_USERS), genericAccount.getRoles());
         assertEquals(AccountStatus.ENABLED, genericAccount.getStatus());
         assertEquals(TestUtils.getClientData(), genericAccount.getClientData());
@@ -1639,7 +1693,129 @@ public class HibernateAccountDaoTest {
         assertEquals(AccountStatus.ENABLED, account.getStatus());
         assertEquals(Boolean.FALSE, account.getEmailVerified());
     }
+    
+    @Test
+    public void getAccountMigatesFromOptionsTable() {
+        HibernateAccount hibernateAccount = new HibernateAccount();
+        hibernateAccount.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        hibernateAccount.setHealthCode(HEALTH_CODE);
+        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
+        
+        Map<String,String> map = new HashMap<>();
+        map.put(TIME_ZONE.name(), "-08:00");
+        map.put(SHARING_SCOPE.name(), "SPONSORS_AND_PARTNERS");
+        map.put(EMAIL_NOTIFICATIONS.name(), "true");
+        map.put(EXTERNAL_IDENTIFIER.name(), "external-id");
+        map.put(DATA_GROUPS.name(), "group1,group2");
+        map.put(LANGUAGES.name(), "fr,en");        
+        ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(map);
+        when(mockOptionsDao.getOptions(HEALTH_CODE)).thenReturn(lookup);
+        
+        AccountId accountId = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, ACCOUNT_ID);
+        Account account = dao.getAccount(accountId);
+        
+        assertEquals(DateTimeZone.forOffsetHours(-8), account.getTimeZone());
+        assertEquals(SharingScope.SPONSORS_AND_PARTNERS, account.getSharingScope());
+        assertEquals(Boolean.TRUE, account.getNotifyByEmail());
+        assertEquals("external-id", account.getExternalId());
+        assertEquals(Sets.newHashSet("group1", "group2"), account.getDataGroups());
+        assertEquals(TestUtils.newLinkedHashSet("fr","en"), account.getLanguages());
+        assertEquals(AccountDao.MIGRATION_VERSION, account.getMigrationVersion());
+        // if this object is saved, it should be compliant with v1 of our migrations
+    }
 
+    @Test
+    public void getAccountAfterAuthenticationMigatesFromOptionsTable() {
+        HibernateAccount hibernateAccount = new HibernateAccount();
+        hibernateAccount.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        hibernateAccount.setHealthCode(HEALTH_CODE);
+        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
+        
+        Map<String,String> map = new HashMap<>();
+        map.put(TIME_ZONE.name(), "-08:00");
+        map.put(SHARING_SCOPE.name(), "SPONSORS_AND_PARTNERS");
+        map.put(EMAIL_NOTIFICATIONS.name(), "true");
+        map.put(EXTERNAL_IDENTIFIER.name(), "external-id");
+        map.put(DATA_GROUPS.name(), "group1,group2");
+        map.put(LANGUAGES.name(), "fr,en");        
+        ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(map);
+        when(mockOptionsDao.getOptions(HEALTH_CODE)).thenReturn(lookup);
+        
+        AccountId accountId = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, ACCOUNT_ID);
+        Account account = dao.getAccountAfterAuthentication(accountId);
+        
+        assertEquals(DateTimeZone.forOffsetHours(-8), account.getTimeZone());
+        assertEquals(SharingScope.SPONSORS_AND_PARTNERS, account.getSharingScope());
+        assertEquals(Boolean.TRUE, account.getNotifyByEmail());
+        assertEquals("external-id", account.getExternalId());
+        assertEquals(Sets.newHashSet("group1", "group2"), account.getDataGroups());
+        assertEquals(TestUtils.newLinkedHashSet("fr","en"), account.getLanguages());
+        assertEquals(AccountDao.MIGRATION_VERSION, account.getMigrationVersion());
+        // if this object is saved, it should be compliant with v1 of our migrations
+    }
+    
+    @Test
+    public void getAccountIgnoresOptionsTableIfMigrated() {
+        HibernateAccount hibernateAccount = new HibernateAccount();
+        hibernateAccount.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        hibernateAccount.setHealthCode(HEALTH_CODE);
+        hibernateAccount.setMigrationVersion(1);
+        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
+        
+        Map<String,String> map = new HashMap<>();
+        map.put(TIME_ZONE.name(), "-08:00");
+        map.put(SHARING_SCOPE.name(), "SPONSORS_AND_PARTNERS");
+        map.put(EMAIL_NOTIFICATIONS.name(), "true");
+        map.put(EXTERNAL_IDENTIFIER.name(), "external-id");
+        map.put(DATA_GROUPS.name(), "group1,group2");
+        map.put(LANGUAGES.name(), "fr,en");        
+        ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(map);
+        when(mockOptionsDao.getOptions(HEALTH_CODE)).thenReturn(lookup);
+        
+        AccountId accountId = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, ACCOUNT_ID);
+        Account account = dao.getAccount(accountId);
+        
+        // Options table was ignored, the values are as they were originally (null)
+        assertNull(account.getTimeZone());
+        assertNull(account.getSharingScope());
+        assertNull(account.getNotifyByEmail());
+        assertNull(account.getExternalId());
+        assertTrue(account.getDataGroups().isEmpty());
+        assertTrue(account.getLanguages().isEmpty());
+        assertEquals(AccountDao.MIGRATION_VERSION, account.getMigrationVersion());
+    }
+
+    @Test
+    public void getAccountAfterAuthenticationIgnoresOptionsTableIfMigrated() {
+        HibernateAccount hibernateAccount = new HibernateAccount();
+        hibernateAccount.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        hibernateAccount.setHealthCode(HEALTH_CODE);
+        hibernateAccount.setMigrationVersion(1);
+        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
+        
+        Map<String,String> map = new HashMap<>();
+        map.put(TIME_ZONE.name(), "-08:00");
+        map.put(SHARING_SCOPE.name(), "SPONSORS_AND_PARTNERS");
+        map.put(EMAIL_NOTIFICATIONS.name(), "true");
+        map.put(EXTERNAL_IDENTIFIER.name(), "external-id");
+        map.put(DATA_GROUPS.name(), "group1,group2");
+        map.put(LANGUAGES.name(), "fr,en");        
+        ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(map);
+        when(mockOptionsDao.getOptions(HEALTH_CODE)).thenReturn(lookup);
+        
+        AccountId accountId = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, ACCOUNT_ID);
+        Account account = dao.getAccountAfterAuthentication(accountId);
+        
+        // Options table was ignored, the values are as they were originally (null)
+        assertNull(account.getTimeZone());
+        assertNull(account.getSharingScope());
+        assertNull(account.getNotifyByEmail());
+        assertNull(account.getExternalId());
+        assertTrue(account.getDataGroups().isEmpty());
+        assertTrue(account.getLanguages().isEmpty());
+        assertEquals(AccountDao.MIGRATION_VERSION, account.getMigrationVersion());
+    }
+    
     private void verifyCreatedHealthCode() {
         // Verify we create the new health code mapping
         verify(mockHealthCodeService).createMapping(TestConstants.TEST_STUDY);

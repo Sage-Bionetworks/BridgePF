@@ -13,12 +13,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.TIME_ZONE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -586,7 +580,7 @@ public class ParticipantServiceTest {
         doReturn(oldSession).when(cacheProvider).getUserSessionByUserId(ID);
 
         doReturn(lookup).when(optionsService).getOptions(STUDY.getStudyIdentifier(), HEALTH_CODE);
-        doReturn(null).when(lookup).getString(EXTERNAL_IDENTIFIER);
+        doReturn(null).when(lookup).getString(ParticipantOption.EXTERNAL_IDENTIFIER);
         
         participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
         
@@ -971,7 +965,7 @@ public class ParticipantServiceTest {
     @Test
     public void updateExternalIdValidatedRequiredWithSameValue() {
         setupExternalIdTest(true, true);
-        when(lookup.getString(EXTERNAL_IDENTIFIER)).thenReturn(EXTERNAL_ID);
+        when(lookup.getString(ParticipantOption.EXTERNAL_IDENTIFIER)).thenReturn(EXTERNAL_ID);
         when(optionsService.getOptions(STUDY.getStudyIdentifier(), HEALTH_CODE)).thenReturn(lookup);
         
         participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);

@@ -284,6 +284,8 @@ public class ParticipantService {
         // Do this first because if the ID has been taken or is invalid, we do not want to update anything else.
         externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());
 
+        // prevent optimistic locking exception
+        account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), account.getId()));
         updateAccountAndRoles(study, callerRoles, account, participant);
         
         // Only Admin and Worker accounts controlled by us should be able to bypass email verification. This is

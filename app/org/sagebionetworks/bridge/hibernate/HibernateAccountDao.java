@@ -311,6 +311,7 @@ public class HibernateAccountDao implements AccountDao {
         hibernateAccount.setCreatedOn(DateUtils.getCurrentMillisFromEpoch());
         hibernateAccount.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         hibernateAccount.setPasswordModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+        hibernateAccount.setMigrationVersion(AccountDao.MIGRATION_VERSION);
 
         // Create account
         try {
@@ -345,9 +346,15 @@ public class HibernateAccountDao implements AccountDao {
         if (persistedAccount == null) {
             throw new EntityNotFoundException(Account.class, "Account " + accountId + " not found");
         }
+        // None of these values should be changeable by the user.
         accountToUpdate.setStudyId(persistedAccount.getStudyId());
         accountToUpdate.setCreatedOn(persistedAccount.getCreatedOn());
+        accountToUpdate.setPasswordAlgorithm(persistedAccount.getPasswordAlgorithm());
+        accountToUpdate.setPasswordHash(persistedAccount.getPasswordHash());
         accountToUpdate.setPasswordModifiedOn(persistedAccount.getPasswordModifiedOn());
+        accountToUpdate.setReauthTokenAlgorithm(persistedAccount.getReauthTokenAlgorithm());
+        accountToUpdate.setReauthTokenHash(persistedAccount.getReauthTokenHash());
+        accountToUpdate.setReauthTokenModifiedOn(persistedAccount.getReauthTokenModifiedOn());
         if (!allowIdentifierUpdates) {
             accountToUpdate.setEmail(persistedAccount.getEmail());
             accountToUpdate.setPhone(persistedAccount.getPhone());
@@ -416,32 +423,37 @@ public class HibernateAccountDao implements AccountDao {
     private HibernateAccount getHibernateAccount(AccountId accountId) {
         // This is the only method where accessing null values is not an error, since we're searching for 
         // the value that was provided. There will be one.
+        HibernateAccount hibernateAccount = null;
+        
         AccountId unguarded = accountId.getUnguardedAccountId();
         if (unguarded.getId() != null) {
-            return hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
-        }
-        String query = null;
-        if (unguarded.getEmail() != null) {
-            query = String.format(EMAIL_QUERY, unguarded.getStudyId(), unguarded.getEmail());
-        } else if (unguarded.getHealthCode() != null) {
-            query = String.format(HEALTH_CODE_QUERY, unguarded.getStudyId(), unguarded.getHealthCode());
+            hibernateAccount = hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
+            if (hibernateAccount == null) {
+                return null;
+            }
         } else {
-            query = String.format(PHONE_QUERY, unguarded.getStudyId(), unguarded.getPhone().getNumber(), unguarded.getPhone().getRegionCode());
+            String query = null;
+            if (unguarded.getEmail() != null) {
+                query = String.format(EMAIL_QUERY, unguarded.getStudyId(), unguarded.getEmail());
+            } else if (unguarded.getHealthCode() != null) {
+                query = String.format(HEALTH_CODE_QUERY, unguarded.getStudyId(), unguarded.getHealthCode());
+            } else {
+                query = String.format(PHONE_QUERY, unguarded.getStudyId(), unguarded.getPhone().getNumber(), unguarded.getPhone().getRegionCode());
+            }
+            List<HibernateAccount> accountList = hibernateHelper.queryGet(query, null, null, HibernateAccount.class);
+            if (accountList.isEmpty()) {
+                return null;
+            }
+            hibernateAccount = accountList.get(0);
+            if (accountList.size() > 1) {
+                LOG.warn("Multiple accounts found email/phone query; example accountId=" + hibernateAccount.getId());
+            }
         }
-        List<HibernateAccount> accountList = hibernateHelper.queryGet(query, null, null, HibernateAccount.class);
-        if (accountList.isEmpty()) {
-            return null;
-        }
-        HibernateAccount hibernateAccount = accountList.get(0);
-        if (accountList.size() > 1) {
-            LOG.warn("Multiple accounts found email/phone query; example accountId=" + hibernateAccount.getId());
-        }
-
         // Migrate ParticipantOptions into this account record and bump the migration version in case it is saved as is.
         // New accounts will be created saving values 
-        if (hibernateAccount.getMigrationVersion() < 1 && hibernateAccount.getHealthCode() == null) {
+        if (hibernateAccount.getMigrationVersion() < 1 && hibernateAccount.getHealthCode() != null) {
             ParticipantOptionsLookup lookup = optionsDao.getOptions(hibernateAccount.getHealthCode());
-            hibernateAccount.setTimeZone(lookup.getTimeZone(TIME_ZONE));
+            hibernateAccount.setTimeZone(DateUtils.timeZoneToOffsetString(lookup.getTimeZone(TIME_ZONE)));
             hibernateAccount.setSharingScope(lookup.getEnum(SHARING_SCOPE, SharingScope.class));
             hibernateAccount.setNotifyByEmail(lookup.getBoolean(EMAIL_NOTIFICATIONS));
             hibernateAccount.setExternalId(lookup.getString(EXTERNAL_IDENTIFIER));
@@ -553,20 +565,23 @@ public class HibernateAccountDao implements AccountDao {
         hibernateAccount.setHealthId(genericAccount.getHealthId());
         hibernateAccount.setFirstName(genericAccount.getFirstName());
         hibernateAccount.setLastName(genericAccount.getLastName());
-        hibernateAccount.setPasswordAlgorithm(genericAccount.getPasswordAlgorithm());
-        hibernateAccount.setPasswordHash(genericAccount.getPasswordHash());
         hibernateAccount.setRoles(genericAccount.getRoles());
         hibernateAccount.setStatus(genericAccount.getStatus());
         hibernateAccount.setVersion(genericAccount.getVersion());
-        hibernateAccount.setTimeZone(genericAccount.getTimeZone());
+        hibernateAccount.setPasswordAlgorithm(genericAccount.getPasswordAlgorithm());
+        hibernateAccount.setPasswordHash(genericAccount.getPasswordHash());
+        hibernateAccount.setPasswordModifiedOn(genericAccount.getPasswordModifiedOn());
+        hibernateAccount.setReauthTokenAlgorithm(genericAccount.getReauthTokenAlgorithm());
+        hibernateAccount.setReauthTokenHash(genericAccount.getReauthTokenHash());
+        hibernateAccount.setReauthTokenModifiedOn(genericAccount.getReauthTokenModifiedOn());
+        hibernateAccount.setTimeZone(DateUtils.timeZoneToOffsetString(genericAccount.getTimeZone()));
         hibernateAccount.setSharingScope(genericAccount.getSharingScope());
         hibernateAccount.setNotifyByEmail(genericAccount.getNotifyByEmail());
         hibernateAccount.setExternalId(genericAccount.getExternalId());
         hibernateAccount.setDataGroups(genericAccount.getDataGroups());
         hibernateAccount.setLanguages(Lists.newArrayList(genericAccount.getLanguages()));
         hibernateAccount.setMigrationVersion(genericAccount.getMigrationVersion());
-        
-        
+
         if (genericAccount.getClientData() != null) {
             hibernateAccount.setClientData(genericAccount.getClientData().toString());
         } else {
@@ -659,12 +674,16 @@ public class HibernateAccountDao implements AccountDao {
         account.setLastName(hibernateAccount.getLastName());
         account.setPasswordAlgorithm(hibernateAccount.getPasswordAlgorithm());
         account.setPasswordHash(hibernateAccount.getPasswordHash());
+        account.setPasswordModifiedOn(hibernateAccount.getPasswordModifiedOn());
+        account.setReauthTokenAlgorithm(hibernateAccount.getReauthTokenAlgorithm());
+        account.setReauthTokenHash(hibernateAccount.getReauthTokenHash());
+        account.setReauthTokenModifiedOn(hibernateAccount.getReauthTokenModifiedOn());
         account.setHealthCode(hibernateAccount.getHealthCode());
         account.setHealthId(hibernateAccount.getHealthId());
         account.setStatus(hibernateAccount.getStatus());
         account.setRoles(hibernateAccount.getRoles());
         account.setVersion(hibernateAccount.getVersion());
-        account.setTimeZone(hibernateAccount.getTimeZone());
+        account.setTimeZone(DateUtils.parseZoneFromOffsetString(hibernateAccount.getTimeZone()));
         account.setSharingScope(hibernateAccount.getSharingScope());
         account.setNotifyByEmail(hibernateAccount.getNotifyByEmail());
         account.setExternalId(hibernateAccount.getExternalId());

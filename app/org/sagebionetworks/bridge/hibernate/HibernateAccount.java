@@ -22,7 +22,6 @@ import javax.persistence.MapKeyColumn;
 import javax.persistence.Table;
 import javax.persistence.Version;
 
-import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -61,7 +60,7 @@ public class HibernateAccount {
     private AccountStatus status;
     private int version;
     private String clientData;
-    private DateTimeZone timeZone;
+    private String timeZone;
     private SharingScope sharingScope;
     private Boolean notifyByEmail;
     private String externalId;
@@ -387,12 +386,11 @@ public class HibernateAccount {
         this.version = version;
     }
     
-    
-    public DateTimeZone getTimeZone() {
+    public String getTimeZone() {
         return timeZone;
     }
 
-    public void setTimeZone(DateTimeZone timeZone) {
+    public void setTimeZone(String timeZone) {
         this.timeZone = timeZone;
     }
 
