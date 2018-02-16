@@ -328,9 +328,15 @@ public class HibernateAccountDao implements AccountDao {
         if (persistedAccount == null) {
             throw new EntityNotFoundException(Account.class, "Account " + accountId + " not found");
         }
+        // None of these values should be changeable by the user.
         accountToUpdate.setStudyId(persistedAccount.getStudyId());
         accountToUpdate.setCreatedOn(persistedAccount.getCreatedOn());
+        accountToUpdate.setPasswordAlgorithm(persistedAccount.getPasswordAlgorithm());
+        accountToUpdate.setPasswordHash(persistedAccount.getPasswordHash());
         accountToUpdate.setPasswordModifiedOn(persistedAccount.getPasswordModifiedOn());
+        accountToUpdate.setReauthTokenAlgorithm(persistedAccount.getReauthTokenAlgorithm());
+        accountToUpdate.setReauthTokenHash(persistedAccount.getReauthTokenHash());
+        accountToUpdate.setReauthTokenModifiedOn(persistedAccount.getReauthTokenModifiedOn());
         if (!allowIdentifierUpdates) {
             accountToUpdate.setEmail(persistedAccount.getEmail());
             accountToUpdate.setPhone(persistedAccount.getPhone());
@@ -523,11 +529,15 @@ public class HibernateAccountDao implements AccountDao {
         hibernateAccount.setHealthId(genericAccount.getHealthId());
         hibernateAccount.setFirstName(genericAccount.getFirstName());
         hibernateAccount.setLastName(genericAccount.getLastName());
-        hibernateAccount.setPasswordAlgorithm(genericAccount.getPasswordAlgorithm());
-        hibernateAccount.setPasswordHash(genericAccount.getPasswordHash());
         hibernateAccount.setRoles(genericAccount.getRoles());
         hibernateAccount.setStatus(genericAccount.getStatus());
         hibernateAccount.setVersion(genericAccount.getVersion());
+        hibernateAccount.setPasswordAlgorithm(genericAccount.getPasswordAlgorithm());
+        hibernateAccount.setPasswordHash(genericAccount.getPasswordHash());
+        hibernateAccount.setPasswordModifiedOn(genericAccount.getPasswordModifiedOn());
+        hibernateAccount.setReauthTokenAlgorithm(genericAccount.getReauthTokenAlgorithm());
+        hibernateAccount.setReauthTokenHash(genericAccount.getReauthTokenHash());
+        hibernateAccount.setReauthTokenModifiedOn(genericAccount.getReauthTokenModifiedOn());
         
         if (genericAccount.getClientData() != null) {
             hibernateAccount.setClientData(genericAccount.getClientData().toString());
@@ -621,6 +631,10 @@ public class HibernateAccountDao implements AccountDao {
         account.setLastName(hibernateAccount.getLastName());
         account.setPasswordAlgorithm(hibernateAccount.getPasswordAlgorithm());
         account.setPasswordHash(hibernateAccount.getPasswordHash());
+        account.setPasswordModifiedOn(hibernateAccount.getPasswordModifiedOn());
+        account.setReauthTokenAlgorithm(hibernateAccount.getReauthTokenAlgorithm());
+        account.setReauthTokenHash(hibernateAccount.getReauthTokenHash());
+        account.setReauthTokenModifiedOn(hibernateAccount.getReauthTokenModifiedOn());
         account.setHealthCode(hibernateAccount.getHealthCode());
         account.setHealthId(hibernateAccount.getHealthId());
         account.setStatus(hibernateAccount.getStatus());
