@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.validators.SignInValidator.EMAIL_SIGNIN
 import static org.sagebionetworks.bridge.validators.SignInValidator.PHONE_SIGNIN_REQUEST;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
@@ -18,6 +19,7 @@ import java.util.function.Supplier;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
@@ -35,6 +37,8 @@ import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.redis.JedisOps;
+import org.sagebionetworks.bridge.redis.JedisTransaction;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -49,8 +53,9 @@ import org.springframework.validation.Validator;
 
 @Component
 public class AccountWorkflowService {
-    
     private static final String BASE_URL = BridgeConfigFactory.getConfig().get("webservices.url");
+    static final String CONFIG_KEY_CHANNEL_THROTTLE_MAX_REQUESTS = "channel.throttle.max.requests";
+    static final String CONFIG_KEY_CHANNEL_THROTTLE_TIMEOUT_SECONDS = "channel.throttle.timeout.seconds";
     private static final String PASSWORD_RESET_TOKEN_EXPIRED = "Password reset token has expired (or already been used).";
     private static final String VERIFY_EMAIL_TOKEN_EXPIRED = "Email verification token has expired (or already been used).";
     private static final String RESET_PASSWORD_URL = "/mobile/resetPassword.html?study=%s&sptoken=%s";
@@ -70,7 +75,15 @@ public class AccountWorkflowService {
     
     static final int EXPIRE_IN_SECONDS = 60*60*2; // 2 hours 
     static final int SESSION_SIGNIN_EXPIRE_IN_SECONDS = 60*5; // 5 minutes
-    
+
+    // Enumeration of request types that we want to throttle on. Used to differentiate between request types and
+    // generate cache keys.
+    private enum ThrottleRequestType {
+        EMAIL_SIGNIN,
+        PHONE_SIGNIN,
+        VERIFY_EMAIL,
+    }
+
     private static class VerificationData {
         private final String studyId;
         private final String userId;
@@ -88,16 +101,31 @@ public class AccountWorkflowService {
             return userId;
         }
     }
-    
+
+    // Config values
+    private int channelThrottleMaxRequests;
+    private int channelThrottleTimeoutSeconds;
+
+    // Dependent services
+    private JedisOps jedisOps;
     private StudyService studyService;
-    
     private SendMailService sendMailService;
-    
     private AccountDao accountDao;
-    
     private CacheProvider cacheProvider;
-    
     private NotificationsService notificationsService;
+
+    /** Bridge config, used to get config values such as throttle configuration. */
+    @Autowired
+    public final void setBridgeConfig(BridgeConfig bridgeConfig) {
+        this.channelThrottleMaxRequests = bridgeConfig.getInt(CONFIG_KEY_CHANNEL_THROTTLE_MAX_REQUESTS);
+        this.channelThrottleTimeoutSeconds = bridgeConfig.getInt(CONFIG_KEY_CHANNEL_THROTTLE_TIMEOUT_SECONDS);
+    }
+
+    /** JedisOps, used for basic Redis operations, like expire() and incr(). */
+    @Autowired
+    public final void setJedisOps(JedisOps jedisOps) {
+        this.jedisOps = jedisOps;
+    }
 
     @Autowired
     final void setStudyService(StudyService studyService) {
@@ -131,7 +159,7 @@ public class AccountWorkflowService {
     final AtomicLong getPhoneSignInRequestInMillis() {
         return phoneSignInRequestInMillis;
     }
-    
+
     /**
      * Send email verification token as part of creating an account that requires an email address be
      * verified. We assume that an account has been created and that email verification should be sent
@@ -141,20 +169,28 @@ public class AccountWorkflowService {
         checkNotNull(study);
         checkArgument(isNotBlank(userId));
         
-        if (recipientEmail != null) {
-            String sptoken = getNextToken();
-            
-            saveVerification(sptoken, new VerificationData(study.getIdentifier(), userId));
-            
-            String url = getVerifyEmailURL(study, sptoken);
-            
-            BasicEmailProvider provider = new BasicEmailProvider.Builder()
+        if (recipientEmail == null) {
+            // Can't send email verification if there's no email.
+            return;
+        }
+
+        if (isRequestThrottled(ThrottleRequestType.VERIFY_EMAIL, userId)) {
+            // Too many requests. Throttle.
+            return;
+        }
+
+        String sptoken = getNextToken();
+
+        saveVerification(sptoken, new VerificationData(study.getIdentifier(), userId));
+
+        String url = getVerifyEmailURL(study, sptoken);
+
+        BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
                 .withEmailTemplate(study.getVerifyEmailTemplate())
                 .withRecipientEmail(recipientEmail)
                 .withToken(URL_TOKEN, url).build();
-            sendMailService.sendEmail(provider);         
-        }
+        sendMailService.sendEmail(provider);
     }
     
     /**
@@ -209,10 +245,9 @@ public class AccountWorkflowService {
             String emailSignIn = null;
             if (study.isEmailSignInEnabled()) {
                 SignIn signIn = new SignIn.Builder().withEmail(account.getEmail()).withStudy(study.getIdentifier()).build();
-                emailSignIn = requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, EMAIL_CACHE_KEY_FUNC, emailSignInRequestInMillis, 
-                        signIn, () -> getNextToken(), (theStudy, token) -> {
-                    return getEmailSignInURL(signIn.getEmail(), theStudy.getIdentifier(), token);
-                });
+                emailSignIn = requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, EMAIL_CACHE_KEY_FUNC, emailSignInRequestInMillis,
+                        signIn, false, this::getNextToken,
+                        (theStudy, token) -> getEmailSignInURL(signIn.getEmail(), theStudy.getIdentifier(), token));
             }
             sendPasswordResetRelatedEmail(study, account.getEmail(), emailSignIn, study.getAccountExistsTemplate());    
         } else if (account.getPhone() != null && account.getPhoneVerified()) {
@@ -315,7 +350,7 @@ public class AccountWorkflowService {
      */
     public void requestPhoneSignIn(SignIn signIn) {
         requestChannelSignIn(PHONE, PHONE_SIGNIN_REQUEST, PHONE_CACHE_KEY_FUNC, phoneSignInRequestInMillis, 
-                signIn, () -> getNextPhoneToken(), (study, token) -> {
+                signIn, true, this::getNextPhoneToken, (study, token) -> {
             // Put a dash in the token so it's easier to enter into the UI. All this should
             // eventually come from a template
             String formattedToken = token.substring(0,3) + "-" + token.substring(3,6); 
@@ -335,7 +370,7 @@ public class AccountWorkflowService {
      */
     public void requestEmailSignIn(SignIn signIn) {
         requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, EMAIL_CACHE_KEY_FUNC, emailSignInRequestInMillis, 
-                signIn, () -> getNextToken(), (study, token) -> {
+                signIn, true, this::getNextToken, (study, token) -> {
             String url = getEmailSignInURL(signIn.getEmail(), study.getIdentifier(), token);
             
             // Email is URL encoded, which is probably a mistake. We're now providing an URL that's will be 
@@ -356,7 +391,7 @@ public class AccountWorkflowService {
     }
     
     private String requestChannelSignIn(ChannelType channelType, Validator validator, Function<SignIn, String> cacheKeySupplier,
-            AtomicLong atomicLong, SignIn signIn, Supplier<String> tokenSupplier,
+            AtomicLong atomicLong, SignIn signIn, boolean shouldThrottle, Supplier<String> tokenSupplier,
             BiFunction<Study, String, String> messageSender) {
         long startTime = System.currentTimeMillis();
         Validate.entityThrowingException(validator, signIn);
@@ -383,6 +418,14 @@ public class AccountWorkflowService {
             }
             return null;
         }
+
+        ThrottleRequestType throttleType = channelType == EMAIL ? ThrottleRequestType.EMAIL_SIGNIN :
+                ThrottleRequestType.PHONE_SIGNIN;
+        if (shouldThrottle && isRequestThrottled(throttleType, account.getId())) {
+            // Too many requests. Throttle.
+            return null;
+        }
+
         String cacheKey = cacheKeySupplier.apply(signIn);
         String token = cacheProvider.getObject(cacheKey, String.class);
         if (token == null) {
@@ -498,5 +541,23 @@ public class AccountWorkflowService {
             strings[i] = BridgeUtils.encodeURIComponent(strings[i]);
         }
         return BASE_URL + String.format(formatString, (Object[])strings);
+    }
+
+    // Check if the request is throttled. Key is either email address or phone, depending on the type.
+    private boolean isRequestThrottled(ThrottleRequestType type, String userId) {
+        // Generate key, which is in the form of channel-throttling:[type]:[userId].
+        String cacheKey = "channel-throttling:" + type.toString().toLowerCase() + ":" + userId;
+
+        // We use Jedis to atomically increment the key value, and then set an expiration on it. The return value of
+        // exec() is the list of Jedis results in order. For the incr(), the result is the value after incrementing.
+        // This is the number of times we've requested in the last time period. If this exceeds the max requests, we're
+        // throttled.
+        int numRequests;
+        try (JedisTransaction transaction = jedisOps.getTransaction(cacheKey)) {
+            List<Object> resultList = transaction.incr(cacheKey).expire(cacheKey, channelThrottleTimeoutSeconds)
+                    .exec();
+            numRequests = ((Long) resultList.get(0)).intValue();
+        }
+        return numRequests > channelThrottleMaxRequests;
     }
 }
