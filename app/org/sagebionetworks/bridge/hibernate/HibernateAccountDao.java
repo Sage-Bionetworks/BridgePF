@@ -64,6 +64,7 @@ import org.sagebionetworks.bridge.services.HealthCodeService;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
+import com.newrelic.agent.deps.com.google.common.collect.Sets;
 
 /** Hibernate implementation of Account Dao. */
 @Component
@@ -557,6 +558,14 @@ public class HibernateAccountDao implements AccountDao {
         hibernateAccount.setRoles(genericAccount.getRoles());
         hibernateAccount.setStatus(genericAccount.getStatus());
         hibernateAccount.setVersion(genericAccount.getVersion());
+        hibernateAccount.setTimeZone(genericAccount.getTimeZone());
+        hibernateAccount.setSharingScope(genericAccount.getSharingScope());
+        hibernateAccount.setNotifyByEmail(genericAccount.getNotifyByEmail());
+        hibernateAccount.setExternalId(genericAccount.getExternalId());
+        hibernateAccount.setDataGroups(genericAccount.getDataGroups());
+        hibernateAccount.setLanguages(Lists.newArrayList(genericAccount.getLanguages()));
+        hibernateAccount.setMigrationVersion(genericAccount.getMigrationVersion());
+        
         
         if (genericAccount.getClientData() != null) {
             hibernateAccount.setClientData(genericAccount.getClientData().toString());
@@ -655,6 +664,13 @@ public class HibernateAccountDao implements AccountDao {
         account.setStatus(hibernateAccount.getStatus());
         account.setRoles(hibernateAccount.getRoles());
         account.setVersion(hibernateAccount.getVersion());
+        account.setTimeZone(hibernateAccount.getTimeZone());
+        account.setSharingScope(hibernateAccount.getSharingScope());
+        account.setNotifyByEmail(hibernateAccount.getNotifyByEmail());
+        account.setExternalId(hibernateAccount.getExternalId());
+        account.setDataGroups(hibernateAccount.getDataGroups());
+        account.setLanguages(Sets.newLinkedHashSet(hibernateAccount.getLanguages()));
+        account.setMigrationVersion(hibernateAccount.getMigrationVersion());
         
         // For accounts prior to the introduction of the email/phone verification flags, where 
         // the flag was not set on creation or verification of the email address, return the right value.

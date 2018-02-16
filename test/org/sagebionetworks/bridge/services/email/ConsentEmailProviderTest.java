@@ -46,7 +46,8 @@ public class ConsentEmailProviderTest {
         study.setSponsorName("Sponsor Name");
         study.setSupportEmail("sender@default.com");
         study.setConsentNotificationEmail("consent@consent.com");
-        
+        study.setConsentNotificationEmailVerified(true);
+
         participant = new StudyParticipant.Builder().withEmail("user@user.com").build();
     }
 
@@ -198,6 +199,36 @@ public class ConsentEmailProviderTest {
         validateNewDocBody(body);
 
         // We can't validate the PDF body since that's encoded in PDF format.
+    }
+
+    @Test
+    public void consentNotificationEmailVerifiedNull() throws Exception {
+        // For backwards-compatibility, consentNotificationEmailVerified=null means we still send it to the consent
+        // notification email.
+        study.setConsentNotificationEmailVerified(null);
+
+        ConsentSignature sig = makeSignatureWithoutImage();
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, PST, participant.getEmail(), sig,
+                SharingScope.NO_SHARING, NEW_DOCUMENT_FRAGMENT, consentBodyTemplate);
+
+        // Validate common elements.
+        MimeTypeEmail email = provider.getMimeTypeEmail();
+        validateCommonElements(email);
+    }
+
+    @Test
+    public void consentNotificationEmailVerifiedFalse() throws Exception {
+        study.setConsentNotificationEmailVerified(false);
+
+        ConsentSignature sig = makeSignatureWithoutImage();
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, PST, participant.getEmail(), sig,
+                SharingScope.NO_SHARING, NEW_DOCUMENT_FRAGMENT, consentBodyTemplate);
+
+        // Validate email recipients does not include consent notification email.
+        MimeTypeEmail email = provider.getMimeTypeEmail();
+        List<String> recipientList = email.getRecipientAddresses();
+        assertEquals(1, recipientList.size());
+        assertEquals("user@user.com", recipientList.get(0));
     }
 
     private static ConsentSignature makeSignatureWithoutImage() {

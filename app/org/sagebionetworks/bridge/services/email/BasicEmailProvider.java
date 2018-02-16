@@ -16,19 +16,36 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.StringUtils;
 
 public class BasicEmailProvider extends MimeTypeEmailProvider {
-
+    private final String overrideSenderEmail;
     private final Set<String> recipientEmails;
     private final Map<String,String> tokenMap;
     private final EmailTemplate template;
     
-    private BasicEmailProvider(Study study, Map<String,String> tokenMap, Set<String> recipientEmails, EmailTemplate template) {
+    private BasicEmailProvider(Study study, String overrideSenderEmail, Map<String,String> tokenMap,
+            Set<String> recipientEmails, EmailTemplate template) {
         super(study);
+        this.overrideSenderEmail = overrideSenderEmail;
         this.recipientEmails = recipientEmails;
         this.tokenMap = tokenMap;
         this.template = template;
     }
+
+    /**
+     * If overrideSenderEmail is specified, returns that. Otherwise, returns the plain sender email from the study,
+     * as specified in {@link MimeTypeEmailProvider#getPlainSenderEmail}.
+     */
+    @Override
+    public String getPlainSenderEmail() {
+        if (StringUtils.isNotBlank(overrideSenderEmail)) {
+            return overrideSenderEmail;
+        } else {
+            return super.getPlainSenderEmail();
+        }
+    }
+
     public Set<String> getRecipientEmails() {
         return recipientEmails;
     }
@@ -66,6 +83,7 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
 
     public static class Builder {
         private Study study;
+        private String overrideSenderEmail;
         private Map<String,String> tokenMap = Maps.newHashMap();
         private Set<String> recipientEmails = Sets.newHashSet();
         private EmailTemplate template;
@@ -74,6 +92,16 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
             this.study = study;
             return this;
         }
+
+        /**
+         * Specify the sender email, instead of getting it from the study. This is the plain, unformmated email, for
+         * example "example@example.com".
+         */
+        public Builder withOverrideSenderEmail(String overrideSenderEmail) {
+            this.overrideSenderEmail = overrideSenderEmail;
+            return this;
+        }
+
         public Builder withRecipientEmail(String recipientEmail) {
             this.recipientEmails.add(recipientEmail);
             return this;
@@ -89,8 +117,8 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
         public BasicEmailProvider build() {
             checkNotNull(study);
             checkNotNull(template);
-            
-            return new BasicEmailProvider(study, tokenMap, recipientEmails, template);
+
+            return new BasicEmailProvider(study, overrideSenderEmail, tokenMap, recipientEmails, template);
         }
     }
 }

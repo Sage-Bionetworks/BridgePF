@@ -157,14 +157,16 @@ public class ConsentServiceTest {
         long signedOn = signature.getSignedOn();
         
         // Before consent if you ask, no sharing
-        SharingScope scope = optionsService.getOptions(testUser.getHealthCode()).getEnum(SHARING_SCOPE, SharingScope.class);
+        SharingScope scope = optionsService.getOptions(testUser.getStudyIdentifier(), testUser.getHealthCode())
+                .getEnum(SHARING_SCOPE, SharingScope.class);
         assertEquals(SharingScope.NO_SHARING, scope);
         
-        consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getStudyParticipant(),
-                signature, SharingScope.ALL_QUALIFIED_RESEARCHERS, false);
+        consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(),
+                testUser.getStudyParticipant(), signature, SharingScope.ALL_QUALIFIED_RESEARCHERS, false);
         
         // Verify we just set the options
-        scope = optionsService.getOptions(testUser.getHealthCode()).getEnum(SHARING_SCOPE, SharingScope.class);
+        scope = optionsService.getOptions(testUser.getStudyIdentifier(), testUser.getHealthCode())
+                .getEnum(SHARING_SCOPE, SharingScope.class);
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, scope);
         
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
