@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
@@ -32,6 +34,22 @@ public class JsonUtils {
     private static final String MULTIVALUE_PROPERTY = "multivalue";
     public static final TypeReference<Map<String, Object>> TYPE_REF_RAW_MAP =
             new TypeReference<Map<String, Object>>(){};
+
+    /**
+     * Parses a JSON String value in ISO8601 format as a Joda DateTime. Returns null if the value is not a valid
+     * ISO8601 date-time.
+     */
+    public static DateTime asDateTime(JsonNode parent, String property) {
+        String dateTimeStr = asText(parent, property);
+        if (StringUtils.isBlank(dateTimeStr)) {
+            return null;
+        }
+        try {
+            return DateTime.parse(dateTimeStr);
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
 
     public static String asText(JsonNode parent, String property) {
         if (parent != null && parent.hasNonNull(property)) {
