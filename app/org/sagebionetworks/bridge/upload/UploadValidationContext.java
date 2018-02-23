@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.upload;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -18,11 +19,11 @@ public class UploadValidationContext {
     private Upload upload;
     private boolean success = true;
     private List<String> messageList = new ArrayList<>();
-    private byte[] data;
-    private byte[] decryptedData;
-    private Map<String, byte[]> unzippedDataMap;
-    private Map<String, JsonNode> jsonDataMap;
-    private Integer appVersion;
+    private File tempDir;
+    private File dataFile;
+    private File decryptedDataFile;
+    private Map<String, File> unzippedDataFileMap;
+    private JsonNode infoJsonNode;
     private HealthDataRecord healthDataRecord;
     private Map<String, byte[]> attachmentsByFieldName;
     private String recordId;
@@ -100,57 +101,64 @@ public class UploadValidationContext {
         messageList.add(msg);
     }
 
-    /** Raw upload data as bytes. This is created by S3DownloadHandler and read by the DecryptHandler. */
-    public byte[] getData() {
-        return data;
+    /** Temporary directory in which we process the upload. */
+    public File getTempDir() {
+        return tempDir;
     }
 
-    /** @see #getData */
-    public void setData(byte[] data) {
-        this.data = data;
+    /** @see #getTempDir */
+    public void setTempDir(File tempDir) {
+        this.tempDir = tempDir;
     }
 
-    /** Decrypted upload data as bytes. This is created by DecryptHandler and read by UnzipHandler. */
-    public byte[] getDecryptedData() {
-        return decryptedData;
+    /** Raw upload data file. This is created by S3DownloadHandler and read by the DecryptHandler. */
+    public File getDataFile() {
+        return dataFile;
     }
 
-    /** @see #getDecryptedData */
-    public void setDecryptedData(byte[] decryptedData) {
-        this.decryptedData = decryptedData;
+    /** @see #getDataFile */
+    public void setDataFile(File dataFile) {
+        this.dataFile = dataFile;
+    }
+
+    /** Decrypted upload data file. This is created by DecryptHandler and read by UnzipHandler. */
+    public File getDecryptedDataFile() {
+        return decryptedDataFile;
+    }
+
+    /** @see #getDecryptedDataFile */
+    public void setDecryptedDataFile(File decryptedDataFile) {
+        this.decryptedDataFile = decryptedDataFile;
     }
 
     /**
-     * Unzipped data as bytes, keyed by filename. This is initially created by the UnzipHandler. The ParseJsonHandler
-     * will read this and remove entries that can be parsed into JSON. Non-JSON entries will still remain in this map.
-     * This is also read by the IosSchemaValidationHandler.
+     * Unzipped data files, keyed by filename. This is created by the UnzipHandler and read by InitRecordHandler, as
+     * well as UploadFormatHandler, and its inner handlers.
      */
-    public Map<String, byte[]> getUnzippedDataMap() {
-        return unzippedDataMap;
+    public Map<String, File> getUnzippedDataFileMap() {
+        return unzippedDataFileMap;
     }
 
-    /** @see #getUnzippedDataMap */
-    public void setUnzippedDataMap(Map<String, byte[]> unzippedDataMap) {
-        this.unzippedDataMap = unzippedDataMap;
+    /** @see #getUnzippedDataFileMap */
+    public void setUnzippedDataFileMap(Map<String, File> unzippedDataFileMap) {
+        this.unzippedDataFileMap = unzippedDataFileMap;
+    }
+
+    // todo doc
+    // Created by InitRecordHandler. Referenced by UploadFormatHandler and its children.
+    public JsonNode getInfoJsonNode() {
+        return infoJsonNode;
+    }
+
+    /** @see #getInfoJsonNode */
+    public void setInfoJsonNode(JsonNode infoJsonNode) {
+        this.infoJsonNode = infoJsonNode;
     }
 
     /**
-     * Parsed JSON data, keyed by filename. This is created by the ParseJsonHandler and read by the
-     * IosSchemaValidationHandler.
-     */
-    public Map<String, JsonNode> getJsonDataMap() {
-        return jsonDataMap;
-    }
-
-    /** @see #getJsonDataMap */
-    public void setJsonDataMap(Map<String, JsonNode> jsonDataMap) {
-        this.jsonDataMap = jsonDataMap;
-    }
-
-    /**
-     * Health Data Record, created from the uploaded data.
-     * This is initially created by IosSchemaValidationHandler, is further updated by the
-     * TranscribeConsentHandler, and is finalized and persisted by UploadArtifactsHandler.
+     * Health Data Record, created from the uploaded data. This is initially created by InitRecordHandler, is further
+     * updated by UploadFormatHandler and its inner handlers and by TranscribeConsentHandler, and is finalized and
+     * persisted by UploadArtifactsHandler.
      */
     public HealthDataRecord getHealthDataRecord() {
         return healthDataRecord;
@@ -159,21 +167,6 @@ public class UploadValidationContext {
     /** @see #getHealthDataRecord */
     public void setHealthDataRecord(HealthDataRecord healthDataRecord) {
         this.healthDataRecord = healthDataRecord;
-    }
-
-    /**
-     * Map of health data attachments, keyed off the field name in the health data record. These files will be uploaded
-     * to external storage (most likely S3) with metadata stored in Health Data Attachments table and field references
-     * in the health data record. This is created by IosSchemaValidationHandler and is uploaded by
-     * UploadArtifactsHandler.
-     */
-    public Map<String, byte[]> getAttachmentsByFieldName() {
-        return attachmentsByFieldName;
-    }
-
-    /** @see #getAttachmentsByFieldName */
-    public void setAttachmentsByFieldName(Map<String, byte[]> attachmentsByFieldName) {
-        this.attachmentsByFieldName = attachmentsByFieldName;
     }
 
     /** ID of the health data record created from the upload. This is created by the UploadArtifactsHandler. */
@@ -208,11 +201,9 @@ public class UploadValidationContext {
         copy.study = this.study;
         copy.upload = this.upload;
         copy.success = this.success;
-        copy.data = this.data;
-        copy.decryptedData = this.decryptedData;
-        copy.unzippedDataMap = this.unzippedDataMap;
-        copy.jsonDataMap = this.jsonDataMap;
-        copy.appVersion = this.appVersion;
+        copy.dataFile = this.dataFile;
+        copy.decryptedDataFile = this.decryptedDataFile;
+        copy.unzippedDataFileMap = this.unzippedDataFileMap;
         copy.healthDataRecord = this.healthDataRecord;
         copy.attachmentsByFieldName = this.attachmentsByFieldName;
         copy.recordId = this.recordId;

@@ -1,17 +1,23 @@
 package org.sagebionetworks.bridge.upload;
 
-import java.util.Iterator;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nonnull;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.file.FileHelper;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -28,10 +34,8 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
 /**
  * <p>
  * Processes uploads for the v2_generic format. This handler reads from
- * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getUnzippedDataMap} and
- * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getJsonDataMap} and updates the existing record in
- * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getHealthDataRecord} and the attachment map in
- * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getAttachmentsByFieldName}.
+ * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getUnzippedDataFileMap} and updates the existing record in
+ * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getHealthDataRecord}.
  * </p>
  * <p>
  * There is some overlap between this code and IosSchemaValidationHandler. However, we have opted to build this handler
@@ -45,9 +49,27 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
  */
 @Component
 public class GenericUploadFormatHandler implements UploadValidationHandler {
+    private static final Logger LOG = LoggerFactory.getLogger(GenericUploadFormatHandler.class);
 
+    private FileHelper fileHelper;
     private SurveyService surveyService;
+    private UploadFileHelper uploadFileHelper;
     private UploadSchemaService uploadSchemaService;
+
+    /** File helper, used to check file sizes before parsing them into memory. */
+    @Autowired
+    public final void setFileHelper(FileHelper fileHelper) {
+        this.fileHelper = fileHelper;
+    }
+
+    /**
+     * Upload file helper, used to find upload fields in a list of files, and parse files and upload attachments as
+     * needed.
+     */
+    @Autowired
+    public final void setUploadFileHelper(UploadFileHelper uploadFileHelper) {
+        this.uploadFileHelper = uploadFileHelper;
+    }
 
     /** Survey service, to get the survey if this upload is a survey. Configured by Spring. */
     @Autowired
@@ -64,15 +86,13 @@ public class GenericUploadFormatHandler implements UploadValidationHandler {
     /** {@inheritDoc} */
     @Override
     public void handle(@Nonnull UploadValidationContext context) throws UploadValidationException {
-        Map<String, byte[]> attachmentMap = context.getAttachmentsByFieldName();
-        Map<String, JsonNode> jsonDataMap = context.getJsonDataMap();
         HealthDataRecord record = context.getHealthDataRecord();
         ObjectNode dataMap = (ObjectNode) record.getData();
+        JsonNode infoJson = context.getInfoJsonNode();
         StudyIdentifier studyId = context.getStudy();
-        Map<String, byte[]> unzippedDataMap = context.getUnzippedDataMap();
+        Map<String, File> unzippedDataFileMap = context.getUnzippedDataFileMap();
 
         // Get schema from info.json
-        JsonNode infoJson = jsonDataMap.get(UploadUtil.FILENAME_INFO_JSON);
         UploadSchema schema = getUploadSchema(studyId, infoJson);
         record.setSchemaId(schema.getSchemaId());
         record.setSchemaRevision(schema.getRevision());
@@ -82,7 +102,7 @@ public class GenericUploadFormatHandler implements UploadValidationHandler {
         String dataFilename = JsonUtils.asText(infoJson, UploadUtil.FIELD_DATA_FILENAME);
 
         // Parse data into the health data record, using the schema.
-        handleData(context, dataFilename, jsonDataMap, unzippedDataMap, schema, dataMap, attachmentMap);
+        handleData(context, dataFilename, unzippedDataFileMap, schema, dataMap);
     }
 
     // Helper method to get a schema based on inputs from info.json.
@@ -152,66 +172,56 @@ public class GenericUploadFormatHandler implements UploadValidationHandler {
 
     // Helper method that, copies health data from the jsonDataMap and unzippedData maps to the dataMap or
     // attachmentMap, based on a schema. Also handles flattening and sanitization.
-    private static void handleData(UploadValidationContext context, String dataFilename,
-            Map<String, JsonNode> jsonDataMap, Map<String, byte[]> unzippedDataMap, UploadSchema schema,
-            ObjectNode dataMap, Map<String, byte[]> attachmentMap) {
-        JsonNode dataFileNode = null;
-        if (StringUtils.isNotBlank(dataFilename)) {
-            dataFileNode = jsonDataMap.get(dataFilename);
-        }
+    private void handleData(UploadValidationContext context, String dataFilename,
+            Map<String, File> unzippedDataFileMap, UploadSchema schema, ObjectNode dataMap)
+            throws UploadValidationException {
+        String uploadId = context.getUploadId();
 
-        // Get flattened JSON data map (key is filename.fieldname), because schemas can reference fields either by
-        // filename.fieldname or wholly by filename.
-        // Note that this includes both the flattened map (filename.fieldname) and the whole file (filename).
-        Map<String, JsonNode> flattenedJsonDataMap = UploadUtil.flattenJsonDataMap(jsonDataMap);
+        JsonNode dataFileNode = NullNode.instance;
+        if (StringUtils.isNotBlank(dataFilename) && unzippedDataFileMap.containsKey(dataFilename)) {
+            // Parse data file. Avoid parsing large files into memory. If it's larger than 2mb, warn. (In the future,
+            // this is a hard limit and will throw.)
+            File dataFile = unzippedDataFileMap.get(dataFilename);
+            long dataFileSize = fileHelper.fileSize(dataFile);
+            if (dataFileSize > UploadUtil.FILE_SIZE_LIMIT_PARSED_JSON) {
+                LOG.warn("Upload data file exceeds max size, uploadId=" + uploadId + ", filename=" + dataFilename +
+                        ", fileSize=" + dataFileSize + " bytes");
+            }
 
-        // Add the fields from the file specified in dataFilename as top-level keys in the flattened map.
-        if (dataFileNode != null) {
-            Iterator<String> fieldNameIter = dataFileNode.fieldNames();
-            while (fieldNameIter.hasNext()) {
-                String oneFieldName = fieldNameIter.next();
-                flattenedJsonDataMap.put(oneFieldName, dataFileNode.get(oneFieldName));
+            try (InputStream dataFileInputStream = fileHelper.getInputStream(dataFile)) {
+                dataFileNode = BridgeObjectMapper.get().readTree(dataFileInputStream);
+            } catch (IOException ex) {
+                throw new UploadValidationException("Error parsing upload data file, uploadId=" + uploadId +
+                        ", fileName=" + dataFilename, ex);
             }
         }
 
-        // Sanitize field names for both JSON and non-JSON.
-        Map<String, JsonNode> sanitizedFlattenedJsonDataMap = UploadUtil.sanitizeFieldNames(flattenedJsonDataMap);
-        Map<String, byte[]> sanitizedUnzippedDataMap = UploadUtil.sanitizeFieldNames(unzippedDataMap);
+        Map<String, File> sanitizedUnzippedDataFileMap = UploadUtil.sanitizeFieldNames(unzippedDataFileMap);
+        Map<String, Map<String, JsonNode>> parsedSanitizedJsonFileCache = new HashMap<>();
 
         // Using schema, copy fields over to data map. Or if it's an attachment, add it to the attachment map.
         for (UploadFieldDefinition oneFieldDef : schema.getFieldDefinitions()) {
             String fieldName = oneFieldDef.getName();
+            JsonNode fieldNode;
 
-            if (sanitizedUnzippedDataMap.containsKey(fieldName)) {
-                UploadUtil.addAttachment(attachmentMap, fieldName, sanitizedUnzippedDataMap.get(fieldName));
-            } else if (sanitizedFlattenedJsonDataMap.containsKey(fieldName)) {
-                copyJsonField(context, sanitizedFlattenedJsonDataMap.get(fieldName), oneFieldDef, dataMap,
-                        attachmentMap);
+            if (dataFileNode.has(fieldName)) {
+                // If it's in the submitted data file, just use it.
+                JsonNode fieldNodeFromDataFile = dataFileNode.get(fieldName);
+
+                if (UploadFieldType.ATTACHMENT_TYPE_SET.contains(oneFieldDef.getType())) {
+                    fieldNode = uploadFileHelper.uploadJsonNodeAsAttachment(fieldNodeFromDataFile, uploadId,
+                            fieldName);
+                } else {
+                    fieldNode = fieldNodeFromDataFile;
+                }
+            } else {
+                fieldNode = uploadFileHelper.findValueForField(uploadId, sanitizedUnzippedDataFileMap, oneFieldDef,
+                        parsedSanitizedJsonFileCache);
             }
-        }
-    }
 
-    // Helper method to copy a JSON field value to the data or attachment map.
-    private static void copyJsonField(UploadValidationContext context, JsonNode fieldValue,
-            UploadFieldDefinition fieldDef, ObjectNode dataMap, Map<String, byte[]> attachmentMap) {
-        String fieldName = fieldDef.getName();
-
-        // Skip nulls.
-        if (fieldValue == null || fieldValue.isNull()) {
-            context.addMessage("Field " + fieldName + " is null.");
-            return;
-        }
-
-        // Attachment map or data map, based on field type.
-        if (UploadFieldType.ATTACHMENT_TYPE_SET.contains(fieldDef.getType())) {
-            try {
-                UploadUtil.addAttachment(attachmentMap, fieldName, BridgeObjectMapper.get().writeValueAsBytes(
-                        fieldValue));
-            } catch (JsonProcessingException ex) {
-                context.addMessage("Field " + fieldName + " could not be converted from JSON: " + ex.getMessage());
+            if (fieldNode != null && !fieldNode.isNull()) {
+                dataMap.set(fieldName, fieldNode);
             }
-        } else {
-            dataMap.set(fieldName, fieldValue);
         }
     }
 }

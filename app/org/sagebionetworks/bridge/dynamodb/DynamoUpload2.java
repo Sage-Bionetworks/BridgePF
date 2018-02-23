@@ -245,6 +245,7 @@ public class DynamoUpload2 implements Upload {
     }
 
     /** @see #getUploadId */
+    @Override
     public void setUploadId(String uploadId) {
         this.uploadId = uploadId;
     }

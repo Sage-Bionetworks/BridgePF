@@ -4,8 +4,15 @@ import java.util.List;
 
 import org.joda.time.LocalDate;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
+
 /** Metadata for Bridge uploads. */
 public interface Upload {
+    /** Instantiates an Upload. */
+    static Upload create() {
+        return new DynamoUpload2();
+    }
+
     /**
      * If the upload is in a state where calling uploadComplete() and kicking off validation is a valid thing to do,
      * then this method will return true. Otherwise, this method will return false.
@@ -72,6 +79,9 @@ public interface Upload {
 
     /** Upload ID. This is the key in the Dynamo DB table that uniquely identifies this upload. */
     String getUploadId();
+
+    /** @see #getUploadId */
+    void setUploadId(String uploadId);
 
     /**
      * List of validation messages, generally contains error messages. Since a single upload file may fail validation

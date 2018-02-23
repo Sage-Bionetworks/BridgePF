@@ -1,12 +1,18 @@
 package org.sagebionetworks.bridge.services;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.security.cert.CertificateEncodingException;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 import javax.annotation.Nonnull;
 
+import com.google.common.io.ByteStreams;
 import org.bouncycastle.cms.CMSException;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
@@ -95,12 +101,31 @@ public class UploadArchiveService {
             throw new BadRequestException(String.format(Validate.CANNOT_BE_NULL, "bytes"));
         }
 
+        // decrypt
+        try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+             InputStream decryptedStream = decrypt(studyId, byteArrayInputStream)) {
+            return ByteStreams.toByteArray(decryptedStream);
+        } catch (IOException ex) {
+            throw new BridgeServiceException(ex);
+        }
+    }
+
+    // todo doc
+    public InputStream decrypt(String studyId, InputStream source) {
+        // validate
+        if (Strings.isNullOrEmpty(studyId)) {
+            throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "studyId"));
+        }
+        if (source == null) {
+            throw new BadRequestException(String.format(Validate.CANNOT_BE_NULL, "source"));
+        }
+
         // get encryptor from cache
         CmsEncryptor encryptor = getEncryptorForStudy(studyId);
 
         // decrypt
         try {
-            return encryptor.decrypt(bytes);
+            return encryptor.decrypt(source);
         } catch (CertificateEncodingException | CMSException | IOException ex) {
             throw new BridgeServiceException(ex);
         }
@@ -175,6 +200,18 @@ public class UploadArchiveService {
             throw new BadRequestException(e);
         } catch (DuplicateZipEntryException e) {
             throw new BadRequestException(e);
+        }
+    }
+
+    // todo doc
+    public void unzip(InputStream source, Function<String, OutputStream> entryNameToOutpuStream,
+            BiConsumer<String, OutputStream> outputStreamFinalizer) {
+        try {
+            ZIPPER.unzip(source, entryNameToOutpuStream, outputStreamFinalizer);
+        } catch (DuplicateZipEntryException | ZipOverflowException ex) {
+            throw new BadRequestException(ex);
+        } catch (IOException ex) {
+            throw new BridgeServiceException(ex);
         }
     }
 }
