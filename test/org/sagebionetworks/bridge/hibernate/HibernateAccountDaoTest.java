@@ -1701,15 +1701,12 @@ public class HibernateAccountDaoTest {
         hibernateAccount.setHealthCode(HEALTH_CODE);
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
         
-        Map<String,String> map = new HashMap<>();
-        map.put(TIME_ZONE.name(), "-08:00");
-        map.put(SHARING_SCOPE.name(), "SPONSORS_AND_PARTNERS");
-        map.put(EMAIL_NOTIFICATIONS.name(), "true");
-        map.put(EXTERNAL_IDENTIFIER.name(), "external-id");
-        map.put(DATA_GROUPS.name(), "group1,group2");
-        map.put(LANGUAGES.name(), "fr,en");        
-        ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(map);
-        when(mockOptionsDao.getOptions(HEALTH_CODE)).thenReturn(lookup);
+        lookupMap.put(TIME_ZONE.name(), "-08:00");
+        lookupMap.put(SHARING_SCOPE.name(), "SPONSORS_AND_PARTNERS");
+        lookupMap.put(EMAIL_NOTIFICATIONS.name(), "true");
+        lookupMap.put(EXTERNAL_IDENTIFIER.name(), "external-id");
+        lookupMap.put(DATA_GROUPS.name(), "group1,group2");
+        lookupMap.put(LANGUAGES.name(), "fr,en");        
         
         AccountId accountId = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, ACCOUNT_ID);
         Account account = dao.getAccount(accountId);
@@ -1720,8 +1717,8 @@ public class HibernateAccountDaoTest {
         assertEquals("external-id", account.getExternalId());
         assertEquals(Sets.newHashSet("group1", "group2"), account.getDataGroups());
         assertEquals(TestUtils.newLinkedHashSet("fr","en"), account.getLanguages());
+        // if this object is saved, it should be compliant with current version of our migrations
         assertEquals(AccountDao.MIGRATION_VERSION, account.getMigrationVersion());
-        // if this object is saved, it should be compliant with v1 of our migrations
     }
 
     @Test
@@ -1731,15 +1728,12 @@ public class HibernateAccountDaoTest {
         hibernateAccount.setHealthCode(HEALTH_CODE);
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
         
-        Map<String,String> map = new HashMap<>();
-        map.put(TIME_ZONE.name(), "-08:00");
-        map.put(SHARING_SCOPE.name(), "SPONSORS_AND_PARTNERS");
-        map.put(EMAIL_NOTIFICATIONS.name(), "true");
-        map.put(EXTERNAL_IDENTIFIER.name(), "external-id");
-        map.put(DATA_GROUPS.name(), "group1,group2");
-        map.put(LANGUAGES.name(), "fr,en");        
-        ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(map);
-        when(mockOptionsDao.getOptions(HEALTH_CODE)).thenReturn(lookup);
+        lookupMap.put(TIME_ZONE.name(), "-08:00");
+        lookupMap.put(SHARING_SCOPE.name(), "SPONSORS_AND_PARTNERS");
+        lookupMap.put(EMAIL_NOTIFICATIONS.name(), "true");
+        lookupMap.put(EXTERNAL_IDENTIFIER.name(), "external-id");
+        lookupMap.put(DATA_GROUPS.name(), "group1,group2");
+        lookupMap.put(LANGUAGES.name(), "fr,en");        
         
         AccountId accountId = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, ACCOUNT_ID);
         Account account = dao.getAccountAfterAuthentication(accountId);
@@ -1750,8 +1744,8 @@ public class HibernateAccountDaoTest {
         assertEquals("external-id", account.getExternalId());
         assertEquals(Sets.newHashSet("group1", "group2"), account.getDataGroups());
         assertEquals(TestUtils.newLinkedHashSet("fr","en"), account.getLanguages());
-        assertEquals(AccountDao.MIGRATION_VERSION, account.getMigrationVersion());
         // if this object is saved, it should be compliant with v1 of our migrations
+        assertEquals(AccountDao.MIGRATION_VERSION, account.getMigrationVersion());
     }
     
     @Test
@@ -1759,29 +1753,32 @@ public class HibernateAccountDaoTest {
         HibernateAccount hibernateAccount = new HibernateAccount();
         hibernateAccount.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         hibernateAccount.setHealthCode(HEALTH_CODE);
-        hibernateAccount.setMigrationVersion(1);
+        hibernateAccount.setTimeZone("+03:00");
+        hibernateAccount.setSharingScope(SharingScope.NO_SHARING);
+        hibernateAccount.setNotifyByEmail(false);
+        hibernateAccount.setExternalId("original-external-id");
+        hibernateAccount.setDataGroups(Sets.newHashSet("groupA"));
+        hibernateAccount.setLanguages(Lists.newArrayList("de"));
+        hibernateAccount.setMigrationVersion(AccountDao.MIGRATION_VERSION);
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
         
-        Map<String,String> map = new HashMap<>();
-        map.put(TIME_ZONE.name(), "-08:00");
-        map.put(SHARING_SCOPE.name(), "SPONSORS_AND_PARTNERS");
-        map.put(EMAIL_NOTIFICATIONS.name(), "true");
-        map.put(EXTERNAL_IDENTIFIER.name(), "external-id");
-        map.put(DATA_GROUPS.name(), "group1,group2");
-        map.put(LANGUAGES.name(), "fr,en");        
-        ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(map);
-        when(mockOptionsDao.getOptions(HEALTH_CODE)).thenReturn(lookup);
+        lookupMap.put(TIME_ZONE.name(), "-08:00");
+        lookupMap.put(SHARING_SCOPE.name(), "SPONSORS_AND_PARTNERS");
+        lookupMap.put(EMAIL_NOTIFICATIONS.name(), "true");
+        lookupMap.put(EXTERNAL_IDENTIFIER.name(), "external-id");
+        lookupMap.put(DATA_GROUPS.name(), "group1,group2");
+        lookupMap.put(LANGUAGES.name(), "fr,en");        
         
         AccountId accountId = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, ACCOUNT_ID);
         Account account = dao.getAccount(accountId);
         
-        // Options table was ignored, the values are as they were originally (null)
-        assertNull(account.getTimeZone());
-        assertNull(account.getSharingScope());
-        assertNull(account.getNotifyByEmail());
-        assertNull(account.getExternalId());
-        assertTrue(account.getDataGroups().isEmpty());
-        assertTrue(account.getLanguages().isEmpty());
+        // Options table was ignored, the values are as they were originally
+        assertEquals("+03:00", account.getTimeZone().toString());
+        assertEquals(SharingScope.NO_SHARING, account.getSharingScope());
+        assertEquals(Boolean.FALSE, account.getNotifyByEmail());
+        assertEquals("original-external-id", account.getExternalId());
+        assertEquals(Sets.newHashSet("groupA"), account.getDataGroups());
+        assertEquals(TestUtils.newLinkedHashSet("de"), account.getLanguages());
         assertEquals(AccountDao.MIGRATION_VERSION, account.getMigrationVersion());
     }
 
@@ -1790,29 +1787,32 @@ public class HibernateAccountDaoTest {
         HibernateAccount hibernateAccount = new HibernateAccount();
         hibernateAccount.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         hibernateAccount.setHealthCode(HEALTH_CODE);
-        hibernateAccount.setMigrationVersion(1);
+        hibernateAccount.setTimeZone("+03:00");
+        hibernateAccount.setSharingScope(SharingScope.NO_SHARING);
+        hibernateAccount.setNotifyByEmail(false);
+        hibernateAccount.setExternalId("original-external-id");
+        hibernateAccount.setDataGroups(Sets.newHashSet("groupA"));
+        hibernateAccount.setLanguages(Lists.newArrayList("de"));
+        hibernateAccount.setMigrationVersion(AccountDao.MIGRATION_VERSION);
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
         
-        Map<String,String> map = new HashMap<>();
-        map.put(TIME_ZONE.name(), "-08:00");
-        map.put(SHARING_SCOPE.name(), "SPONSORS_AND_PARTNERS");
-        map.put(EMAIL_NOTIFICATIONS.name(), "true");
-        map.put(EXTERNAL_IDENTIFIER.name(), "external-id");
-        map.put(DATA_GROUPS.name(), "group1,group2");
-        map.put(LANGUAGES.name(), "fr,en");        
-        ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(map);
-        when(mockOptionsDao.getOptions(HEALTH_CODE)).thenReturn(lookup);
+        lookupMap.put(TIME_ZONE.name(), "-08:00");
+        lookupMap.put(SHARING_SCOPE.name(), "SPONSORS_AND_PARTNERS");
+        lookupMap.put(EMAIL_NOTIFICATIONS.name(), "true");
+        lookupMap.put(EXTERNAL_IDENTIFIER.name(), "external-id");
+        lookupMap.put(DATA_GROUPS.name(), "group1,group2");
+        lookupMap.put(LANGUAGES.name(), "fr,en");        
         
         AccountId accountId = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, ACCOUNT_ID);
         Account account = dao.getAccountAfterAuthentication(accountId);
         
-        // Options table was ignored, the values are as they were originally (null)
-        assertNull(account.getTimeZone());
-        assertNull(account.getSharingScope());
-        assertNull(account.getNotifyByEmail());
-        assertNull(account.getExternalId());
-        assertTrue(account.getDataGroups().isEmpty());
-        assertTrue(account.getLanguages().isEmpty());
+        // Options table was ignored, the values are as they were originally
+        assertEquals("+03:00", account.getTimeZone().toString());
+        assertEquals(SharingScope.NO_SHARING, account.getSharingScope());
+        assertEquals(Boolean.FALSE, account.getNotifyByEmail());
+        assertEquals("original-external-id", account.getExternalId());
+        assertEquals(Sets.newHashSet("groupA"), account.getDataGroups());
+        assertEquals(TestUtils.newLinkedHashSet("de"), account.getLanguages());
         assertEquals(AccountDao.MIGRATION_VERSION, account.getMigrationVersion());
     }
     

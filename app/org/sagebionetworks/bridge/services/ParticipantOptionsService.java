@@ -47,23 +47,21 @@ public class ParticipantOptionsService {
     public ParticipantOptionsLookup getOptions(StudyIdentifier studyId, String healthCode) {
         checkArgument(isNotBlank(healthCode));
         
+        // This load of the account will, if necessary, load the ParticipantOptions DDB record
+        // to retrieve the values.
         AccountId accountId = AccountId.forHealthCode(studyId.getIdentifier(), healthCode);
         Account account = accountDao.getAccount(accountId);
         if (account != null) {
             Map<String,String> map = Maps.newHashMap();
-            add(map, account, ParticipantOption.TIME_ZONE);
-            add(map, account, ParticipantOption.SHARING_SCOPE);
-            add(map, account, ParticipantOption.EMAIL_NOTIFICATIONS);
-            add(map, account, ParticipantOption.EXTERNAL_IDENTIFIER);
-            add(map, account, ParticipantOption.DATA_GROUPS);
-            add(map, account, ParticipantOption.LANGUAGES);
+            map.put(TIME_ZONE.name(), TIME_ZONE.fromAccount(account));
+            map.put(SHARING_SCOPE.name(), SHARING_SCOPE.fromAccount(account));
+            map.put(EMAIL_NOTIFICATIONS.name(), EMAIL_NOTIFICATIONS.fromAccount(account));
+            map.put(EXTERNAL_IDENTIFIER.name(), EXTERNAL_IDENTIFIER.fromAccount(account));
+            map.put(DATA_GROUPS.name(), DATA_GROUPS.fromAccount(account));
+            map.put(LANGUAGES.name(), LANGUAGES.fromAccount(account));
             return new ParticipantOptionsLookup(map);
         }
         return new ParticipantOptionsLookup(Maps.newHashMap());
-    }
-    
-    private void add(Map<String,String> map, Account account, ParticipantOption option) {
-        map.put(option.name(), option.fromAccount(account));
     }
     
     /**
@@ -156,30 +154,6 @@ public class ParticipantOptionsService {
         Account account = accountDao.getAccount(accountId);
         if (account != null) {
             account.setTimeZone(zone);
-            accountDao.updateAccount(account, false);
-        }
-    }
-    
-    public void setAllOptions(StudyIdentifier studyIdentifier, String healthCode, Map<ParticipantOption,String> options) {
-        checkNotNull(studyIdentifier);
-        checkArgument(isNotBlank(healthCode));
-        checkNotNull(options);
-
-        AccountId accountId = AccountId.forHealthCode(studyIdentifier.getIdentifier(), healthCode);
-        Account account = accountDao.getAccount(accountId);
-        if (account != null) {
-            // It's easiest to convert this to a lookup object to do conversions.
-            Map<String,String> map = Maps.newHashMap();
-            options.entrySet().stream().forEach((entry) -> {
-                map.put(entry.getKey().name(), entry.getValue());
-            });
-            ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(map);
-            account.setTimeZone(lookup.getTimeZone(TIME_ZONE));
-            account.setSharingScope(lookup.getEnum(SHARING_SCOPE, SharingScope.class));
-            account.setNotifyByEmail(lookup.getBoolean(EMAIL_NOTIFICATIONS));
-            account.setExternalId(lookup.getString(EXTERNAL_IDENTIFIER));
-            account.setDataGroups(lookup.getStringSet(DATA_GROUPS));
-            account.setLanguages(lookup.getOrderedStringSet(LANGUAGES));
             accountDao.updateAccount(account, false);
         }
     }

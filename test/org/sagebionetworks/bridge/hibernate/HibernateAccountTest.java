@@ -158,8 +158,8 @@ public class HibernateAccountTest {
     public void languages() {
         // Hibernate cannot deal with the LinkedHashSet type, so we store languages as a list to 
         // maintain their order. When transferred to an object implementing the Account class, these
-        // are transferred to a LinkedHashSet, which also ensures the languages are not duplicated in 
-        // the ordered set.
+        // are transferred to a LinkedHashSet, which also ensures the language codes are not 
+        // duplicated in the ordered set.
         List<String> langs = Lists.newArrayList("en","fr");
         
         HibernateAccount account = new HibernateAccount();

@@ -9,7 +9,6 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.TIME_ZONE;
 
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -30,7 +29,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -38,7 +36,6 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.studies.Study;
 
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -140,28 +137,6 @@ public class ParticipantOptionsServiceTest {
         
         Account captured = accountCaptor.getValue();
         assertEquals(DateTimeZone.UTC, captured.getTimeZone());
-    }
-    
-    public void setAllOptions() {
-        Map<ParticipantOption,String> options = Maps.newHashMap();
-        options.put(TIME_ZONE, "-08:00");
-        options.put(SHARING_SCOPE, "sponsors_and_partners");
-        options.put(EMAIL_NOTIFICATIONS, "true");
-        options.put(EXTERNAL_IDENTIFIER, "external-id");
-        options.put(DATA_GROUPS, "group1,group2");
-        options.put(LANGUAGES, "fr,en");
-        
-        service.setAllOptions(TEST_STUDY, HEALTH_CODE, options);
-        
-        verify(mockAccountDao).updateAccount(accountCaptor.capture(), eq(false));
-        
-        Account captured = accountCaptor.getValue();
-        assertEquals(DateTimeZone.forOffsetHours(-8), captured.getTimeZone());
-        assertEquals(SharingScope.SPONSORS_AND_PARTNERS, captured.getSharingScope());
-        assertEquals(Boolean.TRUE, captured.getNotifyByEmail());
-        assertEquals("external-id", captured.getExternalId());
-        assertEquals(Sets.newHashSet("group1","group2"), captured.getDataGroups());
-        assertEquals(TestUtils.newLinkedHashSet("fr", "en"), captured.getLanguages());
     }
     
     @Test

@@ -64,7 +64,7 @@ import org.sagebionetworks.bridge.services.HealthCodeService;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
-import com.newrelic.agent.deps.com.google.common.collect.Sets;
+import com.google.common.collect.Sets;
 
 /** Hibernate implementation of Account Dao. */
 @Component
@@ -451,7 +451,7 @@ public class HibernateAccountDao implements AccountDao {
         }
         // Migrate ParticipantOptions into this account record and bump the migration version in case it is saved as is.
         // New accounts will be created saving values 
-        if (hibernateAccount.getMigrationVersion() < 1 && hibernateAccount.getHealthCode() != null) {
+        if (hibernateAccount.getMigrationVersion() < AccountDao.MIGRATION_VERSION && hibernateAccount.getHealthCode() != null) {
             ParticipantOptionsLookup lookup = optionsDao.getOptions(hibernateAccount.getHealthCode());
             hibernateAccount.setTimeZone(DateUtils.timeZoneToOffsetString(lookup.getTimeZone(TIME_ZONE)));
             hibernateAccount.setSharingScope(lookup.getEnum(SHARING_SCOPE, SharingScope.class));

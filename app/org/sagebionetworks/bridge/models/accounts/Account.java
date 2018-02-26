@@ -104,47 +104,31 @@ public interface Account extends BridgeEntity {
     JsonNode getClientData();
     void setClientData(JsonNode clientData);
     
-    /**
-     * The time zone that has been captured for the user.
-     */
+    /** The time zone that has been captured for the user. */
     DateTimeZone getTimeZone();
     void setTimeZone(DateTimeZone timeZone);
 
-    /**
-     * The sharing scope that currently applies for this user.  
-     */
+    /** The sharing scope that currently applies for this user. */
     SharingScope getSharingScope();
     void setSharingScope(SharingScope sharingScope);
     
-    /**
-     * Has the user consented to receive mass emailings about the study from the study administrators?
-     */
+    /** Has the user consented to receive email about the study from the study administrators? */
     Boolean getNotifyByEmail();
     void setNotifyByEmail(Boolean notifyByEmail);
     
-    /**
-     * The external ID that has been assigned to this account.
-     */
+    /** The external ID that has been assigned to this account. */
     String getExternalId();
     void setExternalId(String externalId);
     
-    /**
-     * The data groups assigned to this account.
-     */
+    /** The data groups assigned to this account. */
     Set<String> getDataGroups();
     void setDataGroups(Set<String> dataGroups);
     
-    /**
-     * The languages that have been captured from HTTP requests for this account. 
-     */
+    /** The languages that have been captured from HTTP requests for this account. */
     LinkedHashSet<String> getLanguages();
     void setLanguages(LinkedHashSet<String> languages);
     
-    /**
-     * A flag used to track changes in the contents of the table across migrations. Current target 
-     * migration level is 1, and involves migration data out of the ParticipantOptions table to the 
-     * accounts table.
-     */
+    /** A flag used to track changes in the contents of the table across migrations. */
     int getMigrationVersion();
     void setMigrationVersion(int migrationVersion);
 }

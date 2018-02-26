@@ -284,7 +284,7 @@ public class ParticipantService {
         // Do this first because if the ID has been taken or is invalid, we do not want to update anything else.
         externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());
 
-        // prevent optimistic locking exception
+        // Prevent optimistic locking exception until operations are combined into one operation. 
         account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), account.getId()));
         updateAccountAndRoles(study, callerRoles, account, participant);
         
@@ -313,12 +313,12 @@ public class ParticipantService {
         account.setFirstName(participant.getFirstName());
         account.setLastName(participant.getLastName());
         account.setClientData(participant.getClientData());
-        // But not timezone or external ID, these are handled separately, e.g. by ExternalIdService
         account.setSharingScope(participant.getSharingScope());
         account.setNotifyByEmail(participant.isNotifyByEmail());
         account.setDataGroups(participant.getDataGroups());
         account.setLanguages(participant.getLanguages());
         account.setMigrationVersion(AccountDao.MIGRATION_VERSION);
+        // Do not copy timezone or external ID. Neither can be updated once set.
         
         for (String attribute : study.getUserProfileAttributes()) {
             String value = participant.getAttributes().get(attribute);
