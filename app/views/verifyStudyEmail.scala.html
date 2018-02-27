@@ -1,0 +1,61 @@
+@(assetsHost: String, assetsBuild: String, studyName: String)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>@studyName Email Verification</title>
+    <script>
+        window.assetsHost = "@assetsHost";
+    </script>
+    <link href="//@assetsHost/mobile/styles/normalize.css" type="text/css" rel="stylesheet"/>
+    <link href="//@assetsHost/mobile/styles/mobile.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+
+<div class="logo_box"><img id="logo" onerror="this.style.visibility='hidden'"/></div>
+<div class="message" id="m1">Verifying...</div>
+<div class="message" id="m2"></div>
+
+<script src="//code.jquery.com/jquery-2.1.3.min.js"></script>
+<script>
+var params = {};
+location.search.substr(1).split("&").forEach(function(item) {
+	var k = item.split("=")[0], v = decodeURIComponent(item.split("=")[1]);
+	params[k] = v;
+});
+
+setTimeout(function() {
+    $("#logo").attr("src", "//" + window.assetsHost + "/mobile/images/"+params.study+".svg");
+}, 1);
+
+function success() {
+    $("#m1").text("The email address for study @studyName has now been verified.");
+}
+function failure() {
+    $("#m1").text("The email address for study @studyName could not be verified.");
+    $("#m2").html("Please refresh the page; if the problem persists, contact Bridge support to receive further assistance.");
+}
+try {
+    if (!params.study) {
+        throw new Error("No study");
+    }
+    if (!params.token) {
+        throw new Error("No token");
+    }
+    if (!params.type) {
+        throw new Error("No type");
+    }
+    var p = $.ajax({
+        type: "POST",
+        url: "/v3/studies/" + params.study + "/emails/verify?token=" + params.token + "&type=" + params.type
+    });
+    p.done(success).fail(failure);
+} catch(e) { // happens if the query string is wrong.
+    console.log(e);
+    failure();
+}
+
+</script>
+</body>
+</html>

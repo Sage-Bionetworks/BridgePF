@@ -1,15 +1,22 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.JSON_MIME_TYPE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
 import java.util.List;
 
+import javax.annotation.Resource;
+
+import org.sagebionetworks.bridge.cache.ViewCache;
+import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.AppConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -21,9 +28,29 @@ public class AppConfigController extends BaseController {
 
     private AppConfigService appConfigService;
     
+    private ViewCache viewCache;
+
     @Autowired
     final void setAppConfigService(AppConfigService appConfigService) {
         this.appConfigService = appConfigService;
+    }
+
+    @Resource(name = "genericViewCache")
+    public void setViewCache(ViewCache viewCache) {
+        this.viewCache = viewCache;
+    }
+    
+    private ViewCacheKey<AppConfig> getCacheKey(CriteriaContext context) {
+        ClientInfo info = context.getClientInfo();
+        String appVersion = info.getAppVersion() == null ? "0" : Integer.toString(info.getAppVersion());
+        String osName = info.getOsName() == null ? "" : info.getOsName();
+        String studyId = context.getStudyIdentifier().getIdentifier();
+        
+        return viewCache.getCacheKey(AppConfig.class, appVersion, osName, studyId);
+    }
+    
+    private String getCacheKeyOfSet(StudyIdentifier studyId) {
+        return studyId.getIdentifier()+":AppConfigList";
     }
     
     public Result getStudyAppConfig(String studyId) {
@@ -33,19 +60,15 @@ public class AppConfigController extends BaseController {
                 .withClientInfo(getClientInfoFromUserAgentHeader())
                 .withStudyIdentifier(study.getStudyIdentifier())
                 .build();
-        AppConfig appConfig = appConfigService.getAppConfigForUser(context, true);
         
-        return okResult(appConfig);            
-    }
-    
-    public Result getSelfAppConfig() {
-        UserSession session = getAuthenticatedAndConsentedSession();
-        
-        CriteriaContext context = getCriteriaContext(session);
-        
-        AppConfig appConfig = appConfigService.getAppConfigForUser(context, true);
-        
-        return okResult(appConfig);
+        ViewCacheKey<AppConfig> cacheKey = getCacheKey(context);
+        String json = viewCache.getView(cacheKey, () -> {
+            AppConfig appConfig = appConfigService.getAppConfigForUser(context, true);
+            // So we can delete all the relevant cached versions, keep track of them under the GUID
+            cacheProvider.addCacheKeyToSet(getCacheKeyOfSet(study.getStudyIdentifier()), cacheKey.getKey());
+            return appConfig;
+        });
+        return ok(json).as(JSON_MIME_TYPE);
     }
     
     public Result getAppConfigs() {
@@ -70,6 +93,7 @@ public class AppConfigController extends BaseController {
         AppConfig appConfig = parseJson(request(), AppConfig.class);
         
         AppConfig created = appConfigService.createAppConfig(session.getStudyIdentifier(), appConfig);
+        cacheProvider.removeSetOfCacheKeys(getCacheKeyOfSet(session.getStudyIdentifier()));
         
         return createdResult(new GuidVersionHolder(created.getGuid(), created.getVersion()));
     }
@@ -81,7 +105,8 @@ public class AppConfigController extends BaseController {
         appConfig.setGuid(guid);
         
         AppConfig updated = appConfigService.updateAppConfig(session.getStudyIdentifier(), appConfig);
-        
+        cacheProvider.removeSetOfCacheKeys(getCacheKeyOfSet(session.getStudyIdentifier()));
+
         return okResult(new GuidVersionHolder(updated.getGuid(), updated.getVersion()));
     }
     
@@ -89,6 +114,7 @@ public class AppConfigController extends BaseController {
         UserSession session = getAuthenticatedSession(ADMIN);
         
         appConfigService.deleteAppConfig(session.getStudyIdentifier(), guid);
+        cacheProvider.removeSetOfCacheKeys(getCacheKeyOfSet(session.getStudyIdentifier()));
 
         return okResult("App config deleted.");
     }

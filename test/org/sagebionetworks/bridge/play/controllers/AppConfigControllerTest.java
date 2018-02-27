@@ -29,6 +29,9 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.cache.ViewCache;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -38,7 +41,6 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AppConfigService;
 import org.sagebionetworks.bridge.services.StudyService;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.newrelic.agent.deps.com.google.common.collect.Lists;
 
@@ -60,6 +62,12 @@ public class AppConfigControllerTest {
     @Mock
     private StudyService mockStudyService;
     
+    @Mock
+    private CacheProvider mockCacheProvider;
+    
+    @Mock
+    private ViewCache viewCache;
+    
     @Captor
     private ArgumentCaptor<CriteriaContext> contextCaptor;
     
@@ -71,6 +79,15 @@ public class AppConfigControllerTest {
     public void before() {
         controller.setAppConfigService(mockService);
         controller.setStudyService(mockStudyService);
+        controller.setCacheProvider(mockCacheProvider);
+        
+        // With mock dependencies, the view cache just doesn't work (no cache hits), and tests that aren't
+        // specifically verifying caching behavior pass.
+        viewCache = new ViewCache();
+        viewCache.setCacheProvider(mockCacheProvider);
+        viewCache.setObjectMapper(BridgeObjectMapper.get());
+        viewCache.setCachePeriod(100);
+        controller.setViewCache(viewCache);
         
         appConfig = AppConfig.create();
         appConfig.setGuid(BridgeUtils.generateGuid());
@@ -81,6 +98,8 @@ public class AppConfigControllerTest {
         UserSession session = new UserSession();
         session.setStudyIdentifier(TEST_STUDY);
         session.setParticipant(new StudyParticipant.Builder()
+                .withDataGroups(Sets.newHashSet("B","A"))
+                .withLanguages(TestUtils.newLinkedHashSet("en"))
                 .withRoles(Sets.newHashSet(DEVELOPER))
                 .withHealthCode("healthCode")
                 .build());
@@ -92,9 +111,7 @@ public class AppConfigControllerTest {
     @Test
     public void getStudyAppConfig() throws Exception {
         // JSON payload here doesn't matter, it's a get request
-        mockPlayContextWithJson("{}", new ImmutableMap.Builder<String,String[]>()
-                .put("User-Agent", new String[] {TEST_UA})
-                .build());
+        mockPlayContextWithJson(appConfig, "User-Agent", TEST_UA);
         
         when(mockStudyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
         when(mockService.getAppConfigForUser(contextCaptor.capture(), eq(true))).thenReturn(appConfig);
@@ -107,24 +124,6 @@ public class AppConfigControllerTest {
         assertEquals("CardioHealth", capturedContext.getClientInfo().getAppName());
         assertEquals(new Integer(101), capturedContext.getClientInfo().getAppVersion());
         assertEquals("iPhone OS", capturedContext.getClientInfo().getOsName());        
-    }
-    
-    @Test
-    public void getSelfAppConfig() throws Exception {
-        mockPlayContext();
-        when(mockService.getAppConfigForUser(any(), eq(true))).thenReturn(appConfig);
-        
-        Result result = controller.getSelfAppConfig();
-        
-        TestUtils.assertResult(result, 200);
-        AppConfig found = getResponsePayload(result, AppConfig.class);
-        assertEquals(appConfig.getGuid(), found.getGuid());
-        
-        verify(mockService).getAppConfigForUser(contextCaptor.capture(), eq(true));
-        
-        CriteriaContext context = contextCaptor.getValue();
-        assertEquals(TEST_STUDY, context.getStudyIdentifier());
-        assertEquals("healthCode", context.getHealthCode());
     }
     
     @SuppressWarnings("unchecked")
@@ -191,5 +190,42 @@ public class AppConfigControllerTest {
         assertResult(result, 200, "App config deleted.");
         
         verify(mockService).deleteAppConfig(TEST_STUDY, GUID);
+    }
+    
+    @Test
+    public void getStudyAppConfigAddsToCache() throws Exception {
+        mockPlayContextWithJson(appConfig, "User-Agent", "Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4");
+        when(mockStudyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        
+        controller.getStudyAppConfig(TestConstants.TEST_STUDY_IDENTIFIER);
+        
+        verify(mockCacheProvider).addCacheKeyToSet("api:AppConfigList", "26:iPhone OS:api:AppConfig:view");
+    }
+    
+    @Test
+    public void createAppConfigDeletesCache() throws Exception {
+        mockPlayContextWithJson(appConfig, "User-Agent", "Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4");
+        when(mockService.createAppConfig(any(), any())).thenReturn(appConfig);
+        
+        controller.createAppConfig();
+        
+        verify(mockCacheProvider).removeSetOfCacheKeys("api:AppConfigList");
+    }
+    
+    @Test
+    public void updateAppConfigDeletesCache() throws Exception {
+        mockPlayContextWithJson(appConfig, "User-Agent", "Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4");
+        when(mockService.updateAppConfig(any(), any())).thenReturn(appConfig);
+        
+        controller.updateAppConfig("guid");
+        
+        verify(mockCacheProvider).removeSetOfCacheKeys("api:AppConfigList");
+    }
+    
+    @Test
+    public void deleteAppConfigDeletesCache() {
+        controller.deleteAppConfig("guid");
+        
+        verify(mockCacheProvider).removeSetOfCacheKeys("api:AppConfigList");
     }
 }
