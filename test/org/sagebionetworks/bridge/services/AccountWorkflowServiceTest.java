@@ -9,12 +9,14 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
+import java.util.List;
 import javax.mail.internet.MimeBodyPart;
 
 import org.junit.Before;
@@ -29,6 +31,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -46,6 +49,7 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.redis.InMemoryJedisOps;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
@@ -82,6 +86,9 @@ public class AccountWorkflowServiceTest {
             .withStudyIdentifier(TestConstants.TEST_STUDY).build();
 
     @Mock
+    private BridgeConfig mockBridgeConfig;
+
+    @Mock
     private StudyService mockStudyService;
     
     @Mock
@@ -101,10 +108,7 @@ public class AccountWorkflowServiceTest {
     
     @Captor
     private ArgumentCaptor<BasicEmailProvider> emailProviderCaptor;
-    
-    @Captor
-    private ArgumentCaptor<Account> accountCaptor;
-    
+
     @Captor
     private ArgumentCaptor<String> stringCaptor;
     
@@ -133,8 +137,16 @@ public class AccountWorkflowServiceTest {
         study.setAccountExistsTemplate(accountExistsTemplate);
         study.setEmailSignInTemplate(emailSignInTemplate);
 
+        // Mock bridge config
+        when(mockBridgeConfig.getInt(AccountWorkflowService.CONFIG_KEY_CHANNEL_THROTTLE_MAX_REQUESTS)).thenReturn(2);
+        when(mockBridgeConfig.getInt(AccountWorkflowService.CONFIG_KEY_CHANNEL_THROTTLE_TIMEOUT_SECONDS)).thenReturn(
+                300);
+
+        // Set up service
         service.setAccountDao(mockAccountDao);
+        service.setBridgeConfig(mockBridgeConfig);
         service.setCacheProvider(mockCacheProvider);
+        service.setJedisOps(new InMemoryJedisOps());
         service.setSendMailService(mockSendMailService);
         service.setStudyService(mockStudyService);
         service.setNotificationsService(mockNotificationsService);
@@ -164,7 +176,18 @@ public class AccountWorkflowServiceTest {
         service.sendEmailVerificationToken(study, USER_ID, null);
         verify(mockSendMailService, never()).sendEmail(any());
     }
-    
+
+    @Test
+    public void sendEmailVerificationTokenThrottled() {
+        // Throttle limit is 2. Make 3 requests, and send only 2 emails.
+        when(service.getNextToken()).thenReturn("ABC");
+        service.sendEmailVerificationToken(study, USER_ID, EMAIL);
+        service.sendEmailVerificationToken(study, USER_ID, EMAIL);
+        service.sendEmailVerificationToken(study, USER_ID, EMAIL);
+        verify(mockSendMailService, times(2)).sendEmail(any());
+
+    }
+
     @Test
     public void resendEmailVerificationToken() {
         when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
@@ -187,6 +210,7 @@ public class AccountWorkflowServiceTest {
             service.resendEmailVerificationToken(ACCOUNT_ID_WITH_EMAIL);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
+            // expected exception
         }
         verify(service, never()).sendEmailVerificationToken(study, USER_ID, EMAIL);
     }
@@ -260,7 +284,36 @@ public class AccountWorkflowServiceTest {
         assertFalse(bodyString.contains("${resetPasswordUrl}"));
         assertFalse(bodyString.contains("${emailSignInUrl}"));
     }
-    
+
+    @Test
+    public void notifyAccountForEmailSignInDoesntThrottle() throws Exception {
+        study.setEmailSignInEnabled(true);
+        AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        when(service.getNextToken()).thenReturn("ABC");
+        when(mockAccount.getEmail()).thenReturn(EMAIL);
+        when(mockAccount.getEmailVerified()).thenReturn(Boolean.TRUE);
+        when(mockAccountDao.getAccount(any())).thenReturn(mockAccount);
+
+        // Throttle limit is 2, but it doesn't apply to notifyAccount(). Call this 3 times, and expect 3 emails with
+        // email sign-in URL.
+        service.notifyAccountExists(study, accountId);
+        service.notifyAccountExists(study, accountId);
+        service.notifyAccountExists(study, accountId);
+
+        verify(mockSendMailService, times(3)).sendEmail(emailProviderCaptor.capture());
+
+        List<BasicEmailProvider> emailProviderList = emailProviderCaptor.getAllValues();
+        for (BasicEmailProvider oneEmailProvider : emailProviderList) {
+            // Email content is verified in test above. Just verify email sign-in URL.
+            MimeTypeEmail email = oneEmailProvider.getMimeTypeEmail();
+            MimeBodyPart body = email.getMessageParts().get(0);
+            String bodyString = (String)body.getContent();
+            assertTrue(bodyString.contains("/mobile/api/startSession.html?email=email%40email.com&study=api&token=ABC"));
+            assertFalse(bodyString.contains("${emailSignInUrl}"));
+        }
+    }
+
     @Test
     public void notifyAccountExistsForEmailWithoutEmailSignIn() throws Exception {
         // A successful notification of an existing account where email sign in is not enabled. The 
@@ -469,6 +522,7 @@ public class AccountWorkflowServiceTest {
             service.resetPassword(passwordReset);
             fail("Should have thrown an exception");
         } catch(EntityNotFoundException e) {
+            // expected exception
         }
         verify(mockCacheProvider).getObject("sptoken:api", String.class);
         verify(mockCacheProvider).removeObject("sptoken:api");
@@ -541,7 +595,20 @@ public class AccountWorkflowServiceTest {
         
         service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
     }
-    
+
+    @Test
+    public void requestEmailSignInThrottles() throws Exception {
+        study.setEmailSignInEnabled(true);
+        when(mockAccountDao.getAccount(any())).thenReturn(mockAccount);
+        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
+
+        // Throttle limit is 2. Request 3 times. Get 2 emails.
+        service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
+        service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
+        service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
+        verify(mockSendMailService, times(2)).sendEmail(any());
+    }
+
     @Test
     public void requestEmailSignInTwiceReturnsSameToken() throws Exception {
         // In this case, where there is a value and an account, we do't generate a new one,
@@ -562,7 +629,7 @@ public class AccountWorkflowServiceTest {
         String bodyString = (String)provider.getMimeTypeEmail().getMessageParts().get(0).getContent();
         assertEquals("Body something", bodyString);
     }
-    
+
     @Test
     public void requestEmailSignInEmailNotRegistered() {
         study.setEmailSignInEnabled(true);
@@ -599,7 +666,19 @@ public class AccountWorkflowServiceTest {
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
         verify(mockNotificationsService, never()).sendSMSMessage(any(), any(), any());
     }
-    
+
+    @Test
+    public void requestPhoneSignInThrottles() {
+        when(mockAccountDao.getAccount(any())).thenReturn(mockAccount);
+        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
+
+        // Throttle limit is 2. Request 3 times. Get 2 texts.
+        service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
+        service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
+        service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
+        verify(mockNotificationsService, times(2)).sendSMSMessage(any(), any(), any());
+    }
+
     @Test
     public void emailChannelSignIn() {
         when(mockCacheProvider.getObject(EMAIL_CACHE_KEY, String.class)).thenReturn(TOKEN);

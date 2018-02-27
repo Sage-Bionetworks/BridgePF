@@ -196,15 +196,6 @@ public class TestUtils {
         return mockPlayContextWithJson(json, headers);
     }
     
-    public static Http.Response mockPlayContextWithJson(Object object, String headerName, String headerValue)
-            throws Exception {
-        Map<String,String[]> headers = Maps.newHashMap();
-        headers.put(headerName, new String[] {headerValue});
-        
-        String json = BridgeObjectMapper.get().writeValueAsString(object);
-        return mockPlayContextWithJson(json, headers);
-    }
-    
     /**
      * In the rare case where you need the context, you can use <code>Http.Context.current.get()</code>;
      */

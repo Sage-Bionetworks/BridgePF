@@ -8,6 +8,7 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
 import org.sagebionetworks.bridge.models.ClientInfo;
@@ -45,8 +46,12 @@ public class AppConfigController extends BaseController {
         String appVersion = info.getAppVersion() == null ? "0" : Integer.toString(info.getAppVersion());
         String osName = info.getOsName() == null ? "" : info.getOsName();
         String studyId = context.getStudyIdentifier().getIdentifier();
+        // Languages. We don't provide a UI to create filtering criteria for these, but if they are 
+        // set through our API, and they are included in the Accept-Language header, we will filter on 
+        // them, so it's important they be part of the key
+        String langs = BridgeUtils.SPACE_JOINER.join(context.getLanguages());
         
-        return viewCache.getCacheKey(AppConfig.class, appVersion, osName, studyId);
+        return viewCache.getCacheKey(AppConfig.class, appVersion, osName, langs, studyId);
     }
     
     private String getCacheKeyOfSet(StudyIdentifier studyId) {
@@ -57,6 +62,7 @@ public class AppConfigController extends BaseController {
         Study study = studyService.getStudy(studyId);
         
         CriteriaContext context = new CriteriaContext.Builder()
+                .withLanguages(getLanguagesFromAcceptLanguageHeader())
                 .withClientInfo(getClientInfoFromUserAgentHeader())
                 .withStudyIdentifier(study.getStudyIdentifier())
                 .build();

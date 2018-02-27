@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContextWithJson;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
@@ -41,9 +42,11 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AppConfigService;
 import org.sagebionetworks.bridge.services.StudyService;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.newrelic.agent.deps.com.google.common.collect.Lists;
 
+import play.mvc.Http;
 import play.mvc.Result;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -111,7 +114,7 @@ public class AppConfigControllerTest {
     @Test
     public void getStudyAppConfig() throws Exception {
         // JSON payload here doesn't matter, it's a get request
-        mockPlayContextWithJson(appConfig, "User-Agent", TEST_UA);
+        mockContext("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4", "en-US,en;q=0.9");
         
         when(mockStudyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
         when(mockService.getAppConfigForUser(contextCaptor.capture(), eq(true))).thenReturn(appConfig);
@@ -121,8 +124,9 @@ public class AppConfigControllerTest {
         
         CriteriaContext capturedContext = contextCaptor.getValue();
         assertEquals(TestConstants.TEST_STUDY, capturedContext.getStudyIdentifier());
-        assertEquals("CardioHealth", capturedContext.getClientInfo().getAppName());
-        assertEquals(new Integer(101), capturedContext.getClientInfo().getAppVersion());
+        assertEquals("Asthma", capturedContext.getClientInfo().getAppName());
+        assertEquals(new Integer(26), capturedContext.getClientInfo().getAppVersion());
+        assertEquals(TestUtils.newLinkedHashSet("en"), capturedContext.getLanguages());
         assertEquals("iPhone OS", capturedContext.getClientInfo().getOsName());        
     }
     
@@ -194,17 +198,17 @@ public class AppConfigControllerTest {
     
     @Test
     public void getStudyAppConfigAddsToCache() throws Exception {
-        mockPlayContextWithJson(appConfig, "User-Agent", "Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4");
+        mockContext("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4", "en-US,en;q=0.9");
         when(mockStudyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
         
         controller.getStudyAppConfig(TestConstants.TEST_STUDY_IDENTIFIER);
         
-        verify(mockCacheProvider).addCacheKeyToSet("api:AppConfigList", "26:iPhone OS:api:AppConfig:view");
+        verify(mockCacheProvider).addCacheKeyToSet("api:AppConfigList", "26:iPhone OS:en:api:AppConfig:view");
     }
     
     @Test
     public void createAppConfigDeletesCache() throws Exception {
-        mockPlayContextWithJson(appConfig, "User-Agent", "Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4");
+        mockContext("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4", "en-US,en;q=0.9");
         when(mockService.createAppConfig(any(), any())).thenReturn(appConfig);
         
         controller.createAppConfig();
@@ -214,7 +218,7 @@ public class AppConfigControllerTest {
     
     @Test
     public void updateAppConfigDeletesCache() throws Exception {
-        mockPlayContextWithJson(appConfig, "User-Agent", "Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4");
+        mockContext("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4", "en-US,en;q=0.9");
         when(mockService.updateAppConfig(any(), any())).thenReturn(appConfig);
         
         controller.updateAppConfig("guid");
@@ -227,5 +231,14 @@ public class AppConfigControllerTest {
         controller.deleteAppConfig("guid");
         
         verify(mockCacheProvider).removeSetOfCacheKeys("api:AppConfigList");
+    }
+    
+    private void mockContext(String userAgent, String langs) throws Exception {
+        Map<String,String[]> headers = Maps.newHashMap();
+        headers.put("User-Agent", new String[] {userAgent});
+        headers.put("Accept-Language", new String[] {langs});
+        
+        String json = BridgeObjectMapper.get().writeValueAsString(appConfig);
+        TestUtils.mockPlayContextWithJson(json, headers);
     }
 }

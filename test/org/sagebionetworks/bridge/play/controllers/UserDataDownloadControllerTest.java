@@ -61,7 +61,7 @@ public class UserDataDownloadControllerTest {
         mockWithJson();
 
         // execute and validate
-        Result result = controller.requestUserData(null, null);
+        Result result = controller.requestUserData();
         TestUtils.assertResult(result, 202);
 
         verify(mockService).requestUserData(eq(STUDY_ID), eq(USER_ID), dateRangeCaptor.capture());
@@ -71,31 +71,14 @@ public class UserDataDownloadControllerTest {
         assertEquals("2015-08-15", dateRange.getStartDate().toString());
         assertEquals("2015-08-19", dateRange.getEndDate().toString());
     }
-    
-    @Test
-    public void testQueryParameters() throws Exception {
-        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withEmail(EMAIL)
-                .withEmailVerified(Boolean.TRUE).build();
-        doReturn(participant).when(mockSession).getParticipant();
-        
-        Result result = controller.requestUserData("2015-08-15", "2015-08-19");
-        TestUtils.assertResult(result, 202);
 
-        verify(mockService).requestUserData(eq(STUDY_ID), eq(USER_ID), dateRangeCaptor.capture());
-        
-        // validate args sent to mock service
-        DateRange dateRange = dateRangeCaptor.getValue();
-        assertEquals("2015-08-15", dateRange.getStartDate().toString());
-        assertEquals("2015-08-19", dateRange.getEndDate().toString());
-    }
-    
     @Test(expected = BadRequestException.class)
     public void throwExceptionIfAccountHasNoEmail() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).build();
         doReturn(participant).when(mockSession).getParticipant();
         mockWithJson();
 
-        controller.requestUserData(null, null);
+        controller.requestUserData();
     }
     
     @Test(expected = BadRequestException.class)
@@ -105,7 +88,7 @@ public class UserDataDownloadControllerTest {
         doReturn(participant).when(mockSession).getParticipant();
         mockWithJson();
 
-        controller.requestUserData(null, null);
+        controller.requestUserData();
     }
 
     private void mockWithJson() throws Exception {
