@@ -205,8 +205,8 @@ public class ConsentServiceTest {
     public void cannotConsentIfTooYoung() {
         LocalDate now = LocalDate.now();
         LocalDate today18YearsAgo = now.minusYears(18);
-        LocalDate yesterday18YearsAgo = today18YearsAgo.minusDays(1);
-        LocalDate tomorrow18YearsAgo = today18YearsAgo.plusDays(1);
+        LocalDate yesterday18YearsAgo = today18YearsAgo.minusDays(2);
+        LocalDate tomorrow18YearsAgo = today18YearsAgo.plusDays(2);
         SharingScope sharingScope = SharingScope.NO_SHARING;
 
         // This will work
@@ -308,7 +308,7 @@ public class ConsentServiceTest {
         assertEquals(consent.getSignedOn(), historicalSignature.getSignedOn());
         
         assertNull(account.getActiveConsentSignature(defaultSubpopulation.getGuid()));
-        
+
         long newSignedOn = DateTime.now().getMillis();
         consent = new ConsentSignature.Builder().withConsentSignature(consent).withSignedOn(newSignedOn).build();
         consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(), testUser.getStudyParticipant(), consent,
