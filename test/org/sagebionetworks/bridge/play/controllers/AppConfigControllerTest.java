@@ -46,14 +46,13 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.newrelic.agent.deps.com.google.common.collect.Lists;
 
-import play.mvc.Http;
 import play.mvc.Result;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AppConfigControllerTest {
     
-    private static final String TEST_UA = "CardioHealth/101 (Unknown iPhone; iOS/11.2.2) BridgeSDK/27";
-
+    private static final String TEST_UA = "Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4";
+    private static final String TEST_LANG = "en-US,en;q=0.9";
     private static final String GUID = "guid";
     
     @Spy
@@ -114,7 +113,7 @@ public class AppConfigControllerTest {
     @Test
     public void getStudyAppConfig() throws Exception {
         // JSON payload here doesn't matter, it's a get request
-        mockContext("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4", "en-US,en;q=0.9");
+        mockContext(TEST_UA, TEST_LANG);
         
         when(mockStudyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
         when(mockService.getAppConfigForUser(contextCaptor.capture(), eq(true))).thenReturn(appConfig);
@@ -198,7 +197,7 @@ public class AppConfigControllerTest {
     
     @Test
     public void getStudyAppConfigAddsToCache() throws Exception {
-        mockContext("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4", "en-US,en;q=0.9");
+        mockContext(TEST_UA, TEST_LANG);
         when(mockStudyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
         
         controller.getStudyAppConfig(TestConstants.TEST_STUDY_IDENTIFIER);
@@ -208,7 +207,7 @@ public class AppConfigControllerTest {
     
     @Test
     public void createAppConfigDeletesCache() throws Exception {
-        mockContext("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4", "en-US,en;q=0.9");
+        mockContext(TEST_UA, TEST_LANG);
         when(mockService.createAppConfig(any(), any())).thenReturn(appConfig);
         
         controller.createAppConfig();
@@ -218,7 +217,7 @@ public class AppConfigControllerTest {
     
     @Test
     public void updateAppConfigDeletesCache() throws Exception {
-        mockContext("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4", "en-US,en;q=0.9");
+        mockContext(TEST_UA, TEST_LANG);
         when(mockService.updateAppConfig(any(), any())).thenReturn(appConfig);
         
         controller.updateAppConfig("guid");

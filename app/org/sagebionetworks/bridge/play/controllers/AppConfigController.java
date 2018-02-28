@@ -37,7 +37,7 @@ public class AppConfigController extends BaseController {
     }
 
     @Resource(name = "genericViewCache")
-    public void setViewCache(ViewCache viewCache) {
+    final void setViewCache(ViewCache viewCache) {
         this.viewCache = viewCache;
     }
     
@@ -70,7 +70,7 @@ public class AppConfigController extends BaseController {
         ViewCacheKey<AppConfig> cacheKey = getCacheKey(context);
         String json = viewCache.getView(cacheKey, () -> {
             AppConfig appConfig = appConfigService.getAppConfigForUser(context, true);
-            // So we can delete all the relevant cached versions, keep track of them under the GUID
+            // So we can delete all the relevant cached versions, keep track of them under the study
             cacheProvider.addCacheKeyToSet(getCacheKeyOfSet(study.getStudyIdentifier()), cacheKey.getKey());
             return appConfig;
         });
