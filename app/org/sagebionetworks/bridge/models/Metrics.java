@@ -3,10 +3,12 @@ package org.sagebionetworks.bridge.models;
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.json.DateUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.sagebionetworks.bridge.json.JsonUtils;
 
 /**
  * Request-scoped metrics.
@@ -50,7 +52,18 @@ public class Metrics {
     }
 
     public void end() {
-        json.put("end", DateUtils.getCurrentISODateTime());
+        // Log endTime
+        DateTime endDateTime = DateUtils.getCurrentDateTime();
+        json.put("end", endDateTime.toString());
+
+        // Calculate elapsed time.
+        DateTime startDateTime = JsonUtils.asDateTime(json, "start");
+        if (startDateTime == null) {
+            // This should not be possible, but if it happens, don't throw an NPE.
+            return;
+        }
+        long elapsedMillis = endDateTime.getMillis() - startDateTime.getMillis();
+        json.put("elapsedMillis", elapsedMillis);
     }
 
     /** Record ID, used for synchronous health data submission API. */

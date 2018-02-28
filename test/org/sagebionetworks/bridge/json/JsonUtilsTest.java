@@ -1,9 +1,6 @@
 package org.sagebionetworks.bridge.json;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.TEST_USERS;
@@ -34,7 +31,34 @@ public class JsonUtilsTest {
     private String esc(String string) {
         return string.replaceAll("'", "\"");
     }
-    
+
+    @Test
+    public void asDateTime() throws Exception {
+        String expectedDateTimeStr = "2018-02-16T17:14:05.520-08:00";
+
+        // Set up test cases
+        String jsonText = "{\n" +
+                "   \"json-null\":null,\n" +
+                "   \"empty-string\":\"\",\n" +
+                "   \"blank-string\":\"   \",\n" +
+                "   \"bad-format\":\"February 16, 2018 2 5:14pm\",\n" +
+                "   \"success-with-time-zone\":\"" + expectedDateTimeStr + "\"\n" +
+                "}";
+        JsonNode node = mapper.readTree(jsonText);
+
+        // Null cases
+        assertNull(JsonUtils.asDateTime(node, "no-value"));
+        assertNull(JsonUtils.asDateTime(node, "json-null"));
+        assertNull(JsonUtils.asDateTime(node, "empty-string"));
+        assertNull(JsonUtils.asDateTime(node, "blank-string"));
+        assertNull(JsonUtils.asDateTime(node, "bad-format"));
+
+        // Success case
+        DateTime dateTime = JsonUtils.asDateTime(node, "success-with-time-zone");
+        assertNotNull(dateTime);
+        assertEquals(expectedDateTimeStr, dateTime.toString());
+    }
+
     @Test
     public void asText() throws Exception {
         JsonNode node = mapper.readTree(esc("{'key':'value'}"));
