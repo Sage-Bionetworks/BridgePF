@@ -356,7 +356,7 @@ public class CacheProviderMockTest {
     }
     
     @Test
-    public void setObjectWithReexpireOfString() {
+    public void setObjectOfString() {
         when(jedisOps.set(CACHE_KEY, "\"test\"")).thenReturn("OK");
         
         cacheProvider.setObject(CACHE_KEY, "test");
@@ -364,10 +364,44 @@ public class CacheProviderMockTest {
     }
     
     @Test
-    public void setObjectOfString() {
+    public void addToSet() {
+        cacheProvider.addCacheKeyToSet(CACHE_KEY, "member");
+        
+        verify(jedisOps).sadd(CACHE_KEY, "member");
     }
     
+    @Test
+    public void removeSetOfCacheKeys() {
+        doReturn(Sets.newHashSet("key1", "key2")).when(jedisOps).smembers(CACHE_KEY);
+        doReturn(transaction).when(jedisOps).getTransaction(CACHE_KEY);
+        
+        cacheProvider.removeSetOfCacheKeys(CACHE_KEY);
+        verify(transaction).del("key1");
+        verify(transaction).del("key2");
+        verify(transaction).del(CACHE_KEY);
+        verify(transaction).exec();
+    }
+    
+    @Test
+    public void nullSetDoesNotDelete() {
+        doReturn(null).when(jedisOps).smembers(CACHE_KEY);
+        doReturn(transaction).when(jedisOps).getTransaction(CACHE_KEY);
+        
+        cacheProvider.removeSetOfCacheKeys(CACHE_KEY);
+        verify(transaction, never()).del(anyString());
+        verify(transaction, never()).exec();
+    }
 
+    @Test
+    public void emptySetDoesNotDelete() {
+        doReturn(Sets.newHashSet()).when(jedisOps).smembers(CACHE_KEY);
+        doReturn(transaction).when(jedisOps).getTransaction(CACHE_KEY);
+        
+        cacheProvider.removeSetOfCacheKeys(CACHE_KEY);
+        verify(transaction, never()).del(anyString());
+        verify(transaction, never()).exec();
+    }
+    
     private void assertSession(String json) {
         JedisOps jedisOps = mock(JedisOps.class);
         
