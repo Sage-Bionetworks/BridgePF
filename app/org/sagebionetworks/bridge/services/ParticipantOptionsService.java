@@ -23,6 +23,7 @@ import com.google.common.collect.Maps;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
@@ -70,14 +71,15 @@ public class ParticipantOptionsService {
     public void setBoolean(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, boolean value) {
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(healthCode));
-        checkNotNull(option == ParticipantOption.EMAIL_NOTIFICATIONS);
+        checkArgument(option == ParticipantOption.EMAIL_NOTIFICATIONS);
         
         AccountId accountId = AccountId.forHealthCode(studyIdentifier.getIdentifier(), healthCode);
         Account account = accountDao.getAccount(accountId);
-        if (account != null) {
-            account.setNotifyByEmail(value);
-            accountDao.updateAccount(account, false);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class, "Account  not found");
         }
+        account.setNotifyByEmail(value);
+        accountDao.updateAccount(account, false);
     }
 
     /**
@@ -86,14 +88,15 @@ public class ParticipantOptionsService {
     public void setString(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, String value) {
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(healthCode));
-        checkNotNull(option == ParticipantOption.EXTERNAL_IDENTIFIER);
+        checkArgument(option == ParticipantOption.EXTERNAL_IDENTIFIER);
         
         AccountId accountId = AccountId.forHealthCode(studyIdentifier.getIdentifier(), healthCode);
         Account account = accountDao.getAccount(accountId);
-        if (account != null) {
-            account.setExternalId(value);
-            accountDao.updateAccount(account, false);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class, "Account  not found");
         }
+        account.setExternalId(value);
+        accountDao.updateAccount(account, false);
     }
 
     /**
@@ -102,14 +105,15 @@ public class ParticipantOptionsService {
     public void setEnum(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, Enum<?> value) {
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(healthCode));
-        checkNotNull(option == ParticipantOption.SHARING_SCOPE);
+        checkArgument(option == ParticipantOption.SHARING_SCOPE);
         
         AccountId accountId = AccountId.forHealthCode(studyIdentifier.getIdentifier(), healthCode);
         Account account = accountDao.getAccount(accountId);
-        if (account != null) {
-            account.setSharingScope((SharingScope)value);
-            accountDao.updateAccount(account, false);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class, "Account  not found");
         }
+        account.setSharingScope((SharingScope)value);
+        accountDao.updateAccount(account, false);
     }
 
     /**
@@ -119,14 +123,15 @@ public class ParticipantOptionsService {
     public void setStringSet(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, Set<String> value) {
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(healthCode));
-        checkNotNull(option == ParticipantOption.DATA_GROUPS);
+        checkArgument(option == ParticipantOption.DATA_GROUPS);
         
         AccountId accountId = AccountId.forHealthCode(studyIdentifier.getIdentifier(), healthCode);
         Account account = accountDao.getAccount(accountId);
-        if (account != null) {
-            account.setDataGroups(value);
-            accountDao.updateAccount(account, false);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class, "Account  not found");
         }
+        account.setDataGroups(value);
+        accountDao.updateAccount(account, false);
     }
 
     /**
@@ -135,26 +140,28 @@ public class ParticipantOptionsService {
     public void setOrderedStringSet(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, LinkedHashSet<String> value) {
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(healthCode));
-        checkNotNull(option == ParticipantOption.LANGUAGES);
+        checkArgument(option == ParticipantOption.LANGUAGES);
         
         AccountId accountId = AccountId.forHealthCode(studyIdentifier.getIdentifier(), healthCode);
         Account account = accountDao.getAccount(accountId);
-        if (account != null) {
-            account.setLanguages(value);
-            accountDao.updateAccount(account, false);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class, "Account  not found");
         }
+        account.setLanguages(value);
+        accountDao.updateAccount(account, false);
     }
     
     public void setDateTimeZone(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, DateTimeZone zone) {
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(healthCode));
-        checkNotNull(option == ParticipantOption.TIME_ZONE);
+        checkArgument(option == ParticipantOption.TIME_ZONE);
 
         AccountId accountId = AccountId.forHealthCode(studyIdentifier.getIdentifier(), healthCode);
         Account account = accountDao.getAccount(accountId);
-        if (account != null) {
-            account.setTimeZone(zone);
-            accountDao.updateAccount(account, false);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class, "Account  not found");
         }
+        account.setTimeZone(zone);
+        accountDao.updateAccount(account, false);
     }
 }

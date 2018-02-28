@@ -94,7 +94,7 @@ public class ParticipantOptionTest {
     }
     
     @Test
-    public void canRetrieveEmptyValuesFromStudyParticipant() {
+    public void canRetrieveEmptyValuesFromAccount() {
         Account emptyAccount = new GenericAccount();
         assertNull(ParticipantOption.DATA_GROUPS.fromAccount(emptyAccount));
         assertEquals("true",ParticipantOption.EMAIL_NOTIFICATIONS.fromAccount(emptyAccount));
@@ -108,7 +108,7 @@ public class ParticipantOptionTest {
     public void canRetrieveFromAccount() {
         GenericAccount account = new GenericAccount();
         account.setDataGroups(Sets.newHashSet("group1","group2"));
-        account.setNotifyByEmail(true);
+        account.setNotifyByEmail(false);
         account.setExternalId("testExternalID");
         account.setLanguages(TestUtils.newLinkedHashSet("en","de"));
         account.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
@@ -119,7 +119,7 @@ public class ParticipantOptionTest {
         assertTrue(result.contains("group2"));
         
         result = ParticipantOption.EMAIL_NOTIFICATIONS.fromAccount(account);
-        assertEquals("true", result);
+        assertEquals("false", result);
         
         result = ParticipantOption.EXTERNAL_IDENTIFIER.fromAccount(account);
         assertEquals("testExternalID", result);
@@ -144,7 +144,7 @@ public class ParticipantOptionTest {
     }
     
     @Test
-    public void canRetrieveEmptyValuesFromAccount() {
+    public void canRetrieveEmptyValuesFromStudyParticipant() {
         StudyParticipant emptyParticipant = new StudyParticipant.Builder().build();
         assertNull(ParticipantOption.DATA_GROUPS.fromParticipant(emptyParticipant));
         assertEquals("true",ParticipantOption.EMAIL_NOTIFICATIONS.fromParticipant(emptyParticipant));

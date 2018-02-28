@@ -12,8 +12,9 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,9 +32,12 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.Sets;
@@ -60,7 +64,8 @@ public class ParticipantOptionsServiceTest {
 
         account = new GenericAccount();
         
-        when(mockAccountDao.getAccount(any())).thenReturn(account);
+        when(mockAccountDao.getAccount(AccountId.forHealthCode(TEST_STUDY.getIdentifier(), HEALTH_CODE)))
+                .thenReturn(account);
         
         Study study = new DynamoStudy();
         study.setDataGroups(Sets.newHashSet("A","B","group1","group2","group3"));
@@ -78,8 +83,10 @@ public class ParticipantOptionsServiceTest {
     
     @Test
     public void getBoolean() {
-        account.setNotifyByEmail(Boolean.TRUE);
+        account.setNotifyByEmail(Boolean.FALSE);
+        assertFalse(service.getOptions(TestConstants.TEST_STUDY, HEALTH_CODE).getBoolean(EMAIL_NOTIFICATIONS));
         
+        account.setNotifyByEmail(Boolean.TRUE);
         assertTrue(service.getOptions(TestConstants.TEST_STUDY, HEALTH_CODE).getBoolean(EMAIL_NOTIFICATIONS));
     }
     
@@ -199,4 +206,54 @@ public class ParticipantOptionsServiceTest {
         Account captured = accountCaptor.getValue();
         assertEquals(langs, captured.getLanguages());
     }
+    
+    @Test
+    public void getLinkedHashSet() {
+        LinkedHashSet<String> langs = TestUtils.newLinkedHashSet("fr","en","kl");
+        account.setLanguages(langs);
+        
+        assertEquals(langs, service.getOptions(TestConstants.TEST_STUDY, HEALTH_CODE).getOrderedStringSet(LANGUAGES));
+    }
+    
+    @Test
+    public void getOptionsAccountNotFound() {
+        ParticipantOptionsLookup lookup = service.getOptions(TestConstants.TEST_STUDY, "not-the-right-health-code");
+        
+        assertEquals(Sets.newHashSet(), lookup.getStringSet(DATA_GROUPS));
+        assertEquals(Boolean.TRUE, lookup.getBoolean(EMAIL_NOTIFICATIONS));
+        assertNull(lookup.getString(EXTERNAL_IDENTIFIER));
+        assertEquals(TestUtils.newLinkedHashSet(), lookup.getOrderedStringSet(LANGUAGES));
+        assertEquals(SharingScope.NO_SHARING, lookup.getEnum(SHARING_SCOPE, SharingScope.class));
+        assertNull(lookup.getTimeZone(TIME_ZONE));
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void setBooleanAccountNotFound() {
+        service.setBoolean(TEST_STUDY, "bad-health-code", EMAIL_NOTIFICATIONS, Boolean.TRUE);
+    }
+
+    @Test(expected = EntityNotFoundException.class)
+    public void setStringAccountNotFound() {
+        service.setString(TEST_STUDY, "bad-health-code", EXTERNAL_IDENTIFIER, "fodder");
+    }
+
+    @Test(expected = EntityNotFoundException.class)
+    public void setEnumAccountNotFound() {
+        service.setEnum(TEST_STUDY, "bad-health-code", SHARING_SCOPE, SharingScope.ALL_QUALIFIED_RESEARCHERS);
+    }
+
+    @Test(expected = EntityNotFoundException.class)
+    public void setStringSetAccountNotFound() {
+        service.setStringSet(TEST_STUDY, "bad-health-code", DATA_GROUPS, Sets.newHashSet("group1","group2"));
+    }
+
+    @Test(expected = EntityNotFoundException.class)
+    public void setOrderedStringSetAccountNotFound() {
+        service.setOrderedStringSet(TEST_STUDY, "bad-health-code", LANGUAGES, TestUtils.newLinkedHashSet("en","fr"));
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void setDateTimeZoneAccountNotFound() {
+        service.setDateTimeZone(TEST_STUDY, "bad-health-code", TIME_ZONE, DateTimeZone.UTC);
+    }    
 }

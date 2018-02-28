@@ -31,7 +31,7 @@ public class ClientInfoTest {
     private static final String INVALID_UA_3 = "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2224.3 Safari/537.36";
     private static final String INVALID_UA_4 = "Mozilla/5 (Windows NT 5.1) Safari/537"; // Purposefully very ambiguous; still fails.
     private static final String INVALID_UA_5 = "AppName/9098209438734677529830495820945298734059682345";
-            
+
     @Test
     public void hashEquals() {
         EqualsVerifier.forClass(ClientInfo.class).allFieldsShouldBeUsed().verify();

@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
@@ -96,7 +97,11 @@ public class ExternalIdService {
                         "External ID cannot be changed or removed after assignment.");
             }
         }
-        optionsService.setString(study.getStudyIdentifier(), healthCode, EXTERNAL_IDENTIFIER, externalIdentifier);
+        try {
+            optionsService.setString(study.getStudyIdentifier(), healthCode, EXTERNAL_IDENTIFIER, externalIdentifier);    
+        } catch(EntityNotFoundException e) {
+            // For backwards compatibility, calling assignExternalId twice or before an account exists is not an error.
+        }
     }
     
     public void unassignExternalId(Study study, String externalIdentifier, String healthCode) {
