@@ -3,6 +3,12 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.TIME_ZONE;
 
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -12,22 +18,26 @@ import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.BridgeUtils;
+import com.google.common.collect.Maps;
+
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
-import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
-import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.accounts.AllParticipantOptionsLookup;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+
 
 @Component
 public class ParticipantOptionsService {
     
-    private ParticipantOptionsDao optionsDao;
+    private AccountDao accountDao;
     
     @Autowired
-    final void setParticipantOptionsDao(ParticipantOptionsDao participantOptionsDao) {
-        this.optionsDao = participantOptionsDao;
+    final void setAccountDao(AccountDao accountDao) {
+        this.accountDao = accountDao;
     }
 
     /**
@@ -35,30 +45,41 @@ public class ParticipantOptionsService {
      * accessors. If a value is not set, the value will be null in the map. A lookup object 
      * will be returned whether any values have been set for this participant or not. 
      */
-    public ParticipantOptionsLookup getOptions(String healthCode) {
+    public ParticipantOptionsLookup getOptions(StudyIdentifier studyId, String healthCode) {
         checkArgument(isNotBlank(healthCode));
         
-        return optionsDao.getOptions(healthCode);
+        // This load of the account will, if necessary, load the ParticipantOptions DDB record
+        // to retrieve the values.
+        AccountId accountId = AccountId.forHealthCode(studyId.getIdentifier(), healthCode);
+        Account account = accountDao.getAccount(accountId);
+        if (account != null) {
+            Map<String,String> map = Maps.newHashMap();
+            map.put(TIME_ZONE.name(), TIME_ZONE.fromAccount(account));
+            map.put(SHARING_SCOPE.name(), SHARING_SCOPE.fromAccount(account));
+            map.put(EMAIL_NOTIFICATIONS.name(), EMAIL_NOTIFICATIONS.fromAccount(account));
+            map.put(EXTERNAL_IDENTIFIER.name(), EXTERNAL_IDENTIFIER.fromAccount(account));
+            map.put(DATA_GROUPS.name(), DATA_GROUPS.fromAccount(account));
+            map.put(LANGUAGES.name(), LANGUAGES.fromAccount(account));
+            return new ParticipantOptionsLookup(map);
+        }
+        return new ParticipantOptionsLookup(Maps.newHashMap());
     }
     
-    /**
-     * Get all options for all participants in a study, in a lookup object that always returns a 
-     * ParticipantOptionsLookup object (event for healthCodes that have no options saved). For batch 
-     * operations on all participants in a study this is the most efficient way to get those values.
-     */
-    public AllParticipantOptionsLookup getOptionsForAllParticipants(StudyIdentifier studyIdentifier) {
-        return optionsDao.getOptionsForAllParticipants(studyIdentifier);
-    }
-
     /**
      * Persist a boolean participant option.
      */
     public void setBoolean(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, boolean value) {
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(healthCode));
-        checkNotNull(option);
+        checkArgument(option == ParticipantOption.EMAIL_NOTIFICATIONS);
         
-        optionsDao.setOption(studyIdentifier, healthCode, option, Boolean.toString(value));
+        AccountId accountId = AccountId.forHealthCode(studyIdentifier.getIdentifier(), healthCode);
+        Account account = accountDao.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class, "Account  not found");
+        }
+        account.setNotifyByEmail(value);
+        accountDao.updateAccount(account, false);
     }
 
     /**
@@ -67,9 +88,15 @@ public class ParticipantOptionsService {
     public void setString(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, String value) {
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(healthCode));
-        checkNotNull(option);
+        checkArgument(option == ParticipantOption.EXTERNAL_IDENTIFIER);
         
-        optionsDao.setOption(studyIdentifier, healthCode, option, value);
+        AccountId accountId = AccountId.forHealthCode(studyIdentifier.getIdentifier(), healthCode);
+        Account account = accountDao.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class, "Account  not found");
+        }
+        account.setExternalId(value);
+        accountDao.updateAccount(account, false);
     }
 
     /**
@@ -78,10 +105,15 @@ public class ParticipantOptionsService {
     public void setEnum(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, Enum<?> value) {
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(healthCode));
-        checkNotNull(option);
-
-        String result = (value == null) ? null : value.name();
-        optionsDao.setOption(studyIdentifier, healthCode, option, result);
+        checkArgument(option == ParticipantOption.SHARING_SCOPE);
+        
+        AccountId accountId = AccountId.forHealthCode(studyIdentifier.getIdentifier(), healthCode);
+        Account account = accountDao.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class, "Account  not found");
+        }
+        account.setSharingScope((SharingScope)value);
+        accountDao.updateAccount(account, false);
     }
 
     /**
@@ -91,9 +123,15 @@ public class ParticipantOptionsService {
     public void setStringSet(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, Set<String> value) {
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(healthCode));
-        checkNotNull(option);
+        checkArgument(option == ParticipantOption.DATA_GROUPS);
         
-        optionsDao.setOption(studyIdentifier, healthCode, option, BridgeUtils.setToCommaList(value));
+        AccountId accountId = AccountId.forHealthCode(studyIdentifier.getIdentifier(), healthCode);
+        Account account = accountDao.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class, "Account  not found");
+        }
+        account.setDataGroups(value);
+        accountDao.updateAccount(account, false);
     }
 
     /**
@@ -102,44 +140,28 @@ public class ParticipantOptionsService {
     public void setOrderedStringSet(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, LinkedHashSet<String> value) {
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(healthCode));
-        checkNotNull(option);
+        checkArgument(option == ParticipantOption.LANGUAGES);
         
-        setStringSet(studyIdentifier, healthCode, option, value);
+        AccountId accountId = AccountId.forHealthCode(studyIdentifier.getIdentifier(), healthCode);
+        Account account = accountDao.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class, "Account  not found");
+        }
+        account.setLanguages(value);
+        accountDao.updateAccount(account, false);
     }
     
     public void setDateTimeZone(StudyIdentifier studyIdentifier, String healthCode, ParticipantOption option, DateTimeZone zone) {
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(healthCode));
-        checkNotNull(option);
+        checkArgument(option == ParticipantOption.TIME_ZONE);
 
-        optionsDao.setOption(studyIdentifier, healthCode, option, DateUtils.timeZoneToOffsetString(zone));
+        AccountId accountId = AccountId.forHealthCode(studyIdentifier.getIdentifier(), healthCode);
+        Account account = accountDao.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class, "Account  not found");
+        }
+        account.setTimeZone(zone);
+        accountDao.updateAccount(account, false);
     }
-    
-    public void setAllOptions(StudyIdentifier studyIdentifier, String healthCode, Map<ParticipantOption,String> options) {
-        checkNotNull(studyIdentifier);
-        checkArgument(isNotBlank(healthCode));
-        checkNotNull(options);
-        
-        optionsDao.setAllOptions(studyIdentifier, healthCode, options);
-    }
-    
-    /**
-     * Delete the entire record associated with a participant in the study and all options.
-     */
-    public void deleteAllParticipantOptions(String healthCode) {
-        checkArgument(isNotBlank(healthCode));
-        
-        optionsDao.deleteAllOptions(healthCode);
-    }
-    
-    /**
-     * Delete a single option for a participant. 
-     */
-    public void deleteOption(String healthCode, ParticipantOption option) {
-        checkArgument(isNotBlank(healthCode));
-        checkNotNull(option);
-        
-        optionsDao.deleteOption(healthCode, option);
-    }
-    
 }

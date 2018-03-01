@@ -11,7 +11,6 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 
 import java.util.Map;
 
@@ -79,9 +78,6 @@ public class UserAdminServiceMockTest {
     private ActivityEventService activityEventService;
     
     @Mock
-    private ParticipantOptionsService participantOptionsService;
-    
-    @Mock
     private ExternalIdService externalIdService;
     
     @Mock
@@ -110,7 +106,6 @@ public class UserAdminServiceMockTest {
         service.setHealthDataService(healthDataService);
         service.setScheduledActivityService(scheduledActivityService);
         service.setActivityEventService(activityEventService);
-        service.setParticipantOptionsService(participantOptionsService);
         service.setExternalIdService(externalIdService);
 
         // Make a user with multiple consent statuses, and just verify that we call the 
@@ -224,10 +219,8 @@ public class UserAdminServiceMockTest {
         
         doReturn("userId").when(account).getId();
         doReturn("healthCode").when(account).getHealthCode();
+        doReturn("externalId").when(account).getExternalId();
         doReturn(account).when(accountDao).getAccount(accountId);
-        
-        doReturn(lookup).when(participantOptionsService).getOptions("healthCode");
-        doReturn("externalId").when(lookup).getString(EXTERNAL_IDENTIFIER);
         
         service.deleteUser(study, "userId");
         
@@ -239,7 +232,6 @@ public class UserAdminServiceMockTest {
         verify(scheduledActivityService).deleteActivitiesForUser("healthCode");
         verify(activityEventService).deleteActivityEvents("healthCode");
         verify(externalIdService).unassignExternalId(study, "externalId", "healthCode");
-        verify(participantOptionsService).deleteAllParticipantOptions("healthCode");
         verify(accountDao).deleteAccount(accountId);
     }
     

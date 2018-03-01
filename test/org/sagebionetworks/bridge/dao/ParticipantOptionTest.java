@@ -12,6 +12,8 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -92,6 +94,56 @@ public class ParticipantOptionTest {
     }
     
     @Test
+    public void canRetrieveEmptyValuesFromAccount() {
+        Account emptyAccount = new GenericAccount();
+        assertNull(ParticipantOption.DATA_GROUPS.fromAccount(emptyAccount));
+        assertEquals("true",ParticipantOption.EMAIL_NOTIFICATIONS.fromAccount(emptyAccount));
+        assertNull(ParticipantOption.EXTERNAL_IDENTIFIER.fromAccount(emptyAccount));
+        assertNull(ParticipantOption.LANGUAGES.fromAccount(emptyAccount));
+        assertNull(ParticipantOption.SHARING_SCOPE.fromAccount(emptyAccount));
+        assertNull(ParticipantOption.TIME_ZONE.fromAccount(emptyAccount));
+    }
+    
+    @Test
+    public void canRetrieveFromAccount() {
+        GenericAccount account = new GenericAccount();
+        account.setDataGroups(Sets.newHashSet("group1","group2"));
+        account.setNotifyByEmail(false);
+        account.setExternalId("testExternalID");
+        account.setLanguages(TestUtils.newLinkedHashSet("en","de"));
+        account.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
+        account.setTimeZone(DateTimeZone.forOffsetHours(-7));
+        
+        String result = ParticipantOption.DATA_GROUPS.fromAccount(account);
+        assertTrue(result.contains("group1"));
+        assertTrue(result.contains("group2"));
+        
+        result = ParticipantOption.EMAIL_NOTIFICATIONS.fromAccount(account);
+        assertEquals("false", result);
+        
+        result = ParticipantOption.EXTERNAL_IDENTIFIER.fromAccount(account);
+        assertEquals("testExternalID", result);
+        
+        result = ParticipantOption.LANGUAGES.fromAccount(account);
+        assertEquals("en,de", result);
+        
+        result = ParticipantOption.SHARING_SCOPE.fromAccount(account);
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS.name(), result);
+        
+        result = ParticipantOption.TIME_ZONE.fromAccount(account);
+        assertEquals("-07:00", result);
+    }
+    
+    @Test
+    public void canRetrieveUTCFromAccount() {
+        Account account = new GenericAccount();
+        account.setTimeZone(DateTimeZone.forOffsetHours(0));
+        
+        assertEquals("UTC", account.getTimeZone().toString());
+        assertEquals("+00:00", ParticipantOption.TIME_ZONE.fromAccount(account));
+    }
+    
+    @Test
     public void canRetrieveEmptyValuesFromStudyParticipant() {
         StudyParticipant emptyParticipant = new StudyParticipant.Builder().build();
         assertNull(ParticipantOption.DATA_GROUPS.fromParticipant(emptyParticipant));
@@ -100,7 +152,7 @@ public class ParticipantOptionTest {
         assertNull(ParticipantOption.LANGUAGES.fromParticipant(emptyParticipant));
         assertNull(ParticipantOption.SHARING_SCOPE.fromParticipant(emptyParticipant));
         assertNull(ParticipantOption.TIME_ZONE.fromParticipant(emptyParticipant));
-    }
+    }    
     
     @Test
     public void cannotBeNull() {

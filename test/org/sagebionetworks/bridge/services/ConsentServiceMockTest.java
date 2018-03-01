@@ -105,6 +105,7 @@ public class ConsentServiceMockTest {
                 .withSignedOn(SIGNED_ON).build();
         
         account = spy(new GenericAccount()); // mock(Account.class);
+        ((GenericAccount)account).setId(ID);
         when(accountDao.getAccount(any(AccountId.class))).thenReturn(account);
         
         StudyConsentView studyConsentView = mock(StudyConsentView.class);
