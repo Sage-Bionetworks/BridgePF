@@ -21,6 +21,8 @@ import org.sagebionetworks.bridge.services.AuthenticationService;
  */
 public interface AccountDao {
     
+    static final int MIGRATION_VERSION = 1;
+    
     /**
      * Verify an email address using a supplied, one-time token for verification.
      */

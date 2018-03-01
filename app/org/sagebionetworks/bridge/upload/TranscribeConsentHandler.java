@@ -27,7 +27,7 @@ public class TranscribeConsentHandler implements UploadValidationHandler {
     @Override
     public void handle(@Nonnull UploadValidationContext context) {
         // read sharing scope from options service
-        ParticipantOptionsLookup lookup = optionsService.getOptions(context.getHealthCode());
+        ParticipantOptionsLookup lookup = optionsService.getOptions(context.getStudy(), context.getHealthCode());
 
         // Get sharing scope (defaults to NO_SHARING)
         SharingScope userSharingScope = lookup.getEnum(SHARING_SCOPE, SharingScope.class);

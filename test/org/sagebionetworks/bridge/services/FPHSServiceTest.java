@@ -73,7 +73,7 @@ public class FPHSServiceTest {
     
     @Test
     public void registerExternalIdentifier() throws Exception {
-        doReturn(new ParticipantOptionsLookup(Maps.newHashMap())).when(optionsService).getOptions("BBB");
+        doReturn(new ParticipantOptionsLookup(Maps.newHashMap())).when(optionsService).getOptions(TEST_STUDY, "BBB");
         
         service.registerExternalIdentifier(TEST_STUDY, "BBB", externalId);
         verify(dao).registerExternalId(externalId);
@@ -83,7 +83,7 @@ public class FPHSServiceTest {
     @Test
     public void failureOfDaoDoeNotSetExternalId() throws Exception {
         // Mock this, throw exception afterward
-        doReturn(new ParticipantOptionsLookup(Maps.newHashMap())).when(optionsService).getOptions("BBB");
+        doReturn(new ParticipantOptionsLookup(Maps.newHashMap())).when(optionsService).getOptions(TEST_STUDY, "BBB");
         doThrow(new EntityNotFoundException(ExternalIdentifier.class, "Not found")).when(dao).registerExternalId(externalId);
         try {
             service.registerExternalIdentifier(TEST_STUDY, "BBB", externalId);
@@ -96,7 +96,7 @@ public class FPHSServiceTest {
             // Options service will be called. The id may not be registered, if so, the call
             // can be called again, the service calls are idempotent. Or else it actually was 
             // recorded, in which case it's also fine, despite the exception.
-            verify(optionsService).getOptions("BBB");
+            verify(optionsService).getOptions(TEST_STUDY, "BBB");
             verify(optionsService).setString(TEST_STUDY, "BBB", EXTERNAL_IDENTIFIER, externalId.getIdentifier());
             verify(optionsService).setStringSet(TEST_STUDY, "BBB", DATA_GROUPS, Sets.newHashSet("football_player"));
             verifyNoMoreInteractions(optionsService);

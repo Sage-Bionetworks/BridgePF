@@ -326,7 +326,8 @@ public class AuthenticationServiceTest {
         
         Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), holder.getIdentifier()));
         
-        Set<String> persistedGroups = optionsService.getOptions(account.getHealthCode()).getStringSet(DATA_GROUPS);
+        Set<String> persistedGroups = optionsService.getOptions(study.getStudyIdentifier(), account.getHealthCode())
+                .getStringSet(DATA_GROUPS);
         assertEquals(groups, persistedGroups);
     }
     
@@ -439,7 +440,7 @@ public class AuthenticationServiceTest {
         UserSession session = authService.signIn(study, context, testUser.getSignIn());
         assertEquals(LANGS, session.getParticipant().getLanguages());
         
-        LinkedHashSet<String> persistedLangs = optionsService.getOptions(testUser.getHealthCode()).getOrderedStringSet(LANGUAGES);
+        LinkedHashSet<String> persistedLangs = optionsService.getOptions(testUser.getStudyIdentifier(), testUser.getHealthCode()).getOrderedStringSet(LANGUAGES);
         assertEquals(LANGS, persistedLangs);
     }
     

@@ -27,6 +27,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
@@ -307,7 +308,7 @@ public class UserProfileControllerTest {
         map.put(DATA_GROUPS.name(), "group1,group2");
         ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(map);
         
-        when(optionsService.getOptions(HEALTH_CODE)).thenReturn(lookup);
+        when(optionsService.getOptions(TestConstants.TEST_STUDY, HEALTH_CODE)).thenReturn(lookup);
         
         Result result = controller.getDataGroups();
         TestUtils.assertResult(result, 200);
