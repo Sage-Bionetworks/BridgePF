@@ -59,7 +59,7 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
     @Override
     public MimeTypeEmail getMimeTypeEmail() throws MessagingException {
         tokenMap.putAll(BridgeUtils.studyTemplateVariables(getStudy()));
-        tokenMap.put("host", BridgeConfigFactory.getConfig().getHostnameWithPostfix("webservices"));
+        tokenMap.put("host", BridgeConfigFactory.getConfig().getHostnameWithPostfix("ws"));
         
         final MimeTypeEmailBuilder emailBuilder = new MimeTypeEmailBuilder();
 
