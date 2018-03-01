@@ -211,7 +211,8 @@ public class AuthenticationController extends BaseController {
         // We have removed the cookie in the past, only to find out that clients were unknowingly
         // depending on the cookie to preserve the session token. So it remains.
         response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", 
+                bridgeConfig.getHostnameWithPostfix("webservices"), true, true);
         
         RequestInfo requestInfo = getRequestInfoBuilder(session)
                 .withSignedInOn(DateUtils.getCurrentDateTime()).build();

@@ -32,6 +32,7 @@ import play.mvc.Http;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -670,12 +671,14 @@ public class BaseControllerTest {
         Http.Context.current.set(context);
         
         BaseController controller = new SchedulePlanController();
+        controller.setBridgeConfig(BridgeConfigFactory.getConfig());
         
         String token = controller.getSessionToken();
         assertEquals("ABC", token);
         
         verify(mockResponse).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, "ABC",
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/",
+                BridgeConfigFactory.getConfig().getHostnameWithPostfix("webservices"), true, true);
     }
     
     @Test

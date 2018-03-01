@@ -206,7 +206,8 @@ public abstract class BaseController extends Controller {
         if (sessionCookie != null && sessionCookie.value() != null && !"".equals(sessionCookie.value())) {
             String sessionToken = sessionCookie.value();
             response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken,
-                    BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
+                    BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/",
+                    bridgeConfig.getHostnameWithPostfix("webservices"), true, true);
             return sessionToken;
         }
         return null;

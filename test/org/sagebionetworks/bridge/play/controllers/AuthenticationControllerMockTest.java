@@ -42,6 +42,7 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -142,6 +143,7 @@ public class AuthenticationControllerMockTest {
         DateTimeUtils.setCurrentMillisFixed(NOW.getMillis());
         
         controller = spy(new AuthenticationController());
+        controller.setBridgeConfig(BridgeConfigFactory.getConfig());
         controller.setAuthenticationService(authenticationService);
         controller.setCacheProvider(cacheProvider);
         controller.setAccountWorkflowService(accountWorkflowService);
@@ -446,7 +448,8 @@ public class AuthenticationControllerMockTest {
 
         verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
         verify(mockResponse).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/",
+                BridgeConfigFactory.getConfig().getHostnameWithPostfix("webservices"), true, true);
         
         RequestInfo requestInfo = requestInfoCaptor.getValue();
         assertEquals("spId", requestInfo.getUserId());
@@ -896,7 +899,8 @@ public class AuthenticationControllerMockTest {
         verifyMetrics();
         
         verify(response).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, TEST_SESSION_TOKEN,
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/",
+                BridgeConfigFactory.getConfig().getHostnameWithPostfix("webservices"), true, true);
         
         verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
         RequestInfo info = requestInfoCaptor.getValue();

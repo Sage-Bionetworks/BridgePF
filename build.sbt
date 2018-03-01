@@ -10,7 +10,7 @@ resolvers += "Heroku Maven repository" at "http://s3pository.heroku.com/maven-ce
 
 resolvers += "Bridge Maven repository" at "https://repo-maven.sagebridge.org/"
 
-resolvers += "Syanpse repository" at "http://sagebionetworks.artifactoryonline.com/sagebionetworks/libs-releases-local/"
+resolvers += "Synapse repository" at "http://sagebionetworks.artifactoryonline.com/sagebionetworks/libs-releases-local/"
 
 resolvers += Resolver.mavenLocal
 
