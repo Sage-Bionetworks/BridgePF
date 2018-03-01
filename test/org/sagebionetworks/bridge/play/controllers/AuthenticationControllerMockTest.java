@@ -449,7 +449,7 @@ public class AuthenticationControllerMockTest {
         verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
         verify(mockResponse).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
                 BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/",
-                BridgeConfigFactory.getConfig().getHostnameWithPostfix("webservices"), true, true);
+                BridgeConfigFactory.getConfig().get("webservices.url"), false, false);
         
         RequestInfo requestInfo = requestInfoCaptor.getValue();
         assertEquals("spId", requestInfo.getUserId());
@@ -900,7 +900,7 @@ public class AuthenticationControllerMockTest {
         
         verify(response).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, TEST_SESSION_TOKEN,
                 BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/",
-                BridgeConfigFactory.getConfig().getHostnameWithPostfix("webservices"), true, true);
+                BridgeConfigFactory.getConfig().get("webservices.url"), false, false);
         
         verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
         RequestInfo info = requestInfoCaptor.getValue();

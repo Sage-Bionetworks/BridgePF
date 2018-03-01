@@ -5,6 +5,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -210,9 +211,10 @@ public class AuthenticationController extends BaseController {
         writeSessionInfoToMetrics(session);  
         // We have removed the cookie in the past, only to find out that clients were unknowingly
         // depending on the cookie to preserve the session token. So it remains.
+        boolean useSsl = bridgeConfig.getEnvironment() != Environment.LOCAL;
         response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", 
-                bridgeConfig.getHostnameWithPostfix("webservices"), true, true);
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/",
+                bridgeConfig.get("webservices.url"), useSsl, useSsl);
         
         RequestInfo requestInfo = getRequestInfoBuilder(session)
                 .withSignedInOn(DateUtils.getCurrentDateTime()).build();
