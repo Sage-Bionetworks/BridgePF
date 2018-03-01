@@ -6,6 +6,10 @@ GET    /mobile/verifyEmail.html                @org.sagebionetworks.bridge.play.
 GET    /mobile/resetPassword.html              @org.sagebionetworks.bridge.play.controllers.ApplicationController.resetPassword(study: String ?= "api")
 GET    /mobile/startSession.html               @org.sagebionetworks.bridge.play.controllers.ApplicationController.startSession(study: String ?= null, email: String ?= null, token: String ?= null)
 GET    /mobile/:study/startSession.html        @org.sagebionetworks.bridge.play.controllers.ApplicationController.startSession(study: String, email: String ?= null, token: String ?= null)
+GET    /vse                                    @org.sagebionetworks.bridge.play.controllers.ApplicationController.verifyStudyEmail(study: String ?= "api")
+GET    /ve                                     @org.sagebionetworks.bridge.play.controllers.ApplicationController.verifyEmail(study: String ?= "api")
+GET    /rp                                     @org.sagebionetworks.bridge.play.controllers.ApplicationController.resetPassword(study: String ?= "api")
+GET    /s/:study                               @org.sagebionetworks.bridge.play.controllers.ApplicationController.startSession(study: String, email: String ?= null, token: String ?= null)
 GET    /.well-known/assetlinks.json            @org.sagebionetworks.bridge.play.controllers.ApplicationController.androidAppLinks
 GET    /.well-known/apple-app-site-association @org.sagebionetworks.bridge.play.controllers.ApplicationController.appleAppLinks
 
