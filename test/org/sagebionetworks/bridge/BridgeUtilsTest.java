@@ -36,30 +36,31 @@ public class BridgeUtilsTest {
     
     @Test
     public void parseAccountId() {
-        AccountId accountId = BridgeUtils.parseAccountId("test", "identifier");
+        // Identifier has upper-case letter to ensure we don't downcase or otherwise change it.
+        AccountId accountId = BridgeUtils.parseAccountId("test", "IdentifierA9");
         assertEquals("test", accountId.getStudyId());
-        assertEquals("identifier", accountId.getId());
+        assertEquals("IdentifierA9", accountId.getId());
         
-        accountId = BridgeUtils.parseAccountId("test", "externalid:identifier");
+        accountId = BridgeUtils.parseAccountId("test", "externalid:IdentifierA9");
         assertEquals("test", accountId.getStudyId());
-        assertEquals("identifier", accountId.getExternalId());
+        assertEquals("IdentifierA9", accountId.getExternalId());
         
-        accountId = BridgeUtils.parseAccountId("test", "externalId:identifier");
+        accountId = BridgeUtils.parseAccountId("test", "externalId:IdentifierA9");
         assertEquals("test", accountId.getStudyId());
-        assertEquals("identifier", accountId.getExternalId());
+        assertEquals("IdentifierA9", accountId.getExternalId());
         
-        accountId = BridgeUtils.parseAccountId("test", "healthcode:identifier");
+        accountId = BridgeUtils.parseAccountId("test", "healthcode:IdentifierA9");
         assertEquals("test", accountId.getStudyId());
-        assertEquals("identifier", accountId.getHealthCode());
+        assertEquals("IdentifierA9", accountId.getHealthCode());
         
-        accountId = BridgeUtils.parseAccountId("test", "healthCode:identifier");
+        accountId = BridgeUtils.parseAccountId("test", "healthCode:IdentifierA9");
         assertEquals("test", accountId.getStudyId());
-        assertEquals("identifier", accountId.getHealthCode());
+        assertEquals("IdentifierA9", accountId.getHealthCode());
         
         // Unrecognized prefix is just part of the userId
-        accountId = BridgeUtils.parseAccountId("test", "unk:identifier");
+        accountId = BridgeUtils.parseAccountId("test", "unk:IdentifierA9");
         assertEquals("test", accountId.getStudyId());
-        assertEquals("unk:identifier", accountId.getId());
+        assertEquals("unk:IdentifierA9", accountId.getId());
     }
     
     @Test

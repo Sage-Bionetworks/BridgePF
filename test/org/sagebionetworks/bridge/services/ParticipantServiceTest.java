@@ -741,8 +741,6 @@ public class ParticipantServiceTest {
         AccountId accountId = AccountId.forEmail(STUDY.getIdentifier(), "email@email.com");
         
         participantService.getParticipant(STUDY, accountId, true);
-        
-        verify(accountDao).getAccount(accountId);
     }
     
     @Test
