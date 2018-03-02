@@ -25,7 +25,6 @@ public class UploadValidationContext {
     private Map<String, File> unzippedDataFileMap;
     private JsonNode infoJsonNode;
     private HealthDataRecord healthDataRecord;
-    private Map<String, byte[]> attachmentsByFieldName;
     private String recordId;
 
     /** Health code of the user contributing the health data. */
@@ -144,8 +143,10 @@ public class UploadValidationContext {
         this.unzippedDataFileMap = unzippedDataFileMap;
     }
 
-    // todo doc
-    // Created by InitRecordHandler. Referenced by UploadFormatHandler and its children.
+    /**
+     * info.json is a special file, which we parse and place here. This is created by InitRecordHandler and read by
+     * UploadFormatHandler and its inner handlers.
+     */
     public JsonNode getInfoJsonNode() {
         return infoJsonNode;
     }
@@ -201,11 +202,12 @@ public class UploadValidationContext {
         copy.study = this.study;
         copy.upload = this.upload;
         copy.success = this.success;
+        copy.tempDir = this.tempDir;
         copy.dataFile = this.dataFile;
         copy.decryptedDataFile = this.decryptedDataFile;
         copy.unzippedDataFileMap = this.unzippedDataFileMap;
+        copy.infoJsonNode = this.infoJsonNode;
         copy.healthDataRecord = this.healthDataRecord;
-        copy.attachmentsByFieldName = this.attachmentsByFieldName;
         copy.recordId = this.recordId;
 
         // messageList is the only field that gets deep copied

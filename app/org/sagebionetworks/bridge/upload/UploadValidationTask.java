@@ -61,6 +61,11 @@ public class UploadValidationTask implements Runnable {
         this.fileHelper = fileHelper;
     }
 
+    /** This is package-scoped to facilitate unit tests. */
+    /* package-scoped */ FileHelper getFileHelper() {
+        return fileHelper;
+    }
+
     /** List of validation handlers. This is configured by Spring through the task factory. */
     public final void setHandlerList(List<UploadValidationHandler> handlerList) {
         this.handlerList = handlerList;

@@ -138,6 +138,7 @@ public class DynamoUpload2 implements Upload {
     }
 
     /** @see #getHealthCode */
+    @Override
     public void setHealthCode(String healthCode) {
         this.healthCode = healthCode;
     }

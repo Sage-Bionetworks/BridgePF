@@ -228,9 +228,9 @@ public class HealthDataService {
 
             // filter on fieldType
             if (UploadFieldType.ATTACHMENT_TYPE_SET.contains(oneFieldDef.getType())) {
-                uploadFileHelper.uploadJsonNodeAsAttachment(fieldValue, recordId, fieldName);
-                String attachmentFilename = recordId + '-' + fieldName;
-                outputData.set(fieldName, TextNode.valueOf(attachmentFilename));
+                JsonNode attachmentIdNode = uploadFileHelper.uploadJsonNodeAsAttachment(fieldValue, recordId,
+                        fieldName);
+                outputData.set(fieldName, attachmentIdNode);
             } else {
                 outputData.set(fieldName, fieldValue);
             }

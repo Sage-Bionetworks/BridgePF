@@ -60,7 +60,11 @@ public class InitRecordHandler implements UploadValidationHandler {
 
         // Transcribe data from info.json. appVersion and phoneInfo are top-level attributes. For backwards
         // compatibility, metadata is info.json verbatim.
-        JsonNode infoJson = parseFileAsJson(uploadId, unzippedDataFileMap, UploadUtil.FILENAME_INFO_JSON);
+        JsonNode infoJson = parseFileAsJson(unzippedDataFileMap, UploadUtil.FILENAME_INFO_JSON);
+        if (infoJson == null) {
+            throw new UploadValidationException("upload ID " + uploadId + " does not contain info.json file");
+        }
+
         record.setAppVersion(JsonUtils.asText(infoJson, UploadUtil.FIELD_APP_VERSION));
         record.setPhoneInfo(JsonUtils.asText(infoJson, UploadUtil.FIELD_PHONE_INFO));
         record.setMetadata(infoJson);
@@ -70,33 +74,29 @@ public class InitRecordHandler implements UploadValidationHandler {
 
         // Copy metadata.json to record.userMetadata. (The names are due to an old feature conflicting with the name of
         // a new feature.) Lightly validate that metadata.json is a JSON object. BridgeEX will handle the rest.
-        JsonNode metadataJson = parseFileAsJson(uploadId, unzippedDataFileMap, UploadUtil.FILENAME_METADATA_JSON);
-        if (metadataJson.isObject()) {
-            record.setUserMetadata(metadataJson);
-        } else {
-            context.addMessage("upload " + uploadId + " contains metadata.json, but it is not a JSON object");
-        }
+        JsonNode metadataJson = parseFileAsJson(unzippedDataFileMap, UploadUtil.FILENAME_METADATA_JSON);
+        record.setUserMetadata(metadataJson);
     }
 
-    // todo doc
-    // todo Always returns a non-null JsonNode
-    public JsonNode parseFileAsJson(String uploadId, Map<String, File> fileMap, String filename)
-            throws UploadValidationException {
+    // Helper method to parse a JSON file from the upload. Generally used for info.json and metadata.json. This method
+    // guarantees that either the file exists, can be parsed as JSON, and is a JSON object, or else it returns null. It
+    // will never return NullNode or a node of the incorrect type.
+    // Package-scoped for unit tests.
+    JsonNode parseFileAsJson(Map<String, File> fileMap, String filename) {
         File file = fileMap.get(filename);
         if (file == null || !fileHelper.fileExists(file)) {
-            throw new UploadValidationException("Upload ID " + uploadId + " must contain file " + filename);
+            return null;
         }
 
         JsonNode jsonNode;
         try (InputStream fileInputStream = fileHelper.getInputStream(file)) {
             jsonNode = BridgeObjectMapper.get().readTree(fileInputStream);
         } catch (IOException ex) {
-            throw new UploadValidationException("Couldn't parse " + filename + " for upload " + uploadId);
+            return null;
         }
 
-        if (jsonNode == null || jsonNode.isNull()) {
-            // info.json is required. If it doesn't exist, fast-fail now.
-            throw new UploadValidationException("Upload ID " + uploadId + " contains null value for file " + filename);
+        if (jsonNode == null || !jsonNode.isObject()) {
+            return null;
         }
 
         return jsonNode;

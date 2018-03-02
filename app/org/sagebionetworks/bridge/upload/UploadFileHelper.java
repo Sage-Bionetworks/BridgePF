@@ -24,12 +24,16 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.schema.SchemaUtils;
 
-// todo doc
+/**
+ * Utility helper class for uploads, which wraps FileHelper and S3Helper and handles various tasks of parsing files and
+ * uploading attachments.
+ */
 @Component
 public class UploadFileHelper {
     private static final Logger LOG = LoggerFactory.getLogger(UploadFileHelper.class);
 
-    private static final String ATTACHMENT_BUCKET = BridgeConfigFactory.getConfig().getProperty("attachment.bucket");
+    // Package-scoped for unit tests.
+    static final String ATTACHMENT_BUCKET = BridgeConfigFactory.getConfig().getProperty("attachment.bucket");
 
     private FileHelper fileHelper;
     private S3Helper s3Helper;
@@ -42,11 +46,28 @@ public class UploadFileHelper {
 
     /** S3 Helper, used to upload attachments. */
     @Resource(name = "s3Helper")
-    public void setS3Helper(S3Helper s3Helper) {
+    public final void setS3Helper(S3Helper s3Helper) {
         this.s3Helper = s3Helper;
     }
 
-    // todo doc
+    /**
+     * Given some upload parameters and a list of files, find the value that matches the given upload schema field. The
+     * field definition could refer to a file, or it can refer to the top-level key within a JSON file.
+     *
+     * @param uploadId
+     *         upload ID, used for logging and to generate attachment IDs
+     * @param sanitizedUnzippedDataFileMap
+     *         map of upload files by name; the file names should be sanitized
+     * @param fieldDef
+     *         field definition to find the value for
+     * @param parsedSanitizedJsonFileCache
+     *         a cache of parsed sanitized JSON nodes, so that we don't have to parse and sanitize any JSON file more
+     *         than once; the caller should initially pass in an empty writable map and reuse the same map for
+     *         subsequent calls in a single upload
+     * @return the JSON node that matches field, or a TextNode with the attachment ID if it's an attachment
+     * @throws UploadValidationException
+     *         if parsing JSON files or uploading attachments fails
+     */
     public JsonNode findValueForField(String uploadId, Map<String, File> sanitizedUnzippedDataFileMap,
             UploadFieldDefinition fieldDef, Map<String, Map<String, JsonNode>> parsedSanitizedJsonFileCache)
             throws UploadValidationException {
@@ -160,7 +181,10 @@ public class UploadFileHelper {
         return fieldNode;
     }
 
-    // todo doc
+    /**
+     * Uploads a JSON node as an upload attachment, then returns a JsonNode containing the attachment's filename in S3,
+     * ready for use in a health data record.
+     */
     public JsonNode uploadJsonNodeAsAttachment(JsonNode node, String uploadId, String fieldName)
             throws UploadValidationException {
         String filename = uploadId + '-' + fieldName;

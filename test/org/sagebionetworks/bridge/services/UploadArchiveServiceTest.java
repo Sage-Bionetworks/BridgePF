@@ -8,7 +8,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.notNull;
 import static org.mockito.Mockito.when;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
@@ -16,22 +18,25 @@ import java.util.Map;
 
 import com.google.common.base.Charsets;
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableMap;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.crypto.BcCmsEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
 import org.sagebionetworks.bridge.crypto.PemUtils;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.springframework.core.io.ClassPathResource;
 
 @SuppressWarnings("unchecked")
 public class UploadArchiveServiceTest {
-    private UploadArchiveService archiveService;
+    private static final byte[] PLAIN_TEXT_DATA = "This is my raw data".getBytes(Charsets.UTF_8);
 
-    @Before
-    public void before() throws Exception {
+    private static UploadArchiveService archiveService;
+    private static byte[] encryptedData;
+
+    @BeforeClass
+    public static void before() throws Exception {
         // encryptor
         File certFile = new ClassPathResource("/cms/rsacert.pem").getFile();
         byte[] certBytes = Files.readAllBytes(certFile.toPath());
@@ -48,22 +53,43 @@ public class UploadArchiveServiceTest {
         // archive service
         archiveService = new UploadArchiveService();
         archiveService.setCmsEncryptorCache(mockEncryptorCache);
+        archiveService.setMaxNumZipEntries(1000000);
+        archiveService.setMaxZipEntrySize(1000000);
+
+        // Encrypt some data, so our tests have something to work with.
+        encryptedData = archiveService.encrypt("test-study", PLAIN_TEXT_DATA);
     }
 
     @Test
-    public void encryptDecryptRoundTrip() {
-        // starting data
-        String inputStr = "This is my raw data.";
-        byte[] inputData = inputStr.getBytes(Charsets.UTF_8);
-
-        // encrypt
-        byte[] encryptedData = archiveService.encrypt("test-study", inputData);
+    public void encryptSuccess() {
         assertNotNull(encryptedData);
         assertTrue(encryptedData.length > 0);
+    }
 
-        // decrypt
+    @Test(expected = BadRequestException.class)
+    public void encryptNullStudyId() {
+        archiveService.encrypt(null, PLAIN_TEXT_DATA);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void encryptEmptyStudyId() {
+        archiveService.encrypt("", PLAIN_TEXT_DATA);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void encryptBlankStudyId() {
+        archiveService.encrypt("   ", PLAIN_TEXT_DATA);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void encryptNullBytes() {
+        archiveService.encrypt("test-study", null);
+    }
+
+    @Test
+    public void decryptSuccess() {
         byte[] decryptedData = archiveService.decrypt("test-study", encryptedData);
-        assertEquals(inputStr, new String(decryptedData, Charsets.UTF_8));
+        assertArrayEquals(PLAIN_TEXT_DATA, decryptedData);
     }
 
     @Test(expected = BridgeServiceException.class)
@@ -73,29 +99,51 @@ public class UploadArchiveServiceTest {
         archiveService.decrypt("test-study", garbageData);
     }
 
-    @Test
-    public void zipUnzipRoundTrip() {
-        // starting data
-        Map<String, byte[]> inputMap = ImmutableMap.of(
-                "foo", "foo data".getBytes(Charsets.UTF_8),
-                "bar", "bar data".getBytes(Charsets.UTF_8),
-                "baz", "baz data".getBytes(Charsets.UTF_8));
-
-        // zip
-        byte[] zippedData = archiveService.zip(inputMap);
-        assertNotNull(zippedData);
-        assertTrue(zippedData.length > 0);
-
-        // unzip
-        Map<String, byte[]> unzippedData = archiveService.unzip(zippedData);
-        assertEquals(3, unzippedData.size());
-        assertArrayEquals(inputMap.get("foo"), unzippedData.get("foo"));
-        assertArrayEquals(inputMap.get("bar"), unzippedData.get("bar"));
-        assertArrayEquals(inputMap.get("baz"), unzippedData.get("baz"));
+    @Test(expected = BadRequestException.class)
+    public void decryptBytesNullStudyId() {
+        archiveService.decrypt(null, encryptedData);
     }
 
-    // There was originally a test here for unzipping garbage data. However, it looks like Java
-    // ZipInputStream.getNextEntry() will just return null if the stream contains garbage data.
+    @Test(expected = BadRequestException.class)
+    public void decryptBytesEmptyStudyId() {
+        archiveService.decrypt("", encryptedData);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void decryptBytesBlankStudyId() {
+        archiveService.decrypt("   ", encryptedData);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void decryptBytesNullBytes() {
+        archiveService.decrypt("test-study", (byte[]) null);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void decryptStreamNullStudyId() throws Exception {
+        try (InputStream encryptedInputStream = new ByteArrayInputStream(encryptedData)) {
+            archiveService.decrypt(null, encryptedInputStream);
+        }
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void decryptStreamEmptyStudyId() throws Exception {
+        try (InputStream encryptedInputStream = new ByteArrayInputStream(encryptedData)) {
+            archiveService.decrypt("", encryptedInputStream);
+        }
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void decryptStreamBlankStudyId() throws Exception {
+        try (InputStream encryptedInputStream = new ByteArrayInputStream(encryptedData)) {
+            archiveService.decrypt("   ", encryptedInputStream);
+        }
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void decryptStreamNullBytes() {
+        archiveService.decrypt("test-study", (InputStream) null);
+    }
 
     @Test
     public void decryptAndUnzipRealFile() throws Exception {

@@ -1,161 +1,180 @@
 package org.sagebionetworks.bridge.upload;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import java.util.HashMap;
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
+import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.file.InMemoryFileHelper;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
+@SuppressWarnings({ "rawtypes", "unchecked" })
 public class GenericUploadFormatHandlerTest {
     private static final String APP_VERSION = "version 1.0.0, build 2";
+    private static final String ATTACHMENT_ID = "dummy-attachment-id";
     private static final String PHONE_INFO = "Unit Tests";
     private static final String SCHEMA_ID = "test-schema";
     private static final String SCHEMA_NAME = "Test Schema";
     private static final int SCHEMA_REV = 3;
+    private static final String UPLOAD_ID = "upload-id";
 
     private static final String CREATED_ON_STRING = "2017-09-26T01:10:21.173+0900";
     private static final long CREATED_ON_MILLIS = DateUtils.convertToMillisFromEpoch(CREATED_ON_STRING);
     private static final String CREATED_ON_TIMEZONE = "+0900";
 
+    private InMemoryFileHelper inMemoryFileHelper;
     private GenericUploadFormatHandler handler;
+    private UploadFileHelper mockUploadFileHelper;
     private UploadSchemaService mockSchemaService;
+    private File tmpDir;
 
     @Before
-    public void setup() {
+    public void setup() throws Exception {
+        // Set up InMemoryFileHelper with tmp dir
+        inMemoryFileHelper = new InMemoryFileHelper();
+        tmpDir = inMemoryFileHelper.createTempDir();
+
+        // Mock dependencies
+        mockUploadFileHelper = mock(UploadFileHelper.class);
+        when(mockUploadFileHelper.findValueForField(any(), any(), any(), any())).thenReturn(TextNode.valueOf(
+                ATTACHMENT_ID));
+
         mockSchemaService = mock(UploadSchemaService.class);
+
+        // Set up handler
         handler = new GenericUploadFormatHandler();
+        handler.setFileHelper(inMemoryFileHelper);
+        handler.setUploadFileHelper(mockUploadFileHelper);
         handler.setUploadSchemaService(mockSchemaService);
     }
 
     @Test
     public void test() throws Exception {
+        // Most of the complexities in this class have been moved to UploadFileHelper. As a result, we only need to
+        // test 1 field and treat it as a passthrough to UploadFileHelper. The only behavior we need to test is
+        // filename sanitization.
+
         // mock schema service
-        List<UploadFieldDefinition> fieldDefList = ImmutableList.of(
-                new UploadFieldDefinition.Builder().withName("record.json.my-int").withType(UploadFieldType.INT)
-                        .build(),
-                new UploadFieldDefinition.Builder().withName("record.json.sanitize____field")
-                        .withType(UploadFieldType.INT).build(),
-                new UploadFieldDefinition.Builder().withName("record.json.my-attachment")
-                        .withType(UploadFieldType.ATTACHMENT_V2).withFileExtension(".json").withMimeType("text/json")
-                        .build(),
-                new UploadFieldDefinition.Builder().withName("nonJson.txt").withType(UploadFieldType.ATTACHMENT_V2)
-                        .withFileExtension(".txt").withMimeType("text/plain").build(),
-                new UploadFieldDefinition.Builder().withName("sanitize____attachment.txt")
-                        .withType(UploadFieldType.ATTACHMENT_V2).withFileExtension(".txt").withMimeType("text/plain")
-                        .build());
+        UploadFieldDefinition sanitizeAttachmentTxtField = new UploadFieldDefinition.Builder()
+                .withName("sanitize____attachment.txt").withType(UploadFieldType.ATTACHMENT_V2)
+                .withFileExtension(".txt").withMimeType("text/plain").build();
+        List<UploadFieldDefinition> fieldDefList = ImmutableList.of(sanitizeAttachmentTxtField);
         mockSchemaServiceWithFields(fieldDefList);
 
         // Setup inputs.
-        String recordJsonText = "{\n" +
-                "   \"my-int\":17,\n" +
-                "   \"sanitize!@#$field\":42,\n" +
-                "   \"my-attachment\":{\"my-key\":\"my-value\"}\n" +
-                "}";
-        JsonNode recordJsonNode = BridgeObjectMapper.get().readTree(recordJsonText);
+        File sanitizeAttachmentTxtFile = makeFileWithContent("sanitize!@#$attachment.txt",
+                "Sanitize my filename");
+        Map<String, File> fileMap = ImmutableMap.of("sanitize!@#$attachment.txt", sanitizeAttachmentTxtFile);
 
-        byte[] nonJsonTxtContent = "Non-JSON attachment".getBytes();
-        byte[] sanitizeAttachmentTxtContent = "Sanitize my filename".getBytes();
-
-        Map<String, JsonNode> jsonDataMap = ImmutableMap.<String, JsonNode>builder().put("info.json", makeInfoJson())
-                .put("record.json", recordJsonNode).build();
-        Map<String, byte[]> unzippedDataMap = ImmutableMap.<String, byte[]>builder()
-                .put("nonJson.txt", nonJsonTxtContent).put("sanitize!@#$attachment.txt", sanitizeAttachmentTxtContent)
-                .build();
-
-        UploadValidationContext context = makeContextWithContent(jsonDataMap, unzippedDataMap);
+        UploadValidationContext context = makeContextWithContent(fileMap);
+        context.setInfoJsonNode(makeInfoJson());
 
         // execute and validate
         handler.handle(context);
         validateCommonProps(context);
 
         JsonNode dataMap = context.getHealthDataRecord().getData();
-        assertEquals(2, dataMap.size());
-        assertEquals(17, dataMap.get("record.json.my-int").intValue());
-        assertEquals(42, dataMap.get("record.json.sanitize____field").intValue());
+        assertEquals(1, dataMap.size());
+        assertEquals(ATTACHMENT_ID, dataMap.get("sanitize____attachment.txt").textValue());
 
-        Map<String, byte[]> attachmentMap = context.getAttachmentsByFieldName();
-        assertEquals(3, attachmentMap.size());
-        assertEquals(nonJsonTxtContent, attachmentMap.get("nonJson.txt"));
-        assertEquals(sanitizeAttachmentTxtContent, attachmentMap.get("sanitize____attachment.txt"));
+        ArgumentCaptor<Map> sanitizedFileMapCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(mockUploadFileHelper).findValueForField(eq(UPLOAD_ID), sanitizedFileMapCaptor.capture(),
+                eq(sanitizeAttachmentTxtField), any());
 
-        JsonNode jsonAttachmentNode = BridgeObjectMapper.get().readTree(attachmentMap.get(
-                "record.json.my-attachment"));
-        assertEquals(1, jsonAttachmentNode.size());
-        assertEquals("my-value", jsonAttachmentNode.get("my-key").textValue());
+        Map<String, File> sanitizedFileMap = sanitizedFileMapCaptor.getValue();
+        assertEquals(1, sanitizedFileMap.size());
+        assertSame(sanitizeAttachmentTxtFile, sanitizedFileMap.get("sanitize____attachment.txt"));
     }
 
     @Test
     public void withDataFilename() throws Exception {
+        // Same test as above, excecpt with the data filename parameter.
+
         // mock schema service
+        UploadFieldDefinition sanitizeAttachmentTxtField = new UploadFieldDefinition.Builder()
+                .withName("sanitize____attachment.txt").withType(UploadFieldType.ATTACHMENT_V2)
+                .withFileExtension(".txt").withMimeType("text/plain").build();
         List<UploadFieldDefinition> fieldDefList = ImmutableList.of(
                 new UploadFieldDefinition.Builder().withName("foo").withType(UploadFieldType.STRING).withMaxLength(24)
                         .build(),
-                new UploadFieldDefinition.Builder().withName("bar").withType(UploadFieldType.STRING).withMaxLength(24)
-                        .build(),
-                new UploadFieldDefinition.Builder().withName("additional.json.foo").withType(UploadFieldType.STRING)
-                        .withMaxLength(24).build(),
-                new UploadFieldDefinition.Builder().withName("additional.json.bar").withType(UploadFieldType.STRING)
-                        .withMaxLength(24).build(),
-                new UploadFieldDefinition.Builder().withName("attachment.json").withType(UploadFieldType.ATTACHMENT_V2)
-                        .withFileExtension(".json").withMimeType("text/json").build());
+                new UploadFieldDefinition.Builder().withName("bar").withType(UploadFieldType.ATTACHMENT_V2).build(),
+                sanitizeAttachmentTxtField);
         mockSchemaServiceWithFields(fieldDefList);
 
+        // Mock UploadFileHelper for the datafile-specific attachment.
+        when(mockUploadFileHelper.uploadJsonNodeAsAttachment(any(), any(), any())).thenReturn(TextNode.valueOf(
+                "data-file-attachment-id"));
+
         // Setup inputs.
+        String recordJsonText = "{\n" +
+                "   \"foo\":\"foo-value\",\n" +
+                "   \"bar\":\"bar is an attachment\"\n" +
+                "}";
+        File recordJsonFile = makeFileWithContent("record.json", recordJsonText);
+
+        File sanitizeAttachmentTxtFile = makeFileWithContent("sanitize!@#$attachment.txt",
+                "Sanitize my filename");
+
+        Map<String, File> fileMap = ImmutableMap.<String, File>builder().put("record.json", recordJsonFile)
+                .put("sanitize!@#$attachment.txt", sanitizeAttachmentTxtFile).build();
+
+        UploadValidationContext context = makeContextWithContent(fileMap);
         ObjectNode infoJsonNode = makeInfoJson();
         infoJsonNode.put(UploadUtil.FIELD_DATA_FILENAME, "record.json");
-
-        ObjectNode recordJsonNode = BridgeObjectMapper.get().createObjectNode();
-        recordJsonNode.put("foo", "foo-value");
-        recordJsonNode.put("bar", "bar-value");
-
-        ObjectNode additionalJsonNode = BridgeObjectMapper.get().createObjectNode();
-        additionalJsonNode.put("foo", "additional-foo-value");
-        additionalJsonNode.put("bar", "additional-bar-value");
-
-        ObjectNode attachmentJsonNode = BridgeObjectMapper.get().createObjectNode();
-        attachmentJsonNode.put("foo", "foo-attachment-value");
-        attachmentJsonNode.put("bar", "bar-attachment-value");
-
-        Map<String, JsonNode> jsonDataMap = ImmutableMap.<String, JsonNode>builder().put("info.json", infoJsonNode)
-                .put("record.json", recordJsonNode).put("additional.json", additionalJsonNode)
-                .put("attachment.json", attachmentJsonNode).build();
-
-        UploadValidationContext context = makeContextWithContent(jsonDataMap, ImmutableMap.of());
+        context.setInfoJsonNode(infoJsonNode);
 
         // execute and validate
         handler.handle(context);
         validateCommonProps(context);
 
         JsonNode dataMap = context.getHealthDataRecord().getData();
-        assertEquals(4, dataMap.size());
+        assertEquals(3, dataMap.size());
         assertEquals("foo-value", dataMap.get("foo").textValue());
-        assertEquals("bar-value", dataMap.get("bar").textValue());
-        assertEquals("additional-foo-value", dataMap.get("additional.json.foo").textValue());
-        assertEquals("additional-bar-value", dataMap.get("additional.json.bar").textValue());
+        assertEquals("data-file-attachment-id", dataMap.get("bar").textValue());
+        assertEquals(ATTACHMENT_ID, dataMap.get("sanitize____attachment.txt").textValue());
 
-        Map<String, byte[]> attachmentMap = context.getAttachmentsByFieldName();
-        assertEquals(1, attachmentMap.size());
-        JsonNode outputAttachmentJsonNode = BridgeObjectMapper.get().readTree(attachmentMap.get("attachment.json"));
-        assertEquals(attachmentJsonNode, outputAttachmentJsonNode);
+        // Verify calls to UploadFileHelper.
+        verify(mockUploadFileHelper).uploadJsonNodeAsAttachment(TextNode.valueOf("bar is an attachment"), UPLOAD_ID,
+                "bar");
+
+        ArgumentCaptor<Map> sanitizedFileMapCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(mockUploadFileHelper).findValueForField(eq(UPLOAD_ID), sanitizedFileMapCaptor.capture(),
+                eq(sanitizeAttachmentTxtField), any());
+
+        Map<String, File> sanitizedFileMap = sanitizedFileMapCaptor.getValue();
+        assertEquals(2, sanitizedFileMap.size());
+        assertSame(recordJsonFile, sanitizedFileMap.get("record.json"));
+        assertSame(sanitizeAttachmentTxtFile, sanitizedFileMap.get("sanitize____attachment.txt"));
+
+        // We don't call mockUploadFileHelper for any other field.
+        verifyNoMoreInteractions(mockUploadFileHelper);
     }
 
     private void mockSchemaServiceWithFields(List<UploadFieldDefinition> fieldDefList) {
@@ -181,18 +200,19 @@ public class GenericUploadFormatHandlerTest {
         return infoJsonNode;
     }
 
-    private static UploadValidationContext makeContextWithContent(Map<String, JsonNode> jsonDataMap,
-            Map<String, byte[]> unzippedDataMap) {
+    private static UploadValidationContext makeContextWithContent(Map<String, File> fileMap) {
         UploadValidationContext context = new UploadValidationContext();
 
-        // Put the content (JSON data map and unzipped data map) into the context.
-        context.setJsonDataMap(jsonDataMap);
-        context.setUnzippedDataMap(unzippedDataMap);
+        // Make dummy upload with upload ID.
+        Upload upload = Upload.create();
+        upload.setUploadId(UPLOAD_ID);
+        context.setUpload(upload);
 
-        // Handler expects the context to have these attributes, including the empty data map and empty attachments
-        // map.
+        // Put the file map into the context.
+        context.setUnzippedDataFileMap(fileMap);
+
+        // Handler expects the context to have these attributes, including the empty data map.
         context.setStudy(TestConstants.TEST_STUDY);
-        context.setAttachmentsByFieldName(new HashMap<>());
 
         HealthDataRecord record = HealthDataRecord.create();
         record.setData(BridgeObjectMapper.get().createObjectNode());
@@ -211,5 +231,11 @@ public class GenericUploadFormatHandlerTest {
 
         // No messages.
         assertTrue(context.getMessageList().isEmpty());
+    }
+
+    private File makeFileWithContent(String name, String content) {
+        File file = inMemoryFileHelper.newFile(tmpDir, name);
+        inMemoryFileHelper.writeBytes(file, content.getBytes(Charsets.UTF_8));
+        return file;
     }
 }
