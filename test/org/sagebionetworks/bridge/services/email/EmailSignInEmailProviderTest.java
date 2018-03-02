@@ -39,7 +39,7 @@ public class EmailSignInEmailProviderTest {
                 .withToken("token", "ABC").build();
         
         String url = String.format("https://%s/mobile/startSession.html?email=%s&study=foo&token=ABC", 
-                BridgeConfigFactory.getConfig().getHostnameWithPostfix("webservices"),
+                BridgeConfigFactory.getConfig().getHostnameWithPostfix("ws"),
                 URLEncoder.encode(RECIPIENT_EMAIL, "UTF-8"));
         
         String finalBody = String.format("Click here to sign in: <a href=\"%s\">%s</a>", url, url);

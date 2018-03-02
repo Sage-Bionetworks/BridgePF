@@ -170,7 +170,7 @@ public class StudyServiceMockTest {
         // Mock templates
         service.setStudyEmailVerificationTemplateSubject(mockTemplateAsSpringResource(
                 "Verify your study email"));
-        service.setStudyEmailVerificationTemplate(mockTemplateAsSpringResource("Click here ${url}"));
+        service.setStudyEmailVerificationTemplate(mockTemplateAsSpringResource("Click here ${url} ${shortUrl}"));
 
         when(service.getNameScopingToken()).thenReturn(TEST_NAME_SCOPING_TOKEN);
         
@@ -276,6 +276,8 @@ public class StudyServiceMockTest {
         MimeTypeEmail email = emailProviderCaptor.getValue().getMimeTypeEmail();
         String body = (String) email.getMessageParts().get(0).getContent();
         assertTrue(body.contains("/mobile/verifyStudyEmail.html?study="+ TEST_STUDY_ID + "&token=" +
+                VERIFICATION_TOKEN + "&type=consent_notification"));
+        assertTrue(body.contains("/vse?study="+ TEST_STUDY_ID + "&token=" +
                 VERIFICATION_TOKEN + "&type=consent_notification"));
         assertTrue(email.getSenderAddress().contains(SUPPORT_EMAIL));
 

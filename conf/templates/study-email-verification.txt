@@ -6,7 +6,7 @@
     bar of your browser:
 </p>
 
-<p>${url}</p>
+<p>${shortUrl}</p>
 
 <p>
     Once you confirm your email, you will be able to receive email notifications for your study.

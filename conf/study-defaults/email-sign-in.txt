@@ -1,1 +1,1 @@
-Click here to sign in: ${url}
+Click here to sign in: ${shortUrl}

@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiFunction;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -58,15 +58,29 @@ public class AccountWorkflowService {
     static final String CONFIG_KEY_CHANNEL_THROTTLE_TIMEOUT_SECONDS = "channel.throttle.timeout.seconds";
     private static final String PASSWORD_RESET_TOKEN_EXPIRED = "Password reset token has expired (or already been used).";
     private static final String VERIFY_EMAIL_TOKEN_EXPIRED = "Email verification token has expired (or already been used).";
+    
     private static final String RESET_PASSWORD_URL = "/mobile/resetPassword.html?study=%s&sptoken=%s";
     private static final String VERIFY_EMAIL_URL = "/mobile/verifyEmail.html?study=%s&sptoken=%s";
     private static final String EMAIL_SIGNIN_URL = "/mobile/%s/startSession.html?email=%s&study=%s&token=%s";
+    
+    private static final String SHORT_RESET_PASSWORD_URL = "/rp?study=%s&sptoken=%s";
+    private static final String SHORT_VERIFY_EMAIL_URL = "/ve?study=%s&sptoken=%s";
+    private static final String SHORT_EMAIL_SIGNIN_URL = "/s/%s?email=%s&study=%s&token=%s";
+    
     private static final String EXP_WINDOW_TOKEN = "expirationWindow";
-    private static final String EMAIL_TOKEN = "email";
-    private static final String TOKEN_TOKEN = "token";
-    private static final String URL_TOKEN = "url";
-    private static final String EMAIL_SIGNIN_TOKEN = "emailSignInUrl"; 
-    private static final String RESET_PASSWORD_TOKEN = "resetPasswordUrl";
+    
+    private static final String EMAIL_KEY = "email";
+    private static final String TOKEN_KEY = "token";
+    
+    private static final String URL_KEY = "url";
+    private static final String SHORT_URL_KEY = "shortUrl";
+     
+    private static final String EMAIL_SIGNIN_URL_KEY = "emailSignInUrl";
+    private static final String SHORT_EMAIL_SIGNIN_URL_KEY = "shortEmailSignInUrl";
+    
+    private static final String RESET_PASSWORD_URL_KEY = "resetPasswordUrl";
+    private static final String SHORT_RESET_PASSWORD_URL_KEY = "shortResetPasswordUrl";
+        
     private static final String EMAIL_SIGNIN_REQUEST_KEY = "%s:%s:signInRequest";
     private static final String PHONE_SIGNIN_REQUEST_KEY = "%s:%s:phoneSignInRequest";
     
@@ -184,12 +198,14 @@ public class AccountWorkflowService {
         saveVerification(sptoken, new VerificationData(study.getIdentifier(), userId));
 
         String url = getVerifyEmailURL(study, sptoken);
+        String shortUrl = getShortVerifyEmailURL(study, sptoken);
 
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
                 .withEmailTemplate(study.getVerifyEmailTemplate())
                 .withRecipientEmail(recipientEmail)
-                .withToken(URL_TOKEN, url).build();
+                .withToken(URL_KEY, url)
+                .withToken(SHORT_URL_KEY, shortUrl).build();
         sendMailService.sendEmail(provider);
     }
     
@@ -242,14 +258,7 @@ public class AccountWorkflowService {
         
         Account account = accountDao.getAccount(accountId);
         if (account.getEmail() != null && account.getEmailVerified()) {
-            String emailSignIn = null;
-            if (study.isEmailSignInEnabled()) {
-                SignIn signIn = new SignIn.Builder().withEmail(account.getEmail()).withStudy(study.getIdentifier()).build();
-                emailSignIn = requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, EMAIL_CACHE_KEY_FUNC, emailSignInRequestInMillis,
-                        signIn, false, this::getNextToken,
-                        (theStudy, token) -> getEmailSignInURL(signIn.getEmail(), theStudy.getIdentifier(), token));
-            }
-            sendPasswordResetRelatedEmail(study, account.getEmail(), emailSignIn, study.getAccountExistsTemplate());    
+            sendPasswordResetRelatedEmail(study, account.getEmail(), true, study.getAccountExistsTemplate());    
         } else if (account.getPhone() != null && account.getPhoneVerified()) {
             String appName = (study.getShortName() != null) ? study.getShortName() : "Bridge";
             String message = "Account for " + appName + " already exists. Reset password: ";
@@ -270,7 +279,7 @@ public class AccountWorkflowService {
         Account account = accountDao.getAccount(accountId);
         if (account != null) {
             if (account.getEmail() != null && account.getEmailVerified()) {
-                sendPasswordResetRelatedEmail(study, account.getEmail(), null, study.getResetPasswordTemplate());    
+                sendPasswordResetRelatedEmail(study, account.getEmail(), false, study.getResetPasswordTemplate());    
             } else if (account.getPhone() != null && account.getPhoneVerified()) {
                 String appName = (study.getShortName() != null) ? study.getShortName() : "Bridge";
                 String message = "Reset " + appName + " password: ";
@@ -279,24 +288,40 @@ public class AccountWorkflowService {
         }
     }
     
-    private void sendPasswordResetRelatedEmail(Study study, String email, String emailSignIn, EmailTemplate template) {
+    private void sendPasswordResetRelatedEmail(Study study, String email, boolean includeEmailSignIn,
+            EmailTemplate template) {
         String sptoken = getNextToken();
         
         String cacheKey = sptoken + ":" + study.getIdentifier();
         cacheProvider.setObject(cacheKey, email, EXPIRE_IN_SECONDS);
         
         String url = getResetPasswordURL(study, sptoken);
+        String shortUrl = getShortResetPasswordURL(study, sptoken);
         
-        BasicEmailProvider provider = new BasicEmailProvider.Builder()
+        BasicEmailProvider.Builder builder = new BasicEmailProvider.Builder()
             .withStudy(study)
             .withEmailTemplate(template)
             .withRecipientEmail(email)
-            // for backwards compatibility; we now also set as passwordResetUrl
-            .withToken(URL_TOKEN, url) 
-            .withToken(RESET_PASSWORD_TOKEN, url)
-            .withToken(EMAIL_SIGNIN_TOKEN, emailSignIn)
-            .withToken(EXP_WINDOW_TOKEN, Integer.toString(EXPIRE_IN_SECONDS/60/60)).build();
-        sendMailService.sendEmail(provider);
+            // for backwards compatibility; we also set as passwordResetUrl
+            .withToken(RESET_PASSWORD_URL_KEY, url)
+            .withToken(SHORT_RESET_PASSWORD_URL_KEY, shortUrl)
+            .withToken(URL_KEY, url)
+            .withToken(SHORT_URL_KEY, shortUrl)
+            .withToken(EXP_WINDOW_TOKEN, Integer.toString(EXPIRE_IN_SECONDS/60/60));
+            
+        if (includeEmailSignIn && study.isEmailSignInEnabled()) {
+            SignIn signIn = new SignIn.Builder().withEmail(email).withStudy(study.getIdentifier()).build();
+            requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, EMAIL_CACHE_KEY_FUNC, emailSignInRequestInMillis,
+                signIn, false, this::getNextToken, (theStudy, token) -> {
+                    // get and add the sign in URLs.
+                    String emailUrl = getEmailSignInURL(signIn.getEmail(), theStudy.getIdentifier(), token);
+                    String emailShortUrl = getShortEmailSignInURL(signIn.getEmail(), theStudy.getIdentifier(), token);
+                    
+                    builder.withToken(EMAIL_SIGNIN_URL_KEY, emailUrl);
+                    builder.withToken(SHORT_EMAIL_SIGNIN_URL_KEY, emailShortUrl);
+                });
+        }
+        sendMailService.sendEmail(builder.build());
     }
     
     private void sendPasswordResetRelatedSMS(Study study, Phone phone, String message) {
@@ -304,7 +329,7 @@ public class AccountWorkflowService {
         String cacheKey = sptoken + ":phone:" + study.getIdentifier();
         cacheProvider.setObject(cacheKey, getPhoneString(phone), EXPIRE_IN_SECONDS);
         
-        String url = getResetPasswordURL(study, sptoken);
+        String url = getShortResetPasswordURL(study, sptoken);
 
         notificationsService.sendSMSMessage(study.getStudyIdentifier(), phone, message + url);
     }
@@ -358,7 +383,6 @@ public class AccountWorkflowService {
             String message = "Enter " + formattedToken + " to sign in to " + appName;
             
             notificationsService.sendSMSMessage(study.getStudyIdentifier(), signIn.getPhone(), message);
-            return null;
         });
     }
     
@@ -372,6 +396,7 @@ public class AccountWorkflowService {
         requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, EMAIL_CACHE_KEY_FUNC, emailSignInRequestInMillis, 
                 signIn, true, this::getNextToken, (study, token) -> {
             String url = getEmailSignInURL(signIn.getEmail(), study.getIdentifier(), token);
+            String shortUrl = getShortEmailSignInURL(signIn.getEmail(), study.getIdentifier(), token);
             
             // Email is URL encoded, which is probably a mistake. We're now providing an URL that's will be 
             // opaque to the user, like the other APIs (where the templates just have a ${url} variable), but we 
@@ -382,17 +407,17 @@ public class AccountWorkflowService {
                 .withEmailTemplate(study.getEmailSignInTemplate())
                 .withStudy(study)
                 .withRecipientEmail(signIn.getEmail())
-                .withToken(EMAIL_TOKEN, BridgeUtils.encodeURIComponent(signIn.getEmail()))
-                .withToken(TOKEN_TOKEN, token)
-                .withToken(URL_TOKEN, url).build();
+                .withToken(EMAIL_KEY, BridgeUtils.encodeURIComponent(signIn.getEmail()))
+                .withToken(TOKEN_KEY, token)
+                .withToken(URL_KEY, url)
+                .withToken(SHORT_URL_KEY, shortUrl).build();
             sendMailService.sendEmail(provider);
-            return url;
         });
     }
     
-    private String requestChannelSignIn(ChannelType channelType, Validator validator, Function<SignIn, String> cacheKeySupplier,
-            AtomicLong atomicLong, SignIn signIn, boolean shouldThrottle, Supplier<String> tokenSupplier,
-            BiFunction<Study, String, String> messageSender) {
+    private void requestChannelSignIn(ChannelType channelType, Validator validator,
+            Function<SignIn, String> cacheKeySupplier, AtomicLong atomicLong, SignIn signIn, boolean shouldThrottle,
+            Supplier<String> tokenSupplier, BiConsumer<Study, String> messageSender) {
         long startTime = System.currentTimeMillis();
         Validate.entityThrowingException(validator, signIn);
 
@@ -416,14 +441,14 @@ public class AccountWorkflowService {
             } catch(InterruptedException e) {
                 // Just return, the thread was killed by the connection, the server died, etc.
             }
-            return null;
+            return;
         }
 
         ThrottleRequestType throttleType = channelType == EMAIL ? ThrottleRequestType.EMAIL_SIGNIN :
                 ThrottleRequestType.PHONE_SIGNIN;
         if (shouldThrottle && isRequestThrottled(throttleType, account.getId())) {
             // Too many requests. Throttle.
-            return null;
+            return;
         }
 
         String cacheKey = cacheKeySupplier.apply(signIn);
@@ -433,9 +458,8 @@ public class AccountWorkflowService {
             cacheProvider.setObject(cacheKey, token, SESSION_SIGNIN_EXPIRE_IN_SECONDS);
         }
 
-        String url = messageSender.apply(study, token);
+        messageSender.accept(study, token);
         atomicLong.set(System.currentTimeMillis()-startTime);
-        return url;
     }
 
     /**
@@ -534,6 +558,18 @@ public class AccountWorkflowService {
     
     private String getResetPasswordURL(Study study, String sptoken) {
         return formatWithEncodedArgs(RESET_PASSWORD_URL, study.getIdentifier(), sptoken);
+    }
+    
+    private String getShortEmailSignInURL(String email, String studyId, String token) {
+        return formatWithEncodedArgs(SHORT_EMAIL_SIGNIN_URL, studyId, email, studyId, token);
+    }
+    
+    private String getShortVerifyEmailURL(Study study, String sptoken) {
+        return formatWithEncodedArgs(SHORT_VERIFY_EMAIL_URL, study.getIdentifier(), sptoken);
+    }
+    
+    private String getShortResetPasswordURL(Study study, String sptoken) {
+        return formatWithEncodedArgs(SHORT_RESET_PASSWORD_URL, study.getIdentifier(), sptoken);
     }
     
     private String formatWithEncodedArgs(String formatString, String... strings) {
