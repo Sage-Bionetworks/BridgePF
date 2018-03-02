@@ -44,7 +44,6 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -97,6 +96,7 @@ public class AuthenticationControllerMockTest {
             .withPhone(TestConstants.PHONE).build();
     private static final SignIn PHONE_SIGN_IN = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING)
             .withPhone(TestConstants.PHONE).withToken(TEST_TOKEN).build();
+    private static final String WEBSERVICES_URL = "https://ws-test.sagebridge.org";
 
     AuthenticationController controller;
 
@@ -147,7 +147,7 @@ public class AuthenticationControllerMockTest {
         
         // Mock the configuration so we can freeze the environment to one that requires SSL.
         BridgeConfig mockConfig = mock(BridgeConfig.class);
-        when(mockConfig.get("webservices.url")).thenReturn(BridgeConfigFactory.getConfig().get("webservices.url"));
+        when(mockConfig.get("webservices.url")).thenReturn(WEBSERVICES_URL);
         when(mockConfig.getEnvironment()).thenReturn(Environment.UAT);
         
         controller = spy(new AuthenticationController());
@@ -552,7 +552,6 @@ public class AuthenticationControllerMockTest {
                 "','email':'email@email.com','password':'bar'}");
         response = mockPlayContextWithJson(json);
         when(controller.bridgeConfig.getEnvironment()).thenReturn(Environment.LOCAL);
-        when(controller.bridgeConfig.get("webservices.url")).thenReturn("http://localhost:9000");
         
         UserSession session = createSession(null, null);
         when(authenticationService.signIn(any(), any(), any())).thenReturn(session);
@@ -560,8 +559,7 @@ public class AuthenticationControllerMockTest {
         controller.signIn();
         
         verify(response).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, TEST_SESSION_TOKEN,
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/",
-                BridgeConfigFactory.getConfig().get("webservices.url"), false, false);
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", WEBSERVICES_URL, false, false);
     }
     
     @Test(expected = UnsupportedVersionException.class)
@@ -924,8 +922,7 @@ public class AuthenticationControllerMockTest {
         // For ssl to be true here, we mock the bridge configuration and set the environment
         // to something besides local. There is a separate test for when the environment is local.
         verify(response).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, TEST_SESSION_TOKEN,
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/",
-                BridgeConfigFactory.getConfig().get("webservices.url"), true, true);
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", WEBSERVICES_URL, true, true);
         
         verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
         RequestInfo info = requestInfoCaptor.getValue();
