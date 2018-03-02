@@ -118,15 +118,16 @@ public class StudyValidator implements Validator {
         if (study.getAccountLimit() < 0) {
             errors.rejectValue("accountLimit", "must be zero (no limit set) or higher");
         }
-        validateTemplate(errors, study.getVerifyEmailTemplate(), "verifyEmailTemplate", "${url}");
-        validateTemplate(errors, study.getResetPasswordTemplate(), "resetPasswordTemplate", "${url}");
+        validateTemplate(errors, study.getVerifyEmailTemplate(), "verifyEmailTemplate", "${url}", "${shortUrl}");
+        validateTemplate(errors, study.getResetPasswordTemplate(), "resetPasswordTemplate", "${url}", "${shortUrl}");
         // Existing studies don't have the template, we use a default template. Okay to be missing.
         if (study.getEmailSignInTemplate() != null) {
-            validateTemplate(errors, study.getEmailSignInTemplate(), "emailSignInTemplate", "${url}", "${token}");
+            validateTemplate(errors, study.getEmailSignInTemplate(), "emailSignInTemplate", "${url}", "${shortUrl}",
+                    "${token}");
         }
         if (study.getAccountExistsTemplate() != null) {
             validateTemplate(errors, study.getAccountExistsTemplate(), "accountExistsTemplate", "${url}",
-                    "${emailSignInUrl}", "${resetPasswordUrl}");
+                    "${shortUrl}", "${emailSignInUrl}", "${resetPasswordUrl}");
         }
         
         for (String userProfileAttribute : study.getUserProfileAttributes()) {
