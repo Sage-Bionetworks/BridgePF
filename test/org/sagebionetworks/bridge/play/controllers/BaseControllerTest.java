@@ -32,6 +32,8 @@ import play.mvc.Http;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -69,6 +71,7 @@ public class BaseControllerTest {
     private static final String TEST_WARNING_MSG = "test warning msg";
     private static final String TEST_WARNING_MSG_2 = "test warning msg 2";
     private static final String TEST_WARNING_MSG_COMBINED = TEST_WARNING_MSG + "; " + TEST_WARNING_MSG_2;
+    private static final String WEBSERVICE_URL = "https://ws-test.sagebridge.org";
     private static final Map<String, String> TEST_HEADERS;
     static {
         TEST_HEADERS = new HashMap<>();
@@ -669,13 +672,48 @@ public class BaseControllerTest {
         
         Http.Context.current.set(context);
         
+        BridgeConfig mockConfig = mock(BridgeConfig.class);
+        when(mockConfig.get("webservices.url")).thenReturn(WEBSERVICE_URL);
+        when(mockConfig.getEnvironment()).thenReturn(Environment.LOCAL);
+        
         BaseController controller = new SchedulePlanController();
+        controller.setBridgeConfig(mockConfig);
         
         String token = controller.getSessionToken();
         assertEquals("ABC", token);
         
         verify(mockResponse).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, "ABC",
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/");
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", WEBSERVICE_URL, false, false);
+    }
+    
+    @Test
+    public void requireSslOnCookies() {
+        Http.Cookie mockCookie = mock(Http.Cookie.class);
+        doReturn("ABC").when(mockCookie).value();
+        
+        Http.Request mockRequest = mock(Http.Request.class);
+        doReturn(mockCookie).when(mockRequest).cookie(BridgeConstants.SESSION_TOKEN_HEADER);
+        
+        Http.Context context = mock(Http.Context.class);
+        when(context.request()).thenReturn(mockRequest);
+
+        Http.Response mockResponse = mock(Http.Response.class);
+        when(context.response()).thenReturn(mockResponse);
+        
+        Http.Context.current.set(context);
+        
+        BaseController controller = new SchedulePlanController();
+
+        BridgeConfig mockConfig = mock(BridgeConfig.class);
+        when(mockConfig.get("webservices.url")).thenReturn(WEBSERVICE_URL);
+        when(mockConfig.getEnvironment()).thenReturn(Environment.PROD);
+        controller.setBridgeConfig(mockConfig);
+        
+        String token = controller.getSessionToken();
+        assertEquals("ABC", token);
+        
+        verify(mockResponse).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, "ABC",
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", WEBSERVICE_URL, true, true);
     }
     
     @Test

@@ -274,13 +274,13 @@ GET    /v3/studies/:studyId/participants/:userId                        @org.sag
 GET    /v3/studies/:studyId/oauth/:vendorId                             @org.sagebionetworks.bridge.play.controllers.OAuthController.getHealthCodesGrantingAccess(studyId: String, vendorId: String, offsetKey: String ?= null, pageSize: String ?= null)
 GET    /v3/studies/:studyId/oauth/:vendorId/:healthCode                 @org.sagebionetworks.bridge.play.controllers.OAuthController.getAccessToken(studyId: String, vendorId: String, healthCode: String)
 
-# Admin APIs for across studies
-POST   /v3/studies/:studyId/users                                       @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUserWithStudyId(studyId: String)
-DELETE /v3/studies/:studyId/uploadschemas/:schemaId                     @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.deleteAllRevisionsOfUploadSchema(studyId: String, schemaId: String)
-
 # Backfills
 GET    /v3/backfill/:name          @org.sagebionetworks.bridge.play.controllers.BackfillController.backfill(name: String)
 POST   /v3/backfill/:name/start    @org.sagebionetworks.bridge.play.controllers.BackfillController.start(name: String)
+ 
+# Admin APIs for across studies
+POST   /v3/studies/:studyId/users                                       @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUserWithStudyId(studyId: String)
+DELETE /v3/studies/:studyId/uploadschemas/:schemaId                     @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.deleteAllRevisionsOfUploadSchema(studyId: String, schemaId: String)
 
 # Cache Management
 GET    /v3/cache           @org.sagebionetworks.bridge.play.controllers.CacheAdminController.listItems
