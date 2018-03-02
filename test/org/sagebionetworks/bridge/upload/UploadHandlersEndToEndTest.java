@@ -257,7 +257,7 @@ public class UploadHandlersEndToEndTest {
 
         // set up TranscribeConsentHandler
         ParticipantOptionsService mockOptionsService = mock(ParticipantOptionsService.class);
-        when(mockOptionsService.getOptions(HEALTH_CODE)).thenReturn(PARTICIPANT_OPTIONS_LOOKUP);
+        when(mockOptionsService.getOptions(TestConstants.TEST_STUDY, HEALTH_CODE)).thenReturn(PARTICIPANT_OPTIONS_LOOKUP);
 
         TranscribeConsentHandler transcribeConsentHandler = new TranscribeConsentHandler();
         transcribeConsentHandler.setOptionsService(mockOptionsService);

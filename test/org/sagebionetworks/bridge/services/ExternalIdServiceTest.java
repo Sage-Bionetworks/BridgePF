@@ -89,7 +89,7 @@ public class ExternalIdServiceTest {
         STUDY.setExternalIdValidationEnabled(true);
         doThrow(new EntityNotFoundException(ExternalIdentifier.class)).when(externalIdDao)
                 .assignExternalId(STUDY.getStudyIdentifier(), EXT_ID, HEALTH_CODE);
-        doReturn(lookup).when(optionsService).getOptions(HEALTH_CODE);
+        doReturn(lookup).when(optionsService).getOptions(STUDY.getStudyIdentifier(), HEALTH_CODE);
         
         try {
             externalIdService.assignExternalId(STUDY, EXT_ID, HEALTH_CODE);
@@ -194,7 +194,7 @@ public class ExternalIdServiceTest {
 
     private void setupExternalIdTest(boolean withValidation, String existingValue) {
         STUDY.setExternalIdValidationEnabled(withValidation);
-        when(optionsService.getOptions(HEALTH_CODE)).thenReturn(lookup);
+        when(optionsService.getOptions(STUDY.getStudyIdentifier(), HEALTH_CODE)).thenReturn(lookup);
         when(lookup.getString(EXTERNAL_IDENTIFIER)).thenReturn(existingValue);
     }
     

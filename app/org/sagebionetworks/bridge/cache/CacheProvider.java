@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.cache;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Resource;
 
@@ -298,6 +299,37 @@ public class CacheProvider {
         checkNotNull(cacheKey);
         try {
             jedisOps.del(cacheKey);
+        } catch(Throwable e) {
+            promptToStartRedisIfLocal(e);
+            throw new BridgeServiceException(e);
+        }        
+    }
+    
+    public void addCacheKeyToSet(String cacheKeyOfSet, String cacheKeyInSet) {
+        checkNotNull(cacheKeyOfSet);
+        checkNotNull(cacheKeyInSet);
+        try {
+            jedisOps.sadd(cacheKeyOfSet, cacheKeyInSet);
+        } catch(Throwable e) {
+            promptToStartRedisIfLocal(e);
+            throw new BridgeServiceException(e);
+        }
+    }
+    
+    public void removeSetOfCacheKeys(String cacheKeyOfSet) {
+        checkNotNull(cacheKeyOfSet);
+        
+        try {
+            Set<String> members = jedisOps.smembers(cacheKeyOfSet);
+            if (members != null && !members.isEmpty()) {
+                try (JedisTransaction transaction = jedisOps.getTransaction()) {
+                    for (String oneMember : members) {
+                        transaction.del(oneMember);
+                    }
+                    transaction.del(cacheKeyOfSet);
+                    transaction.exec();
+                }
+            }
         } catch(Throwable e) {
             promptToStartRedisIfLocal(e);
             throw new BridgeServiceException(e);

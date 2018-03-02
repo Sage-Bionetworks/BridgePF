@@ -7,12 +7,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.TIME_ZONE;
 
 import java.util.Collections;
 import java.util.List;
@@ -31,8 +25,6 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -48,7 +40,6 @@ import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
-import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
@@ -73,8 +64,6 @@ public class ParticipantService {
     private static final String DATE_RANGE_ERROR = "startDate should be before endDate";
 
     private AccountDao accountDao;
-
-    private ParticipantOptionsService optionsService;
 
     private SubpopulationService subpopService;
 
@@ -104,11 +93,6 @@ public class ParticipantService {
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
-    }
-
-    @Autowired
-    final void setParticipantOptionsService(ParticipantOptionsService optionsService) {
-        this.optionsService = optionsService;
     }
 
     @Autowired
@@ -177,14 +161,12 @@ public class ParticipantService {
         }
 
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
-
-        ParticipantOptionsLookup lookup = optionsService.getOptions(account.getHealthCode());
-        builder.withSharingScope(lookup.getEnum(SHARING_SCOPE, SharingScope.class));
-        builder.withNotifyByEmail(lookup.getBoolean(EMAIL_NOTIFICATIONS));
-        builder.withExternalId(lookup.getString(EXTERNAL_IDENTIFIER));
-        builder.withDataGroups(lookup.getStringSet(DATA_GROUPS));
-        builder.withLanguages(lookup.getOrderedStringSet(LANGUAGES));
-        builder.withTimeZone(lookup.getTimeZone(TIME_ZONE));
+        builder.withSharingScope(account.getSharingScope());
+        builder.withNotifyByEmail(account.getNotifyByEmail());
+        builder.withExternalId(account.getExternalId());
+        builder.withDataGroups(account.getDataGroups());
+        builder.withLanguages(account.getLanguages());
+        builder.withTimeZone(account.getTimeZone());
         builder.withFirstName(account.getFirstName());
         builder.withLastName(account.getLastName());
         builder.withEmail(account.getEmail());
@@ -264,11 +246,10 @@ public class ParticipantService {
         
         Account account = accountDao.constructAccount(study, participant.getEmail(), participant.getPhone(),
                 participant.getPassword());
-        Map<ParticipantOption, String> options = Maps.newHashMap();
         
         externalIdService.reserveExternalId(study, participant.getExternalId(), account.getHealthCode());
 
-        updateAccountOptionsAndRoles(study, callerRoles, options, account, participant);
+        updateAccountAndRoles(study, callerRoles, account, participant);
         
         boolean sendVerifyEmail = requestSendVerifyEmail && study.isEmailVerificationEnabled();
 
@@ -284,7 +265,6 @@ public class ParticipantService {
         String accountId = accountDao.createAccount(study, account);
 
         externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());
-        optionsService.setAllOptions(study.getStudyIdentifier(), account.getHealthCode(), options);
         // send verify email
         if (sendVerifyEmail && !study.isAutoVerificationEmailSuppressed()) {
             accountWorkflowService.sendEmailVerificationToken(study, accountId, account.getEmail());
@@ -300,12 +280,13 @@ public class ParticipantService {
         Validate.entityThrowingException(new StudyParticipantValidator(study, false), participant);
         
         Account account = getAccountThrowingException(study, participant.getId());
-        Map<ParticipantOption, String> options = Maps.newHashMap();
 
         // Do this first because if the ID has been taken or is invalid, we do not want to update anything else.
         externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());
 
-        updateAccountOptionsAndRoles(study, callerRoles, options, account, participant);
+        // Prevent optimistic locking exception until operations are combined into one operation. 
+        account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), account.getId()));
+        updateAccountAndRoles(study, callerRoles, account, participant);
         
         // Only Admin and Worker accounts controlled by us should be able to bypass email verification. This is
         // primarily used for integration tests, but is sometimes used to bootstrap external developers and
@@ -316,7 +297,6 @@ public class ParticipantService {
             }
         }
         accountDao.updateAccount(account, false);
-        optionsService.setAllOptions(study.getStudyIdentifier(), account.getHealthCode(), options);
     }
 
     private void throwExceptionIfLimitMetOrExceeded(Study study) {
@@ -328,23 +308,22 @@ public class ParticipantService {
         }
     }
 
-    private void updateAccountOptionsAndRoles(Study study, Set<Roles> callerRoles,
-            Map<ParticipantOption, String> options, Account account, StudyParticipant participant) {
-        for (ParticipantOption option : ParticipantOption.values()) {
-            options.put(option, option.fromParticipant(participant));
-        }
-        // External identifier is handled by the ExternalIdService
-        options.remove(EXTERNAL_IDENTIFIER);
-        options.remove(TIME_ZONE);
-
+    private void updateAccountAndRoles(Study study, Set<Roles> callerRoles, Account account,
+            StudyParticipant participant) {
         account.setFirstName(participant.getFirstName());
         account.setLastName(participant.getLastName());
         account.setClientData(participant.getClientData());
+        account.setSharingScope(participant.getSharingScope());
+        account.setNotifyByEmail(participant.isNotifyByEmail());
+        account.setDataGroups(participant.getDataGroups());
+        account.setLanguages(participant.getLanguages());
+        account.setMigrationVersion(AccountDao.MIGRATION_VERSION);
+        // Do not copy timezone or external ID. Neither can be updated once set.
+        
         for (String attribute : study.getUserProfileAttributes()) {
             String value = participant.getAttributes().get(attribute);
             account.setAttribute(attribute, value);
         }
-        
         if (callerIsAdmin(callerRoles)) {
             updateRoles(callerRoles, participant, account);
         }

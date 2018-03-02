@@ -3,6 +3,12 @@ package org.sagebionetworks.bridge.hibernate;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
+import static org.sagebionetworks.bridge.dao.ParticipantOption.TIME_ZONE;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -26,6 +32,8 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
+import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -42,6 +50,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
+import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -54,6 +63,8 @@ import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 /** Hibernate implementation of Account Dao. */
 @Component
@@ -69,6 +80,7 @@ public class HibernateAccountDao implements AccountDao {
     
     private HealthCodeService healthCodeService;
     private HibernateHelper hibernateHelper;
+    private ParticipantOptionsDao optionsDao;
 
     /** Health code service, because this DAO is expected to generate health codes for new accounts. */
     @Autowired
@@ -82,6 +94,11 @@ public class HibernateAccountDao implements AccountDao {
         this.hibernateHelper = hibernateHelper;
     }
 
+    @Autowired
+    public final void setOptionsDao(ParticipantOptionsDao optionsDao) {
+        this.optionsDao = optionsDao;
+    }
+    
     /** {@inheritDoc} */
     @Override
     public void verifyEmail(Account account) {
@@ -294,6 +311,7 @@ public class HibernateAccountDao implements AccountDao {
         hibernateAccount.setCreatedOn(DateUtils.getCurrentMillisFromEpoch());
         hibernateAccount.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         hibernateAccount.setPasswordModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+        hibernateAccount.setMigrationVersion(AccountDao.MIGRATION_VERSION);
 
         // Create account
         try {
@@ -405,25 +423,43 @@ public class HibernateAccountDao implements AccountDao {
     private HibernateAccount getHibernateAccount(AccountId accountId) {
         // This is the only method where accessing null values is not an error, since we're searching for 
         // the value that was provided. There will be one.
+        HibernateAccount hibernateAccount = null;
+        
         AccountId unguarded = accountId.getUnguardedAccountId();
         if (unguarded.getId() != null) {
-            return hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
-        }
-        String query = null;
-        if (unguarded.getEmail() != null) {
-            query = String.format(EMAIL_QUERY, unguarded.getStudyId(), unguarded.getEmail());
-        } else if (unguarded.getHealthCode() != null) {
-            query = String.format(HEALTH_CODE_QUERY, unguarded.getStudyId(), unguarded.getHealthCode());
+            hibernateAccount = hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
+            if (hibernateAccount == null) {
+                return null;
+            }
         } else {
-            query = String.format(PHONE_QUERY, unguarded.getStudyId(), unguarded.getPhone().getNumber(), unguarded.getPhone().getRegionCode());
+            String query = null;
+            if (unguarded.getEmail() != null) {
+                query = String.format(EMAIL_QUERY, unguarded.getStudyId(), unguarded.getEmail());
+            } else if (unguarded.getHealthCode() != null) {
+                query = String.format(HEALTH_CODE_QUERY, unguarded.getStudyId(), unguarded.getHealthCode());
+            } else {
+                query = String.format(PHONE_QUERY, unguarded.getStudyId(), unguarded.getPhone().getNumber(), unguarded.getPhone().getRegionCode());
+            }
+            List<HibernateAccount> accountList = hibernateHelper.queryGet(query, null, null, HibernateAccount.class);
+            if (accountList.isEmpty()) {
+                return null;
+            }
+            hibernateAccount = accountList.get(0);
+            if (accountList.size() > 1) {
+                LOG.warn("Multiple accounts found email/phone query; example accountId=" + hibernateAccount.getId());
+            }
         }
-        List<HibernateAccount> accountList = hibernateHelper.queryGet(query, null, null, HibernateAccount.class);
-        if (accountList.isEmpty()) {
-            return null;
-        }
-        HibernateAccount hibernateAccount = accountList.get(0);
-        if (accountList.size() > 1) {
-            LOG.warn("Multiple accounts found email/phone query; example accountId=" + hibernateAccount.getId());
+        // Migrate ParticipantOptions into this account record and bump the migration version in case it is saved as is.
+        // New accounts will be created saving values 
+        if (hibernateAccount.getMigrationVersion() < AccountDao.MIGRATION_VERSION && hibernateAccount.getHealthCode() != null) {
+            ParticipantOptionsLookup lookup = optionsDao.getOptions(hibernateAccount.getHealthCode());
+            hibernateAccount.setTimeZone(DateUtils.timeZoneToOffsetString(lookup.getTimeZone(TIME_ZONE)));
+            hibernateAccount.setSharingScope(lookup.getEnum(SHARING_SCOPE, SharingScope.class));
+            hibernateAccount.setNotifyByEmail(lookup.getBoolean(EMAIL_NOTIFICATIONS));
+            hibernateAccount.setExternalId(lookup.getString(EXTERNAL_IDENTIFIER));
+            hibernateAccount.setDataGroups(lookup.getStringSet(DATA_GROUPS));
+            hibernateAccount.setLanguages(Lists.newArrayList(lookup.getOrderedStringSet(LANGUAGES)));
+            hibernateAccount.setMigrationVersion(1);
         }
         return hibernateAccount;
     }
@@ -538,7 +574,14 @@ public class HibernateAccountDao implements AccountDao {
         hibernateAccount.setReauthTokenAlgorithm(genericAccount.getReauthTokenAlgorithm());
         hibernateAccount.setReauthTokenHash(genericAccount.getReauthTokenHash());
         hibernateAccount.setReauthTokenModifiedOn(genericAccount.getReauthTokenModifiedOn());
-        
+        hibernateAccount.setTimeZone(DateUtils.timeZoneToOffsetString(genericAccount.getTimeZone()));
+        hibernateAccount.setSharingScope(genericAccount.getSharingScope());
+        hibernateAccount.setNotifyByEmail(genericAccount.getNotifyByEmail());
+        hibernateAccount.setExternalId(genericAccount.getExternalId());
+        hibernateAccount.setDataGroups(genericAccount.getDataGroups());
+        hibernateAccount.setLanguages(Lists.newArrayList(genericAccount.getLanguages()));
+        hibernateAccount.setMigrationVersion(genericAccount.getMigrationVersion());
+
         if (genericAccount.getClientData() != null) {
             hibernateAccount.setClientData(genericAccount.getClientData().toString());
         } else {
@@ -640,6 +683,13 @@ public class HibernateAccountDao implements AccountDao {
         account.setStatus(hibernateAccount.getStatus());
         account.setRoles(hibernateAccount.getRoles());
         account.setVersion(hibernateAccount.getVersion());
+        account.setTimeZone(DateUtils.parseZoneFromOffsetString(hibernateAccount.getTimeZone()));
+        account.setSharingScope(hibernateAccount.getSharingScope());
+        account.setNotifyByEmail(hibernateAccount.getNotifyByEmail());
+        account.setExternalId(hibernateAccount.getExternalId());
+        account.setDataGroups(hibernateAccount.getDataGroups());
+        account.setLanguages(Sets.newLinkedHashSet(hibernateAccount.getLanguages()));
+        account.setMigrationVersion(hibernateAccount.getMigrationVersion());
         
         // For accounts prior to the introduction of the email/phone verification flags, where 
         // the flag was not set on creation or verification of the email address, return the right value.

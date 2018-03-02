@@ -21,7 +21,7 @@ public class ViewCache {
         public ViewCacheKey(String key) {
             this.key = key;
         }
-        String getKey() {
+        public String getKey() {
             return key;
         }
     };
