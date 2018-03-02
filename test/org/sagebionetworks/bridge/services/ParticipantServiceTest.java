@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -462,6 +463,15 @@ public class ParticipantServiceTest {
         participantService.getParticipant(STUDY, ID, false);
     }
     
+    @Test(expected = EntityNotFoundException.class)
+    public void getParticipantAccountIdDoesNotExist() {
+        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        AccountId wrongAccountId = AccountId.forExternalId(STUDY.getIdentifier(), "some-junk");
+        
+        participantService.getParticipant(STUDY, wrongAccountId, false);
+    }
+    
     @Test
     public void getStudyParticipant() {
         // A lot of mocks have to be set up first, this call aggregates almost everything we know about the user
@@ -713,6 +723,26 @@ public class ParticipantServiceTest {
         StudyParticipant participant = participantService.getParticipant(STUDY, ID, false);
 
         assertTrue(participant.getConsentHistories().keySet().isEmpty());
+    }
+    
+    @Test
+    public void getParticipantByAccountId() {
+        AccountId accountId = AccountId.forEmail(STUDY.getIdentifier(), "email@email.com");
+        when(accountDao.getAccount(accountId)).thenReturn(account);
+        
+        StudyParticipant participant = participantService.getParticipant(STUDY, accountId, true);
+        
+        assertNotNull(participant);
+        verify(accountDao).getAccount(accountId);
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void getParticipantByAccountIdThrowsException() {
+        AccountId accountId = AccountId.forEmail(STUDY.getIdentifier(), "email@email.com");
+        
+        participantService.getParticipant(STUDY, accountId, true);
+        
+        verify(accountDao).getAccount(accountId);
     }
     
     @Test

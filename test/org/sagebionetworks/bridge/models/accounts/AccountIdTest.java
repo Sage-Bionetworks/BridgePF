@@ -30,6 +30,9 @@ public class AccountIdTest {
         
         assertTrue(AccountId.forHealthCode(TEST_STUDY_IDENTIFIER, "DEF-GHI")
                 .equals(AccountId.forHealthCode(TEST_STUDY_IDENTIFIER, "DEF-GHI")));
+        
+        assertTrue(AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "EXTID")
+                .equals(AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "EXTID")));
     }
     
     @Test
@@ -39,6 +42,7 @@ public class AccountIdTest {
         assertEquals("one", AccountId.forEmail(TEST_STUDY_IDENTIFIER, "one").getEmail());
         assertEquals(number, AccountId.forPhone(TEST_STUDY_IDENTIFIER, PHONE).getPhone().getNumber());
         assertEquals("ABC-DEF", AccountId.forHealthCode(TEST_STUDY_IDENTIFIER, "ABC-DEF").getHealthCode());
+        assertEquals("EXTID", AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "EXTID").getExternalId());
     }
     
     @Test(expected = NullPointerException.class)
@@ -62,6 +66,11 @@ public class AccountIdTest {
     }
     
     @Test(expected = NullPointerException.class)
+    public void externalIdAccessorThrows() {
+        AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "one").getEmail();
+    }
+    
+    @Test(expected = NullPointerException.class)
     public void cannotCreateIdObjectWithNoEmail() {
         AccountId.forEmail(TEST_STUDY_IDENTIFIER, null);
     }
@@ -79,6 +88,11 @@ public class AccountIdTest {
     @Test(expected = NullPointerException.class)
     public void cannotCreateIdObjectWithNoHealthCode() {
         AccountId.forHealthCode(TEST_STUDY_IDENTIFIER, null);
+    }
+    
+    @Test(expected = NullPointerException.class)
+    public void cannotCreateIdObjectWithNoExternalId() {
+        AccountId.forExternalId(TEST_STUDY_IDENTIFIER, null);
     }
     
     @Test(expected = NullPointerException.class)
@@ -111,5 +125,6 @@ public class AccountIdTest {
         assertNull(accountId.getEmail());
         assertNull(accountId.getPhone());
         assertNull(accountId.getHealthCode());
+        assertNull(accountId.getExternalId());
     }
 }

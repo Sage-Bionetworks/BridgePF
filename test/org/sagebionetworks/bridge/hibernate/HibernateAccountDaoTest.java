@@ -22,7 +22,6 @@ import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 import static org.sagebionetworks.bridge.dao.ParticipantOption.TIME_ZONE;
 
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -95,6 +94,7 @@ public class HibernateAccountDaoTest {
     private static final AccountId ACCOUNT_ID_WITH_EMAIL = AccountId.forEmail(TestConstants.TEST_STUDY_IDENTIFIER, EMAIL);
     private static final AccountId ACCOUNT_ID_WITH_PHONE = AccountId.forPhone(TestConstants.TEST_STUDY_IDENTIFIER, TestConstants.PHONE);
     private static final AccountId ACCOUNT_ID_WITH_HEALTHCODE = AccountId.forHealthCode(TestConstants.TEST_STUDY_IDENTIFIER, HEALTH_CODE);
+    private static final AccountId ACCOUNT_ID_WITH_EXTID = AccountId.forExternalId(TestConstants.TEST_STUDY_IDENTIFIER, EXTERNAL_ID);
     
     private static final SignIn REAUTH_SIGNIN = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
             .withEmail(EMAIL).withReauthToken(REAUTH_TOKEN).build();
@@ -1171,6 +1171,53 @@ public class HibernateAccountDaoTest {
                         .thenReturn(ImmutableList.of());
         
         Account account = dao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_HEALTHCODE);
+        assertNull(account);
+    }    
+    
+    // ACCOUNT_ID_WITH_EXTID
+    @Test
+    public void getByExternalId() throws Exception {
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
+        // mock hibernate
+        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId='" + TestConstants.TEST_STUDY_IDENTIFIER
+                + "' and externalId='" + EXTERNAL_ID + "'", null, null, HibernateAccount.class))
+                        .thenReturn(ImmutableList.of(hibernateAccount));
+
+        // execute and validate
+        Account account = dao.getAccount(ACCOUNT_ID_WITH_EXTID);
+        assertEquals(hibernateAccount.getEmail(), account.getEmail());
+    }
+    
+    @Test
+    public void getByExternalIdNotFound() {
+        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId='" + TestConstants.TEST_STUDY_IDENTIFIER
+                + "' and externalId='" + EXTERNAL_ID + "'", null, null, HibernateAccount.class))
+                        .thenReturn(ImmutableList.of());
+        
+        Account account = dao.getAccount(ACCOUNT_ID_WITH_EXTID);
+        assertNull(account);
+    }
+
+    @Test
+    public void getByExternalIdAfterAuthentication() throws Exception {
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
+        // mock hibernate
+        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId='" + TestConstants.TEST_STUDY_IDENTIFIER
+                + "' and externalId='" + EXTERNAL_ID + "'", null, null, HibernateAccount.class))
+                        .thenReturn(ImmutableList.of(hibernateAccount));
+
+        // execute and validate
+        Account account = dao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_EXTID);
+        assertEquals(hibernateAccount.getEmail(), account.getEmail());
+    }
+    
+    @Test
+    public void getByExternalIdNotFoundAfterAuthentication() {
+        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId='" + TestConstants.TEST_STUDY_IDENTIFIER
+                + "' and externalId='" + EXTERNAL_ID + "'", null, null, HibernateAccount.class))
+                        .thenReturn(ImmutableList.of());
+        
+        Account account = dao.getAccountAfterAuthentication(ACCOUNT_ID_WITH_EXTID);
         assertNull(account);
     }    
     

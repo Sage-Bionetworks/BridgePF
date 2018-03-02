@@ -20,6 +20,7 @@ import org.joda.time.LocalDateTime;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -32,6 +33,34 @@ import com.google.common.collect.Sets;
 public class BridgeUtilsTest {
     
     private static final LocalDateTime LOCAL_DATE_TIME = LocalDateTime.parse("2010-10-10T10:10:10.111");
+    
+    @Test
+    public void parseAccountId() {
+        AccountId accountId = BridgeUtils.parseAccountId("test", "identifier");
+        assertEquals("test", accountId.getStudyId());
+        assertEquals("identifier", accountId.getId());
+        
+        accountId = BridgeUtils.parseAccountId("test", "externalid:identifier");
+        assertEquals("test", accountId.getStudyId());
+        assertEquals("identifier", accountId.getExternalId());
+        
+        accountId = BridgeUtils.parseAccountId("test", "externalId:identifier");
+        assertEquals("test", accountId.getStudyId());
+        assertEquals("identifier", accountId.getExternalId());
+        
+        accountId = BridgeUtils.parseAccountId("test", "healthcode:identifier");
+        assertEquals("test", accountId.getStudyId());
+        assertEquals("identifier", accountId.getHealthCode());
+        
+        accountId = BridgeUtils.parseAccountId("test", "healthCode:identifier");
+        assertEquals("test", accountId.getStudyId());
+        assertEquals("identifier", accountId.getHealthCode());
+        
+        // Unrecognized prefix is just part of the userId
+        accountId = BridgeUtils.parseAccountId("test", "unk:identifier");
+        assertEquals("test", accountId.getStudyId());
+        assertEquals("unk:identifier", accountId.getId());
+    }
     
     @Test
     public void studyTemplateVariblesWorks() {
