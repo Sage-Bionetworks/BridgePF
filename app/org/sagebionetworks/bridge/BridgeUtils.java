@@ -30,6 +30,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -56,6 +57,17 @@ public class BridgeUtils {
     
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
+    public static AccountId parseAccountId(String studyId, String identifier) {
+        checkNotNull(studyId);
+        checkNotNull(identifier);
+        if (identifier.toLowerCase().startsWith("externalid:")) {
+            return AccountId.forExternalId(studyId, identifier.substring(11));
+        } else if (identifier.toLowerCase().startsWith("healthcode:")) {
+            return AccountId.forHealthCode(studyId, identifier.substring(11));
+        }
+        return AccountId.forId(studyId, identifier);
+    }
+    
     /**
      * Create a variable map for the <code>resolveTemplate</code> method that includes common values from 
      * a study that used in most of our templates. The map is mutable. Variables include:

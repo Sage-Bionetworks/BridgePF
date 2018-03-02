@@ -77,6 +77,7 @@ public class HibernateAccountDao implements AccountDao {
     static final String EMAIL_QUERY = "from HibernateAccount where studyId='%s' and email='%s'";
     static final String HEALTH_CODE_QUERY = "from HibernateAccount where studyId='%s' and healthCode='%s'";
     static final String PHONE_QUERY = "from HibernateAccount where studyId='%s' and phone.number='%s' and phone.regionCode='%s'";
+    static final String EXTID_QUERY = "from HibernateAccount where studyId='%s' and externalId='%s'";
     
     private HealthCodeService healthCodeService;
     private HibernateHelper hibernateHelper;
@@ -437,8 +438,10 @@ public class HibernateAccountDao implements AccountDao {
                 query = String.format(EMAIL_QUERY, unguarded.getStudyId(), unguarded.getEmail());
             } else if (unguarded.getHealthCode() != null) {
                 query = String.format(HEALTH_CODE_QUERY, unguarded.getStudyId(), unguarded.getHealthCode());
-            } else {
+            } else if (unguarded.getPhone() != null) {
                 query = String.format(PHONE_QUERY, unguarded.getStudyId(), unguarded.getPhone().getNumber(), unguarded.getPhone().getRegionCode());
+            } else {
+                query = String.format(EXTID_QUERY, unguarded.getStudyId(), unguarded.getExternalId());
             }
             List<HibernateAccount> accountList = hibernateHelper.queryGet(query, null, null, HibernateAccount.class);
             if (accountList.isEmpty()) {

@@ -140,11 +140,18 @@ public class ParticipantService {
         this.activityEventService = activityEventService;
     }
 
-    public StudyParticipant getParticipant(Study study, String id, boolean includeHistory) {
-        Account account = getAccountThrowingException(study, id);
+    public StudyParticipant getParticipant(Study study, AccountId accountId, boolean includeHistory) {
+        Account account = accountDao.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
         return getParticipant(study, account, includeHistory);
     }
 
+    public StudyParticipant getParticipant(Study study, String id, boolean includeHistory) {
+        return getParticipant(study, AccountId.forId(study.getIdentifier(),  id), includeHistory);
+    }
+    
     public StudyParticipant getParticipant(Study study, Account account, boolean includeHistory) {
         if (account == null) {
             // This should never happen. However, it occasionally does happen, generally only during integration tests.
