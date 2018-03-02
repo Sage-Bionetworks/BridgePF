@@ -124,9 +124,9 @@
         <property name="targetName" value="scheduleController"/>
     </bean>
 
-	<bean id="BackfillControllerProxied" parent="proxiedController">
-		<property name="targetName" value="backfillController" />
- 	</bean>
+    <bean id="BackfillControllerProxied" parent="proxiedController">
+        <property name="targetName" value="backfillController" />
+    </bean>
  
     <bean id="StudyConsentControllerProxied" parent="proxiedController">
         <property name="targetName" value="studyConsentController"/>
