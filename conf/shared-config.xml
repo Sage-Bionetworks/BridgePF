@@ -74,6 +74,7 @@
             <list>
                 <value>metricsInterceptor</value>
                 <value>deprecationInterceptor</value>
+                <value>staticHeadersInterceptor</value>
                 <value>exceptionInterceptor</value>
             </list>
         </property>
@@ -126,7 +127,7 @@
     <bean id="BackfillControllerProxied" parent="proxiedController">
         <property name="targetName" value="backfillController" />
     </bean>
-
+ 
     <bean id="StudyConsentControllerProxied" parent="proxiedController">
         <property name="targetName" value="studyConsentController"/>
     </bean>

@@ -83,13 +83,13 @@ public class StudyValidatorTest {
     @Test
     public void resetPasswordMustHaveUrlVariable() {
         study.setResetPasswordTemplate(new EmailTemplate("subject", "no url variable", MimeType.TEXT));
-        assertValidatorMessage(INSTANCE, study, "resetPasswordTemplate.body", "must contain one of these template variables: ${url}");
+        assertValidatorMessage(INSTANCE, study, "resetPasswordTemplate.body", "must contain one of these template variables: ${url}, ${shortUrl}");
     }
     
     @Test
     public void verifyEmailMustHaveUrlVariable() {
         study.setVerifyEmailTemplate(new EmailTemplate("subject", "no url variable", MimeType.TEXT));
-        assertValidatorMessage(INSTANCE, study, "verifyEmailTemplate.body", "must contain one of these template variables: ${url}");
+        assertValidatorMessage(INSTANCE, study, "verifyEmailTemplate.body", "must contain one of these template variables: ${url}, ${shortUrl}");
     }
 
     @Test
@@ -300,7 +300,7 @@ public class StudyValidatorTest {
     @Test
     public void requiresEmailSignInTemplateRequiresToken() {
         study.setEmailSignInTemplate(new EmailTemplate("subject", "body with no token", MimeType.HTML));
-        assertValidatorMessage(INSTANCE, study, "emailSignInTemplate.body", "must contain one of these template variables: ${url}, ${token}");
+        assertValidatorMessage(INSTANCE, study, "emailSignInTemplate.body", "must contain one of these template variables: ${url}, ${shortUrl}, ${token}");
     }    
 
     @Test
@@ -331,7 +331,7 @@ public class StudyValidatorTest {
     public void requiresAccountExistsTemplateRequiresURL() {
         study.setAccountExistsTemplate(new EmailTemplate("subject", "body with no url", MimeType.HTML));
         assertValidatorMessage(INSTANCE, study, "accountExistsTemplate.body",
-                "must contain one of these template variables: ${url}, ${emailSignInUrl}, ${resetPasswordUrl}");
+                "must contain one of these template variables: ${url}, ${shortUrl}, ${emailSignInUrl}, ${resetPasswordUrl}");
     }
     
     @Test

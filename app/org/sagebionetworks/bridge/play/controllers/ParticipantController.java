@@ -28,6 +28,7 @@ import play.mvc.BodyParser;
 import play.mvc.Result;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.DateUtils;
@@ -35,6 +36,7 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
@@ -180,11 +182,12 @@ public class ParticipantController extends BaseController {
         return createdResult(holder);
     }
     
-    public Result getParticipant(String userId) throws Exception {
+    public Result getParticipant(String userId, boolean consents) throws Exception {
         UserSession session = getAuthenticatedSession(ADMIN, RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        StudyParticipant participant = participantService.getParticipant(study, userId, true);
+        AccountId accountId = BridgeUtils.parseAccountId(study.getIdentifier(), userId);
+        StudyParticipant participant = participantService.getParticipant(study, accountId, consents);
 
         ObjectWriter writer = (study.isHealthCodeExportEnabled()) ?
                 StudyParticipant.API_WITH_HEALTH_CODE_WRITER :
@@ -194,11 +197,12 @@ public class ParticipantController extends BaseController {
         return ok(ser).as(BridgeConstants.JSON_MIME_TYPE);
     }
     
-    public Result getParticipantForWorker(String studyId, String userId) throws Exception {
+    public Result getParticipantForWorker(String studyId, String userId, boolean consents) throws Exception {
         getAuthenticatedSession(WORKER);
         Study study = studyService.getStudy(studyId);
 
-        StudyParticipant participant = participantService.getParticipant(study, userId, true);
+        AccountId accountId = BridgeUtils.parseAccountId(studyId, userId);
+        StudyParticipant participant = participantService.getParticipant(study, accountId, consents);
         
         ObjectWriter writer = StudyParticipant.API_WITH_HEALTH_CODE_WRITER;
         String ser = writer.writeValueAsString(participant);

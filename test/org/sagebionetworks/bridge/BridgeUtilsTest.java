@@ -20,6 +20,7 @@ import org.joda.time.LocalDateTime;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -32,6 +33,35 @@ import com.google.common.collect.Sets;
 public class BridgeUtilsTest {
     
     private static final LocalDateTime LOCAL_DATE_TIME = LocalDateTime.parse("2010-10-10T10:10:10.111");
+    
+    @Test
+    public void parseAccountId() {
+        // Identifier has upper-case letter to ensure we don't downcase or otherwise change it.
+        AccountId accountId = BridgeUtils.parseAccountId("test", "IdentifierA9");
+        assertEquals("test", accountId.getStudyId());
+        assertEquals("IdentifierA9", accountId.getId());
+        
+        accountId = BridgeUtils.parseAccountId("test", "externalid:IdentifierA9");
+        assertEquals("test", accountId.getStudyId());
+        assertEquals("IdentifierA9", accountId.getExternalId());
+        
+        accountId = BridgeUtils.parseAccountId("test", "externalId:IdentifierA9");
+        assertEquals("test", accountId.getStudyId());
+        assertEquals("IdentifierA9", accountId.getExternalId());
+        
+        accountId = BridgeUtils.parseAccountId("test", "healthcode:IdentifierA9");
+        assertEquals("test", accountId.getStudyId());
+        assertEquals("IdentifierA9", accountId.getHealthCode());
+        
+        accountId = BridgeUtils.parseAccountId("test", "healthCode:IdentifierA9");
+        assertEquals("test", accountId.getStudyId());
+        assertEquals("IdentifierA9", accountId.getHealthCode());
+        
+        // Unrecognized prefix is just part of the userId
+        accountId = BridgeUtils.parseAccountId("test", "unk:IdentifierA9");
+        assertEquals("test", accountId.getStudyId());
+        assertEquals("unk:IdentifierA9", accountId.getId());
+    }
     
     @Test
     public void studyTemplateVariblesWorks() {

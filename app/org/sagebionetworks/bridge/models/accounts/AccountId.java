@@ -13,22 +13,27 @@ public final class AccountId {
     public final static AccountId forId(String studyId, String id) {
         checkNotNull(studyId);
         checkNotNull(id);
-        return new AccountId(studyId, id, null, null, null, true);
+        return new AccountId(studyId, id, null, null, null, null, true);
     }
     public final static AccountId forEmail(String studyId, String email) {
         checkNotNull(studyId);
         checkNotNull(email);
-        return new AccountId(studyId, null, email, null, null, true);
+        return new AccountId(studyId, null, email, null, null, null, true);
     }
     public final static AccountId forPhone(String studyId, Phone phone) {
         checkNotNull(studyId);
         checkNotNull(phone);
-        return new AccountId(studyId, null, null, phone, null, true);
+        return new AccountId(studyId, null, null, phone, null, null, true);
     }
     public final static AccountId forHealthCode(String studyId, String healthCode) {
         checkNotNull(studyId);
         checkNotNull(healthCode);
-        return new AccountId(studyId, null, null, null, healthCode, true);
+        return new AccountId(studyId, null, null, null, healthCode, null, true);
+    }
+    public final static AccountId forExternalId(String studyId, String externalId) {
+        checkNotNull(studyId);
+        checkNotNull(externalId);
+        return new AccountId(studyId, null, null, null, null, externalId, true);
     }
     
     private final String studyId;
@@ -36,15 +41,17 @@ public final class AccountId {
     private final String email;
     private final Phone phone;
     private final String healthCode;
+    private final String externalId;
     private final boolean usePreconditions;
     
-    private AccountId(String studyId, String id, String email, Phone phone, String healthCode,
+    private AccountId(String studyId, String id, String email, Phone phone, String healthCode, String externalId,
             boolean usePreconditions) {
         this.studyId = studyId;
         this.id = id;
         this.email = email;
         this.phone = phone;
         this.healthCode = healthCode;
+        this.externalId = externalId;
         this.usePreconditions = usePreconditions;
     }
     
@@ -82,12 +89,18 @@ public final class AccountId {
         }
         return healthCode;
     }
+    public String getExternalId() {
+        if (usePreconditions && externalId == null) {
+            throw new NullPointerException("AccountId.externalId is null");
+        }
+        return externalId;
+    }
     public AccountId getUnguardedAccountId() {
-        return new AccountId(this.studyId, this.id, this.email, this.phone, this.healthCode, false);
+        return new AccountId(this.studyId, this.id, this.email, this.phone, this.healthCode, this.externalId, false);
     }
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, email, id, phone, healthCode, usePreconditions);
+        return Objects.hash(studyId, email, id, phone, healthCode, externalId, usePreconditions);
     }
     
     @Override
@@ -101,8 +114,8 @@ public final class AccountId {
                 Objects.equals(email, other.email) && 
                 Objects.equals(id, other.id) &&
                 Objects.equals(phone, other.phone) &&
-                Objects.equals(healthCode, other.healthCode) && 
+                Objects.equals(healthCode, other.healthCode) &&
+                Objects.equals(externalId, other.externalId) && 
                 Objects.equals(usePreconditions, other.usePreconditions);
     }
-    
 }
