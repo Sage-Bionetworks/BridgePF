@@ -77,7 +77,7 @@ import play.test.Helpers;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AuthenticationControllerMockTest {
-    
+    private static final String DOMAIN = "ws-test.sagebridge.org";
     private static final DateTime NOW = DateTime.now();
     private static final String REAUTH_TOKEN = "reauthToken";
     private static final String TEST_INTERNAL_SESSION_ID = "internal-session-id";
@@ -96,7 +96,6 @@ public class AuthenticationControllerMockTest {
             .withPhone(TestConstants.PHONE).build();
     private static final SignIn PHONE_SIGN_IN = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING)
             .withPhone(TestConstants.PHONE).withToken(TEST_TOKEN).build();
-    private static final String WEBSERVICES_URL = "https://ws-test.sagebridge.org";
 
     AuthenticationController controller;
 
@@ -147,7 +146,7 @@ public class AuthenticationControllerMockTest {
         
         // Mock the configuration so we can freeze the environment to one that requires SSL.
         BridgeConfig mockConfig = mock(BridgeConfig.class);
-        when(mockConfig.get("webservices.url")).thenReturn(WEBSERVICES_URL);
+        when(mockConfig.get("domain")).thenReturn(DOMAIN);
         when(mockConfig.getEnvironment()).thenReturn(Environment.UAT);
         
         controller = spy(new AuthenticationController());
@@ -559,7 +558,7 @@ public class AuthenticationControllerMockTest {
         controller.signIn();
         
         verify(response).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, TEST_SESSION_TOKEN,
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", WEBSERVICES_URL, false, false);
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", DOMAIN, false, false);
     }
     
     @Test(expected = UnsupportedVersionException.class)
@@ -922,7 +921,7 @@ public class AuthenticationControllerMockTest {
         // For ssl to be true here, we mock the bridge configuration and set the environment
         // to something besides local. There is a separate test for when the environment is local.
         verify(response).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, TEST_SESSION_TOKEN,
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", WEBSERVICES_URL, true, true);
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", DOMAIN, true, true);
         
         verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
         RequestInfo info = requestInfoCaptor.getValue();
