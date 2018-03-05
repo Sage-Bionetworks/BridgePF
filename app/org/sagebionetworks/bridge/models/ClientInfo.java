@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.models;
 
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -61,72 +59,6 @@ import com.google.common.cache.LoadingCache;
  */
 public final class ClientInfo {
 
-    public static final String[] UAS = new String[] {
-        "Unknown Client/14",
-        "App Name: Here/14",
-        "Unknown Client/14 BridgeJavaSDK/10",
-        "Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4",
-        "Cardio Health/1 (Unknown iPhone; iPhone OS/9.0.2) BridgeSDK/4",
-        "Belgium/2 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10",
-        "Asthma/26 (Unknown iPhone; iPhone OS 9.1) BridgeSDK/4",
-        "Cardio Health/1 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4",
-        "Belgium/2 (Motorola Flip-Phone; Android 14) BridgeJavaSDK/10",
-        "Cardio Health/1 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4"
-    };
-    
-    public static final void parseMe() {
-        // 0       1           2           3      4          5       6
-        // appName/appVersion (deviceName; osName/osVersion) sdkName/sdkVersion"
-        
-        for (String userAgent : UAS) {
-            System.out.println(userAgent);
-            ClientInfo.Builder builder = new ClientInfo.Builder();
-            
-            String[] stanzas = userAgent.split("[()]");
-            if (stanzas.length == 3) {
-                // All three components are present.
-                String[] appComponents = stanzas[0].split("/");
-                String[] sdkComponents = stanzas[2].split("/");
-                
-                String[] devComponents = stanzas[1].split("[;/]");
-                if (devComponents.length == 3) {
-                    builder.withDeviceName(devComponents[0]);
-                    builder.withOsName(devComponents[1].trim());
-                    builder.withOsVersion(devComponents[2].trim());
-                } else if (devComponents.length == 2) {
-                    builder.withOsName(devComponents[0].trim());
-                    builder.withOsVersion(devComponents[1].trim());
-                }
-                builder.withAppName(appComponents[0])
-                    .withAppVersion(Integer.parseInt(appComponents[1].trim()))
-                    .withSdkName(sdkComponents[0].trim())
-                    .withSdkVersion(Integer.parseInt(sdkComponents[1].trim())).build();
-            } else {
-                // This is the app or sdk stanza, or both
-                if (stanzas[0].matches(".*[0-9]+\\s+[^0-9]+.*")) {
-                    String[] components = stanzas[0].split("(?<=[0-9])\\s(?=([^0-9]))");
-                    String[] appComponents = components[0].split("/");
-                    String[] sdkComponents = components[1].split("/");
-                    
-                    builder.withAppName(appComponents[0].trim())
-                        .withAppVersion(Integer.parseInt(appComponents[1].trim()))
-                        .withSdkName(sdkComponents[0].trim())
-                        .withSdkVersion(Integer.parseInt(sdkComponents[1].trim())).build();
-                } else {
-                    // This is ambiguous, but we assume it is the app name/app version
-                    String[] appComponents = stanzas[0].split("/");
-                    if (appComponents.length == 2) {
-                        builder.withAppName(appComponents[0].trim())
-                            .withAppVersion(Integer.parseInt(appComponents[1].trim())).build();
-                    } else {
-                        builder.withAppName(appComponents[0].trim()).build();
-                    }
-                }
-            }
-            System.out.println("    " + builder.build());
-        }
-    }
-    
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientInfo.class);
 
     /**
@@ -151,21 +83,13 @@ public final class ClientInfo {
      */
     public static final ClientInfo UNKNOWN_CLIENT = new ClientInfo.Builder().build();
 
-    /**
-     * For example, "App Name/14".
-     */
-    private static final Pattern SHORT_STRING = Pattern.compile("^([^/]+)\\/(\\d{1,9})($)");
-    /**
-     * For example, "Unknown Client/14 BridgeJavaSDK/10".
-     */
-    private static final Pattern MEDIUM_STRING = Pattern.compile("^([^/]+)\\/(\\d{1,9})\\s([^/\\(]*)\\/(\\d{1,9})($)");
-    /**
-     * For example, "Asthma/26 (Unknown iPhone; iPhone OS 9.1) BridgeSDK/4" or 
-     * "Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4"
-     */
-    private static final Pattern LONG_STRING = Pattern
-            .compile("^([^/]+)\\/(\\d{1,9})\\s\\(([^;]+);([^\\)]*)\\)\\s([^/]*)\\/(\\d{1,9})($)");
-     
+    /** Numbers followed by spacing, followed by non-numbers, indicates two stanzas */
+    private static final String TWO_STANZA_REGEXP = ".*[0-9]+\\s+[^0-9]+.*";
+    private static final String STANZA_SPLIT_REGEXP = "(?<=[0-9])\\s(?=([^0-9]))";
+    private static final String OLD_OS_FORMAT_REGEXP = "[^/]+\\s[\\d\\.]+";
+    private static final String DIGITS_REGEXP = "^\\s*[0-9]+\\s*$";
+    private static final String SEMANTIC_VERSION_REGEXP = "^\\s*[0-9\\.]+\\s*$";
+
     private final String appName;
     private final Integer appVersion;
     private final String deviceName;
@@ -217,23 +141,14 @@ public final class ClientInfo {
     }
     
     public boolean isSupportedAppVersion(Integer minSupportedVersion) {
-    	// If both the appVersion and minSupportedVersion are defined, check that the appVersion is 
-    	// greater than or equal to the minSupportedVersion
-    	return (appVersion == null || minSupportedVersion == null || appVersion >= minSupportedVersion);
+        // If both the appVersion and minSupportedVersion are defined, check that the appVersion is
+        // greater than or equal to the minSupportedVersion
+        return (appVersion == null || minSupportedVersion == null || appVersion >= minSupportedVersion);
     }
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + Objects.hashCode(appName);
-        result = prime * result + Objects.hashCode(appVersion);
-        result = prime * result + Objects.hashCode(deviceName);
-        result = prime * result + Objects.hashCode(osName);
-        result = prime * result + Objects.hashCode(osVersion);
-        result = prime * result + Objects.hashCode(sdkName);
-        result = prime * result + Objects.hashCode(sdkVersion);
-        return result;
+        return Objects.hash(appName, appVersion, deviceName, osName, osVersion, sdkName, sdkVersion);
     }
 
     @Override
@@ -251,8 +166,9 @@ public final class ClientInfo {
 
     @Override
     public String toString() {
-        return "ClientInfo [appName=" + appName + ", appVersion=" + appVersion + ", deviceName=" + deviceName + ", osName=" + osName + ", osVersion="
-                + osVersion + ", sdkName=" + sdkName + ", sdkVersion=" + sdkVersion + "]";
+        return "ClientInfo [appName=" + appName + ", appVersion=" + appVersion + ", deviceName=" + deviceName
+                + ", osName=" + osName + ", osVersion=" + osVersion + ", sdkName=" + sdkName + ", sdkVersion="
+                + sdkVersion + "]";
     }
 
     public static class Builder {
@@ -325,74 +241,161 @@ public final class ClientInfo {
         return UNKNOWN_CLIENT;
     }
     
-    static ClientInfo parseUserAgentString(String ua) {
-        ClientInfo info = UNKNOWN_CLIENT;
-        if (!StringUtils.isBlank(ua)) {
-            info = parseLongUserAgent(ua);
-            if (info == UNKNOWN_CLIENT) {
-                info = parseMediumUserAgent(ua);
+    static ClientInfo parseUserAgentString(String userAgent) {
+        if (StringUtils.isBlank(userAgent) || invalidFormat(userAgent)) {
+            return ClientInfo.UNKNOWN_CLIENT;
+        }
+        ClientInfo.Builder builder = new ClientInfo.Builder();
+        String[] stanzas = userAgent.split("[()]");
+        if (stanzas.length == 3) {
+            // All three components are present.
+            parseAppStanza(builder, stanzas[0]);
+            parseDeviceStanza(builder, stanzas[1]);
+            parseSdkStanza(builder, stanzas[2]);
+        } else if (stanzas.length == 2) {
+            // This is the left or left and center stanza
+            parseAppStanza(builder, stanzas[0]);
+            parseDeviceStanza(builder, stanzas[1]);
+        } else if (stanzas.length == 1) {
+            // This is the app or sdk stanza, or both
+            if (stanzas[0].matches(TWO_STANZA_REGEXP)) {
+                // It's both
+                String[] components = stanzas[0].split(STANZA_SPLIT_REGEXP);
+                parseAppStanza(builder, components[0]);
+                parseSdkStanza(builder, components[1]);
+            } else {
+                // It's one, we assume it's the app stanza
+                parseAppStanza(builder, stanzas[0]);
             }
-            if (info == UNKNOWN_CLIENT) {
-                info = parseShortUserAgent(ua);
-            }
+        }
+        ClientInfo info = builder.build();
+        
+        // Return singleton instance for all unknown clients. Would like to catch this in the builder,
+        // but the order of static initialization is not correct.
+        if (info.getAppName() == null && info.getAppVersion() == null && info.getDeviceName() == null
+                && info.getOsName() == null && info.getOsVersion() == null && info.getSdkName() == null
+                && info.getSdkVersion() == null) {
+            return ClientInfo.UNKNOWN_CLIENT;
         }
         return info;
     }
     
-    private static ClientInfo parseLongUserAgent(String ua) {
-        Matcher matcher = LONG_STRING.matcher(ua);
-        if (matcher.matches()) {
-            // Pull out the information that matches both deprecated and new format
-            Builder builder = new ClientInfo.Builder()
-                .withAppName(matcher.group(1).trim())
-                .withAppVersion(Integer.parseInt(matcher.group(2).trim()))
-                .withDeviceName(matcher.group(3).trim())
-                .withSdkName(matcher.group(5).trim())
-                .withSdkVersion(Integer.parseInt(matcher.group(6).trim()));
-        	
-            // Older vesions of iOS apps that use the BridgeSDK have a space between 
-            // the osName and osVersion, whereas newer format is to use a forward slash
-            // to separate the two parts. syoung 11/19/2015
-            String osInfo = matcher.group(4).trim();
-            String[] osParts = osInfo.split("/");
-            if (osParts.length == 2) {
-                builder = builder
-                    .withOsName(osParts[0].trim())
-                    .withOsVersion(osParts[1].trim());
+    private static boolean invalidFormat(String userAgent) {
+        int forwardSlash = 0;
+        int semicolon = 0;
+        int openParens = 0;
+        int closedParens = 0;
+        
+        // a/b (c; d/e) f/g
+        
+        // 1/ --> ( or / or nothing
+        // ( --> ; or / or )
+        // ; --> / or )
+        // 2/ --> ) or 3/ or nothing
+        // ) --> / or nothing
+        // 3/ --> nothing
+        for (int i=0; i < userAgent.length(); i++) {
+            char character = userAgent.charAt(i);
+            if ('/' == character) {
+                forwardSlash++;
+            } else if (';' == character) {
+                semicolon++;
+            } else if ('(' == character) {
+                openParens++;
+            } else if (')' == character) {
+                closedParens++;
             }
-            else {
-                int idx = osInfo.lastIndexOf(" ");
-        	    if (idx > 0) {
-        	        builder = builder
-        	            .withOsName(osInfo.substring(0,idx).trim())
-        	            .withOsVersion(osInfo.substring(idx).trim());
-                }
+        }
+        // shouldn't be more than one set of parentheses (matched)
+        // if there's a semicolon, there should only be one and there should be parentheses
+        // shouldn't be more than 3 slashes
+        return (openParens > 1 || closedParens > 1 || openParens != closedParens || 
+                semicolon > 1 || semicolon > openParens || forwardSlash > 3);
+    }
+    
+    private static void parseAppStanza(ClientInfo.Builder builder, String stanza) {
+        if (StringUtils.isBlank(stanza)) {
+            return;
+        }
+        String[] components = stanza.split("/");
+        if (components.length == 2) {
+            builder.withAppName(parseString(components[0]));
+            builder.withAppVersion(parseInteger(components[1])).build();
+        } else if (components.length == 1) {
+            // if it's a number, it's a version, otherwise it's the name.
+            if (components[0].matches(DIGITS_REGEXP)) {
+                builder.withAppVersion(parseInteger(components[0]));
+            } else {
+                builder.withAppName(parseString(components[0]));
             }
-        	
-            return builder.build();
         }
-        return UNKNOWN_CLIENT;
     }
+    
+    private static void parseDeviceStanza(ClientInfo.Builder builder, String stanza) {
+        String[] components = stanza.split(";");
+        if (components.length == 2) {
+            builder.withDeviceName(parseString(components[0]));
+            parseOsStanza(builder, components[1].trim());
+        } else if (components.length == 1) {
+            parseOsStanza(builder, components[0].trim());
+        }
+    }
+    
+    private static void parseOsStanza(ClientInfo.Builder builder, String stanza) {
+        // The old format did not have a slash in it. We have to account for that.
+        String[] components = null;
+        if (stanza.matches(OLD_OS_FORMAT_REGEXP)) {
+            components = new String[] {
+                stanza.substring(0, stanza.lastIndexOf(" ")),
+                stanza.substring(stanza.lastIndexOf(" ")),
+            };
+        } else {
+            components = stanza.split("/");    
+        }
+        if (components.length == 2) {
+            builder.withOsName(parseString(components[0]));
+            builder.withOsVersion(parseString(components[1])).build();
+        } else if (components.length == 1) {
+            // if it's a number, it's a version, otherwise it's the name.
+            if (components[0].trim().matches(SEMANTIC_VERSION_REGEXP)) {
+                builder.withOsVersion(parseString(components[0]));
+            } else {
+                builder.withOsName(parseString(components[0]));
+            }
+        }
+    }
+    
+    private static void parseSdkStanza(ClientInfo.Builder builder, String stanza) {
+        String[] sdkComponents = stanza.split("/");
+        if (sdkComponents.length == 2) {
+            builder.withSdkName(parseString(sdkComponents[0]));
+            builder.withSdkVersion(parseInteger(sdkComponents[1])).build();
+        } else if (sdkComponents.length == 1) {
+            if (sdkComponents[0].matches(DIGITS_REGEXP)) {
+                builder.withSdkVersion(parseInteger(sdkComponents[0]));
+            } else {
+                builder.withSdkName(parseString(sdkComponents[0]));
+            }
+        }
+    }
+    
+    private static String parseString(String value) {
+        // should not contain characters we consider special
+        if (StringUtils.isBlank(value.trim()) || value.matches(".*[;\\(\\)]+.*")) { 
+            return null;
+        }
+        return value.trim();
+    }
+    
+    private static Integer parseInteger(String value) {
+        if (StringUtils.isBlank(value)) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch(NumberFormatException e) {
+            return null;
+        }
+    }    
 
-    private static ClientInfo parseMediumUserAgent(String ua) {
-        Matcher matcher = MEDIUM_STRING.matcher(ua);
-        if (matcher.matches()) {
-            return new ClientInfo.Builder()
-                .withAppName(matcher.group(1).trim())
-                .withAppVersion(Integer.parseInt(matcher.group(2).trim()))
-                .withSdkName(matcher.group(3).trim())
-                .withSdkVersion(Integer.parseInt(matcher.group(4).trim())).build();
-        }
-        return UNKNOWN_CLIENT;
-    }
-
-    private static ClientInfo parseShortUserAgent(String ua) {
-        Matcher matcher = SHORT_STRING.matcher(ua);
-        if (matcher.matches()) {
-            return new ClientInfo.Builder()
-                .withAppName(matcher.group(1).trim())
-                .withAppVersion(Integer.parseInt(matcher.group(2).trim())).build();
-        }
-        return UNKNOWN_CLIENT;
-    }
 }
