@@ -33,6 +33,11 @@ public class ClientInfoTest {
     private static final String INVALID_UA_5 = "AppName/9098209438734677529830495820945298734059682345";
 
     @Test
+    public void playingAround() {
+        ClientInfo.parseMe();
+    }
+    
+    @Test
     public void hashEquals() {
         EqualsVerifier.forClass(ClientInfo.class).allFieldsShouldBeUsed().verify();
     }

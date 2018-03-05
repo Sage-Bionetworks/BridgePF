@@ -77,13 +77,6 @@ public class StudyController extends BaseController {
         this.uploadService = uploadService;
     }
 
-    @Deprecated
-    public Result getStudyList() throws Exception {
-        List<Study> studies = studyService.getStudies();
-
-        return ok(Study.STUDY_LIST_WRITER.writeValueAsString(new ResourceList<Study>(studies)));
-    }
-
     public Result getCurrentStudy() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
         Study study = studyService.getStudy(session.getStudyIdentifier());

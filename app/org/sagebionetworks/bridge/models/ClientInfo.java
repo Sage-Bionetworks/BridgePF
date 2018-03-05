@@ -61,6 +61,72 @@ import com.google.common.cache.LoadingCache;
  */
 public final class ClientInfo {
 
+    public static final String[] UAS = new String[] {
+        "Unknown Client/14",
+        "App Name: Here/14",
+        "Unknown Client/14 BridgeJavaSDK/10",
+        "Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4",
+        "Cardio Health/1 (Unknown iPhone; iPhone OS/9.0.2) BridgeSDK/4",
+        "Belgium/2 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10",
+        "Asthma/26 (Unknown iPhone; iPhone OS 9.1) BridgeSDK/4",
+        "Cardio Health/1 (Unknown iPhone; iPhone OS 9.0.2) BridgeSDK/4",
+        "Belgium/2 (Motorola Flip-Phone; Android 14) BridgeJavaSDK/10",
+        "Cardio Health/1 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4"
+    };
+    
+    public static final void parseMe() {
+        // 0       1           2           3      4          5       6
+        // appName/appVersion (deviceName; osName/osVersion) sdkName/sdkVersion"
+        
+        for (String userAgent : UAS) {
+            System.out.println(userAgent);
+            ClientInfo.Builder builder = new ClientInfo.Builder();
+            
+            String[] stanzas = userAgent.split("[()]");
+            if (stanzas.length == 3) {
+                // All three components are present.
+                String[] appComponents = stanzas[0].split("/");
+                String[] sdkComponents = stanzas[2].split("/");
+                
+                String[] devComponents = stanzas[1].split("[;/]");
+                if (devComponents.length == 3) {
+                    builder.withDeviceName(devComponents[0]);
+                    builder.withOsName(devComponents[1].trim());
+                    builder.withOsVersion(devComponents[2].trim());
+                } else if (devComponents.length == 2) {
+                    builder.withOsName(devComponents[0].trim());
+                    builder.withOsVersion(devComponents[1].trim());
+                }
+                builder.withAppName(appComponents[0])
+                    .withAppVersion(Integer.parseInt(appComponents[1].trim()))
+                    .withSdkName(sdkComponents[0].trim())
+                    .withSdkVersion(Integer.parseInt(sdkComponents[1].trim())).build();
+            } else {
+                // This is the app or sdk stanza, or both
+                if (stanzas[0].matches(".*[0-9]+\\s+[^0-9]+.*")) {
+                    String[] components = stanzas[0].split("(?<=[0-9])\\s(?=([^0-9]))");
+                    String[] appComponents = components[0].split("/");
+                    String[] sdkComponents = components[1].split("/");
+                    
+                    builder.withAppName(appComponents[0].trim())
+                        .withAppVersion(Integer.parseInt(appComponents[1].trim()))
+                        .withSdkName(sdkComponents[0].trim())
+                        .withSdkVersion(Integer.parseInt(sdkComponents[1].trim())).build();
+                } else {
+                    // This is ambiguous, but we assume it is the app name/app version
+                    String[] appComponents = stanzas[0].split("/");
+                    if (appComponents.length == 2) {
+                        builder.withAppName(appComponents[0].trim())
+                            .withAppVersion(Integer.parseInt(appComponents[1].trim())).build();
+                    } else {
+                        builder.withAppName(appComponents[0].trim()).build();
+                    }
+                }
+            }
+            System.out.println("    " + builder.build());
+        }
+    }
+    
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientInfo.class);
 
     /**
