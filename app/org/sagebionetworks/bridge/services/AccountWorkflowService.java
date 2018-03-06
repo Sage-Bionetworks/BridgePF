@@ -65,12 +65,13 @@ public class AccountWorkflowService {
     
     private static final String SHORT_RESET_PASSWORD_URL = "/rp?study=%s&sptoken=%s";
     private static final String SHORT_VERIFY_EMAIL_URL = "/ve?study=%s&sptoken=%s";
-    private static final String SHORT_EMAIL_SIGNIN_URL = "/s/%s?email=%s&study=%s&token=%s";
+    private static final String SHORT_EMAIL_SIGNIN_URL = "/s/%s?email=%s&token=%s";
     
     private static final String EXP_WINDOW_TOKEN = "expirationWindow";
     
     private static final String EMAIL_KEY = "email";
     private static final String TOKEN_KEY = "token";
+    private static final String SPTOKEN_KEY = "sptoken";
     
     private static final String URL_KEY = "url";
     private static final String SHORT_URL_KEY = "shortUrl";
@@ -204,6 +205,7 @@ public class AccountWorkflowService {
                 .withStudy(study)
                 .withEmailTemplate(study.getVerifyEmailTemplate())
                 .withRecipientEmail(recipientEmail)
+                .withToken(SPTOKEN_KEY, sptoken)
                 .withToken(URL_KEY, url)
                 .withToken(SHORT_URL_KEY, shortUrl).build();
         sendMailService.sendEmail(provider);
@@ -305,6 +307,7 @@ public class AccountWorkflowService {
             // for backwards compatibility; we also set as passwordResetUrl
             .withToken(RESET_PASSWORD_URL_KEY, url)
             .withToken(SHORT_RESET_PASSWORD_URL_KEY, shortUrl)
+            .withToken(SPTOKEN_KEY, sptoken)
             .withToken(URL_KEY, url)
             .withToken(SHORT_URL_KEY, shortUrl)
             .withToken(EXP_WINDOW_TOKEN, Integer.toString(EXPIRE_IN_SECONDS/60/60));
@@ -317,6 +320,9 @@ public class AccountWorkflowService {
                     String emailUrl = getEmailSignInURL(signIn.getEmail(), theStudy.getIdentifier(), token);
                     String emailShortUrl = getShortEmailSignInURL(signIn.getEmail(), theStudy.getIdentifier(), token);
                     
+                    // Put the components in separately, in case we want to alter the URL in a specific template.
+                    builder.withToken(EMAIL_KEY, BridgeUtils.encodeURIComponent(signIn.getEmail()));
+                    builder.withToken(TOKEN_KEY, token); // NOTE: sptoken and token are different
                     builder.withToken(EMAIL_SIGNIN_URL_KEY, emailUrl);
                     builder.withToken(SHORT_EMAIL_SIGNIN_URL_KEY, emailShortUrl);
                 });
@@ -561,7 +567,7 @@ public class AccountWorkflowService {
     }
     
     private String getShortEmailSignInURL(String email, String studyId, String token) {
-        return formatWithEncodedArgs(SHORT_EMAIL_SIGNIN_URL, studyId, email, studyId, token);
+        return formatWithEncodedArgs(SHORT_EMAIL_SIGNIN_URL, studyId, email, token);
     }
     
     private String getShortVerifyEmailURL(Study study, String sptoken) {
