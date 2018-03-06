@@ -280,20 +280,19 @@ public final class ClientInfo {
         return info;
     }
     
+    /**
+     * Verifies a few things about the string:
+     * 
+     * - shouldn't be more than one set of parentheses (and they are matched)
+     * - if there's a semicolon, there should only be one and there should be parentheses
+     * - shouldn't be more than 3 slashes
+     */
     private static boolean invalidFormat(String userAgent) {
         int forwardSlash = 0;
         int semicolon = 0;
         int openParens = 0;
         int closedParens = 0;
         
-        // a/b (c; d/e) f/g
-        
-        // 1/ --> ( or / or nothing
-        // ( --> ; or / or )
-        // ; --> / or )
-        // 2/ --> ) or 3/ or nothing
-        // ) --> / or nothing
-        // 3/ --> nothing
         for (int i=0; i < userAgent.length(); i++) {
             char character = userAgent.charAt(i);
             if ('/' == character) {
@@ -306,9 +305,6 @@ public final class ClientInfo {
                 closedParens++;
             }
         }
-        // shouldn't be more than one set of parentheses (matched)
-        // if there's a semicolon, there should only be one and there should be parentheses
-        // shouldn't be more than 3 slashes
         return (openParens > 1 || closedParens > 1 || openParens != closedParens || 
                 semicolon > 1 || semicolon > openParens || forwardSlash > 3);
     }
