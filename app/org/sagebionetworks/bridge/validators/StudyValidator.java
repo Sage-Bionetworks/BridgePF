@@ -127,7 +127,8 @@ public class StudyValidator implements Validator {
         }
         if (study.getAccountExistsTemplate() != null) {
             validateTemplate(errors, study.getAccountExistsTemplate(), "accountExistsTemplate", "${url}",
-                    "${shortUrl}", "${emailSignInUrl}", "${resetPasswordUrl}");
+                    "${shortUrl}", "${emailSignInUrl}", "${resetPasswordUrl}", 
+                    "${shortEmailSignInUrl}", "${shortResetPasswordUrl}");
         }
         
         for (String userProfileAttribute : study.getUserProfileAttributes()) {
