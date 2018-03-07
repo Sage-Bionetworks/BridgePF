@@ -42,7 +42,7 @@ public class UploadArchiveServiceZipTest {
         assertTrue(zippedData.length > 0);
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = NullPointerException.class)
     public void zipNullInput() {
         uploadArchiveService.zip(null);
     }
@@ -61,7 +61,7 @@ public class UploadArchiveServiceZipTest {
     // There was originally a test here for unzipping garbage data. However, it looks like Java
     // ZipInputStream.getNextEntry() will just return null if the stream contains garbage data.
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = NullPointerException.class)
     public void unzipBytesNullInput() {
         uploadArchiveService.unzip(null);
     }
@@ -88,7 +88,7 @@ public class UploadArchiveServiceZipTest {
         testSvc.unzip(zippedData);
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = NullPointerException.class)
     public void unzipStreamNullStream() {
         uploadArchiveService.unzip(null,
                 // Use NullOutputStream, since the test won't ever actually create any streams.
@@ -97,7 +97,7 @@ public class UploadArchiveServiceZipTest {
                 (entryName, outputStream) -> {});
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = NullPointerException.class)
     public void unzipStreamNullOutputStreamFunction() throws Exception {
         try (ByteArrayInputStream zippedDataInputStream = new ByteArrayInputStream(zippedData)) {
             uploadArchiveService.unzip(zippedDataInputStream,
@@ -107,7 +107,7 @@ public class UploadArchiveServiceZipTest {
         }
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = NullPointerException.class)
     public void unzipStreamNullOutputStreamFinalizer() throws Exception {
         try (ByteArrayInputStream zippedDataInputStream = new ByteArrayInputStream(zippedData)) {
             uploadArchiveService.unzip(zippedDataInputStream,

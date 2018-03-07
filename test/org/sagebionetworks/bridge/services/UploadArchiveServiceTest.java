@@ -24,7 +24,6 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.crypto.BcCmsEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
 import org.sagebionetworks.bridge.crypto.PemUtils;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.springframework.core.io.ClassPathResource;
 
@@ -66,22 +65,22 @@ public class UploadArchiveServiceTest {
         assertTrue(encryptedData.length > 0);
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = NullPointerException.class)
     public void encryptNullStudyId() {
         archiveService.encrypt(null, PLAIN_TEXT_DATA);
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void encryptEmptyStudyId() {
         archiveService.encrypt("", PLAIN_TEXT_DATA);
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void encryptBlankStudyId() {
         archiveService.encrypt("   ", PLAIN_TEXT_DATA);
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = NullPointerException.class)
     public void encryptNullBytes() {
         archiveService.encrypt("test-study", null);
     }
@@ -99,48 +98,48 @@ public class UploadArchiveServiceTest {
         archiveService.decrypt("test-study", garbageData);
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = NullPointerException.class)
     public void decryptBytesNullStudyId() {
         archiveService.decrypt(null, encryptedData);
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void decryptBytesEmptyStudyId() {
         archiveService.decrypt("", encryptedData);
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void decryptBytesBlankStudyId() {
         archiveService.decrypt("   ", encryptedData);
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = NullPointerException.class)
     public void decryptBytesNullBytes() {
         archiveService.decrypt("test-study", (byte[]) null);
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = NullPointerException.class)
     public void decryptStreamNullStudyId() throws Exception {
         try (InputStream encryptedInputStream = new ByteArrayInputStream(encryptedData)) {
             archiveService.decrypt(null, encryptedInputStream);
         }
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void decryptStreamEmptyStudyId() throws Exception {
         try (InputStream encryptedInputStream = new ByteArrayInputStream(encryptedData)) {
             archiveService.decrypt("", encryptedInputStream);
         }
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void decryptStreamBlankStudyId() throws Exception {
         try (InputStream encryptedInputStream = new ByteArrayInputStream(encryptedData)) {
             archiveService.decrypt("   ", encryptedInputStream);
         }
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = NullPointerException.class)
     public void decryptStreamNullBytes() {
         archiveService.decrypt("test-study", (InputStream) null);
     }

@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,7 +30,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.util.DuplicateZipEntryException;
 import org.sagebionetworks.bridge.util.ZipOverflowException;
-import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -89,12 +91,9 @@ public class UploadArchiveService {
      */
     public byte[] encrypt(String studyId, byte[] bytes) throws BridgeServiceException {
         // validate
-        if (StringUtils.isBlank(studyId)) {
-            throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "studyId"));
-        }
-        if (bytes == null) {
-            throw new BadRequestException(String.format(Validate.CANNOT_BE_NULL, "bytes"));
-        }
+        checkNotNull(studyId);
+        checkArgument(StringUtils.isNotBlank(studyId));
+        checkNotNull(bytes);
 
         // get encryptor from cache
         CmsEncryptor encryptor = getEncryptorForStudy(studyId);
@@ -122,12 +121,9 @@ public class UploadArchiveService {
      */
     public byte[] decrypt(String studyId, byte[] bytes) throws BridgeServiceException {
         // validate
-        if (StringUtils.isBlank(studyId)) {
-            throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "studyId"));
-        }
-        if (bytes == null) {
-            throw new BadRequestException(String.format(Validate.CANNOT_BE_NULL, "bytes"));
-        }
+        checkNotNull(studyId);
+        checkArgument(StringUtils.isNotBlank(studyId));
+        checkNotNull(bytes);
 
         // decrypt
         try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
@@ -144,12 +140,9 @@ public class UploadArchiveService {
      */
     public InputStream decrypt(String studyId, InputStream source) {
         // validate
-        if (StringUtils.isBlank(studyId)) {
-            throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "studyId"));
-        }
-        if (source == null) {
-            throw new BadRequestException(String.format(Validate.CANNOT_BE_NULL, "source"));
-        }
+        checkNotNull(studyId);
+        checkArgument(StringUtils.isNotBlank(studyId));
+        checkNotNull(source);
 
         // get encryptor from cache
         CmsEncryptor encryptor = getEncryptorForStudy(studyId);
@@ -195,9 +188,7 @@ public class UploadArchiveService {
      */
     public byte[] zip(Map<String, byte[]> dataMap) throws BridgeServiceException {
         // Validate input
-        if (dataMap == null) {
-            throw new BadRequestException(String.format(Validate.CANNOT_BE_NULL, "dataMap"));
-        }
+        checkNotNull(dataMap);
 
         // Zip
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -232,9 +223,7 @@ public class UploadArchiveService {
      */
     public Map<String, byte[]> unzip(byte[] bytes) throws BridgeServiceException {
         // Validate input
-        if (bytes == null) {
-            throw new BadRequestException(String.format(Validate.CANNOT_BE_NULL, "bytes"));
-        }
+        checkNotNull(bytes);
 
         // Unzip
         Map<String, byte[]> dataMap = new HashMap<>();
@@ -280,15 +269,9 @@ public class UploadArchiveService {
     public void unzip(InputStream source, Function<String, OutputStream> entryNameToOutpuStream,
             BiConsumer<String, OutputStream> outputStreamFinalizer) {
         // Validate input
-        if (source == null) {
-            throw new BadRequestException(String.format(Validate.CANNOT_BE_NULL, "source"));
-        }
-        if (entryNameToOutpuStream == null) {
-            throw new BadRequestException(String.format(Validate.CANNOT_BE_NULL, "entryNameToOutpuStream"));
-        }
-        if (outputStreamFinalizer == null) {
-            throw new BadRequestException(String.format(Validate.CANNOT_BE_NULL, "outputStreamFinalizer"));
-        }
+        checkNotNull(source);
+        checkNotNull(entryNameToOutpuStream);
+        checkNotNull(outputStreamFinalizer);
 
         // Unzip
         Set<String> zipEntryNameSet = new HashSet<>();
