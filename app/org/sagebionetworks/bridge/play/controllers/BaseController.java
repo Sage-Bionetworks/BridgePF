@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
@@ -21,6 +20,7 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -39,7 +39,6 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.play.interceptors.RequestUtils;
 import org.sagebionetworks.bridge.services.AuthenticationService;
-import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -75,7 +74,7 @@ public abstract class BaseController extends Controller {
     
     BridgeConfig bridgeConfig;
     
-    ParticipantOptionsService optionsService;
+    AccountDao accountDao;
 
     StudyService studyService;
 
@@ -99,8 +98,8 @@ public abstract class BaseController extends Controller {
     }
     
     @Autowired
-    final void setParticipantOptionsService(ParticipantOptionsService optionsService) {
-        this.optionsService = optionsService;
+    final void setAccountDao(AccountDao accountDao) {
+        this.accountDao = accountDao;
     }
 
     @Autowired
@@ -239,8 +238,8 @@ public abstract class BaseController extends Controller {
         }
         LinkedHashSet<String> languages = getLanguagesFromAcceptLanguageHeader();
         if (!languages.isEmpty()) {
-            optionsService.setOrderedStringSet(
-                    session.getStudyIdentifier(), session.getHealthCode(), LANGUAGES, languages);
+            accountDao.editAccount(session.getStudyIdentifier(), session.getHealthCode(),
+                    account -> account.setLanguages(languages));
             
             sessionUpdateService.updateLanguage(session, languages);
         }

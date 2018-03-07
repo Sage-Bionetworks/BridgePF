@@ -13,7 +13,6 @@ import org.joda.time.DateTimeZone;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
@@ -213,11 +212,9 @@ public class ScheduledActivityController extends BaseController {
     }
 
     private DateTimeZone persistTimeZone(UserSession session, DateTimeZone timeZone) {
-        optionsService.setDateTimeZone(session.getStudyIdentifier(), session.getHealthCode(),
-                ParticipantOption.TIME_ZONE, timeZone);
-        
+        accountDao.editAccount(session.getStudyIdentifier(), session.getHealthCode(),
+                account -> account.setTimeZone(timeZone));
         sessionUpdateService.updateTimeZone(session, timeZone);
-        
         return timeZone;
     }
 }

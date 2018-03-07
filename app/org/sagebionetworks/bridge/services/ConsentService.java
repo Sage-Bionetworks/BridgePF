@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -13,14 +12,13 @@ import java.util.Map;
 import org.apache.commons.io.IOUtils;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -48,7 +46,6 @@ import org.springframework.stereotype.Component;
 public class ConsentService {
 
     private AccountDao accountDao;
-    private ParticipantOptionsService optionsService;
     private SendMailService sendMailService;
     private StudyConsentService studyConsentService;
     private ActivityEventService activityEventService;
@@ -59,15 +56,9 @@ public class ConsentService {
     final void setConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.consentTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
-    }
-
-    @Autowired
-    final void setOptionsService(ParticipantOptionsService optionsService) {
-        this.optionsService = optionsService;
     }
     @Autowired
     final void setSendMailService(SendMailService sendMailService) {
@@ -162,11 +153,11 @@ public class ConsentService {
         List<ConsentSignature> consentListCopy = new ArrayList<>(account.getConsentSignatureHistory(subpopGuid));
         consentListCopy.add(withConsentCreatedOnSignature);
         account.setConsentSignatureHistory(subpopGuid, consentListCopy);
+        account.setSharingScope(sharingScope);
         accountDao.updateAccount(account, false);
         
         // Publish an enrollment event, set sharing scope 
         activityEventService.publishEnrollmentEvent(participant.getHealthCode(), withConsentCreatedOnSignature);
-        optionsService.setEnum(study, participant.getHealthCode(), SHARING_SCOPE, sharingScope);
         
         // Send email, if required.
         if (sendEmail && participant.getEmail() != null) {
@@ -182,13 +173,23 @@ public class ConsentService {
      * Get all the consent status objects for this user. From these, we determine if the user 
      * has consented to the right consents to have access to the study, and whether or not those 
      * consents are up-to-date.
-     * @param context
-     * @return
      */
     public Map<SubpopulationGuid,ConsentStatus> getConsentStatuses(CriteriaContext context) {
         checkNotNull(context);
         
         Account account = accountDao.getAccount(context.getAccountId());
+        return getConsentStatuses(context, account);
+    }
+    
+    /**
+     * Get all the consent status objects for this user. From these, we determine if the user 
+     * has consented to the right consents to have access to the study, and whether or not those 
+     * consents are up-to-date. For reasons I don't entirely understand, you cannot load the 
+     * account twice in one call without getting a concurrent modification exception when you 
+     * update the record, so use the account method where necessary. 
+     */
+    public Map<SubpopulationGuid,ConsentStatus> getConsentStatuses(CriteriaContext context, Account account) {
+        checkNotNull(context);
         
         ImmutableMap.Builder<SubpopulationGuid, ConsentStatus> builder = new ImmutableMap.Builder<>();
         for (Subpopulation subpop : subpopService.getSubpopulationsForUser(context)) {
@@ -206,7 +207,7 @@ public class ConsentService {
         }
         return builder.build();
     }
-
+    
     /**
      * Withdraw consent in this study. The withdrawal date is recorded and the user can no longer 
      * access any APIs that require consent, although the user's account (along with the history of 
@@ -226,16 +227,14 @@ public class ConsentService {
         if(!withdrawSignatures(account, subpopGuid, withdrewOn)) {
             throw new EntityNotFoundException(ConsentSignature.class);
         }
+        Map<SubpopulationGuid,ConsentStatus> statuses = getConsentStatuses(context, account);
+        if (!ConsentStatus.isUserConsented(statuses)) {
+            account.setSharingScope(SharingScope.NO_SHARING);
+        }
         accountDao.updateAccount(account, false);
 
         sendWithdrawEmail(study, participant.getExternalId(), account, withdrawal, withdrewOn);
 
-        Map<SubpopulationGuid,ConsentStatus> statuses = getConsentStatuses(context);
-        
-        if (!ConsentStatus.isUserConsented(statuses)) {
-            optionsService.setEnum(account.getStudyIdentifier(), account.getHealthCode(),
-                    ParticipantOption.SHARING_SCOPE, SharingScope.NO_SHARING);
-        }
         return statuses;
     }
     
@@ -253,22 +252,16 @@ public class ConsentService {
         checkArgument(withdrewOn > 0);
 
         Account account = accountDao.getAccount(context.getAccountId());
-        
-        // Do this first, as it directly impacts the export of data, and if nothing else, we'd like this to succeed.
-        optionsService.setEnum(study.getStudyIdentifier(), account.getHealthCode(), SHARING_SCOPE, SharingScope.NO_SHARING);
-        
-        // Prevent optimistic locking exception until operations are combined into one operation. 
-        account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), account.getId()));
-        
         for (SubpopulationGuid subpopGuid : account.getAllConsentSignatureHistories().keySet()) {
             withdrawSignatures(account, subpopGuid, withdrewOn);
         }
+        account.setSharingScope(SharingScope.NO_SHARING);
         accountDao.updateAccount(account, false);
 
         sendWithdrawEmail(study, participant.getExternalId(), account, withdrawal, withdrewOn);
 
         // But we don't need to query, we know these are all withdraw.
-        return getConsentStatuses(context);
+        return getConsentStatuses(context, account);
     }
 
     // Helper method, which abstracts away logic for sending withdraw notification email.
@@ -278,12 +271,10 @@ public class ConsentService {
             // Withdraw email provider currently doesn't support non-email accounts. Skip.
             return;
         }
-
         if (study.isConsentNotificationEmailVerified() == Boolean.FALSE) {
             // For backwards-compatibility, a null value means the email is verified.
             return;
         }
-
         MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account, withdrawal,
                 withdrewOn);
         sendMailService.sendEmail(consentEmail);

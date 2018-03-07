@@ -1,16 +1,13 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
-
 import java.util.Map;
 
 import org.joda.time.DateTime;
-
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SharingOption;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
@@ -145,7 +142,8 @@ public class ConsentController extends BaseController {
     Result changeSharingScope(SharingScope sharingScope, String message) {
         final UserSession session = getAuthenticatedAndConsentedSession();
         
-        optionsService.setEnum(session.getStudyIdentifier(), session.getHealthCode(), SHARING_SCOPE, sharingScope);
+        accountDao.editAccount(session.getStudyIdentifier(), session.getHealthCode(),
+                account -> account.setSharingScope(sharingScope));
 
         sessionUpdateService.updateSharingScope(session, sharingScope);
         

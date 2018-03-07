@@ -20,9 +20,9 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachment;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.s3.S3Helper;
@@ -111,7 +111,7 @@ public class UploadArtifactsHandlerTest {
         assertEquals("2015-11-18", createIntermediateRecordArg.getUploadDate().toString(ISODateTimeFormat.date()));
         assertEquals(TEST_UPLOAD_ID, createIntermediateRecordArg.getUploadId());
         assertEquals("dummy-external-ID", createIntermediateRecordArg.getUserExternalId());
-        assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, createIntermediateRecordArg.getUserSharingScope());
+        assertEquals(SharingScope.SPONSORS_AND_PARTNERS, createIntermediateRecordArg.getUserSharingScope());
         assertEquals(TestConstants.USER_DATA_GROUPS, createIntermediateRecordArg.getUserDataGroups());
         assertEquals(42, createIntermediateRecordArg.getVersion().longValue());
 
@@ -134,7 +134,7 @@ public class UploadArtifactsHandlerTest {
         assertEquals("2015-11-18", createFinalRecordArg.getUploadDate().toString(ISODateTimeFormat.date()));
         assertEquals(TEST_UPLOAD_ID, createFinalRecordArg.getUploadId());
         assertEquals("dummy-external-ID", createFinalRecordArg.getUserExternalId());
-        assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, createFinalRecordArg.getUserSharingScope());
+        assertEquals(SharingScope.SPONSORS_AND_PARTNERS, createFinalRecordArg.getUserSharingScope());
         assertEquals(TestConstants.USER_DATA_GROUPS, createFinalRecordArg.getUserDataGroups());
         assertEquals(42, createFinalRecordArg.getVersion().longValue());
 
@@ -182,7 +182,7 @@ public class UploadArtifactsHandlerTest {
         record.setUploadDate(LocalDate.parse("2015-11-18"));
         record.setUploadId(TEST_UPLOAD_ID);
         record.setUserExternalId("dummy-external-ID");
-        record.setUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS);
+        record.setUserSharingScope(SharingScope.SPONSORS_AND_PARTNERS);
         record.setUserDataGroups(TestConstants.USER_DATA_GROUPS);
         record.setVersion(42L);
         return record;

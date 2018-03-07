@@ -106,11 +106,11 @@ public class HibernateHelper {
     }
 
     /** Updates a single object. */
-    public void update(Object obj) {
+    public <T> T update(T obj) {
         try {
-            execute(session -> {
+            return execute(session -> {
                 session.update(obj);
-                return null;
+                return obj;
             });
         } catch (OptimisticLockException ex) {
             throw new ConcurrentModificationException("Row has the wrong version number; it may have been saved in " +

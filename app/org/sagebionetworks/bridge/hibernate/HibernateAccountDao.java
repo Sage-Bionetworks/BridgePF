@@ -3,12 +3,6 @@ package org.sagebionetworks.bridge.hibernate;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.TIME_ZONE;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -20,6 +14,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -32,8 +27,6 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.ParticipantOptionsDao;
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -50,9 +43,9 @@ import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.HealthId;
-import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -81,7 +74,6 @@ public class HibernateAccountDao implements AccountDao {
     
     private HealthCodeService healthCodeService;
     private HibernateHelper hibernateHelper;
-    private ParticipantOptionsDao optionsDao;
 
     /** Health code service, because this DAO is expected to generate health codes for new accounts. */
     @Autowired
@@ -95,11 +87,6 @@ public class HibernateAccountDao implements AccountDao {
         this.hibernateHelper = hibernateHelper;
     }
 
-    @Autowired
-    public final void setOptionsDao(ParticipantOptionsDao optionsDao) {
-        this.optionsDao = optionsDao;
-    }
-    
     /** {@inheritDoc} */
     @Override
     public void verifyEmail(Account account) {
@@ -209,7 +196,8 @@ public class HibernateAccountDao implements AccountDao {
         validateHealthCode(hibernateAccount, false);
         Account account = unmarshallAccount(hibernateAccount);
         if (study.isReauthenticationEnabled()) {
-            updateReauthToken(hibernateAccount, account);    
+            int version = updateReauthToken(hibernateAccount, account);
+            ((GenericAccount)account).setVersion(version);
         } else {
             // clear token in case it was created prior to introduction of the flag
             account.setReauthToken(null);
@@ -224,7 +212,8 @@ public class HibernateAccountDao implements AccountDao {
         if (hibernateAccount != null) {
             validateHealthCode(hibernateAccount, false);
             Account account = unmarshallAccount(hibernateAccount);
-            updateReauthToken(hibernateAccount, account);
+            int version = updateReauthToken(hibernateAccount, account);
+            ((GenericAccount)account).setVersion(version);
             return account;
         } else {
             // In keeping with the email implementation, just return null
@@ -243,7 +232,7 @@ public class HibernateAccountDao implements AccountDao {
         }
     }
     
-    private void updateReauthToken(HibernateAccount hibernateAccount, Account account) {
+    private int updateReauthToken(HibernateAccount hibernateAccount, Account account) {
         // Re-create and persist the authentication token.
         String reauthToken = SecureTokenGenerator.INSTANCE.nextToken();
         account.setReauthToken(reauthToken);
@@ -254,7 +243,10 @@ public class HibernateAccountDao implements AccountDao {
         hibernateAccount.setReauthTokenAlgorithm(passwordAlgorithm);
         hibernateAccount.setReauthTokenModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         
-        hibernateHelper.update(hibernateAccount);
+        // We must get the current version to return from the DAO, or subsequent updates to the 
+        // account, even in the same call, will fail (e.g. to update languages captured from a request).
+        HibernateAccount updated = hibernateHelper.update(hibernateAccount);
+        return updated.getVersion();
     }
     
     /** {@inheritDoc} */
@@ -369,6 +361,17 @@ public class HibernateAccountDao implements AccountDao {
         // Update
         hibernateHelper.update(accountToUpdate);
     }
+    
+    /** {@inheritDoc} */
+    @Override
+    public void editAccount(StudyIdentifier studyId, String healthCode, Consumer<Account> accountEdits) {
+        AccountId accountId = AccountId.forHealthCode(studyId.getIdentifier(), healthCode);
+        Account account = getAccount(accountId);
+        if (account != null) {
+            accountEdits.accept(account);
+            updateAccount(account, false);
+        }
+    }
 
     /** {@inheritDoc} */
     @Override
@@ -451,18 +454,6 @@ public class HibernateAccountDao implements AccountDao {
             if (accountList.size() > 1) {
                 LOG.warn("Multiple accounts found email/phone query; example accountId=" + hibernateAccount.getId());
             }
-        }
-        // Migrate ParticipantOptions into this account record and bump the migration version in case it is saved as is.
-        // New accounts will be created saving values 
-        if (hibernateAccount.getMigrationVersion() < AccountDao.MIGRATION_VERSION && hibernateAccount.getHealthCode() != null) {
-            ParticipantOptionsLookup lookup = optionsDao.getOptions(hibernateAccount.getHealthCode());
-            hibernateAccount.setTimeZone(DateUtils.timeZoneToOffsetString(lookup.getTimeZone(TIME_ZONE)));
-            hibernateAccount.setSharingScope(lookup.getEnum(SHARING_SCOPE, SharingScope.class));
-            hibernateAccount.setNotifyByEmail(lookup.getBoolean(EMAIL_NOTIFICATIONS));
-            hibernateAccount.setExternalId(lookup.getString(EXTERNAL_IDENTIFIER));
-            hibernateAccount.setDataGroups(lookup.getStringSet(DATA_GROUPS));
-            hibernateAccount.setLanguages(Lists.newArrayList(lookup.getOrderedStringSet(LANGUAGES)));
-            hibernateAccount.setMigrationVersion(1);
         }
         return hibernateAccount;
     }
@@ -693,6 +684,15 @@ public class HibernateAccountDao implements AccountDao {
         account.setDataGroups(hibernateAccount.getDataGroups());
         account.setLanguages(Sets.newLinkedHashSet(hibernateAccount.getLanguages()));
         account.setMigrationVersion(hibernateAccount.getMigrationVersion());
+        
+        // sharing scope defaults to no sharing
+        if (account.getSharingScope() == null) {
+            account.setSharingScope(SharingScope.NO_SHARING);
+        }
+        // email notifications are opt-out
+        if (account.getNotifyByEmail() == null) {
+            account.setNotifyByEmail(true);
+        }
         
         // For accounts prior to the introduction of the email/phone verification flags, where 
         // the flag was not set on creation or verification of the email address, return the right value.

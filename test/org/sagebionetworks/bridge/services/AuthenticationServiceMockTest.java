@@ -101,8 +101,6 @@ public class AuthenticationServiceMockTest {
     @Mock
     private ConsentService consentService;
     @Mock
-    private ParticipantOptionsService optionsService;
-    @Mock
     private AccountDao accountDao;
     @Mock
     private ParticipantService participantService;
@@ -141,7 +139,6 @@ public class AuthenticationServiceMockTest {
         service.setCacheProvider(cacheProvider);
         service.setBridgeConfig(config);
         service.setConsentService(consentService);
-        service.setOptionsService(optionsService);
         service.setAccountDao(accountDao);
         service.setPasswordResetValidator(passwordResetValidator);
         service.setParticipantService(participantService);
@@ -156,7 +153,7 @@ public class AuthenticationServiceMockTest {
         account.setReauthToken(REAUTH_TOKEN);
         doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
-        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
         UserSession retrieved = service.signIn(study, CONTEXT, EMAIL_PASSWORD_SIGN_IN);
         
@@ -168,7 +165,7 @@ public class AuthenticationServiceMockTest {
     public void unconsentedSignInWithEmail() throws Exception {
         doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
-        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         
         service.signIn(study, CONTEXT, EMAIL_PASSWORD_SIGN_IN);
     }
@@ -193,7 +190,7 @@ public class AuthenticationServiceMockTest {
         account.setReauthToken(REAUTH_TOKEN);
         doReturn(account).when(accountDao).authenticate(study, PHONE_PASSWORD_SIGN_IN);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
-        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
         UserSession retrieved = service.signIn(study, CONTEXT, PHONE_PASSWORD_SIGN_IN);
         
@@ -205,7 +202,7 @@ public class AuthenticationServiceMockTest {
     public void unconsentedSignInWithPhone() throws Exception {
         doReturn(account).when(accountDao).authenticate(study, PHONE_PASSWORD_SIGN_IN);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
-        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         
         service.signIn(study, CONTEXT, PHONE_PASSWORD_SIGN_IN);
     }
@@ -253,7 +250,7 @@ public class AuthenticationServiceMockTest {
                 CONTEXT, SIGN_IN_WITH_EMAIL, SignInValidator.EMAIL_SIGNIN);
         doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
-        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
         UserSession retSession = service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
         
@@ -329,7 +326,7 @@ public class AuthenticationServiceMockTest {
         account.setReauthToken(REAUTH_TOKEN);
 
         StudyParticipant participant = new StudyParticipant.Builder().withEmail(RECIPIENT_EMAIL).build();
-        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         doReturn(account).when(accountDao).reauthenticate(study, REAUTH_REQUEST);
         doReturn(participant).when(participantService).getParticipant(study, account, false);
         
@@ -435,7 +432,7 @@ public class AuthenticationServiceMockTest {
         doReturn(SIGN_IN_WITH_PHONE.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.PHONE,
                 CONTEXT, SIGN_IN_WITH_PHONE, SignInValidator.PHONE_SIGNIN);
         doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_PHONE.getAccountId());
-        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         
         UserSession session = service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
 

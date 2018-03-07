@@ -11,11 +11,9 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import java.util.List;
 
@@ -30,7 +28,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -39,6 +36,7 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -67,8 +65,6 @@ public class ConsentServiceMockTest {
     @Mock
     private AccountDao accountDao;
     @Mock
-    private ParticipantOptionsService optionsService;
-    @Mock
     private SendMailService sendMailService;
     @Mock
     private StudyConsentService studyConsentService;
@@ -89,7 +85,6 @@ public class ConsentServiceMockTest {
     public void before() {
         consentService = new ConsentService();
         consentService.setAccountDao(accountDao);
-        consentService.setOptionsService(optionsService);
         consentService.setSendMailService(sendMailService);
         consentService.setActivityEventService(activityEventService);
         consentService.setStudyConsentService(studyConsentService);
@@ -246,7 +241,7 @@ public class ConsentServiceMockTest {
         ArgumentCaptor<Account> captor = ArgumentCaptor.forClass(Account.class);
         ArgumentCaptor<MimeTypeEmailProvider> emailCaptor = ArgumentCaptor.forClass(MimeTypeEmailProvider.class);
         
-        verify(accountDao, times(2)).getAccount(context.getAccountId());
+        verify(accountDao).getAccount(context.getAccountId());
         verify(accountDao).updateAccount(captor.capture(), eq(false));
         // It happens twice because we do it the first time to set up the test properly
         //verify(account, times(2)).getConsentSignatures(setterCaptor.capture());
@@ -294,14 +289,15 @@ public class ConsentServiceMockTest {
     @Test
     public void withdrawAllConsentsWithEmail() throws Exception {
         setupWithdrawTest();
-
+        TestUtils.mockEditAccount(accountDao, account);
+        
         Withdrawal withdrawal = new Withdrawal("For reasons.");
         consentService.withdrawAllConsents(study, participant, context, withdrawal, SIGNED_ON);
 
         ArgumentCaptor<Account> accountCaptor = ArgumentCaptor.forClass(Account.class);
         
         verify(accountDao).updateAccount(accountCaptor.capture(), eq(false));
-        verify(optionsService).setEnum(study.getStudyIdentifier(), HEALTH_CODE, SHARING_SCOPE, SharingScope.NO_SHARING);
+        verify(account).setSharingScope(SharingScope.NO_SHARING);
 
         ArgumentCaptor<MimeTypeEmailProvider> emailCaptor = ArgumentCaptor.forClass(MimeTypeEmailProvider.class);
         verify(sendMailService).sendEmail(emailCaptor.capture());
@@ -326,6 +322,7 @@ public class ConsentServiceMockTest {
     
     @Test
     public void withdrawAllConsentsWithPhone() {
+        TestUtils.mockEditAccount(accountDao, account);
         account.setPhone(TestConstants.PHONE);
 
         doReturn(participant.getHealthCode()).when(account).getHealthCode();
@@ -339,7 +336,7 @@ public class ConsentServiceMockTest {
         ArgumentCaptor<Account> accountCaptor = ArgumentCaptor.forClass(Account.class);
         
         verify(accountDao).updateAccount(accountCaptor.capture(), eq(false));
-        verify(optionsService).setEnum(study.getStudyIdentifier(), HEALTH_CODE, SHARING_SCOPE, SharingScope.NO_SHARING);
+        verify(account).setSharingScope(SharingScope.NO_SHARING);
         verify(sendMailService, never()).sendEmail(any(MimeTypeEmailProvider.class));
         
         Account updatedAccount = accountCaptor.getValue();

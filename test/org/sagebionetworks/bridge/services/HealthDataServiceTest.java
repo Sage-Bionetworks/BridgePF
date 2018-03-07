@@ -16,10 +16,10 @@ import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.HealthDataDao;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest;
 
@@ -266,7 +266,7 @@ public class HealthDataServiceTest {
         record.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         record.setUploadDate(TEST_UPLOAD_DATE);
         record.setUserDataGroups(TestConstants.USER_DATA_GROUPS);
-        record.setUserSharingScope(ParticipantOption.SharingScope.NO_SHARING);
+        record.setUserSharingScope(SharingScope.NO_SHARING);
         return record;
     }
 }
