@@ -6,21 +6,25 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.File;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
+import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.LocalDate;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
+import org.sagebionetworks.bridge.file.InMemoryFileHelper;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
@@ -32,6 +36,10 @@ public class InitRecordHandlerTest {
     private static final long MOCK_NOW_MILLIS = DateTime.parse("2017-09-26T18:04:13.855-0700").getMillis();
     private static final String UPLOAD_ID = "test-upload";
 
+    private InitRecordHandler handler;
+    private InMemoryFileHelper inMemoryFileHelper;
+    private File tmpDir;
+
     @BeforeClass
     public static void mockNow() {
         DateTimeUtils.setCurrentMillisFixed(MOCK_NOW_MILLIS);
@@ -42,9 +50,22 @@ public class InitRecordHandlerTest {
         DateTimeUtils.setCurrentMillisSystem();
     }
 
-    private static UploadValidationContext setupContextWithJsonDataMap(Map<String, JsonNode> jsonDataMap) {
+    @Before
+    public void before() {
+        // Init fileHelper and tmpDir
+        inMemoryFileHelper = new InMemoryFileHelper();
+        tmpDir = inMemoryFileHelper.createTempDir();
+
+        // Init handler
+        handler = new InitRecordHandler();
+        handler.setFileHelper(inMemoryFileHelper);
+    }
+
+    private UploadValidationContext setupContextWithJsonDataMap(Map<String, JsonNode> jsonDataMap) {
         UploadValidationContext context = new UploadValidationContext();
-        context.setJsonDataMap(jsonDataMap);
+        //noinspection ConstantConditions
+        context.setUnzippedDataFileMap(Maps.transformEntries(jsonDataMap,
+                (name, node) -> makeFileWithContent(name, node.toString())));
 
         // Contexts always include studyId.
         context.setStudy(TestConstants.TEST_STUDY);
@@ -66,9 +87,11 @@ public class InitRecordHandlerTest {
         UploadValidationContext context = setupContextWithJsonDataMap(jsonDataMap);
 
         // execute and validate
-        InitRecordHandler handler = new InitRecordHandler();
         handler.handle(context);
         validateCommonContextAttributes(context);
+
+        // User metadata is null
+        assertNull(context.getHealthDataRecord().getUserMetadata());
 
         // No messages.
         assertTrue(context.getMessageList().isEmpty());
@@ -80,35 +103,12 @@ public class InitRecordHandlerTest {
         UploadValidationContext context = setupContextWithJsonDataMap(ImmutableMap.of());
 
         // execute and catch exception
-        InitRecordHandler handler = new InitRecordHandler();
         try {
             handler.handle(context);
             fail("expected exception");
         } catch (UploadValidationException ex) {
             assertEquals("upload ID " + UPLOAD_ID + " does not contain info.json file", ex.getMessage());
         }
-    }
-
-    @Test
-    public void metadataJsonIsNotAnObject() throws Exception {
-        // Setup context with info.json. metadata.json is some string.
-        Map<String, JsonNode> jsonDataMap = ImmutableMap.<String, JsonNode>builder()
-                .put(UploadUtil.FILENAME_INFO_JSON, makeInfoJson())
-                .put(UploadUtil.FILENAME_METADATA_JSON, TextNode.valueOf("doesn't matter")).build();
-        UploadValidationContext context = setupContextWithJsonDataMap(jsonDataMap);
-
-        // execute and validate
-        InitRecordHandler handler = new InitRecordHandler();
-        handler.handle(context);
-        validateCommonContextAttributes(context);
-
-        // No metadata.
-        assertNull(context.getHealthDataRecord().getUserMetadata());
-
-        // And there's a message.
-        assertEquals(1, context.getMessageList().size());
-        assertEquals("upload " + UPLOAD_ID + " contains metadata.json, but it is not a JSON object",
-                context.getMessageList().get(0));
     }
 
     @Test
@@ -124,7 +124,6 @@ public class InitRecordHandlerTest {
         UploadValidationContext context = setupContextWithJsonDataMap(jsonDataMap);
 
         // execute and validate
-        InitRecordHandler handler = new InitRecordHandler();
         handler.handle(context);
         validateCommonContextAttributes(context);
 
@@ -136,9 +135,6 @@ public class InitRecordHandlerTest {
     }
 
     private static void validateCommonContextAttributes(UploadValidationContext context) {
-        // We have a non-null but empty attachment map.
-        assertTrue(context.getAttachmentsByFieldName().isEmpty());
-
         // Validate health data record props.
         HealthDataRecord record = context.getHealthDataRecord();
         assertEquals(APP_VERSION, record.getAppVersion());
@@ -164,5 +160,61 @@ public class InitRecordHandlerTest {
         infoJsonNode.put(UploadUtil.FIELD_APP_VERSION, APP_VERSION);
         infoJsonNode.put(UploadUtil.FIELD_PHONE_INFO, PHONE_INFO);
         return infoJsonNode;
+    }
+
+    @Test
+    public void parseJsonNotInMap() {
+        JsonNode result = handler.parseFileAsJson(ImmutableMap.of(), UploadUtil.FILENAME_INFO_JSON);
+        assertNull(result);
+    }
+
+    @Test
+    public void parseJsonNotExists() {
+        // If we don't write to the file, it doesn't exist.
+        File file = inMemoryFileHelper.newFile(tmpDir, UploadUtil.FILENAME_INFO_JSON);
+        Map<String, File> fileMap = ImmutableMap.of(UploadUtil.FILENAME_INFO_JSON, file);
+
+        JsonNode result = handler.parseFileAsJson(fileMap, UploadUtil.FILENAME_INFO_JSON);
+        assertNull(result);
+    }
+
+    @Test
+    public void parseJsonInvalidJson() {
+        Map<String, File> fileMap = makeInfoJsonFileMapWithContent("invalid JSON");
+        JsonNode result = handler.parseFileAsJson(fileMap, UploadUtil.FILENAME_INFO_JSON);
+        assertNull(result);
+    }
+
+    @Test
+    public void parseJsonJsonNull() {
+        Map<String, File> fileMap = makeInfoJsonFileMapWithContent("null");
+        JsonNode result = handler.parseFileAsJson(fileMap, UploadUtil.FILENAME_INFO_JSON);
+        assertNull(result);
+    }
+
+    @Test
+    public void parseJsonWrongType() {
+        Map<String, File> fileMap = makeInfoJsonFileMapWithContent("\"not an object\"");
+        JsonNode result = handler.parseFileAsJson(fileMap, UploadUtil.FILENAME_INFO_JSON);
+        assertNull(result);
+    }
+
+    @Test
+    public void parseJsonSuccess() {
+        Map<String, File> fileMap = makeInfoJsonFileMapWithContent("{\"my-key\":\"my-value\"}");
+        JsonNode result = handler.parseFileAsJson(fileMap, UploadUtil.FILENAME_INFO_JSON);
+        assertEquals(1, result.size());
+        assertEquals("my-value", result.get("my-key").textValue());
+    }
+
+    private Map<String, File> makeInfoJsonFileMapWithContent(String content) {
+        File file = makeFileWithContent(UploadUtil.FILENAME_INFO_JSON, content);
+        return ImmutableMap.of(UploadUtil.FILENAME_INFO_JSON, file);
+    }
+
+    private File makeFileWithContent(String name, String content) {
+        File file = inMemoryFileHelper.newFile(tmpDir, name);
+        inMemoryFileHelper.writeBytes(file, content.getBytes(Charsets.UTF_8));
+        return file;
     }
 }

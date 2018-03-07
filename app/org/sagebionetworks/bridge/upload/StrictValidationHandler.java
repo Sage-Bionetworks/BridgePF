@@ -39,8 +39,7 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
  * <p>
  * This handler won't make any other changes to the UploadValidationContext, but it will throw an UploadValidationException
  * if the record data fails validation. Specifically, it will read data from
- * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getHealthDataRecord} and
- * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getAttachmentsByFieldName}.
+ * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getHealthDataRecord}.
  * </p>
  * <p>
  * Because legacy studies don't have the concept of "required fields", Upload Validation was made lenient, to be able
@@ -81,15 +80,11 @@ public class StrictValidationHandler implements UploadValidationHandler {
         String schemaId = record.getSchemaId();
         int schemaRev = record.getSchemaRevision();
 
-        // get attachment field names
-        Set<String> attachmentFieldNameSet = context.getAttachmentsByFieldName().keySet();
-
         // get schema
         UploadSchema schema = uploadSchemaService.getUploadSchemaByIdAndRev(studyIdentifier, schemaId, schemaRev);
         List<UploadFieldDefinition> fieldDefList = schema.getFieldDefinitions();
 
-        List<String> errorList = validateAllFields(fieldDefList, attachmentFieldNameSet,
-                recordDataNode);
+        List<String> errorList = validateAllFields(fieldDefList, recordDataNode);
 
         handleErrors(context, schemaId, schemaRev, errorList);
     }
@@ -165,18 +160,8 @@ public class StrictValidationHandler implements UploadValidationHandler {
     /**
      * Given the schema, the attachments (all we need are names), and the JSON data nodes, we validate the data against
      * the schema.
-     *
-     * @param fieldDefList
-     *         list of field definitions from the schema
-     * @param attachmentFieldNameSet
-     *         set of attachment field names that we have attachments for
-     * @param recordDataNode
-     *         JSON node of the parsed data to validate
-     * @return list of error messages, empty if there are no errors
      */
-    private static List<String> validateAllFields(
-            @Nonnull List<UploadFieldDefinition> fieldDefList, @Nonnull Set<String> attachmentFieldNameSet,
-            @Nonnull JsonNode recordDataNode) {
+    private static List<String> validateAllFields(List<UploadFieldDefinition> fieldDefList, JsonNode recordDataNode) {
         // walk the field definitions and validate fields
         List<String> errorList = new ArrayList<>();
         for (UploadFieldDefinition oneFieldDef : fieldDefList) {
@@ -187,7 +172,7 @@ public class StrictValidationHandler implements UploadValidationHandler {
             if (UploadFieldType.ATTACHMENT_TYPE_SET.contains(fieldType)) {
                 // For attachment types, since they just get exported as raw files, we only need to check if it's
                 // required and present. Specifically, if it's required and it's not present, then that's an error.
-                if (isRequired && !attachmentFieldNameSet.contains(fieldName)) {
+                if (isRequired && !recordDataNode.hasNonNull(fieldName)) {
                     errorList.add("Required attachment field " + fieldName + " missing");
                 }
             } else {

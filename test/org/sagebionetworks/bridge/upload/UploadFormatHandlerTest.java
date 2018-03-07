@@ -4,11 +4,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-import java.util.Map;
-
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.ImmutableMap;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,12 +31,10 @@ public class UploadFormatHandlerTest {
         if (format != null) {
             infoJsonNode.put(UploadUtil.FIELD_FORMAT, format.toString());
         }
-        Map<String, JsonNode> jsonDataMap = ImmutableMap.<String, JsonNode>builder()
-                .put(UploadUtil.FILENAME_INFO_JSON, infoJsonNode).build();
 
         // Make context.
         UploadValidationContext context = new UploadValidationContext();
-        context.setJsonDataMap(jsonDataMap);
+        context.setInfoJsonNode(infoJsonNode);
         return context;
     }
 

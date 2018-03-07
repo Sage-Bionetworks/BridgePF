@@ -59,7 +59,7 @@ import com.google.common.collect.Sets;
 /** Test class for basic utility functions in BaseController. */
 @SuppressWarnings("unchecked")
 public class BaseControllerTest {
-    
+    private static final String DOMAIN = "ws-test.sagebridge.org";
     private static final DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
     private static final Set<String> GROUPS = Sets.newHashSet("group1");
     private static final ClientInfo CLIENTINFO = ClientInfo.fromUserAgentCache("app/10");
@@ -71,7 +71,6 @@ public class BaseControllerTest {
     private static final String TEST_WARNING_MSG = "test warning msg";
     private static final String TEST_WARNING_MSG_2 = "test warning msg 2";
     private static final String TEST_WARNING_MSG_COMBINED = TEST_WARNING_MSG + "; " + TEST_WARNING_MSG_2;
-    private static final String WEBSERVICE_URL = "https://ws-test.sagebridge.org";
     private static final Map<String, String> TEST_HEADERS;
     static {
         TEST_HEADERS = new HashMap<>();
@@ -673,7 +672,7 @@ public class BaseControllerTest {
         Http.Context.current.set(context);
         
         BridgeConfig mockConfig = mock(BridgeConfig.class);
-        when(mockConfig.get("webservices.url")).thenReturn(WEBSERVICE_URL);
+        when(mockConfig.get("domain")).thenReturn(DOMAIN);
         when(mockConfig.getEnvironment()).thenReturn(Environment.LOCAL);
         
         BaseController controller = new SchedulePlanController();
@@ -683,7 +682,7 @@ public class BaseControllerTest {
         assertEquals("ABC", token);
         
         verify(mockResponse).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, "ABC",
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", WEBSERVICE_URL, false, false);
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", DOMAIN, false, false);
     }
     
     @Test
@@ -705,7 +704,7 @@ public class BaseControllerTest {
         BaseController controller = new SchedulePlanController();
 
         BridgeConfig mockConfig = mock(BridgeConfig.class);
-        when(mockConfig.get("webservices.url")).thenReturn(WEBSERVICE_URL);
+        when(mockConfig.get("domain")).thenReturn(DOMAIN);
         when(mockConfig.getEnvironment()).thenReturn(Environment.PROD);
         controller.setBridgeConfig(mockConfig);
         
@@ -713,7 +712,7 @@ public class BaseControllerTest {
         assertEquals("ABC", token);
         
         verify(mockResponse).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, "ABC",
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", WEBSERVICE_URL, true, true);
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", DOMAIN, true, true);
     }
     
     @Test

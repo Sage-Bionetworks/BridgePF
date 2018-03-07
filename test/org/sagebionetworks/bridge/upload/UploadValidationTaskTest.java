@@ -30,10 +30,11 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.UploadDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
-import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
+import org.sagebionetworks.bridge.file.InMemoryFileHelper;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.services.HealthDataService;
 
@@ -64,11 +65,16 @@ public class UploadValidationTaskTest {
             new MessageHandler("foo was here"), new MessageHandler("bar was here"),
             new MessageHandler("kilroy was here"), new RecordIdHandler(null));
 
-
+    private UploadValidationContext ctx;
     private HealthDataService healthDataService;
+    private InMemoryFileHelper inMemoryFileHelper;
+    private UploadDao mockDao;
+    private UploadValidationTask task;
+    private Upload upload;
 
     @Before
     public void setup() throws IOException {
+        // Mock health data service
         testRecord = makeRecordWithId(RECORD_ID);
         HealthDataRecord testRecordDupe = makeRecordWithId(RECORD_ID_2);
         HealthDataRecord testRecordDupe2 = makeRecordWithId(RECORD_ID_3);
@@ -80,6 +86,27 @@ public class UploadValidationTaskTest {
         when(healthDataService.getRecordById(eq(RECORD_ID))).thenReturn(testRecord);
         when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), any(), any())).thenReturn(
                 testRecordDupeListNormal);
+
+        // Set up context
+        Study study = TestUtils.getValidStudy(UploadValidationTaskTest.class);
+
+        upload = Upload.create();
+        upload.setUploadId("test-upload");
+
+        ctx = new UploadValidationContext();
+        ctx.setStudy(study);
+        ctx.setUpload(upload);
+
+        // Set up other pre-reqs
+        inMemoryFileHelper = new InMemoryFileHelper();
+        mockDao = mock(UploadDao.class);
+
+        // Set up task. Spy so we can verify some calls.
+        task = spy(new UploadValidationTask(ctx));
+        task.setFileHelper(inMemoryFileHelper);
+        task.setHandlerList(handlerList);
+        task.setHealthDataService(healthDataService);
+        task.setUploadDao(mockDao);
     }
 
     @Test
@@ -87,7 +114,7 @@ public class UploadValidationTaskTest {
         // test handlers
 
         // execute
-        UploadValidationContext ctx = testHelper(handlerList, UploadStatus.SUCCEEDED, RECORD_ID);
+        testHelper(handlerList, UploadStatus.SUCCEEDED, RECORD_ID);
         assertTrue(ctx.getSuccess());
 
         // validate that the handlers ran by checking the messages they wrote
@@ -130,7 +157,7 @@ public class UploadValidationTaskTest {
                 recordIdHandler);
 
         // execute
-        UploadValidationContext ctx = testHelper(handlerList, UploadStatus.VALIDATION_FAILED, null);
+        testHelper(handlerList, UploadStatus.VALIDATION_FAILED, null);
         assertFalse(ctx.getSuccess());
 
         // Validate validation messages. First message is foo handler. Second message is error message. Just check that
@@ -142,34 +169,21 @@ public class UploadValidationTaskTest {
     }
 
     // helper test method, encapsulating core setup and validation
-    private UploadValidationContext testHelper(List<UploadValidationHandler> handlerList,
+    private void testHelper(List<UploadValidationHandler> handlerList,
             UploadStatus expectedStatus, String expectedRecordId) {
-        // input
-        DynamoStudy study = TestUtils.getValidStudy(UploadValidationTaskTest.class);
-
-        DynamoUpload2 upload2 = new DynamoUpload2();
-        upload2.setUploadId("test-upload");
-
-        UploadValidationContext ctx = new UploadValidationContext();
-        ctx.setStudy(study);
-        ctx.setUpload(upload2);
-
-        // mock dao
-        UploadDao mockDao = mock(UploadDao.class);
-
-        // set up validation task
-        UploadValidationTask task = new UploadValidationTask(ctx);
-        task.setHandlerList(handlerList);
-        task.setUploadDao(mockDao);
-        task.setHealthDataService(healthDataService);
+        // Test might have a custom handler list
+        if (handlerList != null) {
+            task.setHandlerList(handlerList);
+        }
 
         // execute
         task.run();
 
         // validate the upload dao write validation status call
-        verify(mockDao).writeValidationStatus(upload2, expectedStatus, ctx.getMessageList(), expectedRecordId);
+        verify(mockDao).writeValidationStatus(upload, expectedStatus, ctx.getMessageList(), expectedRecordId);
 
-        return ctx;
+        // Validate that we clean up the temp directory.
+        assertTrue(inMemoryFileHelper.isEmpty());
     }
 
     @Test
@@ -177,27 +191,13 @@ public class UploadValidationTaskTest {
         // Trivial record ID handler, to make the test not degenerate.
         List<UploadValidationHandler> handlerList = ImmutableList.of(new RecordIdHandler("will fail"));
 
-        // input
-        DynamoStudy study = TestUtils.getValidStudy(UploadValidationTaskTest.class);
-
-        DynamoUpload2 upload2 = new DynamoUpload2();
-        upload2.setUploadId("test-upload");
-
-        UploadValidationContext ctx = new UploadValidationContext();
-        ctx.setStudy(study);
-        ctx.setUpload(upload2);
-
         // mock dao
-        UploadDao mockDao = mock(UploadDao.class);
         RuntimeException toThrow = new RuntimeException();
-        doThrow(toThrow).when(mockDao).writeValidationStatus(upload2, UploadStatus.SUCCEEDED, ImmutableList.of(),
+        doThrow(toThrow).when(mockDao).writeValidationStatus(upload, UploadStatus.SUCCEEDED, ImmutableList.of(),
                 "will fail");
 
         // set up validation task
-        UploadValidationTask task = spy(new UploadValidationTask(ctx));
         task.setHandlerList(handlerList);
-        task.setUploadDao(mockDao);
-        task.setHealthDataService(healthDataService);
 
         // execute
         task.run();
@@ -208,21 +208,8 @@ public class UploadValidationTaskTest {
 
     @Test
     public void dedupeNullRecordId() {
-        // input
-        DynamoStudy study = TestUtils.getValidStudy(UploadValidationTaskTest.class);
-
-        DynamoUpload2 upload2 = new DynamoUpload2();
-        upload2.setUploadId("test-upload");
-
-        UploadValidationContext ctx = new UploadValidationContext();
-        ctx.setStudy(study);
-        ctx.setUpload(upload2);
-
         // set up validation task
-        UploadValidationTask task = spy(new UploadValidationTask(ctx));
         task.setHandlerList(nullRecordIdHandlerList);
-        task.setHealthDataService(healthDataService);
-        task.setUploadDao(mock(UploadDao.class));
 
         // execute
         task.run();
@@ -234,22 +221,6 @@ public class UploadValidationTaskTest {
 
     @Test
     public void dedupeInformation() {
-        // input
-        DynamoStudy study = TestUtils.getValidStudy(UploadValidationTaskTest.class);
-
-        DynamoUpload2 upload2 = new DynamoUpload2();
-        upload2.setUploadId("test-upload");
-
-        UploadValidationContext ctx = new UploadValidationContext();
-        ctx.setStudy(study);
-        ctx.setUpload(upload2);
-
-        // set up validation task
-        UploadValidationTask task = spy(new UploadValidationTask(ctx));
-        task.setHandlerList(handlerList);
-        task.setHealthDataService(healthDataService);
-        task.setUploadDao(mock(UploadDao.class));
-
         // execute
         task.run();
 
@@ -259,27 +230,10 @@ public class UploadValidationTaskTest {
 
     @Test
     public void dedupeWithoutDuplicate() {
-        // input
-        DynamoStudy study = TestUtils.getValidStudy(UploadValidationTaskTest.class);
-
-        DynamoUpload2 upload2 = new DynamoUpload2();
-        upload2.setUploadId("test-upload");
-
-        UploadValidationContext ctx = new UploadValidationContext();
-        ctx.setStudy(study);
-        ctx.setUpload(upload2);
-
-        // set up validation task
-        UploadValidationTask task = spy(new UploadValidationTask(ctx));
-        task.setHandlerList(handlerList);
-        task.setUploadDao(mock(UploadDao.class));
-
         // only return one test record
-        healthDataService = mock(HealthDataService.class);
         when(healthDataService.getRecordById(any())).thenReturn(testRecord);
         when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), any(), any())).thenReturn(
                 ImmutableList.of(testRecord));
-        task.setHealthDataService(healthDataService);
 
         // execute
         task.run();
@@ -290,77 +244,26 @@ public class UploadValidationTaskTest {
 
     @Test
     public void dedupeNullRecord() {
-        // input
-        DynamoStudy study = TestUtils.getValidStudy(UploadValidationTaskTest.class);
-
-        DynamoUpload2 upload2 = new DynamoUpload2();
-        upload2.setUploadId("test-upload");
-
-        UploadValidationContext ctx = new UploadValidationContext();
-        ctx.setStudy(study);
-        ctx.setUpload(upload2);
-
-        // set up validation task
-        UploadValidationTask task = spy(new UploadValidationTask(ctx));
-        task.setHandlerList(handlerList);
-        task.setUploadDao(mock(UploadDao.class));
-
         // return a null record
-        healthDataService = mock(HealthDataService.class);
         when(healthDataService.getRecordById(any())).thenReturn(null);
-        task.setHealthDataService(healthDataService);
         task.run();
         verify(task, times(0)).logDuplicateUploadRecords(any(), any());
     }
 
     @Test
     public void dedupeEmptyList() {
-        // input
-        DynamoStudy study = TestUtils.getValidStudy(UploadValidationTaskTest.class);
-
-        DynamoUpload2 upload2 = new DynamoUpload2();
-        upload2.setUploadId("test-upload");
-
-        UploadValidationContext ctx = new UploadValidationContext();
-        ctx.setStudy(study);
-        ctx.setUpload(upload2);
-
-        // set up validation task
-        UploadValidationTask task = spy(new UploadValidationTask(ctx));
-        task.setHandlerList(handlerList);
-        task.setUploadDao(mock(UploadDao.class));
-
         // return an empty list
-        healthDataService = mock(HealthDataService.class);
         when(healthDataService.getRecordById(any())).thenReturn(testRecord);
         when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), any(), any())).thenReturn(
                 ImmutableList.of());
-        task.setHealthDataService(healthDataService);
         task.run();
         verify(task, times(0)).logDuplicateUploadRecords(any(), any());
     }
 
     @Test
     public void dedupeMultipleDuplicates() {
-        // input
-        DynamoStudy study = TestUtils.getValidStudy(UploadValidationTaskTest.class);
-
-        DynamoUpload2 upload2 = new DynamoUpload2();
-        upload2.setUploadId("test-upload");
-
-        UploadValidationContext ctx = new UploadValidationContext();
-        ctx.setStudy(study);
-        ctx.setUpload(upload2);
-
-        // set up validation task
-        UploadValidationTask task = spy(new UploadValidationTask(ctx));
-        task.setHandlerList(handlerList);
-        task.setUploadDao(mock(UploadDao.class));
-
-        healthDataService = mock(HealthDataService.class);
         when(healthDataService.getRecordById(any())).thenReturn(testRecord);
         when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(eq(HEALTH_CODE), eq(CREATED_ON), eq(SCHEMA_ID))).thenReturn(testRecordDupeListMulti);
-        task.setHealthDataService(healthDataService);
 
         task.run();
         verify(task).logDuplicateUploadRecords(eq(testRecord), eq(ImmutableList.of(RECORD_ID_2, RECORD_ID_3)));
