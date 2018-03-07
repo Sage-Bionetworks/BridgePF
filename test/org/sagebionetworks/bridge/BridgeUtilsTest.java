@@ -35,17 +35,17 @@ public class BridgeUtilsTest {
     private static final LocalDateTime LOCAL_DATE_TIME = LocalDateTime.parse("2010-10-10T10:10:10.111");
     
     @Test
-    public void secondsToTimeString() {
-        assertEquals("30 seconds", BridgeUtils.secondsToTimeString(30));
-        assertEquals("1 minute", BridgeUtils.secondsToTimeString(60));
-        assertEquals("5 minutes", BridgeUtils.secondsToTimeString(60*5));
-        assertEquals("25 minutes", BridgeUtils.secondsToTimeString(60*25));
-        assertEquals("90 minutes", BridgeUtils.secondsToTimeString(60*90));
-        assertEquals("1 hour", BridgeUtils.secondsToTimeString(60*60));
-        assertEquals("2 hours", BridgeUtils.secondsToTimeString(60*60*2));
-        assertEquals("36 hours", BridgeUtils.secondsToTimeString(60*60*36));
-        assertEquals("1 day", BridgeUtils.secondsToTimeString(60*60*24));
-        assertEquals("2 days", BridgeUtils.secondsToTimeString(60*60*24*2));
+    public void secondsToPeriodString() {
+        assertEquals("30 seconds", BridgeUtils.secondsToPeriodString(30));
+        assertEquals("1 minute", BridgeUtils.secondsToPeriodString(60));
+        assertEquals("5 minutes", BridgeUtils.secondsToPeriodString(60*5));
+        assertEquals("25 minutes", BridgeUtils.secondsToPeriodString(60*25));
+        assertEquals("90 minutes", BridgeUtils.secondsToPeriodString(60*90));
+        assertEquals("1 hour", BridgeUtils.secondsToPeriodString(60*60));
+        assertEquals("2 hours", BridgeUtils.secondsToPeriodString(60*60*2));
+        assertEquals("36 hours", BridgeUtils.secondsToPeriodString(60*60*36));
+        assertEquals("1 day", BridgeUtils.secondsToPeriodString(60*60*24));
+        assertEquals("2 days", BridgeUtils.secondsToPeriodString(60*60*24*2));
     }
     
     @Test

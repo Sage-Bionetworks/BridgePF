@@ -16,7 +16,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -209,8 +208,7 @@ public class AccountWorkflowService {
                 .withToken(SPTOKEN_KEY, sptoken)
                 .withToken(URL_KEY, url)
                 .withToken(SHORT_URL_KEY, shortUrl)
-                .withToken(BridgeConstants.EXPIRATION_PERIOD_KEY, 
-                        BridgeUtils.secondsToTimeString(EXPIRE_IN_SECONDS))
+                .withExpirationPeriod(EXPIRE_IN_SECONDS)
                 .build();
         sendMailService.sendEmail(provider);
     }
@@ -314,8 +312,7 @@ public class AccountWorkflowService {
             .withToken(SPTOKEN_KEY, sptoken)
             .withToken(URL_KEY, url)
             .withToken(SHORT_URL_KEY, shortUrl)
-            .withToken(BridgeConstants.EXPIRATION_PERIOD_KEY, 
-                    BridgeUtils.secondsToTimeString(EXPIRE_IN_SECONDS))
+            .withExpirationPeriod(EXPIRE_IN_SECONDS)
             .withToken(EXP_WINDOW_TOKEN, Integer.toString(EXPIRE_IN_SECONDS/60/60));
             
         if (includeEmailSignIn && study.isEmailSignInEnabled()) {
@@ -423,8 +420,7 @@ public class AccountWorkflowService {
                 .withToken(TOKEN_KEY, token)
                 .withToken(URL_KEY, url)
                 .withToken(SHORT_URL_KEY, shortUrl)
-                .withToken(BridgeConstants.EXPIRATION_PERIOD_KEY, 
-                        BridgeUtils.secondsToTimeString(SESSION_SIGNIN_EXPIRE_IN_SECONDS))
+                .withExpirationPeriod(SESSION_SIGNIN_EXPIRE_IN_SECONDS)
                 .build();
             sendMailService.sendEmail(provider);
         });

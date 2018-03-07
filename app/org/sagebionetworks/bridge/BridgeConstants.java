@@ -100,11 +100,6 @@ public class BridgeConstants {
      * SNS converts these to ASCII.
      */
     public static final int SMS_CHARACTER_LIMIT = 140;
-    
-    /**
-     * The key used to communicate the expiration period in an email or SMS template.
-     */
-    public static final String EXPIRATION_PERIOD_KEY = "expirationPeriod";
 
     /**
      * This whitelist adds a few additional tags and attributes that are used by the CKEDITOR options 
