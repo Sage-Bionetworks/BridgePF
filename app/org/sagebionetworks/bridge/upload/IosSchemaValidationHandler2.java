@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.upload;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -9,7 +12,6 @@ import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.annotation.Resource;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
@@ -22,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.file.FileHelper;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
@@ -40,10 +43,8 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
 /**
  * <p>
  * Processes iOS data into health data records. This handler reads from
- * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getUnzippedDataMap} and
- * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getJsonDataMap} and updates the existing record in
- * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getHealthDataRecord} and the attachment map in
- * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getAttachmentsByFieldName}.
+ * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getUnzippedDataFileMap} and updates the existing record in
+ * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getHealthDataRecord}.
  * </p>
  * <p>
  * Currently, all apps are iOS-based. However, when we start having non-iOS apps, we'll need to restructure this
@@ -82,7 +83,9 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
             .build();
 
     private Map<String, Map<String, Integer>> defaultSchemaRevisionMap;
+    private FileHelper fileHelper;
     private SurveyService surveyService;
+    private UploadFileHelper uploadFileHelper;
     private UploadSchemaService uploadSchemaService;
 
     @Resource(name = "defaultSchemaRevisionMap")
@@ -90,10 +93,25 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         this.defaultSchemaRevisionMap = defaultSchemaRevisionMap;
     }
 
+    /** File helper, used to check file sizes before parsing them into memory. */
+    @Autowired
+    public final void setFileHelper(FileHelper fileHelper) {
+        this.fileHelper = fileHelper;
+    }
+
     /** Survey service, to get the survey if this upload is a survey. Configured by Spring. */
     @Autowired
     public final void setSurveyService(SurveyService surveyService) {
         this.surveyService = surveyService;
+    }
+
+    /**
+     * Upload file helper, used to find upload fields in a list of files, and parse files and upload attachments as
+     * needed.
+     */
+    @Autowired
+    public final void setUploadFileHelper(UploadFileHelper uploadFileHelper) {
+        this.uploadFileHelper = uploadFileHelper;
     }
 
     /** Upload Schema Service, used to get the schema corresponding to the upload. This is configured by Spring. */
@@ -113,19 +131,16 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
     @Override
     public void handle(@Nonnull UploadValidationContext context)
             throws UploadValidationException {
-        Map<String, byte[]> attachmentMap = context.getAttachmentsByFieldName();
-        Map<String, JsonNode> jsonDataMap = context.getJsonDataMap();
         HealthDataRecord record = context.getHealthDataRecord();
         ObjectNode dataMap = (ObjectNode) record.getData();
-        Map<String, byte[]> unzippedDataMap = context.getUnzippedDataMap();
+        JsonNode infoJson = context.getInfoJsonNode();
+        Map<String, File> unzippedDataFileMap = context.getUnzippedDataFileMap();
         Upload upload = context.getUpload();
         String uploadId = upload.getUploadId();
 
         // validate and normalize filenames
-        JsonNode infoJson = jsonDataMap.get(UploadUtil.FILENAME_INFO_JSON);
-        validateInfoJsonFileList(context, uploadId, jsonDataMap, unzippedDataMap, infoJson, record);
-        removeTimestampsFromFilenames(jsonDataMap);
-        removeTimestampsFromFilenames(unzippedDataMap);
+        validateInfoJsonFileList(context, uploadId, unzippedDataFileMap, infoJson, record);
+        removeTimestampsFromFilenames(unzippedDataFileMap);
 
         // schema
         UploadSchema schema = getUploadSchema(context.getStudy(), infoJson);
@@ -136,10 +151,10 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         if (schemaType == UploadSchemaType.IOS_SURVEY) {
             // Convert survey format to JSON data format. This means creating a JSON data map where the "filenames" are
             // just the question names (items) and the file data is the answer JSON node.
-            Map<String, JsonNode> convertedSurveyMap = convertSurveyToJsonData(context, uploadId, jsonDataMap);
-            handleData(context, uploadId, convertedSurveyMap, unzippedDataMap, schema, dataMap, attachmentMap);
+            Map<String, JsonNode> convertedSurveyMap = convertSurveyToJsonData(context, uploadId, unzippedDataFileMap);
+            handleData(context, uploadId, convertedSurveyMap, unzippedDataFileMap, schema, dataMap);
         } else if (schemaType == UploadSchemaType.IOS_DATA) {
-            handleData(context, uploadId, jsonDataMap, unzippedDataMap, schema, dataMap, attachmentMap);
+            handleData(context, uploadId, ImmutableMap.of(), unzippedDataFileMap, schema, dataMap);
         } else {
             throw new UploadValidationException(String.format("Invalid schema type %s", schemaType));
         }
@@ -216,14 +231,10 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
     }
 
     private static void validateInfoJsonFileList(UploadValidationContext context, String uploadId,
-            Map<String, JsonNode> jsonDataMap, Map<String, byte[]> unzippedDataMap, JsonNode infoJson,
+            Map<String, File> unzippedDataFileMap, JsonNode infoJson,
             HealthDataRecord record) {
         // Make sure all files specified by info.json are accounted for.
-        // Because ParseJsonHandler moves files from unzippedDataMap to jsonDataMap, there is no overlap between the
-        // two maps.
-        Set<String> fileNameSet = new HashSet<>();
-        fileNameSet.addAll(jsonDataMap.keySet());
-        fileNameSet.addAll(unzippedDataMap.keySet());
+        Set<String> fileNameSet = new HashSet<>(unzippedDataFileMap.keySet());
 
         JsonNode fileList = infoJson.get(KEY_FILES);
         if (fileList == null) {
@@ -311,22 +322,38 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         }
     }
 
-    private static Map<String, JsonNode> convertSurveyToJsonData(UploadValidationContext context, String uploadId,
-            Map<String, JsonNode> jsonDataMap) {
+    private Map<String, JsonNode> convertSurveyToJsonData(UploadValidationContext context, String uploadId,
+            Map<String, File> unzippedDataFileMap) {
         // Currently, the 3rd party iOS apps don't tag surveys or questions with guids. (In fact, some of the
         // surveys aren't even in the Surveys table yet.) So we have to store them in Health Data Records instead of
         // Survey Responses.
 
         // copy fields to "non-survey" format
         Map<String, JsonNode> convertedSurveyMap = new HashMap<>();
-        for (Map.Entry<String, JsonNode> oneJsonFile : jsonDataMap.entrySet()) {
-            String filename = oneJsonFile.getKey();
+        for (Map.Entry<String, File> oneFileEntry : unzippedDataFileMap.entrySet()) {
+            String filename = oneFileEntry.getKey();
+            File file = oneFileEntry.getValue();
             if (UploadUtil.FILENAME_INFO_JSON.equals(filename) || UploadUtil.FILENAME_METADATA_JSON.equals(filename)) {
                 // Skip info.json and metadata.json. We don't need to add a message, since this is normal.
                 continue;
             }
 
-            JsonNode oneAnswerNode = oneJsonFile.getValue();
+            // Parse file into JSON nodes. Survey answer files should be very small. If they exceed the size, log a
+            // warning. In future releases, once we've verified that no one is sending large survey answer files (and
+            // there's no reason to), we'll simply skip parsing large files.
+            long fileSize = fileHelper.fileSize(file);
+            if (fileSize > UploadUtil.FILE_SIZE_LIMIT_SURVEY_ANSWER) {
+                logger.warn("Survey file exceeds max size, uploadId=" + uploadId + ", filename=" + filename +
+                        ", fileSize=" + fileSize + " bytes");
+            }
+            JsonNode oneAnswerNode;
+            try (InputStream fileInputStream = fileHelper.getInputStream(file)) {
+                oneAnswerNode = BridgeObjectMapper.get().readTree(fileInputStream);
+            } catch (IOException ex) {
+                context.addMessage("Error parsing survey file, uploadId=" + uploadId + ", filename=" + filename);
+                continue;
+            }
+
             if (oneAnswerNode == null || oneAnswerNode.isNull()) {
                 context.addMessage(String.format("Upload ID %s file %s is null", uploadId, filename));
                 continue;
@@ -386,49 +413,46 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         return convertedSurveyMap;
     }
 
-    // Note that handleSurvey() converts the survey format into the data format, treating each answer as its own file
-    // with filename equal to the question name and JsonNode equal to the answer.
-    private static void handleData(UploadValidationContext context, String uploadId,
-            Map<String, JsonNode> jsonDataMap, Map<String, byte[]> unzippedDataMap, UploadSchema schema,
-            ObjectNode dataMap, Map<String, byte[]> attachmentMap) {
-        // Get flattened JSON data map (key is filename.fieldname), because schemas can reference fields either by
-        // filename.fieldname or wholly by filename.
-        // Note that this includes both the flattened map (filename.fieldname) and the whole file (filename).
-        Map<String, JsonNode> flattenedJsonDataMap = UploadUtil.flattenJsonDataMap(jsonDataMap);
-
-        Map<String, JsonNode> sanitizedFlattenedJsonDataMap = UploadUtil.sanitizeFieldNames(flattenedJsonDataMap);
-        Map<String, byte[]> sanitizedUnzippedDataMap = UploadUtil.sanitizeFieldNames(unzippedDataMap);
+    private void handleData(UploadValidationContext context, String uploadId,
+            Map<String, JsonNode> surveyAnswerMap, Map<String, File> unzippedDataFileMap, UploadSchema schema,
+            ObjectNode dataMap) throws UploadValidationException {
+        Map<String, File> sanitizedUnzippedDataFileMap = UploadUtil.sanitizeFieldNames(unzippedDataFileMap);
+        Map<String, Map<String, JsonNode>> parsedSanitizedJsonFileCache = new HashMap<>();
 
         // Using schema, copy fields over to data map. Or if it's an attachment, add it to the attachment map.
         for (UploadFieldDefinition oneFieldDef : schema.getFieldDefinitions()) {
             String fieldName = oneFieldDef.getName();
+            JsonNode fieldNode;
 
-            if (sanitizedUnzippedDataMap.containsKey(fieldName)) {
-                UploadUtil.addAttachment(attachmentMap, fieldName, sanitizedUnzippedDataMap.get(fieldName));
-            } else if (sanitizedFlattenedJsonDataMap.containsKey(fieldName)) {
-                copyJsonField(context, uploadId, sanitizedFlattenedJsonDataMap.get(fieldName), oneFieldDef, dataMap,
-                        attachmentMap);
+            if (surveyAnswerMap.containsKey(fieldName)) {
+                // The field has already been parsed as a survey.
+                JsonNode surveyAnswerNode = surveyAnswerMap.get(fieldName);
+
+                if (UploadFieldType.ATTACHMENT_TYPE_SET.contains(oneFieldDef.getType())) {
+                    // Attachments in a survey. This is unusual, but there's nothing in our schema system that prevents
+                    // this. We should handle it just to be safe.
+                    fieldNode = uploadFileHelper.uploadJsonNodeAsAttachment(surveyAnswerNode, uploadId, fieldName);
+                } else {
+                    fieldNode = surveyAnswerNode;
+                }
+            } else {
+                fieldNode = uploadFileHelper.findValueForField(uploadId, sanitizedUnzippedDataFileMap, oneFieldDef,
+                        parsedSanitizedJsonFileCache);
             }
+
+            // Copy the field to the record.
+            copyJsonField(context, uploadId, fieldNode, oneFieldDef, dataMap);
         }
     }
 
     private static void copyJsonField(UploadValidationContext context, String uploadId, JsonNode fieldValue,
-            UploadFieldDefinition fieldDef, ObjectNode dataMap, Map<String, byte[]> attachmentMap) {
+            UploadFieldDefinition fieldDef, ObjectNode dataMap) {
         String fieldName = fieldDef.getName();
         if (fieldValue == null || fieldValue.isNull()) {
-            context.addMessage(String.format("Upload ID %s field %s is null", uploadId, fieldName));
             return;
         }
 
-        if (UploadFieldType.ATTACHMENT_TYPE_SET.contains(fieldDef.getType())) {
-            try {
-                UploadUtil.addAttachment(attachmentMap, fieldName, BridgeObjectMapper.get().writeValueAsBytes(fieldValue));
-            } catch (JsonProcessingException ex) {
-                context.addMessage(String.format(
-                        "Upload ID %s field %s could not be converted from JSON: %s", uploadId, fieldName,
-                        ex.getMessage()));
-            }
-        } else if (fieldDef.getType().equals(UploadFieldType.CALENDAR_DATE)) {
+        if (fieldDef.getType().equals(UploadFieldType.CALENDAR_DATE)) {
             // Older iOS apps submit a timestamp instead of a calendar date. Use this hack to convert it back.
             String dateStr = fieldValue.textValue();
             LocalDate parsedDate = UploadUtil.parseIosCalendarDate(dateStr);

@@ -214,7 +214,7 @@ public class AuthenticationController extends BaseController {
         boolean useSsl = bridgeConfig.getEnvironment() != Environment.LOCAL;
         response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
                 BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/",
-                bridgeConfig.get("webservices.url"), useSsl, useSsl);
+                bridgeConfig.get("domain"), useSsl, useSsl);
         
         RequestInfo requestInfo = getRequestInfoBuilder(session)
                 .withSignedInOn(DateUtils.getCurrentDateTime()).build();

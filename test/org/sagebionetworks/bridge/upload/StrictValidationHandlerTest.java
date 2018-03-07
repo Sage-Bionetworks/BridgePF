@@ -8,7 +8,6 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +33,7 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 public class StrictValidationHandlerTest {
     private final static byte[] DUMMY_ATTACHMENT = new byte[0];
+    private final static String DUMMY_ATTACHMENT_ID = "dummy-attachment-id";
 
     private UploadValidationContext context;
     private StrictValidationHandler handler;
@@ -80,14 +80,6 @@ public class StrictValidationHandlerTest {
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(testStudy);
         handler.setStudyService(mockStudyService);
 
-        // set up attachments map
-        Map<String, byte[]> attachmentsMap = new HashMap<>();
-        attachmentsMap.put("attachment blob", DUMMY_ATTACHMENT);
-        if (additionalAttachmentMap != null) {
-            attachmentsMap.putAll(additionalAttachmentMap);
-        }
-        context.setAttachmentsByFieldName(attachmentsMap);
-
         // set up JSON data
         String jsonDataString = "{\n" +
                 "   \"string\":\"This is a string\"\n" +
@@ -99,6 +91,15 @@ public class StrictValidationHandlerTest {
             while (additionalJsonIter.hasNext()) {
                 Map.Entry<String, JsonNode> oneAdditionalJson = additionalJsonIter.next();
                 jsonDataNode.set(oneAdditionalJson.getKey(), oneAdditionalJson.getValue());
+            }
+        }
+
+        // We now upload attachments before we call StrictValidationHandler. To handle this, write another entry into
+        // the jsonDataNode with a dummy attachment ID.
+        jsonDataNode.put("attachment blob", DUMMY_ATTACHMENT_ID);
+        if (additionalAttachmentMap != null) {
+            for (String oneAttachmentName : additionalAttachmentMap.keySet()) {
+                jsonDataNode.put(oneAttachmentName, DUMMY_ATTACHMENT_ID);
             }
         }
 

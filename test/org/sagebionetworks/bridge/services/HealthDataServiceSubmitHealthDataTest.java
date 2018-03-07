@@ -1,8 +1,10 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -12,10 +14,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
-import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -41,16 +43,17 @@ import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.upload.StrictValidationHandler;
 import org.sagebionetworks.bridge.upload.TranscribeConsentHandler;
 import org.sagebionetworks.bridge.upload.UploadArtifactsHandler;
+import org.sagebionetworks.bridge.upload.UploadFileHelper;
 import org.sagebionetworks.bridge.upload.UploadUtil;
 import org.sagebionetworks.bridge.upload.UploadValidationContext;
 import org.sagebionetworks.bridge.upload.UploadValidationException;
 
 public class HealthDataServiceSubmitHealthDataTest {
     private static final String APP_VERSION = "version 1.0.0, build 2";
+    private static final JsonNode ATTACHMENT_ID_NODE = TextNode.valueOf("dummy-attachment-id");
     private static final JsonNode DATA = BridgeObjectMapper.get().createObjectNode();
     private static final String HEALTH_CODE = "test-health-code";
     private static final String PHONE_INFO = "Unit Tests";
-    private static final String RECORD_ID = "test-record";
     private static final String SCHEMA_ID = "test-schema";
     private static final int SCHEMA_REV = 3;
     private static final DateTime SURVEY_CREATED_ON = DateTime.parse("2017-09-07T15:02:56.756+0900");
@@ -112,6 +115,10 @@ public class HealthDataServiceSubmitHealthDataTest {
         when(mockSchemaService.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(
                 schema);
 
+        // Mock upload file helper
+        UploadFileHelper mockUploadFileHelper = mock(UploadFileHelper.class);
+        when(mockUploadFileHelper.uploadJsonNodeAsAttachment(any(), any(), any())).thenReturn(ATTACHMENT_ID_NODE);
+
         // mock handlers
         StrictValidationHandler mockStrictValidationHandler = mock(StrictValidationHandler.class);
         TranscribeConsentHandler mockTranscribeConsentHandler = mock(TranscribeConsentHandler.class);
@@ -120,13 +127,16 @@ public class HealthDataServiceSubmitHealthDataTest {
         // UploadArtifactsHandler needs to write record ID back into the context.
         doAnswer(invocation -> {
             UploadValidationContext context = invocation.getArgumentAt(0, UploadValidationContext.class);
-            context.setRecordId(RECORD_ID);
+            HealthDataRecord record = context.getHealthDataRecord();
+            record.setId(context.getUploadId());
+            context.setRecordId(context.getUploadId());
             return null;
         }).when(mockUploadArtifactsHandler).handle(any());
 
         // set up service
         HealthDataService svc = spy(new HealthDataService());
         svc.setSchemaService(mockSchemaService);
+        svc.setUploadFileHelper(mockUploadFileHelper);
         svc.setStrictValidationHandler(mockStrictValidationHandler);
         svc.setTranscribeConsentHandler(mockTranscribeConsentHandler);
         svc.setUploadArtifactsHandler(mockUploadArtifactsHandler);
@@ -134,7 +144,7 @@ public class HealthDataServiceSubmitHealthDataTest {
         // Spy getRecordById(). This decouples the submitHealthData implementation from the getRecord implementation.
         // At this point, we only care about data flow. Don't worry about the actual content.
         HealthDataRecord internalRecord = HealthDataRecord.create();
-        doReturn(internalRecord).when(svc).getRecordById(RECORD_ID);
+        doReturn(internalRecord).when(svc).getRecordById(any());
 
         // setup input
         ObjectNode inputData = BridgeObjectMapper.get().createObjectNode();
@@ -165,11 +175,17 @@ public class HealthDataServiceSubmitHealthDataTest {
         assertEquals(HEALTH_CODE, context.getHealthCode());
         assertEquals(TestConstants.TEST_STUDY, context.getStudy());
 
-        // We have one attachment. Note: This includes the quote marks, because we serialize the entire JSON field.
-        // (This will normally be arrays or objects.)
-        Map<String, byte[]> attachmentMap = context.getAttachmentsByFieldName();
-        assertEquals(1, attachmentMap.size());
-        assertEquals("\"attachment field value\"", new String(attachmentMap.get("attachment-field")));
+        // We generate an upload ID and use it for the record ID.
+        String uploadId = context.getUploadId();
+        assertNotNull(uploadId);
+        assertEquals(uploadId, context.getRecordId());
+
+        // We have one attachment. This is text because we passed in text. This will normally be arrays or objects.
+        ArgumentCaptor<JsonNode> attachmentNodeCaptor = ArgumentCaptor.forClass(JsonNode.class);
+        verify(mockUploadFileHelper).uploadJsonNodeAsAttachment(attachmentNodeCaptor.capture(), eq(uploadId),
+                eq("attachment-field"));
+        JsonNode attachmentNode = attachmentNodeCaptor.getValue();
+        assertEquals("attachment field value", attachmentNode.textValue());
 
         // validate the created record
         HealthDataRecord contextRecord = context.getHealthDataRecord();
@@ -184,11 +200,12 @@ public class HealthDataServiceSubmitHealthDataTest {
         assertEquals(CREATED_ON_MILLIS, contextRecord.getCreatedOn().longValue());
         assertEquals(CREATED_ON_TIMEZONE, contextRecord.getCreatedOnTimeZone());
 
-        // validate the sanitized, filtered data
-        JsonNode filteredData = contextRecord.getData();
-        assertEquals(2, filteredData.size());
-        assertEquals("sanitize this value", filteredData.get("sanitize____this").textValue());
-        assertEquals("normal field value", filteredData.get("normal-field").textValue());
+        // validate the sanitized data (includes attachments with attachment ID)
+        JsonNode sanitizedData = contextRecord.getData();
+        assertEquals(3, sanitizedData.size());
+        assertEquals("sanitize this value", sanitizedData.get("sanitize____this").textValue());
+        assertEquals(ATTACHMENT_ID_NODE, sanitizedData.get("attachment-field"));
+        assertEquals("normal field value", sanitizedData.get("normal-field").textValue());
 
         // validate app version and phone info in metadata
         JsonNode metadata = contextRecord.getMetadata();
@@ -204,6 +221,9 @@ public class HealthDataServiceSubmitHealthDataTest {
         // validate the other handlers are called
         verify(mockTranscribeConsentHandler).handle(context);
         verify(mockUploadArtifactsHandler).handle(context);
+
+        // We get the record back using the upload ID.
+        verify(svc).getRecordById(uploadId);
     }
 
     @Test
@@ -241,7 +261,8 @@ public class HealthDataServiceSubmitHealthDataTest {
         // UploadArtifactsHandler needs to write record ID back into the context.
         doAnswer(invocation -> {
             UploadValidationContext context = invocation.getArgumentAt(0, UploadValidationContext.class);
-            context.setRecordId(RECORD_ID);
+            HealthDataRecord record = context.getHealthDataRecord();
+            context.setRecordId(record.getUploadId());
             return null;
         }).when(mockUploadArtifactsHandler).handle(any());
 
@@ -256,7 +277,7 @@ public class HealthDataServiceSubmitHealthDataTest {
         // Spy getRecordById(). This decouples the submitHealthData implementation from the getRecord implementation.
         // At this point, we only care about data flow. Don't worry about the actual content.
         HealthDataRecord internalRecord = HealthDataRecord.create();
-        doReturn(internalRecord).when(svc).getRecordById(RECORD_ID);
+        doReturn(internalRecord).when(svc).getRecordById(any());
 
         // setup input
         ObjectNode inputData = BridgeObjectMapper.get().createObjectNode();

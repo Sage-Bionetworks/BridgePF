@@ -4,11 +4,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.mockito.Mockito.mock;
 
+import java.io.File;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 
 import org.junit.Test;
@@ -41,13 +42,13 @@ public class UploadValidationContextTest {
         // dummy objects to test against
         Study study = TestUtils.getValidStudy(UploadValidationContextTest.class);
         Upload upload = new DynamoUpload2();
-        byte[] data = "test-data".getBytes(Charsets.UTF_8);
-        byte[] decryptedData = "test-decrypted-data".getBytes(Charsets.UTF_8);
-        Map<String, byte[]> unzippedDataMap = ImmutableMap.of("nonJsonFile.txt", "test text".getBytes(Charsets.UTF_8));
-        Map<String, JsonNode> jsonDataMap = ImmutableMap.<String, JsonNode>of("json.json",
-                BridgeObjectMapper.get().createObjectNode());
+        File tempDir = mock(File.class);
+        File dataFile = mock(File.class);
+        File decryptedDataFile = mock(File.class);
+        Map<String, File> unzippedDataFileMap = ImmutableMap.<String, File>builder().put("foo", mock(File.class))
+                .put("bar", mock(File.class)).put("baz", mock(File.class)).build();
+        JsonNode infoJsonNode = BridgeObjectMapper.get().createObjectNode();
         HealthDataRecord record = HealthDataRecord.create();
-        Map<String, byte[]> attachmentMap = ImmutableMap.of("test-field", "test attachment".getBytes(Charsets.UTF_8));
 
         // create original
         UploadValidationContext original = new UploadValidationContext();
@@ -56,12 +57,12 @@ public class UploadValidationContextTest {
         original.setUpload(upload);
         original.setSuccess(false);
         original.addMessage("common message");
-        original.setData(data);
-        original.setDecryptedData(decryptedData);
-        original.setUnzippedDataMap(unzippedDataMap);
-        original.setJsonDataMap(jsonDataMap);
+        original.setTempDir(tempDir);
+        original.setDataFile(dataFile);
+        original.setDecryptedDataFile(decryptedDataFile);
+        original.setUnzippedDataFileMap(unzippedDataFileMap);
+        original.setInfoJsonNode(infoJsonNode);
         original.setHealthDataRecord(record);
-        original.setAttachmentsByFieldName(attachmentMap);
         original.setRecordId("test-record");
 
         // copy and validate
@@ -70,30 +71,30 @@ public class UploadValidationContextTest {
         assertSame(study, copy.getStudy());
         assertSame(upload, copy.getUpload());
         assertFalse(copy.getSuccess());
-        assertSame(data, copy.getData());
-        assertSame(decryptedData, copy.getDecryptedData());
-        assertSame(unzippedDataMap, copy.getUnzippedDataMap());
-        assertSame(jsonDataMap, copy.getJsonDataMap());
+        assertSame(tempDir, copy.getTempDir());
+        assertSame(dataFile, copy.getDataFile());
+        assertSame(decryptedDataFile, copy.getDecryptedDataFile());
+        assertEquals(unzippedDataFileMap, copy.getUnzippedDataFileMap());
+        assertSame(infoJsonNode, copy.getInfoJsonNode());
         assertSame(record, copy.getHealthDataRecord());
-        assertSame(attachmentMap, copy.getAttachmentsByFieldName());
         assertEquals("test-record", copy.getRecordId());
 
         assertEquals(1, copy.getMessageList().size());
         assertEquals("common message", copy.getMessageList().get(0));
 
         // modify original and validate copy unchanged
-        original.setData("new-data".getBytes(Charsets.UTF_8));
+        original.setHealthCode("new-health-code");
         original.addMessage("original message");
 
-        assertSame(data, copy.getData());
+        assertEquals(HEALTH_CODE, copy.getHealthCode());
         assertEquals(1, copy.getMessageList().size());
         assertEquals("common message", copy.getMessageList().get(0));
 
         // modify copy and validate original unchanged
-        copy.setDecryptedData("new-decrypted-data".getBytes(Charsets.UTF_8));
+        copy.setRecordId("new-record-id");
         copy.addMessage("copy message");
 
-        assertSame(decryptedData, original.getDecryptedData());
+        assertEquals("test-record", original.getRecordId());
         assertEquals(2, original.getMessageList().size());
         assertEquals("common message", original.getMessageList().get(0));
         assertEquals("original message", original.getMessageList().get(1));

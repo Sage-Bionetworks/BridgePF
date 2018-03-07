@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.upload;
 
-import java.util.Map;
 import javax.annotation.Nonnull;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -13,10 +12,8 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 /**
  * This handler reads the "format" field form info.json, and then determines whether to call IosSchemaValidationHandler
  * or GenericUploadFormatHandler. This handler reads from
- * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getUnzippedDataMap} and
- * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getJsonDataMap} and updates the existing record in
- * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getHealthDataRecord} and the attachment map in
- * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getAttachmentsByFieldName}.
+ * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getUnzippedDataFileMap} and updates the existing record in
+ * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getHealthDataRecord}.
  */
 @Component
 public class UploadFormatHandler implements UploadValidationHandler {
@@ -39,8 +36,7 @@ public class UploadFormatHandler implements UploadValidationHandler {
     @Override
     public void handle(@Nonnull UploadValidationContext context) throws UploadValidationException {
         // info.json is guaranteed to exist because of InitRecordHandler.
-        Map<String, JsonNode> jsonDataMap = context.getJsonDataMap();
-        JsonNode infoJson = jsonDataMap.get(UploadUtil.FILENAME_INFO_JSON);
+        JsonNode infoJson = context.getInfoJsonNode();
 
         // Parse upload format. If not specified, it defaults to v1_legacy.
         UploadFormat format = UploadFormat.V1_LEGACY;
