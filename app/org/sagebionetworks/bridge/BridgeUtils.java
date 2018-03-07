@@ -57,6 +57,32 @@ public class BridgeUtils {
     
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
+    private static final int ONE_HOUR = 60*60;
+    private static final int ONE_DAY = 60*60*24;
+    private static final int ONE_MINUTE = 60;
+    
+    /**
+     * Convert expiration measures in seconds to an English language explanation of
+     * the expiration time. This is not intended to cover odd cases, our expirations 
+     * are always in minutes or more commonly, hours 
+     */
+    public static String secondsToTimeString(int seconds) {
+        if (seconds >= (ONE_DAY*2) && seconds % ONE_DAY == 0) {
+            return Integer.toString(seconds/ONE_DAY) + " days";
+        } else if (seconds >= ONE_DAY && seconds % ONE_DAY == 0) {
+            return Integer.toString(seconds/ONE_DAY) + " day";
+        } else if (seconds >= (ONE_HOUR*2) && seconds % ONE_HOUR == 0) {
+            return Integer.toString(seconds/ONE_HOUR) + " hours";
+        } else if (seconds >= ONE_HOUR && seconds % ONE_HOUR == 0) {
+            return Integer.toString(seconds/ONE_HOUR) + " hour";
+        } else if (seconds >= (ONE_MINUTE*2) && seconds % ONE_MINUTE == 0) {
+            return Integer.toString(seconds/ONE_MINUTE) + " minutes";
+        } else if (seconds >= ONE_MINUTE && seconds % ONE_MINUTE == 0) {
+            return Integer.toString(seconds/ONE_MINUTE) + " minute";
+        }
+        return Integer.toString(seconds) + " seconds";
+    }
+    
     public static AccountId parseAccountId(String studyId, String identifier) {
         checkNotNull(studyId);
         checkNotNull(identifier);

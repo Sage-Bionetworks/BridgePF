@@ -4,6 +4,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.EXPIRATION_PERIOD_KEY;
+import static org.sagebionetworks.bridge.BridgeUtils.secondsToTimeString;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -770,7 +772,8 @@ public class StudyService {
 
         BasicEmailProvider provider = new BasicEmailProvider.Builder().withStudy(study).withEmailTemplate(template)
                 .withOverrideSenderEmail(bridgeSupportEmailPlain).withRecipientEmail(email).withToken(URL_TOKEN, url)
-                .withToken(SHORT_URL_TOKEN, shortUrl).build();
+                .withToken(SHORT_URL_TOKEN, shortUrl)
+                .withToken(EXPIRATION_PERIOD_KEY, secondsToTimeString(VERIFY_STUDY_EMAIL_EXPIRE_IN_SECONDS)).build();
         sendMailService.sendEmail(provider);
     }
 
