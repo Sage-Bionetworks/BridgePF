@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.upload;
 
 import javax.annotation.Nonnull;
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -9,6 +11,7 @@ import com.google.common.base.Stopwatch;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.file.FileHelper;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.slf4j.Logger;
@@ -26,6 +29,7 @@ public class UploadValidationTask implements Runnable {
 
     private final UploadValidationContext context;
 
+    private FileHelper fileHelper;
     private List<UploadValidationHandler> handlerList;
     private UploadDao uploadDao;
     private HealthDataService healthDataService;
@@ -52,8 +56,18 @@ public class UploadValidationTask implements Runnable {
         return context;
     }
 
+    /** File helper, used to create and delete the temp directory in which we process uploads. */
+    public final void setFileHelper(FileHelper fileHelper) {
+        this.fileHelper = fileHelper;
+    }
+
+    /** This is package-scoped to facilitate unit tests. */
+    /* package-scoped */ FileHelper getFileHelper() {
+        return fileHelper;
+    }
+
     /** List of validation handlers. This is configured by Spring through the task factory. */
-    public void setHandlerList(List<UploadValidationHandler> handlerList) {
+    public final void setHandlerList(List<UploadValidationHandler> handlerList) {
         this.handlerList = handlerList;
     }
 
@@ -63,7 +77,7 @@ public class UploadValidationTask implements Runnable {
     }
 
     /** Upload DAO, for writing upload validation status. This is configured by Spring through the task factory. */
-    public void setUploadDao(UploadDao uploadDao) {
+    public final void setUploadDao(UploadDao uploadDao) {
         this.uploadDao = uploadDao;
     }
 
@@ -75,6 +89,10 @@ public class UploadValidationTask implements Runnable {
     /** {@inheritDoc} */
     @Override
     public void run() {
+        // Create temp dir.
+        File tempDir = fileHelper.createTempDir();
+        context.setTempDir(tempDir);
+
         Stopwatch stopwatch = Stopwatch.createUnstarted();
         for (UploadValidationHandler oneHandler : handlerList) {
             String handlerName = oneHandler.getClass().getName();
@@ -134,6 +152,12 @@ public class UploadValidationTask implements Runnable {
             logErrorMsg(e);
         }
 
+        // Finally, delete the temp dir.
+        try {
+            fileHelper.deleteDirRecursively(tempDir);
+        } catch (IOException ex) {
+            logger.error("Error deleting temp dir " + tempDir.getAbsolutePath() + ": " + ex.getMessage(), ex);
+        }
     }
 
     // helper method to log exception

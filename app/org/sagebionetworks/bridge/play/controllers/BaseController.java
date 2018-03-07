@@ -208,7 +208,7 @@ public abstract class BaseController extends Controller {
             boolean useSsl = bridgeConfig.getEnvironment() != Environment.LOCAL;
             response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken,
                     BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/",
-                    bridgeConfig.get("webservices.url"), useSsl, useSsl);
+                    bridgeConfig.get("domain"), useSsl, useSsl);
             return sessionToken;
         }
         return null;

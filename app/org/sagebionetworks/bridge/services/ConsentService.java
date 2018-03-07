@@ -184,9 +184,7 @@ public class ConsentService {
     /**
      * Get all the consent status objects for this user. From these, we determine if the user 
      * has consented to the right consents to have access to the study, and whether or not those 
-     * consents are up-to-date. For reasons I don't entirely understand, you cannot load the 
-     * account twice in one call without getting a concurrent modification exception when you 
-     * update the record, so use the account method where necessary. 
+     * consents are up-to-date. 
      */
     public Map<SubpopulationGuid,ConsentStatus> getConsentStatuses(CriteriaContext context, Account account) {
         checkNotNull(context);

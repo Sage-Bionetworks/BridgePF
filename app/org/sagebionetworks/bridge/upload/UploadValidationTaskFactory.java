@@ -6,6 +6,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.dao.UploadDao;
+import org.sagebionetworks.bridge.file.FileHelper;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.services.HealthDataService;
@@ -19,19 +20,26 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class UploadValidationTaskFactory {
+    private FileHelper fileHelper;
     private List<UploadValidationHandler> handlerList;
     private UploadDao uploadDao;
     private HealthDataService healthDataService;
 
+    /** File helper, used to create and delete the temp directory in which we process uploads. */
+    @Autowired
+    public final void setFileHelper(FileHelper fileHelper) {
+        this.fileHelper = fileHelper;
+    }
+
     /** Validation handler list. This is configured by Spring. */
     @Resource(name = "uploadValidationHandlerList")
-    public void setHandlerList(List<UploadValidationHandler> handlerList) {
+    public final void setHandlerList(List<UploadValidationHandler> handlerList) {
         this.handlerList = handlerList;
     }
 
     /** Upload DAO, used to write validation status. This is configured by Spring. */
     @Autowired
-    public void setUploadDao(UploadDao uploadDao) {
+    public final void setUploadDao(UploadDao uploadDao) {
         this.uploadDao = uploadDao;
     }
 
@@ -58,6 +66,7 @@ public class UploadValidationTaskFactory {
 
         // task
         UploadValidationTask task = new UploadValidationTask(context);
+        task.setFileHelper(fileHelper);
         task.setHandlerList(handlerList);
         task.setUploadDao(uploadDao);
         task.setHealthDataService(healthDataService);

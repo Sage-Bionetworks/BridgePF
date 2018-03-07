@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -9,19 +8,21 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import org.apache.commons.lang3.StringUtils;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachment;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
 import org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -29,6 +30,7 @@ import org.sagebionetworks.bridge.schema.SchemaUtils;
 import org.sagebionetworks.bridge.upload.StrictValidationHandler;
 import org.sagebionetworks.bridge.upload.TranscribeConsentHandler;
 import org.sagebionetworks.bridge.upload.UploadArtifactsHandler;
+import org.sagebionetworks.bridge.upload.UploadFileHelper;
 import org.sagebionetworks.bridge.upload.UploadUtil;
 import org.sagebionetworks.bridge.upload.UploadValidationContext;
 import org.sagebionetworks.bridge.upload.UploadValidationException;
@@ -39,7 +41,6 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.dao.HealthDataAttachmentDao;
 import org.sagebionetworks.bridge.dao.HealthDataDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -52,10 +53,10 @@ import org.springframework.validation.Validator;
 /** Service handler for health data APIs. */
 @Component
 public class HealthDataService {
-    private HealthDataAttachmentDao healthDataAttachmentDao;
     private HealthDataDao healthDataDao;
     private SurveyService surveyService;
     private UploadSchemaService schemaService;
+    private UploadFileHelper uploadFileHelper;
 
     // Upload Validation Handlers, used by the synchronous Health Data Submission API
     private StrictValidationHandler strictValidationHandler;
@@ -64,12 +65,6 @@ public class HealthDataService {
 
     private final static int MAX_NUM_RECORD_IDS = 25;
     private static final Validator exporterStatusValidator = new RecordExportStatusRequestValidator();
-
-    /** Health data attachment DAO. This is configured by Spring. */
-    @Autowired
-    public final void setHealthDataAttachmentDao(HealthDataAttachmentDao healthDataAttachmentDao) {
-        this.healthDataAttachmentDao = healthDataAttachmentDao;
-    }
 
     /** Health data DAO. This is configured by Spring. */
     @Autowired
@@ -87,6 +82,12 @@ public class HealthDataService {
     @Autowired
     public final void setSchemaService(UploadSchemaService schemaService) {
         this.schemaService = schemaService;
+    }
+
+    /** Upload file helper, used to upload attachments. */
+    @Autowired
+    public final void setUploadFileHelper(UploadFileHelper uploadFileHelper) {
+        this.uploadFileHelper = uploadFileHelper;
     }
 
     /** Strict Validation Handler, which canonicalizes health data and verifies required fields. */
@@ -117,7 +118,7 @@ public class HealthDataService {
      * incurring the overhead of creating a bunch of small files to upload to S3.
      */
     public HealthDataRecord submitHealthData(StudyIdentifier studyId, StudyParticipant participant,
-            HealthDataSubmission healthDataSubmission) throws JsonProcessingException {
+            HealthDataSubmission healthDataSubmission) throws JsonProcessingException, UploadValidationException {
         // validate health data submission
         if (healthDataSubmission == null) {
             throw new InvalidEntityException("Health data submission cannot be null");
@@ -130,10 +131,12 @@ public class HealthDataService {
         // get schema
         UploadSchema schema = getSchemaForSubmission(studyId, healthDataSubmission);
 
+        // Generate a new uploadId.
+        String uploadId = BridgeUtils.generateGuid();
+
         // Filter data fields and attachments based on schema fields.
         ObjectNode filteredData = BridgeObjectMapper.get().createObjectNode();
-        Map<String, byte[]> attachmentMap = new HashMap<>();
-        filterAttachments(schema, sanitizedData, filteredData, attachmentMap);
+        filterAttachments(uploadId, schema, sanitizedData, filteredData);
 
         // construct health data record
         HealthDataRecord record = makeRecordFromSubmission(studyId, participant, schema, healthDataSubmission, filteredData);
@@ -141,10 +144,15 @@ public class HealthDataService {
         // Construct UploadValidationContext for the remaining upload handlers. We don't need all the fields, just the
         // ones that these handlers will be using.
         UploadValidationContext uploadValidationContext = new UploadValidationContext();
-        uploadValidationContext.setAttachmentsByFieldName(attachmentMap);
         uploadValidationContext.setHealthCode(participant.getHealthCode());
         uploadValidationContext.setHealthDataRecord(record);
         uploadValidationContext.setStudy(studyId);
+
+        // For back-compat reasons, we need to make a dummy upload to store the uploadId. This will never be persisted.
+        // We just need a way to signal the Upload Validation pipeline to use this uploadId.
+        Upload upload = Upload.create();
+        upload.setUploadId(uploadId);
+        uploadValidationContext.setUpload(upload);
 
         // Strict Validation Handler. If this throws, this is an invalid upload (400).
         try {
@@ -206,20 +214,9 @@ public class HealthDataService {
     /**
      * Helper method, which goes through the given schema, and splits the input data into field values and attachments.
      * Fields that are not present in the schema are silently dropped.
-     *
-     * @param schema
-     *         schema with which to process this data
-     * @param inputData
-     *         data, with field names already sanitizied
-     * @param outputData
-     *         data, with attachment fields removed
-     * @param attachmentMap
-     *         map of attachment data
-     * @throws JsonProcessingException
-     *         if serializing attachment fails
      */
-    private static void filterAttachments(UploadSchema schema, JsonNode inputData, ObjectNode outputData,
-            Map<String, byte[]> attachmentMap) throws JsonProcessingException {
+    private void filterAttachments(String recordId, UploadSchema schema, JsonNode inputData, ObjectNode outputData)
+            throws JsonProcessingException, UploadValidationException {
         for (UploadFieldDefinition oneFieldDef : schema.getFieldDefinitions()) {
             String fieldName = oneFieldDef.getName();
             JsonNode fieldValue = inputData.get(fieldName);
@@ -231,7 +228,9 @@ public class HealthDataService {
 
             // filter on fieldType
             if (UploadFieldType.ATTACHMENT_TYPE_SET.contains(oneFieldDef.getType())) {
-                attachmentMap.put(fieldName, BridgeObjectMapper.get().writeValueAsBytes(fieldValue));
+                JsonNode attachmentIdNode = uploadFileHelper.uploadJsonNodeAsAttachment(fieldValue, recordId,
+                        fieldName);
+                outputData.set(fieldName, attachmentIdNode);
             } else {
                 outputData.set(fieldName, fieldValue);
             }
@@ -383,29 +382,6 @@ public class HealthDataService {
         }
 
         return healthDataDao.getRecordsByHealthCodeCreatedOnSchemaId(healthCode, createdOn, schemaId);
-    }
-
-    /* HEALTH DATA ATTACHMENT APIs */
-
-    /**
-     * Creates or updates a health data attachment. If the specified attachment has no ID, this is consider a new
-     * attachment will be created. If the specified attachment does have an ID, this is considered updating an existing
-     * attachment.
-     *
-     * @param attachment
-     *         health data attachment to create or update
-     * @return attachment ID of the created or updated attachment
-     */
-    public String createOrUpdateAttachment(HealthDataAttachment attachment) {
-        // validate attachment
-        if (attachment == null) {
-            throw new InvalidEntityException(String.format(Validate.CANNOT_BE_NULL, "HealthDataAttachment"));
-        }
-        // TODO: validate fields for non-null-ness and non-emptiness
-        // TODO: validate record ID against records
-
-        // call through to DAO
-        return healthDataAttachmentDao.createOrUpdateAttachment(attachment);
     }
 
     /**

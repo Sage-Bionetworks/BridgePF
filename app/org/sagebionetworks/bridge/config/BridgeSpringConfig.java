@@ -40,6 +40,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.sagebionetworks.bridge.file.FileHelper;
 import org.sagebionetworks.client.SynapseAdminClientImpl;
 import org.sagebionetworks.client.SynapseClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,7 +57,6 @@ import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptorCacheLoader;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataAttachment;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoIndexHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoReportData;
@@ -82,7 +82,6 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
 import org.sagebionetworks.bridge.upload.InitRecordHandler;
-import org.sagebionetworks.bridge.upload.ParseJsonHandler;
 import org.sagebionetworks.bridge.upload.S3DownloadHandler;
 import org.sagebionetworks.bridge.upload.StrictValidationHandler;
 import org.sagebionetworks.bridge.upload.TranscribeConsentHandler;
@@ -279,12 +278,6 @@ public class BridgeSpringConfig {
         return dynamoUtils.getMapper(DynamoCompoundActivityDefinition.class);
     }
 
-    @Bean(name = "healthDataAttachmentDdbMapper")
-    @Autowired
-    public DynamoDBMapper healthDataAttachmentDdbMapper(DynamoUtils dynamoUtils) {
-        return dynamoUtils.getMapper(DynamoHealthDataAttachment.class);
-    }
-
     @Bean(name = "reportDataMapper")
     @Autowired
     public DynamoDBMapper reportDataMapper(DynamoUtils dynamoUtils) {
@@ -455,11 +448,11 @@ public class BridgeSpringConfig {
     @Bean(name = "uploadValidationHandlerList")
     @Autowired
     public List<UploadValidationHandler> uploadValidationHandlerList(S3DownloadHandler s3DownloadHandler,
-            DecryptHandler decryptHandler, UnzipHandler unzipHandler, ParseJsonHandler parseJsonHandler,
+            DecryptHandler decryptHandler, UnzipHandler unzipHandler,
             InitRecordHandler initRecordHandler, UploadFormatHandler uploadFormatHandler,
             StrictValidationHandler strictValidationHandler, TranscribeConsentHandler transcribeConsentHandler,
             UploadArtifactsHandler uploadArtifactsHandler) {
-        return ImmutableList.of(s3DownloadHandler, decryptHandler, unzipHandler, parseJsonHandler,
+        return ImmutableList.of(s3DownloadHandler, decryptHandler, unzipHandler,
                 initRecordHandler, uploadFormatHandler, strictValidationHandler, transcribeConsentHandler,
                 uploadArtifactsHandler);
     }
@@ -474,6 +467,11 @@ public class BridgeSpringConfig {
     @Autowired
     public DynamoDBMapper activityDdbMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoScheduledActivity.class);
+    }
+
+    @Bean
+    public FileHelper fileHelper() {
+        return new FileHelper();
     }
 
     @Bean

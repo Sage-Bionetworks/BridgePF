@@ -3,14 +3,18 @@ package org.sagebionetworks.bridge.upload;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -21,12 +25,12 @@ import org.joda.time.LocalDate;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
+import org.sagebionetworks.bridge.file.InMemoryFileHelper;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
-import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -34,9 +38,9 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
-import org.sagebionetworks.bridge.services.SurveyService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
+@SuppressWarnings({ "rawtypes", "unchecked" })
 public class IosSchemaValidationHandler2Test {
     private static final String TEST_HEALTHCODE = "test-healthcode";
     private static final String TEST_STUDY_ID = "test-study";
@@ -45,11 +49,13 @@ public class IosSchemaValidationHandler2Test {
     private static final DateTime MOCK_NOW = DateTime.parse("2016-05-06T16:36:59.747-0700");
 
     private static final Map<String, Map<String, Integer>> DEFAULT_SCHEMA_REV_MAP =
-            ImmutableMap.<String, Map<String, Integer>>of(TEST_STUDY_ID,
-                    ImmutableMap.of("schema-rev-test", 2));
+            ImmutableMap.of(TEST_STUDY_ID, ImmutableMap.of("schema-rev-test", 2));
 
     private UploadValidationContext context;
     private IosSchemaValidationHandler2 handler;
+    private UploadFileHelper mockUploadFileHelper;
+    private InMemoryFileHelper inMemoryFileHelper;
+    private File tmpDir;
 
     @Before
     public void setup() {
@@ -72,8 +78,11 @@ public class IosSchemaValidationHandler2Test {
         context = new UploadValidationContext();
         context.setStudy(study);
         context.setUpload(upload);
-        context.setAttachmentsByFieldName(new HashMap<>());
         context.setHealthDataRecord(record);
+
+        // Init fileHelper and tmpDir
+        inMemoryFileHelper = new InMemoryFileHelper();
+        tmpDir = inMemoryFileHelper.createTempDir();
 
         // set up test schemas
         UploadSchema surveySchema = UploadSchema.create();
@@ -97,118 +106,43 @@ public class IosSchemaValidationHandler2Test {
                         .withType(UploadFieldType.TIMESTAMP).build(),
                 new UploadFieldDefinition.Builder().withName("new-date-time")
                         .withType(UploadFieldType.TIMESTAMP).build(),
-                new UploadFieldDefinition.Builder().withName("optional").withRequired(false)
-                        .withType(UploadFieldType.STRING).build(),
-                new UploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
-                        .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build()));
 
-        UploadSchema jsonDataSchema = UploadSchema.create();
-        jsonDataSchema.setStudyId(TEST_STUDY_ID);
-        jsonDataSchema.setSchemaId("json-data");
-        jsonDataSchema.setRevision(1);
-        jsonDataSchema.setName("JSON Data");
-        jsonDataSchema.setSchemaType(UploadSchemaType.IOS_DATA);
-        jsonDataSchema.setFieldDefinitions(ImmutableList.of(
-                new UploadFieldDefinition.Builder().withName("string.json.string")
+                new UploadFieldDefinition.Builder().withName("int-as-string")
                         .withType(UploadFieldType.STRING).build(),
-                new UploadFieldDefinition.Builder().withName("string.json.intAsString")
-                        .withType(UploadFieldType.STRING).build(),
-                new UploadFieldDefinition.Builder().withName("blob.json.blob")
-                        .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
-                new UploadFieldDefinition.Builder().withName("date.json.date")
+                new UploadFieldDefinition.Builder().withName("timestamp-as-date")
                         .withType(UploadFieldType.CALENDAR_DATE).build(),
-                new UploadFieldDefinition.Builder().withName("date.json.timestampAsDate")
-                        .withType(UploadFieldType.CALENDAR_DATE).build(),
-                new UploadFieldDefinition.Builder().withName("optional").withRequired(false)
-                        .withType(UploadFieldType.STRING).build(),
-                new UploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
-                        .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build()));
-
-        UploadSchema nonJsonDataSchema = UploadSchema.create();
-        nonJsonDataSchema.setStudyId(TEST_STUDY_ID);
-        nonJsonDataSchema.setSchemaId("non-json-data");
-        nonJsonDataSchema.setRevision(1);
-        nonJsonDataSchema.setName("Non-JSON Data");
-        nonJsonDataSchema.setSchemaType(UploadSchemaType.IOS_DATA);
-        nonJsonDataSchema.setFieldDefinitions(ImmutableList.of(
-                new UploadFieldDefinition.Builder().withName("nonJsonFile.txt")
-                        .withType(UploadFieldType.ATTACHMENT_BLOB).build(),
-                new UploadFieldDefinition.Builder().withName("jsonFile.json")
-                        .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
-                new UploadFieldDefinition.Builder().withName("optional").withRequired(false)
-                        .withType(UploadFieldType.STRING).build(),
-                new UploadFieldDefinition.Builder().withName("empty_attachment").withRequired(false)
-                        .withType(UploadFieldType.ATTACHMENT_V2).build(),
-                new UploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
-                        .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build()));
-
-        UploadSchema mixedSchema = UploadSchema.create();
-        mixedSchema.setStudyId(TEST_STUDY_ID);
-        mixedSchema.setSchemaId("mixed-data");
-        mixedSchema.setRevision(1);
-        mixedSchema.setName("Mixed Data");
-        mixedSchema.setSchemaType(UploadSchemaType.IOS_DATA);
-        mixedSchema.setFieldDefinitions(ImmutableList.of(
-                new UploadFieldDefinition.Builder().withName("nonJsonFile.txt")
-                        .withType(UploadFieldType.ATTACHMENT_BLOB).build(),
-                new UploadFieldDefinition.Builder().withName("attachment.json")
-                        .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
-                new UploadFieldDefinition.Builder().withName("inline.json")
+                new UploadFieldDefinition.Builder().withName("inline-json-blob")
                         .withType(UploadFieldType.INLINE_JSON_BLOB).build(),
-                new UploadFieldDefinition.Builder().withName("field.json.attachment")
-                        .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build(),
-                new UploadFieldDefinition.Builder().withName("field.json.string")
-                        .withType(UploadFieldType.STRING).build(),
+
                 new UploadFieldDefinition.Builder().withName("optional").withRequired(false)
                         .withType(UploadFieldType.STRING).build(),
                 new UploadFieldDefinition.Builder().withName("optional_attachment").withRequired(false)
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build()));
 
-        UploadSchema schemaRevTest2 = UploadSchema.create();
-        schemaRevTest2.setStudyId(TEST_STUDY_ID);
-        schemaRevTest2.setSchemaId("schema-rev-test");
-        schemaRevTest2.setRevision(2);
-        schemaRevTest2.setName("Schema Rev Test 2: Electric Buggaloo");
-        schemaRevTest2.setSchemaType(UploadSchemaType.IOS_DATA);
-        schemaRevTest2.setFieldDefinitions(ImmutableList.of(
-                new UploadFieldDefinition.Builder().withName("dummy.json.field").withType(UploadFieldType.STRING)
-                        .build()));
-
-        UploadSchema schemaRevTest3 = UploadSchema.create();
-        schemaRevTest3.setStudyId(TEST_STUDY_ID);
-        schemaRevTest3.setSchemaId("schema-rev-test");
-        schemaRevTest3.setRevision(3);
-        schemaRevTest3.setName("Schema Rev Test 3: The Quickening");
-        schemaRevTest3.setSchemaType(UploadSchemaType.IOS_DATA);
-        schemaRevTest3.setFieldDefinitions(ImmutableList.of(
-                new UploadFieldDefinition.Builder().withName("dummy.json.field").withType(UploadFieldType.STRING)
-                        .build()));
-
-        UploadSchema simpleAttachmentSchema = UploadSchema.create();
-        simpleAttachmentSchema.setStudyId(TEST_STUDY_ID);
-        simpleAttachmentSchema.setSchemaId("simple-attachment-schema");
-        simpleAttachmentSchema.setRevision(1);
-        simpleAttachmentSchema.setName("Simple Attachment Schema");
-        simpleAttachmentSchema.setSchemaType(UploadSchemaType.IOS_DATA);
-        simpleAttachmentSchema.setFieldDefinitions(ImmutableList.of(
-                new UploadFieldDefinition.Builder().withName("attachment")
-                        .withType(UploadFieldType.ATTACHMENT_V2).withMimeType("text/plain").build()));
+        UploadSchema nonSurveySchema = UploadSchema.create();
+        nonSurveySchema.setStudyId(TEST_STUDY_ID);
+        nonSurveySchema.setSchemaId("non-survey");
+        nonSurveySchema.setRevision(1);
+        nonSurveySchema.setName("Non-Survey");
+        nonSurveySchema.setSchemaType(UploadSchemaType.IOS_DATA);
+        nonSurveySchema.setFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder()
+                .withName("sanitize____attachment.txt").withType(UploadFieldType.ATTACHMENT_V2)
+                .withFileExtension(".txt").withMimeType("text/plain").build()));
 
         // mock upload schema service
         UploadSchemaService mockSchemaService = mock(UploadSchemaService.class);
         when(mockSchemaService.getUploadSchemaByIdAndRev(study, "test-survey", 1)).thenReturn(surveySchema);
-        when(mockSchemaService.getUploadSchemaByIdAndRev(study, "json-data", 1)).thenReturn(jsonDataSchema);
-        when(mockSchemaService.getUploadSchemaByIdAndRev(study, "non-json-data", 1)).thenReturn(nonJsonDataSchema);
-        when(mockSchemaService.getUploadSchemaByIdAndRev(study, "mixed-data", 1)).thenReturn(mixedSchema);
-        when(mockSchemaService.getUploadSchemaByIdAndRev(study, "schema-rev-test", 2)).thenReturn(schemaRevTest2);
-        when(mockSchemaService.getUploadSchemaByIdAndRev(study, "schema-rev-test", 3)).thenReturn(schemaRevTest3);
-        when(mockSchemaService.getUploadSchemaByIdAndRev(study, "simple-attachment-schema", 1)).thenReturn(
-                simpleAttachmentSchema);
+        when(mockSchemaService.getUploadSchemaByIdAndRev(study, "non-survey", 1)).thenReturn(nonSurveySchema);
+
+        // mock upload file helper
+        mockUploadFileHelper = mock(UploadFileHelper.class);
 
         // set up handler
         handler = new IosSchemaValidationHandler2();
-        handler.setUploadSchemaService(mockSchemaService);
         handler.setDefaultSchemaRevisionMap(DEFAULT_SCHEMA_REV_MAP);
+        handler.setFileHelper(inMemoryFileHelper);
+        handler.setUploadSchemaService(mockSchemaService);
+        handler.setUploadFileHelper(mockUploadFileHelper);
     }
 
     @After
@@ -241,10 +175,20 @@ public class IosSchemaValidationHandler2Test {
                 "   },{\n" +
                 "       \"filename\":\"new-date-time.json\",\n" +
                 "       \"timestamp\":\"2015-04-02T03:24:01-07:00\"\n" +
+                "   },{\n" +
+                "       \"filename\":\"int-as-string.json\",\n" +
+                "       \"timestamp\":\"2015-04-02T03:24:01-07:00\"\n" +
+                "   },{\n" +
+                "       \"filename\":\"timestamp-as-date.json\",\n" +
+                "       \"timestamp\":\"2015-04-02T03:24:01-07:00\"\n" +
+                "   },{\n" +
+                "       \"filename\":\"inline-json-blob.json\",\n" +
+                "       \"timestamp\":\"2015-04-02T03:24:01-07:00\"\n" +
                 "   }],\n" +
                 "   \"item\":\"test-survey\"\n" +
                 "}";
         JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
+        context.setInfoJsonNode(infoJsonNode);
 
         String fooAnswerJsonText = "{\n" +
                 "   \"questionType\":0,\n" +
@@ -254,7 +198,6 @@ public class IosSchemaValidationHandler2Test {
                 "   \"item\":\"foo\",\n" +
                 "   \"endDate\":\"2015-04-02T03:26:59-07:00\"\n" +
                 "}";
-        JsonNode fooAnswerJsonNode = BridgeObjectMapper.get().readTree(fooAnswerJsonText);
 
         String barAnswerJsonText = "{\n" +
                 "   \"questionType\":0,\n" +
@@ -265,7 +208,6 @@ public class IosSchemaValidationHandler2Test {
                 "   \"item\":\"bar\",\n" +
                 "   \"endDate\":\"2015-04-02T03:27:09-07:00\"\n" +
                 "}";
-        JsonNode barAnswerJsonNode = BridgeObjectMapper.get().readTree(barAnswerJsonText);
 
         String bazAnswerJsonText = "{\n" +
                 "   \"questionType\":0,\n" +
@@ -275,7 +217,6 @@ public class IosSchemaValidationHandler2Test {
                 "   \"item\":\"baz\",\n" +
                 "   \"endDate\":\"2015-04-02T03:24:01-07:00\"\n" +
                 "}";
-        JsonNode bazAnswerJsonNode = BridgeObjectMapper.get().readTree(bazAnswerJsonText);
 
         String calendarDateAnswerJsonText = "{\n" +
                 "   \"questionType\":0,\n" +
@@ -285,7 +226,6 @@ public class IosSchemaValidationHandler2Test {
                 "   \"item\":\"calendar-date\",\n" +
                 "   \"endDate\":\"2015-04-02T03:24:01-07:00\"\n" +
                 "}";
-        JsonNode calendarDateAnswerJsonNode = BridgeObjectMapper.get().readTree(calendarDateAnswerJsonText);
 
         String timeWithoutDateAnswerJsonText = "{\n" +
                 "   \"questionType\":0,\n" +
@@ -295,7 +235,6 @@ public class IosSchemaValidationHandler2Test {
                 "   \"item\":\"time-without-date\",\n" +
                 "   \"endDate\":\"2015-04-02T03:24:01-07:00\"\n" +
                 "}";
-        JsonNode timeWithoutDateAnswerJsonNode = BridgeObjectMapper.get().readTree(timeWithoutDateAnswerJsonText);
 
         String legacyDateTimeAnswerJsonText = "{\n" +
                 "   \"questionType\":0,\n" +
@@ -305,7 +244,6 @@ public class IosSchemaValidationHandler2Test {
                 "   \"item\":\"legacy-date-time\",\n" +
                 "   \"endDate\":\"2015-04-02T03:24:01-07:00\"\n" +
                 "}";
-        JsonNode legacyDateTimeAnswerJsonNode = BridgeObjectMapper.get().readTree(legacyDateTimeAnswerJsonText);
 
         String newDateTimeAnswerJsonText = "{\n" +
                 "   \"questionType\":0,\n" +
@@ -315,20 +253,47 @@ public class IosSchemaValidationHandler2Test {
                 "   \"item\":\"new-date-time\",\n" +
                 "   \"endDate\":\"2015-04-02T03:24:01-07:00\"\n" +
                 "}";
-        JsonNode newDateTimeAnswerJsonNode = BridgeObjectMapper.get().readTree(newDateTimeAnswerJsonText);
 
-        Map<String, JsonNode> jsonDataMap = new HashMap<>();
-        jsonDataMap.put("info.json", infoJsonNode);
-        jsonDataMap.put("foo.json", fooAnswerJsonNode);
-        jsonDataMap.put("bar.json", barAnswerJsonNode);
-        jsonDataMap.put("baz.json", bazAnswerJsonNode);
-        jsonDataMap.put("calendar-date.json", calendarDateAnswerJsonNode);
-        jsonDataMap.put("time-without-date.json", timeWithoutDateAnswerJsonNode);
-        jsonDataMap.put("legacy-date-time.json", legacyDateTimeAnswerJsonNode);
-        jsonDataMap.put("new-date-time.json", newDateTimeAnswerJsonNode);
-        context.setJsonDataMap(jsonDataMap);
+        String intAsStringAnswerJsonText = "{\n" +
+                "   \"questionType\":0,\n" +
+                "   \"numericAnswer\":1337,\n" +
+                "   \"unit\":\"lb\",\n" +
+                "   \"startDate\":\"2015-04-02T03:27:05-07:00\",\n" +
+                "   \"questionTypeName\":\"Integer\",\n" +
+                "   \"item\":\"int-as-string\",\n" +
+                "   \"endDate\":\"2015-04-02T03:27:09-07:00\"\n" +
+                "}";
 
-        context.setUnzippedDataMap(ImmutableMap.<String, byte[]>of());
+        String timestampAsDateAnswerJsonText = "{\n" +
+                "   \"questionType\":0,\n" +
+                "   \"dateAnswer\":\"2015-12-25T14:41-0800\",\n" +
+                "   \"startDate\":\"2015-04-02T03:23:59-07:00\",\n" +
+                "   \"questionTypeName\":\"DateAndTime\",\n" +
+                "   \"item\":\"timestamp-as-date\",\n" +
+                "   \"endDate\":\"2015-04-02T03:24:01-07:00\"\n" +
+                "}";
+
+        String inlineJsonBlobAnswerJsonText = "{\n" +
+                "   \"questionType\":0,\n" +
+                "   \"choiceAnswers\":[\"inline\", \"json\", \"blob\"],\n" +
+                "   \"startDate\":\"2015-04-02T03:23:59-07:00\",\n" +
+                "   \"questionTypeName\":\"MultipleChoice\",\n" +
+                "   \"item\":\"inline-json-blob\",\n" +
+                "   \"endDate\":\"2015-04-02T03:24:01-07:00\"\n" +
+                "}";
+
+        Map<String, File> fileMap = new HashMap<>();
+        addFileToMap(fileMap, "foo.json", fooAnswerJsonText);
+        addFileToMap(fileMap, "bar.json", barAnswerJsonText);
+        addFileToMap(fileMap, "baz.json", bazAnswerJsonText);
+        addFileToMap(fileMap, "calendar-date.json", calendarDateAnswerJsonText);
+        addFileToMap(fileMap, "time-without-date.json", timeWithoutDateAnswerJsonText);
+        addFileToMap(fileMap, "legacy-date-time.json", legacyDateTimeAnswerJsonText);
+        addFileToMap(fileMap, "new-date-time.json", newDateTimeAnswerJsonText);
+        addFileToMap(fileMap, "int-as-string.json", intAsStringAnswerJsonText);
+        addFileToMap(fileMap, "timestamp-as-date.json", timestampAsDateAnswerJsonText);
+        addFileToMap(fileMap, "inline-json-blob.json", inlineJsonBlobAnswerJsonText);
+        context.setUnzippedDataFileMap(fileMap);
 
         // execute
         handler.handle(context);
@@ -342,7 +307,7 @@ public class IosSchemaValidationHandler2Test {
         assertEquals(1, record.getSchemaRevision());
 
         JsonNode dataNode = record.getData();
-        assertEquals(7, dataNode.size());
+        assertEquals(10, dataNode.size());
         assertEquals("foo answer", dataNode.get("foo").textValue());
         assertEquals(42, dataNode.get("bar").intValue());
         assertEquals("lb", dataNode.get("bar_unit").textValue());
@@ -350,10 +315,20 @@ public class IosSchemaValidationHandler2Test {
         assertEquals("16:42:52.256", dataNode.get("time-without-date").textValue());
         assertEquals("2017-01-31T16:42:52.256-0800", dataNode.get("legacy-date-time").textValue());
         assertEquals("2017-02-02T09:13:27.212-0800", dataNode.get("new-date-time").textValue());
+        assertEquals("1337", dataNode.get("int-as-string").textValue());
+        assertEquals("2015-12-25", dataNode.get("timestamp-as-date").textValue());
 
-        Map<String, byte[]> attachmentMap = context.getAttachmentsByFieldName();
-        assertEquals(1, attachmentMap.size());
-        JsonNode blobNode = BridgeObjectMapper.get().readTree(attachmentMap.get("baz"));
+        JsonNode inlineJsonBlobNode = dataNode.get("inline-json-blob");
+        assertEquals(3, inlineJsonBlobNode.size());
+        assertEquals("inline", inlineJsonBlobNode.get(0).textValue());
+        assertEquals("json", inlineJsonBlobNode.get(1).textValue());
+        assertEquals("blob", inlineJsonBlobNode.get(2).textValue());
+
+        ArgumentCaptor<JsonNode> blobNodeCaptor = ArgumentCaptor.forClass(JsonNode.class);
+        verify(mockUploadFileHelper).uploadJsonNodeAsAttachment(blobNodeCaptor.capture(), eq(TEST_UPLOAD_ID),
+                eq("baz"));
+
+        JsonNode blobNode = blobNodeCaptor.getValue();
         assertEquals(2, blobNode.size());
         assertEquals("survey", blobNode.get(0).textValue());
         assertEquals("blob", blobNode.get(1).textValue());
@@ -363,414 +338,57 @@ public class IosSchemaValidationHandler2Test {
     }
 
     @Test
-    public void surveyGuidAndCreatedOn() throws Exception {
-        // mock survey service
-        long expectedCreatedOn = DateTime.parse("2015-08-27T13:38:55-07:00").getMillis();
+    public void nonSurvey() throws Exception {
+        // Most of the complexities in this class have been moved to UploadFileHelper. As a result, we only need to
+        // test 1 field and treat it as a passthrough to UploadFileHelper. The only behavior we need to test is
+        // filename sanitization.
 
-        DynamoSurvey survey = new DynamoSurvey();
-        survey.setIdentifier("test-survey");
-        survey.setSchemaRevision(1);
+        // Mock Upload File Helper
+        when(mockUploadFileHelper.findValueForField(eq(TEST_UPLOAD_ID), any(), any(), any())).thenReturn(
+                TextNode.valueOf("dummy-attachment-id"));
 
-        SurveyService mockSurveyService = mock(SurveyService.class);
-        when(mockSurveyService.getSurvey(eq(new GuidCreatedOnVersionHolderImpl("test-guid", expectedCreatedOn))))
-                .thenReturn(survey);
-        handler.setSurveyService(mockSurveyService);
-
-        // fill in context with survey data
-        String infoJsonText = "{\n" +
-                "   \"files\":[{\n" +
-                "       \"filename\":\"foo.json\",\n" +
-                "       \"timestamp\":\"2015-08-22T03:26:59-07:00\"\n" +
-                "   },{\n" +
-                "       \"filename\":\"bar.json\",\n" +
-                "       \"timestamp\":\"2015-08-22T03:27:09-07:00\"\n" +
-                "   },{\n" +
-                "       \"filename\":\"baz.json\",\n" +
-                "       \"timestamp\":\"2015-08-22T03:24:01-07:00\"\n" +
-                "   }],\n" +
-                "   \"surveyGuid\":\"test-guid\",\n" +
-                "   \"surveyCreatedOn\":\"2015-08-27T13:38:55-07:00\"\n" +
-                "}";
-        JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
-
-        String fooAnswerJsonText = "{\n" +
-                "   \"questionType\":0,\n" +
-                "   \"textAnswer\":\"foo answer from guid\",\n" +
-                "   \"startDate\":\"2015-08-22T03:26:57-07:00\",\n" +
-                "   \"questionTypeName\":\"Text\",\n" +
-                "   \"item\":\"foo\",\n" +
-                "   \"endDate\":\"2015-04-02T03:26:59-07:00\"\n" +
-                "}";
-        JsonNode fooAnswerJsonNode = BridgeObjectMapper.get().readTree(fooAnswerJsonText);
-
-        String barAnswerJsonText = "{\n" +
-                "   \"questionType\":0,\n" +
-                "   \"numericAnswer\":47,\n" +
-                "   \"unit\":\"lb\",\n" +
-                "   \"startDate\":\"2015-08-22T03:27:05-07:00\",\n" +
-                "   \"questionTypeName\":\"Integer\",\n" +
-                "   \"item\":\"bar\",\n" +
-                "   \"endDate\":\"2015-04-02T03:27:09-07:00\"\n" +
-                "}";
-        JsonNode barAnswerJsonNode = BridgeObjectMapper.get().readTree(barAnswerJsonText);
-
-        String bazAnswerJsonText = "{\n" +
-                "   \"questionType\":0,\n" +
-                "   \"choiceAnswers\":[\"survey\", \"guid\", \"createdOn\"],\n" +
-                "   \"startDate\":\"2015-08-22T03:23:59-07:00\",\n" +
-                "   \"questionTypeName\":\"MultipleChoice\",\n" +
-                "   \"item\":\"baz\",\n" +
-                "   \"endDate\":\"2015-04-02T03:24:01-07:00\"\n" +
-                "}";
-        JsonNode bazAnswerJsonNode = BridgeObjectMapper.get().readTree(bazAnswerJsonText);
-
-        Map<String, JsonNode> jsonDataMap = new HashMap<>();
-        jsonDataMap.put("info.json", infoJsonNode);
-        jsonDataMap.put("foo.json", fooAnswerJsonNode);
-        jsonDataMap.put("bar.json", barAnswerJsonNode);
-        jsonDataMap.put("baz.json", bazAnswerJsonNode);
-        context.setJsonDataMap(jsonDataMap);
-
-        context.setUnzippedDataMap(ImmutableMap.<String, byte[]>of());
-
-        // execute
-        handler.handle(context);
-
-        // validate
-        HealthDataRecord record = context.getHealthDataRecord();
-        assertEquals(DateTime.parse("2015-08-22T03:27:09-07:00").getMillis(),
-                record.getCreatedOn().longValue());
-        assertEquals("-0700", record.getCreatedOnTimeZone());
-        assertEquals("test-survey", record.getSchemaId());
-        assertEquals(1, record.getSchemaRevision());
-
-        JsonNode dataNode = record.getData();
-        assertEquals(3, dataNode.size());
-        assertEquals("foo answer from guid", dataNode.get("foo").textValue());
-        assertEquals(47, dataNode.get("bar").intValue());
-        assertEquals("lb", dataNode.get("bar_unit").textValue());
-
-        Map<String, byte[]> attachmentMap = context.getAttachmentsByFieldName();
-        assertEquals(1, attachmentMap.size());
-        JsonNode blobNode = BridgeObjectMapper.get().readTree(attachmentMap.get("baz"));
-        assertEquals(3, blobNode.size());
-        assertEquals("survey", blobNode.get(0).textValue());
-        assertEquals("guid", blobNode.get(1).textValue());
-        assertEquals("createdOn", blobNode.get(2).textValue());
-
-        // We should have no messages.
-        assertTrue(context.getMessageList().isEmpty());
-    }
-
-    @Test
-    public void jsonData() throws Exception {
         // fill in context with JSON data
         String infoJsonText = "{\n" +
                 "   \"files\":[{\n" +
-                "       \"filename\":\"string.json\",\n" +
-                "       \"timestamp\":\"2015-04-13T18:48:02-07:00\"\n" +
-                "   },{\n" +
-                "       \"filename\":\"blob.json\",\n" +
-                "       \"timestamp\":\"2015-04-13T18:47:20-07:00\"\n" +
-                "   },{\n" +
-                "       \"filename\":\"date.json\",\n" +
+                "       \"filename\":\"sanitize!@#$attachment.txt\",\n" +
                 "       \"timestamp\":\"2015-04-13T18:47:41-07:00\"\n" +
                 "   }],\n" +
-                "   \"item\":\"json-data\"\n" +
+                "   \"item\":\"non-survey\"\n" +
                 "}";
         JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
+        context.setInfoJsonNode(infoJsonNode);
 
-        String stringJsonText = "{\n" +
-                "   \"string\":\"This is a string\",\n" +
-                "   \"intAsString\":42\n" +
-                "}";
-        JsonNode stringJsonNode = BridgeObjectMapper.get().readTree(stringJsonText);
-
-        String blobJsonText = "{\n" +
-                "   \"blob\":[\"This\", \"is\", \"a\", \"blob\"]\n" +
-                "}";
-        JsonNode blobJsonNode = BridgeObjectMapper.get().readTree(blobJsonText);
-
-        String dateJsonText = "{\n" +
-                "   \"date\":\"2015-12-25\",\n" +
-                "   \"timestampAsDate\":\"2015-12-25T14:41-0800\"\n" +
-                "}";
-        JsonNode dateJsonNode = BridgeObjectMapper.get().readTree(dateJsonText);
-
-        Map<String, JsonNode> jsonDataMap = new HashMap<>();
-        jsonDataMap.put("info.json", infoJsonNode);
-        jsonDataMap.put("string.json", stringJsonNode);
-        jsonDataMap.put("blob.json", blobJsonNode);
-        jsonDataMap.put("date.json", dateJsonNode);
-        context.setJsonDataMap(jsonDataMap);
-
-        context.setUnzippedDataMap(ImmutableMap.<String, byte[]>of());
+        Map<String, File> fileMap = new HashMap<>();
+        addFileToMap(fileMap, "sanitize!@#$attachment.txt", "Sanitize my filename");
+        context.setUnzippedDataFileMap(fileMap);
 
         // execute
         handler.handle(context);
 
         // validate
         HealthDataRecord record = context.getHealthDataRecord();
-        assertEquals(DateTime.parse("2015-04-13T18:48:02-07:00").getMillis(),
-                record.getCreatedOn().longValue());
+        assertEquals(DateTime.parse("2015-04-13T18:47:41-07:00").getMillis(), record.getCreatedOn().longValue());
         assertEquals("-0700", record.getCreatedOnTimeZone());
-        assertEquals("json-data", record.getSchemaId());
+        assertEquals("non-survey", record.getSchemaId());
         assertEquals(1, record.getSchemaRevision());
-
-        JsonNode dataNode = record.getData();
-        assertEquals(4, dataNode.size());
-        assertEquals("This is a string", dataNode.get("string.json.string").textValue());
-        assertTrue(dataNode.get("string.json.intAsString").isTextual());
-        assertEquals("42", dataNode.get("string.json.intAsString").textValue());
-        assertEquals("2015-12-25", dataNode.get("date.json.date").textValue());
-        assertEquals("2015-12-25", dataNode.get("date.json.timestampAsDate").textValue());
-
-        Map<String, byte[]> attachmentMap = context.getAttachmentsByFieldName();
-        assertEquals(1, attachmentMap.size());
-        JsonNode blobNode = BridgeObjectMapper.get().readTree(attachmentMap.get("blob.json.blob"));
-        assertEquals(4, blobNode.size());
-        assertEquals("This", blobNode.get(0).textValue());
-        assertEquals("is", blobNode.get(1).textValue());
-        assertEquals("a", blobNode.get(2).textValue());
-        assertEquals("blob", blobNode.get(3).textValue());
-
-        // We should have no messages.
-        assertTrue(context.getMessageList().isEmpty());
-    }
-
-    @Test
-    public void nonJsonData() throws Exception {
-        // fill in context
-        String infoJsonText = "{\n" +
-                "   \"files\":[{\n" +
-                "       \"filename\":\"jsonFile.json\",\n" +
-                "       \"timestamp\":\"2015-04-13T18:58:15-07:00\"\n" +
-                "   },{\n" +
-                "       \"filename\":\"nonJsonFile.txt\",\n" +
-                "       \"timestamp\":\"2015-04-13T18:58:21-07:00\"\n" +
-                "   },{\n" +
-                "       \"filename\":\"empty_attachment\",\n" +
-                "       \"timestamp\":\"2015-04-13T18:58:18-07:00\"\n" +
-                "   }],\n" +
-                "   \"item\":\"non-json-data\"\n" +
-                "}";
-        JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
-
-        String jsonJsonText = "{\n" +
-                "   \"field\":\"This is JSON data\"\n" +
-                "}";
-        JsonNode jsonJsonNode = BridgeObjectMapper.get().readTree(jsonJsonText);
-
-        Map<String, JsonNode> jsonDataMap = new HashMap<>();
-        jsonDataMap.put("info.json", infoJsonNode);
-        jsonDataMap.put("jsonFile.json", jsonJsonNode);
-        context.setJsonDataMap(jsonDataMap);
-
-        context.setUnzippedDataMap(ImmutableMap.<String, byte[]>builder()
-                .put("nonJsonFile.txt", "This is non-JSON data".getBytes(Charsets.UTF_8))
-                .put("empty_attachment", new byte[0])
-                .build());
-
-        // execute
-        handler.handle(context);
-
-        // validate
-        HealthDataRecord record = context.getHealthDataRecord();
-        assertEquals(DateTime.parse("2015-04-13T18:58:21-07:00").getMillis(),
-                record.getCreatedOn().longValue());
-        assertEquals("-0700", record.getCreatedOnTimeZone());
-        assertEquals("non-json-data", record.getSchemaId());
-        assertEquals(1, record.getSchemaRevision());
-
-        JsonNode dataNode = record.getData();
-        assertEquals(0, dataNode.size());
-
-        Map<String, byte[]> attachmentMap = context.getAttachmentsByFieldName();
-        assertEquals(2, attachmentMap.size());
-
-        JsonNode jsonJsonAttachmentNode = BridgeObjectMapper.get().readTree(attachmentMap.get("jsonFile.json"));
-        assertEquals(1, jsonJsonAttachmentNode.size());
-        assertEquals("This is JSON data", jsonJsonAttachmentNode.get("field").textValue());
-
-        assertEquals("This is non-JSON data", new String(attachmentMap.get("nonJsonFile.txt"), Charsets.UTF_8));
-
-        // We should have no messages.
-        assertTrue(context.getMessageList().isEmpty());
-    }
-
-    @Test
-    public void mixedData() throws Exception {
-        // fill in context
-        String infoJsonText = "{\n" +
-                "   \"files\":[{\n" +
-                "       \"filename\":\"nonJsonFile.txt\",\n" +
-                "       \"timestamp\":\"2015-04-22T18:37:11-07:00\"\n" +
-                "   },{\n" +
-                "       \"filename\":\"attachment.json\",\n" +
-                "       \"timestamp\":\"2015-04-22T18:38:22-07:00\"\n" +
-                "   },{\n" +
-                "       \"filename\":\"inline.json\",\n" +
-                "       \"timestamp\":\"2015-04-22T18:39:33-07:00\"\n" +
-                "   },{\n" +
-                "       \"filename\":\"field.json\",\n" +
-                "       \"timestamp\":\"2015-04-22T18:39:44-07:00\"\n" +
-                "   }],\n" +
-                "   \"item\":\"mixed-data\"\n" +
-                "}";
-        JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
-
-        String attachmentJsonText = "{\n" +
-                "   \"attachment\":\"This is an attachment\"\n" +
-                "}";
-        JsonNode attachmentJsonNode = BridgeObjectMapper.get().readTree(attachmentJsonText);
-
-        String inlineJsonText = "{\n" +
-                "   \"string\":\"inline value\"\n" +
-                "}";
-        JsonNode inlineJsonNode = BridgeObjectMapper.get().readTree(inlineJsonText);
-
-        String fieldJsonText = "{\n" +
-                "   \"attachment\":[\"mixed\", \"data\", \"attachment\"],\n" +
-                "   \"string\":\"This is a string\"\n" +
-                "}";
-        JsonNode fieldJsonNode = BridgeObjectMapper.get().readTree(fieldJsonText);
-
-        Map<String, JsonNode> jsonDataMap = new HashMap<>();
-        jsonDataMap.put("info.json", infoJsonNode);
-        jsonDataMap.put("attachment.json", attachmentJsonNode);
-        jsonDataMap.put("inline.json", inlineJsonNode);
-        jsonDataMap.put("field.json", fieldJsonNode);
-        context.setJsonDataMap(jsonDataMap);
-
-        context.setUnzippedDataMap(ImmutableMap.of("nonJsonFile.txt",
-                "Non-JSON in mixed data".getBytes(Charsets.UTF_8)));
-
-        // execute
-        handler.handle(context);
-
-        // validate
-        HealthDataRecord record = context.getHealthDataRecord();
-        assertEquals(DateTime.parse("2015-04-22T18:39:44-07:00").getMillis(),
-                record.getCreatedOn().longValue());
-        assertEquals("-0700", record.getCreatedOnTimeZone());
-        assertEquals("mixed-data", record.getSchemaId());
-        assertEquals(1, record.getSchemaRevision());
-
-        JsonNode dataNode = record.getData();
-        assertEquals(2, dataNode.size());
-        assertEquals("This is a string", dataNode.get("field.json.string").textValue());
-
-        JsonNode outputInlineJsonNode = dataNode.get("inline.json");
-        assertEquals(1, outputInlineJsonNode.size());
-        assertEquals("inline value", outputInlineJsonNode.get("string").textValue());
-
-        Map<String, byte[]> attachmentMap = context.getAttachmentsByFieldName();
-        assertEquals(3, attachmentMap.size());
-        assertEquals("Non-JSON in mixed data", new String(attachmentMap.get("nonJsonFile.txt"), Charsets.UTF_8));
-
-        JsonNode outputAttachmentJsonNode = BridgeObjectMapper.get().readTree(attachmentMap.get("attachment.json"));
-        assertEquals(1, outputAttachmentJsonNode.size());
-        assertEquals("This is an attachment", outputAttachmentJsonNode.get("attachment").textValue());
-
-        JsonNode fieldJsonAttachmentNode = BridgeObjectMapper.get().readTree(attachmentMap.get(
-                "field.json.attachment"));
-        assertEquals(3, fieldJsonAttachmentNode.size());
-        assertEquals("mixed", fieldJsonAttachmentNode.get(0).textValue());
-        assertEquals("data", fieldJsonAttachmentNode.get(1).textValue());
-        assertEquals("attachment", fieldJsonAttachmentNode.get(2).textValue());
-
-        // We should have no messages.
-        assertTrue(context.getMessageList().isEmpty());
-    }
-
-    @Test
-    public void schemaRevTestLegacyMap() throws Exception {
-        // fill in context with JSON data
-        String infoJsonText = "{\n" +
-                "   \"files\":[{\n" +
-                "       \"filename\":\"dummy.json\",\n" +
-                "       \"timestamp\":\"2015-07-21T15:24:57-07:00\"\n" +
-                "   }],\n" +
-                "   \"item\":\"schema-rev-test\"\n" +
-                "}";
-        JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
-
-        String dummyJsonText = "{\n" +
-                "   \"field\":\"dummy field value\"\n" +
-                "}";
-        JsonNode dummyJsonNode = BridgeObjectMapper.get().readTree(dummyJsonText);
-
-        Map<String, JsonNode> jsonDataMap = new HashMap<>();
-        jsonDataMap.put("info.json", infoJsonNode);
-        jsonDataMap.put("dummy.json", dummyJsonNode);
-        context.setJsonDataMap(jsonDataMap);
-
-        context.setUnzippedDataMap(ImmutableMap.<String, byte[]>of());
-
-        // execute
-        handler.handle(context);
-
-        // validate
-        HealthDataRecord record = context.getHealthDataRecord();
-        assertEquals(DateTime.parse("2015-07-21T15:24:57-07:00").getMillis(),
-                record.getCreatedOn().longValue());
-        assertEquals("-0700", record.getCreatedOnTimeZone());
-        assertEquals("schema-rev-test", record.getSchemaId());
-        assertEquals(2, record.getSchemaRevision());
 
         JsonNode dataNode = record.getData();
         assertEquals(1, dataNode.size());
-        assertEquals("dummy field value", dataNode.get("dummy.json.field").textValue());
+        assertEquals("dummy-attachment-id", dataNode.get("sanitize____attachment.txt").textValue());
 
-        // no attachments
-        assertTrue(context.getAttachmentsByFieldName().isEmpty());
+        // Verify call to Upload File Helper
+        ArgumentCaptor<Map> sanizitedFileMapCaptor = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor<UploadFieldDefinition> fieldDefCaptor = ArgumentCaptor.forClass(UploadFieldDefinition.class);
+        verify(mockUploadFileHelper).findValueForField(eq(TEST_UPLOAD_ID), sanizitedFileMapCaptor.capture(),
+                fieldDefCaptor.capture(), any());
 
-        // We should have no messages.
-        assertTrue(context.getMessageList().isEmpty());
-    }
+        Map<String, File> sanitizedFileMap = sanizitedFileMapCaptor.getValue();
+        assertEquals(1, sanitizedFileMap.size());
+        assertTrue(sanitizedFileMap.containsKey("sanitize____attachment.txt"));
+        assertEquals(fileMap.get("sanitize!@#$attachment.txt"), sanitizedFileMap.get("sanitize____attachment.txt"));
 
-    @Test
-    public void schemaRevTestWithRev() throws Exception {
-        // fill in context with JSON data
-        String infoJsonText = "{\n" +
-                "   \"files\":[{\n" +
-                "       \"filename\":\"dummy.json\",\n" +
-                "       \"timestamp\":\"2015-07-21T15:24:57-07:00\"\n" +
-                "   }],\n" +
-                "   \"item\":\"schema-rev-test\",\n" +
-                "   \"schemaRevision\":3\n" +
-                "}";
-        JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
-
-        String dummyJsonText = "{\n" +
-                "   \"field\":\"dummy field value\"\n" +
-                "}";
-        JsonNode dummyJsonNode = BridgeObjectMapper.get().readTree(dummyJsonText);
-
-        Map<String, JsonNode> jsonDataMap = new HashMap<>();
-        jsonDataMap.put("info.json", infoJsonNode);
-        jsonDataMap.put("dummy.json", dummyJsonNode);
-        context.setJsonDataMap(jsonDataMap);
-
-        context.setUnzippedDataMap(ImmutableMap.<String, byte[]>of());
-
-        // execute
-        handler.handle(context);
-
-        // validate
-        HealthDataRecord record = context.getHealthDataRecord();
-        assertEquals(DateTime.parse("2015-07-21T15:24:57-07:00").getMillis(),
-                record.getCreatedOn().longValue());
-        assertEquals("-0700", record.getCreatedOnTimeZone());
-        assertEquals("schema-rev-test", record.getSchemaId());
-        assertEquals(3, record.getSchemaRevision());
-
-        JsonNode dataNode = record.getData();
-        assertEquals(1, dataNode.size());
-        assertEquals("dummy field value", dataNode.get("dummy.json.field").textValue());
-
-        // no attachments
-        assertTrue(context.getAttachmentsByFieldName().isEmpty());
+        UploadFieldDefinition fieldDef = fieldDefCaptor.getValue();
+        assertEquals("sanitize____attachment.txt", fieldDef.getName());
 
         // We should have no messages.
         assertTrue(context.getMessageList().isEmpty());
@@ -783,20 +401,17 @@ public class IosSchemaValidationHandler2Test {
         // fill in context
         String infoJsonText = "{\n" +
                 "   \"files\":[{\n" +
-                "       \"filename\":\"attachment\"\n" +
+                "       \"filename\":\"sanitize!@#$attachment.txt\"\n" +
                 "   }],\n" +
-                "   \"item\":\"simple-attachment-schema\",\n" +
+                "   \"item\":\"non-survey\",\n" +
                 "   \"schemaRevision\":1\n" +
                 "}";
         JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
+        context.setInfoJsonNode(infoJsonNode);
 
-        Map<String, JsonNode> jsonDataMap = new HashMap<>();
-        jsonDataMap.put("info.json", infoJsonNode);
-        context.setJsonDataMap(jsonDataMap);
-
-        context.setUnzippedDataMap(ImmutableMap.<String, byte[]>builder()
-                .put("attachment", "This is an attachment.".getBytes(Charsets.UTF_8))
-                .build());
+        Map<String, File> fileMap = new HashMap<>();
+        addFileToMap(fileMap, "sanitize!@#$attachment.txt", "Sanitize my filename");
+        context.setUnzippedDataFileMap(fileMap);
 
         // execute
         handler.handle(context);
@@ -817,22 +432,19 @@ public class IosSchemaValidationHandler2Test {
         long createdOnMillis = DateUtils.convertToMillisFromEpoch(createdOnString);
         String infoJsonText = "{\n" +
                 "   \"files\":[{\n" +
-                "       \"filename\":\"attachment\",\n" +
+                "       \"filename\":\"sanitize!@#$attachment.txt\",\n" +
                 "       \"timestamp\":\"2017-10-01T01:13:01.046-07:00\"\n" +
                 "   }],\n" +
-                "   \"item\":\"simple-attachment-schema\",\n" +
+                "   \"item\":\"non-survey\",\n" +
                 "   \"schemaRevision\":1,\n" +
                 "   \"createdOn\":\"" + createdOnString + "\"\n" +
                 "}";
         JsonNode infoJsonNode = BridgeObjectMapper.get().readTree(infoJsonText);
+        context.setInfoJsonNode(infoJsonNode);
 
-        Map<String, JsonNode> jsonDataMap = new HashMap<>();
-        jsonDataMap.put("info.json", infoJsonNode);
-        context.setJsonDataMap(jsonDataMap);
-
-        context.setUnzippedDataMap(ImmutableMap.<String, byte[]>builder()
-                .put("attachment", "This is an attachment.".getBytes(Charsets.UTF_8))
-                .build());
+        Map<String, File> fileMap = new HashMap<>();
+        addFileToMap(fileMap, "sanitize!@#$attachment.txt", "Sanitize my filename");
+        context.setUnzippedDataFileMap(fileMap);
 
         // execute
         handler.handle(context);
@@ -841,5 +453,11 @@ public class IosSchemaValidationHandler2Test {
         HealthDataRecord record = context.getHealthDataRecord();
         assertEquals(createdOnMillis, record.getCreatedOn().longValue());
         assertEquals("+0900", record.getCreatedOnTimeZone());
+    }
+
+    private void addFileToMap(Map<String, File> fileMap, String name, String content) {
+        File file = inMemoryFileHelper.newFile(tmpDir, name);
+        inMemoryFileHelper.writeBytes(file, content.getBytes(Charsets.UTF_8));
+        fileMap.put(name, file);
     }
 }

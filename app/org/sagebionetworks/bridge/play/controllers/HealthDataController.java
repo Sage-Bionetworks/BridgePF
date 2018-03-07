@@ -10,6 +10,8 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
 import org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest;
 import org.sagebionetworks.bridge.services.HealthDataService;
+import org.sagebionetworks.bridge.upload.UploadValidationException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import play.mvc.Result;
@@ -34,7 +36,7 @@ public class HealthDataController extends BaseController {
      * upload API. This is most beneficial for small data sets, like simple surveys. This API returns the health data
      * record produced from this submission, which includes the record ID.
      */
-    public Result submitHealthData() throws JsonProcessingException, IOException {
+    public Result submitHealthData() throws IOException, UploadValidationException {
         // Submit health data.
         UserSession session = getAuthenticatedAndConsentedSession();
         HealthDataSubmission healthDataSubmission = parseJson(request(), HealthDataSubmission.class);

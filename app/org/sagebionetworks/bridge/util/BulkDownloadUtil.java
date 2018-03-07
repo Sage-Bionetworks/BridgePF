@@ -10,11 +10,6 @@ import java.util.Map;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
 
 import org.joda.time.format.ISODateTimeFormat;
 import org.springframework.context.support.AbstractApplicationContext;
@@ -23,7 +18,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoHealthCode;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
-import org.sagebionetworks.bridge.upload.ParseJsonHandler;
 import org.sagebionetworks.bridge.upload.S3DownloadHandler;
 import org.sagebionetworks.bridge.upload.UnzipHandler;
 import org.sagebionetworks.bridge.upload.UploadValidationContext;
@@ -71,7 +65,6 @@ public class BulkDownloadUtil {
         S3DownloadHandler s3DownloadHandler = springCtx.getBean(S3DownloadHandler.class);
         DecryptHandler decryptHandler = springCtx.getBean(DecryptHandler.class);
         UnzipHandler unzipHandler = springCtx.getBean(UnzipHandler.class);
-        ParseJsonHandler parseJsonHandler = springCtx.getBean(ParseJsonHandler.class);
 
         // DDB mappers
         DynamoDBMapperConfig uploadMapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(
@@ -87,8 +80,6 @@ public class BulkDownloadUtil {
         DynamoDBMapper healthCodeMapper = new DynamoDBMapper(ddbClient, healthCodeMapperConfig);
 
         // get uploads
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectWriter prettyPrinter = mapper.writerWithDefaultPrettyPrinter();
         List<UploadObject> uploads = getUploads(uploadMapper, healthCodeMapper, s3KeyArr);
         System.out.println("Found " + uploads.size() + " uploads.");
 
@@ -101,6 +92,10 @@ public class BulkDownloadUtil {
             UploadValidationContext ctx = new UploadValidationContext();
             ctx.setStudy(study);
             ctx.setUpload(uploadObj.metadata);
+
+            // Make temp dir within temp dir.
+            File uploadTmpDir = new File(tmpDir, uploadObj.metadata.getUploadId());
+            ctx.setTempDir(uploadTmpDir);
 
             // use handlers to process uploads
             try {
@@ -124,13 +119,11 @@ public class BulkDownloadUtil {
                         uploadObj.metadata.getHealthCode(),
                         uploadObj.metadata.getUploadDate().toString(ISODateTimeFormat.date()), ex.getMessage()));
                 System.out.println("Falling back to non-decrypted data.");
-                ctx.setDecryptedData(ctx.getData());
+                ctx.setDecryptedDataFile(ctx.getDataFile());
             }
 
-            boolean hasUnzipped;
             try {
                 unzipHandler.handle(ctx);
-                hasUnzipped = true;
             } catch (Exception ex) {
                 System.out.println(String.format(
                         "Error unzipping file %s with uploadId %s from study %s, healthCode %s, timestamp %s: %s",
@@ -138,59 +131,6 @@ public class BulkDownloadUtil {
                         uploadObj.metadata.getHealthCode(),
                         uploadObj.metadata.getUploadDate().toString(ISODateTimeFormat.date()), ex.getMessage()));
                 System.out.println("Will write zipped file to disk.");
-                hasUnzipped = false;
-            }
-
-            // write file to disk
-            String basename = String.format("%s-%s-%s", uploadObj.studyId, uploadObj.metadata.getFilename(),
-                    uploadObj.metadata.getUploadId());
-
-            if (hasUnzipped) {
-                // parseJsonHandler doesn't throw
-                parseJsonHandler.handle(ctx);
-
-                try {
-                    Map<String, JsonNode> jsonDataMap = ctx.getJsonDataMap();
-                    String jsonBundle = prettyPrinter.writeValueAsString(jsonDataMap);
-                    File jsonFile = new File(tmpDir, basename + ".json");
-                    Files.write(jsonBundle, jsonFile, Charsets.UTF_8);
-                } catch (Exception ex) {
-                    System.out.println(String.format(
-                            "Error writing JSON for file %s with uploadId %s from study %s, healthCode %s, timestamp " +
-                                    "%s: %s",
-                            uploadObj.metadata.getFilename(), uploadObj.metadata.getUploadId(), uploadObj.studyId,
-                            uploadObj.metadata.getHealthCode(),
-                            uploadObj.metadata.getUploadDate().toString(ISODateTimeFormat.date()), ex.getMessage()));
-                }
-
-                Map<String, byte[]> byteMap = ctx.getUnzippedDataMap();
-                for (Map.Entry<String, byte[]> oneByteEntry : byteMap.entrySet()) {
-                    try {
-                        File byteFile = new File(tmpDir, basename + "." + oneByteEntry.getKey());
-                        Files.write(oneByteEntry.getValue(), byteFile);
-                    } catch (Exception ex) {
-                        System.out.println(String.format(
-                                "Error writing data file %s for file %s with uploadId %s from study %s, healthCode " +
-                                        "%s, timestamp %s: %s",
-                                oneByteEntry.getKey(),
-                                uploadObj.metadata.getFilename(), uploadObj.metadata.getUploadId(), uploadObj.studyId,
-                                uploadObj.metadata.getHealthCode(),
-                                uploadObj.metadata.getUploadDate().toString(ISODateTimeFormat.date()),
-                                ex.getMessage()));
-                    }
-                }
-            } else {
-                // we have no unzipped data, write decrypted data
-                try {
-                    File rawFile = new File(tmpDir, basename);
-                    Files.write(ctx.getDecryptedData(), rawFile);
-                } catch (Exception ex) {
-                    System.out.println(String.format(
-                            "Error writing raw file %s with uploadId %s from study %s, healthCode %s, timestamp %s: %s",
-                            uploadObj.metadata.getFilename(), uploadObj.metadata.getUploadId(), uploadObj.studyId,
-                            uploadObj.metadata.getHealthCode(),
-                            uploadObj.metadata.getUploadDate().toString(ISODateTimeFormat.date()), ex.getMessage()));
-                }
             }
         }
     }

@@ -4,14 +4,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
+import java.io.File;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,12 +37,12 @@ import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
+import org.sagebionetworks.bridge.file.InMemoryFileHelper;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataAttachment;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -56,19 +56,15 @@ import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SurveyService;
 import org.sagebionetworks.bridge.services.UploadArchiveService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
-import org.sagebionetworks.bridge.util.Zipper;
 
 public class UploadHandlersEndToEndTest {
     private static final String APP_VERSION = "version 1.0.0, build 1";
-    private static final String ATTACHMENT_ID_PREFIX = "attachment-";
     private static final Set<String> DATA_GROUP_SET = ImmutableSet.of("parkinson", "test_user");
     private static final String EXTERNAL_ID = "external-id";
     private static final String HEALTH_CODE = "health-code";
     private static final byte[] METADATA_JSON_CONTENT = "{\"my-meta-key\":\"my-meta-value\"}".getBytes();
     private static final String PHONE_INFO = "Unit Test Hardware";
-    private static final String RECORD_ID = "record-id";
     private static final String UPLOAD_ID = "upload-id";
-    private static final Zipper ZIPPER = new Zipper(1000000, 1000000);
 
     private static final String CREATED_ON_STRING = "2015-04-02T03:26:59.456-07:00";
     private static final long CREATED_ON_MILLIS = DateUtils.convertToMillisFromEpoch(CREATED_ON_STRING);
@@ -100,20 +96,12 @@ public class UploadHandlersEndToEndTest {
         UPLOAD.setUploadId(UPLOAD_ID);
     }
 
-    // The following handlers have no external dependencies. We can use real handlers with real helper class objects.
-    private static final UnzipHandler UNZIP_HANDLER = new UnzipHandler();
-    static {
-        UNZIP_HANDLER.setUploadArchiveService(new UploadArchiveService());
-    }
-
-    private static final ParseJsonHandler PARSE_JSON_HANDLER = new ParseJsonHandler();
-    private static final InitRecordHandler INIT_RECORD_HANDLER = new InitRecordHandler();
-
-    private int numAttachments;
+    private InMemoryFileHelper inMemoryFileHelper;
     private HealthDataService mockHealthDataService;
     private UploadDao mockUploadDao;
     private S3Helper mockS3UploadHelper;
     private HealthDataRecord savedRecord;
+    private Map<String, byte[]> uploadedFileContentMap;
 
     @BeforeClass
     public static void mockDateTime() {
@@ -123,11 +111,40 @@ public class UploadHandlersEndToEndTest {
     @Before
     public void before() {
         // Reset all member vars, because JUnit doesn't.
-        numAttachments = 0;
+        inMemoryFileHelper = new InMemoryFileHelper();
         mockHealthDataService = mock(HealthDataService.class);
         mockUploadDao = mock(UploadDao.class);
         mockS3UploadHelper = mock(S3Helper.class);
         savedRecord = null;
+        uploadedFileContentMap = new HashMap<>();
+
+        // Mock HealthDataService.createOrUpdateRecord()
+        when(mockHealthDataService.createOrUpdateRecord(any(HealthDataRecord.class))).thenAnswer(
+                invocation -> {
+                    // save record
+                    savedRecord = invocation.getArgumentAt(0, HealthDataRecord.class);
+                    return savedRecord.getId();
+                });
+
+        when(mockHealthDataService.getRecordById(any())).thenAnswer(invocation -> {
+            String recordId = invocation.getArgumentAt(0, String.class);
+            if (recordId.equals(savedRecord.getId())) {
+                return savedRecord;
+            } else {
+                return null;
+            }
+        });
+
+        // Mock S3 upload helper. We need to save the file contents, since we delete all files at the end of execution.
+        doAnswer(invocation -> {
+            String s3Key = invocation.getArgumentAt(1, String.class);
+            File uploadedFile = invocation.getArgumentAt(2, File.class);
+            byte[] uploadedFileContent = inMemoryFileHelper.getBytes(uploadedFile);
+            uploadedFileContentMap.put(s3Key, uploadedFileContent);
+
+            // Required return
+            return null;
+        }).when(mockS3UploadHelper).writeFileToS3(any(), any(), any());
     }
 
     @AfterClass
@@ -147,23 +164,49 @@ public class UploadHandlersEndToEndTest {
         // Add metadata.json to the fileBytesMap.
         fileBytesMap.put("metadata.json", METADATA_JSON_CONTENT);
 
-        // zip file
-        byte[] zippedFile = ZIPPER.zip(fileBytesMap);
+        // For zipping, we use the real service.
+        UploadArchiveService unzipService = new UploadArchiveService();
+        unzipService.setMaxNumZipEntries(1000000);
+        unzipService.setMaxZipEntrySize(1000000);
+        byte[] zippedFile = unzipService.zip(fileBytesMap);
+
+        // Set up UploadFileHelper
+        UploadFileHelper uploadFileHelper = new UploadFileHelper();
+        uploadFileHelper.setFileHelper(inMemoryFileHelper);
+        uploadFileHelper.setS3Helper(mockS3UploadHelper);
 
         // set up S3DownloadHandler - mock S3 Helper
         // "S3" returns file unencrypted for simplicity of testing
         S3Helper mockS3DownloadHelper = mock(S3Helper.class);
-        when(mockS3DownloadHelper.readS3FileAsBytes(TestConstants.UPLOAD_BUCKET, UPLOAD_ID)).thenReturn(zippedFile);
+        doAnswer(invocation -> {
+            File destFile = invocation.getArgumentAt(2, File.class);
+            inMemoryFileHelper.writeBytes(destFile, zippedFile);
+
+            // Required return
+            return null;
+        }).when(mockS3DownloadHelper).downloadS3File(eq(TestConstants.UPLOAD_BUCKET), eq(UPLOAD_ID), any());
 
         S3DownloadHandler s3DownloadHandler = new S3DownloadHandler();
+        s3DownloadHandler.setFileHelper(inMemoryFileHelper);
         s3DownloadHandler.setS3Helper(mockS3DownloadHelper);
 
         // set up DecryptHandler - For ease of tests, this will just return the input verbatim.
         UploadArchiveService mockUploadArchiveService = mock(UploadArchiveService.class);
-        when(mockUploadArchiveService.decrypt(TestConstants.TEST_STUDY_IDENTIFIER, zippedFile)).thenReturn(zippedFile);
+        when(mockUploadArchiveService.decrypt(eq(TestConstants.TEST_STUDY_IDENTIFIER), any(InputStream.class)))
+                .thenAnswer(invocation -> invocation.getArgumentAt(1, InputStream.class));
 
         DecryptHandler decryptHandler = new DecryptHandler();
+        decryptHandler.setFileHelper(inMemoryFileHelper);
         decryptHandler.setUploadArchiveService(mockUploadArchiveService);
+
+        // Set up UnzipHandler
+        UnzipHandler unzipHandler = new UnzipHandler();
+        unzipHandler.setFileHelper(inMemoryFileHelper);
+        unzipHandler.setUploadArchiveService(unzipService);
+
+        // Set up InitRecordHandler
+        InitRecordHandler initRecordHandler = new InitRecordHandler();
+        initRecordHandler.setFileHelper(inMemoryFileHelper);
 
         // mock schema service
         UploadSchemaService mockUploadSchemaService = mock(UploadSchemaService.class);
@@ -179,11 +222,15 @@ public class UploadHandlersEndToEndTest {
 
         // set up IosSchemaValidationHandler
         IosSchemaValidationHandler2 iosSchemaValidationHandler = new IosSchemaValidationHandler2();
+        iosSchemaValidationHandler.setFileHelper(inMemoryFileHelper);
+        iosSchemaValidationHandler.setUploadFileHelper(uploadFileHelper);
         iosSchemaValidationHandler.setUploadSchemaService(mockUploadSchemaService);
         iosSchemaValidationHandler.setSurveyService(mockSurveyService);
 
         // set up GenericUploadFormatHandler
         GenericUploadFormatHandler genericUploadFormatHandler = new GenericUploadFormatHandler();
+        genericUploadFormatHandler.setFileHelper(inMemoryFileHelper);
+        genericUploadFormatHandler.setUploadFileHelper(uploadFileHelper);
         genericUploadFormatHandler.setUploadSchemaService(mockUploadSchemaService);
         genericUploadFormatHandler.setSurveyService(mockSurveyService);
 
@@ -212,19 +259,6 @@ public class UploadHandlersEndToEndTest {
         TranscribeConsentHandler transcribeConsentHandler = new TranscribeConsentHandler();
         transcribeConsentHandler.setAccountDao(mockAccountDao);
 
-        // mock HealthDataService for UploadArtifactsHandler
-        when(mockHealthDataService.createOrUpdateAttachment(any(HealthDataAttachment.class))).thenAnswer(
-                invocation -> ATTACHMENT_ID_PREFIX + (++numAttachments));
-
-        when(mockHealthDataService.createOrUpdateRecord(any(HealthDataRecord.class))).thenAnswer(invocation -> {
-            // add record ID to record
-            savedRecord = invocation.getArgumentAt(0, HealthDataRecord.class);
-            savedRecord.setId(RECORD_ID);
-            return RECORD_ID;
-        });
-
-        when(mockHealthDataService.getRecordById(RECORD_ID)).thenAnswer(invocation -> savedRecord);
-
         // mock HealthDataService should return empty list for getRecordsByHealthcodeCreatedOnSchemaId(), so dedupe
         // logic doesn't crash
         when(mockHealthDataService.getRecordsByHealthcodeCreatedOnSchemaId(HEALTH_CODE, CREATED_ON_MILLIS,
@@ -233,14 +267,14 @@ public class UploadHandlersEndToEndTest {
         // set up UploadArtifactsHandler
         UploadArtifactsHandler uploadArtifactsHandler = new UploadArtifactsHandler();
         uploadArtifactsHandler.setHealthDataService(mockHealthDataService);
-        uploadArtifactsHandler.setS3Helper(mockS3UploadHelper);
 
         // set up task factory
-        List<UploadValidationHandler> handlerList = ImmutableList.of(s3DownloadHandler, decryptHandler, UNZIP_HANDLER,
-                PARSE_JSON_HANDLER, INIT_RECORD_HANDLER, uploadFormatHandler, strictValidationHandler, transcribeConsentHandler,
+        List<UploadValidationHandler> handlerList = ImmutableList.of(s3DownloadHandler, decryptHandler, unzipHandler,
+                initRecordHandler, uploadFormatHandler, strictValidationHandler, transcribeConsentHandler,
                 uploadArtifactsHandler);
 
         UploadValidationTaskFactory taskFactory = new UploadValidationTaskFactory();
+        taskFactory.setFileHelper(inMemoryFileHelper);
         taskFactory.setHandlerList(handlerList);
         taskFactory.setUploadDao(mockUploadDao);
         taskFactory.setHealthDataService(mockHealthDataService);
@@ -313,7 +347,7 @@ public class UploadHandlersEndToEndTest {
 
         // verify created record
         ArgumentCaptor<HealthDataRecord> recordCaptor = ArgumentCaptor.forClass(HealthDataRecord.class);
-        verify(mockHealthDataService, atLeastOnce()).createOrUpdateRecord(recordCaptor.capture());
+        verify(mockHealthDataService).createOrUpdateRecord(recordCaptor.capture());
 
         HealthDataRecord record = recordCaptor.getValue();
         validateCommonRecordProps(record);
@@ -338,11 +372,8 @@ public class UploadHandlersEndToEndTest {
         // validate no uploads to S3
         verifyZeroInteractions(mockS3UploadHelper);
 
-        // verify no attachments
-        verify(mockHealthDataService, never()).createOrUpdateAttachment(any(HealthDataAttachment.class));
-
         // verify upload dao write validation status
-        verify(mockUploadDao).writeValidationStatus(UPLOAD, UploadStatus.SUCCEEDED, ImmutableList.of(), RECORD_ID);
+        verify(mockUploadDao).writeValidationStatus(UPLOAD, UploadStatus.SUCCEEDED, ImmutableList.of(), UPLOAD_ID);
     }
 
     @Test
@@ -506,7 +537,7 @@ public class UploadHandlersEndToEndTest {
 
         // verify created record
         ArgumentCaptor<HealthDataRecord> recordCaptor = ArgumentCaptor.forClass(HealthDataRecord.class);
-        verify(mockHealthDataService, atLeastOnce()).createOrUpdateRecord(recordCaptor.capture());
+        verify(mockHealthDataService).createOrUpdateRecord(recordCaptor.capture());
 
         HealthDataRecord record = recordCaptor.getValue();
         validateCommonRecordProps(record);
@@ -541,12 +572,14 @@ public class UploadHandlersEndToEndTest {
         validateTextAttachment(gggTxtContent, gggTxtAttachmentId);
 
         String eeeJsonAttachmentId = dataNode.get("EEE.json").textValue();
-        JsonNode eeeJsonNode = getAttachmentAsJson(eeeJsonAttachmentId);
+        byte[] eeeJsonUploadedContent = uploadedFileContentMap.get(eeeJsonAttachmentId);
+        JsonNode eeeJsonNode = BridgeObjectMapper.get().readTree(eeeJsonUploadedContent);
         assertEquals(1, eeeJsonNode.size());
         assertEquals("value", eeeJsonNode.get("key").textValue());
 
         String fffJsonAttachmentId = dataNode.get("FFF.json").textValue();
-        JsonNode fffJsonNode = getAttachmentAsJson(fffJsonAttachmentId);
+        byte[] fffJsonUploadedContent = uploadedFileContentMap.get(fffJsonAttachmentId);
+        JsonNode fffJsonNode = BridgeObjectMapper.get().readTree(fffJsonUploadedContent);
         assertEquals(2, fffJsonNode.size());
 
         assertEquals(1, fffJsonNode.get(0).size());
@@ -556,22 +589,14 @@ public class UploadHandlersEndToEndTest {
         assertEquals("Eggplant", fffJsonNode.get(1).get("name").textValue());
 
         String hhhAttachmentId = dataNode.get("record.json.HHH").textValue();
-        JsonNode hhhNode = getAttachmentAsJson(hhhAttachmentId);
+        JsonNode hhhNode = getJsonFragmentAttachment(hhhAttachmentId);
         assertEquals(3, hhhNode.size());
         assertEquals("attachment", hhhNode.get(0).textValue());
         assertEquals("inside", hhhNode.get(1).textValue());
         assertEquals("file", hhhNode.get(2).textValue());
 
-        // verify attachments in HealthDataAttachments - Of all the attributes, the only one that actually matters is
-        // the record ID
-        ArgumentCaptor<HealthDataAttachment> attachmentCaptor = ArgumentCaptor.forClass(HealthDataAttachment.class);
-        verify(mockHealthDataService, times(6)).createOrUpdateAttachment(attachmentCaptor.capture());
-        for (HealthDataAttachment oneAttachment : attachmentCaptor.getAllValues()) {
-            assertEquals(RECORD_ID, oneAttachment.getRecordId());
-        }
-
         // verify upload dao write validation status
-        verify(mockUploadDao).writeValidationStatus(UPLOAD, UploadStatus.SUCCEEDED, ImmutableList.of(), RECORD_ID);
+        verify(mockUploadDao).writeValidationStatus(UPLOAD, UploadStatus.SUCCEEDED, ImmutableList.of(), UPLOAD_ID);
     }
 
     @Test
@@ -627,13 +652,11 @@ public class UploadHandlersEndToEndTest {
     }
 
     private void validateTextAttachment(String expected, String attachmentId) throws Exception {
-        ArgumentCaptor<byte[]> attachmentContentCaptor = ArgumentCaptor.forClass(byte[].class);
-        verify(mockS3UploadHelper).writeBytesToS3(eq(TestConstants.ATTACHMENT_BUCKET), eq(attachmentId),
-                attachmentContentCaptor.capture());
-        assertEquals(expected, new String(attachmentContentCaptor.getValue(), Charsets.UTF_8));
+        byte[] uploadedFileContent = uploadedFileContentMap.get(attachmentId);
+        assertEquals(expected, new String(uploadedFileContent, Charsets.UTF_8));
     }
 
-    private JsonNode getAttachmentAsJson(String attachmentId) throws Exception {
+    private JsonNode getJsonFragmentAttachment(String attachmentId) throws Exception {
         ArgumentCaptor<byte[]> attachmentContentCaptor = ArgumentCaptor.forClass(byte[].class);
         verify(mockS3UploadHelper).writeBytesToS3(eq(TestConstants.ATTACHMENT_BUCKET), eq(attachmentId),
                 attachmentContentCaptor.capture());
