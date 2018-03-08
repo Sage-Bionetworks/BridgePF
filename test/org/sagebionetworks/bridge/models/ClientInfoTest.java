@@ -70,6 +70,8 @@ public class ClientInfoTest {
         assertClientInfo("(test) (tones)", null, null, null, null, null, null, null);
         assertClientInfo("foo/bar d/e (c; a/b)", null, null, null, null, null, null, null);
         assertClientInfo("(c/d; a/b)", null, null, null, null, null, null, null);
+        assertClientInfo("appName (deviceName; osName/osVersion) sdkName", "appName", null, "deviceName", "osName",
+                "osVersion", "sdkName", null);
         
         // All the original test strings pass
         assertClientInfo("Unknown Client/14", "Unknown Client", 14, null, null, null, null, null);

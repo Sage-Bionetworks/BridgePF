@@ -319,6 +319,8 @@ public final class ClientInfo {
                     return true;
                 }
             }
+            // Basically once you have a device stanza and it's completed
+            // we want to ensure you are looking for the last slash.
             if (oneChar == ')') {
                 ++slashes;
             }
