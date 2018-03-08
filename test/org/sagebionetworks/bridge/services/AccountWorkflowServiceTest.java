@@ -166,6 +166,7 @@ public class AccountWorkflowServiceTest {
         BasicEmailProvider provider = emailProviderCaptor.getValue();
         Map<String,String> tokens = provider.getTokenMap();
         assertEquals(SPTOKEN, tokens.get("sptoken"));
+        assertEquals("2 hours", tokens.get("expirationPeriod"));
         
         MimeTypeEmail email = provider.getMimeTypeEmail();
         assertEquals("\"This study name\" <support@support.com>", email.getSenderAddress());
@@ -277,6 +278,7 @@ public class AccountWorkflowServiceTest {
         
         assertEquals(TOKEN, provider.getTokenMap().get("token"));
         assertEquals(SPTOKEN, provider.getTokenMap().get("sptoken"));
+        assertEquals("2 hours", provider.getTokenMap().get("expirationPeriod"));
         assertEquals(BridgeUtils.encodeURIComponent(EMAIL), provider.getTokenMap().get("email"));
         assertEquals("2", provider.getTokenMap().get("expirationWindow"));
         
@@ -325,6 +327,7 @@ public class AccountWorkflowServiceTest {
             assertEquals("2", oneEmailProvider.getTokenMap().get("expirationWindow"));
             assertEquals(SPTOKEN, oneEmailProvider.getTokenMap().get("sptoken"));
             assertEquals(TOKEN, oneEmailProvider.getTokenMap().get("token"));
+            assertEquals("2 hours", oneEmailProvider.getTokenMap().get("expirationPeriod"));
             assertEquals(BridgeUtils.encodeURIComponent(EMAIL), oneEmailProvider.getTokenMap().get("email"));
             
             // Email content is verified in test above. Just verify email sign-in URL.
@@ -355,6 +358,7 @@ public class AccountWorkflowServiceTest {
         BasicEmailProvider provider = emailProviderCaptor.getValue();
         assertEquals(SPTOKEN, provider.getTokenMap().get("sptoken"));
         assertEquals("2", provider.getTokenMap().get("expirationWindow"));
+        assertEquals("2 hours", provider.getTokenMap().get("expirationPeriod"));
 
         String bodyString = (String) provider.getMimeTypeEmail().getMessageParts().get(0).getContent();
         
@@ -398,6 +402,7 @@ public class AccountWorkflowServiceTest {
         
         assertEquals(SPTOKEN, provider.getTokenMap().get("sptoken"));
         assertEquals("2", provider.getTokenMap().get("expirationWindow"));
+        assertEquals("2 hours", provider.getTokenMap().get("expirationPeriod"));
         
         MimeTypeEmail email = provider.getMimeTypeEmail();
         assertEquals("\"This study name\" <support@support.com>", email.getSenderAddress());
@@ -502,7 +507,6 @@ public class AccountWorkflowServiceTest {
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(mockAccount);
 
         PasswordReset passwordReset = new PasswordReset("newPassword", SPTOKEN, TEST_STUDY_IDENTIFIER);
-        
         service.resetPassword(passwordReset);
         
         verify(mockCacheProvider).getObject(SPTOKEN+":api", String.class);
@@ -518,7 +522,6 @@ public class AccountWorkflowServiceTest {
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
 
         PasswordReset passwordReset = new PasswordReset("newPassword", SPTOKEN, TEST_STUDY_IDENTIFIER);
-        
         service.resetPassword(passwordReset);
         
         verify(mockCacheProvider).getObject(SPTOKEN+":phone:api", String.class);
@@ -583,6 +586,7 @@ public class AccountWorkflowServiceTest {
         BasicEmailProvider provider = emailProviderCaptor.getValue();
         assertEquals(BridgeUtils.encodeURIComponent(EMAIL), provider.getTokenMap().get("email"));
         assertEquals(TOKEN, provider.getTokenMap().get("token"));
+        assertEquals("5 minutes", provider.getTokenMap().get("expirationPeriod"));
         
         String token = provider.getTokenMap().get("token");
         
@@ -663,6 +667,7 @@ public class AccountWorkflowServiceTest {
         BasicEmailProvider provider = emailProviderCaptor.getValue();
         assertEquals(BridgeUtils.encodeURIComponent(EMAIL), provider.getTokenMap().get("email"));
         assertEquals(TOKEN, provider.getTokenMap().get("token"));
+        assertEquals("5 minutes", provider.getTokenMap().get("expirationPeriod"));
         
         assertEquals(EMAIL, provider.getMimeTypeEmail().getRecipientAddresses().get(0));
         assertEquals(SUPPORT_EMAIL, provider.getPlainSenderEmail());
