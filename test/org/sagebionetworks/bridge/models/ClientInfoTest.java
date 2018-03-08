@@ -59,6 +59,7 @@ public class ClientInfoTest {
         assertClientInfo("/app (iOS) 10", null, null, null, "iPhone OS", null, null, 10);
         assertClientInfo("/app", null, null, null, null, null, null, null);
         assertClientInfo("10//10", null, null, null, null, null, null, null);
+        assertClientInfo("/7 (Android/10) /5", null, 7, null, "Android", "10", null, 5);
         
         // Also try some error conditions...
         assertClientInfo("/ (; /) /", null, null, null, null, null, null, null);
