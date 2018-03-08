@@ -11,6 +11,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 
+import java.util.LinkedHashSet;
 import java.util.Map;
 
 import org.junit.Before;
@@ -23,6 +24,7 @@ import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -488,5 +490,21 @@ public class AuthenticationServiceMockTest {
         EmailVerification ev = new EmailVerification(null);
         service.verifyEmail(ev);
     }
-
+    
+    @Test
+    public void languagesArePersistedFromContext() {
+        LinkedHashSet<String> languages = TestUtils.newLinkedHashSet("es","de");
+        CriteriaContext context = new CriteriaContext.Builder().withLanguages(languages).withUserId(USER_ID)
+                .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+        doReturn(account).when(accountDao).getAccount(any());
+        
+        // No languages.
+        StudyParticipant participant = new StudyParticipant.Builder().build();
+        doReturn(participant).when(participantService).getParticipant(study, account, false);
+        
+        service.getSession(study, context);
+        
+        verify(accountDao).updateAccount(account, false);
+        assertEquals(languages, account.getLanguages());
+    }
 }

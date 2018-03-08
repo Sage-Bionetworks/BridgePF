@@ -672,6 +672,8 @@ public class HibernateAccountDaoTest {
         assertNotEquals(PasswordAlgorithm.BCRYPT, captured.getReauthTokenAlgorithm());
         assertNotEquals("AAA", captured.getReauthTokenHash());
         assertNotEquals(originalTimestamp, captured.getReauthTokenModifiedOn());
+     // version has been incremented because reauth token was rotated
+        assertEquals(2, captured.getVersion()); 
     }
     
     @Test
@@ -1663,6 +1665,15 @@ public class HibernateAccountDaoTest {
         validateGenericConsent(barSignedOn3, barHibernateConsent3, barConsentSignatureList.get(0));
         validateGenericConsent(barSignedOn4, barHibernateConsent4, barConsentSignatureList.get(1));
     }
+    
+    @Test
+    public void unmarshallDefaults() {
+        HibernateAccount hibernateAccount = new HibernateAccount();
+        GenericAccount genericAccount = (GenericAccount) HibernateAccountDao.unmarshallAccount(hibernateAccount);
+        
+        assertTrue(genericAccount.getNotifyByEmail());
+        assertEquals(SharingScope.NO_SHARING, genericAccount.getSharingScope());
+    }
 
     // branch coverage, to make sure nothing crashes.
     @Test
@@ -1732,6 +1743,59 @@ public class HibernateAccountDaoTest {
         Account account = HibernateAccountDao.unmarshallAccount(hibernateAccount);
         assertEquals(AccountStatus.ENABLED, account.getStatus());
         assertEquals(Boolean.FALSE, account.getEmailVerified());
+    }
+    
+    @Test
+    public void editAccountSuccess() throws Exception {
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
+        // To prevent two updates during test, enter healthCode/healthId
+        hibernateAccount.setHealthCode("A");
+        hibernateAccount.setHealthId("B");
+        // mock hibernate
+        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId='" + TestConstants.TEST_STUDY_IDENTIFIER
+                + "' and healthCode='" + HEALTH_CODE + "'", null, null, HibernateAccount.class))
+                        .thenReturn(ImmutableList.of(hibernateAccount));
+        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
+
+        // execute and validate
+        dao.editAccount(TestConstants.TEST_STUDY, HEALTH_CODE, account -> account.setFirstName("ChangedFirstName"));
+        
+        ArgumentCaptor<HibernateAccount> updatedAccountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
+        verify(mockHibernateHelper).update(updatedAccountCaptor.capture());
+        
+        assertEquals("ChangedFirstName", updatedAccountCaptor.getValue().getFirstName());
+    }
+    
+    @Test
+    public void editAccountCannotChangeSensitiveFields() throws Exception {
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
+        // To prevent two updates during test, enter healthCode/healthId
+        hibernateAccount.setHealthCode("A");
+        hibernateAccount.setHealthId("B");
+        // mock hibernate
+        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId='" + TestConstants.TEST_STUDY_IDENTIFIER
+                + "' and healthCode='" + HEALTH_CODE + "'", null, null, HibernateAccount.class))
+                        .thenReturn(ImmutableList.of(hibernateAccount));
+        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
+
+        // execute and validate
+        dao.editAccount(TestConstants.TEST_STUDY, HEALTH_CODE, account -> account.setEmail("JUNK"));
+        
+        ArgumentCaptor<HibernateAccount> updatedAccountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
+        verify(mockHibernateHelper).update(updatedAccountCaptor.capture());
+        
+        assertEquals(EMAIL, updatedAccountCaptor.getValue().getEmail());
+    }
+    
+    @Test
+    public void editAccountWhenAccountNotFound() throws Exception {
+        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId='" + TestConstants.TEST_STUDY_IDENTIFIER
+                + "' and healthCode='" + HEALTH_CODE + "'", null, null, HibernateAccount.class))
+                        .thenReturn(ImmutableList.of());
+        
+        dao.editAccount(TestConstants.TEST_STUDY, "bad-health-code", account -> account.setEmail("JUNK"));
+        
+        verify(mockHibernateHelper, never()).update(any());
     }
     
     private void verifyCreatedHealthCode() {

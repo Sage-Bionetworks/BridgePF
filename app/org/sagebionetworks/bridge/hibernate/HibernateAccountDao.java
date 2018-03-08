@@ -196,8 +196,7 @@ public class HibernateAccountDao implements AccountDao {
         validateHealthCode(hibernateAccount, false);
         Account account = unmarshallAccount(hibernateAccount);
         if (study.isReauthenticationEnabled()) {
-            int version = updateReauthToken(hibernateAccount, account);
-            ((GenericAccount)account).setVersion(version);
+            updateReauthToken(hibernateAccount, account);
         } else {
             // clear token in case it was created prior to introduction of the flag
             account.setReauthToken(null);
@@ -212,8 +211,7 @@ public class HibernateAccountDao implements AccountDao {
         if (hibernateAccount != null) {
             validateHealthCode(hibernateAccount, false);
             Account account = unmarshallAccount(hibernateAccount);
-            int version = updateReauthToken(hibernateAccount, account);
-            ((GenericAccount)account).setVersion(version);
+            updateReauthToken(hibernateAccount, account);
             return account;
         } else {
             // In keeping with the email implementation, just return null
@@ -232,7 +230,7 @@ public class HibernateAccountDao implements AccountDao {
         }
     }
     
-    private int updateReauthToken(HibernateAccount hibernateAccount, Account account) {
+    private void updateReauthToken(HibernateAccount hibernateAccount, Account account) {
         // Re-create and persist the authentication token.
         String reauthToken = SecureTokenGenerator.INSTANCE.nextToken();
         account.setReauthToken(reauthToken);
@@ -245,8 +243,13 @@ public class HibernateAccountDao implements AccountDao {
         
         // We must get the current version to return from the DAO, or subsequent updates to the 
         // account, even in the same call, will fail (e.g. to update languages captured from a request).
+        // This is safe because the only attributes we're changing are the re-authentication 
+        // token columns, and these cannot be changed anywhere else. Also note that this works in 
+        // the case of adding healthCode/healthId because we're returning the hibernateAccount with
+        // the version incremented by the HibernateHelper class in that case, whereas here we have 
+        // already transferred over to the use of the account object in the calling code.
         HibernateAccount updated = hibernateHelper.update(hibernateAccount);
-        return updated.getVersion();
+        ((GenericAccount)account).setVersion(updated.getVersion());
     }
     
     /** {@inheritDoc} */

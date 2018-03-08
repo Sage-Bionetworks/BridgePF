@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -28,6 +29,7 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
 public class FPHSServiceTest {
@@ -76,10 +78,13 @@ public class FPHSServiceTest {
     @Test
     public void registerExternalIdentifier() throws Exception {
         TestUtils.mockEditAccount(mockAccountDao, mockAccount);
+        Set<String> dataGroups = Sets.newHashSet();
+        when(mockAccount.getDataGroups()).thenReturn(dataGroups);
         
         service.registerExternalIdentifier(TEST_STUDY, "BBB", externalId);
         verify(mockDao).registerExternalId(externalId);
         verify(mockAccount).setExternalId(externalId.getIdentifier());
+        assertEquals(Sets.newHashSet("football_player"), dataGroups);
     }
     
     @Test
