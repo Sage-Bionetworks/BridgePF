@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.models;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
 
 import org.junit.Test;
@@ -10,6 +12,8 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class ClientInfoTest {
 
+    private static final String UA = "Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4";
+    
     @Test
     public void hashEquals() {
         EqualsVerifier.forClass(ClientInfo.class).allFieldsShouldBeUsed().verify();
@@ -63,6 +67,8 @@ public class ClientInfoTest {
         assertClientInfo("app/3 (Device; /2.0.0) sdk/4", "app", 3, "Device", null, "2.0.0", "sdk", 4);
         assertClientInfo("AppName/1 (Device Name; iPhone OS) BridgeJavaSDK/3",
                 "AppName", 1, "Device Name", "iPhone OS", null, "BridgeJavaSDK", 3);
+        assertClientInfo("1/2 3/4", null, 2, null, null, null, null, 4);
+        assertClientInfo("1/2", null, 2, null, null, null, null, null);
         
         // Also try some error conditions...
         assertClientInfo("/ (; /) /", null, null, null, null, null, null, null);
@@ -119,7 +125,15 @@ public class ClientInfoTest {
         // I made this up so it would break the parser.
         assertClientInfo("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) Chrome/64.0.3282.186 Safari/537.36", 
                 null, null, null, null, null, null, null);
-
+        assertClientInfo(";;", null, null, null, null, null, null, null);
+        assertClientInfo(";(", null, null, null, null, null, null, null);
+        assertClientInfo("))", null, null, null, null, null, null, null);
+        assertClientInfo(")(", null, null, null, null, null, null, null);
+        assertClientInfo(");", null, null, null, null, null, null, null);
+        assertClientInfo("/;", null, null, null, null, null, null, null);
+        assertClientInfo("//(", null, null, null, null, null, null, null);
+        assertClientInfo("///", null, null, null, null, null, null, null);
+        assertClientInfo("()/()", null, null, null, null, null, null, null);
         
         // Never seen in the wild, but made to fail our parser (and now passes)
         assertClientInfo("appName; 10 (something/10/test)", null, null, null, null, null, null, null);
@@ -139,7 +153,44 @@ public class ClientInfoTest {
         assertEquals(sdkName, info.getSdkName());
         assertEquals(sdkVersion, info.getSdkVersion());
     }
+
+    @Test
+    public void cacheWorks() {
+        ClientInfo info1 = ClientInfo.fromUserAgentCache(UA);
+        ClientInfo info2 = ClientInfo.fromUserAgentCache(UA);
+        
+        assertSame(info1, info2);
+    }
     
+    @Test
+    public void cacheWorksWithBadValues() {
+        assertSame(ClientInfo.UNKNOWN_CLIENT, ClientInfo.fromUserAgentCache(null));
+        assertSame(ClientInfo.UNKNOWN_CLIENT, ClientInfo.fromUserAgentCache("   \n"));
+    }
+    
+    @Test
+    public void testIsSupportedAppVersion_GreaterThanSucceeds() {
+        ClientInfo info = ClientInfo.parseUserAgentString(UA);
+        assertTrue(info.isSupportedAppVersion(25));
+    }
+    
+    @Test
+    public void testIsSupportedAppVersion_EqualToSucceeds() {
+        ClientInfo info = ClientInfo.parseUserAgentString(UA);
+        assertTrue(info.isSupportedAppVersion(26));
+    }
+    
+    @Test
+    public void testIsSupportedAppVersion_NullMinSucceeds() {
+        ClientInfo info = ClientInfo.parseUserAgentString(UA);
+        assertTrue(info.isSupportedAppVersion(null));
+    }
+    
+    @Test
+    public void testIsSupportedAppVersion_LessThanFails() {
+        ClientInfo info = ClientInfo.parseUserAgentString(UA);
+        assertFalse(info.isSupportedAppVersion(27));
+    }    
     @Test
     public void returnsUknownClient() {
         ClientInfo info = ClientInfo.parseUserAgentString("/7.1.1.");

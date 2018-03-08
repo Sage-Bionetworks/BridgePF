@@ -84,8 +84,10 @@ public final class ClientInfo {
     public static final ClientInfo UNKNOWN_CLIENT = new ClientInfo.Builder().build();
 
     /** Numbers followed by spacing, followed by non-numbers, indicates two stanzas */
-    private static final String TWO_STANZA_REGEXP = ".*[0-9]+\\s+[^0-9]+.*";
-    private static final String STANZA_SPLIT_REGEXP = "(?<=[0-9])\\s(?=([^0-9]))";
+    //private static final String TWO_STANZA_REGEXP = ".*[0-9]+\\s+[^0-9]+.*";
+    //private static final String STANZA_SPLIT_REGEXP = "(?<=[0-9])\\s(?=([^0-9]))";
+    private static final String TWO_STANZA_REGEXP = ".*[0-9]+\\s+.*";
+    private static final String STANZA_SPLIT_REGEXP = "(?<=[0-9])\\s(?=(.*))";
     private static final String OLD_OS_FORMAT_REGEXP = "[^/]+\\s[\\d\\.]+";
     private static final String DIGITS_REGEXP = "^\\s*[0-9]+\\s*$";
     private static final String SEMANTIC_VERSION_REGEXP = "^\\s*[0-9\\.]+\\s*$";
@@ -347,7 +349,7 @@ public final class ClientInfo {
             if (!components[0].matches(DIGITS_REGEXP)) {
                 builder.withAppName(parseString(components[0]));    
             }
-            builder.withAppVersion(parseInteger(components[1])).build();
+            builder.withAppVersion(parseInteger(components[1]));
         } else if (components.length == 1) {
             // if it's a number, it's a version, otherwise it's the name.
             if (components[0].matches(DIGITS_REGEXP)) {
@@ -395,7 +397,9 @@ public final class ClientInfo {
     private static void parseSdkStanza(ClientInfo.Builder builder, String stanza) {
         String[] sdkComponents = stanza.split("/");
         if (sdkComponents.length == 2) {
-            builder.withSdkName(parseString(sdkComponents[0]));
+            if (!sdkComponents[0].matches(DIGITS_REGEXP)) {
+                builder.withSdkName(parseString(sdkComponents[0]));    
+            }
             builder.withSdkVersion(parseInteger(sdkComponents[1])).build();
         } else if (sdkComponents.length == 1) {
             if (sdkComponents[0].matches(DIGITS_REGEXP)) {
