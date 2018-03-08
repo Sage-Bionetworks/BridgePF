@@ -77,6 +77,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
+import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 import org.sagebionetworks.bridge.validators.StudyValidator;
@@ -269,8 +270,8 @@ public class StudyServiceMockTest {
         assertEquals(consentNotificationEmail, verificationData.get("email").textValue());
 
         // Verify sent email.
-        ArgumentCaptor<MimeTypeEmailProvider> emailProviderCaptor = ArgumentCaptor.forClass(
-                MimeTypeEmailProvider.class);
+        ArgumentCaptor<BasicEmailProvider> emailProviderCaptor = ArgumentCaptor.forClass(
+                BasicEmailProvider.class);
         verify(sendMailService).sendEmail(emailProviderCaptor.capture());
 
         MimeTypeEmail email = emailProviderCaptor.getValue().getMimeTypeEmail();
@@ -280,7 +281,8 @@ public class StudyServiceMockTest {
         assertTrue(body.contains("/vse?study="+ TEST_STUDY_ID + "&token=" +
                 VERIFICATION_TOKEN + "&type=consent_notification"));
         assertTrue(email.getSenderAddress().contains(SUPPORT_EMAIL));
-
+        assertEquals("1 day", emailProviderCaptor.getValue().getTokenMap().get("expirationPeriod"));
+        
         List<String> recipientList = email.getRecipientAddresses();
         assertEquals(1, recipientList.size());
         assertEquals(consentNotificationEmail, recipientList.get(0));

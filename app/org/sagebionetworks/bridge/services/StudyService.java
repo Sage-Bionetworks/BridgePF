@@ -770,7 +770,8 @@ public class StudyService {
 
         BasicEmailProvider provider = new BasicEmailProvider.Builder().withStudy(study).withEmailTemplate(template)
                 .withOverrideSenderEmail(bridgeSupportEmailPlain).withRecipientEmail(email).withToken(URL_TOKEN, url)
-                .withToken(SHORT_URL_TOKEN, shortUrl).build();
+                .withToken(SHORT_URL_TOKEN, shortUrl)
+                .withExpirationPeriod(VERIFY_STUDY_EMAIL_EXPIRE_IN_SECONDS).build();
         sendMailService.sendEmail(provider);
     }
 
