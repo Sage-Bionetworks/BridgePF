@@ -288,25 +288,49 @@ public final class ClientInfo {
      * - shouldn't be more than 3 slashes
      */
     private static boolean invalidFormat(String userAgent) {
-        int forwardSlash = 0;
-        int semicolon = 0;
-        int openParens = 0;
-        int closedParens = 0;
-        
+        // Format: a/b (c; d/e) f/g
+        //    : / ( /
+        // 1/ : ( /
+        // (  : ; / )      
+        // ;  : / )
+        // 2/ : )
+        // )  : /
+        // 3/ : 
+        char lastSeparator = 0;
+        int slashes = 0;
         for (int i=0; i < userAgent.length(); i++) {
-            char character = userAgent.charAt(i);
-            if ('/' == character) {
-                forwardSlash++;
-            } else if (';' == character) {
-                semicolon++;
-            } else if ('(' == character) {
-                openParens++;
-            } else if (')' == character) {
-                closedParens++;
+            char oneChar = userAgent.charAt(i);
+            
+            if (!inSet(oneChar, '(', ')', ';', '/')) {
+                continue;
+            }
+            if ((lastSeparator == 0 && !inSet(oneChar, '/', '(')) ||
+                (lastSeparator == '(' && !inSet(oneChar, ';', '/', ')')) ||
+                (lastSeparator == ';' && !inSet(oneChar, ')', '/')) ||
+                (lastSeparator == ')' && !inSet(oneChar, '/'))) {
+                return true;
+            } else if (lastSeparator == '/') {
+                ++slashes;
+                if (slashes == 1 && !inSet(oneChar, '(', '/', ')')) {
+                    return true;
+                } else if (slashes == 2 && !inSet(oneChar, ')', '/')) {
+                    return true;
+                } else if (slashes > 2) {
+                    return true;
+                }
+            }
+            lastSeparator = oneChar;
+        }
+        return false;
+    }
+    
+    private static boolean inSet(char character, char... set) {
+        for (char testCharacter : set) {
+            if (character == testCharacter) {
+                return true;
             }
         }
-        return (openParens > 1 || closedParens > 1 || openParens != closedParens || 
-                semicolon > 1 || semicolon > openParens || forwardSlash > 3);
+        return false;
     }
     
     private static void parseAppStanza(ClientInfo.Builder builder, String stanza) {
@@ -315,7 +339,9 @@ public final class ClientInfo {
         }
         String[] components = stanza.split("/");
         if (components.length == 2) {
-            builder.withAppName(parseString(components[0]));
+            if (!components[0].matches(DIGITS_REGEXP)) {
+                builder.withAppName(parseString(components[0]));    
+            }
             builder.withAppVersion(parseInteger(components[1])).build();
         } else if (components.length == 1) {
             // if it's a number, it's a version, otherwise it's the name.

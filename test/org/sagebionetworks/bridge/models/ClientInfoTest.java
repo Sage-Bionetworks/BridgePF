@@ -57,6 +57,8 @@ public class ClientInfoTest {
         assertClientInfo("(;iOS 10) SDK", null, null, null, "iPhone OS", "10", "SDK", null);
         assertClientInfo("/3 (;; iOS 10)", null, null, null, null, null, null, null);
         assertClientInfo("/app (iOS) 10", null, null, null, "iPhone OS", null, null, 10);
+        assertClientInfo("/app", null, null, null, null, null, null, null);
+        assertClientInfo("10//10", null, null, null, null, null, null, null);
         
         // Also try some error conditions...
         assertClientInfo("/ (; /) /", null, null, null, null, null, null, null);
@@ -64,6 +66,9 @@ public class ClientInfoTest {
         assertClientInfo("()", null, null, null, null, null, null, null);
         assertClientInfo(null, null, null, null, null, null, null, null);
         assertClientInfo("   \t", null, null, null, null, null, null, null);
+        assertClientInfo("(test) (tones)", null, null, null, null, null, null, null);
+        assertClientInfo("foo/bar d/e (c; a/b)", null, null, null, null, null, null, null);
+        assertClientInfo("(c/d; a/b)", null, null, null, null, null, null, null);
         
         // All the original test strings pass
         assertClientInfo("Unknown Client/14", "Unknown Client", 14, null, null, null, null, null);
