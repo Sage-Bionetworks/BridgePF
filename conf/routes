@@ -16,6 +16,7 @@ GET    /.well-known/apple-app-site-association @org.sagebionetworks.bridge.play.
 # Authentication
 POST   /v3/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signInV3
 POST   /v3/auth/signOut                 @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signOut
+POST   /v4/auth/signOut                 @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signOutV4
 POST   /v3/auth/reauth                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.reauthenticate
 POST   /v3/auth/requestResetPassword    @org.sagebionetworks.bridge.play.controllers.AuthenticationController.requestResetPassword
 POST   /v3/auth/resetPassword           @org.sagebionetworks.bridge.play.controllers.AuthenticationController.resetPassword
