@@ -16,7 +16,7 @@ public class ClientInfoTest {
     }
     
     @Test
-    public void aBunchOfTests() {
+    public void verifyParsing() {
         // One stanza is interpreted to be the application stanza.
         assertClientInfo("appName", "appName", null, null, null, null, null, null);
         assertClientInfo("appName/", "appName", null, null, null, null, null, null);
