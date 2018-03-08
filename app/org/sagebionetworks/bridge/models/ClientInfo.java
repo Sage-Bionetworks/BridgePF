@@ -313,13 +313,20 @@ public final class ClientInfo {
                 return true;
             } else if (lastSeparator == '/') {
                 ++slashes;
+                
+                if ((slashes == 1 && !inSet(oneChar, '(', '/', ')')) ||
+                    (slashes == 2 && !inSet(oneChar, ')', '/')) || 
+                    (slashes > 2)) {
+                    return true;
+                }
+                /*
                 if (slashes == 1 && !inSet(oneChar, '(', '/', ')')) {
                     return true;
                 } else if (slashes == 2 && !inSet(oneChar, ')', '/')) {
                     return true;
                 } else if (slashes > 2) {
                     return true;
-                }
+                }*/
             }
             // Basically once you have a device stanza and it's completed
             // we want to ensure you are looking for the last slash.
@@ -383,7 +390,7 @@ public final class ClientInfo {
         }
         if (components.length == 2) {
             builder.withOsName(parseString(components[0]));
-            builder.withOsVersion(parseString(components[1])).build();
+            builder.withOsVersion(parseString(components[1]));
         } else if (components.length == 1) {
             // if it's a number, it's a version, otherwise it's the name.
             if (components[0].trim().matches(SEMANTIC_VERSION_REGEXP)) {
@@ -400,7 +407,7 @@ public final class ClientInfo {
             if (!sdkComponents[0].matches(DIGITS_REGEXP)) {
                 builder.withSdkName(parseString(sdkComponents[0]));    
             }
-            builder.withSdkVersion(parseInteger(sdkComponents[1])).build();
+            builder.withSdkVersion(parseInteger(sdkComponents[1]));
         } else if (sdkComponents.length == 1) {
             if (sdkComponents[0].matches(DIGITS_REGEXP)) {
                 builder.withSdkVersion(parseInteger(sdkComponents[0]));

@@ -65,11 +65,13 @@ public class ClientInfoTest {
         assertClientInfo("10//10", null, null, null, null, null, null, null);
         assertClientInfo("10 10", null, 10, null, null, null, null, 10);
         assertClientInfo("/7 (Android/10) /5", null, 7, null, "Android", "10", null, 5);
+        assertClientInfo("1/2 3/4", null, 2, null, null, null, null, 4);
+        assertClientInfo("1/2", null, 2, null, null, null, null, null);
         assertClientInfo("app/3 (Device; /2.0.0) sdk/4", "app", 3, "Device", null, "2.0.0", "sdk", 4);
         assertClientInfo("AppName/1 (Device Name; iPhone OS) BridgeJavaSDK/3",
                 "AppName", 1, "Device Name", "iPhone OS", null, "BridgeJavaSDK", 3);
-        assertClientInfo("1/2 3/4", null, 2, null, null, null, null, 4);
-        assertClientInfo("1/2", null, 2, null, null, null, null, null);
+        assertClientInfo("appName (deviceName; osName/osVersion) sdkName", "appName", null, "deviceName", "osName",
+                "osVersion", "sdkName", null);
         
         // Also try some error conditions...
         assertClientInfo("/ (; /) /", null, null, null, null, null, null, null);
@@ -80,8 +82,6 @@ public class ClientInfoTest {
         assertClientInfo("(test) (tones)", null, null, null, null, null, null, null);
         assertClientInfo("foo/bar d/e (c; a/b)", null, null, null, null, null, null, null);
         assertClientInfo("(c/d; a/b)", null, null, null, null, null, null, null);
-        assertClientInfo("appName (deviceName; osName/osVersion) sdkName", "appName", null, "deviceName", "osName",
-                "osVersion", "sdkName", null);
         
         // All the original test strings pass
         assertClientInfo("Unknown Client/14", "Unknown Client", 14, null, null, null, null, null);
