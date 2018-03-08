@@ -60,6 +60,9 @@ public class ClientInfoTest {
         assertClientInfo("/app", null, null, null, null, null, null, null);
         assertClientInfo("10//10", null, null, null, null, null, null, null);
         assertClientInfo("/7 (Android/10) /5", null, 7, null, "Android", "10", null, 5);
+        assertClientInfo("app/3 (Device; /2.0.0) sdk/4", "app", 3, "Device", null, "2.0.0", "sdk", 4);
+        assertClientInfo("AppName/1 (Device Name; iPhone OS) BridgeJavaSDK/3",
+                "AppName", 1, "Device Name", "iPhone OS", null, "BridgeJavaSDK", 3);
         
         // Also try some error conditions...
         assertClientInfo("/ (; /) /", null, null, null, null, null, null, null);
