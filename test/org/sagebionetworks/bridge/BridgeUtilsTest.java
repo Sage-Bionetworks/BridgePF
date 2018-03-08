@@ -38,6 +38,7 @@ public class BridgeUtilsTest {
     public void secondsToPeriodString() {
         assertEquals("30 seconds", BridgeUtils.secondsToPeriodString(30));
         assertEquals("1 minute", BridgeUtils.secondsToPeriodString(60));
+        assertEquals("90 seconds", BridgeUtils.secondsToPeriodString(90));
         assertEquals("5 minutes", BridgeUtils.secondsToPeriodString(60*5));
         assertEquals("25 minutes", BridgeUtils.secondsToPeriodString(60*25));
         assertEquals("90 minutes", BridgeUtils.secondsToPeriodString(60*90));
