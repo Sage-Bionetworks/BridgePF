@@ -111,6 +111,10 @@ public class ClientInfoTest {
         assertClientInfo(
                 "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:58.0) Gecko/20100101 Firefox/58.0",
                 null, null, null, null, null, null, null);
+        // I made this up so it would break the parser.
+        assertClientInfo("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) Chrome/64.0.3282.186 Safari/537.36", 
+                null, null, null, null, null, null, null);
+
         
         // Never seen in the wild, but made to fail our parser (and now passes)
         assertClientInfo("appName; 10 (something/10/test)", null, null, null, null, null, null, null);

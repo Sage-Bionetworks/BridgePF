@@ -319,6 +319,9 @@ public final class ClientInfo {
                     return true;
                 }
             }
+            if (oneChar == ')') {
+                ++slashes;
+            }
             lastSeparator = oneChar;
         }
         return false;
