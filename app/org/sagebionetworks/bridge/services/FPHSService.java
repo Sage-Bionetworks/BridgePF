@@ -3,12 +3,10 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 
 import java.util.List;
-import java.util.Set;
 
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.FPHSExternalIdentifierDao;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
@@ -22,15 +20,15 @@ import org.springframework.stereotype.Component;
 public class FPHSService {
     
     private FPHSExternalIdentifierDao fphsDao;
-    private ParticipantOptionsService optionsService;
+    private AccountDao accountDao;
 
     @Autowired
     final void setFPHSExternalIdentifierDao(FPHSExternalIdentifierDao dao) {
         this.fphsDao = dao;
     }
     @Autowired
-    final void setParticipantOptionsService(ParticipantOptionsService options) {
-        this.optionsService = options;
+    final void setAccountDao(AccountDao accountDao) {
+        this.accountDao = accountDao;
     }
     
     public void verifyExternalIdentifier(ExternalIdentifier externalId) throws Exception {
@@ -52,11 +50,12 @@ public class FPHSService {
         }
         verifyExternalIdentifier(externalId);
         
-        Set<String> dataGroups = optionsService.getOptions(studyId, healthCode).getStringSet(DATA_GROUPS);
-        dataGroups.add("football_player");
-        optionsService.setString(studyId, healthCode, EXTERNAL_IDENTIFIER, externalId.getIdentifier());
-        optionsService.setStringSet(studyId, healthCode, DATA_GROUPS, dataGroups);
         fphsDao.registerExternalId(externalId);
+
+        accountDao.editAccount(studyId, healthCode, account -> {
+            account.getDataGroups().add("football_player");
+            account.setExternalId(externalId.getIdentifier());
+        });
     }
     
     /**

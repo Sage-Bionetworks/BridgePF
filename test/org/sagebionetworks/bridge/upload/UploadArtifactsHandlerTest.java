@@ -15,9 +15,9 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.services.HealthDataService;
 
@@ -88,7 +88,7 @@ public class UploadArtifactsHandlerTest {
         record.setUploadDate(LocalDate.parse("2015-11-18"));
         record.setUploadId(TEST_UPLOAD_ID);
         record.setUserExternalId("dummy-external-ID");
-        record.setUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS);
+        record.setUserSharingScope(SharingScope.SPONSORS_AND_PARTNERS);
         record.setUserDataGroups(TestConstants.USER_DATA_GROUPS);
         record.setVersion(42L);
         return record;

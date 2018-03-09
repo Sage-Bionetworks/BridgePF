@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dao;
 
 import java.util.Iterator;
+import java.util.function.Consumer;
 
 import org.joda.time.DateTime;
 
@@ -11,6 +12,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 
 /**
@@ -84,6 +86,11 @@ public interface AccountDao {
      * (constructAccount() is not sufficient).
      */
     void updateAccount(Account account, boolean allowIdentifierUpdates);
+    
+    /**
+     * Load, and if it exists, edit and save an account. 
+     */
+    void editAccount(StudyIdentifier studyId, String healthCode, Consumer<Account> accountEdits);
     
     /**
      * Get an account in the context of a study by the user's ID, email address, health code,

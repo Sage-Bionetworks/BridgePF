@@ -168,7 +168,8 @@ public class HibernateHelperTest {
     @Test
     public void update() {
         Object testObj = new Object();
-        helper.update(testObj);
+        Object received = helper.update(testObj);
+        assertSame(testObj, received);
         verify(mockSession).update(testObj);
     }
 

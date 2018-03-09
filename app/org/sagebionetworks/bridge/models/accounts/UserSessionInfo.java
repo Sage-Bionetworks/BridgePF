@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.config.Environment;
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 

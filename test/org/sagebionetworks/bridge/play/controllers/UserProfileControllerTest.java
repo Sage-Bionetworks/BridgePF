@@ -16,7 +16,6 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -27,16 +26,16 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
-import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -45,7 +44,6 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.play.controllers.UserProfileController;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ExternalIdService;
-import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -68,7 +66,7 @@ public class UserProfileControllerTest {
     private static final String HEALTH_CODE = "healthCode";
     
     @Mock
-    private ParticipantOptionsService optionsService;
+    private AccountDao accountDao;
     
     @Mock
     private ConsentService consentService;
@@ -84,6 +82,9 @@ public class UserProfileControllerTest {
     
     @Mock
     private ParticipantService participantService;
+    
+    @Mock
+    private Account account;
     
     @Captor
     private ArgumentCaptor<StudyParticipant> participantCaptor;
@@ -120,8 +121,8 @@ public class UserProfileControllerTest {
         viewCache.setCacheProvider(cacheProvider);
         
         controller = spy(new UserProfileController());
+        controller.setAccountDao(accountDao);
         controller.setStudyService(studyService);
-        controller.setParticipantOptionsService(optionsService);
         controller.setCacheProvider(cacheProvider);
         controller.setExternalIdService(externalIdService);
         controller.setParticipantService(participantService);
@@ -304,11 +305,8 @@ public class UserProfileControllerTest {
     @Test
     @SuppressWarnings("deprecation")
     public void canGetDataGroups() throws Exception {
-        Map<String,String> map = Maps.newHashMap();
-        map.put(DATA_GROUPS.name(), "group1,group2");
-        ParticipantOptionsLookup lookup = new ParticipantOptionsLookup(map);
-        
-        when(optionsService.getOptions(TestConstants.TEST_STUDY, HEALTH_CODE)).thenReturn(lookup);
+        when(account.getDataGroups()).thenReturn(Sets.newHashSet("group1","group2"));
+        when(accountDao.getAccount(any())).thenReturn(account);
         
         Result result = controller.getDataGroups();
         TestUtils.assertResult(result, 200);

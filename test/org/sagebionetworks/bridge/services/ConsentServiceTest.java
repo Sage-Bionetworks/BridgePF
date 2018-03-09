@@ -6,7 +6,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -27,14 +26,15 @@ import org.sagebionetworks.bridge.TestUserAdminHelper;
 import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -68,9 +68,6 @@ public class ConsentServiceTest {
 
     @Resource
     private StudyService studyService;
-
-    @Resource
-    private ParticipantOptionsService optionsService;
     
     @Resource
     private ParticipantService participantService;
@@ -157,17 +154,17 @@ public class ConsentServiceTest {
         long signedOn = signature.getSignedOn();
         
         // Before consent if you ask, no sharing
-        SharingScope scope = optionsService.getOptions(testUser.getStudyIdentifier(), testUser.getHealthCode())
-                .getEnum(SHARING_SCOPE, SharingScope.class);
-        assertEquals(SharingScope.NO_SHARING, scope);
+        AccountId accountId = AccountId.forHealthCode(testUser.getStudyIdentifier().getIdentifier(),
+                testUser.getHealthCode());
+        Account account = accountDao.getAccount(accountId);
+        assertEquals(SharingScope.NO_SHARING, account.getSharingScope());
         
         consentService.consentToResearch(testUser.getStudy(), defaultSubpopulation.getGuid(),
                 testUser.getStudyParticipant(), signature, SharingScope.ALL_QUALIFIED_RESEARCHERS, false);
         
         // Verify we just set the options
-        scope = optionsService.getOptions(testUser.getStudyIdentifier(), testUser.getHealthCode())
-                .getEnum(SHARING_SCOPE, SharingScope.class);
-        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, scope);
+        account = accountDao.getAccount(accountId);
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, account.getSharingScope());        
         
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         assertEquals(1, statuses.size());

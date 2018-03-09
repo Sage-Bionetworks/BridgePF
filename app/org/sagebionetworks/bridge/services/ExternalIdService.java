@@ -4,7 +4,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 
 import java.util.List;
 
@@ -13,12 +12,13 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.Config;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
-import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.ExternalIdsValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -33,7 +33,7 @@ public class ExternalIdService {
     
     private ExternalIdDao externalIdDao;
     
-    private ParticipantOptionsService optionsService;
+    private AccountDao accountDao;
     
     private ExternalIdsValidator validator;
     
@@ -43,8 +43,8 @@ public class ExternalIdService {
     }
     
     @Autowired
-    final void setParticipantOptionsService(ParticipantOptionsService optionsService) {
-        this.optionsService = optionsService;
+    final void setAccountDao(AccountDao accountDao) {
+        this.accountDao = accountDao;
     }
 
     @Autowired
@@ -84,23 +84,23 @@ public class ExternalIdService {
         checkNotNull(study);
         checkNotNull(healthCode);
         
-        if (study.isExternalIdValidationEnabled()) {
-            ParticipantOptionsLookup lookup = optionsService.getOptions(study.getStudyIdentifier(), healthCode);
-            String existingExternalId = lookup.getString(EXTERNAL_IDENTIFIER);
+        AccountId accountId = AccountId.forHealthCode(study.getIdentifier(), healthCode);
+        Account account = accountDao.getAccount(accountId);
+        if (account != null) {
+            if (study.isExternalIdValidationEnabled()) {
+                String existingExternalId = account.getExternalId();
 
-            if (isBlank(existingExternalId)) {
-                if (isNotBlank(externalIdentifier)) {
-                    externalIdDao.assignExternalId(study.getStudyIdentifier(), externalIdentifier, healthCode);
+                if (isBlank(existingExternalId)) {
+                    if (isNotBlank(externalIdentifier)) {
+                        externalIdDao.assignExternalId(study.getStudyIdentifier(), externalIdentifier, healthCode);
+                    }
+                } else if (!existingExternalId.equals(externalIdentifier)) {
+                    throw new BadRequestException(
+                            "External ID cannot be changed or removed after assignment.");
                 }
-            } else if (!existingExternalId.equals(externalIdentifier)) {
-                throw new BadRequestException(
-                        "External ID cannot be changed or removed after assignment.");
             }
-        }
-        try {
-            optionsService.setString(study.getStudyIdentifier(), healthCode, EXTERNAL_IDENTIFIER, externalIdentifier);    
-        } catch(EntityNotFoundException e) {
-            // For backwards compatibility, calling assignExternalId twice or before an account exists is not an error.
+            account.setExternalId(externalIdentifier);
+            accountDao.updateAccount(account, false);
         }
     }
     
@@ -110,7 +110,9 @@ public class ExternalIdService {
         checkArgument(isNotBlank(healthCode));
         
         externalIdDao.unassignExternalId(study.getStudyIdentifier(), externalIdentifier);
-        optionsService.setString(study.getStudyIdentifier(), healthCode, EXTERNAL_IDENTIFIER, null);
+        // NOTE: This is called before the account itself is deleted, so this is not necessary. Leave it in
+        // until we refactor the handling of external IDs.
+        accountDao.editAccount(study.getStudyIdentifier(), healthCode, account -> account.setExternalId(null));
     }
 
     public void deleteExternalIds(Study study, List<String> externalIdentifiers) {

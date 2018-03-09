@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.models.accounts;
 
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.JsonUtils;
 
