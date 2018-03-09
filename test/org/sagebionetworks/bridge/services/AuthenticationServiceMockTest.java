@@ -7,6 +7,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
@@ -493,18 +494,22 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void languagesArePersistedFromContext() {
+        // This specifically has to be a mock to easily mock the editAccount method on the DAO.
+        Account mockAccount = mock(Account.class);
+
         LinkedHashSet<String> languages = TestUtils.newLinkedHashSet("es","de");
         CriteriaContext context = new CriteriaContext.Builder().withLanguages(languages).withUserId(USER_ID)
                 .withStudyIdentifier(TestConstants.TEST_STUDY).build();
-        doReturn(account).when(accountDao).getAccount(any());
+        TestUtils.mockEditAccount(accountDao, mockAccount);
+        doReturn(mockAccount).when(accountDao).getAccount(any());
         
         // No languages.
-        StudyParticipant participant = new StudyParticipant.Builder().build();
-        doReturn(participant).when(participantService).getParticipant(study, account, false);
+        StudyParticipant participant = new StudyParticipant.Builder().withHealthCode("healthCode").build();
+        doReturn(participant).when(participantService).getParticipant(study, mockAccount, false);
         
         service.getSession(study, context);
         
-        verify(accountDao).updateAccount(account, false);
-        assertEquals(languages, account.getLanguages());
+        verify(accountDao).editAccount(eq(TestConstants.TEST_STUDY), eq("healthCode"), any());
+        verify(mockAccount).setLanguages(languages);
     }
 }

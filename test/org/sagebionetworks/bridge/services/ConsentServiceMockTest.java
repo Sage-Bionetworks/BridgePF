@@ -52,13 +52,16 @@ import org.sagebionetworks.bridge.services.email.WithdrawConsentEmailProvider;
 @RunWith(MockitoJUnitRunner.class)
 @SuppressWarnings("ConstantConditions")
 public class ConsentServiceMockTest {
+    private static final Withdrawal WITHDRAWAL = new Withdrawal("For reasons.");
     private static final String EXTERNAL_ID = "external-id";
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("GUID");
     private static final long SIGNED_ON = 1446044925219L;
+    private static final long WITHDREW_ON = SIGNED_ON + 10000;
     private static final long CONSENT_CREATED_ON = 1446044814108L;
     private static final String ID = "user-id";
     private static final String HEALTH_CODE = "health-code";
     private static final String EMAIL = "email@email.com";
+    private static final SubpopulationGuid SECOND_SUBPOP = SubpopulationGuid.create("anotherSubpop");
     
     private ConsentService consentService;
 
@@ -235,7 +238,7 @@ public class ConsentServiceMockTest {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(withdrawnConsent, consentSignature));
 
         // Execute and validate.
-        consentService.withdrawConsent(study, SUBPOP_GUID, participant, context, new Withdrawal("For reasons."),
+        consentService.withdrawConsent(study, SUBPOP_GUID, participant, context, WITHDRAWAL,
                 SIGNED_ON + 10000);
         
         ArgumentCaptor<Account> captor = ArgumentCaptor.forClass(Account.class);
@@ -278,7 +281,7 @@ public class ConsentServiceMockTest {
     @Test
     public void withdrawConsentWithAccount() throws Exception {
         setupWithdrawTest();
-        consentService.withdrawConsent(study, SUBPOP_GUID, participant, context, new Withdrawal("For reasons."), SIGNED_ON);
+        consentService.withdrawConsent(study, SUBPOP_GUID, participant, context, WITHDRAWAL, SIGNED_ON);
         
         verify(accountDao).updateAccount(account, false);
         verify(sendMailService).sendEmail(any(WithdrawConsentEmailProvider.class));
@@ -291,7 +294,7 @@ public class ConsentServiceMockTest {
         setupWithdrawTest();
         TestUtils.mockEditAccount(accountDao, account);
         
-        Withdrawal withdrawal = new Withdrawal("For reasons.");
+        Withdrawal withdrawal = WITHDRAWAL;
         consentService.withdrawAllConsents(study, participant, context, withdrawal, SIGNED_ON);
 
         ArgumentCaptor<Account> accountCaptor = ArgumentCaptor.forClass(Account.class);
@@ -329,7 +332,7 @@ public class ConsentServiceMockTest {
         doReturn(account).when(accountDao).getAccount(AccountId.forId(study.getIdentifier(), participant.getId()));
 
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
-        Withdrawal withdrawal = new Withdrawal("For reasons.");
+        Withdrawal withdrawal = WITHDRAWAL;
         
         consentService.withdrawAllConsents(study, participant, context, withdrawal, SIGNED_ON);
 
@@ -351,7 +354,7 @@ public class ConsentServiceMockTest {
     public void accountFailureConsistent() {
         when(accountDao.getAccount(any())).thenThrow(new BridgeServiceException("Something bad happend", 500));
         try {
-            consentService.withdrawConsent(study, SUBPOP_GUID, participant, context, new Withdrawal("For reasons."),
+            consentService.withdrawConsent(study, SUBPOP_GUID, participant, context, WITHDRAWAL,
                     DateTime.now().getMillis());
             fail("Should have thrown an exception");
         } catch(BridgeServiceException e) {
@@ -400,7 +403,7 @@ public class ConsentServiceMockTest {
         setupWithdrawTest();
         study.setConsentNotificationEmailVerified(null);
         consentService.withdrawConsent(study, SUBPOP_GUID, participant, context,
-                new Withdrawal("For reasons."), SIGNED_ON);
+                WITHDRAWAL, SIGNED_ON);
 
         // For backwards-compatibility, verified=null means the email is verified.
         verify(sendMailService).sendEmail(any(WithdrawConsentEmailProvider.class));
@@ -411,7 +414,7 @@ public class ConsentServiceMockTest {
         setupWithdrawTest();
         study.setConsentNotificationEmailVerified(false);
         consentService.withdrawConsent(study, SUBPOP_GUID, participant, context,
-                new Withdrawal("For reasons."), SIGNED_ON);
+                WITHDRAWAL, SIGNED_ON);
 
         // verified=false means the email is never sent.
         verify(sendMailService, never()).sendEmail(any());
@@ -421,7 +424,7 @@ public class ConsentServiceMockTest {
     public void withdrawAllWithNotificationEmailVerifiedNull() throws Exception {
         setupWithdrawTest();
         study.setConsentNotificationEmailVerified(null);
-        consentService.withdrawAllConsents(study, participant, context, new Withdrawal("For reasons."),
+        consentService.withdrawAllConsents(study, participant, context, WITHDRAWAL,
                 SIGNED_ON);
 
         // For backwards-compatibility, verified=null means the email is verified.
@@ -432,13 +435,93 @@ public class ConsentServiceMockTest {
     public void withdrawAllWithNotificationEmailVerifiedFalse() throws Exception {
         setupWithdrawTest();
         study.setConsentNotificationEmailVerified(false);
-        consentService.withdrawAllConsents(study, participant, context, new Withdrawal("For reasons."),
+        consentService.withdrawAllConsents(study, participant, context, WITHDRAWAL,
                 SIGNED_ON);
 
         // verified=false means the email is never sent.
         verify(sendMailService, never()).sendEmail(any());
     }
+    
+    @Test
+    public void withdrawFromOneRequiredConsentSetsAccountToNoSharing() throws Exception {
+        setupWithdrawTest(true, false);
+        
+        consentService.withdrawConsent(study, SUBPOP_GUID, participant, context, WITHDRAWAL, WITHDREW_ON);
+        
+        assertEquals(SharingScope.NO_SHARING, account.getSharingScope());
+        assertEquals(new Long(WITHDREW_ON), account.getConsentSignatureHistory(SUBPOP_GUID).get(0).getWithdrewOn());
+        assertNull(account.getConsentSignatureHistory(SECOND_SUBPOP).get(0).getWithdrewOn());
+    }
 
+    @Test
+    public void withdrawFromOneOfTwoRequiredConsentsSetsAcountToNoSharing() throws Exception {
+        setupWithdrawTest(true, true);
+        
+        consentService.withdrawConsent(study, SUBPOP_GUID, participant, context, WITHDRAWAL, WITHDREW_ON);
+        
+        // You must sign all required consents to sign.
+        assertEquals(SharingScope.NO_SHARING, account.getSharingScope());
+        assertEquals(new Long(WITHDREW_ON), account.getConsentSignatureHistory(SUBPOP_GUID).get(0).getWithdrewOn());
+        assertNull(account.getConsentSignatureHistory(SECOND_SUBPOP).get(0).getWithdrewOn());
+    }
+    
+    @Test
+    public void withdrawFromOneOptionalConsentDoesNotChangeSharing() throws Exception {
+        setupWithdrawTest(false, true);
+        
+        consentService.withdrawConsent(study, SUBPOP_GUID, participant, context, WITHDRAWAL, WITHDREW_ON);
+        
+        // Not changed because all the required consents are still signed.
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, account.getSharingScope());
+        
+        assertEquals(new Long(WITHDREW_ON), account.getConsentSignatureHistory(SUBPOP_GUID).get(0).getWithdrewOn());
+        assertNull(account.getConsentSignatureHistory(SECOND_SUBPOP).get(0).getWithdrewOn());
+    }
+    
+    @Test
+    public void withdrawFromOneOfTwoOptionalConsentsDoesNotChangeSharing() throws Exception {
+        setupWithdrawTest(false, false);
+        
+        consentService.withdrawConsent(study, SUBPOP_GUID, participant, context, WITHDRAWAL, WITHDREW_ON);
+        
+        // Not changed because all the required consents are still signed.
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, account.getSharingScope());
+        
+        assertEquals(new Long(WITHDREW_ON), account.getConsentSignatureHistory(SUBPOP_GUID).get(0).getWithdrewOn());
+        assertNull(account.getConsentSignatureHistory(SECOND_SUBPOP).get(0).getWithdrewOn());
+    }
+    
+    private void setupWithdrawTest(boolean subpop1Required, boolean subpop2Required) {
+        // two consents, withdrawing one does not turn sharing entirely off.
+        account.setEmail(EMAIL);
+        account.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
+        
+        Subpopulation subpop1 = Subpopulation.create();
+        subpop1.setName(SUBPOP_GUID.getGuid());
+        subpop1.setGuid(SUBPOP_GUID);
+        subpop1.setRequired(subpop1Required);
+        
+        Subpopulation subpop2 = Subpopulation.create();
+        subpop2.setName(SECOND_SUBPOP.getGuid());
+        subpop2.setGuid(SECOND_SUBPOP);
+        subpop2.setRequired(subpop2Required);
+        
+        doReturn(participant.getHealthCode()).when(account).getHealthCode();
+        doReturn(account).when(accountDao).getAccount(AccountId.forId(study.getIdentifier(), participant.getId()));
+        doReturn(ImmutableList.of(subpop1, subpop2)).when(subpopService).getSubpopulationsForUser(any());
+        
+        ConsentSignature consentSignature = new ConsentSignature.Builder().withName("Test User")
+                .withBirthdate("1990-01-01").withSignedOn(SIGNED_ON).build();
+        List<ConsentSignature> consents = ImmutableList.of(consentSignature);
+        
+        ConsentSignature secondConsentSignature = new ConsentSignature.Builder().withName("Test User")
+                .withBirthdate("1990-01-01").withSignedOn(SIGNED_ON).build();
+        List<ConsentSignature> secondConsents = ImmutableList.of(secondConsentSignature);
+        
+        account.setConsentSignatureHistory(SUBPOP_GUID, consents);
+        account.setConsentSignatureHistory(SECOND_SUBPOP, secondConsents);
+    }
+    
     private void setupWithdrawTest() {
         account.setEmail(EMAIL);
 

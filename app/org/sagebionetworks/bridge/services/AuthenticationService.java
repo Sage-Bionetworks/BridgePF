@@ -298,8 +298,10 @@ public class AuthenticationService {
         if (participant.getLanguages().isEmpty() && !context.getLanguages().isEmpty()) {
             participant = new StudyParticipant.Builder().copyOf(participant)
                     .withLanguages(context.getLanguages()).build();
-            account.setLanguages(context.getLanguages());
-            accountDao.updateAccount(account, false);
+            
+            // Note that the context does not have the healthCode, you must use the participant
+            accountDao.editAccount(study.getStudyIdentifier(), participant.getHealthCode(),
+                    accountToEdit -> accountToEdit.setLanguages(context.getLanguages()));
         }
         
         UserSession session = new UserSession(participant);
