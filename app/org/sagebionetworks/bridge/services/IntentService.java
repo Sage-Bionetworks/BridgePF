@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.validators.IntentToParticipateValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,8 @@ import com.google.common.collect.Iterables;
 @Component
 public class IntentService {
 
+    private static final String URL_KEY = "url";
+    
     /** Hold on to the intent for 4 hours. */
     private static final int EXPIRATION_IN_SECONDS = 4 * 60 * 60;
     
@@ -95,8 +98,15 @@ public class IntentService {
             
             // send an app store link to download the app, if we have something to send.
             if (!study.getInstallLinks().isEmpty()) {
-                String message = getInstallLink(intent.getOsName(), study.getInstallLinks());
-                notificationsService.sendSMSMessage(study, intent.getPhone(), message);
+                String url = getInstallLink(intent.getOsName(), study.getInstallLinks());
+                
+                SmsMessageProvider provider = new SmsMessageProvider.Builder()
+                        .withStudy(study)
+                        .withSmsTemplate(study.getAppInstallLinkSmsTemplate())
+                        .withPhone(intent.getPhone())
+                        .withExpirationPeriod(EXPIRATION_IN_SECONDS)
+                        .withToken(URL_KEY, url).build();
+                notificationsService.sendSMSMessage(provider);
             }
         }
     }
@@ -125,15 +135,15 @@ public class IntentService {
     }
 
     protected String getInstallLink(String osName, Map<String,String> installLinks) {
-        String message = installLinks.get(osName);
+        String installLink = installLinks.get(osName);
         // OS name wasn't submitted or it's wrong, use the universal link
-        if (message == null) {
-            message = installLinks.get(OperatingSystem.UNIVERSAL);
+        if (installLink == null) {
+            installLink = installLinks.get(OperatingSystem.UNIVERSAL);
         }
         // Don't have a link named "Universal" so just find ANYTHING
-        if (message == null && !installLinks.isEmpty()) {
-            message = Iterables.getFirst(installLinks.values(), null);
+        if (installLink == null && !installLinks.isEmpty()) {
+            installLink = Iterables.getFirst(installLinks.values(), null);
         }
-        return message;
+        return installLink;
     }
 }

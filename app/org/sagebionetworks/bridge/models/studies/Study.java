@@ -267,6 +267,40 @@ public interface Study extends BridgeEntity, StudyIdentifier {
      */
     EmailTemplate getAccountExistsTemplate();
     void setAccountExistsTemplate(EmailTemplate template);
+        
+    /**
+     * The template for an SMS message sent to a user that triggers the reset password workflow, 
+     * on an account that only has a phone number.
+     */
+    SmsTemplate getResetPasswordSmsTemplate();
+    void setResetPasswordSmsTemplate(SmsTemplate template);
+    
+    /**
+     * The template for the SMS message sent to a user as part of a sign in via phone workflow.
+     * @return
+     */
+    SmsTemplate getPhoneSignInSmsTemplate();
+    void setPhoneSignInSmsTemplate(SmsTemplate template);
+    
+    /**
+     * The template for the SMS message sent as part of the workflow supported by the intent to 
+     * participate API (which will send a link to install the app via the provided phone number).
+     */
+    SmsTemplate getAppInstallLinkSmsTemplate();
+    void setAppInstallLinkSmsTemplate(SmsTemplate template);
+    
+    /**
+     * The template for the SMS message sent to verify and account's phone number.
+     */
+    SmsTemplate getVerifyPhoneSmsTemplate();
+    void setVerifyPhoneSmsTemplate(SmsTemplate template);
+    
+    /**
+     * The template for the SMS message sent as part of the workflow when a user tries to sign up 
+     * for a study where they already have an account.
+     */
+    SmsTemplate getAccountExistsSmsTemplate();
+    void setAccountExistsSmsTemplate(SmsTemplate template);
     
     /**
      * Is this study active? Currently not in use, a de-activated study will be hidden from the 

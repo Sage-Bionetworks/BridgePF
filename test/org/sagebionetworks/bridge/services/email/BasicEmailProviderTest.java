@@ -27,7 +27,7 @@ public class BasicEmailProviderTest {
 
         EmailTemplate template = new EmailTemplate("Subject ${url}", 
             "${studyName} ${studyShortName} ${studyId} ${sponsorName} ${supportEmail} "+
-            "${technicalEmail} ${consentEmail} ${url}", MimeType.HTML);
+            "${technicalEmail} ${consentEmail} ${url} ${expirationPeriod}", MimeType.HTML); 
         
         // Create
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
@@ -35,6 +35,7 @@ public class BasicEmailProviderTest {
             .withRecipientEmail("recipient@recipient.com")
             .withRecipientEmail("recipient2@recipient.com")
             .withEmailTemplate(template)
+            .withExpirationPeriod(60*60)
             .withToken("url", "some-url").build();
 
         // Check provider attributes
@@ -49,7 +50,7 @@ public class BasicEmailProviderTest {
         MimeBodyPart body = email.getMessageParts().get(0);
         
         String bodyString = (String)body.getContent();
-        assertEquals("Name ShortName id SponsorName support@email.com tech@email.com consent@email.com some-url", 
+        assertEquals("Name ShortName id SponsorName support@email.com tech@email.com consent@email.com some-url 1 hour", 
                 bodyString);
     }
 

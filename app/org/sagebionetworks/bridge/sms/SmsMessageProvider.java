@@ -1,0 +1,104 @@
+package org.sagebionetworks.bridge.sms;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.models.accounts.Phone;
+import org.sagebionetworks.bridge.models.studies.SmsTemplate;
+import org.sagebionetworks.bridge.models.studies.Study;
+
+import com.amazonaws.services.sns.model.MessageAttributeValue;
+import com.amazonaws.services.sns.model.PublishRequest;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
+
+public class SmsMessageProvider {
+    private final Study study;
+    private final Map<String,String> tokenMap;
+    private final Phone phone;
+    private final SmsTemplate template;
+    
+    private SmsMessageProvider(Study study, SmsTemplate template, Phone phone, Map<String, String> tokenMap) {
+        this.study = study;
+        this.template = template;
+        this.phone = phone;
+        this.tokenMap = tokenMap;
+    }
+
+    public Study getStudy() {
+        return study;
+    }
+    public SmsTemplate getTemplate() {
+        return template;
+    }
+    public Map<String,String> getTokenMap() {
+        return ImmutableMap.copyOf(tokenMap);
+    }
+    public Phone getPhone() {
+        return phone;
+    }
+    
+    public PublishRequest getSmsRequest() {
+        String studyShortName = StringUtils.isBlank(study.getShortName()) ? "Bridge" : study.getShortName();
+
+        tokenMap.putAll(BridgeUtils.studyTemplateVariables(getStudy()));
+        tokenMap.put("host", BridgeConfigFactory.getConfig().getHostnameWithPostfix("ws"));
+        tokenMap.put("studyShortName", studyShortName);
+
+        Map<String, MessageAttributeValue> smsAttributes = Maps.newHashMap();
+        smsAttributes.put(BridgeConstants.SMS_TYPE, attribute(BridgeConstants.SMS_TYPE_TRANSACTIONAL));
+        smsAttributes.put(BridgeConstants.SENDER_ID, attribute(studyShortName));
+        // Costs seem too low to worry about this, but if need be, this is how we'd cap it.
+        // smsAttributes.put("AWS.SNS.SMS.MaxPrice", attribute("0.50")); max price set to $.50
+
+        String formattedMessage = BridgeUtils.resolveTemplate(template.getMessage(), tokenMap);
+        return new PublishRequest()
+                .withMessage(formattedMessage.trim())
+                .withPhoneNumber(phone.getNumber())
+                .withMessageAttributes(smsAttributes);
+    }
+    
+    private MessageAttributeValue attribute(String value) {
+        return new MessageAttributeValue().withStringValue(value).withDataType("String");
+    }
+    
+    public static class Builder {
+        private Study study;
+        private Map<String,String> tokenMap = Maps.newHashMap();
+        private Phone phone;
+        private SmsTemplate template;
+
+        public Builder withStudy(Study study) {
+            this.study = study;
+            return this;
+        }
+        public Builder withSmsTemplate(SmsTemplate template) {
+            this.template = template;
+            return this;
+        }
+        public Builder withToken(String name, String value) {
+            tokenMap.put(name, value);
+            return this;
+        }
+        public Builder withPhone(Phone phone) {
+            this.phone = phone;
+            return this;
+        }
+        public Builder withExpirationPeriod(int expireInSeconds) {
+            withToken(BridgeConstants.EXPIRATION_PERIOD_KEY, BridgeUtils.secondsToPeriodString(expireInSeconds));
+            return this;
+        }
+        public SmsMessageProvider build() {
+            checkNotNull(study);
+            checkNotNull(template);
+            checkNotNull(phone);
+
+            return new SmsMessageProvider(study, template, phone, tokenMap);
+        }
+    }
+}

@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -27,10 +28,12 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
+import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -72,6 +75,9 @@ public class IntentServiceTest {
     @Captor
     ArgumentCaptor<IntentToParticipate> intentCaptor;
     
+    @Captor
+    ArgumentCaptor<SmsMessageProvider> smsMessageProviderCaptor;
+    
     @Before
     public void before() {
         service = new IntentService();
@@ -92,6 +98,7 @@ public class IntentServiceTest {
         
         when(mockStudy.getIdentifier()).thenReturn("testStudy");
         when(mockStudy.getInstallLinks()).thenReturn(installLinks);
+        when(mockStudy.getAppInstallLinkSmsTemplate()).thenReturn(new SmsTemplate("this-is-a-link"));
         when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
         
         String cacheKey = "subpopGuid:"+TestConstants.PHONE.getNumber()+":testStudy:itp";
@@ -104,7 +111,12 @@ public class IntentServiceTest {
         verify(mockCacheProvider).setObject(stringCaptor.capture(), eq(intent), eq(4 * 60 * 60));
         assertEquals(cacheKey, stringCaptor.getValue());
         
-        verify(mockNotificationsService).sendSMSMessage(mockStudy, intent.getPhone(), "this-is-a-link");
+        verify(mockNotificationsService).sendSMSMessage(smsMessageProviderCaptor.capture());
+        
+        SmsMessageProvider provider = smsMessageProviderCaptor.getValue();
+        assertEquals(mockStudy, provider.getStudy());
+        assertEquals(intent.getPhone(), provider.getPhone());
+        assertEquals("this-is-a-link", provider.getSmsRequest().getMessage());
     }
     
     @Test(expected = InvalidEntityException.class)
@@ -134,7 +146,7 @@ public class IntentServiceTest {
         assertEquals(cacheKey, stringCaptor.getValue());
         
         // But we don't send a message because installLinks map is empty
-        verify(mockNotificationsService, never()).sendSMSMessage(mockStudy, intent.getPhone(), "this-is-a-link");
+        verify(mockNotificationsService, never()).sendSMSMessage(any());
     }
     
     @Test
@@ -159,7 +171,7 @@ public class IntentServiceTest {
         
         // These are not called.
         verify(mockCacheProvider, never()).setObject(cacheKey, intent, (4 * 60 * 60));
-        verify(mockNotificationsService, never()).sendSMSMessage(mockStudy, intent.getPhone(), "this-is-a-link");
+        verify(mockNotificationsService, never()).sendSMSMessage(any());
     }
     
     @Test

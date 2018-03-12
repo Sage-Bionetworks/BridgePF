@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
+import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 
@@ -118,18 +119,24 @@ public class StudyValidator implements Validator {
         if (study.getAccountLimit() < 0) {
             errors.rejectValue("accountLimit", "must be zero (no limit set) or higher");
         }
-        validateTemplate(errors, study.getVerifyEmailTemplate(), "verifyEmailTemplate", "${url}", "${shortUrl}");
-        validateTemplate(errors, study.getResetPasswordTemplate(), "resetPasswordTemplate", "${url}", "${shortUrl}");
+        validateEmailTemplate(errors, study.getVerifyEmailTemplate(), "verifyEmailTemplate", "${url}", "${shortUrl}");
+        validateEmailTemplate(errors, study.getResetPasswordTemplate(), "resetPasswordTemplate", "${url}", "${shortUrl}");
         // Existing studies don't have the template, we use a default template. Okay to be missing.
         if (study.getEmailSignInTemplate() != null) {
-            validateTemplate(errors, study.getEmailSignInTemplate(), "emailSignInTemplate", "${url}", "${shortUrl}",
+            validateEmailTemplate(errors, study.getEmailSignInTemplate(), "emailSignInTemplate", "${url}", "${shortUrl}",
                     "${token}");
         }
         if (study.getAccountExistsTemplate() != null) {
-            validateTemplate(errors, study.getAccountExistsTemplate(), "accountExistsTemplate", "${url}",
+            validateEmailTemplate(errors, study.getAccountExistsTemplate(), "accountExistsTemplate", "${url}",
                     "${shortUrl}", "${emailSignInUrl}", "${resetPasswordUrl}", 
                     "${shortEmailSignInUrl}", "${shortResetPasswordUrl}");
         }
+        
+        validateSmsTemplate(errors, study.getResetPasswordSmsTemplate(), "resetPasswordSmsTemplate", "${url}");
+        validateSmsTemplate(errors, study.getPhoneSignInSmsTemplate(), "phoneSignInSmsTemplate", "${token}");
+        validateSmsTemplate(errors, study.getAppInstallLinkSmsTemplate(), "appInstallLinkSmsTemplate", "${url}"); // TODO
+        validateSmsTemplate(errors, study.getVerifyPhoneSmsTemplate(), "verifyPhoneSmsTemplate", "${token}");
+        validateSmsTemplate(errors, study.getAccountExistsSmsTemplate(), "accountExistsSmsTemplate", "${token}", "${resetPasswordUrl}");
         
         for (String userProfileAttribute : study.getUserProfileAttributes()) {
             if (RESERVED_ATTR_NAMES.contains(userProfileAttribute)) {
@@ -271,16 +278,16 @@ public class StudyValidator implements Validator {
         }
     }
     
-    private void validateTemplate(Errors errors, EmailTemplate template, String fieldName, String... templateVariables) {
+    private void validateEmailTemplate(Errors errors, EmailTemplate template, String fieldName, String... templateVariables) {
         if (template == null) {
             errors.rejectValue(fieldName, "is required");
         } else {
             errors.pushNestedPath(fieldName);
             if (StringUtils.isBlank(template.getSubject())) {
-                errors.rejectValue("subject", "is required");
+                errors.rejectValue("subject", "cannot be blank");
             }
             if (StringUtils.isBlank(template.getBody())) {
-                errors.rejectValue("body", "is required");
+                errors.rejectValue("body", "cannot be blank");
             } else {
                 boolean missingTemplateVariable = true;
                 for (int i=0; i < templateVariables.length; i++) {
@@ -291,6 +298,32 @@ public class StudyValidator implements Validator {
                 }
                 if (missingTemplateVariable) {
                     errors.rejectValue("body", "must contain one of these template variables: "
+                            + BridgeUtils.COMMA_SPACE_JOINER.join(templateVariables));
+                }
+            }
+            errors.popNestedPath();
+        }        
+    }
+    
+    private void validateSmsTemplate(Errors errors, SmsTemplate template, String fieldName, String... templateVariables) {
+        if (template != null) {
+            errors.pushNestedPath(fieldName);
+            // This is crude. Once template variables are substituted, these messages might be too long. Right now
+            // we're doing a better calculation in the study manager
+            if (StringUtils.isBlank(template.getMessage())) {
+                errors.rejectValue("message", "cannot be blank");
+            } else if (template.getMessage().length() > 160) {
+                errors.rejectValue("message", "cannot be more than 160 characters");
+            } else {
+                boolean missingTemplateVariable = true;
+                for (int i=0; i < templateVariables.length; i++) {
+                    if (template.getMessage().contains(templateVariables[i])) {
+                        missingTemplateVariable = false;
+                        break;
+                    }
+                }
+                if (missingTemplateVariable) {
+                    errors.rejectValue("message", "must contain one of these template variables: "
                             + BridgeUtils.COMMA_SPACE_JOINER.join(templateVariables));
                 }
             }

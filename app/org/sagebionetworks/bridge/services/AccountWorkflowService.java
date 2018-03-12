@@ -36,11 +36,13 @@ import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.JedisTransaction;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
+import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -264,9 +266,7 @@ public class AccountWorkflowService {
         if (account.getEmail() != null && account.getEmailVerified()) {
             sendPasswordResetRelatedEmail(study, account.getEmail(), true, study.getAccountExistsTemplate());    
         } else if (account.getPhone() != null && account.getPhoneVerified()) {
-            String appName = (study.getShortName() != null) ? study.getShortName() : "Bridge";
-            String message = "Account for " + appName + " already exists. Reset password: ";
-            sendPasswordResetRelatedSMS(study, account.getPhone(), message);
+            sendPasswordResetRelatedSMS(study, account.getPhone(), true, study.getAccountExistsSmsTemplate());
         }
     }
     
@@ -285,9 +285,7 @@ public class AccountWorkflowService {
             if (account.getEmail() != null && account.getEmailVerified()) {
                 sendPasswordResetRelatedEmail(study, account.getEmail(), false, study.getResetPasswordTemplate());    
             } else if (account.getPhone() != null && account.getPhoneVerified()) {
-                String appName = (study.getShortName() != null) ? study.getShortName() : "Bridge";
-                String message = "Reset " + appName + " password: ";
-                sendPasswordResetRelatedSMS(study, account.getPhone(), message);
+                sendPasswordResetRelatedSMS(study, account.getPhone(), false, study.getResetPasswordSmsTemplate());
             }
         }
     }
@@ -333,14 +331,32 @@ public class AccountWorkflowService {
         sendMailService.sendEmail(builder.build());
     }
     
-    private void sendPasswordResetRelatedSMS(Study study, Phone phone, String message) {
+    private void sendPasswordResetRelatedSMS(Study study, Phone phone, boolean includePhoneSignIn, SmsTemplate template) {
         String sptoken = getNextToken();
         String cacheKey = sptoken + ":phone:" + study.getIdentifier();
         cacheProvider.setObject(cacheKey, getPhoneString(phone), EXPIRE_IN_SECONDS);
         
         String url = getShortResetPasswordURL(study, sptoken);
 
-        notificationsService.sendSMSMessage(study.getStudyIdentifier(), phone, message + url);
+        SmsMessageProvider.Builder builder = new SmsMessageProvider.Builder();
+        builder.withSmsTemplate(template);
+        builder.withStudy(study);
+        builder.withPhone(phone);
+        builder.withExpirationPeriod(EXPIRE_IN_SECONDS);
+        builder.withToken(RESET_PASSWORD_URL_KEY, url);
+        builder.withToken(URL_KEY, url);
+        
+        if (includePhoneSignIn /*&& study.isEmailSignInEnabled()*/) {
+            SignIn signIn = new SignIn.Builder().withPhone(phone).withStudy(study.getIdentifier()).build();
+            requestChannelSignIn(PHONE, PHONE_SIGNIN_REQUEST, PHONE_CACHE_KEY_FUNC, phoneSignInRequestInMillis,
+                signIn, false, this::getNextToken, (theStudy, token) -> {
+                    String formattedToken = token.substring(0,3) + "-" + token.substring(3,6);
+                    // TODO: This expiration overwrites the expiration of the reset password link!
+                    builder.withToken(TOKEN_KEY, formattedToken);
+                    builder.withExpirationPeriod(SESSION_SIGNIN_EXPIRE_IN_SECONDS);
+                });
+        }
+        notificationsService.sendSMSMessage(builder.build());
     }
 
     /**
@@ -351,7 +367,7 @@ public class AccountWorkflowService {
     public void resetPassword(PasswordReset passwordReset) {
         checkNotNull(passwordReset);
         
-        // This pathway is unusual as the account may have an email address or a phone number, so test for both.
+        // This pathway is unusual as the token may have been sent via email or phone, so test for both.
         String emailCacheKey = passwordReset.getSptoken() + ":" + passwordReset.getStudyIdentifier();
         String phoneCacheKey = passwordReset.getSptoken() + ":phone:" + passwordReset.getStudyIdentifier();
         
@@ -388,10 +404,14 @@ public class AccountWorkflowService {
             // Put a dash in the token so it's easier to enter into the UI. All this should
             // eventually come from a template
             String formattedToken = token.substring(0,3) + "-" + token.substring(3,6); 
-            String appName = (study.getShortName() != null) ? study.getShortName() : "Bridge";
-            String message = "Enter " + formattedToken + " to sign in to " + appName;
             
-            notificationsService.sendSMSMessage(study.getStudyIdentifier(), signIn.getPhone(), message);
+            SmsMessageProvider provider = new SmsMessageProvider.Builder()
+                    .withStudy(study)
+                    .withSmsTemplate(study.getPhoneSignInSmsTemplate())
+                    .withPhone(signIn.getPhone())
+                    .withExpirationPeriod(SESSION_SIGNIN_EXPIRE_IN_SECONDS)
+                    .withToken(TOKEN_KEY, formattedToken).build();
+            notificationsService.sendSMSMessage(provider);
         });
     }
     

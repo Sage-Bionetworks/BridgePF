@@ -8,6 +8,7 @@ import java.util.Set;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeBodyPart;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
@@ -19,8 +20,6 @@ import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 
 public class BasicEmailProvider extends MimeTypeEmailProvider {
-    private static final String EXPIRATION_PERIOD_KEY = "expirationPeriod";
-    
     private final String overrideSenderEmail;
     private final Set<String> recipientEmails;
     private final Map<String,String> tokenMap;
@@ -117,7 +116,7 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
             return this;
         }
         public Builder withExpirationPeriod(int expireInSeconds) {
-            withToken(EXPIRATION_PERIOD_KEY, BridgeUtils.secondsToPeriodString(expireInSeconds));
+            withToken(BridgeConstants.EXPIRATION_PERIOD_KEY, BridgeUtils.secondsToPeriodString(expireInSeconds));
             return this;
         }
         public BasicEmailProvider build() {

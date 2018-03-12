@@ -95,12 +95,23 @@ public class BridgeConstants {
     
     public static final Set<Roles> NO_CALLER_ROLES = ImmutableSet.of();
     
+    public static final String EXPIRATION_PERIOD_KEY = "expirationPeriod";
+    
     /**
      * Limited to 140 characters (Java is UTF-16, so two bytes per character, assuming for now that 
      * SNS converts these to ASCII.
      */
     public static final int SMS_CHARACTER_LIMIT = 140;
-
+    /**
+     * 11 character label as to who sent the SMS message. Only in some supported countries (not US):
+     * https://support.twilio.com/hc/en-us/articles/223133767-International-support-for-Alphanumeric-Sender-ID
+     */
+    public static final String SENDER_ID = "AWS.SNS.SMS.SenderID";
+    /** SMS type (Promotional or Transactional). */
+    public static final String SMS_TYPE = "AWS.SNS.SMS.SMSType";
+    /** SMS message type. */
+    public static final String SMS_TYPE_TRANSACTIONAL = "Transactional";
+    
     /**
      * This whitelist adds a few additional tags and attributes that are used by the CKEDITOR options 
      * we have displayed in the UI.

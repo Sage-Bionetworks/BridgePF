@@ -20,6 +20,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.NotificationRegistrationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -28,9 +29,11 @@ import org.sagebionetworks.bridge.exceptions.NotImplementedException;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
+import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.model.InvalidParameterException;
@@ -81,6 +84,7 @@ public class NotificationsServiceTest {
         doReturn(map).when(mockStudy).getPushNotificationARNs();
      
         doReturn(mockStudy).when(mockStudyService).getStudy(STUDY_ID);
+        doReturn(TestConstants.TEST_STUDY).when(mockStudy).getStudyIdentifier();
     }
     
     @Test
@@ -220,9 +224,14 @@ public class NotificationsServiceTest {
     @Test
     public void sendSMSMessageOK() throws Exception {
         doReturn(mockPublishResult).when(mockSnsClient).publish(any());
-        String message = "This is my SMS message.";
         
-        service.sendSMSMessage(STUDY_ID, TestConstants.PHONE, message);
+        String message = "This is my SMS message.";
+        SmsMessageProvider provider = new SmsMessageProvider.Builder()
+                .withStudy(mockStudy)
+                .withSmsTemplate(new SmsTemplate(message))
+                .withPhone(TestConstants.PHONE).build();
+        
+        service.sendSMSMessage(provider);
         
         verify(mockSnsClient).publish(requestCaptor.capture());
         
@@ -230,9 +239,9 @@ public class NotificationsServiceTest {
         assertEquals(TestConstants.PHONE.getNumber(), request.getPhoneNumber());
         assertEquals(message, request.getMessage());
         assertEquals("Transactional",
-                request.getMessageAttributes().get(NotificationsService.SMS_TYPE).getStringValue());
+                request.getMessageAttributes().get(BridgeConstants.SMS_TYPE).getStringValue());
         assertEquals("Bridge", 
-                request.getMessageAttributes().get(NotificationsService.SENDER_ID).getStringValue());
+                request.getMessageAttributes().get(BridgeConstants.SENDER_ID).getStringValue());
     }
     
     @Test(expected = BridgeServiceException.class)
@@ -242,6 +251,11 @@ public class NotificationsServiceTest {
         for (int i=0; i < 3; i++) {
             message += message;
         }
-        service.sendSMSMessage(STUDY_ID, TestConstants.PHONE, message);
+        SmsMessageProvider provider = new SmsMessageProvider.Builder()
+                .withStudy(mockStudy)
+                .withSmsTemplate(new SmsTemplate(message))
+                .withPhone(TestConstants.PHONE).build();
+        
+        service.sendSMSMessage(provider);
     }
 }

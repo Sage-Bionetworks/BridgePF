@@ -17,6 +17,7 @@ import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.sagebionetworks.bridge.models.studies.OAuthProviderTest;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
+import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 
@@ -32,7 +33,8 @@ public class StudyValidatorTest {
     private static final String NAMESPACE = "namespace";
     private static final String PACKAGE_NAME = "package_name";
     private static final String FINGERPRINTS = "sha256_cert_fingerprints";
-    
+    private static final String TOO_LONG_STRING = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901";
+
     private DynamoStudy study;
     
     @Before
@@ -249,13 +251,13 @@ public class StudyValidatorTest {
     @Test
     public void requiresVerifyEmailTemplateWithSubject() {
         study.setVerifyEmailTemplate(new EmailTemplate("  ", "body", MimeType.HTML));
-        assertValidatorMessage(INSTANCE, study, "verifyEmailTemplate.subject", "is required");
+        assertValidatorMessage(INSTANCE, study, "verifyEmailTemplate.subject", "cannot be blank");
     }
 
     @Test
     public void requiresVerifyEmailTemplateWithBody() {
         study.setVerifyEmailTemplate(new EmailTemplate("subject", null, MimeType.HTML));
-        assertValidatorMessage(INSTANCE, study, "verifyEmailTemplate.body", "is required");
+        assertValidatorMessage(INSTANCE, study, "verifyEmailTemplate.body", "cannot be blank");
     }
 
     @Test
@@ -267,13 +269,13 @@ public class StudyValidatorTest {
     @Test
     public void requiresResetPasswordTemplateWithSubject() {
         study.setResetPasswordTemplate(new EmailTemplate("  ", "body", MimeType.TEXT));
-        assertValidatorMessage(INSTANCE, study, "resetPasswordTemplate.subject", "is required");
+        assertValidatorMessage(INSTANCE, study, "resetPasswordTemplate.subject", "cannot be blank");
     }
 
     @Test
     public void requiresResetPasswordTemplateWithBody() {
         study.setResetPasswordTemplate(new EmailTemplate("subject", null, MimeType.TEXT));
-        assertValidatorMessage(INSTANCE, study, "resetPasswordTemplate.body", "is required");
+        assertValidatorMessage(INSTANCE, study, "resetPasswordTemplate.body", "cannot be blank");
     }
     
     @Test
@@ -294,7 +296,7 @@ public class StudyValidatorTest {
     @Test
     public void requiresEmailSignInTemplateWithSubject() {
         study.setEmailSignInTemplate(new EmailTemplate(null, "body", MimeType.HTML));
-        assertValidatorMessage(INSTANCE, study, "emailSignInTemplate.subject", "is required");
+        assertValidatorMessage(INSTANCE, study, "emailSignInTemplate.subject", "cannot be blank");
     }
     
     @Test
@@ -306,7 +308,7 @@ public class StudyValidatorTest {
     @Test
     public void requiresEmailSignInTemplateWithBody() {
         study.setEmailSignInTemplate(new EmailTemplate("subject", null, MimeType.HTML));
-        assertValidatorMessage(INSTANCE, study, "emailSignInTemplate.body", "is required");
+        assertValidatorMessage(INSTANCE, study, "emailSignInTemplate.body", "cannot be blank");
     }
     
     @Test
@@ -318,13 +320,13 @@ public class StudyValidatorTest {
     @Test
     public void requiresAccountExistsTemplateWithSubject() {
         study.setAccountExistsTemplate(new EmailTemplate(null, "body", MimeType.HTML));
-        assertValidatorMessage(INSTANCE, study, "accountExistsTemplate.subject", "is required");
+        assertValidatorMessage(INSTANCE, study, "accountExistsTemplate.subject", "cannot be blank");
     }
 
     @Test
     public void requiresAccountExistsTemplateWithBody() {
         study.setAccountExistsTemplate(new EmailTemplate("subject", null, MimeType.HTML));
-        assertValidatorMessage(INSTANCE, study, "accountExistsTemplate.body", "is required");
+        assertValidatorMessage(INSTANCE, study, "accountExistsTemplate.body", "cannot be blank");
     }
     
     @Test
@@ -563,5 +565,125 @@ public class StudyValidatorTest {
         msg += "A";
         study.getInstallLinks().put("foo", msg);
         assertValidatorMessage(INSTANCE, study, "installLinks", "cannot be longer than "+BridgeConstants.SMS_CHARACTER_LIMIT+" characters");
+    }
+    
+    @Test
+    public void resetPasswordSmsTemplateCanBeNull() {
+        study.setResetPasswordSmsTemplate(null);
+        Validate.entityThrowingException(INSTANCE, study);
+    }
+    
+    @Test
+    public void phoneSignInSmsTemplateCanBeNull() {
+        study.setPhoneSignInSmsTemplate(null);
+        Validate.entityThrowingException(INSTANCE, study);
+    }
+    
+    @Test
+    public void appInstallLinkSmsTemplateCanBeNull() {
+        study.setAppInstallLinkSmsTemplate(null);
+        Validate.entityThrowingException(INSTANCE, study);
+    }
+    
+    @Test
+    public void verifyPhoneSmsTemplateCanBeNull() {
+        study.setVerifyPhoneSmsTemplate(null);
+        Validate.entityThrowingException(INSTANCE, study);
+    }
+    
+    @Test
+    public void accountExistsSmsTemplateCanBeNull() {
+        study.setAccountExistsSmsTemplate(null);
+        Validate.entityThrowingException(INSTANCE, study);
+    }
+    
+    @Test
+    public void resetPasswordSmsTemplateMessageRequired() {
+        study.setResetPasswordSmsTemplate(new SmsTemplate(null));
+        assertValidatorMessage(INSTANCE, study, "resetPasswordSmsTemplate.message", "cannot be blank");
+    }
+    
+    @Test
+    public void phoneSignInSmsTemplateMessageRequired() {
+        study.setPhoneSignInSmsTemplate(new SmsTemplate(null));
+        assertValidatorMessage(INSTANCE, study, "phoneSignInSmsTemplate.message", "cannot be blank");
+    }
+    
+    @Test
+    public void appInstallLinkSmsTemplateMessageRequired() {
+        study.setAppInstallLinkSmsTemplate(new SmsTemplate(null));
+        assertValidatorMessage(INSTANCE, study, "appInstallLinkSmsTemplate.message", "cannot be blank");
+    }
+    
+    @Test
+    public void verifyPhoneSmsTemplateMessageRequired() {
+        study.setVerifyPhoneSmsTemplate(new SmsTemplate(null));
+        assertValidatorMessage(INSTANCE, study, "verifyPhoneSmsTemplate.message", "cannot be blank");
+    }
+    
+    @Test
+    public void accountExistsSmsTemplateMessageRequired() {
+        study.setAccountExistsSmsTemplate(new SmsTemplate(null));
+        assertValidatorMessage(INSTANCE, study, "accountExistsSmsTemplate.message", "cannot be blank");
+    }
+    
+    @Test
+    public void resetPasswordSmsTemplateHasMaxLength() {
+        study.setResetPasswordSmsTemplate(new SmsTemplate(TOO_LONG_STRING));
+        assertValidatorMessage(INSTANCE, study, "resetPasswordSmsTemplate.message", "cannot be more than 160 characters");
+    }
+    
+    @Test
+    public void phoneSignInSmsTemplateHasMaxLength() {
+        study.setPhoneSignInSmsTemplate(new SmsTemplate(TOO_LONG_STRING));
+        assertValidatorMessage(INSTANCE, study, "phoneSignInSmsTemplate.message", "cannot be more than 160 characters");
+    }
+    
+    @Test
+    public void appInstallLinkSmsTemplateHasMaxLength() {
+        study.setAppInstallLinkSmsTemplate(new SmsTemplate(TOO_LONG_STRING));
+        assertValidatorMessage(INSTANCE, study, "appInstallLinkSmsTemplate.message", "cannot be more than 160 characters");
+    }
+    
+    @Test
+    public void verifyPhoneSmsTemplateHasMaxLength() {
+        study.setVerifyPhoneSmsTemplate(new SmsTemplate(TOO_LONG_STRING));
+        assertValidatorMessage(INSTANCE, study, "verifyPhoneSmsTemplate.message", "cannot be more than 160 characters");
+    }
+    
+    @Test
+    public void accountExistsSmsTemplateHasMaxLength() {
+        study.setAccountExistsSmsTemplate(new SmsTemplate(TOO_LONG_STRING));
+        assertValidatorMessage(INSTANCE, study, "accountExistsSmsTemplate.message", "cannot be more than 160 characters");
+    }
+    
+    @Test
+    public void resetPasswordSmsTemplateRequiresTemplateVar() {
+        study.setResetPasswordSmsTemplate(new SmsTemplate("content"));
+        assertValidatorMessage(INSTANCE, study, "resetPasswordSmsTemplate.message", "must contain one of these template variables: ${url}");
+    }
+    
+    @Test
+    public void phoneSignInSmsTemplateRequiresTemplateVar() {
+        study.setPhoneSignInSmsTemplate(new SmsTemplate("content"));
+        assertValidatorMessage(INSTANCE, study, "phoneSignInSmsTemplate.message", "must contain one of these template variables: ${token}");
+    }
+    
+    @Test
+    public void appInstallLinkSmsTemplateRequiresTemplateVar() {
+        study.setAppInstallLinkSmsTemplate(new SmsTemplate("content"));
+        assertValidatorMessage(INSTANCE, study, "appInstallLinkSmsTemplate.message", "must contain one of these template variables: ${url}");
+    }
+    
+    @Test
+    public void verifyPhoneSmsTemplateRequiresTemplateVar() {
+        study.setVerifyPhoneSmsTemplate(new SmsTemplate("content"));
+        assertValidatorMessage(INSTANCE, study, "verifyPhoneSmsTemplate.message", "must contain one of these template variables: ${token}");
+    }
+    
+    @Test
+    public void accountExistsSmsTemplateRequiresTemplateVar() {
+        study.setAccountExistsSmsTemplate(new SmsTemplate("content"));
+        assertValidatorMessage(INSTANCE, study, "accountExistsSmsTemplate.message", "must contain one of these template variables: ${token}, ${resetPasswordUrl}");
     }
 }

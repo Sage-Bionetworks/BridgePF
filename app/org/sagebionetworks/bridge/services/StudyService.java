@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -68,6 +69,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
+import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -79,6 +81,7 @@ import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 @Component("studyService")
+@PropertySource("classpath:study-defaults/sms-messages.properties")
 public class StudyService {
     private static Logger LOG = LoggerFactory.getLogger(StudyService.class);
 
@@ -121,6 +124,11 @@ public class StudyService {
     private String defaultAccountExistsTemplateSubject;
     private String studyEmailVerificationTemplate;
     private String studyEmailVerificationTemplateSubject;
+    private String defaultResetPasswordSmsTemplate;
+    private String defaultPhoneSignInSmsTemplate;
+    private String defaultAppInstallLinkSmsTemplate;
+    private String defaultVerifyPhoneSmsTemplate;
+    private String defaultAccountExistsSmsTemplate;
 
     @Value("classpath:study-defaults/email-verification.txt")
     final void setDefaultEmailVerificationTemplate(org.springframework.core.io.Resource resource) throws IOException {
@@ -154,20 +162,37 @@ public class StudyService {
     final void setDefaultAccountExistsTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultAccountExistsTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-
     @Value("classpath:templates/study-email-verification.txt")
-    public final void setStudyEmailVerificationTemplate(org.springframework.core.io.Resource resource)
+    final void setStudyEmailVerificationTemplate(org.springframework.core.io.Resource resource)
             throws IOException {
         this.studyEmailVerificationTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-
     @Value("classpath:templates/study-email-verification-subject.txt")
-    public final void setStudyEmailVerificationTemplateSubject(
+    final void setStudyEmailVerificationTemplateSubject(
             org.springframework.core.io.Resource resource) throws IOException {
         this.studyEmailVerificationTemplateSubject = IOUtils.toString(resource.getInputStream(),
                 StandardCharsets.UTF_8);
     }
-
+    @Value("${sms.reset.password}")
+    final void setResetPasswordSmsTemplate(String template) {
+        this.defaultResetPasswordSmsTemplate = template;
+    }
+    @Value("${sms.phone.signin}")
+    final void setPhoneSignInSmsTemplate(String template) {
+        this.defaultPhoneSignInSmsTemplate = template;
+    }
+    @Value("${sms.app.install.link}")
+    final void setAppInstallLinkSmsTemplate(String template) {
+        this.defaultAppInstallLinkSmsTemplate = template;
+    }
+    @Value("${sms.verify.phone}")
+    final void setVerifyPhoneSmsTemplate(String template) {
+        this.defaultVerifyPhoneSmsTemplate = template;
+    }
+    @Value("${sms.account.exists}")
+    final void setAccountExistsSmsTemplate(String template) {
+        this.defaultAccountExistsSmsTemplate = template;
+    }
     /** Bridge config. */
     @Autowired
     public final void setBridgeConfig(BridgeConfig bridgeConfig) {
@@ -260,15 +285,9 @@ public class StudyService {
             if (!study.isActive() && !includeDeleted) {
                 throw new EntityNotFoundException(Study.class, "Study not found.");
             }
-            // Because these templates do not exist in all studies, add the default if it is null.
-            if (study.getEmailSignInTemplate() == null) {
-                study.setEmailSignInTemplate( getEmailSignInTemplate() );
-            }
-            if (study.getAccountExistsTemplate() == null) {
-                study.setAccountExistsTemplate( getAccountExistsTemplate() );
-            }
+            // Because these templates do not exist in all studies, add the defaults where they are null
+            setDefaultsIfAbsent(study);
         }
-
         return study;
     }
 
@@ -689,6 +708,27 @@ public class StudyService {
         }
         if (study.getAccountExistsTemplate() == null) {
             study.setAccountExistsTemplate( getAccountExistsTemplate() );
+        }
+        if (study.getEmailSignInTemplate() == null) {
+            study.setEmailSignInTemplate( getEmailSignInTemplate() );
+        }
+        if (study.getAccountExistsTemplate() == null) {
+            study.setAccountExistsTemplate( getAccountExistsTemplate() );
+        }
+        if (study.getResetPasswordSmsTemplate() == null) {
+            study.setResetPasswordSmsTemplate(new SmsTemplate(defaultResetPasswordSmsTemplate));
+        }
+        if (study.getPhoneSignInSmsTemplate() == null) {
+            study.setPhoneSignInSmsTemplate(new SmsTemplate(defaultPhoneSignInSmsTemplate));
+        }
+        if (study.getAppInstallLinkSmsTemplate() == null) {
+            study.setAppInstallLinkSmsTemplate(new SmsTemplate(defaultAppInstallLinkSmsTemplate));
+        }
+        if (study.getVerifyPhoneSmsTemplate() == null) {
+            study.setVerifyPhoneSmsTemplate(new SmsTemplate(defaultVerifyPhoneSmsTemplate));
+        }
+        if (study.getAccountExistsSmsTemplate() == null) {
+            study.setAccountExistsSmsTemplate(new SmsTemplate(defaultAccountExistsSmsTemplate));
         }
     }
 
