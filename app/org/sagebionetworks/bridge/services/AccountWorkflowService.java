@@ -61,33 +61,38 @@ public class AccountWorkflowService {
     private static final String PASSWORD_RESET_TOKEN_EXPIRED = "Password reset token has expired (or already been used).";
     private static final String VERIFY_EMAIL_TOKEN_EXPIRED = "Email verification token has expired (or already been used).";
     
-    private static final String RESET_PASSWORD_URL = "/mobile/resetPassword.html?study=%s&sptoken=%s";
-    private static final String VERIFY_EMAIL_URL = "/mobile/verifyEmail.html?study=%s&sptoken=%s";
-    private static final String EMAIL_SIGNIN_URL = "/mobile/%s/startSession.html?email=%s&study=%s&token=%s";
-    
-    private static final String SHORT_RESET_PASSWORD_URL = "/rp?study=%s&sptoken=%s";
-    private static final String SHORT_VERIFY_EMAIL_URL = "/ve?study=%s&sptoken=%s";
-    private static final String SHORT_EMAIL_SIGNIN_URL = "/s/%s?email=%s&token=%s";
-    
-    private static final String EXP_WINDOW_TOKEN = "expirationWindow";
-    
+    // These are component tokens we include in URLs, but they are also included as is in the template variables
+    // for further customization on a case-by-case basis.
     private static final String EMAIL_KEY = "email";
     private static final String TOKEN_KEY = "token";
     private static final String SPTOKEN_KEY = "sptoken";
     
-    private static final String URL_KEY = "url";
-    private static final String SHORT_URL_KEY = "shortUrl";
-     
-    private static final String EMAIL_SIGNIN_URL_KEY = "emailSignInUrl";
-    private static final String SHORT_EMAIL_SIGNIN_URL_KEY = "shortEmailSignInUrl";
+    // These are older values. These are still included, for now, for existing templates.
+    private static final String OLD_URL_KEY = "url";
+    private static final String OLD_SHORT_URL_KEY = "shortUrl";
+    private static final String OLD_RESET_PASSWORD_URL = "/mobile/resetPassword.html?study=%s&sptoken=%s";
+    private static final String OLD_VERIFY_EMAIL_URL = "/mobile/verifyEmail.html?study=%s&sptoken=%s";
+    private static final String OLD_EMAIL_SIGNIN_URL = "/mobile/%s/startSession.html?email=%s&study=%s&token=%s";
+    private static final String OLD_EXP_WINDOW_TOKEN = "expirationWindow";
+    private static final String OLD_EXPIRATION_PERIOD = "expirationPeriod";
     
+    // We now have shorter URLs and template variables that can be combined in one template
+    private static final String RESET_PASSWORD_URL = "/rp?study=%s&sptoken=%s";
+    private static final String VERIFY_EMAIL_URL = "/ve?study=%s&sptoken=%s";
+    private static final String EMAIL_SIGNIN_URL = "/s/%s?email=%s&token=%s";
+     
+    // Keys to reference the URLs
     private static final String RESET_PASSWORD_URL_KEY = "resetPasswordUrl";
-    private static final String SHORT_RESET_PASSWORD_URL_KEY = "shortResetPasswordUrl";
+    private static final String EMAIL_VERIFICATION_URL_KEY = "emailVerificationUrl";
+    private static final String EMAIL_SIGNIN_URL_KEY = "emailSignInUrl";
         
+    // Keys to reference an expiration period for each URL or token
     private static final String RESET_PASSWORD_EXPIRATION_PERIOD = "resetPasswordExpirationPeriod";
+    private static final String EMAIL_VERIFICATION_EXPIRATION_PERIOD = "emailVerificationExpirationPeriod";
     private static final String PHONE_SIGNIN_EXPIRATION_PERIOD = "phoneSignInExpirationPeriod";
     private static final String EMAIL_SIGNIN_EXPIRATION_PERIOD = "emailSignInExpirationPeriod";
     
+    // Cache keys
     private static final String EMAIL_SIGNIN_REQUEST_KEY = "%s:%s:signInRequest";
     private static final String PHONE_SIGNIN_REQUEST_KEY = "%s:%s:phoneSignInRequest";
     
@@ -204,17 +209,18 @@ public class AccountWorkflowService {
 
         saveVerification(sptoken, new VerificationData(study.getIdentifier(), userId));
 
-        String url = getVerifyEmailURL(study, sptoken);
-        String shortUrl = getShortVerifyEmailURL(study, sptoken);
+        String oldUrl = getVerifyEmailURL(study, sptoken);
+        String newUrl = getShortVerifyEmailURL(study, sptoken);
 
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
                 .withEmailTemplate(study.getVerifyEmailTemplate())
                 .withRecipientEmail(recipientEmail)
                 .withToken(SPTOKEN_KEY, sptoken)
-                .withToken(URL_KEY, url)
-                .withToken(SHORT_URL_KEY, shortUrl)
-                .withExpirationPeriod(EXPIRE_IN_SECONDS)
+                .withToken(OLD_URL_KEY, oldUrl)
+                .withToken(OLD_SHORT_URL_KEY, oldUrl)
+                .withToken(EMAIL_VERIFICATION_URL_KEY, newUrl)
+                .withExpirationPeriod(EMAIL_VERIFICATION_EXPIRATION_PERIOD, EXPIRE_IN_SECONDS)
                 .build();
         sendMailService.sendEmail(provider);
     }
@@ -309,14 +315,11 @@ public class AccountWorkflowService {
             .withEmailTemplate(template)
             .withRecipientEmail(email)
             .withToken(SPTOKEN_KEY, sptoken)
-            .withExpirationPeriod(EXPIRE_IN_SECONDS)
-            // for backwards compatibility, we set ${url}, ${expirationWindow}
-            .withToken(URL_KEY, url)
-            .withToken(SHORT_URL_KEY, shortUrl)
-            .withToken(EXP_WINDOW_TOKEN, Integer.toString(EXPIRE_IN_SECONDS/60/60))
-            // Then we set the password reset URL under another key
-            .withToken(RESET_PASSWORD_URL_KEY, url)
-            .withToken(SHORT_RESET_PASSWORD_URL_KEY, shortUrl)
+            .withToken(OLD_URL_KEY, url)
+            .withToken(OLD_SHORT_URL_KEY, shortUrl)
+            .withToken(OLD_EXP_WINDOW_TOKEN, Integer.toString(EXPIRE_IN_SECONDS/60/60))
+            .withExpirationPeriod(OLD_EXPIRATION_PERIOD, EXPIRE_IN_SECONDS)
+            .withToken(RESET_PASSWORD_URL_KEY, shortUrl)
             .withExpirationPeriod(RESET_PASSWORD_EXPIRATION_PERIOD, EXPIRE_IN_SECONDS);
             
         if (includeEmailSignIn && study.isEmailSignInEnabled()) {
@@ -324,15 +327,13 @@ public class AccountWorkflowService {
             requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, EMAIL_CACHE_KEY_FUNC, emailSignInRequestInMillis,
                 signIn, false, this::getNextToken, (theStudy, token) -> {
                     // get and add the sign in URLs.
-                    String emailUrl = getEmailSignInURL(signIn.getEmail(), theStudy.getIdentifier(), token);
                     String emailShortUrl = getShortEmailSignInURL(signIn.getEmail(), theStudy.getIdentifier(), token);
                     
                     // Put the components in separately, in case we want to alter the URL in a specific template.
                     builder.withToken(EMAIL_KEY, BridgeUtils.encodeURIComponent(signIn.getEmail()));
                     builder.withToken(TOKEN_KEY, token);
-                    // Now put in the emailSignIn URL with expiration separately called out.
-                    builder.withToken(EMAIL_SIGNIN_URL_KEY, emailUrl);
-                    builder.withToken(SHORT_EMAIL_SIGNIN_URL_KEY, emailShortUrl);
+                    builder.withToken(OLD_SHORT_URL_KEY, emailShortUrl);
+                    builder.withToken(EMAIL_SIGNIN_URL_KEY, emailShortUrl);
                     builder.withExpirationPeriod(EMAIL_SIGNIN_EXPIRATION_PERIOD, SESSION_SIGNIN_EXPIRE_IN_SECONDS);
                 });
         }
@@ -350,7 +351,7 @@ public class AccountWorkflowService {
         builder.withSmsTemplate(template);
         builder.withStudy(study);
         builder.withPhone(phone);
-        builder.withToken(URL_KEY, url);
+        builder.withToken(SPTOKEN_KEY, sptoken);
         builder.withToken(RESET_PASSWORD_URL_KEY, url);
         builder.withExpirationPeriod(RESET_PASSWORD_EXPIRATION_PERIOD, EXPIRE_IN_SECONDS);
         
@@ -417,7 +418,7 @@ public class AccountWorkflowService {
                     .withStudy(study)
                     .withSmsTemplate(study.getPhoneSignInSmsTemplate())
                     .withPhone(signIn.getPhone())
-                    .withExpirationPeriod(SESSION_SIGNIN_EXPIRE_IN_SECONDS)
+                    .withExpirationPeriod(PHONE_SIGNIN_EXPIRATION_PERIOD, SESSION_SIGNIN_EXPIRE_IN_SECONDS)
                     .withToken(TOKEN_KEY, formattedToken).build();
             notificationsService.sendSMSMessage(provider);
         });
@@ -446,9 +447,10 @@ public class AccountWorkflowService {
                 .withRecipientEmail(signIn.getEmail())
                 .withToken(EMAIL_KEY, BridgeUtils.encodeURIComponent(signIn.getEmail()))
                 .withToken(TOKEN_KEY, token)
-                .withToken(URL_KEY, url)
-                .withToken(SHORT_URL_KEY, shortUrl)
-                .withExpirationPeriod(SESSION_SIGNIN_EXPIRE_IN_SECONDS)
+                .withToken(OLD_URL_KEY, url)
+                .withToken(OLD_SHORT_URL_KEY, shortUrl)
+                .withToken(EMAIL_SIGNIN_URL_KEY, shortUrl)
+                .withExpirationPeriod(EMAIL_SIGNIN_EXPIRATION_PERIOD, SESSION_SIGNIN_EXPIRE_IN_SECONDS)
                 .build();
             sendMailService.sendEmail(provider);
         });
@@ -588,27 +590,27 @@ public class AccountWorkflowService {
     };
 
     private String getEmailSignInURL(String email, String studyId, String token) {
-        return formatWithEncodedArgs(EMAIL_SIGNIN_URL, studyId, email, studyId, token);
+        return formatWithEncodedArgs(OLD_EMAIL_SIGNIN_URL, studyId, email, studyId, token);
     }
     
     private String getVerifyEmailURL(Study study, String sptoken) {
-        return formatWithEncodedArgs(VERIFY_EMAIL_URL, study.getIdentifier(), sptoken);
+        return formatWithEncodedArgs(OLD_VERIFY_EMAIL_URL, study.getIdentifier(), sptoken);
     }
     
     private String getResetPasswordURL(Study study, String sptoken) {
-        return formatWithEncodedArgs(RESET_PASSWORD_URL, study.getIdentifier(), sptoken);
+        return formatWithEncodedArgs(OLD_RESET_PASSWORD_URL, study.getIdentifier(), sptoken);
     }
     
     private String getShortEmailSignInURL(String email, String studyId, String token) {
-        return formatWithEncodedArgs(SHORT_EMAIL_SIGNIN_URL, studyId, email, token);
+        return formatWithEncodedArgs(EMAIL_SIGNIN_URL, studyId, email, token);
     }
     
     private String getShortVerifyEmailURL(Study study, String sptoken) {
-        return formatWithEncodedArgs(SHORT_VERIFY_EMAIL_URL, study.getIdentifier(), sptoken);
+        return formatWithEncodedArgs(VERIFY_EMAIL_URL, study.getIdentifier(), sptoken);
     }
     
     private String getShortResetPasswordURL(Study study, String sptoken) {
-        return formatWithEncodedArgs(SHORT_RESET_PASSWORD_URL, study.getIdentifier(), sptoken);
+        return formatWithEncodedArgs(RESET_PASSWORD_URL, study.getIdentifier(), sptoken);
     }
     
     private String formatWithEncodedArgs(String formatString, String... strings) {

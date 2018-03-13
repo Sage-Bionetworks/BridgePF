@@ -7,7 +7,6 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -41,7 +40,6 @@ public class SmsMessageProvider {
     
     public PublishRequest getSmsRequest() {
         tokenMap.putAll(BridgeUtils.studyTemplateVariables(getStudy()));
-        tokenMap.put("host", BridgeConfigFactory.getConfig().getHostnameWithPostfix("ws"));
         
         // overwriting the study's short name field with a default value, if needed
         String studyShortName = StringUtils.isBlank(study.getShortName()) ? "Bridge" : study.getShortName();
@@ -88,10 +86,6 @@ public class SmsMessageProvider {
         }
         public Builder withExpirationPeriod(String name, int expireInSeconds) {
             withToken(name, BridgeUtils.secondsToPeriodString(expireInSeconds));
-            return this;
-        }
-        public Builder withExpirationPeriod(int expireInSeconds) {
-            withToken(BridgeConstants.EXPIRATION_PERIOD_KEY, BridgeUtils.secondsToPeriodString(expireInSeconds));
             return this;
         }
         public SmsMessageProvider build() {

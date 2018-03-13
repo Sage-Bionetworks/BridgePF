@@ -170,7 +170,8 @@ public class StudyServiceMockTest {
         // Mock templates
         service.setStudyEmailVerificationTemplateSubject(mockTemplateAsSpringResource(
                 "Verify your study email"));
-        service.setStudyEmailVerificationTemplate(mockTemplateAsSpringResource("Click here ${url} ${shortUrl}"));
+        service.setStudyEmailVerificationTemplate(mockTemplateAsSpringResource(
+                "Click here ${studyEmailVerificationUrl} ${studyEmailVerificationExpirationPeriod}"));
 
         when(service.getNameScopingToken()).thenReturn(TEST_NAME_SCOPING_TOKEN);
         
@@ -282,12 +283,11 @@ public class StudyServiceMockTest {
 
         MimeTypeEmail email = emailProviderCaptor.getValue().getMimeTypeEmail();
         String body = (String) email.getMessageParts().get(0).getContent();
-        assertTrue(body.contains("/mobile/verifyStudyEmail.html?study="+ TEST_STUDY_ID + "&token=" +
-                VERIFICATION_TOKEN + "&type=consent_notification"));
+        System.out.println(body);
         assertTrue(body.contains("/vse?study="+ TEST_STUDY_ID + "&token=" +
                 VERIFICATION_TOKEN + "&type=consent_notification"));
         assertTrue(email.getSenderAddress().contains(SUPPORT_EMAIL));
-        assertEquals("1 day", emailProviderCaptor.getValue().getTokenMap().get("expirationPeriod"));
+        assertEquals("1 day", emailProviderCaptor.getValue().getTokenMap().get("studyEmailVerificationExpirationPeriod"));
         
         List<String> recipientList = email.getRecipientAddresses();
         assertEquals(1, recipientList.size());

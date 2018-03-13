@@ -26,7 +26,7 @@ import com.google.common.collect.Iterables;
 @Component
 public class IntentService {
 
-    private static final String URL_KEY = "url";
+    private static final String APP_INSTALL_URL_KEY = "appInstallUrl";
     
     /** Hold on to the intent for 4 hours. */
     private static final int EXPIRATION_IN_SECONDS = 4 * 60 * 60;
@@ -100,12 +100,12 @@ public class IntentService {
             if (!study.getInstallLinks().isEmpty()) {
                 String url = getInstallLink(intent.getOsName(), study.getInstallLinks());
                 
+                // The URL being sent does not expire.
                 SmsMessageProvider provider = new SmsMessageProvider.Builder()
                         .withStudy(study)
                         .withSmsTemplate(study.getAppInstallLinkSmsTemplate())
                         .withPhone(intent.getPhone())
-                        .withExpirationPeriod(EXPIRATION_IN_SECONDS)
-                        .withToken(URL_KEY, url).build();
+                        .withToken(APP_INSTALL_URL_KEY, url).build();
                 notificationsService.sendSMSMessage(provider);
             }
         }

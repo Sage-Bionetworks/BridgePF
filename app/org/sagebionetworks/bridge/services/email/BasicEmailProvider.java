@@ -8,9 +8,7 @@ import java.util.Set;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeBodyPart;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 
@@ -60,7 +58,6 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
     @Override
     public MimeTypeEmail getMimeTypeEmail() throws MessagingException {
         tokenMap.putAll(BridgeUtils.studyTemplateVariables(getStudy()));
-        tokenMap.put("host", BridgeConfigFactory.getConfig().getHostnameWithPostfix("ws"));
         
         final MimeTypeEmailBuilder emailBuilder = new MimeTypeEmailBuilder();
 
@@ -113,10 +110,6 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
         }
         public Builder withToken(String name, String value) {
             tokenMap.put(name, value);
-            return this;
-        }
-        public Builder withExpirationPeriod(int expireInSeconds) {
-            withToken(BridgeConstants.EXPIRATION_PERIOD_KEY, BridgeUtils.secondsToPeriodString(expireInSeconds));
             return this;
         }
         public Builder withExpirationPeriod(String name, int expireInSeconds) {

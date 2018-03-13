@@ -119,21 +119,20 @@ public class StudyValidator implements Validator {
         if (study.getAccountLimit() < 0) {
             errors.rejectValue("accountLimit", "must be zero (no limit set) or higher");
         }
-        validateEmailTemplate(errors, study.getVerifyEmailTemplate(), "verifyEmailTemplate", "${url}", "${shortUrl}");
-        validateEmailTemplate(errors, study.getResetPasswordTemplate(), "resetPasswordTemplate", "${url}", "${shortUrl}");
+        validateEmailTemplate(errors, study.getVerifyEmailTemplate(), "verifyEmailTemplate", "${url}", "${emailVerificationUrl}");
+        validateEmailTemplate(errors, study.getResetPasswordTemplate(), "resetPasswordTemplate", "${url}", "${resetPasswordUrl}");
         // Existing studies don't have the template, we use a default template. Okay to be missing.
         if (study.getEmailSignInTemplate() != null) {
-            validateEmailTemplate(errors, study.getEmailSignInTemplate(), "emailSignInTemplate", "${url}", "${shortUrl}",
+            validateEmailTemplate(errors, study.getEmailSignInTemplate(), "emailSignInTemplate", "${url}", "${emailSignInUrl}",
                     "${token}");
         }
         if (study.getAccountExistsTemplate() != null) {
             validateEmailTemplate(errors, study.getAccountExistsTemplate(), "accountExistsTemplate", "${url}",
-                    "${shortUrl}", "${emailSignInUrl}", "${resetPasswordUrl}", 
-                    "${shortEmailSignInUrl}", "${shortResetPasswordUrl}");
+                    "${emailSignInUrl}", "${resetPasswordUrl}");
         }
-        validateSmsTemplate(errors, study.getResetPasswordSmsTemplate(), "resetPasswordSmsTemplate", "${url}");
+        validateSmsTemplate(errors, study.getResetPasswordSmsTemplate(), "resetPasswordSmsTemplate", "${url}", "${resetPasswordUrl}");
         validateSmsTemplate(errors, study.getPhoneSignInSmsTemplate(), "phoneSignInSmsTemplate", "${token}");
-        validateSmsTemplate(errors, study.getAppInstallLinkSmsTemplate(), "appInstallLinkSmsTemplate", "${url}");
+        validateSmsTemplate(errors, study.getAppInstallLinkSmsTemplate(), "appInstallLinkSmsTemplate", "${url}", "${appInstallUrl}");
         validateSmsTemplate(errors, study.getVerifyPhoneSmsTemplate(), "verifyPhoneSmsTemplate", "${token}");
         validateSmsTemplate(errors, study.getAccountExistsSmsTemplate(), "accountExistsSmsTemplate", "${token}",
                 "${resetPasswordUrl}");

@@ -128,14 +128,13 @@ public class AccountWorkflowServiceTest {
     
     @Before
     public void before() {
-        EmailTemplate verifyEmailTemplate = new EmailTemplate("VE ${studyName}", "Body ${url} ${shortUrl}", MimeType.TEXT);
-        EmailTemplate resetPasswordTemplate = new EmailTemplate("RP ${studyName}", "Body ${url} ${shortUrl}", MimeType.TEXT);
-        EmailTemplate accountExistsTemplate = new EmailTemplate("AE ${studyName}", 
-                "Body ${url} ${shortUrl} ${resetPasswordUrl} ${emailSignInUrl} ${shortResetPasswordUrl} ${shortEmailSignInUrl}", 
-                MimeType.TEXT);
+        EmailTemplate verifyEmailTemplate = new EmailTemplate("VE ${studyName}", "Body ${url} ${emailVerificationUrl}", MimeType.TEXT);
+        EmailTemplate resetPasswordTemplate = new EmailTemplate("RP ${studyName}", "Body ${url} ${resetPasswordUrl}", MimeType.TEXT);
+        EmailTemplate accountExistsTemplate = new EmailTemplate("AE ${studyName}",
+                "Body ${url} ${resetPasswordUrl} ${emailSignInUrl}", MimeType.TEXT); 
         EmailTemplate emailSignInTemplate = new EmailTemplate("subject","Body ${token}", MimeType.TEXT);
         SmsTemplate phoneSignInSmsTemplate = new SmsTemplate("Enter ${token} to sign in to ${studyShortName}");
-        SmsTemplate resetPasswordSmsTemplate = new SmsTemplate("Reset ${studyShortName} password: ${url}") ;
+        SmsTemplate resetPasswordSmsTemplate = new SmsTemplate("Reset ${studyShortName} password: ${resetPasswordUrl}"); 
         SmsTemplate accountExistsSmsTemplate = new SmsTemplate("Account for ${studyShortName} already exists. Reset password: ${resetPasswordUrl} or ${token}");
         
         study = Study.create();
@@ -177,7 +176,7 @@ public class AccountWorkflowServiceTest {
         BasicEmailProvider provider = emailProviderCaptor.getValue();
         Map<String,String> tokens = provider.getTokenMap();
         assertEquals(SPTOKEN, tokens.get("sptoken"));
-        assertEquals("2 hours", tokens.get("expirationPeriod"));
+        assertEquals("2 hours", tokens.get("emailVerificationExpirationPeriod"));
         
         MimeTypeEmail email = provider.getMimeTypeEmail();
         assertEquals("\"This study name\" <support@support.com>", email.getSenderAddress());
@@ -303,7 +302,10 @@ public class AccountWorkflowServiceTest {
         String bodyString = (String)body.getContent();
         assertTrue(bodyString.contains("/mobile/resetPassword.html?study=api&sptoken="+SPTOKEN));
         assertTrue(bodyString.contains("/rp?study=api&sptoken="+SPTOKEN));
-        assertTrue(bodyString.contains("/mobile/api/startSession.html?email=email%40email.com&study=api&token="+TOKEN));
+        // This was recently added and is only used in one study where we've hard-coded it. Remove it
+        // so that ${url} continues to work for the reset password link. We're moving all links 
+        // towad the short form, in stepped releases.
+        //assertTrue(bodyString.contains("/mobile/api/startSession.html?email=email%40email.com&study=api&token="+TOKEN));
         assertTrue(bodyString.contains("/s/api?email=email%40email.com&token="+TOKEN));
         
         // All the template variables have been replaced
@@ -345,7 +347,6 @@ public class AccountWorkflowServiceTest {
             MimeTypeEmail email = oneEmailProvider.getMimeTypeEmail();
             MimeBodyPart body = email.getMessageParts().get(0);
             String bodyString = (String)body.getContent();
-            assertTrue(bodyString.contains("/mobile/api/startSession.html?email=email%40email.com&study=api&token="+TOKEN));
             assertTrue(bodyString.contains("/s/api?email=email%40email.com&token="+TOKEN));
             assertFalse(bodyString.contains("${emailSignInUrl}"));
             assertFalse(bodyString.contains("${shortEmailSignInUrl}"));
@@ -424,7 +425,6 @@ public class AccountWorkflowServiceTest {
         assertEquals("RP This study name", email.getSubject());
         MimeBodyPart body = email.getMessageParts().get(0);
         String bodyString = (String)body.getContent();
-        assertTrue(bodyString.contains("/mobile/resetPassword.html?study=api&sptoken="+SPTOKEN));
         assertTrue(bodyString.contains("/rp?study=api&sptoken="+SPTOKEN));
     }
     
@@ -601,7 +601,7 @@ public class AccountWorkflowServiceTest {
         BasicEmailProvider provider = emailProviderCaptor.getValue();
         assertEquals(BridgeUtils.encodeURIComponent(EMAIL), provider.getTokenMap().get("email"));
         assertEquals(TOKEN, provider.getTokenMap().get("token"));
-        assertEquals("5 minutes", provider.getTokenMap().get("expirationPeriod"));
+        assertEquals("5 minutes", provider.getTokenMap().get("emailSignInExpirationPeriod"));
         
         String token = provider.getTokenMap().get("token");
         
@@ -682,7 +682,7 @@ public class AccountWorkflowServiceTest {
         BasicEmailProvider provider = emailProviderCaptor.getValue();
         assertEquals(BridgeUtils.encodeURIComponent(EMAIL), provider.getTokenMap().get("email"));
         assertEquals(TOKEN, provider.getTokenMap().get("token"));
-        assertEquals("5 minutes", provider.getTokenMap().get("expirationPeriod"));
+        assertEquals("5 minutes", provider.getTokenMap().get("emailSignInExpirationPeriod"));
         
         assertEquals(EMAIL, provider.getMimeTypeEmail().getRecipientAddresses().get(0));
         assertEquals(SUPPORT_EMAIL, provider.getPlainSenderEmail());

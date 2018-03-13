@@ -85,13 +85,13 @@ public class StudyValidatorTest {
     @Test
     public void resetPasswordMustHaveUrlVariable() {
         study.setResetPasswordTemplate(new EmailTemplate("subject", "no url variable", MimeType.TEXT));
-        assertValidatorMessage(INSTANCE, study, "resetPasswordTemplate.body", "must contain one of these template variables: ${url}, ${shortUrl}");
+        assertValidatorMessage(INSTANCE, study, "resetPasswordTemplate.body", "must contain one of these template variables: ${url}, ${resetPasswordUrl}");
     }
     
     @Test
     public void verifyEmailMustHaveUrlVariable() {
         study.setVerifyEmailTemplate(new EmailTemplate("subject", "no url variable", MimeType.TEXT));
-        assertValidatorMessage(INSTANCE, study, "verifyEmailTemplate.body", "must contain one of these template variables: ${url}, ${shortUrl}");
+        assertValidatorMessage(INSTANCE, study, "verifyEmailTemplate.body", "must contain one of these template variables: ${url}, ${emailVerificationUrl}");
     }
 
     @Test
@@ -302,7 +302,7 @@ public class StudyValidatorTest {
     @Test
     public void requiresEmailSignInTemplateRequiresToken() {
         study.setEmailSignInTemplate(new EmailTemplate("subject", "body with no token", MimeType.HTML));
-        assertValidatorMessage(INSTANCE, study, "emailSignInTemplate.body", "must contain one of these template variables: ${url}, ${shortUrl}, ${token}");
+        assertValidatorMessage(INSTANCE, study, "emailSignInTemplate.body", "must contain one of these template variables: ${url}, ${emailSignInUrl}, ${token}");
     }    
 
     @Test
@@ -333,7 +333,7 @@ public class StudyValidatorTest {
     public void requiresAccountExistsTemplateRequiresURL() {
         study.setAccountExistsTemplate(new EmailTemplate("subject", "body with no url", MimeType.HTML));
         assertValidatorMessage(INSTANCE, study, "accountExistsTemplate.body",
-                "must contain one of these template variables: ${url}, ${shortUrl}, ${emailSignInUrl}, ${resetPasswordUrl}, ${shortEmailSignInUrl}, ${shortResetPasswordUrl}");
+                "must contain one of these template variables: ${url}, ${emailSignInUrl}, ${resetPasswordUrl}");
     }
     
     @Test
@@ -347,10 +347,10 @@ public class StudyValidatorTest {
         study.setAccountExistsTemplate(new EmailTemplate("subject", "${emailSignInUrl}", MimeType.HTML));
         Validate.entityThrowingException(INSTANCE, study);
 
-        study.setAccountExistsTemplate(new EmailTemplate("subject", "${shortEmailSignInUrl}", MimeType.HTML));
+        study.setAccountExistsTemplate(new EmailTemplate("subject", "${emailSignInUrl}", MimeType.HTML));
         Validate.entityThrowingException(INSTANCE, study);
 
-        study.setAccountExistsTemplate(new EmailTemplate("subject", "${shortResetPasswordUrl}", MimeType.HTML));
+        study.setAccountExistsTemplate(new EmailTemplate("subject", "${resetPasswordUrl}", MimeType.HTML));
         Validate.entityThrowingException(INSTANCE, study);
     }
     
@@ -660,7 +660,7 @@ public class StudyValidatorTest {
     @Test
     public void resetPasswordSmsTemplateRequiresTemplateVar() {
         study.setResetPasswordSmsTemplate(new SmsTemplate("content"));
-        assertValidatorMessage(INSTANCE, study, "resetPasswordSmsTemplate.message", "must contain one of these template variables: ${url}");
+        assertValidatorMessage(INSTANCE, study, "resetPasswordSmsTemplate.message", "must contain one of these template variables: ${url}, ${resetPasswordUrl}");
     }
     
     @Test
@@ -672,7 +672,7 @@ public class StudyValidatorTest {
     @Test
     public void appInstallLinkSmsTemplateRequiresTemplateVar() {
         study.setAppInstallLinkSmsTemplate(new SmsTemplate("content"));
-        assertValidatorMessage(INSTANCE, study, "appInstallLinkSmsTemplate.message", "must contain one of these template variables: ${url}");
+        assertValidatorMessage(INSTANCE, study, "appInstallLinkSmsTemplate.message", "must contain one of these template variables: ${url}, ${appInstallUrl}");
     }
     
     @Test

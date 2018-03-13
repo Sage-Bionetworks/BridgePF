@@ -35,7 +35,7 @@ public class BasicEmailProviderTest {
             .withRecipientEmail("recipient@recipient.com")
             .withRecipientEmail("recipient2@recipient.com")
             .withEmailTemplate(template)
-            .withExpirationPeriod(60*60)
+            .withExpirationPeriod("expirationPeriod", 60*60)
             .withToken("url", "some-url").build();
 
         // Check provider attributes

@@ -87,15 +87,14 @@ public class StudyService {
 
     private static final String BASE_URL = BridgeConfigFactory.getConfig().get("webservices.url");
     static final String CONFIG_KEY_SUPPORT_EMAIL_PLAIN = "support.email.plain";
-    private static final String VERIFY_STUDY_EMAIL_URL = "%s/mobile/verifyStudyEmail.html?study=%s&token=%s&type=%s";
-    private static final String SHORT_VERIFY_STUDY_EMAIL_URL = "%s/vse?study=%s&token=%s&type=%s";
+    private static final String VERIFY_STUDY_EMAIL_URL = "%s/vse?study=%s&token=%s&type=%s";
     static final int VERIFY_STUDY_EMAIL_EXPIRE_IN_SECONDS = 60*60*24;
     static final String EXPORTER_SYNAPSE_USER_ID = BridgeConfigFactory.getConfig().getExporterSynapseId(); // copy-paste from website
     static final String SYNAPSE_REGISTER_END_POINT = "https://www.synapse.org/#!NewAccount:";
     private static final String STUDY_PROPERTY = "Study";
     private static final String TYPE_PROPERTY = "type";
-    private static final String URL_TOKEN = "url";
-    private static final String SHORT_URL_TOKEN = "shortUrl";
+    private static final String STUDY_EMAIL_VERIFICATION_URL = "studyEmailVerificationUrl";
+    private static final String STUDY_EMAIL_VERIFICATION_EXPIRATION_PERIOD = "studyEmailVerificationExpirationPeriod";
     private static final String IDENTIFIER_PROPERTY = "identifier";
     private final Set<String> studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
             BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
@@ -800,18 +799,19 @@ public class StudyService {
         String token = createTimeLimitedToken();
         saveVerification(token, new VerificationData(study.getIdentifier(), email));
 
-        // Create and send verification email.
+        // Create and send verification email. Users cannot edit this template so there's no backwards
+        // compatibility issues
         String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
-        String url = String.format(VERIFY_STUDY_EMAIL_URL, BASE_URL, studyId, token, type.toString().toLowerCase());
-        String shortUrl = String.format(SHORT_VERIFY_STUDY_EMAIL_URL, BASE_URL, studyId, token, type.toString().toLowerCase());
+        String shortUrl = String.format(VERIFY_STUDY_EMAIL_URL, BASE_URL, studyId, token, type.toString().toLowerCase());
         
         EmailTemplate template = new EmailTemplate(studyEmailVerificationTemplateSubject,
                 studyEmailVerificationTemplate, MimeType.HTML);
 
         BasicEmailProvider provider = new BasicEmailProvider.Builder().withStudy(study).withEmailTemplate(template)
-                .withOverrideSenderEmail(bridgeSupportEmailPlain).withRecipientEmail(email).withToken(URL_TOKEN, url)
-                .withToken(SHORT_URL_TOKEN, shortUrl)
-                .withExpirationPeriod(VERIFY_STUDY_EMAIL_EXPIRE_IN_SECONDS).build();
+                .withOverrideSenderEmail(bridgeSupportEmailPlain).withRecipientEmail(email)
+                .withToken(STUDY_EMAIL_VERIFICATION_URL, shortUrl)
+                .withExpirationPeriod(STUDY_EMAIL_VERIFICATION_EXPIRATION_PERIOD, VERIFY_STUDY_EMAIL_EXPIRE_IN_SECONDS)
+                .build();
         sendMailService.sendEmail(provider);
     }
 

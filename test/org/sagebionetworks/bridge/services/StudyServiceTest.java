@@ -228,7 +228,7 @@ public class StudyServiceTest {
         assertNotNull(rpTemplate.getSubject());
         assertNotNull(rpTemplate.getBody());
         
-        SmsTemplate smsTemplate = new SmsTemplate("Test Template ${url} ${token}");
+        SmsTemplate smsTemplate = new SmsTemplate("Test Template ${token} ${appInstallUrl} ${resetPasswordUrl}"); 
         study.setResetPasswordSmsTemplate(smsTemplate);
         study.setPhoneSignInSmsTemplate(smsTemplate);
         study.setAppInstallLinkSmsTemplate(smsTemplate);
