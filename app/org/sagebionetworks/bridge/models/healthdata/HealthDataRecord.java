@@ -7,11 +7,11 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import java.util.Set;
 
 import org.joda.time.LocalDate;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -137,10 +137,10 @@ public interface HealthDataRecord extends BridgeEntity {
     void setUserMetadata(JsonNode userMetadata);
 
     /** Whether this record should be shared with all researchers, only study researchers, or not at all. */
-    ParticipantOption.SharingScope getUserSharingScope();
+    SharingScope getUserSharingScope();
 
     /** @see #getUserSharingScope */
-    void setUserSharingScope(ParticipantOption.SharingScope userSharingScope);
+    void setUserSharingScope(SharingScope userSharingScope);
     
     /**
      * An external identifier that relates this record to other external health data records (analogous to the internal

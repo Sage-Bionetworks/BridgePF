@@ -11,7 +11,6 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.SHARING_SCOPE;
 
 import java.util.Map;
 
@@ -33,12 +32,14 @@ import org.mockito.stubbing.Answer;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
@@ -49,7 +50,6 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.play.controllers.ConsentController;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ConsentService;
-import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -87,13 +87,15 @@ public class ConsentControllerMockedTest {
     @Mock
     private ConsentService consentService;
     @Mock
-    private ParticipantOptionsService optionsService;
+    private AccountDao accountDao;
     @Mock
     private CacheProvider cacheProvider;
     @Mock
     private AuthenticationService authenticationService;
     @Mock
     private UserSession updatedSession;
+    @Mock
+    private Account account;
     @Captor
     private ArgumentCaptor<ConsentSignature> signatureCaptor;
     
@@ -129,7 +131,7 @@ public class ConsentControllerMockedTest {
         sessionUpdateService.setCacheProvider(cacheProvider);
         
         controller = spy(new ConsentController());
-        controller.setParticipantOptionsService(optionsService);
+        controller.setAccountDao(accountDao);
         controller.setSessionUpdateService(sessionUpdateService);
         controller.setStudyService(studyService);
         controller.setConsentService(consentService);
@@ -178,14 +180,16 @@ public class ConsentControllerMockedTest {
     
     @Test
     public void testChangeSharingScope() throws Exception {
+        TestUtils.mockEditAccount(accountDao, account);
+        
         Result result = controller.changeSharingScope(SharingScope.NO_SHARING, "message");
         
         TestUtils.assertResult(result,  200);
         JsonNode node = TestUtils.getJson(result);
         assertEquals("no_sharing", node.get("sharingScope").asText());
         assertFalse(node.get("dataSharing").asBoolean());
-
-        verify(optionsService).setEnum(study.getStudyIdentifier(), HEALTH_CODE, SHARING_SCOPE, SharingScope.NO_SHARING);
+        
+        verify(account).setSharingScope(SharingScope.NO_SHARING);
     }
 
     @Test
@@ -591,6 +595,8 @@ public class ConsentControllerMockedTest {
     @Test
     @SuppressWarnings("deprecation")
     public void dataSharingSuspendedUpdatesSession() throws Exception {
+        TestUtils.mockEditAccount(accountDao, account);
+        
         Result result = controller.suspendDataSharing();
 
         TestUtils.assertResult(result, 200);
@@ -598,12 +604,14 @@ public class ConsentControllerMockedTest {
         assertEquals("no_sharing", node.get("sharingScope").asText());
         assertFalse(node.get("dataSharing").asBoolean());
 
-        verify(optionsService).setEnum(study.getStudyIdentifier(), HEALTH_CODE, SHARING_SCOPE, SharingScope.NO_SHARING);
+        verify(account).setSharingScope(SharingScope.NO_SHARING);
     }
     
     @Test
     @SuppressWarnings("deprecation")
     public void dataSharingResumedUpdatesSession() throws Exception {
+        TestUtils.mockEditAccount(accountDao, account);
+        
         Result result = controller.resumeDataSharing();
 
         TestUtils.assertResult(result, 200);
@@ -611,7 +619,7 @@ public class ConsentControllerMockedTest {
         assertEquals("sponsors_and_partners", node.get("sharingScope").asText());
         assertTrue(node.get("dataSharing").asBoolean());
 
-        verify(optionsService).setEnum(study.getStudyIdentifier(), HEALTH_CODE, SHARING_SCOPE, SharingScope.SPONSORS_AND_PARTNERS);
+        verify(account).setSharingScope(SharingScope.SPONSORS_AND_PARTNERS);
     }
     
     private void assertConsentInSession(Result result, SharingScope scope, SubpopulationGuid subpopGuid) throws Exception {

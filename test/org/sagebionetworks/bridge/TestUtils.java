@@ -3,7 +3,9 @@ package org.sagebionetworks.bridge;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -15,6 +17,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -27,13 +30,14 @@ import com.google.common.collect.Sets;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
+import org.mockito.Mockito;
 import org.springframework.validation.Validator;
 import play.mvc.Http;
 import play.mvc.Result;
 import play.test.Helpers;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -42,7 +46,9 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.OperatingSystem;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
@@ -73,6 +79,25 @@ public class TestUtils {
     
     private static final DateTime TEST_CREATED_ON = DateTime.parse("2015-01-27T00:38:32.486Z");
 
+    /**
+     * Mocks this DAO method behavior so that you can verify that AccountDao.editAccount() was called, and 
+     * that your mock account was correctly edited.
+     * @param mockAccountDao
+     *      A mocked version of the AccountDao interface
+     * @param mockAccount
+     *      A mocked version of the Account interface
+     */
+    @SuppressWarnings("unchecked")
+    public static void mockEditAccount(AccountDao mockAccountDao, Account mockAccount) {
+        Mockito.mockingDetails(mockAccountDao).isMock();
+        Mockito.mockingDetails(mockAccount).isMock();
+        doAnswer(invocation -> {
+            Consumer<Account> accountEdits = (Consumer<Account>)invocation.getArgumentAt(2, Consumer.class);
+            accountEdits.accept(mockAccount);
+            return null;
+        }).when(mockAccountDao).editAccount(any(), any(), any());
+    }
+    
     public static void assertDatesWithTimeZoneEqual(DateTime date1, DateTime date2) {
         // I don't know of a one line test for this... maybe just comparing ISO string formats of the date.
         assertTrue(date1.isEqual(date2));

@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 
 import java.util.Map;
@@ -11,8 +10,11 @@ import javax.annotation.Resource;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -144,8 +146,13 @@ public class UserProfileController extends BaseController {
     public Result getDataGroups() throws Exception {
         UserSession session = getAuthenticatedSession();
         
-        Set<String> dataGroups = optionsService.getOptions(
-                session.getStudyIdentifier(), session.getHealthCode()).getStringSet(DATA_GROUPS);
+        AccountId accountId = AccountId.forHealthCode(session.getStudyIdentifier().getIdentifier(),
+                session.getHealthCode());
+        Account account = accountDao.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
+        Set<String> dataGroups = account.getDataGroups();
         
         ArrayNode array = JsonNodeFactory.instance.arrayNode();
         dataGroups.stream().forEach(array::add);

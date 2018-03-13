@@ -6,10 +6,10 @@ import static org.junit.Assert.assertNotEquals;
 import org.joda.time.DateTime;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.Phone;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 
 import com.fasterxml.jackson.databind.JsonNode;

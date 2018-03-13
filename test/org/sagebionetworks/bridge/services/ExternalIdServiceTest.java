@@ -1,14 +1,13 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.EXTERNAL_IDENTIFIER;
 
 import java.util.List;
 
@@ -19,13 +18,15 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.Config;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
-import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.Lists;
@@ -45,10 +46,10 @@ public class ExternalIdServiceTest {
     private ExternalIdDao externalIdDao;
     
     @Mock
-    private ParticipantOptionsService optionsService;
+    private AccountDao accountDao;
     
     @Mock
-    private ParticipantOptionsLookup lookup;
+    private Account account;
     
     private ExternalIdService externalIdService;
     
@@ -56,11 +57,15 @@ public class ExternalIdServiceTest {
     public void before() {
         Config config = mock(Config.class);
         when(config.getInt(ExternalIdDao.CONFIG_KEY_ADD_LIMIT)).thenReturn(10);
+        when(account.getHealthCode()).thenReturn(HEALTH_CODE);
         
         externalIdService = new ExternalIdService();
         externalIdService.setExternalIdDao(externalIdDao);
-        externalIdService.setParticipantOptionsService(optionsService);
+        externalIdService.setAccountDao(accountDao);
         externalIdService.setConfig(config);
+        
+        when(accountDao.getAccount(any())).thenReturn(account);
+        TestUtils.mockEditAccount(accountDao, account);
     }
     
     @Test
@@ -89,7 +94,6 @@ public class ExternalIdServiceTest {
         STUDY.setExternalIdValidationEnabled(true);
         doThrow(new EntityNotFoundException(ExternalIdentifier.class)).when(externalIdDao)
                 .assignExternalId(STUDY.getStudyIdentifier(), EXT_ID, HEALTH_CODE);
-        doReturn(lookup).when(optionsService).getOptions(STUDY.getStudyIdentifier(), HEALTH_CODE);
         
         try {
             externalIdService.assignExternalId(STUDY, EXT_ID, HEALTH_CODE);
@@ -97,7 +101,7 @@ public class ExternalIdServiceTest {
         } catch(EntityNotFoundException e) {
         }
         verify(externalIdDao).assignExternalId(STUDY.getStudyIdentifier(), EXT_ID, HEALTH_CODE);
-        verify(optionsService, never()).setString(STUDY.getStudyIdentifier(), HEALTH_CODE, EXTERNAL_IDENTIFIER, EXT_ID);
+        verify(account, never()).setExternalId(any());
     }
     
     @Test
@@ -105,7 +109,7 @@ public class ExternalIdServiceTest {
         externalIdService.unassignExternalId(STUDY, EXT_ID, HEALTH_CODE);
         
         verify(externalIdDao).unassignExternalId(STUDY.getStudyIdentifier(), EXT_ID);
-        verify(optionsService).setString(STUDY.getStudyIdentifier(), HEALTH_CODE, EXTERNAL_IDENTIFIER, null);
+        verify(account).setExternalId(null);
     }
 
     @Test
@@ -137,8 +141,7 @@ public class ExternalIdServiceTest {
         // Adding validated ID, reserve it
         verify(externalIdDao).reserveExternalId(STUDY.getStudyIdentifier(), EXT_ID);
         verify(externalIdDao).assignExternalId(STUDY.getStudyIdentifier(), EXT_ID, HEALTH_CODE);
-        verify(optionsService).setString(STUDY.getStudyIdentifier(), HEALTH_CODE, EXTERNAL_IDENTIFIER, EXT_ID);
-        
+        verify(account).setExternalId(EXT_ID);
     }
 
     @Test
@@ -194,13 +197,12 @@ public class ExternalIdServiceTest {
 
     private void setupExternalIdTest(boolean withValidation, String existingValue) {
         STUDY.setExternalIdValidationEnabled(withValidation);
-        when(optionsService.getOptions(STUDY.getStudyIdentifier(), HEALTH_CODE)).thenReturn(lookup);
-        when(lookup.getString(EXTERNAL_IDENTIFIER)).thenReturn(existingValue);
+        when(account.getExternalId()).thenReturn(existingValue);
     }
     
     private void verifySetAsOption(String externalId) {
         verify(externalIdDao, never()).reserveExternalId(STUDY.getStudyIdentifier(), externalId);
         verify(externalIdDao, never()).assignExternalId(STUDY.getStudyIdentifier(), externalId, HEALTH_CODE);
-        verify(optionsService).setString(STUDY.getStudyIdentifier(), HEALTH_CODE, EXTERNAL_IDENTIFIER, externalId);
+        verify(account).setExternalId(externalId);
     }
 }

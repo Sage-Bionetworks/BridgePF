@@ -5,8 +5,8 @@ import static org.sagebionetworks.bridge.validators.IntentToParticipateValidator
 
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.Phone;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 

@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.Roles.TEST_USERS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -135,6 +136,7 @@ public class TestUserAdminHelper {
         private Set<String> dataGroups;
         private String email;
         private String password;
+        private LinkedHashSet<String> languages;
         
         private Builder(Class<?> cls) {
             this.cls = cls;
@@ -170,6 +172,10 @@ public class TestUserAdminHelper {
             this.dataGroups = dataGroups;
             return this;
         }
+        public Builder withLanguages(LinkedHashSet<String> languages) {
+            this.languages = languages;
+            return this;
+        }
         public Builder withEmail(String email) {
             this.email = email;
             return this;
@@ -186,7 +192,8 @@ public class TestUserAdminHelper {
             String finalEmail = (email == null) ? TestUtils.makeRandomTestEmail(cls) : email;
             String finalPassword = (password == null) ? PASSWORD : password;
             StudyParticipant finalParticipant = new StudyParticipant.Builder().withEmail(finalEmail)
-                    .withPassword(finalPassword).withRoles(roles).withDataGroups(dataGroups).build();
+                    .withPassword(finalPassword).withRoles(roles).withLanguages(languages).withDataGroups(dataGroups)
+                    .build();
             
             UserSession session = userAdminService.createUser(
                     finalStudy, finalParticipant, subpopGuid, signIn, consent);

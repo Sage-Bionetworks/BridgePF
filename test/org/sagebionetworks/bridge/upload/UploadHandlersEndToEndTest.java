@@ -32,7 +32,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
@@ -41,7 +41,8 @@ import org.sagebionetworks.bridge.file.InMemoryFileHelper;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
-import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
+import org.sagebionetworks.bridge.models.accounts.GenericAccount;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -51,7 +52,6 @@ import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.services.HealthDataService;
-import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SurveyService;
 import org.sagebionetworks.bridge.services.UploadArchiveService;
@@ -73,14 +73,6 @@ public class UploadHandlersEndToEndTest {
     private static final DateTime MOCK_NOW = DateTime.parse("2016-06-03T11:33:55.777-0700");
     private static final long MOCK_NOW_MILLIS = MOCK_NOW.getMillis();
     private static final LocalDate MOCK_TODAY = MOCK_NOW.toLocalDate();
-
-    private static final Map<String, String> PARTICIPANT_OPTIONS_MAP = ImmutableMap.<String, String>builder()
-            .put(ParticipantOption.DATA_GROUPS.name(), "parkinson,test_user")
-            .put(ParticipantOption.EXTERNAL_IDENTIFIER.name(), EXTERNAL_ID)
-            .put(ParticipantOption.SHARING_SCOPE.name(), ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS.name())
-            .build();
-    private static final ParticipantOptionsLookup PARTICIPANT_OPTIONS_LOOKUP = new ParticipantOptionsLookup(
-            PARTICIPANT_OPTIONS_MAP);
 
     private static final DynamoStudy STUDY = new DynamoStudy();
     static {
@@ -256,11 +248,16 @@ public class UploadHandlersEndToEndTest {
         strictValidationHandler.setStudyService(mockStudyService);
 
         // set up TranscribeConsentHandler
-        ParticipantOptionsService mockOptionsService = mock(ParticipantOptionsService.class);
-        when(mockOptionsService.getOptions(TestConstants.TEST_STUDY, HEALTH_CODE)).thenReturn(PARTICIPANT_OPTIONS_LOOKUP);
+        GenericAccount account = new GenericAccount();
+        account.setDataGroups(ImmutableSet.of("parkinson","test_user"));
+        account.setExternalId(EXTERNAL_ID);
+        account.setSharingScope(SharingScope.SPONSORS_AND_PARTNERS);
+
+        AccountDao mockAccountDao = mock(AccountDao.class);
+        when(mockAccountDao.getAccount(any())).thenReturn(account);
 
         TranscribeConsentHandler transcribeConsentHandler = new TranscribeConsentHandler();
-        transcribeConsentHandler.setOptionsService(mockOptionsService);
+        transcribeConsentHandler.setAccountDao(mockAccountDao);
 
         // mock HealthDataService should return empty list for getRecordsByHealthcodeCreatedOnSchemaId(), so dedupe
         // logic doesn't crash
@@ -302,7 +299,7 @@ public class UploadHandlersEndToEndTest {
         assertEquals(MOCK_TODAY, record.getUploadDate());
         assertEquals(UPLOAD_ID, record.getUploadId());
         assertEquals(MOCK_NOW_MILLIS, record.getUploadedOn().longValue());
-        assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, record.getUserSharingScope());
+        assertEquals(SharingScope.SPONSORS_AND_PARTNERS, record.getUserSharingScope());
         assertEquals(EXTERNAL_ID, record.getUserExternalId());
         assertEquals(DATA_GROUP_SET, record.getUserDataGroups());
 
