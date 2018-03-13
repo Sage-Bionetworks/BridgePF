@@ -308,8 +308,8 @@ public class StudyValidator implements Validator {
     private void validateSmsTemplate(Errors errors, SmsTemplate template, String fieldName, String... templateVariables) {
         if (template != null) {
             errors.pushNestedPath(fieldName);
-            // This is crude. Once template variables are substituted, these messages might be too long. Right now
-            // we're doing a better calculation in the study manager
+            // This is not necessarily going to prevent the message from be split because the template variables haven't
+            // been substituted. We do calculate this more accurately in the study manager right now.
             if (StringUtils.isBlank(template.getMessage())) {
                 errors.rejectValue("message", "cannot be blank");
             } else if (template.getMessage().length() > 160) {
