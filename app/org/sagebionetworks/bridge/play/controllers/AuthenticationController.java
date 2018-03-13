@@ -151,6 +151,7 @@ public class AuthenticationController extends BaseController {
         }
     }
 
+    @Deprecated
     @BodyParser.Of(BodyParser.Empty.class)
     public Result signOut() throws Exception {
         final UserSession session = getSessionIfItExists();
