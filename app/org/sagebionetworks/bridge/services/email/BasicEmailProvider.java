@@ -119,6 +119,10 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
             withToken(BridgeConstants.EXPIRATION_PERIOD_KEY, BridgeUtils.secondsToPeriodString(expireInSeconds));
             return this;
         }
+        public Builder withExpirationPeriod(String name, int expireInSeconds) {
+            withToken(name, BridgeUtils.secondsToPeriodString(expireInSeconds));
+            return this;
+        }
         public BasicEmailProvider build() {
             checkNotNull(study);
             checkNotNull(template);

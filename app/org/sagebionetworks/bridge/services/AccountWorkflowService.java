@@ -84,6 +84,10 @@ public class AccountWorkflowService {
     private static final String RESET_PASSWORD_URL_KEY = "resetPasswordUrl";
     private static final String SHORT_RESET_PASSWORD_URL_KEY = "shortResetPasswordUrl";
         
+    private static final String RESET_PASSWORD_EXPIRATION_PERIOD = "resetPasswordExpirationPeriod";
+    private static final String PHONE_SIGNIN_EXPIRATION_PERIOD = "phoneSignInExpirationPeriod";
+    private static final String EMAIL_SIGNIN_EXPIRATION_PERIOD = "emailSignInExpirationPeriod";
+    
     private static final String EMAIL_SIGNIN_REQUEST_KEY = "%s:%s:signInRequest";
     private static final String PHONE_SIGNIN_REQUEST_KEY = "%s:%s:phoneSignInRequest";
     
@@ -304,14 +308,16 @@ public class AccountWorkflowService {
             .withStudy(study)
             .withEmailTemplate(template)
             .withRecipientEmail(email)
-            // for backwards compatibility; we also set as passwordResetUrl
-            .withToken(RESET_PASSWORD_URL_KEY, url)
-            .withToken(SHORT_RESET_PASSWORD_URL_KEY, shortUrl)
             .withToken(SPTOKEN_KEY, sptoken)
+            .withExpirationPeriod(EXPIRE_IN_SECONDS)
+            // for backwards compatibility, we set ${url}, ${expirationWindow}
             .withToken(URL_KEY, url)
             .withToken(SHORT_URL_KEY, shortUrl)
-            .withExpirationPeriod(EXPIRE_IN_SECONDS)
-            .withToken(EXP_WINDOW_TOKEN, Integer.toString(EXPIRE_IN_SECONDS/60/60));
+            .withToken(EXP_WINDOW_TOKEN, Integer.toString(EXPIRE_IN_SECONDS/60/60))
+            // Then we set the password reset URL under another key
+            .withToken(RESET_PASSWORD_URL_KEY, url)
+            .withToken(SHORT_RESET_PASSWORD_URL_KEY, shortUrl)
+            .withExpirationPeriod(RESET_PASSWORD_EXPIRATION_PERIOD, EXPIRE_IN_SECONDS);
             
         if (includeEmailSignIn && study.isEmailSignInEnabled()) {
             SignIn signIn = new SignIn.Builder().withEmail(email).withStudy(study.getIdentifier()).build();
@@ -323,9 +329,11 @@ public class AccountWorkflowService {
                     
                     // Put the components in separately, in case we want to alter the URL in a specific template.
                     builder.withToken(EMAIL_KEY, BridgeUtils.encodeURIComponent(signIn.getEmail()));
-                    builder.withToken(TOKEN_KEY, token); // NOTE: sptoken and token are different
+                    builder.withToken(TOKEN_KEY, token);
+                    // Now put in the emailSignIn URL with expiration separately called out.
                     builder.withToken(EMAIL_SIGNIN_URL_KEY, emailUrl);
                     builder.withToken(SHORT_EMAIL_SIGNIN_URL_KEY, emailShortUrl);
+                    builder.withExpirationPeriod(EMAIL_SIGNIN_EXPIRATION_PERIOD, SESSION_SIGNIN_EXPIRE_IN_SECONDS);
                 });
         }
         sendMailService.sendEmail(builder.build());
@@ -342,18 +350,18 @@ public class AccountWorkflowService {
         builder.withSmsTemplate(template);
         builder.withStudy(study);
         builder.withPhone(phone);
-        builder.withExpirationPeriod(EXPIRE_IN_SECONDS);
-        builder.withToken(RESET_PASSWORD_URL_KEY, url);
         builder.withToken(URL_KEY, url);
+        builder.withToken(RESET_PASSWORD_URL_KEY, url);
+        builder.withExpirationPeriod(RESET_PASSWORD_EXPIRATION_PERIOD, EXPIRE_IN_SECONDS);
         
-        if (includePhoneSignIn /*&& study.isEmailSignInEnabled()*/) {
+        // When phone workflow is fully supported, this will only be done if phone sign in is enabled
+        if (includePhoneSignIn /* && study.isPhoneSignInEnabled()*/) {
             SignIn signIn = new SignIn.Builder().withPhone(phone).withStudy(study.getIdentifier()).build();
             requestChannelSignIn(PHONE, PHONE_SIGNIN_REQUEST, PHONE_CACHE_KEY_FUNC, phoneSignInRequestInMillis,
                 signIn, false, this::getNextToken, (theStudy, token) -> {
                     String formattedToken = token.substring(0,3) + "-" + token.substring(3,6);
-                    // TODO: This expiration overwrites the expiration of the reset password link!
                     builder.withToken(TOKEN_KEY, formattedToken);
-                    builder.withExpirationPeriod(SESSION_SIGNIN_EXPIRE_IN_SECONDS);
+                    builder.withExpirationPeriod(PHONE_SIGNIN_EXPIRATION_PERIOD, SESSION_SIGNIN_EXPIRE_IN_SECONDS);
                 });
         }
         notificationsService.sendSMSMessage(builder.build());

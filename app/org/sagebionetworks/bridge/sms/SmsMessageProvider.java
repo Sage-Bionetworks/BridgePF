@@ -14,7 +14,6 @@ import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.amazonaws.services.sns.model.MessageAttributeValue;
 import com.amazonaws.services.sns.model.PublishRequest;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
 public class SmsMessageProvider {
@@ -36,19 +35,17 @@ public class SmsMessageProvider {
     public SmsTemplate getTemplate() {
         return template;
     }
-    public Map<String,String> getTokenMap() {
-        return ImmutableMap.copyOf(tokenMap);
-    }
     public Phone getPhone() {
         return phone;
     }
     
     public PublishRequest getSmsRequest() {
-        String studyShortName = StringUtils.isBlank(study.getShortName()) ? "Bridge" : study.getShortName();
-
         tokenMap.putAll(BridgeUtils.studyTemplateVariables(getStudy()));
         tokenMap.put("host", BridgeConfigFactory.getConfig().getHostnameWithPostfix("ws"));
-        tokenMap.put("studyShortName", studyShortName);
+        
+        // overwriting the study's short name field with a default value, if needed
+        String studyShortName = StringUtils.isBlank(study.getShortName()) ? "Bridge" : study.getShortName();
+        tokenMap.put("studyShortName", studyShortName); 
 
         Map<String, MessageAttributeValue> smsAttributes = Maps.newHashMap();
         smsAttributes.put(BridgeConstants.SMS_TYPE, attribute(BridgeConstants.SMS_TYPE_TRANSACTIONAL));
@@ -87,6 +84,10 @@ public class SmsMessageProvider {
         }
         public Builder withPhone(Phone phone) {
             this.phone = phone;
+            return this;
+        }
+        public Builder withExpirationPeriod(String name, int expireInSeconds) {
+            withToken(name, BridgeUtils.secondsToPeriodString(expireInSeconds));
             return this;
         }
         public Builder withExpirationPeriod(int expireInSeconds) {

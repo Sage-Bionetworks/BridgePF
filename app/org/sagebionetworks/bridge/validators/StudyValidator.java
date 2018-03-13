@@ -131,12 +131,12 @@ public class StudyValidator implements Validator {
                     "${shortUrl}", "${emailSignInUrl}", "${resetPasswordUrl}", 
                     "${shortEmailSignInUrl}", "${shortResetPasswordUrl}");
         }
-        
         validateSmsTemplate(errors, study.getResetPasswordSmsTemplate(), "resetPasswordSmsTemplate", "${url}");
         validateSmsTemplate(errors, study.getPhoneSignInSmsTemplate(), "phoneSignInSmsTemplate", "${token}");
-        validateSmsTemplate(errors, study.getAppInstallLinkSmsTemplate(), "appInstallLinkSmsTemplate", "${url}"); // TODO
+        validateSmsTemplate(errors, study.getAppInstallLinkSmsTemplate(), "appInstallLinkSmsTemplate", "${url}");
         validateSmsTemplate(errors, study.getVerifyPhoneSmsTemplate(), "verifyPhoneSmsTemplate", "${token}");
-        validateSmsTemplate(errors, study.getAccountExistsSmsTemplate(), "accountExistsSmsTemplate", "${token}", "${resetPasswordUrl}");
+        validateSmsTemplate(errors, study.getAccountExistsSmsTemplate(), "accountExistsSmsTemplate", "${token}",
+                "${resetPasswordUrl}");
         
         for (String userProfileAttribute : study.getUserProfileAttributes()) {
             if (RESERVED_ATTR_NAMES.contains(userProfileAttribute)) {
