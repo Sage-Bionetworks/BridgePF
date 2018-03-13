@@ -218,7 +218,7 @@ public class AccountWorkflowService {
                 .withRecipientEmail(recipientEmail)
                 .withToken(SPTOKEN_KEY, sptoken)
                 .withToken(OLD_URL_KEY, oldUrl)
-                .withToken(OLD_SHORT_URL_KEY, oldUrl)
+                .withToken(OLD_SHORT_URL_KEY, newUrl) // new URL is short
                 .withToken(EMAIL_VERIFICATION_URL_KEY, newUrl)
                 .withExpirationPeriod(EMAIL_VERIFICATION_EXPIRATION_PERIOD, EXPIRE_IN_SECONDS)
                 .build();
