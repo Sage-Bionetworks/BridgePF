@@ -50,9 +50,7 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
         return recipientEmails;
     }
     public Map<String,String> getTokenMap() {
-        // Nulls will cause ImmutableMap.of to fail
-        tokenMap.values().removeIf(Objects::isNull);
-        return ImmutableMap.copyOf(tokenMap);
+        return tokenMap;
     }
     public EmailTemplate getTemplate() {
         return template;
@@ -60,8 +58,6 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
     
     @Override
     public MimeTypeEmail getMimeTypeEmail() throws MessagingException {
-        tokenMap.putAll(BridgeUtils.studyTemplateVariables(getStudy()));
-        
         final MimeTypeEmailBuilder emailBuilder = new MimeTypeEmailBuilder();
 
         final String formattedSubject = BridgeUtils.resolveTemplate(template.getSubject(), tokenMap);
@@ -122,8 +118,12 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
         public BasicEmailProvider build() {
             checkNotNull(study);
             checkNotNull(template);
-
-            return new BasicEmailProvider(study, overrideSenderEmail, tokenMap, recipientEmails, template);
+            
+            tokenMap.putAll(BridgeUtils.studyTemplateVariables(study));
+            // Nulls will cause ImmutableMap.of to fail
+            tokenMap.values().removeIf(Objects::isNull);
+            
+            return new BasicEmailProvider(study, overrideSenderEmail, ImmutableMap.copyOf(tokenMap), recipientEmails, template);
         }
     }
 }

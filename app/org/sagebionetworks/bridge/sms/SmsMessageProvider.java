@@ -40,21 +40,13 @@ public class SmsMessageProvider {
         return phone;
     }
     public Map<String,String> getTokenMap() {
-        // Nulls will cause ImmutableMap.of to fail
-        tokenMap.values().removeIf(Objects::isNull);
-        return ImmutableMap.copyOf(tokenMap);
+        return tokenMap;
     }
 
     public PublishRequest getSmsRequest() {
-        tokenMap.putAll(BridgeUtils.studyTemplateVariables(getStudy()));
-        
-        // overwriting the study's short name field with a default value, if needed
-        String studyShortName = StringUtils.isBlank(study.getShortName()) ? "Bridge" : study.getShortName();
-        tokenMap.put("studyShortName", studyShortName); 
-
         Map<String, MessageAttributeValue> smsAttributes = Maps.newHashMap();
         smsAttributes.put(BridgeConstants.SMS_TYPE, attribute(BridgeConstants.SMS_TYPE_TRANSACTIONAL));
-        smsAttributes.put(BridgeConstants.SENDER_ID, attribute(studyShortName));
+        smsAttributes.put(BridgeConstants.SENDER_ID, attribute(tokenMap.get("studyShortName")));
         // Costs seem too low to worry about this, but if need be, this is how we'd cap it.
         // smsAttributes.put("AWS.SNS.SMS.MaxPrice", attribute("0.50")); max price set to $.50
 
@@ -99,8 +91,15 @@ public class SmsMessageProvider {
             checkNotNull(study);
             checkNotNull(template);
             checkNotNull(phone);
+            tokenMap.putAll(BridgeUtils.studyTemplateVariables(study));
+            
+            // overwriting the study's short name field with a default value, if needed
+            String studyShortName = StringUtils.isBlank(study.getShortName()) ? "Bridge" : study.getShortName();
+            tokenMap.put("studyShortName", studyShortName);
+            // remove nulls, these will cause ImmutableMap.of to fail
+            tokenMap.values().removeIf(Objects::isNull);
 
-            return new SmsMessageProvider(study, template, phone, tokenMap);
+            return new SmsMessageProvider(study, template, phone, ImmutableMap.copyOf(tokenMap));
         }
     }
 }

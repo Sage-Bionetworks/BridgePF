@@ -80,8 +80,6 @@ public class SmsMessageProviderTest {
                 .withSmsTemplate(new SmsTemplate(""))
                 .withToken("url", null).build();
         
-        provider.getSmsRequest();
-        
         Map<String,String> tokenMap = provider.getTokenMap();
         assertNull(tokenMap.get("supportName"));
     }
