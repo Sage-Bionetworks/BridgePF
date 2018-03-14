@@ -36,7 +36,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -54,7 +54,6 @@ import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.ScheduledActivityService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -107,7 +106,7 @@ public class ScheduledActivityControllerTest {
     CacheProvider cacheProvider;
     
     @Mock
-    ParticipantOptionsService optionsService;
+    AccountDao accountDao;
     
     @Mock
     Study study;
@@ -171,7 +170,7 @@ public class ScheduledActivityControllerTest {
         controller.setScheduledActivityService(scheduledActivityService);
         controller.setStudyService(studyService);
         controller.setCacheProvider(cacheProvider);
-        controller.setParticipantOptionsService(optionsService);
+        controller.setAccountDao(accountDao);
         
         sessionUpdateService = spy(new SessionUpdateService());
         sessionUpdateService.setCacheProvider(cacheProvider);
@@ -184,11 +183,12 @@ public class ScheduledActivityControllerTest {
     @SuppressWarnings("deprecation")
     @Test
     public void timeZoneCapturedFirstTime() throws Exception {
+        TestUtils.mockEditAccount(accountDao, account);
+        
         DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
         controller.getScheduledActivities(null, "+03:00", "3", "5");
         
-        verify(optionsService).setDateTimeZone(TEST_STUDY, session.getHealthCode(),
-                ParticipantOption.TIME_ZONE, MSK);
+        verify(account).setTimeZone(MSK);
         assertEquals(MSK, session.getParticipant().getTimeZone());
         
         verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());

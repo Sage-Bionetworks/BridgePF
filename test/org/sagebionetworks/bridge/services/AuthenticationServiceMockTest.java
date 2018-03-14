@@ -7,10 +7,12 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 
+import java.util.LinkedHashSet;
 import java.util.Map;
 
 import org.junit.Before;
@@ -23,6 +25,7 @@ import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -101,8 +104,6 @@ public class AuthenticationServiceMockTest {
     @Mock
     private ConsentService consentService;
     @Mock
-    private ParticipantOptionsService optionsService;
-    @Mock
     private AccountDao accountDao;
     @Mock
     private ParticipantService participantService;
@@ -141,7 +142,6 @@ public class AuthenticationServiceMockTest {
         service.setCacheProvider(cacheProvider);
         service.setBridgeConfig(config);
         service.setConsentService(consentService);
-        service.setOptionsService(optionsService);
         service.setAccountDao(accountDao);
         service.setPasswordResetValidator(passwordResetValidator);
         service.setParticipantService(participantService);
@@ -156,7 +156,7 @@ public class AuthenticationServiceMockTest {
         account.setReauthToken(REAUTH_TOKEN);
         doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
-        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
         UserSession retrieved = service.signIn(study, CONTEXT, EMAIL_PASSWORD_SIGN_IN);
         
@@ -168,7 +168,7 @@ public class AuthenticationServiceMockTest {
     public void unconsentedSignInWithEmail() throws Exception {
         doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
-        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         
         service.signIn(study, CONTEXT, EMAIL_PASSWORD_SIGN_IN);
     }
@@ -193,7 +193,7 @@ public class AuthenticationServiceMockTest {
         account.setReauthToken(REAUTH_TOKEN);
         doReturn(account).when(accountDao).authenticate(study, PHONE_PASSWORD_SIGN_IN);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
-        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
         UserSession retrieved = service.signIn(study, CONTEXT, PHONE_PASSWORD_SIGN_IN);
         
@@ -205,7 +205,7 @@ public class AuthenticationServiceMockTest {
     public void unconsentedSignInWithPhone() throws Exception {
         doReturn(account).when(accountDao).authenticate(study, PHONE_PASSWORD_SIGN_IN);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
-        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         
         service.signIn(study, CONTEXT, PHONE_PASSWORD_SIGN_IN);
     }
@@ -253,7 +253,7 @@ public class AuthenticationServiceMockTest {
                 CONTEXT, SIGN_IN_WITH_EMAIL, SignInValidator.EMAIL_SIGNIN);
         doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
-        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
         UserSession retSession = service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
         
@@ -329,7 +329,7 @@ public class AuthenticationServiceMockTest {
         account.setReauthToken(REAUTH_TOKEN);
 
         StudyParticipant participant = new StudyParticipant.Builder().withEmail(RECIPIENT_EMAIL).build();
-        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         doReturn(account).when(accountDao).reauthenticate(study, REAUTH_REQUEST);
         doReturn(participant).when(participantService).getParticipant(study, account, false);
         
@@ -435,7 +435,7 @@ public class AuthenticationServiceMockTest {
         doReturn(SIGN_IN_WITH_PHONE.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.PHONE,
                 CONTEXT, SIGN_IN_WITH_PHONE, SignInValidator.PHONE_SIGNIN);
         doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_PHONE.getAccountId());
-        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any());
+        doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
         
         UserSession session = service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
 
@@ -491,5 +491,25 @@ public class AuthenticationServiceMockTest {
         EmailVerification ev = new EmailVerification(null);
         service.verifyEmail(ev);
     }
+    
+    @Test
+    public void languagesArePersistedFromContext() {
+        // This specifically has to be a mock to easily mock the editAccount method on the DAO.
+        Account mockAccount = mock(Account.class);
 
+        LinkedHashSet<String> languages = TestUtils.newLinkedHashSet("es","de");
+        CriteriaContext context = new CriteriaContext.Builder().withLanguages(languages).withUserId(USER_ID)
+                .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+        TestUtils.mockEditAccount(accountDao, mockAccount);
+        doReturn(mockAccount).when(accountDao).getAccount(any());
+        
+        // No languages.
+        StudyParticipant participant = new StudyParticipant.Builder().withHealthCode("healthCode").build();
+        doReturn(participant).when(participantService).getParticipant(study, mockAccount, false);
+        
+        service.getSession(study, context);
+        
+        verify(accountDao).editAccount(eq(TestConstants.TEST_STUDY), eq("healthCode"), any());
+        verify(mockAccount).setLanguages(languages);
+    }
 }

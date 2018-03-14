@@ -451,7 +451,7 @@ public class AuthenticationControllerMockTest {
         Result result = controller.signInV3();
         assertSessionInPlayResult(result);
         
-        Http.Response mockResponse = controller.response();
+        controller.response();
 
         verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
         RequestInfo requestInfo = requestInfoCaptor.getValue();

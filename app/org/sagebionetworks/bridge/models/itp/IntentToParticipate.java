@@ -1,9 +1,9 @@
 package org.sagebionetworks.bridge.models.itp;
 
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.Phone;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;

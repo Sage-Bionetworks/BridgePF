@@ -5,8 +5,8 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope.ALL_QUALIFIED_RESEARCHERS;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope.NO_SHARING;
+import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
+import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
 
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -38,9 +38,6 @@ public class SessionUpdateServiceTest {
     
     @Mock
     private CacheProvider mockCacheProvider;
-    
-    @Mock
-    private ParticipantOptionsService mockOptionsService;
     
     private SessionUpdateService service;
     

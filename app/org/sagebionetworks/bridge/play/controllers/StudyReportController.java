@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -44,15 +43,8 @@ public class StudyReportController extends BaseController {
     @Autowired
     ReportService reportService;
     
-    @Autowired
-    AccountDao accountDao;
-    
     final void setReportService(ReportService reportService) {
         this.reportService = reportService;
-    }
-    
-    final void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
     }
     
     /**

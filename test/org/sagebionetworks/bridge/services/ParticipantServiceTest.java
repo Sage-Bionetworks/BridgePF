@@ -43,8 +43,6 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -63,8 +61,8 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
-import org.sagebionetworks.bridge.models.accounts.ParticipantOptionsLookup;
 import org.sagebionetworks.bridge.models.accounts.Phone;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
@@ -152,16 +150,10 @@ public class ParticipantServiceTest {
     private ScheduledActivityDao activityDao;
     
     @Mock
-    private ParticipantOptionsService optionsService;
-    
-    @Mock
     private SubpopulationService subpopService;
     
     @Mock
     private ConsentService consentService;
-    
-    @Mock
-    private ParticipantOptionsLookup lookup;
     
     @Mock
     private CacheProvider cacheProvider;
@@ -189,9 +181,6 @@ public class ParticipantServiceTest {
     
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
-    
-    @Captor
-    ArgumentCaptor<Map<ParticipantOption,String>> optionsCaptor;
     
     @Captor
     ArgumentCaptor<Account> accountCaptor;
@@ -237,22 +226,22 @@ public class ParticipantServiceTest {
     }
     
     private void mockHealthCodeAndAccountRetrieval() {
+        TestUtils.mockEditAccount(accountDao, account);
         ((GenericAccount)account).setId(ID);
         ((GenericAccount)account).setHealthCode(HEALTH_CODE);
         account.setEmail(EMAIL);
         when(accountDao.constructAccount(any(), any(), any(), any())).thenReturn(account);
         when(accountDao.createAccount(same(STUDY), same(account))).thenReturn(ID);
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
-        when(optionsService.getOptions(STUDY.getStudyIdentifier(), HEALTH_CODE)).thenReturn(lookup);
     }
     
     private void mockAccountNoEmail() {
+        TestUtils.mockEditAccount(accountDao, account);
         ((GenericAccount)account).setId(ID);
         ((GenericAccount)account).setHealthCode(HEALTH_CODE);
         when(accountDao.constructAccount(any(), any(), any(), any())).thenReturn(account);
         when(accountDao.createAccount(same(STUDY), same(account))).thenReturn(ID);
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
-        when(optionsService.getOptions(STUDY.getStudyIdentifier(), HEALTH_CODE)).thenReturn(lookup);
     }
     
     @Test
@@ -307,7 +296,6 @@ public class ParticipantServiceTest {
         }
         verify(externalIdService).reserveExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
         verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, PASSWORD);
-        verifyNoMoreInteractions(optionsService);
     }
     
     @Test
@@ -337,7 +325,6 @@ public class ParticipantServiceTest {
         } catch(InvalidEntityException e) {
         }
         verifyNoMoreInteractions(accountDao);
-        verifyNoMoreInteractions(optionsService);
         verifyNoMoreInteractions(externalIdService);
     }
     
@@ -575,7 +562,8 @@ public class ParticipantServiceTest {
     public void updateParticipantWithExternalIdValidationAddingId() {
         STUDY.setExternalIdValidationEnabled(true);
         mockHealthCodeAndAccountRetrieval();
-        
+        account.setExternalId(null);
+
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE)
                 .withEmail(EMAIL)
@@ -588,9 +576,6 @@ public class ParticipantServiceTest {
         oldSession.setAuthenticated(true);
         oldSession.setStudyIdentifier(STUDY.getStudyIdentifier());
         doReturn(oldSession).when(cacheProvider).getUserSessionByUserId(ID);
-
-        doReturn(lookup).when(optionsService).getOptions(STUDY.getStudyIdentifier(), HEALTH_CODE);
-        doReturn(null).when(lookup).getString(ParticipantOption.EXTERNAL_IDENTIFIER);
         
         participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
         
@@ -628,7 +613,6 @@ public class ParticipantServiceTest {
         } catch(EntityNotFoundException e) {
         }
         verify(accountDao, never()).updateAccount(any(), eq(false));
-        verifyNoMoreInteractions(optionsService);
         verifyNoMoreInteractions(externalIdService);
     }
     
@@ -809,7 +793,6 @@ public class ParticipantServiceTest {
     @Test
     public void getStudyParticipantWithAccount() throws Exception {
         mockHealthCodeAndAccountRetrieval();
-        doReturn(lookup).when(optionsService).getOptions(STUDY.getStudyIdentifier(), HEALTH_CODE);
         account.setClientData(TestUtils.getClientData());
         
         StudyParticipant participant = participantService.getParticipant(STUDY, account, false);
@@ -993,8 +976,6 @@ public class ParticipantServiceTest {
     @Test
     public void updateExternalIdValidatedRequiredWithSameValue() {
         setupExternalIdTest(true, true);
-        when(lookup.getString(ParticipantOption.EXTERNAL_IDENTIFIER)).thenReturn(EXTERNAL_ID);
-        when(optionsService.getOptions(STUDY.getStudyIdentifier(), HEALTH_CODE)).thenReturn(lookup);
         
         participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
         

@@ -6,7 +6,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.*;
 import static org.sagebionetworks.bridge.BridgeConstants.*;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import static org.junit.Assert.assertEquals;
@@ -34,6 +33,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -43,12 +43,12 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.RequestInfo;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.services.ParticipantOptionsService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -399,13 +399,14 @@ public class BaseControllerTest {
     
     @Test
     public void canGetLanguagesWhenInHeader() throws Exception {
+        AccountDao accountDao = mock(AccountDao.class);
+        Account account = mock(Account.class);
+        TestUtils.mockEditAccount(accountDao, account);
+        
         BaseController controller = new SchedulePlanController();
+        controller.setAccountDao(accountDao);
         mockPlayContext();
         mockHeader(ACCEPT_LANGUAGE, "en,fr");
-
-        // This gets called to save the languages retrieved from the header
-        ParticipantOptionsService optionsService = mock(ParticipantOptionsService.class);
-        controller.setParticipantOptionsService(optionsService);
 
         CacheProvider cacheProvider = mock(CacheProvider.class);
         controller.setCacheProvider(cacheProvider);
@@ -428,18 +429,17 @@ public class BaseControllerTest {
         StudyParticipant updatedParticipant = session.getParticipant();
         assertEquals(LANGUAGE_SET, updatedParticipant.getLanguages());
         
-        verify(optionsService).setOrderedStringSet(TEST_STUDY, "AAA", LANGUAGES, LANGUAGE_SET);
+        verify(account).setLanguages(LANGUAGE_SET);
         verify(cacheProvider).setUserSession(session);
     }
     
     @Test
     public void canGetLanguagesWhenNotInSessionOrHeader() throws Exception {
+        AccountDao accountDao = mock(AccountDao.class);
+        
         BaseController controller = new SchedulePlanController();
+        controller.setAccountDao(accountDao);
         mockPlayContext();
-
-        // This gets called to save the languages retrieved from the header
-        ParticipantOptionsService optionsService = mock(ParticipantOptionsService.class);
-        controller.setParticipantOptionsService(optionsService);
 
         CacheProvider cacheProvider = mock(CacheProvider.class);
         controller.setCacheProvider(cacheProvider);
@@ -448,6 +448,8 @@ public class BaseControllerTest {
         
         LinkedHashSet<String> languages = controller.getLanguages(session);
         assertTrue(languages.isEmpty());
+        
+        verify(accountDao, never()).editAccount(any(), any(), any());
     }
 
     @Test

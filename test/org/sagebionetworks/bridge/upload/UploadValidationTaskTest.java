@@ -28,10 +28,10 @@ import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.file.InMemoryFileHelper;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.Upload;
@@ -309,7 +309,7 @@ public class UploadValidationTaskTest {
         record.setUploadDate(UPLOAD_DATE);
         record.setUploadedOn(UPLOADED_ON);
         record.setUploadId(UPLOAD_ID);
-        record.setUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS);
+        record.setUserSharingScope(SharingScope.SPONSORS_AND_PARTNERS);
         record.setUserExternalId(USER_EXTERNAL_ID);
         record.setUserDataGroups(TestConstants.USER_DATA_GROUPS);
         record.setData(BridgeObjectMapper.get().readTree(DATA_TEXT));

@@ -6,10 +6,10 @@ import com.fasterxml.jackson.annotation.JsonFilter;
 import java.util.Set;
 
 import org.joda.time.LocalDate;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.json.LocalDateToStringSerializer;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
@@ -42,7 +42,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private String uploadId;
     private Long uploadedOn;
     private JsonNode userMetadata;
-    private ParticipantOption.SharingScope userSharingScope;
+    private SharingScope userSharingScope;
     private String userExternalId;
     private Set<String> userDataGroups;
     private String validationErrors;
@@ -248,13 +248,13 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     /** {@inheritDoc} */
     @DynamoDBTypeConverted(converter=EnumMarshaller.class)
     @Override
-    public ParticipantOption.SharingScope getUserSharingScope() {
+    public SharingScope getUserSharingScope() {
         return userSharingScope;
     }
 
     /** @see #getUserSharingScope */
     @Override
-    public void setUserSharingScope(ParticipantOption.SharingScope userSharingScope) {
+    public void setUserSharingScope(SharingScope userSharingScope) {
         this.userSharingScope = userSharingScope;
     }
     
