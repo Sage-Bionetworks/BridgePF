@@ -1,14 +1,19 @@
 package org.sagebionetworks.bridge.services.email;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+import java.util.Map;
 
 import javax.mail.internet.MimeBodyPart;
 
 import org.junit.Test;
-
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
+import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 
 import com.google.common.collect.Sets;
 
@@ -70,4 +75,18 @@ public class BasicEmailProviderTest {
         // Check provider attributes
         assertEquals("example@example.com", provider.getPlainSenderEmail());
     }
+    @Test
+    public void nullTokenMapEntryDoesntBreakMap() throws Exception {
+        EmailTemplate template = new EmailTemplate("asdf", "asdf", MimeType.TEXT);
+        
+        BasicEmailProvider provider = new BasicEmailProvider.Builder().withEmailTemplate(template)
+                .withRecipientEmail("email@email.com")
+                .withOverrideSenderEmail("example@example.com").withStudy(Study.create()).build();
+        
+        provider.getMimeTypeEmail();
+        
+        Map<String,String> tokenMap = provider.getTokenMap();
+        assertNull(tokenMap.get("supportName"));
+    }    
+    
 }

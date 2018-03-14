@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services.email;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.mail.MessagingException;
@@ -49,6 +50,8 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
         return recipientEmails;
     }
     public Map<String,String> getTokenMap() {
+        // Nulls will cause ImmutableMap.of to fail
+        tokenMap.values().removeIf(Objects::isNull);
         return ImmutableMap.copyOf(tokenMap);
     }
     public EmailTemplate getTemplate() {

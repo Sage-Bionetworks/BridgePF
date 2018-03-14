@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.sms;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -13,6 +14,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.amazonaws.services.sns.model.MessageAttributeValue;
 import com.amazonaws.services.sns.model.PublishRequest;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
 public class SmsMessageProvider {
@@ -37,7 +39,12 @@ public class SmsMessageProvider {
     public Phone getPhone() {
         return phone;
     }
-    
+    public Map<String,String> getTokenMap() {
+        // Nulls will cause ImmutableMap.of to fail
+        tokenMap.values().removeIf(Objects::isNull);
+        return ImmutableMap.copyOf(tokenMap);
+    }
+
     public PublishRequest getSmsRequest() {
         tokenMap.putAll(BridgeUtils.studyTemplateVariables(getStudy()));
         
@@ -77,7 +84,7 @@ public class SmsMessageProvider {
             return this;
         }
         public Builder withToken(String name, String value) {
-            tokenMap.put(name, value);
+            tokenMap.put(name, value);    
             return this;
         }
         public Builder withPhone(Phone phone) {

@@ -277,7 +277,6 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     
     /**
      * The template for the SMS message sent to a user as part of a sign in via phone workflow.
-     * @return
      */
     SmsTemplate getPhoneSignInSmsTemplate();
     void setPhoneSignInSmsTemplate(SmsTemplate template);

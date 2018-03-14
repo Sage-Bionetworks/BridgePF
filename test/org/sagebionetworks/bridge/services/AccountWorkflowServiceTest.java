@@ -379,7 +379,6 @@ public class AccountWorkflowServiceTest {
     
     @Test
     public void notifyAccountExistsForPhone() throws Exception {
-        study.setEmailSignInEnabled(true);
         AccountId accountId = AccountId.forPhone(TEST_STUDY_IDENTIFIER, TestConstants.PHONE);
         when(service.getNextToken()).thenReturn(SPTOKEN, TOKEN);
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
@@ -396,7 +395,7 @@ public class AccountWorkflowServiceTest {
         String message = smsMessageProviderCaptor.getValue().getSmsRequest().getMessage();
         assertTrue(message.contains("Account for ShortName already exists. Reset password: "));
         assertTrue(message.contains("/rp?study=api&sptoken="+SPTOKEN));
-        assertTrue(message.contains(" or ABC-DEF")); // token is formatted
+        assertTrue(message.contains(" or "+TOKEN.substring(0,3) + "-" + TOKEN.substring(3,6)));
     }
     
     @Test
