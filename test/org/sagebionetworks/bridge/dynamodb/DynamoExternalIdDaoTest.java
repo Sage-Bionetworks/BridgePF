@@ -88,46 +88,21 @@ public class DynamoExternalIdDaoTest {
         assertEquals("healthCode", identifier.getHealthCode());
     }
     
-    @Test
-    public void reservationSucceedsFirstTime() {
-        dao.reserveExternalId(studyId, "AAA");
-        
-        DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(studyId, "AAA");
-        DynamoExternalIdentifier identifier = mapper.load(keyObject);
-        assertTrue(identifier.getReservation() > 0L);
-    }
-    
-    @Test
-    public void reservationSucceedsAfterLockExpires() throws Exception {
-        dao.reserveExternalId(studyId, "AAA");
-
-        // Timeout is 30 seconds. Sleep for 31 seconds.
-        Thread.sleep(31000);
-        dao.reserveExternalId(studyId, "AAA");
-    }
-    
     @Test(expected = EntityAlreadyExistsException.class)
     public void reservationFailsOnHealthCodeAssigned() {
         dao.assignExternalId(studyId, "AAA", "some-health-code");
-        
-        dao.reserveExternalId(studyId, "AAA");
-    }
-    
-    @Test(expected = EntityAlreadyExistsException.class)
-    public void reservationFailsOnReservationWindow() {
-        dao.reserveExternalId(studyId, "AAA");
-        dao.reserveExternalId(studyId, "AAA");
+        dao.assignExternalId(studyId, "AAA", "another-health-code");
     }
     
     @Test(expected = EntityNotFoundException.class)
     public void reservationFailsOnCodeDoesNotExist() {
-        dao.reserveExternalId(studyId, "DDD");
+        dao.assignExternalId(studyId, "DDD", "some-health-code");
     }
     
     @Test(expected = EntityNotFoundException.class)
     public void reservationFailsOnCodeOutsideStudy() {
         StudyIdentifier studyId = new StudyIdentifierImpl("some-other-study");
-        dao.reserveExternalId(studyId, "AAA");
+        dao.assignExternalId(studyId, "AAA", "some-health-code");
     }
     
     @Test
@@ -137,7 +112,6 @@ public class DynamoExternalIdDaoTest {
         DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(studyId, "AAA");
         DynamoExternalIdentifier identifier = mapper.load(keyObject);
         assertEquals("healthCode", identifier.getHealthCode());
-        assertEquals(0, identifier.getReservation());
     }
     
     @Test(expected = EntityNotFoundException.class)
@@ -168,7 +142,6 @@ public class DynamoExternalIdDaoTest {
         DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(studyId, "AAA");
         DynamoExternalIdentifier identifier = mapper.load(keyObject);
         assertNull(identifier.getHealthCode());
-        assertEquals(0L, identifier.getReservation());
     }
     
     @Test
@@ -326,42 +299,23 @@ public class DynamoExternalIdDaoTest {
     @Test
     public void retrieveUnassignedExcludesReserved() throws Exception {
         dao.assignExternalId(studyId, "AAA", "healthCode1");
-        dao.reserveExternalId(studyId, "BBB"); // only reserved
+        dao.assignExternalId(studyId, "BBB", "healthCode1");
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 5, null, Boolean.FALSE);
         assertEquals(1, page.getItems().size());
         assertEquals(new ExternalIdentifierInfo("CCC", false), page.getItems().get(0));
 
-        // Timeout is 30 seconds. Sleep for 31 seconds.
-        Thread.sleep(31000);
-        page = dao.getExternalIds(studyId, null, 5, null, Boolean.FALSE);
-        assertEquals(2, page.getItems().size());
-        assertTrue(page.getItems().contains(new ExternalIdentifierInfo("BBB", false)));
-        assertTrue(page.getItems().contains(new ExternalIdentifierInfo("CCC", false)));
-    }
-    
-    @Test
-    public void retrieveAssignedIncludesReserved() throws Exception {
-        dao.assignExternalId(studyId, "AAA", "healthCode");
-        dao.reserveExternalId(studyId, "BBB");
-
-        ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 5, null, Boolean.TRUE);
+        page = dao.getExternalIds(studyId, null, 5, null, Boolean.TRUE);
         assertEquals(2, page.getItems().size());
         assertTrue(page.getItems().contains(new ExternalIdentifierInfo("AAA", true)));
         assertTrue(page.getItems().contains(new ExternalIdentifierInfo("BBB", true)));
-        
-        // Wait until lock is released, item is no longer in results that are considered assigned.
-        Thread.sleep(31000);
-        page = dao.getExternalIds(studyId, null, 5, null, Boolean.TRUE);
-        assertEquals(1, page.getItems().size());
-        assertTrue(page.getItems().contains(new ExternalIdentifierInfo("AAA", true)));
     }
     
     @Test
     public void getNextAvailableID() {
         // We should skip over reserved and assigned IDs to find a free one
         dao.assignExternalId(studyId, "AAA", "healthCode");
-        dao.reserveExternalId(studyId, "BBB");
+        dao.assignExternalId(studyId, "BBB", "healthCode");
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> ids = dao.getExternalIds(studyId, null, 1, null, Boolean.FALSE);
         

@@ -39,13 +39,15 @@ public class IdentifierUpdateValidator implements Validator {
         if (update.getEmailUpdate() != null) {
             updateFields++;
         }
+        if (update.getExternalIdUpdate() != null) {
+            updateFields++;
+        }
         if (updateFields < 1) {
-            errors.reject("requires at least one updated identifier (email, phone)");
+            errors.reject("requires at least one updated identifier (email, phone, externalId)");
         }
         if (update.getPhoneUpdate() != null && !Phone.isValid(update.getPhoneUpdate())) {
             errors.rejectValue("phoneUpdate", "does not appear to be a phone number");
         }
-        
     }
     
 }

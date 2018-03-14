@@ -254,17 +254,8 @@ public class HibernateAccountDao implements AccountDao {
     
     /** {@inheritDoc} */
     @Override
-    public Account constructAccount(Study study, String email, Phone phone, String password) {
+    public Account constructAccount(Study study, String email, Phone phone, String externalId, String password) {
         HealthId healthId = healthCodeService.createMapping(study.getStudyIdentifier());
-        return constructAccountForMigration(study, email, phone, password, healthId);
-    }
-
-    /**
-     * Helper method that does all the work for constructAccount(), except we pass in the Health Code mapping instead
-     * of creating it ourselves. This allows us to create an account in both MySQL and Stormpath with the same Health
-     * Code mapping.
-     */
-    public Account constructAccountForMigration(Study study, String email, Phone phone, String password, HealthId healthId) {
         // Set basic params from inputs.
         GenericAccount account = new GenericAccount();
         account.setStudyId(study.getStudyIdentifier());
@@ -273,6 +264,7 @@ public class HibernateAccountDao implements AccountDao {
         account.setEmailVerified(Boolean.FALSE);
         account.setPhoneVerified(Boolean.FALSE);
         account.setHealthId(healthId);
+        account.setExternalId(externalId);
 
         // Hash password if it has been supplied.
         if (password != null) {
@@ -288,21 +280,9 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public String createAccount(Study study, Account account) {
-        String accountId = BridgeUtils.generateGuid();
-        createAccountForMigration(study, account, accountId);
-
-        return accountId;
-    }
-
-    /**
-     * Helper method that does the same work as createAccount(), except account ID generation and email verification
-     * happen outside of this method. This is used during migration so that Stormpath does ID generation and so we
-     * don't verify email twice.
-     */
-    public void createAccountForMigration(Study study, Account account, String id) {
-        // Initial creation of account. Fill in basic initial parameters.
+        String userId = BridgeUtils.generateGuid();
         HibernateAccount hibernateAccount = marshallAccount(account);
-        hibernateAccount.setId(id);
+        hibernateAccount.setId(userId);
         hibernateAccount.setStudyId(study.getIdentifier());
         hibernateAccount.setCreatedOn(DateUtils.getCurrentMillisFromEpoch());
         hibernateAccount.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
@@ -320,15 +300,18 @@ public class HibernateAccountDao implements AccountDao {
                 accountId = AccountId.forEmail(study.getIdentifier(), account.getEmail());
             } else if (hibernateAccount.getPhone() != null) {
                 accountId = AccountId.forPhone(study.getIdentifier(), account.getPhone());
+            } else if (hibernateAccount.getExternalId() != null) {
+                accountId = AccountId.forExternalId(study.getIdentifier(), account.getExternalId());
             }
             HibernateAccount otherAccount = getHibernateAccount(accountId);
             if (otherAccount != null) {
                 throw new EntityAlreadyExistsException(Account.class, "userId", otherAccount.getId());
             } else {
                 throw new BridgeServiceException("Conflict creating an account, but can't find an existing " +
-                        "account with the same study and email or phone");
+                        "account with the same study and email, phone, or externalId");
             }
         }
+        return userId;
     }
 
     /** {@inheritDoc} */
@@ -356,6 +339,7 @@ public class HibernateAccountDao implements AccountDao {
             accountToUpdate.setPhone(persistedAccount.getPhone());
             accountToUpdate.setEmailVerified(persistedAccount.getEmailVerified());
             accountToUpdate.setPhoneVerified(persistedAccount.getPhoneVerified());
+            accountToUpdate.setExternalId(persistedAccount.getExternalId());
         }
 
         // Update modifiedOn.

@@ -5,12 +5,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.BEGINS_WITH;
-import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.GE;
-import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.LT;
 import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.NOT_NULL;
 import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.NULL;
-import static com.amazonaws.services.dynamodbv2.model.ConditionalOperator.AND;
-import static com.amazonaws.services.dynamodbv2.model.ConditionalOperator.OR;
 
 import java.util.HashMap;
 import java.util.List;
@@ -22,7 +18,6 @@ import javax.annotation.Resource;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.model.ReturnConsumedCapacity;
 import com.google.common.util.concurrent.RateLimiter;
-import org.joda.time.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +29,6 @@ import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
@@ -49,7 +43,6 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
-import com.amazonaws.services.dynamodbv2.model.ConditionalOperator;
 import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -62,7 +55,6 @@ public class DynamoExternalIdDao implements ExternalIdDao {
 
     private static final Logger LOG = LoggerFactory.getLogger(DynamoExternalIdDao.class);
 
-    private static final String RESERVATION = "reservation";
     private static final String HEALTH_CODE = "healthCode";
     static final String IDENTIFIER = "identifier";
     private static final String STUDY_ID = "studyId";
@@ -181,29 +173,6 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     }
     
     @Override
-    public void reserveExternalId(StudyIdentifier studyId, String externalId) throws EntityAlreadyExistsException {
-        checkNotNull(studyId);
-        checkArgument(isNotBlank(externalId));
-        
-        DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(studyId, externalId);
-        
-        DynamoExternalIdentifier identifier = mapper.load(keyObject);
-        if (identifier == null) {
-            throw new EntityNotFoundException(ExternalIdentifier.class);
-        }
-        try {
-            long newReservation = DateUtils.getCurrentMillisFromEpoch();
-            
-            identifier.setReservation(newReservation);
-            mapper.save(identifier, getReservationExpression(newReservation));
-            
-        } catch(ConditionalCheckFailedException e) {
-            // The timeout is in effect or the healthCode is set, either way, code is "taken"
-            throw new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", identifier.getIdentifier());
-        }
-    }
-
-    @Override
     public void assignExternalId(StudyIdentifier studyId, String externalId, String healthCode) {
         checkNotNull(studyId);
         checkArgument(isNotBlank(externalId));
@@ -219,7 +188,6 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         if (!healthCode.equals(identifier.getHealthCode())) {
             try {
                 
-                identifier.setReservation(0L);
                 identifier.setHealthCode(healthCode);
                 mapper.save(identifier, getAssignmentExpression());
                 
@@ -241,7 +209,6 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         DynamoExternalIdentifier identifier = mapper.load(keyObject);
         if (identifier != null) {
             identifier.setHealthCode(null);
-            identifier.setReservation(0L);
             mapper.save(identifier);
         }
     }
@@ -297,45 +264,14 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     }
 
     private void addAssignmentFilter(DynamoDBQueryExpression<DynamoExternalIdentifier> query, boolean isAssigned) {
-        String reservationStartTime = Long.toString(DateTimeUtils.currentTimeMillis()-lockDuration);
-        
         ComparisonOperator healthCodeOp = (isAssigned) ? NOT_NULL : NULL;
-        ComparisonOperator reservationOp = (isAssigned) ? GE : LT;
-        ConditionalOperator op = (isAssigned) ? OR : AND;
-        AttributeValue attrValue = new AttributeValue().withN(reservationStartTime);
         
         Condition healthCodeCondition = new Condition().withComparisonOperator(healthCodeOp);
-        Condition reservationCondition = new Condition().withAttributeValueList(attrValue).withComparisonOperator(reservationOp);
         query.withQueryFilterEntry(HEALTH_CODE, healthCodeCondition);
-        query.withQueryFilterEntry(RESERVATION, reservationCondition);
-        query.withConditionalOperator(op);
     }
     
     /**
-     * Save the record with a new timestamp IF the healthCode is empty and the reservation timestamp in the 
-     * existing record was not set in the recent past (during the lockDuration).
-     */
-    private DynamoDBSaveExpression getReservationExpression(long newReservation) {
-        AttributeValue reservationStartTime = new AttributeValue().withN(Long.toString(newReservation-lockDuration));
-        
-        ExpectedAttributeValue beforeReservation = new ExpectedAttributeValue()
-                .withValue(reservationStartTime).withComparisonOperator(LT);
-        
-        ExpectedAttributeValue healthCodeNull = new ExpectedAttributeValue().withExists(false);
-        
-        Map<String, ExpectedAttributeValue> map = Maps.newHashMap();
-        map.put(RESERVATION, beforeReservation);
-        map.put(HEALTH_CODE, healthCodeNull);
-
-        DynamoDBSaveExpression saveExpression = new DynamoDBSaveExpression();
-        saveExpression.withConditionalOperator(AND);
-        saveExpression.setExpected(map);
-        return saveExpression;
-    }
-    
-    /**
-     * Save the record with the user's healthCode IF the healthCode is not yet set. If calling code calls 
-     * the reservation method first, this should not happen, but we do not prevent it.  
+     * Save the record with the user's healthCode.  
      */
     private DynamoDBSaveExpression getAssignmentExpression() {
         Map<String, ExpectedAttributeValue> map = Maps.newHashMap();
@@ -347,9 +283,6 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     }
     
     private ExternalIdentifierInfo createInfo(ExternalIdentifier id, long lockDuration) {
-        // This calculation is done a couple of times, it does not need to be accurate to the millisecond
-        long reservationStartTime = DateTimeUtils.currentTimeMillis() - lockDuration;
-        boolean isAssigned = (id.getHealthCode() != null || id.getReservation() >= reservationStartTime);
-        return new ExternalIdentifierInfo(id.getIdentifier(), isAssigned);
+        return new ExternalIdentifierInfo(id.getIdentifier(), id.getHealthCode() != null);
     }
 }

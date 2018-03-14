@@ -79,7 +79,6 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
-import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 
 @RunWith(MockitoJUnitRunner.class)

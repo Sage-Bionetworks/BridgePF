@@ -46,14 +46,6 @@ public interface ExternalIdDao {
     void addExternalIds(StudyIdentifier studyId, List<String> externalIdentifiers);
     
     /**
-     * Reserve this ID. Reserving the ID prevents it from being taken by another caller for a short duration (30 seconds), 
-     * allowing this reserving thread to do other work to set up the user (e.g. creating an account, which can
-     * take a long time to finish). If the code is not assigned by calling assignExternalId(...), it will become available 
-     * again after the duration expires.   
-     */
-    void reserveExternalId(StudyIdentifier studyId, String externalIdentifier);
-    
-    /**
      * Assign an external identifier. Once assigned, it cannot be re-assigned. If already assigned to this health code, 
      * nothing happens.  
      */

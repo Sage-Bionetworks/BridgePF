@@ -118,9 +118,11 @@ public class ParticipantControllerTest {
     private static final SignIn PHONE_PASSWORD_SIGN_IN_REQUEST = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
             .withPhone(TestConstants.PHONE).withPassword(TestConstants.PASSWORD).build();
     private static final IdentifierUpdate PHONE_UPDATE = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN_REQUEST, null,
-            TestConstants.PHONE);
+            TestConstants.PHONE, null);
     private static final IdentifierUpdate EMAIL_UPDATE = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN_REQUEST,
-            TestConstants.EMAIL, null);
+            TestConstants.EMAIL, null, null);
+    private static final IdentifierUpdate EXTID_UPDATE = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN_REQUEST,
+            null, null, "some-new-extid");
     
     @Spy
     private ParticipantController controller;
@@ -946,6 +948,28 @@ public class ParticipantControllerTest {
         assertNull(update.getPhoneUpdate());
     }
 
+    @Test
+    public void updateIdentifiersWithExternalId() throws Exception {
+        mockPlayContextWithJson(EXTID_UPDATE);
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        
+        when(mockParticipantService.updateIdentifiers(eq(study), any(), any())).thenReturn(participant);
+        
+        Result result = controller.updateIdentifiers();
+        assertResult(result, 200);
+        
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        assertEquals(ID, node.get("id").textValue());
+        
+        verify(mockParticipantService).updateIdentifiers(eq(study), contextCaptor.capture(), identifierUpdateCaptor.capture());
+        
+        IdentifierUpdate update = identifierUpdateCaptor.getValue();
+        assertEquals(PHONE_PASSWORD_SIGN_IN_REQUEST.getPhone(), update.getSignIn().getPhone());
+        assertEquals(PHONE_PASSWORD_SIGN_IN_REQUEST.getPassword(), update.getSignIn().getPassword());
+        assertEquals("some-new-extid", update.getExternalIdUpdate());
+        assertNull(update.getPhoneUpdate());
+    }
+    
     @Test(expected = NotAuthenticatedException.class)
     public void updateIdentifierRequiresAuthentication() throws Exception {
         doReturn(null).when(controller).getSessionIfItExists();

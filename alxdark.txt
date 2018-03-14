@@ -1,0 +1,61 @@
+./
+../
+.DS_Store
+.localized
+App Store.app/
+Automator.app/
+Calculator.app/
+Calendar.app/
+Chess.app/
+Cisco/
+Contacts.app/
+Cyberduck.app/
+DBeaver.app/
+DVD Player.app/
+Dashboard.app/
+Dictionary.app/
+Dropbox.app/
+Eclipse.app/
+Enterprise Connect.app/
+FaceTime.app/
+Firefox.app/
+Font Book.app/
+Google Chrome.app/
+Image Capture.app/
+Integrity.app/
+Launchpad.app/
+Mail.app/
+Maps.app/
+Messages.app/
+Microsoft Excel.app/
+Microsoft OneNote.app/
+Microsoft Outlook.app/
+Microsoft PowerPoint.app/
+Microsoft Word.app/
+Mission Control.app/
+MySQLWorkbench.app/
+Notes.app/
+Photo Booth.app/
+Photos.app/
+Preview.app/
+Python 3.6/
+QuickTime Player.app/
+Reminders.app/
+Safari.app/
+Self Service.app/
+Siri.app/
+Skitch.app/
+Slack.app/
+SourceTree.app/
+Stickies.app/
+System Preferences.app/
+TextEdit.app/
+Time Machine.app/
+Utilities/
+VirtualBox.app/
+Visual Studio Code.app/
+Xcode.app/
+Zeplin.app/
+iBooks.app/
+iTunes.app/
+zoom.us.app/

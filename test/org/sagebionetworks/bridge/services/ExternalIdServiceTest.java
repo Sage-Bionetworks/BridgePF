@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -18,15 +17,10 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.Config;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.Lists;
@@ -45,27 +39,16 @@ public class ExternalIdServiceTest {
     @Mock
     private ExternalIdDao externalIdDao;
     
-    @Mock
-    private AccountDao accountDao;
-    
-    @Mock
-    private Account account;
-    
     private ExternalIdService externalIdService;
     
     @Before
     public void before() {
         Config config = mock(Config.class);
         when(config.getInt(ExternalIdDao.CONFIG_KEY_ADD_LIMIT)).thenReturn(10);
-        when(account.getHealthCode()).thenReturn(HEALTH_CODE);
         
         externalIdService = new ExternalIdService();
         externalIdService.setExternalIdDao(externalIdDao);
-        externalIdService.setAccountDao(accountDao);
         externalIdService.setConfig(config);
-        
-        when(accountDao.getAccount(any())).thenReturn(account);
-        TestUtils.mockEditAccount(accountDao, account);
     }
     
     @Test
@@ -90,18 +73,21 @@ public class ExternalIdServiceTest {
     }
     
     @Test
-    public void assignExternalIdFailsVerification() {
-        STUDY.setExternalIdValidationEnabled(true);
-        doThrow(new EntityNotFoundException(ExternalIdentifier.class)).when(externalIdDao)
-                .assignExternalId(STUDY.getStudyIdentifier(), EXT_ID, HEALTH_CODE);
+    public void assignExternalIdDoesNothingWhenTurnedOff() {
+        STUDY.setExternalIdValidationEnabled(false);
         
-        try {
-            externalIdService.assignExternalId(STUDY, EXT_ID, HEALTH_CODE);
-            fail("Should have thrown exception");
-        } catch(EntityNotFoundException e) {
-        }
+        externalIdService.assignExternalId(STUDY, EXT_ID, HEALTH_CODE);
+        
+        verify(externalIdDao, never()).assignExternalId(any(), any(), any());
+    }
+    
+    @Test
+    public void assignExternalIdDoesOK() {
+        STUDY.setExternalIdValidationEnabled(true);
+        
+        externalIdService.assignExternalId(STUDY, EXT_ID, HEALTH_CODE);
+        
         verify(externalIdDao).assignExternalId(STUDY.getStudyIdentifier(), EXT_ID, HEALTH_CODE);
-        verify(account, never()).setExternalId(any());
     }
     
     @Test
@@ -109,7 +95,6 @@ public class ExternalIdServiceTest {
         externalIdService.unassignExternalId(STUDY, EXT_ID, HEALTH_CODE);
         
         verify(externalIdDao).unassignExternalId(STUDY.getStudyIdentifier(), EXT_ID);
-        verify(account).setExternalId(null);
     }
 
     @Test
@@ -129,80 +114,5 @@ public class ExternalIdServiceTest {
         } catch(BadRequestException e) {
         }
         verifyNoMoreInteractions(externalIdDao);
-    }
-    
-    @Test
-    public void createExternalIdValidatedWithValue() {
-        setupExternalIdTest(true, null);
-        
-        externalIdService.reserveExternalId(STUDY, EXT_ID, HEALTH_CODE);
-        externalIdService.assignExternalId(STUDY, EXT_ID, HEALTH_CODE);
-        
-        // Adding validated ID, reserve it
-        verify(externalIdDao).reserveExternalId(STUDY.getStudyIdentifier(), EXT_ID);
-        verify(externalIdDao).assignExternalId(STUDY.getStudyIdentifier(), EXT_ID, HEALTH_CODE);
-        verify(account).setExternalId(EXT_ID);
-    }
-
-    @Test
-    public void externalIdNotValidatedWithValue() {
-        setupExternalIdTest(false, "someInitialValue");
-        
-        externalIdService.reserveExternalId(STUDY, EXT_ID, HEALTH_CODE);
-        externalIdService.assignExternalId(STUDY, EXT_ID, HEALTH_CODE);
-        
-        // Adding unvalidated ID, set as an option
-        verifySetAsOption(EXT_ID);
-    }
-
-    @Test
-    public void createExternalIdValidatedNoValue() {
-        setupExternalIdTest(true, null);
-        
-        externalIdService.reserveExternalId(STUDY, null, HEALTH_CODE);
-        externalIdService.assignExternalId(STUDY, null, HEALTH_CODE);
-        
-        // Validated but no value supplied, just set null option
-        verifySetAsOption(null);
-    }
-
-    @Test
-    public void updateExternalIdValidatedWithSameValue() {
-        setupExternalIdTest(true, EXT_ID);
-        
-        externalIdService.reserveExternalId(STUDY, EXT_ID, HEALTH_CODE);
-        externalIdService.assignExternalId(STUDY, EXT_ID, HEALTH_CODE);
-        
-        // Submitting same value again with validation reserves but doesn't update
-        verify(externalIdDao).reserveExternalId(STUDY.getStudyIdentifier(), EXT_ID);
-    }
-
-    @Test(expected = BadRequestException.class)
-    public void updateExternalIdValidatedWithChangedValue() {
-        setupExternalIdTest(true, EXT_ID);
-        
-        // Updating a validated ID throws an exception
-        externalIdService.reserveExternalId(STUDY, "newExternalId", HEALTH_CODE);
-        externalIdService.assignExternalId(STUDY, "newExternalId", HEALTH_CODE);
-    }
-
-    @Test(expected = BadRequestException.class)
-    public void updateExternalIdValidatedNoValue() {
-        setupExternalIdTest(true, EXT_ID);
-        
-        // Nulling a validated value throws an exception
-        externalIdService.reserveExternalId(STUDY, null, HEALTH_CODE);
-        externalIdService.assignExternalId(STUDY, null, HEALTH_CODE);
-    }
-
-    private void setupExternalIdTest(boolean withValidation, String existingValue) {
-        STUDY.setExternalIdValidationEnabled(withValidation);
-        when(account.getExternalId()).thenReturn(existingValue);
-    }
-    
-    private void verifySetAsOption(String externalId) {
-        verify(externalIdDao, never()).reserveExternalId(STUDY.getStudyIdentifier(), externalId);
-        verify(externalIdDao, never()).assignExternalId(STUDY.getStudyIdentifier(), externalId, HEALTH_CODE);
-        verify(account).setExternalId(externalId);
     }
 }
