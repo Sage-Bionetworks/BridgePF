@@ -339,12 +339,12 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
             }
 
             // Parse file into JSON nodes. Survey answer files should be very small. If they exceed the size, log a
-            // warning. In future releases, once we've verified that no one is sending large survey answer files (and
-            // there's no reason to), we'll simply skip parsing large files.
+            // warning and skip.
             long fileSize = fileHelper.fileSize(file);
             if (fileSize > UploadUtil.FILE_SIZE_LIMIT_SURVEY_ANSWER) {
                 logger.warn("Survey file exceeds max size, uploadId=" + uploadId + ", filename=" + filename +
                         ", fileSize=" + fileSize + " bytes");
+                continue;
             }
             JsonNode oneAnswerNode;
             try (InputStream fileInputStream = fileHelper.getInputStream(file)) {

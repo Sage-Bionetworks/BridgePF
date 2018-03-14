@@ -52,7 +52,9 @@ public class UploadUtil {
     public static final String FIELD_SURVEY_CREATED_ON = "surveyCreatedOn";
     public static final int FILE_SIZE_LIMIT_SURVEY_ANSWER = 1024;
     public static final int FILE_SIZE_LIMIT_INLINE_FIELD = 10 * 1024;
-    public static final int FILE_SIZE_LIMIT_PARSED_JSON = 2 * 1024 * 1024;
+    public static final int FILE_SIZE_LIMIT_DATA_FILE = 2 * 1024 * 1024;
+    public static final int WARNING_LIMIT_PARSED_JSON = 5 * 1024 * 1024;
+    public static final int FILE_SIZE_LIMIT_PARSED_JSON = 20 * 1024 * 1024;
 
     // Regex patterns and strings for validation.
     private static final Pattern FIELD_NAME_MULTIPLE_SPECIAL_CHARS_PATTERN = Pattern.compile("[\\-\\._ ]{2,}");

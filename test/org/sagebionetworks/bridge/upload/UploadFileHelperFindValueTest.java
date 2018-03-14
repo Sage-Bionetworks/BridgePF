@@ -106,6 +106,28 @@ public class UploadFileHelperFindValueTest {
     }
 
     @Test
+    public void inlineFileTooLarge() throws Exception {
+        // Set file size limit to something very small, to hit our test for sure.
+        uploadFileHelper.setInlineFileSizeLimit(10);
+
+        // Make field def.
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName(FIELD_NAME_FILE)
+                .withType(UploadFieldType.STRING).build();
+
+        // Make file map.
+        File recordJsonFile = makeFileWithContent(FIELD_NAME_FILE,
+                "\"This file content is definitely exceeds our file size limit.\"");
+        Map<String, File> fileMap = ImmutableMap.of(FIELD_NAME_FILE, recordJsonFile);
+
+        // Execute
+        JsonNode result = uploadFileHelper.findValueForField(UPLOAD_ID, fileMap, fieldDef, new HashMap<>());
+        assertNull(result);
+
+        // Verify no uploaded files
+        verifyZeroInteractions(mockS3Helper);
+    }
+
+    @Test
     public void findValueNoValueFound() throws Exception {
         // Make field def.
         UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName(FIELD_NAME_JSON_KEY)
@@ -162,6 +184,52 @@ public class UploadFileHelperFindValueTest {
         // Execute
         JsonNode result = uploadFileHelper.findValueForField(UPLOAD_ID, fileMap, fieldDef, new HashMap<>());
         assertEquals("record-value", result.textValue());
+
+        // Verify no uploaded files
+        verifyZeroInteractions(mockS3Helper);
+    }
+
+    @Test
+    public void findValueInlineWarningLimit() throws Exception {
+        // Set limits to something that's easier to test.
+        uploadFileHelper.setParsedJsonWarningLimit(20);
+        uploadFileHelper.setParsedJsonFileSizeLimit(40);
+
+        // Make field def.
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName(FIELD_NAME_JSON_KEY)
+                .withType(UploadFieldType.STRING).build();
+
+        // Make file map.
+        File recordJsonFile = makeFileWithContent(FIELD_NAME_FILE,
+                "{\"foo\":\"Long but not too long\"}");
+        Map<String, File> fileMap = ImmutableMap.<String, File>builder().put(FIELD_NAME_FILE, recordJsonFile).build();
+
+        // Execute - The file is too large. Skip.
+        JsonNode result = uploadFileHelper.findValueForField(UPLOAD_ID, fileMap, fieldDef, new HashMap<>());
+        assertEquals("Long but not too long", result.textValue());
+
+        // Verify no uploaded files
+        verifyZeroInteractions(mockS3Helper);
+    }
+
+    @Test
+    public void findValueInlineFileSizeLimit() throws Exception {
+        // Set limits to something that's easier to test.
+        uploadFileHelper.setParsedJsonWarningLimit(20);
+        uploadFileHelper.setParsedJsonFileSizeLimit(40);
+
+        // Make field def.
+        UploadFieldDefinition fieldDef = new UploadFieldDefinition.Builder().withName(FIELD_NAME_JSON_KEY)
+                .withType(UploadFieldType.STRING).build();
+
+        // Make file map.
+        File recordJsonFile = makeFileWithContent(FIELD_NAME_FILE,
+                "{\"foo\":\"This is the value, but the file is definitely too long to parse\"}");
+        Map<String, File> fileMap = ImmutableMap.<String, File>builder().put(FIELD_NAME_FILE, recordJsonFile).build();
+
+        // Execute - The file is long enough to warn, but not long enough to skip.
+        JsonNode result = uploadFileHelper.findValueForField(UPLOAD_ID, fileMap, fieldDef, new HashMap<>());
+        assertNull(result);
 
         // Verify no uploaded files
         verifyZeroInteractions(mockS3Helper);
