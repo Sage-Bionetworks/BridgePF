@@ -87,6 +87,7 @@ public final class DynamoStudy implements Study {
     private boolean emailVerificationEnabled;
     private boolean externalIdValidationEnabled;
     private boolean emailSignInEnabled;
+    private boolean phoneSignInEnabled;
     private boolean externalIdRequiredOnSignup;
     private boolean reauthenticationEnabled;
     private Map<String, Integer> minSupportedAppVersions;
@@ -474,6 +475,17 @@ public final class DynamoStudy implements Study {
         this.emailSignInEnabled = enabled;
     }
     
+    /** {@inheritDoc} */
+    @Override 
+    public boolean isPhoneSignInEnabled() {
+        return phoneSignInEnabled;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public void setPhoneSignInEnabled(boolean enabled){
+        this.phoneSignInEnabled = enabled;
+    }
     
     /** {@inheritDoc} */
     @Override
@@ -609,16 +621,15 @@ public final class DynamoStudy implements Study {
     @Override
     public int hashCode() {
         return Objects.hash(name, shortName, sponsorName, identifier, autoVerificationEmailSuppressed,
-                studyIdExcludedInExport, supportEmail,
-                synapseDataAccessTeamId, synapseProjectId, technicalEmail, usesCustomExportSchedule,
-                uploadMetadataFieldDefinitions, uploadValidationStrictness, consentNotificationEmail,
-                consentNotificationEmailVerified, minAgeOfConsent,
-                accountLimit, version, active, profileAttributes, taskIdentifiers, activityEventKeys, dataGroups,
-                passwordPolicy, verifyEmailTemplate, resetPasswordTemplate, emailSignInTemplate, accountExistsTemplate,
+                studyIdExcludedInExport, supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail,
+                usesCustomExportSchedule, uploadMetadataFieldDefinitions, uploadValidationStrictness,
+                consentNotificationEmail, consentNotificationEmailVerified, minAgeOfConsent, accountLimit, version,
+                active, profileAttributes, taskIdentifiers, activityEventKeys, dataGroups, passwordPolicy,
+                verifyEmailTemplate, resetPasswordTemplate, emailSignInTemplate, accountExistsTemplate,
                 strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
-                externalIdValidationEnabled, emailSignInEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
-                pushNotificationARNs, installLinks, disableExport, oauthProviders, appleAppLinks, androidAppLinks, 
-                reauthenticationEnabled);
+                externalIdValidationEnabled, emailSignInEnabled, phoneSignInEnabled, externalIdRequiredOnSignup,
+                minSupportedAppVersions, pushNotificationARNs, installLinks, disableExport, oauthProviders,
+                appleAppLinks, androidAppLinks, reauthenticationEnabled);
     }
 
     @Override
@@ -666,6 +677,7 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(disableExport, other.disableExport)
                 && Objects.equals(emailSignInTemplate, other.emailSignInTemplate)
                 && Objects.equals(emailSignInEnabled, other.emailSignInEnabled)
+                && Objects.equals(phoneSignInEnabled, other.phoneSignInEnabled)
                 && Objects.equals(accountLimit, other.accountLimit)
                 && Objects.equals(oauthProviders, other.oauthProviders)
                 && Objects.equals(appleAppLinks, other.appleAppLinks)
@@ -676,7 +688,7 @@ public final class DynamoStudy implements Study {
     @Override
     public String toString() {
         return String.format(
-            "DynamoStudy [name=%s, shortName=%s, active=%s, sponsorName=%s, identifier=%s, "
+                "DynamoStudy [name=%s, shortName=%s, active=%s, sponsorName=%s, identifier=%s, "
                         + "autoVerificationEmailSuppressed=%b, minAgeOfConsent=%s, studyIdExcludedInExport=%b, "
                         + "supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, technicalEmail=%s, "
                         + "uploadValidationStrictness=%s, consentNotificationEmail=%s, "
@@ -685,16 +697,16 @@ public final class DynamoStudy implements Study {
                         + "resetPasswordTemplate=%s, strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, "
                         + "emailVerificationEnabled=%s, externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, "
                         + "minSupportedAppVersions=%s, usesCustomExportSchedule=%s, pushNotificationARNs=%s, installLinks=%s"
-                        + "disableExport=%s, emailSignInTemplate=%s, emailSignInEnabled=%s, accountLimit=%s, oauthProviders=%s, "
-                        + "appleAppLinks=%s, androidAppLinks=%s, reauthenticationEnabled=%s]",
+                        + "disableExport=%s, emailSignInTemplate=%s, emailSignInEnabled=%s, phoneSignInEnabled=%s, "
+                        + "accountLimit=%s, oauthProviders=%s, appleAppLinks=%s, androidAppLinks=%s, reauthenticationEnabled=%s]",
                 name, shortName, active, sponsorName, identifier, autoVerificationEmailSuppressed, minAgeOfConsent,
-                studyIdExcludedInExport, supportEmail,
-                synapseDataAccessTeamId, synapseProjectId, technicalEmail, uploadValidationStrictness,
-                consentNotificationEmail, consentNotificationEmailVerified, version,
+                studyIdExcludedInExport, supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail,
+                uploadValidationStrictness, consentNotificationEmail, consentNotificationEmailVerified, version,
                 profileAttributes, taskIdentifiers, activityEventKeys, dataGroups, passwordPolicy, verifyEmailTemplate,
                 resetPasswordTemplate, strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
                 externalIdValidationEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
                 usesCustomExportSchedule, pushNotificationARNs, installLinks, disableExport, emailSignInTemplate,
-                emailSignInEnabled, accountLimit, oauthProviders, appleAppLinks, androidAppLinks, reauthenticationEnabled);
+                emailSignInEnabled, phoneSignInEnabled, accountLimit, oauthProviders, appleAppLinks, androidAppLinks,
+                reauthenticationEnabled);
     }
 }

@@ -516,6 +516,7 @@ public class StudyService {
             study.setExternalIdValidationEnabled(originalStudy.isExternalIdValidationEnabled());
             study.setExternalIdRequiredOnSignup(originalStudy.isExternalIdRequiredOnSignup());
             study.setEmailSignInEnabled(originalStudy.isEmailSignInEnabled());
+            study.setPhoneSignInEnabled(originalStudy.isPhoneSignInEnabled());
             study.setReauthenticationEnabled(originalStudy.isReauthenticationEnabled());
             study.setAccountLimit(originalStudy.getAccountLimit());
             study.setStudyIdExcludedInExport(originalStudy.isStudyIdExcludedInExport());
