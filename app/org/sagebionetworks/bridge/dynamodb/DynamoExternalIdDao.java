@@ -28,7 +28,6 @@ import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
@@ -82,6 +81,15 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         this.mapper = mapper;
     }
 
+    @Override
+    public ExternalIdentifier getExternalId(StudyIdentifier studyId, String externalId) {
+        checkNotNull(studyId);
+        checkNotNull(externalId);
+        
+        DynamoExternalIdentifier key = new DynamoExternalIdentifier(studyId, externalId);
+        return mapper.load(key);
+    }
+    
     @Override
     public ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIds(StudyIdentifier studyId,
             String offsetKey, final int pageSize, String idFilter, Boolean assignmentFilter) {
@@ -179,20 +187,17 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         checkArgument(isNotBlank(healthCode));
         
         DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(studyId, externalId);
-        
         DynamoExternalIdentifier identifier = mapper.load(keyObject);
-        if (identifier == null) {
-            throw new EntityNotFoundException(ExternalIdentifier.class);
-        }
-        // If the same code has already been set, do nothing, do not throw an error.
-        if (!healthCode.equals(identifier.getHealthCode())) {
+
+        // If the identifier doesn't exist, or the same code has already been set, do nothing
+        if (identifier != null && !healthCode.equals(identifier.getHealthCode())) {
             try {
-                
                 identifier.setHealthCode(healthCode);
                 mapper.save(identifier, getAssignmentExpression());
-                
             } catch(ConditionalCheckFailedException e) {
-                // The timeout is in effect or the healthCode is set, either way, code is "taken"
+                // If this happens, it's a consistency error because the account should have failed. We need to reconcile.
+                LOG.error("Failed attempt to assign externalId: " + externalId + " from " + identifier.getHealthCode()
+                        + " to " + healthCode);
                 throw new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", identifier.getIdentifier());
             }        
         }

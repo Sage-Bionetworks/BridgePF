@@ -293,7 +293,7 @@ public class HibernateAccountDao implements AccountDao {
         try {
             hibernateHelper.create(hibernateAccount);
         } catch (ConcurrentModificationException ex) {
-            // Account can conflict because studyId + email or studyId + phone has been used for an 
+            // Account can conflict because studyId + email|phone|externalId|healthCode have been used for an 
             // existing account. 
             AccountId accountId = null;
             if (hibernateAccount.getEmail() != null) {

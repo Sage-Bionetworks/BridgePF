@@ -1,9 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -70,15 +68,6 @@ public class ExternalIdServiceTest {
         externalIdService.addExternalIds(STUDY, EXT_IDS);
         
         verify(externalIdDao).addExternalIds(STUDY.getStudyIdentifier(), EXT_IDS);
-    }
-    
-    @Test
-    public void assignExternalIdDoesNothingWhenTurnedOff() {
-        STUDY.setExternalIdValidationEnabled(false);
-        
-        externalIdService.assignExternalId(STUDY, EXT_ID, HEALTH_CODE);
-        
-        verify(externalIdDao, never()).assignExternalId(any(), any(), any());
     }
     
     @Test

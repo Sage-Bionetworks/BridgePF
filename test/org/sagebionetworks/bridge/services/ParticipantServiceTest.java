@@ -44,9 +44,9 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.LimitExceededException;
@@ -57,7 +57,6 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Email;
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
@@ -251,12 +250,16 @@ public class ParticipantServiceTest {
         STUDY.setEmailVerificationEnabled(true);
         mockHealthCodeAndAccountRetrieval();
         
+        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID))
+                .thenReturn(new DynamoExternalIdentifier());
+        
         IdentifierHolder idHolder = participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
         assertEquals(ID, idHolder.getIdentifier());
         
         verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
         
         // suppress email (true) == sendEmail (false)
+        verify(externalIdService).getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID);
         verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture());
         verify(accountWorkflowService).sendEmailVerificationToken(STUDY, ID, EMAIL);
         
@@ -279,26 +282,10 @@ public class ParticipantServiceTest {
         verify(cacheProvider, never()).removeSessionByUserId(ID);
     }
     
-    // Or any other failure to reserve an externalId
-    @Test
-    public void createParticipantWithAssignedId() {
-        STUDY.setExternalIdValidationEnabled(true);
-        mockHealthCodeAndAccountRetrieval();
-        
-        doThrow(new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", "AAA"))
-            .when(accountDao).createAccount(any(), any());
-        
-        try {
-            participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
-            fail("Should have thrown exception");
-        } catch(EntityAlreadyExistsException e) {
-        }
-        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, EXTERNAL_ID, PASSWORD);
-        verify(externalIdService, never()).assignExternalId(any(), any(), any());
-    }
-    
     @Test
     public void createParticipantWithExternalIdValidation() {
+        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID))
+                .thenReturn(new DynamoExternalIdentifier());
         STUDY.setExternalIdValidationEnabled(true);
         mockHealthCodeAndAccountRetrieval();
         
@@ -965,6 +952,8 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdValidationEnabled(true);
         STUDY.setExternalIdRequiredOnSignup(true);
         mockHealthCodeAndAccountRetrieval();
+        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID))
+                .thenReturn(new DynamoExternalIdentifier());
         
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
         

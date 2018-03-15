@@ -30,7 +30,6 @@ import org.sagebionetworks.bridge.validators.EmailValidator;
 import org.sagebionetworks.bridge.validators.EmailVerificationValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 import org.sagebionetworks.bridge.validators.SignInValidator;
-import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import org.slf4j.Logger;
@@ -195,8 +194,6 @@ public class AuthenticationService {
     public IdentifierHolder signUp(Study study, StudyParticipant participant, boolean checkForConsent) {
         checkNotNull(study);
         checkNotNull(participant);
-        
-        Validate.entityThrowingException(new StudyParticipantValidator(study, true), participant);
         
         try {
             // Since caller has no roles, no roles can be assigned on sign up.

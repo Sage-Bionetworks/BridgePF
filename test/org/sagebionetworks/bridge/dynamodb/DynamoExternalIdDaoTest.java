@@ -4,6 +4,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +17,7 @@ import javax.annotation.Resource;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -21,14 +26,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -67,6 +73,16 @@ public class DynamoExternalIdDaoTest {
         }
         dao.addExternalIds(studyId, extIdList);
     }
+    
+    @Test
+    public void getExistingId() {
+        assertEquals("AAA", dao.getExternalId(studyId, "AAA").getIdentifier());
+    }
+    
+    @Test
+    public void getExistingIdReturnsNull() {
+        assertNull(dao.getExternalId(studyId, "does-not-exist"));
+    }
 
     @Test
     public void cannotAddExistingIdentifiers() {
@@ -88,51 +104,42 @@ public class DynamoExternalIdDaoTest {
         assertEquals("healthCode", identifier.getHealthCode());
     }
     
-    @Test(expected = EntityAlreadyExistsException.class)
-    public void reservationFailsOnHealthCodeAssigned() {
-        dao.assignExternalId(studyId, "AAA", "some-health-code");
-        dao.assignExternalId(studyId, "AAA", "another-health-code");
-    }
-    
-    @Test(expected = EntityNotFoundException.class)
-    public void reservationFailsOnCodeDoesNotExist() {
-        dao.assignExternalId(studyId, "DDD", "some-health-code");
-    }
-    
-    @Test(expected = EntityNotFoundException.class)
-    public void reservationFailsOnCodeOutsideStudy() {
-        StudyIdentifier studyId = new StudyIdentifierImpl("some-other-study");
-        dao.assignExternalId(studyId, "AAA", "some-health-code");
-    }
-    
     @Test
-    public void canAssignExternalId() {
+    public void missingIdentifierDoesNothing() {
+        DynamoDBMapper spiedMapper = Mockito.spy(mapper);
+        
+        dao.assignExternalId(studyId, "missing", "healthCode");
+        
+        verify(spiedMapper, never()).save(any(), (DynamoDBSaveExpression)any());
+    }
+
+    @Test
+    public void matchingHealthCodeDoesNothing() {
         dao.assignExternalId(studyId, "AAA", "healthCode");
         
-        DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(studyId, "AAA");
-        DynamoExternalIdentifier identifier = mapper.load(keyObject);
-        assertEquals("healthCode", identifier.getHealthCode());
+        DynamoDBMapper spiedMapper = Mockito.spy(mapper);
+        
+        dao.assignExternalId(studyId, "AAA", "healthCode");
+        
+        verify(spiedMapper, never()).save(any(), (DynamoDBSaveExpression)any());
     }
-    
-    @Test(expected = EntityNotFoundException.class)
-    public void assignMissingExternalIdThrowException() {
-        dao.assignExternalId(studyId, "DDD", "healthCode");
-    }
-    
+
     @Test
-    public void canReassignHealthCodeSafely() {
-        // Well-behaved client code shouldn't do this, but if it happens it does not throw an exception
+    public void availableExternalIdIsAssigned() {
         dao.assignExternalId(studyId, "AAA", "healthCode");
-        dao.assignExternalId(studyId, "AAA", "healthCode");
+        
+        ExternalIdentifier externalId = dao.getExternalId(studyId, "AAA");
+        assertEquals("AAA", externalId.getIdentifier());
+        assertEquals("healthCode", externalId.getHealthCode());
+        assertEquals(studyId.getIdentifier(), externalId.getStudyId());
     }
-    
+
     @Test(expected = EntityAlreadyExistsException.class)
-    public void identifierCannotBeAssignedTwice() {
-        // Well-behaved client code shouldn't do this, but if it happens, it will not succeed.
+    public void assignedExternalIdThrowsException() {
         dao.assignExternalId(studyId, "AAA", "healthCode");
         dao.assignExternalId(studyId, "AAA", "differentHealthCode");
     }
-    
+
     @Test
     public void identifierCanBeUnassigned() {
         dao.assignExternalId(studyId, "AAA", "healthCode");

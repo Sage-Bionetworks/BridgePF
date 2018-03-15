@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dao;
 import java.util.List;
 
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
@@ -17,6 +18,11 @@ public interface ExternalIdDao {
     String CONFIG_KEY_ADD_LIMIT = "external.id.add.limit";
     String CONFIG_KEY_LOCK_DURATION = "external.id.lock.duration";
 
+    /**
+     * Get a single external ID record. Returns null if there is no record.
+     */
+    public ExternalIdentifier getExternalId(StudyIdentifier studyId, String externalId);
+    
     /**
      * Retrieve external IDs that match the ID and/or assignment filters. These records are returned in pages of pageSize 
      * records. Each page is identified by the offsetKey of the last record of the immediately prior page. If that value is 

@@ -14,8 +14,10 @@ import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.ExternalIdsValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -41,6 +43,13 @@ public class ExternalIdService {
         validator = new ExternalIdsValidator(config.getInt(ExternalIdDao.CONFIG_KEY_ADD_LIMIT));
     }
     
+    public ExternalIdentifier getExternalId(StudyIdentifier studyId, String externalId) {
+        checkNotNull(studyId);
+        checkNotNull(externalId);
+        
+        return externalIdDao.getExternalId(studyId, externalId);
+    }
+    
     public ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIds(Study study, String offsetKey, Integer pageSize,
             String idFilter, Boolean assignmentFilter) {
         checkNotNull(study);
@@ -64,7 +73,7 @@ public class ExternalIdService {
         checkNotNull(study);
         checkNotNull(healthCode);
         
-        if (study.isExternalIdValidationEnabled()) {
+        if (externalIdentifier != null) {
             externalIdDao.assignExternalId(study.getStudyIdentifier(), externalIdentifier, healthCode);
         }
     }

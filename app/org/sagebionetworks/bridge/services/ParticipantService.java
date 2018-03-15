@@ -248,8 +248,7 @@ public class ParticipantService {
         if (study.getAccountLimit() > 0) {
             throwExceptionIfLimitMetOrExceeded(study);
         }
-
-        Validate.entityThrowingException(new StudyParticipantValidator(study, true), participant);
+        Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, study, true), participant);
         
         Account account = accountDao.constructAccount(study, participant.getEmail(), participant.getPhone(),
                 participant.getExternalId(), participant.getPassword());
@@ -257,7 +256,6 @@ public class ParticipantService {
         updateAccountAndRoles(study, callerRoles, account, participant);
         
         boolean sendVerifyEmail = requestSendVerifyEmail && study.isEmailVerificationEnabled();
-
         if (sendVerifyEmail) {
             account.setStatus(AccountStatus.UNVERIFIED);
         } else {
@@ -268,9 +266,7 @@ public class ParticipantService {
         }
 
         String accountId = accountDao.createAccount(study, account);
-        if (isNotBlank(participant.getExternalId())) {
-            externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());    
-        }
+        externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());    
         
         // send verify email
         if (sendVerifyEmail && !study.isAutoVerificationEmailSuppressed()) {
@@ -284,7 +280,7 @@ public class ParticipantService {
         checkNotNull(callerRoles);
         checkNotNull(participant);
         
-        Validate.entityThrowingException(new StudyParticipantValidator(study, false), participant);
+        Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, study, false), participant);
         
         Account account = getAccountThrowingException(study, participant.getId());
 
