@@ -520,7 +520,7 @@ public class ParticipantService {
             accountUpdated = true;
             assignExternalId = true;
         }
-        // save 
+        // save. if this throws a constraint exception, further services are not called
         if (accountUpdated) {
             accountDao.updateAccount(account, true);   
         }

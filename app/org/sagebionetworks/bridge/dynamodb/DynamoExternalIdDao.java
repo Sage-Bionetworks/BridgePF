@@ -59,7 +59,6 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     private static final String STUDY_ID = "studyId";
 
     private int addLimit;
-    private int lockDuration;
     private RateLimiter getExternalIdRateLimiter;
     private DynamoDBMapper mapper;
 
@@ -67,7 +66,6 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     @Autowired
     public final void setConfig(Config config) {
         addLimit = config.getInt(CONFIG_KEY_ADD_LIMIT);
-        lockDuration = config.getInt(CONFIG_KEY_LOCK_DURATION);
         setGetExternalIdRateLimiter(RateLimiter.create(config.getInt(EXTERNAL_ID_GET_RATE)));
     }
 
@@ -130,7 +128,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
                     // return no more than pageSize externalIdentifiers
                     break;
                 }
-                identifiers.add(createInfo(id, lockDuration));
+                identifiers.add(new ExternalIdentifierInfo(id.getIdentifier(), id.getHealthCode() != null));
             }
 
             capacityConsumed = list.getConsumedCapacity().getCapacityUnits().intValue();
@@ -287,7 +285,4 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         return saveExpression;
     }
     
-    private ExternalIdentifierInfo createInfo(ExternalIdentifier id, long lockDuration) {
-        return new ExternalIdentifierInfo(id.getIdentifier(), id.getHealthCode() != null);
-    }
 }
