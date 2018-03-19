@@ -36,12 +36,32 @@ public class UploadFileHelper {
     static final String ATTACHMENT_BUCKET = BridgeConfigFactory.getConfig().getProperty("attachment.bucket");
 
     private FileHelper fileHelper;
+    private int inlineFileSizeLimit = UploadUtil.FILE_SIZE_LIMIT_INLINE_FIELD;
+    private int parsedJsonFileSizeLimit = UploadUtil.FILE_SIZE_LIMIT_PARSED_JSON;
+    private int parsedJsonWarningLimit = UploadUtil.WARNING_LIMIT_PARSED_JSON;
     private S3Helper s3Helper;
 
     /** File helper, used to check file sizes before parsing them into memory. */
     @Autowired
     public final void setFileHelper(FileHelper fileHelper) {
         this.fileHelper = fileHelper;
+    }
+
+    /** Sets the file size limit for inline files. This setter is to allow unit tests to override. */
+    final void setInlineFileSizeLimit(@SuppressWarnings("SameParameterValue") int inlineFileSizeLimit) {
+        this.inlineFileSizeLimit = inlineFileSizeLimit;
+    }
+
+    /** Sets the file size limit for parsed JSON files. This setter is to allow unit tests to override. */
+    final void setParsedJsonFileSizeLimit(@SuppressWarnings("SameParameterValue") int parsedJsonFileSizeLimit) {
+        this.parsedJsonFileSizeLimit = parsedJsonFileSizeLimit;
+    }
+
+    /**
+     * Sets the threshold on parsed JSON files before we log a warning. This setter is to allow unit tests to override.
+     */
+    final void setParsedJsonWarningLimit(@SuppressWarnings("SameParameterValue") int parsedJsonWarningLimit) {
+        this.parsedJsonWarningLimit = parsedJsonWarningLimit;
     }
 
     /** S3 Helper, used to upload attachments. */
@@ -92,21 +112,21 @@ public class UploadFileHelper {
             } else {
                 // Case 1c: The whole file is an inline JSON field.
 
-                // DynamoDB has a row size limit of 400kb. To make sure we don't go over, we have a soft limit of
-                // 10kb per field (soon to be a hard limit). Check the size limit now and log a warning (and in the
-                // future, throw an error or something.
+                // DynamoDB has a row size limit of 400kb. To make sure we don't go over, we have a limit of 10kb per
+                // field.
                 long fieldFileSize = fileHelper.fileSize(fieldFile);
-                if (fieldFileSize > UploadUtil.FILE_SIZE_LIMIT_INLINE_FIELD) {
+                if (fieldFileSize > inlineFileSizeLimit) {
                     LOG.warn("Inline field file exceeds max size, uploadId=" + uploadId + ", fieldname=" +
                             fieldName + ", fileSize=" + fieldFileSize + " bytes");
-                }
-
-                // Parse field from file.
-                try (InputStream fileInputStream = fileHelper.getInputStream(fieldFile)) {
-                    fieldNode = BridgeObjectMapper.get().readTree(fileInputStream);
-                } catch (IOException ex) {
-                    throw new UploadValidationException("Error parsing field file, uploadId=" + uploadId +
-                            ", fieldName=" + fieldName, ex);
+                    fieldNode = null;
+                } else {
+                    // Parse field from file.
+                    try (InputStream fileInputStream = fileHelper.getInputStream(fieldFile)) {
+                        fieldNode = BridgeObjectMapper.get().readTree(fileInputStream);
+                    } catch (IOException ex) {
+                        throw new UploadValidationException("Error parsing field file, uploadId=" + uploadId +
+                                ", fieldName=" + fieldName, ex);
+                    }
                 }
             }
         } else {
@@ -125,13 +145,17 @@ public class UploadFileHelper {
                 if (parsedSanitizedJsonFileCache.containsKey(parsedFilename)) {
                     sanitizedParsedJsonNodeMap = parsedSanitizedJsonFileCache.get(parsedFilename);
                 } else {
-                    // We don't want to load large files into memory, for obvious reasons. Historically, we parse files
-                    // on the ~1.5mb mark, and because of the way old schemas are set up, we can't avoid that. For now,
-                    // put a 2mb soft limit (soon to be hard limit) and warn.
+                    // We don't want to load large files into memory, for obvious reasons. Because of the way old
+                    // studies are set up, we sometimes end up parsing very large files into Bridge anyway. For now,
+                    // warn if the size is >5mb, and skip if the size >20mb.
                     File parsedFile = oneFileEntry.getValue();
                     long parsedFileSize = fileHelper.fileSize(parsedFile);
-                    if (parsedFileSize > UploadUtil.FILE_SIZE_LIMIT_PARSED_JSON) {
+                    if (parsedFileSize > parsedJsonFileSizeLimit) {
                         LOG.warn("Parsed JSON file exceeds max size, uploadId=" + uploadId + ", filename=" +
+                                parsedFilename + ", fileSize=" + parsedFileSize + " bytes");
+                        continue;
+                    } else if (parsedFileSize > parsedJsonWarningLimit) {
+                        LOG.warn("Parsed JSON file exceeds warning threshold, uploadId=" + uploadId + ", filename=" +
                                 parsedFilename + ", fileSize=" + parsedFileSize + " bytes");
                     }
 

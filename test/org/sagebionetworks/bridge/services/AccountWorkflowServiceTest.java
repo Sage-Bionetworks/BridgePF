@@ -389,7 +389,7 @@ public class AccountWorkflowServiceTest {
         
         verify(mockCacheProvider).setObject(SPTOKEN+":phone:api", 
                 BridgeObjectMapper.get().writeValueAsString(TestConstants.PHONE), 
-                AccountWorkflowService.EXPIRE_IN_SECONDS);
+                AccountWorkflowService.VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         verify(mockNotificationsService).sendSMSMessage(smsMessageProviderCaptor.capture());
         
         String message = smsMessageProviderCaptor.getValue().getSmsRequest().getMessage();
@@ -592,7 +592,7 @@ public class AccountWorkflowServiceTest {
         
         verify(mockAccountDao).getAccount(SIGN_IN_REQUEST_WITH_EMAIL.getAccountId());
         
-        verify(mockCacheProvider).setObject(eq(CACHE_KEY), stringCaptor.capture(), eq(300));
+        verify(mockCacheProvider).setObject(eq(CACHE_KEY), stringCaptor.capture(), eq(AccountWorkflowService.SIGNIN_EXPIRE_IN_SECONDS));
         assertNotNull(stringCaptor.getValue());
 
         verify(mockSendMailService).sendEmail(emailProviderCaptor.capture());
@@ -600,7 +600,7 @@ public class AccountWorkflowServiceTest {
         BasicEmailProvider provider = emailProviderCaptor.getValue();
         assertEquals(BridgeUtils.encodeURIComponent(EMAIL), provider.getTokenMap().get("email"));
         assertEquals(TOKEN, provider.getTokenMap().get("token"));
-        assertEquals("5 minutes", provider.getTokenMap().get("emailSignInExpirationPeriod"));
+        assertEquals("1 hour", provider.getTokenMap().get("emailSignInExpirationPeriod"));
         
         String token = provider.getTokenMap().get("token");
         
@@ -681,7 +681,7 @@ public class AccountWorkflowServiceTest {
         BasicEmailProvider provider = emailProviderCaptor.getValue();
         assertEquals(BridgeUtils.encodeURIComponent(EMAIL), provider.getTokenMap().get("email"));
         assertEquals(TOKEN, provider.getTokenMap().get("token"));
-        assertEquals("5 minutes", provider.getTokenMap().get("emailSignInExpirationPeriod"));
+        assertEquals("1 hour", provider.getTokenMap().get("emailSignInExpirationPeriod"));
         
         assertEquals(EMAIL, provider.getMimeTypeEmail().getRecipientAddresses().get(0));
         assertEquals(SUPPORT_EMAIL, provider.getPlainSenderEmail());
@@ -712,7 +712,7 @@ public class AccountWorkflowServiceTest {
         service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
         
         verify(mockCacheProvider).getObject(cacheKey, String.class);
-        verify(mockCacheProvider).setObject(cacheKey, "123456", 300);
+        verify(mockCacheProvider).setObject(cacheKey, "123456", AccountWorkflowService.SIGNIN_EXPIRE_IN_SECONDS);
         verify(mockNotificationsService).sendSMSMessage(smsMessageProviderCaptor.capture());
         
         assertEquals(study, smsMessageProviderCaptor.getValue().getStudy());
