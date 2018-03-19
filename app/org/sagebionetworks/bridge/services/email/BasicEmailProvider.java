@@ -3,13 +3,13 @@ package org.sagebionetworks.bridge.services.email;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeBodyPart;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 
@@ -19,8 +19,6 @@ import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 
 public class BasicEmailProvider extends MimeTypeEmailProvider {
-    private static final String EXPIRATION_PERIOD_KEY = "expirationPeriod";
-    
     private final String overrideSenderEmail;
     private final Set<String> recipientEmails;
     private final Map<String,String> tokenMap;
@@ -52,7 +50,7 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
         return recipientEmails;
     }
     public Map<String,String> getTokenMap() {
-        return ImmutableMap.copyOf(tokenMap);
+        return tokenMap;
     }
     public EmailTemplate getTemplate() {
         return template;
@@ -60,9 +58,6 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
     
     @Override
     public MimeTypeEmail getMimeTypeEmail() throws MessagingException {
-        tokenMap.putAll(BridgeUtils.studyTemplateVariables(getStudy()));
-        tokenMap.put("host", BridgeConfigFactory.getConfig().getHostnameWithPostfix("ws"));
-        
         final MimeTypeEmailBuilder emailBuilder = new MimeTypeEmailBuilder();
 
         final String formattedSubject = BridgeUtils.resolveTemplate(template.getSubject(), tokenMap);
@@ -116,15 +111,19 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
             tokenMap.put(name, value);
             return this;
         }
-        public Builder withExpirationPeriod(int expireInSeconds) {
-            withToken(EXPIRATION_PERIOD_KEY, BridgeUtils.secondsToPeriodString(expireInSeconds));
+        public Builder withExpirationPeriod(String name, int expireInSeconds) {
+            withToken(name, BridgeUtils.secondsToPeriodString(expireInSeconds));
             return this;
         }
         public BasicEmailProvider build() {
             checkNotNull(study);
             checkNotNull(template);
-
-            return new BasicEmailProvider(study, overrideSenderEmail, tokenMap, recipientEmails, template);
+            
+            tokenMap.putAll(BridgeUtils.studyTemplateVariables(study));
+            // Nulls will cause ImmutableMap.of to fail
+            tokenMap.values().removeIf(Objects::isNull);
+            
+            return new BasicEmailProvider(study, overrideSenderEmail, ImmutableMap.copyOf(tokenMap), recipientEmails, template);
         }
     }
 }

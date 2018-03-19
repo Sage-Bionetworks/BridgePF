@@ -1,11 +1,13 @@
 package org.sagebionetworks.bridge.services.email;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+import java.util.Map;
 
 import javax.mail.internet.MimeBodyPart;
 
 import org.junit.Test;
-
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -27,7 +29,7 @@ public class BasicEmailProviderTest {
 
         EmailTemplate template = new EmailTemplate("Subject ${url}", 
             "${studyName} ${studyShortName} ${studyId} ${sponsorName} ${supportEmail} "+
-            "${technicalEmail} ${consentEmail} ${url}", MimeType.HTML);
+            "${technicalEmail} ${consentEmail} ${url} ${expirationPeriod}", MimeType.HTML); 
         
         // Create
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
@@ -35,6 +37,7 @@ public class BasicEmailProviderTest {
             .withRecipientEmail("recipient@recipient.com")
             .withRecipientEmail("recipient2@recipient.com")
             .withEmailTemplate(template)
+            .withExpirationPeriod("expirationPeriod", 60*60)
             .withToken("url", "some-url").build();
 
         // Check provider attributes
@@ -49,7 +52,7 @@ public class BasicEmailProviderTest {
         MimeBodyPart body = email.getMessageParts().get(0);
         
         String bodyString = (String)body.getContent();
-        assertEquals("Name ShortName id SponsorName support@email.com tech@email.com consent@email.com some-url", 
+        assertEquals("Name ShortName id SponsorName support@email.com tech@email.com consent@email.com some-url 1 hour", 
                 bodyString);
     }
 
@@ -69,4 +72,16 @@ public class BasicEmailProviderTest {
         // Check provider attributes
         assertEquals("example@example.com", provider.getPlainSenderEmail());
     }
+    @Test
+    public void nullTokenMapEntryDoesntBreakMap() throws Exception {
+        EmailTemplate template = new EmailTemplate("asdf", "asdf", MimeType.TEXT);
+        
+        BasicEmailProvider provider = new BasicEmailProvider.Builder().withEmailTemplate(template)
+                .withRecipientEmail("email@email.com")
+                .withOverrideSenderEmail("example@example.com").withStudy(Study.create()).build();
+        
+        Map<String,String> tokenMap = provider.getTokenMap();
+        assertNull(tokenMap.get("supportName"));
+    }    
+    
 }
