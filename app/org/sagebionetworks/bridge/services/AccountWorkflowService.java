@@ -88,8 +88,8 @@ public class AccountWorkflowService {
     private final AtomicLong emailSignInRequestInMillis = new AtomicLong(200L);
     private final AtomicLong phoneSignInRequestInMillis = new AtomicLong(200L);
     
-    static final int EXPIRE_IN_SECONDS = 60*60*2; // 2 hours 
-    static final int SESSION_SIGNIN_EXPIRE_IN_SECONDS = 60*5; // 5 minutes
+    static final int VERIFY_OR_RESET_EXPIRE_IN_SECONDS = 60*60*2; // 2 hours 
+    static final int SIGNIN_EXPIRE_IN_SECONDS = 60*60; // 1 hour
 
     // Enumeration of request types that we want to throttle on. Used to differentiate between request types and
     // generate cache keys.
@@ -295,7 +295,7 @@ public class AccountWorkflowService {
         String sptoken = getNextToken();
         
         String cacheKey = sptoken + ":" + study.getIdentifier();
-        cacheProvider.setObject(cacheKey, email, EXPIRE_IN_SECONDS);
+        cacheProvider.setObject(cacheKey, email, VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         
         String url = getResetPasswordURL(study, sptoken);
         String shortUrl = getShortResetPasswordURL(study, sptoken);
@@ -310,7 +310,7 @@ public class AccountWorkflowService {
             .withToken(SPTOKEN_KEY, sptoken)
             .withToken(URL_KEY, url)
             .withToken(SHORT_URL_KEY, shortUrl)
-            .withToken(EXP_WINDOW_TOKEN, Integer.toString(EXPIRE_IN_SECONDS/60/60));
+            .withToken(EXP_WINDOW_TOKEN, Integer.toString(VERIFY_OR_RESET_EXPIRE_IN_SECONDS/60/60));
             
         if (includeEmailSignIn && study.isEmailSignInEnabled()) {
             SignIn signIn = new SignIn.Builder().withEmail(email).withStudy(study.getIdentifier()).build();
@@ -333,7 +333,7 @@ public class AccountWorkflowService {
     private void sendPasswordResetRelatedSMS(Study study, Phone phone, String message) {
         String sptoken = getNextToken();
         String cacheKey = sptoken + ":phone:" + study.getIdentifier();
-        cacheProvider.setObject(cacheKey, getPhoneString(phone), EXPIRE_IN_SECONDS);
+        cacheProvider.setObject(cacheKey, getPhoneString(phone), VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         
         String url = getShortResetPasswordURL(study, sptoken);
 
@@ -461,7 +461,7 @@ public class AccountWorkflowService {
         String token = cacheProvider.getObject(cacheKey, String.class);
         if (token == null) {
             token = tokenSupplier.get();
-            cacheProvider.setObject(cacheKey, token, SESSION_SIGNIN_EXPIRE_IN_SECONDS);
+            cacheProvider.setObject(cacheKey, token, SIGNIN_EXPIRE_IN_SECONDS);
         }
 
         messageSender.accept(study, token);
@@ -499,7 +499,7 @@ public class AccountWorkflowService {
         checkNotNull(data);
                  
         try {
-            cacheProvider.setObject(sptoken, BridgeObjectMapper.get().writeValueAsString(data), EXPIRE_IN_SECONDS);
+            cacheProvider.setObject(sptoken, BridgeObjectMapper.get().writeValueAsString(data), VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         } catch (IOException e) {
             throw new BridgeServiceException(e);
         }
