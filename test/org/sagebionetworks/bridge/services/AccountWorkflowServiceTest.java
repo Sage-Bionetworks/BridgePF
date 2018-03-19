@@ -583,7 +583,6 @@ public class AccountWorkflowServiceTest {
         BasicEmailProvider provider = emailProviderCaptor.getValue();
         assertEquals(BridgeUtils.encodeURIComponent(EMAIL), provider.getTokenMap().get("email"));
         assertEquals(TOKEN, provider.getTokenMap().get("token"));
-        assertEquals("1 hour", provider.getTokenMap().get("expirationPeriod"));
         
         String token = provider.getTokenMap().get("token");
         
@@ -664,7 +663,6 @@ public class AccountWorkflowServiceTest {
         BasicEmailProvider provider = emailProviderCaptor.getValue();
         assertEquals(BridgeUtils.encodeURIComponent(EMAIL), provider.getTokenMap().get("email"));
         assertEquals(TOKEN, provider.getTokenMap().get("token"));
-        assertEquals("1 hour", provider.getTokenMap().get("expirationPeriod"));
         
         assertEquals(EMAIL, provider.getMimeTypeEmail().getRecipientAddresses().get(0));
         assertEquals(SUPPORT_EMAIL, provider.getPlainSenderEmail());
