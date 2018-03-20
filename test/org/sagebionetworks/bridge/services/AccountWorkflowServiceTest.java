@@ -390,15 +390,9 @@ public class AccountWorkflowServiceTest {
         verify(mockCacheProvider).setObject(SPTOKEN+":phone:api", 
                 BridgeObjectMapper.get().writeValueAsString(TestConstants.PHONE), 
                 AccountWorkflowService.VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
-<<<<<<< HEAD
-        verify(mockNotificationsService).sendSMSMessage(eq(study.getStudyIdentifier()), 
-                eq(TestConstants.PHONE), stringCaptor.capture());
-        String message = stringCaptor.getValue();
-=======
         verify(mockNotificationsService).sendSMSMessage(smsMessageProviderCaptor.capture());
         
         String message = smsMessageProviderCaptor.getValue().getSmsRequest().getMessage();
->>>>>>> release-20180320
         assertTrue(message.contains("Account for ShortName already exists. Reset password: "));
         assertTrue(message.contains("/rp?study=api&sptoken="+SPTOKEN));
         assertTrue(message.contains(" or "+TOKEN.substring(0,3) + "-" + TOKEN.substring(3,6)));
@@ -719,17 +713,12 @@ public class AccountWorkflowServiceTest {
         
         verify(mockCacheProvider).getObject(cacheKey, String.class);
         verify(mockCacheProvider).setObject(cacheKey, "123456", AccountWorkflowService.SIGNIN_EXPIRE_IN_SECONDS);
-<<<<<<< HEAD
-        verify(mockNotificationsService).sendSMSMessage(study.getStudyIdentifier(), TestConstants.PHONE,
-                "Enter 123-456 to sign in to AppName");
-=======
         verify(mockNotificationsService).sendSMSMessage(smsMessageProviderCaptor.capture());
         
         assertEquals(study, smsMessageProviderCaptor.getValue().getStudy());
         assertEquals(TestConstants.PHONE, smsMessageProviderCaptor.getValue().getPhone());
         String message = smsMessageProviderCaptor.getValue().getSmsRequest().getMessage();
         assertEquals("Enter 123-456 to sign in to AppName", message);
->>>>>>> release-20180320
     }
     
     @Test

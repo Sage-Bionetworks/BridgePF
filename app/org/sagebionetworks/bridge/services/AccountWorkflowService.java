@@ -315,18 +315,12 @@ public class AccountWorkflowService {
             .withEmailTemplate(template)
             .withRecipientEmail(email)
             .withToken(SPTOKEN_KEY, sptoken)
-<<<<<<< HEAD
-            .withToken(URL_KEY, url)
-            .withToken(SHORT_URL_KEY, shortUrl)
-            .withToken(EXP_WINDOW_TOKEN, Integer.toString(VERIFY_OR_RESET_EXPIRE_IN_SECONDS/60/60));
-=======
             .withToken(OLD_URL_KEY, url)
             .withToken(OLD_SHORT_URL_KEY, shortUrl)
             .withToken(OLD_EXP_WINDOW_TOKEN, Integer.toString(VERIFY_OR_RESET_EXPIRE_IN_SECONDS/60/60))
             .withExpirationPeriod(OLD_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS)
             .withToken(RESET_PASSWORD_URL_KEY, shortUrl)
             .withExpirationPeriod(RESET_PASSWORD_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
->>>>>>> release-20180320
             
         if (includeEmailSignIn && study.isEmailSignInEnabled()) {
             SignIn signIn = new SignIn.Builder().withEmail(email).withStudy(study.getIdentifier()).build();
