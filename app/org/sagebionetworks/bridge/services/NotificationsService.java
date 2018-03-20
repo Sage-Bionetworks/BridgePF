@@ -5,7 +5,6 @@ import static org.sagebionetworks.bridge.BridgeUtils.SEMICOLON_SPACE_JOINER;
 
 import java.nio.charset.Charset;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.Resource;
 
@@ -20,22 +19,20 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.NotImplementedException;
 import org.sagebionetworks.bridge.models.OperatingSystem;
-import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.validators.NotificationMessageValidator;
 import org.sagebionetworks.bridge.validators.NotificationRegistrationValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.sns.AmazonSNSClient;
-import com.amazonaws.services.sns.model.MessageAttributeValue;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.amazonaws.services.sns.model.PublishResult;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 /**
  * Service for managing client registration to receive push notifications, integrated into the 
@@ -45,18 +42,6 @@ import com.google.common.collect.Maps;
 public class NotificationsService {
     private static Logger LOG = LoggerFactory.getLogger(NotificationsService.class);
     
-    /**
-     * 11 character label as to who sent the SMS message. Only in some supported countries (not US):
-     * https://support.twilio.com/hc/en-us/articles/223133767-International-support-for-Alphanumeric-Sender-ID
-     */
-    public static final String SENDER_ID = "AWS.SNS.SMS.SenderID";
-    /**
-     * SMS type (Promotional or Transactional).
-     */
-    public static final String SMS_TYPE = "AWS.SNS.SMS.SMSType";
-    
-    private static final String SMS_TYPE_TRANSACTIONAL = "Transactional";
-        
     private StudyService studyService;
     
     private NotificationRegistrationDao notificationRegistrationDao;
@@ -187,33 +172,21 @@ public class NotificationsService {
         }
     }
     
-    public void sendSMSMessage(StudyIdentifier studyId, Phone phone, String message) {
-        checkNotNull(studyId);
-        checkNotNull(phone);
-        checkNotNull(message);
+    public void sendSMSMessage(SmsMessageProvider provider) {
+        checkNotNull(provider);
         
+        PublishRequest request = provider.getSmsRequest();
+
         // Limited to 140 bytes in GSM. We can test the length in ASCII (GSM is not a supported encoding in the 
         // JDK) and this is a rough approximation as both are 7-bit encodings.
-        if (message.getBytes(Charset.forName("US-ASCII")).length > BridgeConstants.SMS_CHARACTER_LIMIT) {
+        if (request.getMessage().getBytes(Charset.forName("US-ASCII")).length > BridgeConstants.SMS_CHARACTER_LIMIT) {
             throw new BridgeServiceException("SMS message cannot be longer than 140 UTF-8/ASCII characters.");
         }
         
-        Map<String, MessageAttributeValue> smsAttributes = Maps.newHashMap();
-        smsAttributes.put(SENDER_ID, attribute("Bridge"));
-        smsAttributes.put(SMS_TYPE, attribute(SMS_TYPE_TRANSACTIONAL));
-        // Costs seem too low to worry about this, but if need be, this is how we'd cap it.
-        // smsAttributes.put("AWS.SNS.SMS.MaxPrice", attribute("0.50")); max price set to $.50
-        
-        PublishResult result = snsClient.publish(new PublishRequest()
-                .withMessage(message)
-                .withPhoneNumber(phone.getNumber())
-                .withMessageAttributes(smsAttributes));
+        PublishResult result = snsClient.publish(request);
 
-        LOG.debug("Sent SMS message, study=" + studyId.getIdentifier() + ", message ID=" + result.getMessageId());
-    }
-
-    private MessageAttributeValue attribute(String value) {
-        return new MessageAttributeValue().withStringValue(value).withDataType("String");
+        LOG.debug("Sent SMS message, study=" + provider.getStudy().getStudyIdentifier().getIdentifier()
+                + ", message ID=" + result.getMessageId());
     }
 
     private String getPlatformARN(Study study, NotificationRegistration registration) {

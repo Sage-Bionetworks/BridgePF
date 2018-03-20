@@ -16,13 +16,13 @@ import org.junit.runner.RunWith;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import java.io.IOException;
@@ -75,7 +75,7 @@ public class DynamoHealthDataDaoDdbTest {
         testRecord.setUploadDate(UPLOAD_DATE);
         testRecord.setUploadedOn(UPLOADED_ON);
         testRecord.setUploadId(UPLOAD_ID);
-        testRecord.setUserSharingScope(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS);
+        testRecord.setUserSharingScope(SharingScope.SPONSORS_AND_PARTNERS);
         testRecord.setUserExternalId(USER_EXTERNAL_ID);
         testRecord.setUserDataGroups(TestConstants.USER_DATA_GROUPS);
         testRecord.setData(BridgeObjectMapper.get().readTree(DATA_TEXT));
@@ -106,7 +106,7 @@ public class DynamoHealthDataDaoDdbTest {
         assertEquals(UPLOAD_DATE, savedRecord.getUploadDate());
         assertEquals(UPLOAD_ID, savedRecord.getUploadId());
         assertEquals(UPLOADED_ON, savedRecord.getUploadedOn().longValue());
-        assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, savedRecord.getUserSharingScope());
+        assertEquals(SharingScope.SPONSORS_AND_PARTNERS, savedRecord.getUserSharingScope());
         assertEquals(USER_EXTERNAL_ID, savedRecord.getUserExternalId());
         assertEquals(TestConstants.USER_DATA_GROUPS, savedRecord.getUserDataGroups());
         assertEquals(1L, savedRecord.getVersion().longValue());
@@ -142,7 +142,7 @@ public class DynamoHealthDataDaoDdbTest {
         assertEquals(UPLOAD_DATE, savedRecord.getUploadDate());
         assertEquals(UPLOAD_ID, savedRecord.getUploadId());
         assertEquals(UPLOADED_ON, savedRecord.getUploadedOn().longValue());
-        assertEquals(ParticipantOption.SharingScope.SPONSORS_AND_PARTNERS, savedRecord.getUserSharingScope());
+        assertEquals(SharingScope.SPONSORS_AND_PARTNERS, savedRecord.getUserSharingScope());
         assertEquals(USER_EXTERNAL_ID, savedRecord.getUserExternalId());
         assertEquals(TestConstants.USER_DATA_GROUPS, savedRecord.getUserDataGroups());
 

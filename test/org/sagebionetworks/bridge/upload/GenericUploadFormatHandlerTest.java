@@ -177,6 +177,52 @@ public class GenericUploadFormatHandlerTest {
         verifyNoMoreInteractions(mockUploadFileHelper);
     }
 
+    @Test
+    public void dataFileTooLarge() throws Exception {
+        // Override file size limit to make this easier to test.
+        handler.setDataFileSizeLimit(40);
+
+        // mock schema service
+        UploadFieldDefinition fooFieldDef = new UploadFieldDefinition.Builder().withName("foo")
+                .withType(UploadFieldType.STRING).withMaxLength(24).build();
+        UploadFieldDefinition barFieldDef = new UploadFieldDefinition.Builder().withName("bar")
+                .withType(UploadFieldType.ATTACHMENT_V2).build();
+        List<UploadFieldDefinition> fieldDefList = ImmutableList.of(fooFieldDef, barFieldDef);
+        mockSchemaServiceWithFields(fieldDefList);
+
+        // Upload file helper should just return null for this test.
+        when(mockUploadFileHelper.findValueForField(any(), any(), any(), any())).thenReturn(null);
+
+        // Setup inputs.
+        String recordJsonText = "{\n" +
+                "   \"foo\":\"foo-value\",\n" +
+                "   \"bar\":\"bar is an attachment\"\n" +
+                "}";
+        File recordJsonFile = makeFileWithContent("record.json", recordJsonText);
+
+        Map<String, File> fileMap = ImmutableMap.<String, File>builder().put("record.json", recordJsonFile).build();
+
+        UploadValidationContext context = makeContextWithContent(fileMap);
+        ObjectNode infoJsonNode = makeInfoJson();
+        infoJsonNode.put(UploadUtil.FIELD_DATA_FILENAME, "record.json");
+        context.setInfoJsonNode(infoJsonNode);
+
+        // execute and validate
+        handler.handle(context);
+        validateCommonProps(context);
+
+        // Data map is empty.
+        JsonNode dataMap = context.getHealthDataRecord().getData();
+        assertEquals(0, dataMap.size());
+
+        // Since we skipped the data file (too large), we asked the file helper (which didn't find any results).
+        verify(mockUploadFileHelper).findValueForField(eq(UPLOAD_ID), any(), eq(fooFieldDef), any());
+        verify(mockUploadFileHelper).findValueForField(eq(UPLOAD_ID), any(), eq(barFieldDef), any());
+
+        // We don't call mockUploadFileHelper for any other field.
+        verifyNoMoreInteractions(mockUploadFileHelper);
+    }
+
     private void mockSchemaServiceWithFields(List<UploadFieldDefinition> fieldDefList) {
         UploadSchema schema = UploadSchema.create();
         schema.setSchemaId(SCHEMA_ID);

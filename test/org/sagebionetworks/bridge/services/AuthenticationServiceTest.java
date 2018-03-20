@@ -9,8 +9,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.DATA_GROUPS;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -35,8 +33,6 @@ import org.sagebionetworks.bridge.TestUserAdminHelper.TestUser;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -51,6 +47,7 @@ import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -79,9 +76,6 @@ public class AuthenticationServiceTest {
     @Resource
     private AuthenticationService authService;
 
-    @Resource
-    private ParticipantOptionsService optionsService;
-    
     @Resource
     private AccountDao accountDao;
     
@@ -325,10 +319,7 @@ public class AuthenticationServiceTest {
         IdentifierHolder holder = authService.signUp(study, participant, false);
         
         Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), holder.getIdentifier()));
-        
-        Set<String> persistedGroups = optionsService.getOptions(study.getStudyIdentifier(), account.getHealthCode())
-                .getStringSet(DATA_GROUPS);
-        assertEquals(groups, persistedGroups);
+        assertEquals(groups, account.getDataGroups());
     }
     
     @Test
@@ -406,12 +397,8 @@ public class AuthenticationServiceTest {
     public void existingLanguagePreferencesAreLoaded() {
         LinkedHashSet<String> LANGS = TestUtils.newLinkedHashSet("en","es");
         testUser = helper.getBuilder(AuthenticationServiceTest.class)
-                .withConsent(true).withSignIn(true).build();
+                .withConsent(true).withLanguages(LANGS).withSignIn(true).build();
         
-        String healthCode = testUser.getHealthCode();
-        optionsService.setOrderedStringSet(
-                testUser.getStudyIdentifier(), healthCode, ParticipantOption.LANGUAGES, LANGS);
-
         authService.signOut(testUser.getSession());
         
         Study study = studyService.getStudy(testUser.getStudyIdentifier());
@@ -437,11 +424,10 @@ public class AuthenticationServiceTest {
         
         Study study = studyService.getStudy(testUser.getStudyIdentifier());
         
+        // If the languages are in the session after signing in, they've been persisted in the account table,
+        // there isn't anything further to test (as there was when these were stored in a separate table).
         UserSession session = authService.signIn(study, context, testUser.getSignIn());
         assertEquals(LANGS, session.getParticipant().getLanguages());
-        
-        LinkedHashSet<String> persistedLangs = optionsService.getOptions(testUser.getStudyIdentifier(), testUser.getHealthCode()).getOrderedStringSet(LANGUAGES);
-        assertEquals(LANGS, persistedLangs);
     }
     
     @Test

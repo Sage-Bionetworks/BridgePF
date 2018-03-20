@@ -14,11 +14,12 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
 
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 import org.junit.Test;
-
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -33,6 +34,21 @@ import com.google.common.collect.Sets;
 public class BridgeUtilsTest {
     
     private static final LocalDateTime LOCAL_DATE_TIME = LocalDateTime.parse("2010-10-10T10:10:10.111");
+    
+    @Test
+    public void secondsToPeriodString() {
+        assertEquals("30 seconds", BridgeUtils.secondsToPeriodString(30));
+        assertEquals("1 minute", BridgeUtils.secondsToPeriodString(60));
+        assertEquals("90 seconds", BridgeUtils.secondsToPeriodString(90));
+        assertEquals("5 minutes", BridgeUtils.secondsToPeriodString(60*5));
+        assertEquals("25 minutes", BridgeUtils.secondsToPeriodString(60*25));
+        assertEquals("90 minutes", BridgeUtils.secondsToPeriodString(60*90));
+        assertEquals("1 hour", BridgeUtils.secondsToPeriodString(60*60));
+        assertEquals("2 hours", BridgeUtils.secondsToPeriodString(60*60*2));
+        assertEquals("36 hours", BridgeUtils.secondsToPeriodString(60*60*36));
+        assertEquals("1 day", BridgeUtils.secondsToPeriodString(60*60*24));
+        assertEquals("2 days", BridgeUtils.secondsToPeriodString(60*60*24*2));
+    }
     
     @Test
     public void parseAccountId() {
@@ -65,6 +81,9 @@ public class BridgeUtilsTest {
     
     @Test
     public void studyTemplateVariblesWorks() {
+        String host = BridgeConfigFactory.getConfig().getHostnameWithPostfix("ws");
+        assertTrue(StringUtils.isNotBlank(host));
+        
         Study study = Study.create();
         study.setName("name1");
         study.setShortName("shortName");
@@ -73,7 +92,6 @@ public class BridgeUtilsTest {
         study.setSupportEmail("supportEmail1");
         study.setTechnicalEmail("technicalEmail1");
         study.setConsentNotificationEmail("consentNotificationEmail1");
-
         Map<String,String> map = BridgeUtils.studyTemplateVariables(study, (value) -> {
             return value.replaceAll("1", "2");
         });
@@ -87,6 +105,7 @@ public class BridgeUtilsTest {
         assertEquals("technicalEmail2", map.get("technicalEmail"));
         assertEquals("consentNotificationEmail2", map.get("consentEmail"));
         assertEquals("isMutable", map.get("thisMap"));
+        assertEquals(host, map.get("host"));
     }
     
     

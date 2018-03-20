@@ -1,1 +1,3 @@
-Click here to sign in: ${shortUrl}
+Click here to sign in: ${emailSignInUrl}
+
+This link expires in ${emailSignInExpirationPeriod}.

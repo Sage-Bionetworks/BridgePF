@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
-import static org.sagebionetworks.bridge.dao.ParticipantOption.LANGUAGES;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
@@ -52,7 +51,6 @@ public class AuthenticationService {
     private CacheProvider cacheProvider;
     private BridgeConfig config;
     private ConsentService consentService;
-    private ParticipantOptionsService optionsService;
     private AccountDao accountDao;
     private ParticipantService participantService;
     private StudyService studyService;
@@ -71,10 +69,6 @@ public class AuthenticationService {
     @Autowired
     final void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
-    }
-    @Autowired
-    final void setOptionsService(ParticipantOptionsService optionsService) {
-        this.optionsService = optionsService;
     }
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
@@ -304,7 +298,10 @@ public class AuthenticationService {
         if (participant.getLanguages().isEmpty() && !context.getLanguages().isEmpty()) {
             participant = new StudyParticipant.Builder().copyOf(participant)
                     .withLanguages(context.getLanguages()).build();
-            optionsService.setOrderedStringSet(study, account.getHealthCode(), LANGUAGES, context.getLanguages());
+            
+            // Note that the context does not have the healthCode, you must use the participant
+            accountDao.editAccount(study.getStudyIdentifier(), participant.getHealthCode(),
+                    accountToEdit -> accountToEdit.setLanguages(context.getLanguages()));
         }
         
         UserSession session = new UserSession(participant);
@@ -332,7 +329,7 @@ public class AuthenticationService {
                 .withUserDataGroups(session.getParticipant().getDataGroups())
                 .build();
         
-        session.setConsentStatuses(consentService.getConsentStatuses(newContext));
+        session.setConsentStatuses(consentService.getConsentStatuses(newContext, account));
         
         return session;
     }

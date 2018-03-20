@@ -51,10 +51,16 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
 public class GenericUploadFormatHandler implements UploadValidationHandler {
     private static final Logger LOG = LoggerFactory.getLogger(GenericUploadFormatHandler.class);
 
+    private int dataFileSizeLimit = UploadUtil.FILE_SIZE_LIMIT_DATA_FILE;
     private FileHelper fileHelper;
     private SurveyService surveyService;
     private UploadFileHelper uploadFileHelper;
     private UploadSchemaService uploadSchemaService;
+
+    /** File size limit for data file. Package scoped so that unit tests can override. */
+    final void setDataFileSizeLimit(@SuppressWarnings("SameParameterValue") int dataFileSizeLimit) {
+        this.dataFileSizeLimit = dataFileSizeLimit;
+    }
 
     /** File helper, used to check file sizes before parsing them into memory. */
     @Autowired
@@ -183,16 +189,16 @@ public class GenericUploadFormatHandler implements UploadValidationHandler {
             // this is a hard limit and will throw.)
             File dataFile = unzippedDataFileMap.get(dataFilename);
             long dataFileSize = fileHelper.fileSize(dataFile);
-            if (dataFileSize > UploadUtil.FILE_SIZE_LIMIT_PARSED_JSON) {
+            if (dataFileSize > dataFileSizeLimit) {
                 LOG.warn("Upload data file exceeds max size, uploadId=" + uploadId + ", filename=" + dataFilename +
                         ", fileSize=" + dataFileSize + " bytes");
-            }
-
-            try (InputStream dataFileInputStream = fileHelper.getInputStream(dataFile)) {
-                dataFileNode = BridgeObjectMapper.get().readTree(dataFileInputStream);
-            } catch (IOException ex) {
-                throw new UploadValidationException("Error parsing upload data file, uploadId=" + uploadId +
-                        ", fileName=" + dataFilename, ex);
+            } else {
+                try (InputStream dataFileInputStream = fileHelper.getInputStream(dataFile)) {
+                    dataFileNode = BridgeObjectMapper.get().readTree(dataFileInputStream);
+                } catch (IOException ex) {
+                    throw new UploadValidationException("Error parsing upload data file, uploadId=" + uploadId +
+                            ", fileName=" + dataFilename, ex);
+                }
             }
         }
 

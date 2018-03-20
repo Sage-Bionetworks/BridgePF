@@ -30,6 +30,7 @@ import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.sagebionetworks.bridge.models.studies.OAuthProviderTest;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
+import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -114,6 +115,16 @@ public class DynamoStudyTest {
                 JsonUtils.asEntity(node, "emailSignInTemplate", EmailTemplate.class));
         assertEqualsAndNotNull(study.getAccountExistsTemplate(),
                 JsonUtils.asEntity(node, "accountExistsTemplate", EmailTemplate.class));
+        assertEquals(study.getResetPasswordSmsTemplate(),
+                JsonUtils.asEntity(node, "resetPasswordSmsTemplate", SmsTemplate.class));
+        assertEquals(study.getPhoneSignInSmsTemplate(),
+                JsonUtils.asEntity(node, "phoneSignInSmsTemplate", SmsTemplate.class));
+        assertEquals(study.getAppInstallLinkSmsTemplate(),
+                JsonUtils.asEntity(node, "appInstallLinkSmsTemplate", SmsTemplate.class));
+        assertEquals(study.getVerifyPhoneSmsTemplate(),
+                JsonUtils.asEntity(node, "verifyPhoneSmsTemplate", SmsTemplate.class));
+        assertEquals(study.getAccountExistsSmsTemplate(),
+                JsonUtils.asEntity(node, "accountExistsSmsTemplate", SmsTemplate.class));
         assertEqualsAndNotNull(study.getUserProfileAttributes(), JsonUtils.asStringSet(node, "userProfileAttributes"));
         assertEqualsAndNotNull(study.getTaskIdentifiers(), JsonUtils.asStringSet(node, "taskIdentifiers"));
         assertEqualsAndNotNull(study.getActivityEventKeys(), JsonUtils.asStringSet(node, "activityEventKeys"));

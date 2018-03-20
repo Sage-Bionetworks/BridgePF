@@ -59,7 +59,6 @@ import org.sagebionetworks.bridge.crypto.CmsEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptorCacheLoader;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoIndexHelper;
-import org.sagebionetworks.bridge.dynamodb.DynamoParticipantOptions;
 import org.sagebionetworks.bridge.dynamodb.DynamoReportData;
 import org.sagebionetworks.bridge.dynamodb.DynamoReportIndex;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
@@ -446,12 +445,6 @@ public class BridgeSpringConfig {
         return dynamoUtils.getMapper(DynamoExternalIdentifier.class);
     }
     
-    @Bean(name = "participantOptionsDbMapper")
-    @Autowired
-    public DynamoDBMapper participantOptionsDbMapper(DynamoUtils dynamoUtils) {
-        return dynamoUtils.getMapper(DynamoParticipantOptions.class);
-    }
-
     @Bean(name = "uploadValidationHandlerList")
     @Autowired
     public List<UploadValidationHandler> uploadValidationHandlerList(S3DownloadHandler s3DownloadHandler,

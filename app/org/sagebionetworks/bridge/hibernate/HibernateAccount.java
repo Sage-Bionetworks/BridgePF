@@ -23,10 +23,10 @@ import javax.persistence.Table;
 import javax.persistence.Version;
 
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.dao.ParticipantOption.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 
 /** MySQL implementation of accounts via Hibernate. */
 // Note: We use a separate class entirely and marshall it to/from GenericAccount instead of using the Account interface

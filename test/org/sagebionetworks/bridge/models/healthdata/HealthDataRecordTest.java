@@ -23,11 +23,11 @@ import org.springframework.validation.MapBindingResult;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dao.ParticipantOption;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.validators.HealthDataRecordValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -59,7 +59,7 @@ public class HealthDataRecordTest {
         assertEquals("dummy study", record.getStudyId());
         assertEquals(UPLOAD_DATE, record.getUploadDate());
         assertEquals(TestConstants.USER_DATA_GROUPS, record.getUserDataGroups());
-        assertEquals(ParticipantOption.SharingScope.NO_SHARING, record.getUserSharingScope());
+        assertEquals(SharingScope.NO_SHARING, record.getUserSharingScope());
     }
 
     @Test
@@ -253,7 +253,7 @@ public class HealthDataRecordTest {
         record.setStudyId("dummy study");
         record.setUploadDate(UPLOAD_DATE);
         record.setUserDataGroups(TestConstants.USER_DATA_GROUPS);
-        record.setUserSharingScope(ParticipantOption.SharingScope.NO_SHARING);
+        record.setUserSharingScope(SharingScope.NO_SHARING);
         return record;
     }
 
@@ -302,7 +302,7 @@ public class HealthDataRecordTest {
         assertEquals("2014-02-12", record.getUploadDate().toString(ISODateTimeFormat.date()));
         assertEquals("json upload", record.getUploadId());
         assertEquals(uploadedOn, record.getUploadedOn().longValue());
-        assertEquals(ParticipantOption.SharingScope.ALL_QUALIFIED_RESEARCHERS, record.getUserSharingScope());
+        assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, record.getUserSharingScope());
         assertEquals("ABC-123-XYZ", record.getUserExternalId());
         assertEquals("dummy validation errors", record.getValidationErrors());
         assertEquals(42, record.getVersion().longValue());

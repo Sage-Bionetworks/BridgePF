@@ -1,10 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static org.sagebionetworks.bridge.dao.ParticipantOption.EMAIL_NOTIFICATIONS;
-
 import java.util.Map;
 
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -14,7 +11,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import play.mvc.Http;
@@ -24,13 +20,6 @@ import play.mvc.Result;
 public class EmailController extends BaseController {
     private final Logger LOG = LoggerFactory.getLogger(EmailController.class);
     
-    private AccountDao accountDao;
-
-    @Autowired
-    public void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
-    }
-
     /**
      * An URL to which a POST can be sent to set the user's email notification preference to "off". Cannot turn email
      * notifications back on through this endpoint. This cannot be part of the public API, because MailChimp doesn't
@@ -70,7 +59,7 @@ public class EmailController extends BaseController {
             if (healthCode == null) {
                 throw new BadRequestException("Email not found.");
             }
-            optionsService.setBoolean(study, healthCode, EMAIL_NOTIFICATIONS, false);
+            accountDao.editAccount(study.getStudyIdentifier(), healthCode, account -> account.setNotifyByEmail(false));
             
             return ok("You have been unsubscribed from future email.");
         } catch(Throwable throwable) {
