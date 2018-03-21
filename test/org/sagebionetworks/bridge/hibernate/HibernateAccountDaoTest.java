@@ -219,7 +219,7 @@ public class HibernateAccountDaoTest {
             dao.verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
             fail("Should have thrown an exception");
         } catch (EntityNotFoundException e) {
-
+            // expected exception
         }
         verify(mockHibernateHelper, never()).update(any());
         assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
@@ -288,7 +288,7 @@ public class HibernateAccountDaoTest {
             dao.verifyChannel(AuthenticationService.ChannelType.PHONE, account);
             fail("Should have thrown an exception");
         } catch (EntityNotFoundException e) {
-
+            // expected exception
         }
         verify(mockHibernateHelper, never()).update(any());
         assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
@@ -517,7 +517,7 @@ public class HibernateAccountDaoTest {
             dao.reauthenticate(STUDY, REAUTH_SIGNIN);
             fail("Should have thrown exception");
         } catch(UnauthorizedException e) {
-            
+            // expected exception
         }
         verify(mockHibernateHelper, never()).queryGet(any(), any(), any(), eq(HibernateAccount.class));
         verify(mockHibernateHelper, never()).update(any());
@@ -621,9 +621,9 @@ public class HibernateAccountDaoTest {
         assertTrue(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM.checkHash(captured.getReauthTokenHash(),
                 account.getReauthToken()));
     }
-    
+
     @Test
-    public void signOut() throws Exception {
+    public void deleteReauthToken() throws Exception {
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
         hibernateAccount.setReauthTokenAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
         hibernateAccount.setReauthTokenHash("AAA");
@@ -633,7 +633,7 @@ public class HibernateAccountDaoTest {
         
         ArgumentCaptor<HibernateAccount> accountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
         
-        dao.signOut(ACCOUNT_ID_WITH_EMAIL);
+        dao.deleteReauthToken(ACCOUNT_ID_WITH_EMAIL);
         
         verify(mockHibernateHelper).update(accountCaptor.capture());
         HibernateAccount captured = accountCaptor.getValue();
@@ -642,15 +642,30 @@ public class HibernateAccountDaoTest {
         assertNull(captured.getReauthTokenHash());
         assertNull(captured.getReauthTokenModifiedOn());
     }
-    
+
     @Test
-    public void signOutAccountNotFound() throws Exception {
+    public void deleteReauthTokenNoToken() throws Exception {
+        // Return an account with no reauth token.
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
+        hibernateAccount.setReauthTokenAlgorithm(null);
+        hibernateAccount.setReauthTokenHash(null);
+        hibernateAccount.setReauthTokenModifiedOn(null);
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any())).thenReturn(ImmutableList.of(
+                hibernateAccount));
+
         // Just quietly succeeds without doing any work.
-        dao.signOut(ACCOUNT_ID_WITH_EMAIL);
+        dao.deleteReauthToken(ACCOUNT_ID_WITH_EMAIL);
+        verify(mockHibernateHelper, never()).update(any());
+    }
+
+    @Test
+    public void deleteReauthTokenAccountNotFound() throws Exception {
+        // Just quietly succeeds without doing any work.
+        dao.deleteReauthToken(ACCOUNT_ID_WITH_EMAIL);
         
         verify(mockHibernateHelper, never()).update(any());
     }
-    
+
     @Test
     public void getAccountAfterAuthentication() throws Exception {
         Long originalTimestamp = DateTime.now().minusMinutes(2).getMillis();
