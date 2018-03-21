@@ -151,9 +151,11 @@ public class AuthenticationController extends BaseController {
         }
     }
 
+    @Deprecated
     @BodyParser.Of(BodyParser.Empty.class)
     public Result signOut() throws Exception {
         final UserSession session = getSessionIfItExists();
+        // Always set, even if we eventually decide to return an error code when there's no session
         if (session != null) {
             authenticationService.signOut(session);
         }
@@ -161,6 +163,20 @@ public class AuthenticationController extends BaseController {
         return okResult("Signed out.");
     }
 
+    @BodyParser.Of(BodyParser.Empty.class)
+    public Result signOutV4() throws Exception {
+        final UserSession session = getSessionIfItExists();
+        // Always set, even if we eventually decide to return an error code when there's no session
+        response().discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
+        response().setHeader(BridgeConstants.CLEAR_SITE_DATA_HEADER, BridgeConstants.CLEAR_SITE_DATA_VALUE);
+        if (session != null) {
+            authenticationService.signOut(session);
+        } else {
+            throw new BadRequestException("Not signed in");
+        }
+        return okResult("Signed out.");
+    }
+    
     public Result signUp() throws Exception {
         JsonNode node = requestToJSON(request());
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
