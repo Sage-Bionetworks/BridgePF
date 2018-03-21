@@ -539,25 +539,42 @@ public class ParticipantServiceTest {
     @Test(expected = EntityNotFoundException.class)
     public void signOutUserWhoDoesNotExist() {
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(null);
-        
-        participantService.signUserOut(STUDY, ID);
+        participantService.signUserOut(STUDY, ID, true);
     }
-    
+
     @Test
     public void signOutUser() {
+        // Setup
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
         ((GenericAccount)account).setId("userId");
-        
-        participantService.signUserOut(STUDY, ID);
-        
+
+        // Execute
+        participantService.signUserOut(STUDY, ID, false);
+
+        // Verify
         verify(accountDao).getAccount(ACCOUNT_ID);
-        verify(accountDao).signOut(accountIdCaptor.capture());
+        verify(accountDao, never()).deleteReauthToken(any());
         verify(cacheProvider).removeSessionByUserId("userId");
-        
+    }
+
+    @Test
+    public void signOutUserDeleteReauthToken() {
+        // Setup
+        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        ((GenericAccount)account).setId("userId");
+
+        // Execute
+        participantService.signUserOut(STUDY, ID, true);
+
+        // Verify
+        verify(accountDao).getAccount(ACCOUNT_ID);
+        verify(accountDao).deleteReauthToken(accountIdCaptor.capture());
+        verify(cacheProvider).removeSessionByUserId("userId");
+
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, accountIdCaptor.getValue().getStudyId());
         assertEquals("userId", accountIdCaptor.getValue().getId());
     }
-    
+
     @Test
     public void updateParticipantWithExternalIdValidationAddingId() {
         STUDY.setExternalIdValidationEnabled(true);
