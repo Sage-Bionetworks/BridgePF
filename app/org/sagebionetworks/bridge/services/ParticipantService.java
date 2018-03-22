@@ -244,7 +244,7 @@ public class ParticipantService {
      * triggering a reset password request.
      */
     public IdentifierHolder createParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant,
-            boolean shouldVerify) {
+            boolean shouldSendVerification) {
         checkNotNull(study);
         checkNotNull(callerRoles);
         checkNotNull(participant);
@@ -265,14 +265,14 @@ public class ParticipantService {
         account.setStatus(AccountStatus.ENABLED);
 
         // enabled unless we need any kind of verification
-        boolean sendEmailVerification = shouldVerify && study.isEmailVerificationEnabled();
+        boolean sendEmailVerification = shouldSendVerification && study.isEmailVerificationEnabled();
         if (sendEmailVerification) {
             account.setStatus(AccountStatus.UNVERIFIED);
         } else if (participant.getEmail() != null) {
             account.setEmailVerified(true); // not verifying, so consider it verified if it exists
         }
         
-        boolean sendPhoneVerification = shouldVerify && study.isPhoneVerificationEnabled();
+        boolean sendPhoneVerification = shouldSendVerification && study.isPhoneVerificationEnabled();
         if (sendPhoneVerification) {
             account.setStatus(AccountStatus.UNVERIFIED);
         } else if (participant.getPhone() != null) {
