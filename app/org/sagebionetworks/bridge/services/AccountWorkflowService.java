@@ -31,7 +31,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
+import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -59,7 +59,7 @@ public class AccountWorkflowService {
     static final String CONFIG_KEY_CHANNEL_THROTTLE_MAX_REQUESTS = "channel.throttle.max.requests";
     static final String CONFIG_KEY_CHANNEL_THROTTLE_TIMEOUT_SECONDS = "channel.throttle.timeout.seconds";
     private static final String PASSWORD_RESET_TOKEN_EXPIRED = "Password reset token has expired (or already been used).";
-    private static final String VERIFY_EMAIL_TOKEN_EXPIRED = "Email verification token has expired (or already been used).";
+    private static final String VERIFY_TOKEN_EXPIRED = "Verification token has expired (or already been used).";
     
     // These are component tokens we include in URLs, but they are also included as is in the template variables
     // for further customization on a case-by-case basis.
@@ -89,6 +89,7 @@ public class AccountWorkflowService {
     // Keys to reference an expiration period for each URL or token
     private static final String RESET_PASSWORD_EXPIRATION_PERIOD = "resetPasswordExpirationPeriod";
     private static final String EMAIL_VERIFICATION_EXPIRATION_PERIOD = "emailVerificationExpirationPeriod";
+    private static final String PHONE_VERIFICATION_EXPIRATION_PERIOD = "phoneVerificationExpirationPeriod";
     private static final String PHONE_SIGNIN_EXPIRATION_PERIOD = "phoneSignInExpirationPeriod";
     private static final String EMAIL_SIGNIN_EXPIRATION_PERIOD = "emailSignInExpirationPeriod";
     
@@ -108,6 +109,7 @@ public class AccountWorkflowService {
         EMAIL_SIGNIN,
         PHONE_SIGNIN,
         VERIFY_EMAIL,
+        VERIFY_PHONE
     }
 
     private static class VerificationData {
@@ -225,17 +227,45 @@ public class AccountWorkflowService {
         sendMailService.sendEmail(provider);
     }
     
+    public void sendPhoneVerificationToken(Study study, String userId, Phone phone) {
+        checkNotNull(study);
+        checkArgument(isNotBlank(userId));
+        
+        if (phone == null) {
+            return;
+        }
+        if (isRequestThrottled(ThrottleRequestType.VERIFY_PHONE, userId)) {
+            // Too many requests. Throttle.
+            return;
+        }
+        String sptoken = getNextToken();
+        String formattedSpToken = sptoken.substring(0,3) + "-" + sptoken.substring(3,6);
+        
+        SmsMessageProvider provider = new SmsMessageProvider.Builder()
+                .withStudy(study)
+                .withToken("sptoken", formattedSpToken)
+                .withSmsTemplate(study.getVerifyPhoneSmsTemplate())
+                .withExpirationPeriod(PHONE_VERIFICATION_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS)
+                .withPhone(phone).build();
+        notificationsService.sendSMSMessage(provider);
+    }
+        
     /**
-     * Send another email verification token. This creates and sends a new verification token 
-     * starting with the user's email address.
+     * Send another verification token via email or phone. This creates and sends a new verification token 
+     * using the specified channel (an email or SMS message).
      */
-    public void resendEmailVerificationToken(AccountId accountId) {
+    public void resendVerificationToken(ChannelType type, AccountId accountId) {
+        checkNotNull(type);
         checkNotNull(accountId);
         
         Study study = studyService.getStudy(accountId.getStudyId());
         Account account = accountDao.getAccount(accountId);
         if (account != null) {
-            sendEmailVerificationToken(study, account.getId(), account.getEmail());
+            if (type == ChannelType.EMAIL) {
+                sendEmailVerificationToken(study, account.getId(), account.getEmail());
+            } else if (type == ChannelType.PHONE) {
+                sendPhoneVerificationToken(study, account.getId(), account.getPhone());
+            }
         }
     }
     
@@ -247,12 +277,12 @@ public class AccountWorkflowService {
      * to persist the state change.
      * @returns account if the account is successfully verified (otherwise, throws an exception)
      */
-    public Account verifyEmail(EmailVerification verification) {
+    public Account verifyChannel(Verification verification) {
         checkNotNull(verification);
 
         VerificationData data = restoreVerification(verification.getSptoken());
         if (data == null) {
-            throw new BadRequestException(VERIFY_EMAIL_TOKEN_EXPIRED);
+            throw new BadRequestException(VERIFY_TOKEN_EXPIRED);
         }
         Study study = studyService.getStudy(data.getStudyId());
 

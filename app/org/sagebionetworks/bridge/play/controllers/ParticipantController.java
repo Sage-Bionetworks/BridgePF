@@ -51,6 +51,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
+import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.ParticipantService;
 
 @Controller
@@ -311,9 +312,18 @@ public class ParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        participantService.resendEmailVerification(study, userId);
+        participantService.resendVerification(study, ChannelType.EMAIL, userId);
         
         return okResult("Email verification request has been resent to user.");
+    }
+    
+    public Result resendPhoneVerification(String userId) {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+
+        participantService.resendVerification(study, ChannelType.PHONE, userId);
+        
+        return okResult("Phone verification request has been resent to user.");
     }
     
     public Result resendConsentAgreement(String userId, String subpopulationGuid) {

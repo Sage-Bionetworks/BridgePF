@@ -8,6 +8,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.LinkedHashSet;
@@ -44,7 +45,7 @@ import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
-import org.sagebionetworks.bridge.models.accounts.Email;
+import org.sagebionetworks.bridge.models.accounts.Identifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
@@ -56,6 +57,7 @@ import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -238,8 +240,8 @@ public class AuthenticationServiceTest {
     @Test
     public void canResendEmailVerification() throws Exception {
         testUser = helper.getBuilder(AuthenticationServiceTest.class).withConsent(false).withSignIn(false).build();
-        Email email = new Email(testUser.getStudyIdentifier(), testUser.getEmail());
-        authService.resendEmailVerification(testUser.getStudyIdentifier(), email);
+        Identifier email = new Identifier(testUser.getStudyIdentifier(), testUser.getEmail());
+        authService.resendVerification(ChannelType.EMAIL, email);
     }
 
     @Test
@@ -364,8 +366,8 @@ public class AuthenticationServiceTest {
     
     @Test
     public void resendEmailVerificationLooksSuccessfulWhenNoAccount() throws Exception {
-        Email email = new Email(TEST_STUDY_IDENTIFIER, "notarealaccount@sagebase.org");
-        authService.resendEmailVerification(study, email);
+        Identifier email = new Identifier(TEST_STUDY, "notarealaccount@sagebase.org");
+        authService.resendVerification(ChannelType.EMAIL, email);
     }
     
     @Test

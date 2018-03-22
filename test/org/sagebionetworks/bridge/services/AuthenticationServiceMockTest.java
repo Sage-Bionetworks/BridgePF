@@ -39,8 +39,10 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
+import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
+import org.sagebionetworks.bridge.models.accounts.Identifier;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -121,6 +123,8 @@ public class AuthenticationServiceMockTest {
     private ArgumentCaptor<UserSession> sessionCaptor;
     @Captor
     private ArgumentCaptor<StudyParticipant> participantCaptor;
+    @Captor
+    private ArgumentCaptor<AccountId> accountIdCaptor;
     @Spy
     private AuthenticationService service;
 
@@ -477,19 +481,36 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void verifyEmail() {
-        EmailVerification ev = new EmailVerification("sptoken");
-        doReturn(account).when(accountWorkflowService).verifyEmail(ev);
+        Verification ev = new Verification("sptoken");
+        doReturn(account).when(accountWorkflowService).verifyChannel(ev);
         
-        service.verifyEmail(ev);
+        service.verifyChannel(ChannelType.EMAIL, ev);
         
-        verify(accountWorkflowService).verifyEmail(ev);
-        verify(accountDao).verifyEmail(account);
+        verify(accountWorkflowService).verifyChannel(ev);
+        verify(accountDao).verifyChannel(ChannelType.EMAIL, account);
     }
     
     @Test(expected = InvalidEntityException.class)
     public void verifyEmailInvalid() {
-        EmailVerification ev = new EmailVerification(null);
-        service.verifyEmail(ev);
+        Verification ev = new Verification(null);
+        service.verifyChannel(ChannelType.EMAIL, ev);
+    }
+    
+    @Test
+    public void verifyPhone() {
+        Verification ev = new Verification("sptoken");
+        doReturn(account).when(accountWorkflowService).verifyChannel(ev);
+        
+        service.verifyChannel(ChannelType.PHONE, ev);
+        
+        verify(accountWorkflowService).verifyChannel(ev);
+        verify(accountDao).verifyChannel(ChannelType.PHONE, account);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void verifyPhoneInvalid() {
+        Verification ev = new Verification(null);
+        service.verifyChannel(ChannelType.PHONE, ev);
     }
     
     @Test
@@ -511,5 +532,39 @@ public class AuthenticationServiceMockTest {
         
         verify(accountDao).editAccount(eq(TestConstants.TEST_STUDY), eq("healthCode"), any());
         verify(mockAccount).setLanguages(languages);
+    }
+
+    @Test
+    public void resendEmailVerification() {
+        Identifier identifier = new Identifier(TestConstants.TEST_STUDY, RECIPIENT_EMAIL);
+        service.resendVerification(ChannelType.EMAIL, identifier);
+        
+        verify(accountWorkflowService).resendVerificationToken(eq(ChannelType.EMAIL), accountIdCaptor.capture());
+        
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, accountIdCaptor.getValue().getStudyId());
+        assertEquals(RECIPIENT_EMAIL, accountIdCaptor.getValue().getEmail());
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void resendEmailVerificationInvalid() {
+        Identifier identifier = new Identifier(null, (String)null);
+        service.resendVerification(ChannelType.EMAIL, identifier);
+    }
+    
+    @Test
+    public void resendPhoneVerification() {
+        Identifier identifier = new Identifier(TestConstants.TEST_STUDY, TestConstants.PHONE);
+        service.resendVerification(ChannelType.PHONE, identifier);
+        
+        verify(accountWorkflowService).resendVerificationToken(eq(ChannelType.PHONE), accountIdCaptor.capture());
+        
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, accountIdCaptor.getValue().getStudyId());
+        assertEquals(TestConstants.PHONE, accountIdCaptor.getValue().getPhone());
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void resendPhoneVerificationInvalid() {
+        Identifier identifier = new Identifier(null, (Phone)null);
+        service.resendVerification(ChannelType.EMAIL, identifier);
     }
 }

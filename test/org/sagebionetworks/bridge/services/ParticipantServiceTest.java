@@ -56,7 +56,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.accounts.Email;
+import org.sagebionetworks.bridge.models.accounts.Identifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
@@ -74,6 +74,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -192,7 +193,7 @@ public class ParticipantServiceTest {
     ArgumentCaptor<UserSession> sessionCaptor;
     
     @Captor
-    ArgumentCaptor<Email> emailCaptor;
+    ArgumentCaptor<Identifier> emailCaptor;
     
     @Captor
     ArgumentCaptor<Study> studyCaptor;
@@ -209,6 +210,8 @@ public class ParticipantServiceTest {
     public void before() {
         STUDY.setExternalIdValidationEnabled(false);
         STUDY.setExternalIdRequiredOnSignup(false);
+        STUDY.setEmailVerificationEnabled(false);
+        STUDY.setPhoneVerificationEnabled(false);
         STUDY.setAccountLimit(0);
         participantService = new ParticipantService();
         participantService.setAccountDao(accountDao);
@@ -226,10 +229,15 @@ public class ParticipantServiceTest {
     }
     
     private void mockHealthCodeAndAccountRetrieval() {
+        mockHealthCodeAndAccountRetrieval(EMAIL, null);
+    }
+    
+    private void mockHealthCodeAndAccountRetrieval(String email, Phone phone) {
         TestUtils.mockEditAccount(accountDao, account);
         ((GenericAccount)account).setId(ID);
         ((GenericAccount)account).setHealthCode(HEALTH_CODE);
-        account.setEmail(EMAIL);
+        account.setEmail(email);
+        account.setPhone(phone);
         when(accountDao.constructAccount(any(), any(), any(), any())).thenReturn(account);
         when(accountDao.createAccount(same(STUDY), same(account))).thenReturn(ID);
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
@@ -403,6 +411,82 @@ public class ParticipantServiceTest {
         assertEquals(AccountStatus.ENABLED, account.getStatus());
         assertNull(account.getEmailVerified());
     }
+    
+    @Test
+    public void createParticipantPhoneDisabledNoVerificationWanted() {
+        STUDY.setPhoneVerificationEnabled(false);
+        mockHealthCodeAndAccountRetrieval(null, PHONE);
+        
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
+        
+        verify(accountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any());
+        assertEquals(AccountStatus.ENABLED, account.getStatus());
+        assertEquals(Boolean.TRUE, account.getPhoneVerified());
+    }
+    
+    @Test
+    public void createParticipantPhoneDisabledVerificationWanted() {
+        STUDY.setPhoneVerificationEnabled(false);
+        mockHealthCodeAndAccountRetrieval(null, PHONE);
+        
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
+        
+        verify(accountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any());
+        assertEquals(AccountStatus.ENABLED, account.getStatus());
+        assertEquals(Boolean.TRUE, account.getPhoneVerified());
+    }
+    
+    @Test
+    public void createParticipantPhoneEnabledNoVerificationWanted() {
+        STUDY.setPhoneVerificationEnabled(true);
+        mockHealthCodeAndAccountRetrieval(null, PHONE);
+        
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
+        
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+        assertEquals(AccountStatus.ENABLED, account.getStatus());
+        assertEquals(Boolean.TRUE, account.getPhoneVerified());
+    }
+    
+    @Test
+    public void createParticipantPhoneEnabledVerificationWanted() {
+        STUDY.setPhoneVerificationEnabled(true);
+        mockHealthCodeAndAccountRetrieval(null, PHONE);
+
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
+
+        verify(accountWorkflowService).sendPhoneVerificationToken(any(), any(), any());
+        assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
+        assertNull(account.getPhoneVerified());
+    }
+
+    @Test
+    public void createParticipantAutoVerificationPhoneSuppressed() {
+        Study study = makeStudy();
+        study.setPhoneVerificationEnabled(true);
+        study.setAutoVerificationPhoneSuppressed(true);
+        mockHealthCodeAndAccountRetrieval(null, PHONE);
+
+        participantService.createParticipant(study, CALLER_ROLES, PARTICIPANT, true);
+
+        verify(accountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any());
+        assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
+        assertNull(account.getPhoneVerified());
+    }
+
+    @Test
+    public void createParticipantEmailNoPhoneVerificationWanted() {
+        STUDY.setPhoneVerificationEnabled(true);
+        mockHealthCodeAndAccountRetrieval(null, PHONE);
+
+        // Make minimal email participant.
+        StudyParticipant emailParticipant = new StudyParticipant.Builder().withEmail(EMAIL).build();
+        participantService.createParticipant(STUDY, CALLER_ROLES, emailParticipant, false);
+
+        verify(accountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any());
+        assertEquals(AccountStatus.ENABLED, account.getStatus());
+        assertNull(account.getPhoneVerified());
+    }
 
     @Test
     public void getPagedAccountSummaries() {
@@ -469,8 +553,6 @@ public class ParticipantServiceTest {
         ((GenericAccount)account).setCreatedOn(createdOn);
         account.setFirstName(FIRST_NAME);
         account.setLastName(LAST_NAME);
-        account.setEmail(EMAIL);
-        account.setPhone(PHONE);
         account.setEmailVerified(Boolean.TRUE);
         account.setPhoneVerified(Boolean.FALSE);
         account.setStatus(AccountStatus.DISABLED);
@@ -486,7 +568,7 @@ public class ParticipantServiceTest {
         account.setLanguages(USER_LANGUAGES);
         account.setTimeZone(USER_TIME_ZONE);
         
-        mockHealthCodeAndAccountRetrieval();
+        mockHealthCodeAndAccountRetrieval(EMAIL, PHONE);
         
         List<Subpopulation> subpopulations = Lists.newArrayList();
         // Two subpopulations for mocking.
@@ -887,9 +969,9 @@ public class ParticipantServiceTest {
     public void resendEmailVerification() {
         mockHealthCodeAndAccountRetrieval();
         
-        participantService.resendEmailVerification(STUDY, ID);
+        participantService.resendVerification(STUDY, ChannelType.EMAIL, ID);
         
-        verify(accountWorkflowService).resendEmailVerificationToken(accountIdCaptor.capture());
+        verify(accountWorkflowService).resendVerificationToken(eq(ChannelType.EMAIL), accountIdCaptor.capture());
         
         AccountId accountId = accountIdCaptor.getValue();
         assertEquals(STUDY.getIdentifier(), accountId.getStudyId());

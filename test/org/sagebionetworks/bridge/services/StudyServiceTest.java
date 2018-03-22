@@ -243,6 +243,9 @@ public class StudyServiceTest {
         study = studyService.updateStudy(study, true);
         policy = study.getPasswordPolicy();
         assertTrue(study.isEmailVerificationEnabled());
+        assertTrue(study.isPhoneVerificationEnabled());
+        assertTrue(study.isAutoVerificationPhoneSuppressed());
+
         assertEquals(6, policy.getMinLength());
         assertTrue(policy.isNumericRequired());
         assertFalse(policy.isSymbolRequired());
@@ -349,6 +352,8 @@ public class StudyServiceTest {
     private void assertStudyDefaults(Study study) {
         assertTrue(study.isStudyIdExcludedInExport());
         assertTrue(study.isEmailVerificationEnabled());
+        assertFalse(study.isPhoneVerificationEnabled());
+        assertFalse(study.isAutoVerificationPhoneSuppressed());
         assertFalse(study.isExternalIdValidationEnabled());
         assertFalse(study.isExternalIdRequiredOnSignup());
         assertFalse(study.isEmailSignInEnabled());
@@ -359,6 +364,8 @@ public class StudyServiceTest {
     private void assertStudyChanged(Study study) {
         assertFalse(study.isStudyIdExcludedInExport());
         assertFalse(study.isEmailVerificationEnabled());
+        assertTrue(study.isPhoneVerificationEnabled());
+        assertTrue(study.isAutoVerificationPhoneSuppressed());
         assertTrue(study.isExternalIdValidationEnabled());
         assertTrue(study.isExternalIdRequiredOnSignup());
         assertTrue(study.isEmailSignInEnabled());
@@ -374,6 +381,8 @@ public class StudyServiceTest {
         study.setEmailSignInEnabled(false);
         study.setReauthenticationEnabled(false);
         study.setAccountLimit(0);
+        study.setPhoneVerificationEnabled(false);
+        study.setAutoVerificationPhoneSuppressed(false);
     }
     
     private void changeStudyDefaults(Study study) {
@@ -384,6 +393,8 @@ public class StudyServiceTest {
         study.setEmailSignInEnabled(true);
         study.setReauthenticationEnabled(true);
         study.setAccountLimit(10);
+        study.setPhoneVerificationEnabled(true);
+        study.setAutoVerificationPhoneSuppressed(true);
     }
     
     @Test(expected=InvalidEntityException.class)

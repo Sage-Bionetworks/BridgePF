@@ -44,7 +44,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
+import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -136,6 +136,7 @@ public class AccountWorkflowServiceTest {
         SmsTemplate phoneSignInSmsTemplate = new SmsTemplate("Enter ${token} to sign in to ${studyShortName}");
         SmsTemplate resetPasswordSmsTemplate = new SmsTemplate("Reset ${studyShortName} password: ${resetPasswordUrl}"); 
         SmsTemplate accountExistsSmsTemplate = new SmsTemplate("Account for ${studyShortName} already exists. Reset password: ${resetPasswordUrl} or ${token}");
+        SmsTemplate verifyPhoneSmsTemplate = new SmsTemplate("Verify phone with ${sptoken}");
         
         study = Study.create();
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
@@ -149,6 +150,7 @@ public class AccountWorkflowServiceTest {
         study.setPhoneSignInSmsTemplate(phoneSignInSmsTemplate);
         study.setResetPasswordSmsTemplate(resetPasswordSmsTemplate);
         study.setAccountExistsSmsTemplate(accountExistsSmsTemplate);
+        study.setVerifyPhoneSmsTemplate(verifyPhoneSmsTemplate);
 
         // Mock bridge config
         when(mockBridgeConfig.getInt(AccountWorkflowService.CONFIG_KEY_CHANNEL_THROTTLE_MAX_REQUESTS)).thenReturn(2);
@@ -206,13 +208,46 @@ public class AccountWorkflowServiceTest {
     }
 
     @Test
+    public void sendPhoneVerificationToken() throws Exception {
+        when(service.getNextToken()).thenReturn("012345");
+        
+        service.sendPhoneVerificationToken(study, USER_ID, TestConstants.PHONE);
+        
+        verify(mockNotificationsService).sendSMSMessage(smsMessageProviderCaptor.capture());
+        
+        SmsMessageProvider provider = smsMessageProviderCaptor.getValue();
+        Map<String,String> tokens = provider.getTokenMap();
+        assertEquals("012-345", tokens.get("sptoken"));
+        assertEquals("2 hours", tokens.get("phoneVerificationExpirationPeriod"));
+        
+        String message = provider.getSmsRequest().getMessage();
+        assertTrue(message.contains("012-345"));
+    }
+    
+    @Test
+    public void sendPhoneVerificationTokenNoEmail() throws Exception {
+        service.sendPhoneVerificationToken(study, USER_ID, null);
+        verify(mockNotificationsService, never()).sendSMSMessage(any());
+    }
+
+    @Test
+    public void sendPhoneVerificationTokenThrottled() {
+        // Throttle limit is 2. Make 3 requests, and send only 2 emails.
+        when(service.getNextToken()).thenReturn(TOKEN);
+        service.sendPhoneVerificationToken(study, USER_ID, TestConstants.PHONE);
+        service.sendPhoneVerificationToken(study, USER_ID, TestConstants.PHONE);
+        service.sendPhoneVerificationToken(study, USER_ID, TestConstants.PHONE);
+        verify(mockNotificationsService, times(2)).sendSMSMessage(any());
+    }
+    
+    @Test
     public void resendEmailVerificationToken() {
         when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(mockAccount);
         when(mockAccount.getId()).thenReturn(USER_ID);
         when(mockAccount.getEmail()).thenReturn(EMAIL);
         
-        service.resendEmailVerificationToken(ACCOUNT_ID_WITH_EMAIL);
+        service.resendVerificationToken(ChannelType.EMAIL, ACCOUNT_ID_WITH_EMAIL);
         
         verify(service).sendEmailVerificationToken(study, USER_ID, EMAIL);
     }
@@ -224,7 +259,7 @@ public class AccountWorkflowServiceTest {
         when(mockAccount.getId()).thenReturn(USER_ID);
         
         try {
-            service.resendEmailVerificationToken(ACCOUNT_ID_WITH_EMAIL);
+            service.resendVerificationToken(ChannelType.EMAIL, ACCOUNT_ID_WITH_EMAIL);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
             // expected exception
@@ -238,9 +273,47 @@ public class AccountWorkflowServiceTest {
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(null);
         when(mockAccount.getId()).thenReturn(USER_ID);
         
-        service.resendEmailVerificationToken(ACCOUNT_ID_WITH_EMAIL);
+        service.resendVerificationToken(ChannelType.EMAIL, ACCOUNT_ID_WITH_EMAIL);
         
         verify(service, never()).sendEmailVerificationToken(study, USER_ID, EMAIL);
+    }
+    
+    @Test
+    public void resendPhoneVerificationToken() {
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
+        when(mockAccount.getId()).thenReturn(USER_ID);
+        when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
+        
+        service.resendVerificationToken(ChannelType.PHONE, ACCOUNT_ID_WITH_PHONE);
+        
+        verify(service).sendPhoneVerificationToken(study, USER_ID, TestConstants.PHONE);
+    }
+    
+    @Test
+    public void resendPhoneVerificationTokenFailsWithMissingStudy() {
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenThrow(new EntityNotFoundException(Study.class));
+        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
+        when(mockAccount.getId()).thenReturn(USER_ID);
+        
+        try {
+            service.resendVerificationToken(ChannelType.EMAIL, ACCOUNT_ID_WITH_PHONE);
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+            // expected exception
+        }
+        verify(service, never()).sendPhoneVerificationToken(study, USER_ID, TestConstants.PHONE);
+    }
+    
+    @Test
+    public void resendPhoneVerificationTokenFailsQuietlyWithMissingAccount() {
+        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(null);
+        when(mockAccount.getId()).thenReturn(USER_ID);
+        
+        service.resendVerificationToken(ChannelType.EMAIL, ACCOUNT_ID_WITH_PHONE);
+        
+        verify(service, never()).sendPhoneVerificationToken(study, USER_ID, TestConstants.PHONE);
     }
     
     @Test
@@ -251,9 +324,9 @@ public class AccountWorkflowServiceTest {
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(mockAccount);
         when(mockAccount.getId()).thenReturn("accountId");
         
-        EmailVerification verification = new EmailVerification(SPTOKEN);
+        Verification verification = new Verification(SPTOKEN);
         
-        Account account = service.verifyEmail(verification);
+        Account account = service.verifyChannel(verification);
         assertEquals("accountId",account.getId());
     }
     
@@ -261,9 +334,9 @@ public class AccountWorkflowServiceTest {
     public void verifyEmailBadSptokenThrowsException() {
         when(mockCacheProvider.getObject(SPTOKEN, String.class)).thenReturn(null);
         
-        EmailVerification verification = new EmailVerification(SPTOKEN);
+        Verification verification = new Verification(SPTOKEN);
         
-        service.verifyEmail(verification);
+        service.verifyChannel(verification);
     }
     
     @Test

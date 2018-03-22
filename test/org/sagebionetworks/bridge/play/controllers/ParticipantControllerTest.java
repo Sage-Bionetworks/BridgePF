@@ -77,6 +77,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.services.AuthenticationService;
+import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
@@ -675,7 +676,15 @@ public class ParticipantControllerTest {
         Result result = controller.resendEmailVerification(ID);
         assertResult(result, 200, "Email verification request has been resent to user.");
 
-        verify(mockParticipantService).resendEmailVerification(study, ID);
+        verify(mockParticipantService).resendVerification(study, ChannelType.EMAIL, ID);
+    }
+    
+    @Test
+    public void resendPhoneVerification() throws Exception {
+        Result result = controller.resendPhoneVerification(ID);
+        assertResult(result, 200, "Phone verification request has been resent to user.");
+
+        verify(mockParticipantService).resendVerification(study, ChannelType.PHONE, ID);
     }
     
     @Test

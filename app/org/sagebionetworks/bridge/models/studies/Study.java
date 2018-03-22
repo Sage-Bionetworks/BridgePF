@@ -401,4 +401,20 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     
     List<AndroidAppLink> getAndroidAppLinks();
     void setAndroidAppLinks(List<AndroidAppLink> androidAppLinks);
+    
+    /** 
+     * Are phone numbers considered valid on sign up, or must the client go through a verification step? 
+     * Normally we would require verification, but some lab-based applications may skip to sign in.
+     */
+    boolean isPhoneVerificationEnabled();
+    
+    /** Should a new phone number be verified? */
+    void setPhoneVerificationEnabled(boolean phoneVerificationEnabled);
+    
+    /** If the phone number must be verified, do we suppress sending an SMS message on sign up? */
+    boolean isAutoVerificationPhoneSuppressed();
+    
+    /** Should a new phone number be verified? */
+    void setAutoVerificationPhoneSuppressed(boolean autoVerificationPhoneSuppressed);
+    
 }

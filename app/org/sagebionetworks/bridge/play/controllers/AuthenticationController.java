@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.Environment;
@@ -15,15 +13,17 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.Email;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
+import org.sagebionetworks.bridge.models.accounts.Identifier;
+import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
+import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -179,31 +179,48 @@ public class AuthenticationController extends BaseController {
     
     public Result signUp() throws Exception {
         JsonNode node = requestToJSON(request());
-        StudyParticipant participant = parseJson(request(), StudyParticipant.class);
+        StudyParticipant participant = MAPPER.treeToValue(node, StudyParticipant.class);
         
         boolean checkForConsent = JsonUtils.asBoolean(node, "checkForConsent");
         
-        Study study = getStudyOrThrowException(node);
+        String studyId = JsonUtils.asText(node, BridgeConstants.STUDY_PROPERTY);
+        Study study = getStudyOrThrowException(studyId);
         authenticationService.signUp(study, participant, checkForConsent);
         return createdResult("Signed up.");
     }
 
     public Result verifyEmail() throws Exception {
-        EmailVerification emailVerification = parseJson(request(), EmailVerification.class);
+        Verification verification = parseJson(request(), Verification.class);
 
-        authenticationService.verifyEmail(emailVerification);
+        authenticationService.verifyChannel(ChannelType.EMAIL, verification);
         
         return okResult("Email address verified.");
     }
 
     public Result resendEmailVerification() throws Exception {
-        JsonNode json = requestToJSON(request());
-        Email email = parseJson(request(), Email.class);
-        Study study = getStudyOrThrowException(json);
-        authenticationService.resendEmailVerification(study.getStudyIdentifier(), email);
+        Identifier identifier = parseJson(request(), Identifier.class);
+        getStudyOrThrowException(identifier.getStudyIdentifier());
+        
+        authenticationService.resendVerification(ChannelType.EMAIL, identifier);
         return okResult("If registered with the study, we'll email you instructions on how to verify your account.");
     }
 
+    public Result verifyPhone() throws Exception {
+        Verification verification = parseJson(request(), Verification.class);
+
+        authenticationService.verifyChannel(ChannelType.PHONE, verification);
+        
+        return okResult("Phone number verified.");
+    }
+
+    public Result resendPhoneVerification() throws Exception {
+        Identifier identifier = parseJson(request(), Identifier.class);
+        getStudyOrThrowException(identifier.getStudyIdentifier());
+        
+        authenticationService.resendVerification(ChannelType.PHONE, identifier);
+        return okResult("If registered with the study, we'll send an SMS message to your phone.");
+    }
+    
     public Result requestResetPassword() throws Exception {
         SignIn signIn = parseJson(request(), SignIn.class);
         
@@ -216,9 +233,8 @@ public class AuthenticationController extends BaseController {
     }
 
     public Result resetPassword() throws Exception {
-        JsonNode json = requestToJSON(request());
         PasswordReset passwordReset = parseJson(request(), PasswordReset.class);
-        getStudyOrThrowException(json);
+        getStudyOrThrowException(passwordReset.getStudyIdentifier());
         authenticationService.resetPassword(passwordReset);
         return okResult("Password has been changed.");
     }
@@ -244,18 +260,15 @@ public class AuthenticationController extends BaseController {
      * headers. If the study cannot be found in any of these places, it throws an exception, because the API will not
      * work correctly without it.
      */
-    private Study getStudyOrThrowException(JsonNode node) {
-        String studyId = getStudyStringOrThrowException(node);
+    private Study getStudyOrThrowException(StudyIdentifier studyId) {
         Study study = studyService.getStudy(studyId);
         verifySupportedVersionOrThrowException(study);
         return study;
     }
-
-    private String getStudyStringOrThrowException(JsonNode node) {
-        String studyId = JsonUtils.asText(node, STUDY_PROPERTY);
-        if (isNotBlank(studyId)) {
-            return studyId;
-        }
-        throw new EntityNotFoundException(Study.class);
+    
+    private Study getStudyOrThrowException(String studyId) {
+        Study study = studyService.getStudy(studyId);
+        verifySupportedVersionOrThrowException(study);
+        return study;
     }
 }

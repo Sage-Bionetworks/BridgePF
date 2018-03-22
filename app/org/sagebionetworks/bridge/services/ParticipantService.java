@@ -52,6 +52,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
+import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.validators.IdentifierUpdateValidator;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
@@ -243,7 +244,7 @@ public class ParticipantService {
      * triggering a reset password request.
      */
     public IdentifierHolder createParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant,
-            boolean requestSendVerifyEmail) {
+            boolean shouldVerify) {
         checkNotNull(study);
         checkNotNull(callerRoles);
         checkNotNull(participant);
@@ -260,24 +261,34 @@ public class ParticipantService {
         externalIdService.reserveExternalId(study, participant.getExternalId(), account.getHealthCode());
 
         updateAccountAndRoles(study, callerRoles, account, participant);
-        
-        boolean sendVerifyEmail = requestSendVerifyEmail && study.isEmailVerificationEnabled();
 
-        if (sendVerifyEmail) {
+        account.setStatus(AccountStatus.ENABLED);
+
+        // enabled unless we need any kind of verification
+        boolean sendEmailVerification = shouldVerify && study.isEmailVerificationEnabled();
+        if (sendEmailVerification) {
             account.setStatus(AccountStatus.UNVERIFIED);
-        } else {
-            account.setStatus(AccountStatus.ENABLED);
-            if (participant.getEmail() != null) {
-                account.setEmailVerified(true);
-            }
+        } else if (participant.getEmail() != null) {
+            account.setEmailVerified(true); // not verifying, so consider it verified if it exists
+        }
+        
+        boolean sendPhoneVerification = shouldVerify && study.isPhoneVerificationEnabled();
+        if (sendPhoneVerification) {
+            account.setStatus(AccountStatus.UNVERIFIED);
+        } else if (participant.getPhone() != null) {
+            account.setPhoneVerified(true); // not verifying, so consider it verified if it exists
         }
 
         String accountId = accountDao.createAccount(study, account);
 
         externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());
         // send verify email
-        if (sendVerifyEmail && !study.isAutoVerificationEmailSuppressed()) {
+        if (sendEmailVerification && !study.isAutoVerificationEmailSuppressed()) {
             accountWorkflowService.sendEmailVerificationToken(study, accountId, account.getEmail());
+        }
+        // send verify phone number
+        if (sendPhoneVerification && !study.isAutoVerificationPhoneSuppressed()) {
+            accountWorkflowService.sendPhoneVerificationToken(study, accountId, account.getPhone());
         }
         return new IdentifierHolder(accountId);
     }
@@ -380,13 +391,17 @@ public class ParticipantService {
         activityDao.deleteActivitiesForUser(account.getHealthCode());
     }
 
-    public void resendEmailVerification(Study study, String userId) {
+    public void resendVerification(Study study, ChannelType type, String userId) {
         checkNotNull(study);
         checkArgument(isNotBlank(userId));
 
         StudyParticipant participant = getParticipant(study, userId, false);
-        if (participant.getEmail() != null) {
-            accountWorkflowService.resendEmailVerificationToken(AccountId.forEmail(study.getIdentifier(), participant.getEmail()));
+        if (type == ChannelType.EMAIL && participant.getEmail() != null) {
+            AccountId accountId = AccountId.forEmail(study.getIdentifier(), participant.getEmail());
+            accountWorkflowService.resendVerificationToken(type, accountId);
+        } else if (type == ChannelType.PHONE && participant.getPhone() != null) {
+            AccountId accountId = AccountId.forPhone(study.getIdentifier(), participant.getPhone());
+            accountWorkflowService.resendVerificationToken(type, accountId);
         }
     }
 

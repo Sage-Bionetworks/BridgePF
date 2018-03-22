@@ -58,8 +58,8 @@ import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
-import org.sagebionetworks.bridge.models.accounts.Email;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
+import org.sagebionetworks.bridge.models.accounts.Identifier;
+import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -69,6 +69,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
+import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import play.mvc.Http;
@@ -123,7 +124,7 @@ public class AuthenticationControllerMockTest {
     ArgumentCaptor<SignIn> signInCaptor;
     
     @Captor
-    ArgumentCaptor<Email> emailCaptor;
+    ArgumentCaptor<Identifier> identifierCaptor;
     
     @Captor
     ArgumentCaptor<PasswordReset> passwordResetCaptor;
@@ -167,6 +168,8 @@ public class AuthenticationControllerMockTest {
         study.setDataGroups(TestConstants.USER_DATA_GROUPS);
         when(studyService.getStudy(TEST_STUDY_ID_STRING)).thenReturn(study);
         when(studyService.getStudy(TEST_STUDY_ID)).thenReturn(study);
+        when(studyService.getStudy((String)null)).thenThrow(new EntityNotFoundException(Study.class));
+        when(studyService.getStudy((StudyIdentifier)null)).thenThrow(new EntityNotFoundException(Study.class));
         
         controller.setStudyService(studyService);
         
@@ -565,15 +568,15 @@ public class AuthenticationControllerMockTest {
         mockPlayContextWithJson(requestJsonString);
 
         // mock AuthenticationService
-        ArgumentCaptor<EmailVerification> emailVerifyCaptor = ArgumentCaptor.forClass(EmailVerification.class);
+        ArgumentCaptor<Verification> emailVerifyCaptor = ArgumentCaptor.forClass(Verification.class);
 
         // execute and validate
         Result result = controller.verifyEmail();
         TestUtils.assertResult(result, 200, "Email address verified.");
 
         // validate email verification
-        verify(authenticationService).verifyEmail(emailVerifyCaptor.capture());
-        EmailVerification emailVerify = emailVerifyCaptor.getValue();
+        verify(authenticationService).verifyChannel(eq(ChannelType.EMAIL), emailVerifyCaptor.capture());
+        Verification emailVerify = emailVerifyCaptor.getValue();
         assertEquals(TEST_TOKEN, emailVerify.getSptoken());
     }
     
@@ -640,8 +643,8 @@ public class AuthenticationControllerMockTest {
         
         controller.resendEmailVerification();
         
-        verify(authenticationService).resendEmailVerification(eq(TEST_STUDY_ID), emailCaptor.capture());
-        Email deser = emailCaptor.getValue();
+        verify(authenticationService).resendVerification(eq(ChannelType.EMAIL), identifierCaptor.capture());
+        Identifier deser = identifierCaptor.getValue();
         assertEquals(TEST_STUDY_ID, deser.getStudyIdentifier());
         assertEquals(TEST_EMAIL, deser.getEmail());
     }
@@ -656,10 +659,37 @@ public class AuthenticationControllerMockTest {
 
     @Test(expected = EntityNotFoundException.class)
     public void resendEmailVerificationNoStudy() throws Exception {
-        mockPlayContextWithJson(new Email((StudyIdentifier) null, TEST_EMAIL));
+        mockPlayContextWithJson(new Identifier((StudyIdentifier) null, TEST_EMAIL));
         controller.resendEmailVerification();
     }
 
+    @Test
+    public void resendPhoneVerificationWorks() throws Exception {
+        mockSignInWithPhonePayload();
+        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
+        
+        controller.resendPhoneVerification();
+        
+        verify(authenticationService).resendVerification(eq(ChannelType.PHONE), identifierCaptor.capture());
+        Identifier deser = identifierCaptor.getValue();
+        assertEquals(TEST_STUDY_ID, deser.getStudyIdentifier());
+        assertEquals(TestConstants.PHONE, deser.getPhone());
+    }
+    
+    @Test(expected = UnsupportedVersionException.class)
+    public void resendPhoneVerificationAppVersionDisabled() throws Exception {
+        mockSignInWithPhonePayload();
+        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
+        
+        controller.resendPhoneVerification();
+    }
+
+    @Test(expected = EntityNotFoundException.class)
+    public void resendPhoneVerificationNoStudy() throws Exception {
+        mockPlayContextWithJson(new Identifier((StudyIdentifier) null, TestConstants.PHONE));
+        controller.resendPhoneVerification();
+    }
+    
     @Test
     public void resetPassword() throws Exception {
         mockResetPasswordRequest();

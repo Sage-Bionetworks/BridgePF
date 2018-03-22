@@ -6,23 +6,37 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class Email implements BridgeEntity {
+public class Identifier implements BridgeEntity {
 
-    private final String email;
     private final StudyIdentifier studyIdentifier;
+    private final String email;
+    private final Phone phone;
     
-    public Email(@JsonProperty("study") String study, @JsonProperty("email") String email) {
+    public Identifier(@JsonProperty("study") String study, @JsonProperty("email") String email,
+            @JsonProperty("phone") Phone phone) {
         this.studyIdentifier = (study != null) ? new StudyIdentifierImpl(study) : null;
         this.email = email;
+        this.phone = phone;
     }
 
-    public Email(StudyIdentifier studyId, String email) {
+    public Identifier(StudyIdentifier studyId, String email) {
         this.studyIdentifier = studyId;
         this.email = email;
+        this.phone = null;
+    }
+    
+    public Identifier(StudyIdentifier studyId, Phone phone) {
+        this.studyIdentifier = studyId;
+        this.phone = phone;
+        this.email = null;
     }
     
     public String getEmail() {
         return email;
+    }
+    
+    public Phone getPhone() {
+        return phone;
     }
     
     public StudyIdentifier getStudyIdentifier() {
