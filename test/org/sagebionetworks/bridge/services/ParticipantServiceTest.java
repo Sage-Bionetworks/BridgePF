@@ -211,7 +211,6 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdValidationEnabled(false);
         STUDY.setExternalIdRequiredOnSignup(false);
         STUDY.setEmailVerificationEnabled(false);
-        STUDY.setPhoneVerificationEnabled(false);
         STUDY.setAccountLimit(0);
         participantService = new ParticipantService();
         participantService.setAccountDao(accountDao);
@@ -353,7 +352,9 @@ public class ParticipantServiceTest {
         STUDY.setEmailVerificationEnabled(false);
         mockHealthCodeAndAccountRetrieval();
         
-        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT).withPhone(null).build();
+        
+        participantService.createParticipant(STUDY, CALLER_ROLES, participant, true);
         
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         assertEquals(AccountStatus.ENABLED, account.getStatus());
@@ -414,43 +415,17 @@ public class ParticipantServiceTest {
     
     @Test
     public void createParticipantPhoneDisabledNoVerificationWanted() {
-        STUDY.setPhoneVerificationEnabled(false);
         mockHealthCodeAndAccountRetrieval(null, PHONE);
         
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
         
         verify(accountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any());
-        assertEquals(AccountStatus.ENABLED, account.getStatus());
-        assertEquals(Boolean.TRUE, account.getPhoneVerified());
-    }
-    
-    @Test
-    public void createParticipantPhoneDisabledVerificationWanted() {
-        STUDY.setPhoneVerificationEnabled(false);
-        mockHealthCodeAndAccountRetrieval(null, PHONE);
-        
-        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
-        
-        verify(accountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any());
-        assertEquals(AccountStatus.ENABLED, account.getStatus());
-        assertEquals(Boolean.TRUE, account.getPhoneVerified());
-    }
-    
-    @Test
-    public void createParticipantPhoneEnabledNoVerificationWanted() {
-        STUDY.setPhoneVerificationEnabled(true);
-        mockHealthCodeAndAccountRetrieval(null, PHONE);
-        
-        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
-        
-        verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         assertEquals(AccountStatus.ENABLED, account.getStatus());
         assertEquals(Boolean.TRUE, account.getPhoneVerified());
     }
     
     @Test
     public void createParticipantPhoneEnabledVerificationWanted() {
-        STUDY.setPhoneVerificationEnabled(true);
         mockHealthCodeAndAccountRetrieval(null, PHONE);
 
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
@@ -463,7 +438,6 @@ public class ParticipantServiceTest {
     @Test
     public void createParticipantAutoVerificationPhoneSuppressed() {
         Study study = makeStudy();
-        study.setPhoneVerificationEnabled(true);
         study.setAutoVerificationPhoneSuppressed(true);
         mockHealthCodeAndAccountRetrieval(null, PHONE);
 
@@ -474,9 +448,7 @@ public class ParticipantServiceTest {
         assertNull(account.getPhoneVerified());
     }
 
-    @Test
     public void createParticipantEmailNoPhoneVerificationWanted() {
-        STUDY.setPhoneVerificationEnabled(true);
         mockHealthCodeAndAccountRetrieval(null, PHONE);
 
         // Make minimal email participant.

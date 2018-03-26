@@ -474,7 +474,6 @@ public class TestUtils {
         study.setDisableExport(false);
         study.setAccountLimit(0);
         study.setPushNotificationARNs(pushNotificationARNs);
-        study.setPhoneVerificationEnabled(true);
         study.setAutoVerificationPhoneSuppressed(true);
         return study;
     }

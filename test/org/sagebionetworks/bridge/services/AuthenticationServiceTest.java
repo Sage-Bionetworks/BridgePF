@@ -44,6 +44,7 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Identifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
@@ -160,12 +161,19 @@ public class AuthenticationServiceTest {
                     .withSubpopGuid(TestConstants.TEST_STUDY_IDENTIFIER).build();
             intentService.submitIntentToParticipate(intent);
             
-            study.setEmailVerificationEnabled(false); // cheating here to avoid having email confirmation path.
+            study.setAutoVerificationEmailSuppressed(true);
+            study.setAutoVerificationPhoneSuppressed(true);
             holder = authService.signUp(study, participant, true);
             
+            Account account = accountDao.getAccount(
+                    AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, holder.getIdentifier()));
+            account.setPhoneVerified(true);
+            account.setEmailVerified(true);
+            account.setStatus(AccountStatus.ENABLED);
+            accountDao.updateAccount(account, true);
+            
             CriteriaContext context = new CriteriaContext.Builder()
-                    .withStudyIdentifier(TestConstants.TEST_STUDY)
-                    .build();
+                    .withStudyIdentifier(TestConstants.TEST_STUDY).build();
             
             // You should be able to sign in, and be consented. No exception.
             SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)

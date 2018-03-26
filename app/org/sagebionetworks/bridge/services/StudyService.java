@@ -537,7 +537,6 @@ public class StudyService {
             study.setReauthenticationEnabled(originalStudy.isReauthenticationEnabled());
             study.setAccountLimit(originalStudy.getAccountLimit());
             study.setStudyIdExcludedInExport(originalStudy.isStudyIdExcludedInExport());
-            study.setPhoneVerificationEnabled(originalStudy.isPhoneVerificationEnabled());
             study.setAutoVerificationPhoneSuppressed(originalStudy.isAutoVerificationPhoneSuppressed());
         }
 

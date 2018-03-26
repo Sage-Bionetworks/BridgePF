@@ -266,19 +266,20 @@ public class ParticipantService {
 
         // enabled unless we need any kind of verification
         boolean sendEmailVerification = shouldSendVerification && study.isEmailVerificationEnabled();
-        if (sendEmailVerification) {
-            account.setStatus(AccountStatus.UNVERIFIED);
-        } else if (participant.getEmail() != null) {
-            account.setEmailVerified(true); // not verifying, so consider it verified if it exists
+        if (participant.getEmail() != null) {
+            if (sendEmailVerification) {
+                account.setStatus(AccountStatus.UNVERIFIED);
+            } else {
+                account.setEmailVerified(true);
+            }
         }
-        
-        boolean sendPhoneVerification = shouldSendVerification && study.isPhoneVerificationEnabled();
-        if (sendPhoneVerification) {
-            account.setStatus(AccountStatus.UNVERIFIED);
-        } else if (participant.getPhone() != null) {
-            account.setPhoneVerified(true); // not verifying, so consider it verified if it exists
+        if (participant.getPhone() != null) {
+            if (shouldSendVerification) {
+                account.setStatus(AccountStatus.UNVERIFIED);
+            } else {
+                account.setPhoneVerified(true); // not verifying, so consider it verified if it exists
+            }
         }
-
         String accountId = accountDao.createAccount(study, account);
 
         externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());
@@ -287,7 +288,7 @@ public class ParticipantService {
             accountWorkflowService.sendEmailVerificationToken(study, accountId, account.getEmail());
         }
         // send verify phone number
-        if (sendPhoneVerification && !study.isAutoVerificationPhoneSuppressed()) {
+        if (shouldSendVerification && !study.isAutoVerificationPhoneSuppressed()) {
             accountWorkflowService.sendPhoneVerificationToken(study, accountId, account.getPhone());
         }
         return new IdentifierHolder(accountId);
