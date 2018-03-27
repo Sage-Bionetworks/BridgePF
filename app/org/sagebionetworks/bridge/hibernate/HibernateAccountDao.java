@@ -220,9 +220,9 @@ public class HibernateAccountDao implements AccountDao {
     }
 
     @Override
-    public void signOut(AccountId accountId) {
+    public void deleteReauthToken(AccountId accountId) {
         HibernateAccount hibernateAccount = getHibernateAccount(accountId);
-        if (hibernateAccount != null) {
+        if (hibernateAccount != null && hibernateAccount.getReauthTokenHash() != null) {
             hibernateAccount.setReauthTokenHash(null);
             hibernateAccount.setReauthTokenAlgorithm(null);
             hibernateAccount.setReauthTokenModifiedOn(null);

@@ -223,14 +223,17 @@ public class ParticipantService {
         return accountDao.getPagedAccountSummaries(study, offsetBy, pageSize, emailFilter, phoneFilter, startTime, endTime);
     }
 
-    public void signUserOut(Study study, String email) {
+    public void signUserOut(Study study, String email, boolean deleteReauthToken) {
         checkNotNull(study);
         checkArgument(isNotBlank(email));
 
         Account account = getAccountThrowingException(study, email);
         
         AccountId accountId = AccountId.forId(study.getIdentifier(), account.getId());
-        accountDao.signOut(accountId);
+
+        if (deleteReauthToken) {
+            accountDao.deleteReauthToken(accountId);
+        }
         
         cacheProvider.removeSessionByUserId(account.getId());
     }

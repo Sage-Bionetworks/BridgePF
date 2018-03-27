@@ -174,9 +174,7 @@ public class ParticipantControllerTest {
     private Study study;
     
     private StudyParticipant participant;
-    
-    private SessionUpdateService sessionUpdateService;
-    
+
     @Before
     public void before() throws Exception {
         study = new DynamoStudy();
@@ -214,8 +212,8 @@ public class ParticipantControllerTest {
         controller.setStudyService(mockStudyService);
         controller.setAuthenticationService(authService);
         controller.setCacheProvider(mockCacheProvider);
-        
-        sessionUpdateService = new SessionUpdateService();
+
+        SessionUpdateService sessionUpdateService = new SessionUpdateService();
         sessionUpdateService.setCacheProvider(mockCacheProvider);
         sessionUpdateService.setConsentService(mockConsentService);
         
@@ -301,10 +299,10 @@ public class ParticipantControllerTest {
     
     @Test
     public void signUserOut() throws Exception {
-        Result result = controller.signOut(ID);
+        Result result = controller.signOut(ID, false);
         TestUtils.assertResult(result, 200, "User signed out.");
 
-        verify(mockParticipantService).signUserOut(study, ID);
+        verify(mockParticipantService).signUserOut(study, ID, false);
     }
 
     @Test

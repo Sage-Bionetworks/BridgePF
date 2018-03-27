@@ -161,7 +161,7 @@ public class ParticipantController extends BaseController {
         
         // Similarly, we will return startTime/endTime in the top-level request parameter properties as 
         // startDate/endDate while transitioning, to maintain backwards compatibility.
-        ObjectNode node = (ObjectNode)MAPPER.valueToTree(page);
+        ObjectNode node = MAPPER.valueToTree(page);
         Map<String,Object> rp = page.getRequestParams();
         if (rp.get(START_TIME) != null) {
             node.put(START_DATE, (String)rp.get(START_TIME));    
@@ -239,11 +239,11 @@ public class ParticipantController extends BaseController {
     }
     
     @BodyParser.Of(BodyParser.Empty.class)
-    public Result signOut(String userId) throws Exception {
+    public Result signOut(String userId, boolean deleteReauthToken) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        participantService.signUserOut(study, userId);
+        participantService.signUserOut(study, userId, deleteReauthToken);
 
         return okResult("User signed out.");
     }

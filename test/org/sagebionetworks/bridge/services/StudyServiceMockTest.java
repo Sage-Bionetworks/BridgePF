@@ -170,7 +170,8 @@ public class StudyServiceMockTest {
         // Mock templates
         service.setStudyEmailVerificationTemplateSubject(mockTemplateAsSpringResource(
                 "Verify your study email"));
-        service.setStudyEmailVerificationTemplate(mockTemplateAsSpringResource("Click here ${url} ${shortUrl}"));
+        service.setStudyEmailVerificationTemplate(mockTemplateAsSpringResource(
+                "Click here ${studyEmailVerificationUrl} ${studyEmailVerificationExpirationPeriod}"));
 
         when(service.getNameScopingToken()).thenReturn(TEST_NAME_SCOPING_TOKEN);
         
@@ -191,6 +192,13 @@ public class StudyServiceMockTest {
             study.setVersion(oldVersion != null ? oldVersion + 1 : 1);
             return study;
         });
+        
+        // Also set the service default message strings from this study, for tests where we clear these
+        service.setResetPasswordSmsTemplate(study.getResetPasswordSmsTemplate().getMessage());
+        service.setPhoneSignInSmsTemplate(study.getPhoneSignInSmsTemplate().getMessage());
+        service.setAppInstallLinkSmsTemplate(study.getAppInstallLinkSmsTemplate().getMessage());
+        service.setVerifyPhoneSmsTemplate(study.getVerifyPhoneSmsTemplate().getMessage());
+        service.setAccountExistsSmsTemplate(study.getAccountExistsSmsTemplate().getMessage());
 
         // Spy StudyService.createTimeLimitedToken() to create a known token instead of a random one. This makes our
         // tests easier.
@@ -275,12 +283,11 @@ public class StudyServiceMockTest {
 
         MimeTypeEmail email = emailProviderCaptor.getValue().getMimeTypeEmail();
         String body = (String) email.getMessageParts().get(0).getContent();
-        assertTrue(body.contains("/mobile/verifyStudyEmail.html?study="+ TEST_STUDY_ID + "&token=" +
-                VERIFICATION_TOKEN + "&type=consent_notification"));
+        System.out.println(body);
         assertTrue(body.contains("/vse?study="+ TEST_STUDY_ID + "&token=" +
                 VERIFICATION_TOKEN + "&type=consent_notification"));
         assertTrue(email.getSenderAddress().contains(SUPPORT_EMAIL));
-        assertEquals("1 day", emailProviderCaptor.getValue().getTokenMap().get("expirationPeriod"));
+        assertEquals("1 day", emailProviderCaptor.getValue().getTokenMap().get("studyEmailVerificationExpirationPeriod"));
         
         List<String> recipientList = email.getRecipientAddresses();
         assertEquals(1, recipientList.size());
@@ -571,6 +578,155 @@ public class StudyServiceMockTest {
         assertNotNull(retStudy.getAccountExistsTemplate());
     }
     
+    @Test
+    public void loadingStudyWithoutResetPasswordSmsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setResetPasswordSmsTemplate(null);
+        when(studyDao.getStudy("foo")).thenReturn(study);
+        
+        Study retStudy = service.getStudy("foo");
+        assertNotNull(retStudy.getResetPasswordSmsTemplate());
+    }
+    
+    @Test
+    public void loadingStudyWithoutPhoneSignInSmsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setPhoneSignInSmsTemplate(null);
+        when(studyDao.getStudy("foo")).thenReturn(study);
+        
+        Study retStudy = service.getStudy("foo");
+        assertNotNull(retStudy.getPhoneSignInSmsTemplate());
+    }
+    
+    @Test
+    public void loadingStudyWithoutAppInstallLinkSmsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setAppInstallLinkSmsTemplate(null);
+        when(studyDao.getStudy("foo")).thenReturn(study);
+        
+        Study retStudy = service.getStudy("foo");
+        assertNotNull(retStudy.getAppInstallLinkSmsTemplate());
+    }
+    
+    @Test
+    public void loadingStudyWithoutVerifyPhoneSmsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setVerifyPhoneSmsTemplate(null);
+        when(studyDao.getStudy("foo")).thenReturn(study);
+        
+        Study retStudy = service.getStudy("foo");
+        assertNotNull(retStudy.getVerifyPhoneSmsTemplate());
+    }
+    
+    @Test
+    public void loadingStudyWithoutAccountExistsSmsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setAccountExistsSmsTemplate(null);
+        when(studyDao.getStudy("foo")).thenReturn(study);
+        
+        Study retStudy = service.getStudy("foo");
+        assertNotNull(retStudy.getAccountExistsSmsTemplate());
+    }
+    
+    @Test
+    public void updateStudyWithoutResetPasswordSmsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setResetPasswordSmsTemplate(null);
+        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
+        
+        Study retStudy = service.updateStudy(study, false);
+        assertNotNull(retStudy.getResetPasswordSmsTemplate());
+    }
+    
+    @Test
+    public void updateStudyWithoutPhoneSignInSmsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setPhoneSignInSmsTemplate(null);
+        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
+        
+        Study retStudy = service.updateStudy(study, false);
+        assertNotNull(retStudy.getPhoneSignInSmsTemplate());
+    }
+    
+    @Test
+    public void updateStudyWithoutAppInstallLinkSmsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setAppInstallLinkSmsTemplate(null);
+        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
+        
+        Study retStudy = service.updateStudy(study, false);
+        assertNotNull(retStudy.getAppInstallLinkSmsTemplate());
+    }
+    
+    @Test
+    public void updateStudyWithoutVerifyPhoneSmsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setVerifyPhoneSmsTemplate(null);
+        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
+        
+        Study retStudy = service.updateStudy(study, false);
+        assertNotNull(retStudy.getVerifyPhoneSmsTemplate());
+    }
+    
+    @Test
+    public void updateStudyWithoutAccountExistsSmsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setAccountExistsSmsTemplate(null);
+        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
+        
+        Study retStudy = service.updateStudy(study, false);
+        assertNotNull(retStudy.getAccountExistsSmsTemplate());
+    }
+    
+    @Test
+    public void createStudyWithoutResetPasswordSmsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setResetPasswordSmsTemplate(null);
+        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
+        
+        Study retStudy = service.createStudy(study);
+        assertNotNull(retStudy.getResetPasswordSmsTemplate());
+    }
+    
+    @Test
+    public void createStudyWithoutPhoneSignInSmsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setPhoneSignInSmsTemplate(null);
+        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
+        
+        Study retStudy = service.createStudy(study);
+        assertNotNull(retStudy.getPhoneSignInSmsTemplate());
+    }
+    
+    @Test
+    public void createStudyWithoutAppInstallLinkSmsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setAppInstallLinkSmsTemplate(null);
+        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
+        
+        Study retStudy = service.createStudy(study);
+        assertNotNull(retStudy.getAppInstallLinkSmsTemplate());
+    }
+    
+    @Test
+    public void createStudyWithoutVerifyPhoneSmsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setVerifyPhoneSmsTemplate(null);
+        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
+        
+        Study retStudy = service.createStudy(study);
+        assertNotNull(retStudy.getVerifyPhoneSmsTemplate());
+    }
+    
+    @Test
+    public void createStudyWithoutAccountExistsSmsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setAccountExistsSmsTemplate(null);
+        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
+        
+        Study retStudy = service.createStudy(study);
+        assertNotNull(retStudy.getAccountExistsSmsTemplate());
+    }    
     @Test
     public void physicallyDeleteStudy() {
         // execute

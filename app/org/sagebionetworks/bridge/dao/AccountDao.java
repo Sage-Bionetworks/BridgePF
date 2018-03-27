@@ -23,7 +23,7 @@ import org.sagebionetworks.bridge.services.AuthenticationService;
  */
 public interface AccountDao {
     
-    static final int MIGRATION_VERSION = 1;
+    int MIGRATION_VERSION = 1;
     
     /**
      * Verify an email address using a supplied, one-time token for verification.
@@ -54,9 +54,9 @@ public interface AccountDao {
     Account reauthenticate(Study study, SignIn signIn);
     
     /**
-     * Sign the user out of Bridge. This clears the user's reauthentication token.
+     * This clears the user's reauthentication token.
      */
-    void signOut(AccountId accountId);
+    void deleteReauthToken(AccountId accountId);
     
     /**
      * Retrieve an account where authentication is handled outside of the DAO (If we

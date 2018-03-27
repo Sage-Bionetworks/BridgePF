@@ -186,7 +186,7 @@ public class AuthenticationService {
     public void signOut(final UserSession session) {
         if (session != null) {
             AccountId accountId = AccountId.forId(session.getStudyIdentifier().getIdentifier(), session.getId());
-            accountDao.signOut(accountId);
+            accountDao.deleteReauthToken(accountId);
             cacheProvider.removeSession(session);
         }
     }
