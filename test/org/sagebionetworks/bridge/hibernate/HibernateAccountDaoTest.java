@@ -818,6 +818,33 @@ public class HibernateAccountDaoTest {
     }
     
     @Test
+    public void createAccountAlreadyExistsForExternalIdAccount() {
+        String externalId = "other-account-id";
+        HibernateAccount otherHibernateAccount = new HibernateAccount();
+        otherHibernateAccount.setId("userId");
+        otherHibernateAccount.setExternalId(externalId);
+        
+        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
+        when(mockHibernateHelper.queryGet(queryCaptor.capture(), any(), any(), any()))
+                .thenReturn(ImmutableList.of(otherHibernateAccount));
+
+        doThrow(ConcurrentModificationException.class).when(mockHibernateHelper).create(any());
+
+        // execute
+        try {
+            GenericAccount account = makeValidGenericAccount();
+            account.setEmail(null);
+            account.setPhone(null);
+            account.setExternalId(externalId);
+            dao.createAccount(STUDY, account);
+            fail("expected exception");
+        } catch (EntityAlreadyExistsException ex) {
+            assertEquals("userId", ex.getEntity().get("userId"));
+            assertTrue(queryCaptor.getValue().contains("externalId='"+externalId+"'"));
+        }
+    }
+    
+    @Test
     public void updateSuccess() {
         // Some fields can't be modified. Create the persisted account and set the base fields so we can verify they
         // weren't modified.

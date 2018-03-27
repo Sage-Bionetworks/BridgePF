@@ -33,6 +33,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -44,8 +45,6 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -87,7 +86,7 @@ public class ParticipantServiceTest {
     private static final Set<String> STUDY_DATA_GROUPS = BridgeUtils.commaListToOrderedSet("group1,group2");
     private static final long CONSENT_PUBLICATION_DATE = DateTime.now().getMillis();
     private static final Phone PHONE = TestConstants.PHONE;
-    private static final Study STUDY = new DynamoStudy();
+    private static final Study STUDY = Study.create();
     static {
         STUDY.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         STUDY.setHealthCodeExportEnabled(true);
@@ -141,6 +140,7 @@ public class ParticipantServiceTest {
             .withPhone(TestConstants.PHONE).withPassword(PASSWORD).build();
     private static final SignIn REAUTH_REQUEST = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER).withEmail(EMAIL)
             .withReauthToken("ASDF").build();
+    private static final ExternalIdentifier EXT_ID = ExternalIdentifier.create(STUDY.getStudyIdentifier(), EXTERNAL_ID);
     
     private ParticipantService participantService;
     
@@ -255,12 +255,12 @@ public class ParticipantServiceTest {
         STUDY.setEmailVerificationEnabled(true);
         mockHealthCodeAndAccountRetrieval();
         
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID))
-                .thenReturn(new DynamoExternalIdentifier());
+        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(EXT_ID);
         
         IdentifierHolder idHolder = participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
         assertEquals(ID, idHolder.getIdentifier());
         
+        verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, EXTERNAL_ID, PASSWORD);
         verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
         
         // suppress email (true) == sendEmail (false)
@@ -290,7 +290,7 @@ public class ParticipantServiceTest {
     @Test
     public void createParticipantWithExternalIdValidation() {
         when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID))
-                .thenReturn(new DynamoExternalIdentifier());
+                .thenReturn(EXT_ID);
         STUDY.setExternalIdValidationEnabled(true);
         mockHealthCodeAndAccountRetrieval();
         
@@ -618,7 +618,7 @@ public class ParticipantServiceTest {
             fail("Should have thrown exception.");
         } catch(EntityNotFoundException e) {
         }
-        verify(accountDao, never()).updateAccount(any(), eq(false));
+        verify(accountDao, never()).updateAccount(any(), Mockito.anyBoolean());
         verifyNoMoreInteractions(externalIdService);
     }
     
@@ -974,8 +974,7 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdValidationEnabled(true);
         STUDY.setExternalIdRequiredOnSignup(true);
         mockHealthCodeAndAccountRetrieval();
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID))
-                .thenReturn(new DynamoExternalIdentifier());
+        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(EXT_ID);
         
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
         
@@ -1148,8 +1147,8 @@ public class ParticipantServiceTest {
     
     @Test
     public void updateIdentifiersAuthenticatingToAnotherAccountInvalid() {
+        // This ID does not match the ID in the request's context, and that will fail
         ((GenericAccount)account).setId("another-user-id");
-        
         when(accountDao.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
         
         IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, TestConstants.EMAIL, null, null);
@@ -1158,7 +1157,9 @@ public class ParticipantServiceTest {
             participantService.updateIdentifiers(STUDY, CONTEXT, update);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
-            verify(accountDao, never()).updateAccount(any(), eq(false));
+            verify(accountDao, never()).updateAccount(any(), Mockito.anyBoolean());
+            verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+            verify(externalIdService, never()).assignExternalId(any(), any(), any());
         }
     }
     
@@ -1173,7 +1174,7 @@ public class ParticipantServiceTest {
         when(accountDao.getAccount(any())).thenReturn(account);
         
         IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "updated@email.com",
-                new Phone("4082588569", "US"), EXTERNAL_ID);
+                new Phone("4082588569", "US"), "newExternalId");
         
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
@@ -1183,8 +1184,29 @@ public class ParticipantServiceTest {
         assertEquals(TestConstants.PHONE, account.getPhone());
         assertEquals(Boolean.TRUE, account.getPhoneVerified());
         assertEquals(EXTERNAL_ID, account.getExternalId());
-        verify(accountDao, never()).updateAccount(any(), eq(false));
+        verify(accountDao, never()).updateAccount(any(), Mockito.anyBoolean());
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+        verify(externalIdService, never()).assignExternalId(STUDY, account.getExternalId(), account.getHealthCode());
+    }
+    
+    @Test
+    public void updateIdentifiersDoesNotReassignExistingExternalId() throws Exception {
+        mockHealthCodeAndAccountRetrieval();
+        account.setPhone(null);
+        account.setExternalId(EXTERNAL_ID);
+        when(accountDao.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(accountDao.getAccount(any())).thenReturn(account);
+        
+        // Add phone
+        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, new Phone("4082588569", "US"),
+                null);
+        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        
+        // External ID not changed, externalIdService not called
+        assertEquals(EXTERNAL_ID, account.getExternalId());
+        verify(accountDao).updateAccount(any(), eq(true));
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+        verify(externalIdService, never()).assignExternalId(STUDY, account.getExternalId(), account.getHealthCode());
     }
     
     @Test(expected = InvalidEntityException.class)
@@ -1202,10 +1224,12 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval();
         
         STUDY.setExternalIdValidationEnabled(true);
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID))
-                .thenReturn(new DynamoExternalIdentifier());
+        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(EXT_ID);
         
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
+        
+        verify(externalIdService).getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID);
+        verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
     }
     
     @Test
@@ -1230,7 +1254,7 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval();
         STUDY.setExternalIdValidationEnabled(true);
         
-        DynamoExternalIdentifier identifier = new DynamoExternalIdentifier();
+        ExternalIdentifier identifier = ExternalIdentifier.create(STUDY.getStudyIdentifier(), EXTERNAL_ID);
         identifier.setHealthCode("AAA");
         when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(identifier);
         

@@ -14,8 +14,6 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -32,7 +30,7 @@ public class StudyParticipantValidatorTest {
     
     private static final Set<String> STUDY_PROFILE_ATTRS = BridgeUtils.commaListToOrderedSet("attr1,attr2");
     private static final Set<String> STUDY_DATA_GROUPS = BridgeUtils.commaListToOrderedSet("group1,group2,bluebell");
-    
+    private static final ExternalIdentifier EXT_ID = ExternalIdentifier.create(TestConstants.TEST_STUDY, "id");
     private Study study;
 
     private StudyParticipantValidator validator;
@@ -42,7 +40,7 @@ public class StudyParticipantValidatorTest {
     
     @Before
     public void before() {
-        study = new DynamoStudy();
+        study = Study.create();
         study.setIdentifier("test-study");
         study.setHealthCodeExportEnabled(true);
         study.setUserProfileAttributes(STUDY_PROFILE_ATTRS);
@@ -220,18 +218,17 @@ public class StudyParticipantValidatorTest {
         assertValidatorMessage(validator, withPhone("this isn't a phone number", "US"), "phone", "does not appear to be a phone number");
     }
     
-    // TODO: These four tests need to be renamed, they're confusing.
     @Test
     public void externalIdForNewParticipantValidatedDoesNotExist() {
         validator = new StudyParticipantValidator(externalIdService, study, true);
         study.setExternalIdValidationEnabled(true);
+        study.setExternalIdRequiredOnSignup(true);
         assertValidatorMessage(validator, withExternalId("foo"), "externalId", "is not a valid external ID");
     }
     
     @Test
     public void externalIdForNewParticipantValidated() {
-        ExternalIdentifier externalIdentifier = new DynamoExternalIdentifier();
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo")).thenReturn(externalIdentifier);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo")).thenReturn(EXT_ID);
         
         validator = new StudyParticipantValidator(externalIdService, study, true);
         study.setExternalIdValidationEnabled(true);
@@ -251,14 +248,37 @@ public class StudyParticipantValidatorTest {
     
     @Test
     public void validateExistingManagedExternalId() {
-        ExternalIdentifier externalIdentifier = new DynamoExternalIdentifier();
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo")).thenReturn(externalIdentifier);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo")).thenReturn(EXT_ID);
 
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
                 .withExternalId("foo").withId("id").withPassword("pAssword1@").build();
         
         validator = new StudyParticipantValidator(externalIdService, study, false);
         study.setExternalIdValidationEnabled(true);
+        Validate.entityThrowingException(validator, participant);
+    }
+    
+    @Test
+    public void externalIdManagedButInvalidOnUpdateOK() {
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
+                .withExternalId("foo").withId("id").withPassword("pAssword1@").build();
+        
+        // The ID won't exist and that's fine, because you cannot add an external ID on an update.
+        // We're just going to ignore email, phone, and external ID on updates.
+        validator = new StudyParticipantValidator(externalIdService, study, false);
+        study.setExternalIdValidationEnabled(true);
+        Validate.entityThrowingException(validator, participant);
+    }
+    
+    @Test
+    public void externalIdValidWithoutManagement() {
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
+                .withExternalId("foo").withId("id").withPassword("pAssword1@").build();
+        
+        // The ID won't exist and that's fine
+        validator = new StudyParticipantValidator(externalIdService, study, true);
+        study.setExternalIdValidationEnabled(false);
+        study.setExternalIdRequiredOnSignup(true);
         Validate.entityThrowingException(validator, participant);
     }
     

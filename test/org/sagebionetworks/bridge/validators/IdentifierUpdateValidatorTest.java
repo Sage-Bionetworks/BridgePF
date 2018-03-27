@@ -82,6 +82,24 @@ public class IdentifierUpdateValidatorTest {
     }
     
     @Test
+    public void validPhoneUpdate() {
+        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withEmail(TestConstants.EMAIL).withReauthToken("asdf").build();
+        
+        IdentifierUpdate update = new IdentifierUpdate(signIn, null, new Phone("4082588569", "US"), null);
+        Validate.entityThrowingException(IdentifierUpdateValidator.INSTANCE, update);
+    }
+    
+    @Test
+    public void validExternalIdUpate() {
+        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withEmail(TestConstants.EMAIL).withReauthToken("asdf").build();
+        
+        IdentifierUpdate update = new IdentifierUpdate(signIn, null, null, "newExternalId");
+        Validate.entityThrowingException(IdentifierUpdateValidator.INSTANCE, update);
+    }
+    
+    @Test
     public void phoneInvalid() {
         SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
                 .withEmail(TestConstants.EMAIL).withReauthToken("asdf").build();
