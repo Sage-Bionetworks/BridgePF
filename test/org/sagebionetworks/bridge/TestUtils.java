@@ -468,6 +468,7 @@ public class TestUtils {
         study.setExternalIdValidationEnabled(true);
         study.setReauthenticationEnabled(true);
         study.setEmailSignInEnabled(true);
+        study.setPhoneSignInEnabled(true);
         study.setExternalIdRequiredOnSignup(true);
         study.setActive(true);
         study.setDisableExport(false);

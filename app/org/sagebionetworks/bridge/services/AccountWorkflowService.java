@@ -264,9 +264,9 @@ public class AccountWorkflowService {
     }
     
     /**
-     * Send an email message to the user notifying them that the account already exists, and 
-     * provide a link to reset the password if desired. The workflow of this email then merges 
-     * with the workflow to reset a password.
+     * Send an email message or SMS to the user notifying them that the account already exists, 
+     * and provide a link to reset the password if desired. If the workflow for the study includes 
+     * phone or email-based sign ins, also provide the URL or token to sign in instead.
      */
     public void notifyAccountExists(Study study, AccountId accountId) {
         checkNotNull(study);
@@ -470,6 +470,8 @@ public class AccountWorkflowService {
         // Do we want the same flag for phone? Do we want to eliminate this flag?
         if (channelType == EMAIL && !study.isEmailSignInEnabled()) {
             throw new UnauthorizedException("Email-based sign in not enabled for study: " + study.getName());
+        } else if (channelType == PHONE && !study.isPhoneSignInEnabled()) {
+            throw new UnauthorizedException("Phone-based sign in not enabled for study: " + study.getName());
         }
 
         // check that the account exists, return quietly if not to prevent account enumeration attacks
