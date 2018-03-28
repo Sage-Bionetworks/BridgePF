@@ -25,7 +25,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
-
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
@@ -118,6 +118,7 @@ public class BridgeUtils {
                 Iterables.getFirst(commaListToOrderedSet(study.getTechnicalEmail()), ""));
         map.put("consentEmail", 
                 Iterables.getFirst(commaListToOrderedSet(study.getConsentNotificationEmail()), ""));
+        map.put("host", BridgeConfigFactory.getConfig().getHostnameWithPostfix("ws"));
         if (escaper != null) {
             for (Map.Entry<String,String> entry : map.entrySet()) {
                 map.put(entry.getKey(), escaper.apply(entry.getValue()));

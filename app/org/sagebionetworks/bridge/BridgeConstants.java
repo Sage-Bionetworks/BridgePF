@@ -40,9 +40,9 @@ public class BridgeConstants {
 
     public static final String SESSION_TOKEN_HEADER = "Bridge-Session";
 
-    public static final String BRIDGE_STUDY_HEADER = "Bridge-Study";
-
-    public static final String BRIDGE_HOST_HEADER = "Bridge-Host";
+    public static final String CLEAR_SITE_DATA_HEADER = "Clear-Site-Data";
+    
+    public static final String CLEAR_SITE_DATA_VALUE = "\"cache\", \"cookies\", \"storage\", \"executionContexts\"";
 
     /** Used by Heroku to pass in the request ID */
     public static final String X_REQUEST_ID_HEADER = "X-Request-Id";
@@ -95,12 +95,23 @@ public class BridgeConstants {
     
     public static final Set<Roles> NO_CALLER_ROLES = ImmutableSet.of();
     
+    public static final String EXPIRATION_PERIOD_KEY = "expirationPeriod";
+    
     /**
      * Limited to 140 characters (Java is UTF-16, so two bytes per character, assuming for now that 
      * SNS converts these to ASCII.
      */
     public static final int SMS_CHARACTER_LIMIT = 140;
-
+    /**
+     * 11 character label as to who sent the SMS message. Only in some supported countries (not US):
+     * https://support.twilio.com/hc/en-us/articles/223133767-International-support-for-Alphanumeric-Sender-ID
+     */
+    public static final String SENDER_ID = "AWS.SNS.SMS.SenderID";
+    /** SMS type (Promotional or Transactional). */
+    public static final String SMS_TYPE = "AWS.SNS.SMS.SMSType";
+    /** SMS message type. */
+    public static final String SMS_TYPE_TRANSACTIONAL = "Transactional";
+    
     /**
      * This whitelist adds a few additional tags and attributes that are used by the CKEDITOR options 
      * we have displayed in the UI.

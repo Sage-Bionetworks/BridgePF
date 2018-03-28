@@ -14,11 +14,12 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
 
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 import org.junit.Test;
-
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -80,6 +81,9 @@ public class BridgeUtilsTest {
     
     @Test
     public void studyTemplateVariblesWorks() {
+        String host = BridgeConfigFactory.getConfig().getHostnameWithPostfix("ws");
+        assertTrue(StringUtils.isNotBlank(host));
+        
         Study study = Study.create();
         study.setName("name1");
         study.setShortName("shortName");
@@ -88,7 +92,6 @@ public class BridgeUtilsTest {
         study.setSupportEmail("supportEmail1");
         study.setTechnicalEmail("technicalEmail1");
         study.setConsentNotificationEmail("consentNotificationEmail1");
-
         Map<String,String> map = BridgeUtils.studyTemplateVariables(study, (value) -> {
             return value.replaceAll("1", "2");
         });
@@ -102,6 +105,7 @@ public class BridgeUtilsTest {
         assertEquals("technicalEmail2", map.get("technicalEmail"));
         assertEquals("consentNotificationEmail2", map.get("consentEmail"));
         assertEquals("isMutable", map.get("thisMap"));
+        assertEquals(host, map.get("host"));
     }
     
     

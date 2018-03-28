@@ -495,6 +495,52 @@ public class AuthenticationControllerMockTest {
         verify(mockResponse).discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
         verifyMetrics();
     }
+    
+    @Test
+    public void signOutV4() throws Exception {
+        mockPlayContext();
+        
+        // mock getSessionToken and getMetrics
+        doReturn(TEST_SESSION_TOKEN).when(controller).getSessionToken();
+
+        // mock AuthenticationService
+        UserSession session = createSession(TestConstants.REQUIRED_SIGNED_CURRENT, null);
+        when(authenticationService.getSession(TEST_SESSION_TOKEN)).thenReturn(session);
+
+        // execute and validate
+        Result result = controller.signOutV4();
+        assertResult(result, 200);
+        
+        @SuppressWarnings("static-access")
+        Http.Response mockResponse = controller.response();
+
+        verify(authenticationService).signOut(session);
+        verify(mockResponse).discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
+        verify(mockResponse).setHeader(BridgeConstants.CLEAR_SITE_DATA_HEADER, BridgeConstants.CLEAR_SITE_DATA_VALUE);
+        verifyMetrics();
+    }
+    
+    @Test
+    public void signOutV4Throws() throws Exception {
+        mockPlayContext();
+        
+        // mock getSessionToken and getMetrics
+        doReturn(null).when(controller).getSessionToken();
+
+        // execute and validate
+        try {
+            controller.signOutV4();
+            fail("Should have thrown exception");
+        } catch(BadRequestException e) {
+            
+        }
+        
+        @SuppressWarnings("static-access")
+        Http.Response mockResponse = controller.response();
+        verify(mockResponse).discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
+        verify(mockResponse).setHeader(BridgeConstants.CLEAR_SITE_DATA_HEADER, BridgeConstants.CLEAR_SITE_DATA_VALUE);
+        // We do not send metrics if you don't have a session, for better or worse.
+    }
 
     @Test
     public void signOutAlreadySignedOut() throws Exception {

@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
+import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -146,6 +147,15 @@ public class StudyServiceTest {
         assertTrue(newStudy.isStudyIdExcludedInExport());
         assertEquals(UploadValidationStrictness.REPORT, newStudy.getUploadValidationStrictness());
 
+        // Verify that the missing templates where created
+        assertNotNull(newStudy.getEmailSignInTemplate());
+        assertNotNull(newStudy.getAccountExistsTemplate());
+        assertNotNull(newStudy.getResetPasswordSmsTemplate());
+        assertNotNull(newStudy.getPhoneSignInSmsTemplate());
+        assertNotNull(newStudy.getAppInstallLinkSmsTemplate());
+        assertNotNull(newStudy.getVerifyPhoneSmsTemplate());
+        assertNotNull(newStudy.getAccountExistsSmsTemplate());
+        
         assertEquals(study.getIdentifier(), newStudy.getIdentifier());
         assertEquals("Test Study [StudyServiceTest]", newStudy.getName());
         assertEquals(18, newStudy.getMinAgeOfConsent());
@@ -194,7 +204,7 @@ public class StudyServiceTest {
     }
     
     @Test
-    public void canUpdatePasswordPolicyAndEmailTemplates() {
+    public void canUpdatePasswordPolicyAndTemplates() {
         study = TestUtils.getValidStudy(StudyServiceTest.class);
         study.setPasswordPolicy(null);
         study.setVerifyEmailTemplate(null);
@@ -219,6 +229,13 @@ public class StudyServiceTest {
         assertNotNull(rpTemplate.getSubject());
         assertNotNull(rpTemplate.getBody());
         
+        SmsTemplate smsTemplate = new SmsTemplate("Test Template ${token} ${appInstallUrl} ${resetPasswordUrl}"); 
+        study.setResetPasswordSmsTemplate(smsTemplate);
+        study.setPhoneSignInSmsTemplate(smsTemplate);
+        study.setAppInstallLinkSmsTemplate(smsTemplate);
+        study.setVerifyPhoneSmsTemplate(smsTemplate);
+        study.setAccountExistsSmsTemplate(smsTemplate);
+        
         // Now change them and verify they are changed.
         study.setPasswordPolicy(new PasswordPolicy(6, true, false, false, true));
         study.setVerifyEmailTemplate(new EmailTemplate("subject *", "body ${url} *", MimeType.TEXT));
@@ -242,6 +259,12 @@ public class StudyServiceTest {
         assertEquals("subject **", rpTemplate.getSubject());
         assertEquals("body ${url} **", rpTemplate.getBody());
         assertEquals(MimeType.TEXT, rpTemplate.getMimeType());
+        
+        assertEquals(smsTemplate.getMessage(), study.getResetPasswordSmsTemplate().getMessage());
+        assertEquals(smsTemplate.getMessage(), study.getPhoneSignInSmsTemplate().getMessage());
+        assertEquals(smsTemplate.getMessage(), study.getAppInstallLinkSmsTemplate().getMessage());
+        assertEquals(smsTemplate.getMessage(), study.getVerifyPhoneSmsTemplate().getMessage());
+        assertEquals(smsTemplate.getMessage(), study.getAccountExistsSmsTemplate().getMessage());
     }
     
     @Test
@@ -268,12 +291,22 @@ public class StudyServiceTest {
         study.setResetPasswordTemplate(null);
         study.setEmailSignInTemplate(null);
         study.setAccountExistsTemplate(null);
+        study.setResetPasswordSmsTemplate(null);
+        study.setPhoneSignInSmsTemplate(null);
+        study.setAppInstallLinkSmsTemplate(null);
+        study.setVerifyPhoneSmsTemplate(null);
+        study.setAccountExistsSmsTemplate(null);
         study = studyService.updateStudy(study, false);
         
         assertNotNull(study.getVerifyEmailTemplate());
         assertNotNull(study.getResetPasswordTemplate());
         assertNotNull(study.getEmailSignInTemplate());
         assertNotNull(study.getAccountExistsTemplate());
+        assertNotNull(study.getResetPasswordSmsTemplate());
+        assertNotNull(study.getPhoneSignInSmsTemplate());
+        assertNotNull(study.getAppInstallLinkSmsTemplate());
+        assertNotNull(study.getVerifyPhoneSmsTemplate());
+        assertNotNull(study.getAccountExistsSmsTemplate());
     }
     
     @Test

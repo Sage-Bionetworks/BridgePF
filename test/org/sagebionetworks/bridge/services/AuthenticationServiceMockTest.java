@@ -230,7 +230,7 @@ public class AuthenticationServiceMockTest {
         session.setParticipant(new StudyParticipant.Builder().withEmail("email@email.com").withId(USER_ID).build());
         service.signOut(session);
         
-        verify(accountDao).signOut(ACCOUNT_ID);
+        verify(accountDao).deleteReauthToken(ACCOUNT_ID);
         verify(cacheProvider).removeSession(session);
     }
     
@@ -238,7 +238,7 @@ public class AuthenticationServiceMockTest {
     public void signOutNoSessionToken() {
         service.signOut(null);
         
-        verify(accountDao, never()).signOut(any());
+        verify(accountDao, never()).deleteReauthToken(any());
         verify(cacheProvider, never()).removeSession(any());
     }
     
