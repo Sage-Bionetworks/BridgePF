@@ -563,24 +563,39 @@ public class AuthenticationControllerMockTest {
     @Test
     public void verifyEmail() throws Exception {
         // mock request
-        String requestJsonString = "{\n" +
-                "   \"sptoken\":\"" + TEST_TOKEN + "\",\n" +
-                "   \"study\":\"" + TEST_STUDY_ID_STRING + "\"\n" +
-                "}";
+        String json = TestUtils.createJson(
+                "{'sptoken':'"+TEST_TOKEN+"','study':'"+TEST_STUDY_ID_STRING+"'}");
+        mockPlayContextWithJson(json);
 
-        mockPlayContextWithJson(requestJsonString);
-
-        // mock AuthenticationService
-        ArgumentCaptor<Verification> emailVerifyCaptor = ArgumentCaptor.forClass(Verification.class);
+        ArgumentCaptor<Verification> verificationCaptor = ArgumentCaptor.forClass(Verification.class);
 
         // execute and validate
         Result result = controller.verifyEmail();
         TestUtils.assertResult(result, 200, "Email address verified.");
 
         // validate email verification
-        verify(authenticationService).verifyChannel(eq(ChannelType.EMAIL), emailVerifyCaptor.capture());
-        Verification emailVerify = emailVerifyCaptor.getValue();
-        assertEquals(TEST_TOKEN, emailVerify.getSptoken());
+        verify(authenticationService).verifyChannel(eq(ChannelType.EMAIL), verificationCaptor.capture());
+        Verification verification = verificationCaptor.getValue();
+        assertEquals(TEST_TOKEN, verification.getSptoken());
+    }
+    
+    @Test
+    public void verifyPhone() throws Exception {
+        // mock request
+        String json = TestUtils.createJson(
+                "{'sptoken':'"+TEST_TOKEN+"','study':'"+TEST_STUDY_ID_STRING+"'}");
+        mockPlayContextWithJson(json);
+
+        ArgumentCaptor<Verification> verificationCaptor = ArgumentCaptor.forClass(Verification.class);
+
+        // execute and validate
+        Result result = controller.verifyPhone();
+        TestUtils.assertResult(result, 200, "Phone number verified.");
+
+        // validate phone verification
+        verify(authenticationService).verifyChannel(eq(ChannelType.PHONE), verificationCaptor.capture());
+        Verification verification = verificationCaptor.getValue();
+        assertEquals(TEST_TOKEN, verification.getSptoken());
     }
     
     @SuppressWarnings("deprecation")
