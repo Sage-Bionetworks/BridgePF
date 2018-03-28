@@ -121,6 +121,7 @@ public class StudyServiceTest {
         study.setStrictUploadValidationEnabled(false);
         study.setEmailVerificationEnabled(false);
         study.setEmailSignInEnabled(true);
+        study.setPhoneSignInEnabled(true);
         study = studyService.createStudy(study);
 
         // Verify that the flags are set correctly on create.
@@ -352,6 +353,7 @@ public class StudyServiceTest {
         assertFalse(study.isExternalIdValidationEnabled());
         assertFalse(study.isExternalIdRequiredOnSignup());
         assertFalse(study.isEmailSignInEnabled());
+        assertFalse(study.isPhoneSignInEnabled());
         assertFalse(study.isReauthenticationEnabled());
         assertEquals(0, study.getAccountLimit());
     }
@@ -362,6 +364,7 @@ public class StudyServiceTest {
         assertTrue(study.isExternalIdValidationEnabled());
         assertTrue(study.isExternalIdRequiredOnSignup());
         assertTrue(study.isEmailSignInEnabled());
+        assertTrue(study.isPhoneSignInEnabled());
         assertTrue(study.isReauthenticationEnabled());
         assertEquals(10, study.getAccountLimit());
     }
@@ -372,6 +375,7 @@ public class StudyServiceTest {
         study.setExternalIdValidationEnabled(false);
         study.setExternalIdRequiredOnSignup(false);
         study.setEmailSignInEnabled(false);
+        study.setPhoneSignInEnabled(false);
         study.setReauthenticationEnabled(false);
         study.setAccountLimit(0);
     }
@@ -382,6 +386,7 @@ public class StudyServiceTest {
         study.setExternalIdValidationEnabled(true);
         study.setExternalIdRequiredOnSignup(true);
         study.setEmailSignInEnabled(true);
+        study.setPhoneSignInEnabled(true);
         study.setReauthenticationEnabled(true);
         study.setAccountLimit(10);
     }

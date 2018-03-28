@@ -651,6 +651,14 @@ public class AccountWorkflowServiceTest {
         service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
     }
 
+    @Test(expected = UnauthorizedException.class)
+    public void requestPhoneSignInDisabled() {
+        study.setPhoneSignInEnabled(false);
+        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
+        
+        service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
+    }
+    
     @Test
     public void requestEmailSignInThrottles() throws Exception {
         study.setEmailSignInEnabled(true);
@@ -702,7 +710,8 @@ public class AccountWorkflowServiceTest {
     }
     
     @Test
-    public void requestPhoneSignIn() { 
+    public void requestPhoneSignIn() {
+        study.setPhoneSignInEnabled(true);
         study.setShortName("AppName");
         String cacheKey = TestConstants.PHONE.getNumber() + ":api:phoneSignInRequest";
         when(mockAccountDao.getAccount(SIGN_IN_WITH_PHONE.getAccountId())).thenReturn(mockAccount);
@@ -723,6 +732,9 @@ public class AccountWorkflowServiceTest {
     
     @Test
     public void requestPhoneSignInFails() {
+        study.setPhoneSignInEnabled(true);
+        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
+        
         // This should fail silently, or we risk giving away information about accounts in the system.
         service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
         
@@ -732,6 +744,7 @@ public class AccountWorkflowServiceTest {
 
     @Test
     public void requestPhoneSignInThrottles() {
+        study.setPhoneSignInEnabled(true);
         when(mockAccountDao.getAccount(any())).thenReturn(mockAccount);
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
 
