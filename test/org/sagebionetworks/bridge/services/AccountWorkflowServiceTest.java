@@ -379,8 +379,8 @@ public class AccountWorkflowServiceTest {
     
     @Test
     public void notifyAccountExistsForPhone() throws Exception {
-        study.setPhoneSignInEnabled(true);
         when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        study.setPhoneSignInEnabled(true);
         AccountId accountId = AccountId.forPhone(TEST_STUDY_IDENTIFIER, TestConstants.PHONE);
         when(service.getNextToken()).thenReturn(SPTOKEN, TOKEN);
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
