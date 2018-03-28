@@ -59,7 +59,7 @@ public class AccountWorkflowService {
     static final String CONFIG_KEY_CHANNEL_THROTTLE_MAX_REQUESTS = "channel.throttle.max.requests";
     static final String CONFIG_KEY_CHANNEL_THROTTLE_TIMEOUT_SECONDS = "channel.throttle.timeout.seconds";
     private static final String PASSWORD_RESET_TOKEN_EXPIRED = "Password reset token has expired (or already been used).";
-    private static final String VERIFY_TOKEN_EXPIRED = "Verification token has expired (or already been used).";
+    private static final String VERIFY_TOKEN_EXPIRED = "Verification token is invalid (it may have expired, or already been used).";
     
     // These are component tokens we include in URLs, but they are also included as is in the template variables
     // for further customization on a case-by-case basis.
@@ -115,18 +115,26 @@ public class AccountWorkflowService {
     private static class VerificationData {
         private final String studyId;
         private final String userId;
+        private final ChannelType type;
         @JsonCreator
-        public VerificationData(@JsonProperty("studyId") String studyId, @JsonProperty("userId") String userId) {
+        public VerificationData(@JsonProperty("studyId") String studyId, @JsonProperty("type") ChannelType type,
+                @JsonProperty("userId") String userId) {
             checkArgument(isNotBlank(studyId));
             checkArgument(isNotBlank(userId));
             this.studyId = studyId;
             this.userId = userId;
+            // On deployment, this value will be missing, and by inference is for email verifications
+            // in process, since phone verification won't have existed until the deployment.
+            this.type = (type == null) ? ChannelType.EMAIL : type;
         }
         public String getStudyId() {
             return studyId;
         }
         public String getUserId() {
             return userId;
+        }
+        public ChannelType getType() {
+            return type;
         }
     }
 
@@ -209,7 +217,7 @@ public class AccountWorkflowService {
 
         String sptoken = getNextToken();
 
-        saveVerification(sptoken, new VerificationData(study.getIdentifier(), userId));
+        saveVerification(sptoken, new VerificationData(study.getIdentifier(), ChannelType.EMAIL, userId));
 
         String oldUrl = getVerifyEmailURL(study, sptoken);
         String newUrl = getShortVerifyEmailURL(study, sptoken);
@@ -239,6 +247,9 @@ public class AccountWorkflowService {
             return;
         }
         String sptoken = getNextToken();
+        
+        saveVerification(sptoken, new VerificationData(study.getIdentifier(), ChannelType.PHONE, userId));
+        
         String formattedSpToken = sptoken.substring(0,3) + "-" + sptoken.substring(3,6);
         
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
@@ -255,7 +266,6 @@ public class AccountWorkflowService {
      * using the specified channel (an email or SMS message).
      */
     public void resendVerificationToken(ChannelType type, AccountId accountId) {
-        checkNotNull(type);
         checkNotNull(accountId);
         
         Study study = studyService.getStudy(accountId.getStudyId());
@@ -265,23 +275,25 @@ public class AccountWorkflowService {
                 sendEmailVerificationToken(study, account.getId(), account.getEmail());
             } else if (type == ChannelType.PHONE) {
                 sendPhoneVerificationToken(study, account.getId(), account.getPhone());
+            } else {
+                throw new UnsupportedOperationException("Channel type not implemented");
             }
         }
     }
     
     /**
-     * Using the verification token that was sent to the user, verify the email address. 
-     * If the token is invalid, it fails quietly. If the token exists but the account 
-     * does not, it throws an exception (this would be unexpected). If an account is 
-     * returned, the email has been verified, but the AccountDao must be called in order 
-     * to persist the state change.
-     * @returns account if the account is successfully verified (otherwise, throws an exception)
+     * Using the verification token that was sent to the user, verify the email address 
+     * or phone number. If an account is returned, the email address or phone number has been 
+     * verified, but the AccountDao must be called in order to persist the state change.
      */
-    public Account verifyChannel(Verification verification) {
+    public Account verifyChannel(ChannelType type, Verification verification) {
         checkNotNull(verification);
 
         VerificationData data = restoreVerification(verification.getSptoken());
         if (data == null) {
+            throw new BadRequestException(VERIFY_TOKEN_EXPIRED);
+        }
+        if (data.getType() != type) {
             throw new BadRequestException(VERIFY_TOKEN_EXPIRED);
         }
         Study study = studyService.getStudy(data.getStudyId());
@@ -545,9 +557,14 @@ public class AccountWorkflowService {
             Validator validator) {
         Validate.entityThrowingException(validator, signIn);
        
-        String cacheKey = (channelType == EMAIL) ?
-                EMAIL_CACHE_KEY_FUNC.apply(signIn) :
-                PHONE_CACHE_KEY_FUNC.apply(signIn);
+        String cacheKey = null;
+        if (channelType == EMAIL) {
+            cacheKey = EMAIL_CACHE_KEY_FUNC.apply(signIn);
+        } else if (channelType == PHONE) {
+            cacheKey = PHONE_CACHE_KEY_FUNC.apply(signIn);
+        } else {
+            throw new UnsupportedOperationException("Channel type not implemented");
+        }
 
         String storedToken = cacheProvider.getObject(cacheKey, String.class);
         if (storedToken == null || !storedToken.equals(signIn.getToken())) {

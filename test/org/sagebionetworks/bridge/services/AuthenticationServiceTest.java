@@ -8,7 +8,6 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.LinkedHashSet;
@@ -46,7 +45,6 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
-import org.sagebionetworks.bridge.models.accounts.Identifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
@@ -248,8 +246,8 @@ public class AuthenticationServiceTest {
     @Test
     public void canResendEmailVerification() throws Exception {
         testUser = helper.getBuilder(AuthenticationServiceTest.class).withConsent(false).withSignIn(false).build();
-        Identifier email = new Identifier(testUser.getStudyIdentifier(), testUser.getEmail());
-        authService.resendVerification(ChannelType.EMAIL, email);
+        AccountId accountId = AccountId.forEmail(testUser.getStudyIdentifier().getIdentifier(), testUser.getEmail());
+        authService.resendVerification(ChannelType.EMAIL, accountId);
     }
 
     @Test
@@ -374,8 +372,8 @@ public class AuthenticationServiceTest {
     
     @Test
     public void resendEmailVerificationLooksSuccessfulWhenNoAccount() throws Exception {
-        Identifier email = new Identifier(TEST_STUDY, "notarealaccount@sagebase.org");
-        authService.resendVerification(ChannelType.EMAIL, email);
+        AccountId accountId = AccountId.forEmail(TEST_STUDY_IDENTIFIER, "notarealaccount@sagebase.org");
+        authService.resendVerification(ChannelType.EMAIL, accountId);
     }
     
     @Test

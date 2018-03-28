@@ -4,11 +4,16 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Objects;
 
+import org.sagebionetworks.bridge.models.BridgeEntity;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * An identifier that can be used to find an account (a study identifier with an ID, email, or phone number).
  * Note that AccountId inequality does not indicate the objects represent two different accounts! 
  */
-public final class AccountId {
+public final class AccountId implements BridgeEntity {
     
     public final static AccountId forId(String studyId, String id) {
         checkNotNull(studyId);
@@ -43,6 +48,13 @@ public final class AccountId {
     private final String healthCode;
     private final String externalId;
     private final boolean usePreconditions;
+
+    @JsonCreator
+    private AccountId(@JsonProperty("study") String studyId, @JsonProperty("id") String id,
+            @JsonProperty("email") String email, @JsonProperty("phone") Phone phone,
+            @JsonProperty("healthCode") String healthCode, @JsonProperty("externalId") String externalId) {
+        this(studyId, id, email, phone, healthCode, externalId, true);
+    }
     
     private AccountId(String studyId, String id, String email, Phone phone, String healthCode, String externalId,
             boolean usePreconditions) {

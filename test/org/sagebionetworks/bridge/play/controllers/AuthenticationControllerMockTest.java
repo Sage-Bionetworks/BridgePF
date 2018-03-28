@@ -57,8 +57,8 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.RequestInfo;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
-import org.sagebionetworks.bridge.models.accounts.Identifier;
 import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -124,7 +124,7 @@ public class AuthenticationControllerMockTest {
     ArgumentCaptor<SignIn> signInCaptor;
     
     @Captor
-    ArgumentCaptor<Identifier> identifierCaptor;
+    ArgumentCaptor<AccountId> accountIdCaptor;
     
     @Captor
     ArgumentCaptor<PasswordReset> passwordResetCaptor;
@@ -410,6 +410,7 @@ public class AuthenticationControllerMockTest {
         controller.signUp();
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void signInExistingSession() throws Exception {
         response = mockPlayContext();
@@ -427,7 +428,7 @@ public class AuthenticationControllerMockTest {
         verifyCommonLoggingForSignIns();    
     }
 
-    @SuppressWarnings("static-access")
+    @SuppressWarnings({ "static-access", "deprecation" })
     private void signInNewSession(boolean isConsented, Roles role) throws Exception {
         // mock getSessionToken and getMetrics
         doReturn(null).when(controller).getSessionToken();
@@ -476,6 +477,7 @@ public class AuthenticationControllerMockTest {
         signInNewSession(true, null);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void signOut() throws Exception {
         mockPlayContext();
@@ -545,6 +547,7 @@ public class AuthenticationControllerMockTest {
         // We do not send metrics if you don't have a session, for better or worse.
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void signOutAlreadySignedOut() throws Exception {
         // mock getSessionToken and getMetrics
@@ -580,6 +583,7 @@ public class AuthenticationControllerMockTest {
         assertEquals(TEST_TOKEN, emailVerify.getSptoken());
     }
     
+    @SuppressWarnings("deprecation")
     @Test(expected = UnsupportedVersionException.class)
     public void signInBlockedByVersionKillSwitch() throws Exception {
         Map<String,String[]> headers = new ImmutableMap.Builder<String,String[]>()
@@ -643,9 +647,9 @@ public class AuthenticationControllerMockTest {
         
         controller.resendEmailVerification();
         
-        verify(authenticationService).resendVerification(eq(ChannelType.EMAIL), identifierCaptor.capture());
-        Identifier deser = identifierCaptor.getValue();
-        assertEquals(TEST_STUDY_ID, deser.getStudyIdentifier());
+        verify(authenticationService).resendVerification(eq(ChannelType.EMAIL), accountIdCaptor.capture());
+        AccountId deser = accountIdCaptor.getValue();
+        assertEquals(TEST_STUDY_ID.getIdentifier(), deser.getStudyId());
         assertEquals(TEST_EMAIL, deser.getEmail());
     }
     
@@ -659,7 +663,8 @@ public class AuthenticationControllerMockTest {
 
     @Test(expected = EntityNotFoundException.class)
     public void resendEmailVerificationNoStudy() throws Exception {
-        mockPlayContextWithJson(new Identifier((StudyIdentifier) null, TEST_EMAIL));
+        String json = TestUtils.createJson("{'email':'email@email.com'}");
+        mockPlayContextWithJson(json);
         controller.resendEmailVerification();
     }
 
@@ -670,9 +675,9 @@ public class AuthenticationControllerMockTest {
         
         controller.resendPhoneVerification();
         
-        verify(authenticationService).resendVerification(eq(ChannelType.PHONE), identifierCaptor.capture());
-        Identifier deser = identifierCaptor.getValue();
-        assertEquals(TEST_STUDY_ID, deser.getStudyIdentifier());
+        verify(authenticationService).resendVerification(eq(ChannelType.PHONE), accountIdCaptor.capture());
+        AccountId deser = accountIdCaptor.getValue();
+        assertEquals(TEST_STUDY_ID.getIdentifier(), deser.getStudyId());
         assertEquals(TestConstants.PHONE, deser.getPhone());
     }
     
@@ -686,7 +691,15 @@ public class AuthenticationControllerMockTest {
 
     @Test(expected = EntityNotFoundException.class)
     public void resendPhoneVerificationNoStudy() throws Exception {
-        mockPlayContextWithJson(new Identifier((StudyIdentifier) null, TestConstants.PHONE));
+        String json = TestUtils.createJson("{'phone':{'number':'4082588569','regionCode':'US'}}");
+        mockPlayContextWithJson(json);
+        controller.resendPhoneVerification();
+    }
+    
+    @Test
+    public void resendPhoneVerificationVerifyPhone() throws Exception {
+        String json = TestUtils.createJson("{'study':'study-key','phone':{'number':'4082588569','regionCode':'US'}}");
+        mockPlayContextWithJson(json);
         controller.resendPhoneVerification();
     }
     
@@ -884,6 +897,7 @@ public class AuthenticationControllerMockTest {
         controller.phoneSignIn();
     }
     
+    @SuppressWarnings("deprecation")
     @Test(expected = EntityNotFoundException.class)
     public void signInV3ThrowsNotFound() throws Exception {
         mockPlayContextWithJson(PHONE_SIGN_IN);

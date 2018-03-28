@@ -351,7 +351,6 @@ public class StudyServiceTest {
     private void assertStudyDefaults(Study study) {
         assertTrue(study.isStudyIdExcludedInExport());
         assertTrue(study.isEmailVerificationEnabled());
-        assertFalse(study.isAutoVerificationPhoneSuppressed());
         assertFalse(study.isExternalIdValidationEnabled());
         assertFalse(study.isExternalIdRequiredOnSignup());
         assertFalse(study.isEmailSignInEnabled());

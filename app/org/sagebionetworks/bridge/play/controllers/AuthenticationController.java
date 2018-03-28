@@ -13,7 +13,7 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.Identifier;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -21,7 +21,6 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -198,10 +197,10 @@ public class AuthenticationController extends BaseController {
     }
 
     public Result resendEmailVerification() throws Exception {
-        Identifier identifier = parseJson(request(), Identifier.class);
-        getStudyOrThrowException(identifier.getStudyIdentifier());
+        AccountId accountId = parseJson(request(), AccountId.class);
+        getStudyOrThrowException(accountId.getUnguardedAccountId().getStudyId());
         
-        authenticationService.resendVerification(ChannelType.EMAIL, identifier);
+        authenticationService.resendVerification(ChannelType.EMAIL, accountId);
         return okResult("If registered with the study, we'll email you instructions on how to verify your account.");
     }
 
@@ -214,10 +213,12 @@ public class AuthenticationController extends BaseController {
     }
 
     public Result resendPhoneVerification() throws Exception {
-        Identifier identifier = parseJson(request(), Identifier.class);
-        getStudyOrThrowException(identifier.getStudyIdentifier());
+        AccountId accountId = parseJson(request(), AccountId.class);
         
-        authenticationService.resendVerification(ChannelType.PHONE, identifier);
+        // Must be here to get the correct exception if study property is missing
+        getStudyOrThrowException(accountId.getUnguardedAccountId().getStudyId());
+        
+        authenticationService.resendVerification(ChannelType.PHONE, accountId);
         return okResult("If registered with the study, we'll send an SMS message to your phone.");
     }
     
@@ -253,19 +254,6 @@ public class AuthenticationController extends BaseController {
         cacheProvider.updateRequestInfo(requestInfo);
     }
 
-    /**
-     * Unauthenticated calls that require a study (most of the calls not requiring authentication, including this one),
-     * should include the study identifier as part of the JSON payload. This call handles such JSON and converts it to a
-     * study. As a fallback for existing clients, it also looks for the study information in the query string or
-     * headers. If the study cannot be found in any of these places, it throws an exception, because the API will not
-     * work correctly without it.
-     */
-    private Study getStudyOrThrowException(StudyIdentifier studyId) {
-        Study study = studyService.getStudy(studyId);
-        verifySupportedVersionOrThrowException(study);
-        return study;
-    }
-    
     private Study getStudyOrThrowException(String studyId) {
         Study study = studyService.getStudy(studyId);
         verifySupportedVersionOrThrowException(study);

@@ -537,7 +537,6 @@ public class StudyService {
             study.setReauthenticationEnabled(originalStudy.isReauthenticationEnabled());
             study.setAccountLimit(originalStudy.getAccountLimit());
             study.setStudyIdExcludedInExport(originalStudy.isStudyIdExcludedInExport());
-            study.setAutoVerificationPhoneSuppressed(originalStudy.isAutoVerificationPhoneSuppressed());
         }
 
         // prevent anyone changing active to false -- it should be done by deactivateStudy() method

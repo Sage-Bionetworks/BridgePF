@@ -56,7 +56,6 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.accounts.Identifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
@@ -191,9 +190,6 @@ public class ParticipantServiceTest {
 
     @Captor
     ArgumentCaptor<UserSession> sessionCaptor;
-    
-    @Captor
-    ArgumentCaptor<Identifier> emailCaptor;
     
     @Captor
     ArgumentCaptor<Study> studyCaptor;
@@ -448,6 +444,7 @@ public class ParticipantServiceTest {
         assertNull(account.getPhoneVerified());
     }
 
+    @Test
     public void createParticipantEmailNoPhoneVerificationWanted() {
         mockHealthCodeAndAccountRetrieval(null, PHONE);
 
@@ -948,6 +945,27 @@ public class ParticipantServiceTest {
         AccountId accountId = accountIdCaptor.getValue();
         assertEquals(STUDY.getIdentifier(), accountId.getStudyId());
         assertEquals(EMAIL, accountId.getEmail());
+    }
+    
+    @Test
+    public void resendPhoneVerification() {
+        mockHealthCodeAndAccountRetrieval(null, TestConstants.PHONE);
+        
+        participantService.resendVerification(STUDY, ChannelType.PHONE, ID);
+        
+        verify(accountWorkflowService).resendVerificationToken(eq(ChannelType.PHONE), accountIdCaptor.capture());
+        
+        AccountId accountId = accountIdCaptor.getValue();
+        assertEquals(STUDY.getIdentifier(), accountId.getStudyId());
+        assertEquals(PHONE, accountId.getPhone());
+    }
+    
+    @Test(expected = UnsupportedOperationException.class)
+    public void resendVerificationUnsupportedOperation() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        // Use null so we don't have to create a dummy unsupported channel type
+        participantService.resendVerification(STUDY, null, ID);
     }
     
     @Test

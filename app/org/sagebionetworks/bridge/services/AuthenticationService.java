@@ -17,7 +17,6 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
-import org.sagebionetworks.bridge.models.accounts.Identifier;
 import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
@@ -25,7 +24,7 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.validators.IdentifierValidator;
+import org.sagebionetworks.bridge.validators.AccountIdValidator;
 import org.sagebionetworks.bridge.validators.VerificationValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 import org.sagebionetworks.bridge.validators.SignInValidator;
@@ -222,24 +221,20 @@ public class AuthenticationService {
         checkNotNull(verification);
 
         Validate.entityThrowingException(VerificationValidator.INSTANCE, verification);
-        Account account = accountWorkflowService.verifyChannel(verification);
+        Account account = accountWorkflowService.verifyChannel(type, verification);
         accountDao.verifyChannel(type, account);
     }
     
-    public void resendVerification(ChannelType type, Identifier identifier) {
-        checkNotNull(identifier);
-        
-        Validate.entityThrowingException(new IdentifierValidator(type), identifier);
+    public void resendVerification(ChannelType type, AccountId accountId) {
+        checkNotNull(accountId);
+
+        Validate.entityThrowingException(AccountIdValidator.getInstance(type), accountId);
         try {
-            String studyId = identifier.getStudyIdentifier().getIdentifier();
-            AccountId accountId = (type == ChannelType.EMAIL) ?
-                    AccountId.forEmail(studyId, identifier.getEmail()) :
-                    AccountId.forPhone(studyId, identifier.getPhone());
             accountWorkflowService.resendVerificationToken(type, accountId);    
         } catch(EntityNotFoundException e) {
             // Suppress this. Otherwise it reveals if the account does not exist
             LOG.info("Resend " + type.name() + " verification for unregistered email in study '"
-                    + identifier.getStudyIdentifier().getIdentifier() + "'");
+                    + accountId.getStudyId() + "'");
         }
     }
     
