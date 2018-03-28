@@ -282,6 +282,20 @@ public class StudyParticipantValidatorTest {
         Validate.entityThrowingException(validator, participant);
     }
     
+    @Test
+    public void externalIdInvalidWithManagement() {
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo")).thenReturn(EXT_ID);
+        
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
+                .withId("id").withPassword("pAssword1@").build();
+        
+        // This should fail. External ID is required on sign up but there's no externalId
+        validator = new StudyParticipantValidator(externalIdService, study, true);
+        study.setExternalIdValidationEnabled(true);
+        study.setExternalIdRequiredOnSignup(true);
+        assertValidatorMessage(validator, participant, "externalId", "is required");
+    }
+    
     private StudyParticipant withPhone(String phone, String phoneRegion) {
         return new StudyParticipant.Builder().withPhone(new Phone(phone, phoneRegion)).build();
     }

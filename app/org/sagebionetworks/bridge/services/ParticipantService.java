@@ -484,7 +484,7 @@ public class ParticipantService {
         checkNotNull(update);
         
         // Validate
-        Validate.entityThrowingException(IdentifierUpdateValidator.INSTANCE, update);
+        Validate.entityThrowingException(new IdentifierUpdateValidator(study, externalIdService), update);
         
         // Sign in
         Account account = null;
