@@ -45,8 +45,6 @@ import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate;
-import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -135,8 +133,6 @@ public class AuthenticationServiceMockTest {
     public void before() {
         study = Study.create();
         study.setIdentifier(STUDY_ID);
-        study.setEmailSignInEnabled(true);
-        study.setEmailSignInTemplate(new EmailTemplate("subject","${token}",MimeType.TEXT));
         study.setSupportEmail(SUPPORT_EMAIL);
         study.setName("Sender");
         

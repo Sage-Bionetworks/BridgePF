@@ -318,7 +318,13 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     boolean isEmailSignInEnabled();
     
     /** @see #isEmailSignInEnabled */
-    void setEmailSignInEnabled(boolean emailSignInEnable);
+    void setEmailSignInEnabled(boolean emailSignInEnabled);
+    
+    /** True if we allow users in this study to send an SMS message with a token that can be used to sign into the app. */ 
+    boolean isPhoneSignInEnabled();
+    
+    /** @see #isPhoneSignInEnabled */
+    void setPhoneSignInEnabled(boolean phoneSignInEnabled);
     
     /** True if this study will export the healthCode when generating a participant roster. */
     boolean isHealthCodeExportEnabled();

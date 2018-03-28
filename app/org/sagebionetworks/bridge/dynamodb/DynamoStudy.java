@@ -93,6 +93,7 @@ public final class DynamoStudy implements Study {
     private boolean emailVerificationEnabled;
     private boolean externalIdValidationEnabled;
     private boolean emailSignInEnabled;
+    private boolean phoneSignInEnabled;
     private boolean externalIdRequiredOnSignup;
     private boolean reauthenticationEnabled;
     private boolean autoVerificationPhoneSuppressed;
@@ -481,6 +482,17 @@ public final class DynamoStudy implements Study {
         this.emailSignInEnabled = enabled;
     }
     
+    /** {@inheritDoc} */
+    @Override 
+    public boolean isPhoneSignInEnabled() {
+        return phoneSignInEnabled;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public void setPhoneSignInEnabled(boolean enabled){
+        this.phoneSignInEnabled = enabled;
+    }
     
     /** {@inheritDoc} */
     @Override
@@ -687,10 +699,11 @@ public final class DynamoStudy implements Study {
                 active, profileAttributes, taskIdentifiers, activityEventKeys, dataGroups, passwordPolicy,
                 verifyEmailTemplate, resetPasswordTemplate, emailSignInTemplate, accountExistsTemplate,
                 strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
-                externalIdValidationEnabled, emailSignInEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
-                pushNotificationARNs, installLinks, disableExport, oauthProviders, appleAppLinks, androidAppLinks,
-                reauthenticationEnabled, resetPasswordSmsTemplate, phoneSignInSmsTemplate, appInstallLinkSmsTemplate,
-                verifyPhoneSmsTemplate, accountExistsSmsTemplate, autoVerificationPhoneSuppressed);
+                externalIdValidationEnabled, emailSignInEnabled, phoneSignInEnabled, externalIdRequiredOnSignup,
+                minSupportedAppVersions, pushNotificationARNs, installLinks, disableExport, oauthProviders,
+                appleAppLinks, androidAppLinks, reauthenticationEnabled, resetPasswordSmsTemplate,
+                phoneSignInSmsTemplate, appInstallLinkSmsTemplate, verifyPhoneSmsTemplate, accountExistsSmsTemplate,
+                autoVerificationPhoneSuppressed);
     }
 
     @Override
@@ -738,6 +751,7 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(disableExport, other.disableExport)
                 && Objects.equals(emailSignInTemplate, other.emailSignInTemplate)
                 && Objects.equals(emailSignInEnabled, other.emailSignInEnabled)
+                && Objects.equals(phoneSignInEnabled, other.phoneSignInEnabled)
                 && Objects.equals(accountLimit, other.accountLimit)
                 && Objects.equals(oauthProviders, other.oauthProviders)
                 && Objects.equals(appleAppLinks, other.appleAppLinks)
@@ -754,19 +768,19 @@ public final class DynamoStudy implements Study {
     @Override
     public String toString() {
         return String.format(
-            "DynamoStudy [name=%s, shortName=%s, active=%s, sponsorName=%s, identifier=%s, "
+                "DynamoStudy [name=%s, shortName=%s, active=%s, sponsorName=%s, identifier=%s, "
                         + "autoVerificationEmailSuppressed=%b, minAgeOfConsent=%s, studyIdExcludedInExport=%b, "
                         + "supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, technicalEmail=%s, "
-                        + "uploadValidationStrictness=%s, consentNotificationEmail=%s, "
-                        + "consentNotificationEmailVerified=%s, version=%s, userProfileAttributes=%s, taskIdentifiers=%s, "
-                        + "activityEventKeys=%s, dataGroups=%s, passwordPolicy=%s, verifyEmailTemplate=%s, "
-                        + "resetPasswordTemplate=%s, strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, "
-                        + "emailVerificationEnabled=%s, externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, "
-                        + "minSupportedAppVersions=%s, usesCustomExportSchedule=%s, pushNotificationARNs=%s, installLinks=%s"
-                        + "disableExport=%s, emailSignInTemplate=%s, emailSignInEnabled=%s, accountLimit=%s, oauthProviders=%s, "
-                        + "appleAppLinks=%s, androidAppLinks=%s, reauthenticationEnabled=%s, resetPasswordSmsTemplate=%s, "
-                        + "phoneSignInSmsTemplate=%s, appInstallLinkSmsTemplate=%s, verifyPhoneSmsTemplate=%s, "
-                        + "accountExistsSmsTemplate=%s, autoVerificationPhoneSuppressed=%s]",
+                        + "uploadValidationStrictness=%s, consentNotificationEmail=%s, consentNotificationEmailVerified=%s, "
+                        + "version=%s, userProfileAttributes=%s, taskIdentifiers=%s, activityEventKeys=%s, dataGroups=%s, "
+                        + "passwordPolicy=%s, verifyEmailTemplate=%s, resetPasswordTemplate=%s, "
+                        + "strictUploadValidationEnabled=%s, healthCodeExportEnabled=%s, emailVerificationEnabled=%s, "
+                        + "externalIdValidationEnabled=%s, externalIdRequiredOnSignup=%s, minSupportedAppVersions=%s, "
+                        + "usesCustomExportSchedule=%s, pushNotificationARNs=%s, installLinks=%s, disableExport=%s, "
+                        + "emailSignInTemplate=%s, emailSignInEnabled=%s, phoneSignInEnabled=%s, accountLimit=%s, "
+                        + "oauthProviders=%s, appleAppLinks=%s, androidAppLinks=%s, reauthenticationEnabled=%s, "
+                        + "resetPasswordSmsTemplate=%s, phoneSignInSmsTemplate=%s, appInstallLinkSmsTemplate=%s, "
+                        + "verifyPhoneSmsTemplate=%s, accountExistsSmsTemplate=%s, autoVerificationPhoneSuppressed=%s]",
                 name, shortName, active, sponsorName, identifier, autoVerificationEmailSuppressed, minAgeOfConsent,
                 studyIdExcludedInExport, supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail,
                 uploadValidationStrictness, consentNotificationEmail, consentNotificationEmailVerified, version,
@@ -774,7 +788,7 @@ public final class DynamoStudy implements Study {
                 resetPasswordTemplate, strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
                 externalIdValidationEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
                 usesCustomExportSchedule, pushNotificationARNs, installLinks, disableExport, emailSignInTemplate,
-                emailSignInEnabled, accountLimit, oauthProviders, appleAppLinks, androidAppLinks,
+                emailSignInEnabled, phoneSignInEnabled, accountLimit, oauthProviders, appleAppLinks, androidAppLinks,
                 reauthenticationEnabled, resetPasswordSmsTemplate, phoneSignInSmsTemplate, appInstallLinkSmsTemplate,
                 verifyPhoneSmsTemplate, accountExistsSmsTemplate, autoVerificationPhoneSuppressed);
     }
