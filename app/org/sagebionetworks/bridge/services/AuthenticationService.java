@@ -17,17 +17,15 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
-import org.sagebionetworks.bridge.models.accounts.Email;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
+import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.validators.EmailValidator;
-import org.sagebionetworks.bridge.validators.EmailVerificationValidator;
+import org.sagebionetworks.bridge.validators.AccountIdValidator;
+import org.sagebionetworks.bridge.validators.VerificationValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 import org.sagebionetworks.bridge.validators.SignInValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -216,28 +214,27 @@ public class AuthenticationService {
         return null;
     }
 
-    public void verifyEmail(EmailVerification verification) {
+    public void verifyChannel(ChannelType type, Verification verification) {
         checkNotNull(verification);
 
-        Validate.entityThrowingException(EmailVerificationValidator.INSTANCE, verification);
-        Account account = accountWorkflowService.verifyEmail(verification);
-        accountDao.verifyEmail(account);
+        Validate.entityThrowingException(VerificationValidator.INSTANCE, verification);
+        Account account = accountWorkflowService.verifyChannel(type, verification);
+        accountDao.verifyChannel(type, account);
     }
     
-    public void resendEmailVerification(StudyIdentifier studyIdentifier, Email email) {
-        checkNotNull(studyIdentifier);
-        checkNotNull(email);
-        
-        Validate.entityThrowingException(EmailValidator.INSTANCE, email);
+    public void resendVerification(ChannelType type, AccountId accountId) {
+        checkNotNull(accountId);
+
+        Validate.entityThrowingException(AccountIdValidator.getInstance(type), accountId);
         try {
-            AccountId accountId = AccountId.forEmail(studyIdentifier.getIdentifier(), email.getEmail());
-            accountWorkflowService.resendEmailVerificationToken(accountId);    
+            accountWorkflowService.resendVerificationToken(type, accountId);    
         } catch(EntityNotFoundException e) {
             // Suppress this. Otherwise it reveals if the account does not exist
-            LOG.info("Resend email verification for unregistered email in study '"+studyIdentifier.getIdentifier()+"'");
+            LOG.info("Resend " + type.name() + " verification for unregistered email in study '"
+                    + accountId.getStudyId() + "'");
         }
     }
-
+    
     public void requestResetPassword(Study study, SignIn signIn) throws BridgeServiceException {
         checkNotNull(study);
         checkNotNull(signIn);

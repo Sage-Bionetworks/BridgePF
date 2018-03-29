@@ -59,6 +59,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AuthenticationService;
+import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 
 public class HibernateAccountDaoTest {
@@ -146,7 +147,7 @@ public class HibernateAccountDaoTest {
         
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
         
-        dao.verifyEmail(account);
+        dao.verifyChannel(ChannelType.EMAIL, account);
         
         assertEquals(AccountStatus.ENABLED, hibernateAccount.getStatus());
         assertEquals(Boolean.TRUE, hibernateAccount.getEmailVerified());
@@ -223,6 +224,29 @@ public class HibernateAccountDaoTest {
         verify(mockHibernateHelper, never()).update(any());
         assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
         assertNull(account.getEmailVerified());
+    }
+    
+    @Test
+    public void verifyPhoneUsingToken() {
+        HibernateAccount hibernateAccount = new HibernateAccount();
+        hibernateAccount.setStatus(AccountStatus.UNVERIFIED);
+        hibernateAccount.setPhoneVerified(Boolean.FALSE);
+        
+        GenericAccount account = new GenericAccount();
+        account.setId(ACCOUNT_ID);
+        account.setStatus(AccountStatus.UNVERIFIED);
+        account.setPhoneVerified(Boolean.FALSE);
+        
+        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
+        
+        dao.verifyChannel(ChannelType.PHONE, account);
+        
+        assertEquals(AccountStatus.ENABLED, hibernateAccount.getStatus());
+        assertEquals(Boolean.TRUE, hibernateAccount.getPhoneVerified());
+        assertTrue(hibernateAccount.getModifiedOn() > 0L);
+        assertEquals(AccountStatus.ENABLED, account.getStatus());
+        assertEquals(Boolean.TRUE, account.getPhoneVerified());
+        verify(mockHibernateHelper).update(hibernateAccount);
     }
     
     @Test

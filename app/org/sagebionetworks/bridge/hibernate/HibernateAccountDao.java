@@ -87,12 +87,6 @@ public class HibernateAccountDao implements AccountDao {
         this.hibernateHelper = hibernateHelper;
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public void verifyEmail(Account account) {
-        verifyChannel(EMAIL, account);
-    }
-    
     /**
      * Mark the email address as verified and enable the account if it is in the unverified state. 
      * This method assumes some logic has executed that proves the user has control of the email 

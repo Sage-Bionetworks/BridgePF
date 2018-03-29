@@ -26,11 +26,6 @@ public interface AccountDao {
     int MIGRATION_VERSION = 1;
     
     /**
-     * Verify an email address using a supplied, one-time token for verification.
-     */
-    void verifyEmail(Account account);
-    
-    /**
      * Set the verified flag for the channel (email or phone) to true, and enable the account (if needed).
      */
     void verifyChannel(AuthenticationService.ChannelType channelType, Account account);

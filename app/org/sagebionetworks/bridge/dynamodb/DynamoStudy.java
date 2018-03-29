@@ -96,6 +96,7 @@ public final class DynamoStudy implements Study {
     private boolean phoneSignInEnabled;
     private boolean externalIdRequiredOnSignup;
     private boolean reauthenticationEnabled;
+    private boolean autoVerificationPhoneSuppressed;
     private Map<String, Integer> minSupportedAppVersions;
     private Map<String, String> pushNotificationARNs;
     private Map<String, String> installLinks;
@@ -680,6 +681,16 @@ public final class DynamoStudy implements Study {
     }
 
     @Override
+    public boolean isAutoVerificationPhoneSuppressed() {
+        return autoVerificationPhoneSuppressed;
+    }
+    
+    @Override
+    public void setAutoVerificationPhoneSuppressed(boolean autoVerificationPhoneSuppressed) {
+        this.autoVerificationPhoneSuppressed = autoVerificationPhoneSuppressed;
+    }
+    
+    @Override
     public int hashCode() {
         return Objects.hash(name, shortName, sponsorName, identifier, autoVerificationEmailSuppressed,
                 studyIdExcludedInExport, supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail,
@@ -691,7 +702,8 @@ public final class DynamoStudy implements Study {
                 externalIdValidationEnabled, emailSignInEnabled, phoneSignInEnabled, externalIdRequiredOnSignup,
                 minSupportedAppVersions, pushNotificationARNs, installLinks, disableExport, oauthProviders,
                 appleAppLinks, androidAppLinks, reauthenticationEnabled, resetPasswordSmsTemplate,
-                phoneSignInSmsTemplate, appInstallLinkSmsTemplate, verifyPhoneSmsTemplate, accountExistsSmsTemplate);
+                phoneSignInSmsTemplate, appInstallLinkSmsTemplate, verifyPhoneSmsTemplate, accountExistsSmsTemplate,
+                autoVerificationPhoneSuppressed);
     }
 
     @Override
@@ -749,7 +761,8 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(phoneSignInSmsTemplate, other.phoneSignInSmsTemplate)
                 && Objects.equals(appInstallLinkSmsTemplate, other.appInstallLinkSmsTemplate)
                 && Objects.equals(verifyPhoneSmsTemplate, other.verifyPhoneSmsTemplate)
-                && Objects.equals(accountExistsSmsTemplate, other.accountExistsSmsTemplate);
+                && Objects.equals(accountExistsSmsTemplate, other.accountExistsSmsTemplate)
+                && Objects.equals(autoVerificationPhoneSuppressed, other.autoVerificationPhoneSuppressed);
     }
 
     @Override
@@ -767,7 +780,7 @@ public final class DynamoStudy implements Study {
                         + "emailSignInTemplate=%s, emailSignInEnabled=%s, phoneSignInEnabled=%s, accountLimit=%s, "
                         + "oauthProviders=%s, appleAppLinks=%s, androidAppLinks=%s, reauthenticationEnabled=%s, "
                         + "resetPasswordSmsTemplate=%s, phoneSignInSmsTemplate=%s, appInstallLinkSmsTemplate=%s, "
-                        + "verifyPhoneSmsTemplate=%s, accountExistsSmsTemplate=%s]",
+                        + "verifyPhoneSmsTemplate=%s, accountExistsSmsTemplate=%s, autoVerificationPhoneSuppressed=%s]",
                 name, shortName, active, sponsorName, identifier, autoVerificationEmailSuppressed, minAgeOfConsent,
                 studyIdExcludedInExport, supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail,
                 uploadValidationStrictness, consentNotificationEmail, consentNotificationEmailVerified, version,
@@ -777,6 +790,6 @@ public final class DynamoStudy implements Study {
                 usesCustomExportSchedule, pushNotificationARNs, installLinks, disableExport, emailSignInTemplate,
                 emailSignInEnabled, phoneSignInEnabled, accountLimit, oauthProviders, appleAppLinks, androidAppLinks,
                 reauthenticationEnabled, resetPasswordSmsTemplate, phoneSignInSmsTemplate, appInstallLinkSmsTemplate,
-                verifyPhoneSmsTemplate, accountExistsSmsTemplate);
+                verifyPhoneSmsTemplate, accountExistsSmsTemplate, autoVerificationPhoneSuppressed);
     }
 }

@@ -244,6 +244,8 @@ public class StudyServiceTest {
         study = studyService.updateStudy(study, true);
         policy = study.getPasswordPolicy();
         assertTrue(study.isEmailVerificationEnabled());
+        assertTrue(study.isAutoVerificationPhoneSuppressed());
+
         assertEquals(6, policy.getMinLength());
         assertTrue(policy.isNumericRequired());
         assertFalse(policy.isSymbolRequired());
@@ -361,6 +363,7 @@ public class StudyServiceTest {
     private void assertStudyChanged(Study study) {
         assertFalse(study.isStudyIdExcludedInExport());
         assertFalse(study.isEmailVerificationEnabled());
+        assertTrue(study.isAutoVerificationPhoneSuppressed());
         assertTrue(study.isExternalIdValidationEnabled());
         assertTrue(study.isExternalIdRequiredOnSignup());
         assertTrue(study.isEmailSignInEnabled());
@@ -378,6 +381,7 @@ public class StudyServiceTest {
         study.setPhoneSignInEnabled(false);
         study.setReauthenticationEnabled(false);
         study.setAccountLimit(0);
+        study.setAutoVerificationPhoneSuppressed(false);
     }
     
     private void changeStudyDefaults(Study study) {
@@ -389,6 +393,7 @@ public class StudyServiceTest {
         study.setPhoneSignInEnabled(true);
         study.setReauthenticationEnabled(true);
         study.setAccountLimit(10);
+        study.setAutoVerificationPhoneSuppressed(true);
     }
     
     @Test(expected=InvalidEntityException.class)

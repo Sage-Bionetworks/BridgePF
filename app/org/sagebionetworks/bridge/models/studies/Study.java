@@ -407,4 +407,11 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     
     List<AndroidAppLink> getAndroidAppLinks();
     void setAndroidAppLinks(List<AndroidAppLink> androidAppLinks);
+    
+    /** If the phone number must be verified, do we suppress sending an SMS message on sign up? */
+    boolean isAutoVerificationPhoneSuppressed();
+    
+    /** Should a new phone number be verified? */
+    void setAutoVerificationPhoneSuppressed(boolean autoVerificationPhoneSuppressed);
+    
 }

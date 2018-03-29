@@ -34,12 +34,13 @@ import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
-import org.sagebionetworks.bridge.models.accounts.EmailVerification;
+import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -119,6 +120,8 @@ public class AuthenticationServiceMockTest {
     private ArgumentCaptor<UserSession> sessionCaptor;
     @Captor
     private ArgumentCaptor<StudyParticipant> participantCaptor;
+    @Captor
+    private ArgumentCaptor<AccountId> accountIdCaptor;
     @Spy
     private AuthenticationService service;
 
@@ -473,19 +476,36 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void verifyEmail() {
-        EmailVerification ev = new EmailVerification("sptoken");
-        doReturn(account).when(accountWorkflowService).verifyEmail(ev);
+        Verification ev = new Verification("sptoken");
+        doReturn(account).when(accountWorkflowService).verifyChannel(ChannelType.EMAIL, ev);
         
-        service.verifyEmail(ev);
+        service.verifyChannel(ChannelType.EMAIL, ev);
         
-        verify(accountWorkflowService).verifyEmail(ev);
-        verify(accountDao).verifyEmail(account);
+        verify(accountWorkflowService).verifyChannel(ChannelType.EMAIL, ev);
+        verify(accountDao).verifyChannel(ChannelType.EMAIL, account);
     }
     
     @Test(expected = InvalidEntityException.class)
     public void verifyEmailInvalid() {
-        EmailVerification ev = new EmailVerification(null);
-        service.verifyEmail(ev);
+        Verification ev = new Verification(null);
+        service.verifyChannel(ChannelType.EMAIL, ev);
+    }
+    
+    @Test
+    public void verifyPhone() {
+        Verification ev = new Verification("sptoken");
+        doReturn(account).when(accountWorkflowService).verifyChannel(ChannelType.PHONE, ev);
+        
+        service.verifyChannel(ChannelType.PHONE, ev);
+        
+        verify(accountWorkflowService).verifyChannel(ChannelType.PHONE, ev);
+        verify(accountDao).verifyChannel(ChannelType.PHONE, account);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void verifyPhoneInvalid() {
+        Verification ev = new Verification(null);
+        service.verifyChannel(ChannelType.PHONE, ev);
     }
     
     @Test
@@ -508,4 +528,39 @@ public class AuthenticationServiceMockTest {
         verify(accountDao).editAccount(eq(TestConstants.TEST_STUDY), eq("healthCode"), any());
         verify(mockAccount).setLanguages(languages);
     }
+
+    @Test
+    public void resendEmailVerification() {
+        AccountId accountId = AccountId.forEmail(TestConstants.TEST_STUDY_IDENTIFIER, RECIPIENT_EMAIL);
+        service.resendVerification(ChannelType.EMAIL, accountId);
+        
+        verify(accountWorkflowService).resendVerificationToken(eq(ChannelType.EMAIL), accountIdCaptor.capture());
+        
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, accountIdCaptor.getValue().getStudyId());
+        assertEquals(RECIPIENT_EMAIL, accountIdCaptor.getValue().getEmail());
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void resendEmailVerificationInvalid() throws Exception {
+        AccountId accountId = BridgeObjectMapper.get().readValue("{}", AccountId.class);
+        service.resendVerification(ChannelType.EMAIL, accountId);
+    }
+    
+    @Test
+    public void resendPhoneVerification() {
+        AccountId accountId = AccountId.forPhone(TestConstants.TEST_STUDY_IDENTIFIER, TestConstants.PHONE);
+        service.resendVerification(ChannelType.PHONE, accountId);
+        
+        verify(accountWorkflowService).resendVerificationToken(eq(ChannelType.PHONE), accountIdCaptor.capture());
+        
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, accountIdCaptor.getValue().getStudyId());
+        assertEquals(TestConstants.PHONE, accountIdCaptor.getValue().getPhone());
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void resendPhoneVerificationInvalid() throws Exception {
+        AccountId accountId = BridgeObjectMapper.get().readValue("{}", AccountId.class);
+        service.resendVerification(ChannelType.PHONE, accountId);
+    }
+    
 }

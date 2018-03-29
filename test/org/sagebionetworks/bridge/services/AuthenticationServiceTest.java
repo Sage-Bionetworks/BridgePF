@@ -43,8 +43,8 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
-import org.sagebionetworks.bridge.models.accounts.Email;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
@@ -56,6 +56,7 @@ import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -158,12 +159,19 @@ public class AuthenticationServiceTest {
                     .withSubpopGuid(TestConstants.TEST_STUDY_IDENTIFIER).build();
             intentService.submitIntentToParticipate(intent);
             
-            study.setEmailVerificationEnabled(false); // cheating here to avoid having email confirmation path.
+            study.setAutoVerificationEmailSuppressed(true);
+            study.setAutoVerificationPhoneSuppressed(true);
             holder = authService.signUp(study, participant, true);
             
+            Account account = accountDao.getAccount(
+                    AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, holder.getIdentifier()));
+            account.setPhoneVerified(true);
+            account.setEmailVerified(true);
+            account.setStatus(AccountStatus.ENABLED);
+            accountDao.updateAccount(account, true);
+            
             CriteriaContext context = new CriteriaContext.Builder()
-                    .withStudyIdentifier(TestConstants.TEST_STUDY)
-                    .build();
+                    .withStudyIdentifier(TestConstants.TEST_STUDY).build();
             
             // You should be able to sign in, and be consented. No exception.
             SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
@@ -238,8 +246,8 @@ public class AuthenticationServiceTest {
     @Test
     public void canResendEmailVerification() throws Exception {
         testUser = helper.getBuilder(AuthenticationServiceTest.class).withConsent(false).withSignIn(false).build();
-        Email email = new Email(testUser.getStudyIdentifier(), testUser.getEmail());
-        authService.resendEmailVerification(testUser.getStudyIdentifier(), email);
+        AccountId accountId = AccountId.forEmail(testUser.getStudyIdentifier().getIdentifier(), testUser.getEmail());
+        authService.resendVerification(ChannelType.EMAIL, accountId);
     }
 
     @Test
@@ -369,8 +377,8 @@ public class AuthenticationServiceTest {
     
     @Test
     public void resendEmailVerificationLooksSuccessfulWhenNoAccount() throws Exception {
-        Email email = new Email(TEST_STUDY_IDENTIFIER, "notarealaccount@sagebase.org");
-        authService.resendEmailVerification(study, email);
+        AccountId accountId = AccountId.forEmail(TEST_STUDY_IDENTIFIER, "notarealaccount@sagebase.org");
+        authService.resendVerification(ChannelType.EMAIL, accountId);
     }
     
     @Test
