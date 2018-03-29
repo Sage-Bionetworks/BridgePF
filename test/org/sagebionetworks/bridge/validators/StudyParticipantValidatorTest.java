@@ -302,7 +302,7 @@ public class StudyParticipantValidatorTest {
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
                 .withId("id").withPassword("pAssword1@").build();
         
-        // This should fail. External ID is required on sign up but there's no externalId
+        // This succeeds. ID is not required and since it's not present, we don't validate it.
         validator = new StudyParticipantValidator(externalIdService, study, true);
         study.setExternalIdValidationEnabled(true);
         study.setExternalIdRequiredOnSignup(false);
