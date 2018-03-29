@@ -1,14 +1,23 @@
 package org.sagebionetworks.bridge.validators;
 
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 public class IdentifierUpdateValidator implements Validator {
 
-    public static final IdentifierUpdateValidator INSTANCE = new IdentifierUpdateValidator();
+    private Study study;
+    private ExternalIdService externalIdService;
+    
+    public IdentifierUpdateValidator(Study study, ExternalIdService externalIdService) {
+        this.study = study;
+        this.externalIdService = externalIdService;
+    }
     
     @Override
     public boolean supports(Class<?> clazz) {
@@ -39,13 +48,23 @@ public class IdentifierUpdateValidator implements Validator {
         if (update.getEmailUpdate() != null) {
             updateFields++;
         }
+        if (update.getExternalIdUpdate() != null) {
+            updateFields++;
+            // the same validation we perform when adding a participant where external ID is required on sign up.
+            if (study.isExternalIdValidationEnabled()) {
+                ExternalIdentifier externalId = externalIdService.getExternalId(study.getStudyIdentifier(),
+                        update.getExternalIdUpdate());
+                if (externalId == null) {
+                    errors.rejectValue("externalIdUpdate", "is not a valid external ID");
+                }
+            }
+        }
         if (updateFields < 1) {
-            errors.reject("requires at least one updated identifier (email, phone)");
+            errors.reject("requires at least one updated identifier (email, phone, externalId)");
         }
         if (update.getPhoneUpdate() != null && !Phone.isValid(update.getPhoneUpdate())) {
             errors.rejectValue("phoneUpdate", "does not appear to be a phone number");
         }
-        
     }
     
 }

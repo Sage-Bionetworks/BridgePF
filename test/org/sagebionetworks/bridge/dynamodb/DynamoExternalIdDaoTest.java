@@ -4,6 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +16,7 @@ import javax.annotation.Resource;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -21,14 +25,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -67,6 +72,16 @@ public class DynamoExternalIdDaoTest {
         }
         dao.addExternalIds(studyId, extIdList);
     }
+    
+    @Test
+    public void getExistingId() {
+        assertEquals("AAA", dao.getExternalId(studyId, "AAA").getIdentifier());
+    }
+    
+    @Test
+    public void getExistingIdReturnsNull() {
+        assertNull(dao.getExternalId(studyId, "does-not-exist"));
+    }
 
     @Test
     public void cannotAddExistingIdentifiers() {
@@ -89,76 +104,41 @@ public class DynamoExternalIdDaoTest {
     }
     
     @Test
-    public void reservationSucceedsFirstTime() {
-        dao.reserveExternalId(studyId, "AAA");
+    public void missingIdentifierDoesNothing() {
+        DynamoDBMapper spiedMapper = Mockito.spy(mapper);
         
-        DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(studyId, "AAA");
-        DynamoExternalIdentifier identifier = mapper.load(keyObject);
-        assertTrue(identifier.getReservation() > 0L);
+        dao.assignExternalId(studyId, "missing", "healthCode");
+        
+        verify(spiedMapper, never()).save(any(), (DynamoDBSaveExpression)any());
     }
-    
-    @Test
-    public void reservationSucceedsAfterLockExpires() throws Exception {
-        dao.reserveExternalId(studyId, "AAA");
 
-        // Timeout is 30 seconds. Sleep for 31 seconds.
-        Thread.sleep(31000);
-        dao.reserveExternalId(studyId, "AAA");
-    }
-    
-    @Test(expected = EntityAlreadyExistsException.class)
-    public void reservationFailsOnHealthCodeAssigned() {
-        dao.assignExternalId(studyId, "AAA", "some-health-code");
-        
-        dao.reserveExternalId(studyId, "AAA");
-    }
-    
-    @Test(expected = EntityAlreadyExistsException.class)
-    public void reservationFailsOnReservationWindow() {
-        dao.reserveExternalId(studyId, "AAA");
-        dao.reserveExternalId(studyId, "AAA");
-    }
-    
-    @Test(expected = EntityNotFoundException.class)
-    public void reservationFailsOnCodeDoesNotExist() {
-        dao.reserveExternalId(studyId, "DDD");
-    }
-    
-    @Test(expected = EntityNotFoundException.class)
-    public void reservationFailsOnCodeOutsideStudy() {
-        StudyIdentifier studyId = new StudyIdentifierImpl("some-other-study");
-        dao.reserveExternalId(studyId, "AAA");
-    }
-    
     @Test
-    public void canAssignExternalId() {
+    public void matchingHealthCodeDoesNothing() {
         dao.assignExternalId(studyId, "AAA", "healthCode");
         
-        DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(studyId, "AAA");
-        DynamoExternalIdentifier identifier = mapper.load(keyObject);
-        assertEquals("healthCode", identifier.getHealthCode());
-        assertEquals(0, identifier.getReservation());
+        DynamoDBMapper spiedMapper = Mockito.spy(mapper);
+        
+        dao.assignExternalId(studyId, "AAA", "healthCode");
+        
+        verify(spiedMapper, never()).save(any(), (DynamoDBSaveExpression)any());
     }
-    
-    @Test(expected = EntityNotFoundException.class)
-    public void assignMissingExternalIdThrowException() {
-        dao.assignExternalId(studyId, "DDD", "healthCode");
-    }
-    
+
     @Test
-    public void canReassignHealthCodeSafely() {
-        // Well-behaved client code shouldn't do this, but if it happens it does not throw an exception
+    public void availableExternalIdIsAssigned() {
         dao.assignExternalId(studyId, "AAA", "healthCode");
-        dao.assignExternalId(studyId, "AAA", "healthCode");
+        
+        ExternalIdentifier externalId = dao.getExternalId(studyId, "AAA");
+        assertEquals("AAA", externalId.getIdentifier());
+        assertEquals("healthCode", externalId.getHealthCode());
+        assertEquals(studyId.getIdentifier(), externalId.getStudyId());
     }
-    
+
     @Test(expected = EntityAlreadyExistsException.class)
-    public void identifierCannotBeAssignedTwice() {
-        // Well-behaved client code shouldn't do this, but if it happens, it will not succeed.
+    public void assignedExternalIdThrowsException() {
         dao.assignExternalId(studyId, "AAA", "healthCode");
         dao.assignExternalId(studyId, "AAA", "differentHealthCode");
     }
-    
+
     @Test
     public void identifierCanBeUnassigned() {
         dao.assignExternalId(studyId, "AAA", "healthCode");
@@ -168,7 +148,6 @@ public class DynamoExternalIdDaoTest {
         DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(studyId, "AAA");
         DynamoExternalIdentifier identifier = mapper.load(keyObject);
         assertNull(identifier.getHealthCode());
-        assertEquals(0L, identifier.getReservation());
     }
     
     @Test
@@ -326,42 +305,23 @@ public class DynamoExternalIdDaoTest {
     @Test
     public void retrieveUnassignedExcludesReserved() throws Exception {
         dao.assignExternalId(studyId, "AAA", "healthCode1");
-        dao.reserveExternalId(studyId, "BBB"); // only reserved
+        dao.assignExternalId(studyId, "BBB", "healthCode1");
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 5, null, Boolean.FALSE);
         assertEquals(1, page.getItems().size());
         assertEquals(new ExternalIdentifierInfo("CCC", false), page.getItems().get(0));
 
-        // Timeout is 30 seconds. Sleep for 31 seconds.
-        Thread.sleep(31000);
-        page = dao.getExternalIds(studyId, null, 5, null, Boolean.FALSE);
-        assertEquals(2, page.getItems().size());
-        assertTrue(page.getItems().contains(new ExternalIdentifierInfo("BBB", false)));
-        assertTrue(page.getItems().contains(new ExternalIdentifierInfo("CCC", false)));
-    }
-    
-    @Test
-    public void retrieveAssignedIncludesReserved() throws Exception {
-        dao.assignExternalId(studyId, "AAA", "healthCode");
-        dao.reserveExternalId(studyId, "BBB");
-
-        ForwardCursorPagedResourceList<ExternalIdentifierInfo> page = dao.getExternalIds(studyId, null, 5, null, Boolean.TRUE);
+        page = dao.getExternalIds(studyId, null, 5, null, Boolean.TRUE);
         assertEquals(2, page.getItems().size());
         assertTrue(page.getItems().contains(new ExternalIdentifierInfo("AAA", true)));
         assertTrue(page.getItems().contains(new ExternalIdentifierInfo("BBB", true)));
-        
-        // Wait until lock is released, item is no longer in results that are considered assigned.
-        Thread.sleep(31000);
-        page = dao.getExternalIds(studyId, null, 5, null, Boolean.TRUE);
-        assertEquals(1, page.getItems().size());
-        assertTrue(page.getItems().contains(new ExternalIdentifierInfo("AAA", true)));
     }
     
     @Test
     public void getNextAvailableID() {
         // We should skip over reserved and assigned IDs to find a free one
         dao.assignExternalId(studyId, "AAA", "healthCode");
-        dao.reserveExternalId(studyId, "BBB");
+        dao.assignExternalId(studyId, "BBB", "healthCode");
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> ids = dao.getExternalIds(studyId, null, 1, null, Boolean.FALSE);
         

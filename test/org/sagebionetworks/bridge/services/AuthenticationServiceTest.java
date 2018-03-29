@@ -262,7 +262,7 @@ public class AuthenticationServiceTest {
 
     @Test
     public void createAdminAndSignInWithoutConsentError() {
-        TestUser testUser = helper.getBuilder(AuthenticationServiceTest.class)
+        testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(false).withSignIn(false).withRoles(Roles.ADMIN).build();
         UserSession session = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
         helper.deleteUser(testUser.getStudy(), session.getId());
@@ -292,6 +292,7 @@ public class AuthenticationServiceTest {
     // This test combines test of dataGroups, languages, and other data that can be set.
     @Test
     public void signUpDataExistsOnSignIn() {
+        study.setExternalIdValidationEnabled(false);
         StudyParticipant participant = TestUtils.getStudyParticipant(AuthenticationServiceTest.class);
         IdentifierHolder holder = null;
         try {
@@ -317,17 +318,21 @@ public class AuthenticationServiceTest {
     
     @Test
     public void signUpWillCreateDataGroups() {
-        String name = TestUtils.randomName(AuthenticationServiceTest.class);
-        String email = "bridge-testing+"+name+"@sagebase.org";
+        String email = TestUtils.makeRandomTestEmail(AuthenticationServiceTest.class); 
         Set<String> groups = Sets.newHashSet("group1");
-        
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withEmail(email).withPassword("P@ssword1").withDataGroups(groups).build();
-
-        IdentifierHolder holder = authService.signUp(study, participant, false);
-        
-        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), holder.getIdentifier()));
-        assertEquals(groups, account.getDataGroups());
+        IdentifierHolder holder = null;
+        try {
+            holder = authService.signUp(study, participant, false);
+            
+            Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), holder.getIdentifier()));
+            assertEquals(groups, account.getDataGroups());
+        } finally {
+            if (holder != null) {
+                userAdminService.deleteUser(study, holder.getIdentifier());    
+            }
+        }
     }
     
     @Test
@@ -465,11 +470,16 @@ public class AuthenticationServiceTest {
         Set<Roles> roles = Sets.newHashSet(Roles.DEVELOPER, Roles.RESEARCHER);
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withEmail(email).withPassword(PASSWORD).withRoles(roles).build();
-        
-        IdentifierHolder idHolder = authService.signUp(study, participant, false);
-        
-        participant = participantService.getParticipant(study, idHolder.getIdentifier(), false);
-        assertTrue(participant.getRoles().isEmpty());
+        IdentifierHolder holder = null;
+        try {
+            holder = authService.signUp(study, participant, false);    
+            participant = participantService.getParticipant(study, holder.getIdentifier(), false);
+            assertTrue(participant.getRoles().isEmpty());
+        } finally {
+            if (holder != null) {
+                userAdminService.deleteUser(study, holder.getIdentifier());    
+            }
+        }
     }
     
     @Test

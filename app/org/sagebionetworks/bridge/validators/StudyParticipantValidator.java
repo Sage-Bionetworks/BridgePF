@@ -10,18 +10,22 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.ExternalIdService;
 
 public class StudyParticipantValidator implements Validator {
 
     private static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
+    private final ExternalIdService externalIdService;
     private final Study study;
     private final boolean isNew;
     
-    public StudyParticipantValidator(Study study, boolean isNew) {
+    public StudyParticipantValidator(ExternalIdService externalIdService, Study study, boolean isNew) {
+        this.externalIdService = externalIdService;
         this.study = study;
         this.isNew = isNew;
     }
@@ -52,6 +56,13 @@ public class StudyParticipantValidator implements Validator {
             if (study.isExternalIdRequiredOnSignup() && isBlank(participant.getExternalId())) {
                 errors.rejectValue("externalId", "is required");
             }
+            if (study.isExternalIdValidationEnabled() && participant.getExternalId() != null) {
+                ExternalIdentifier externalId = externalIdService.getExternalId(study.getStudyIdentifier(), participant.getExternalId());
+                if (externalId == null) {
+                    errors.rejectValue("externalId", "is not a valid external ID");
+                }
+            }
+            
             // Password is optional, but validation is applied if supplied, any time it is 
             // supplied (such as in the password reset workflow).
             String password = participant.getPassword();
@@ -64,7 +75,7 @@ public class StudyParticipantValidator implements Validator {
                 errors.rejectValue("id", "is required");
             }
         }
-        
+                
         // if external ID validation is enabled, it's not covered by the validator.
         for (String dataGroup : participant.getDataGroups()) {
             if (!study.getDataGroups().contains(dataGroup)) {

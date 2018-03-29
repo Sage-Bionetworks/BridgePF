@@ -49,7 +49,6 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
-import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.HealthIdImpl;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -724,7 +723,7 @@ public class HibernateAccountDaoTest {
     @Test
     public void constructAccount() throws Exception {
         // execute and validate
-        GenericAccount account = (GenericAccount) dao.constructAccount(STUDY, EMAIL, PHONE, DUMMY_PASSWORD);
+        GenericAccount account = (GenericAccount) dao.constructAccount(STUDY, EMAIL, PHONE, EXTERNAL_ID, DUMMY_PASSWORD);
         assertEquals(TestConstants.TEST_STUDY, account.getStudyIdentifier());
         assertEquals(EMAIL, account.getEmail());
         assertEquals(PHONE.getNationalFormat(), account.getPhone().getNationalFormat());
@@ -732,6 +731,7 @@ public class HibernateAccountDaoTest {
         assertEquals(Boolean.FALSE, account.getPhoneVerified());
         assertEquals(HEALTH_CODE, account.getHealthCode());
         assertEquals(HEALTH_ID, account.getHealthId());
+        assertEquals(EXTERNAL_ID, account.getExternalId());
         assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, account.getPasswordAlgorithm());
 
         // validate password hash
@@ -741,7 +741,7 @@ public class HibernateAccountDaoTest {
     @Test
     public void constructAccountWithoutPasswordWorks() throws Exception {
         // execute and validate
-        GenericAccount account = (GenericAccount) dao.constructAccount(STUDY, EMAIL, PHONE, null);
+        GenericAccount account = (GenericAccount) dao.constructAccount(STUDY, EMAIL, PHONE, EXTERNAL_ID, null);
         assertEquals(TestConstants.TEST_STUDY, account.getStudyIdentifier());
         assertEquals(EMAIL, account.getEmail());
         assertEquals(PHONE.getNationalFormat(), account.getPhone().getNationalFormat());
@@ -749,23 +749,9 @@ public class HibernateAccountDaoTest {
         assertEquals(Boolean.FALSE, account.getPhoneVerified());
         assertEquals(HEALTH_CODE, account.getHealthCode());
         assertEquals(HEALTH_ID, account.getHealthId());
+        assertEquals(EXTERNAL_ID, account.getExternalId());
         assertNull(account.getPasswordHash());
         assertNull(account.getPasswordAlgorithm());
-    }
-
-    @Test
-    public void constructAccountForMigration() throws Exception {
-        HealthId healthId = new HealthIdImpl(HEALTH_ID, HEALTH_CODE);
-
-        // execute
-        GenericAccount account = (GenericAccount) dao.constructAccountForMigration(STUDY, EMAIL, PHONE, DUMMY_PASSWORD, healthId);
-
-        // Most of this stuff has been tested in the previous test. Just test that we set the expected HealthId.
-        assertEquals(HEALTH_CODE, account.getHealthCode());
-        assertEquals(HEALTH_ID, account.getHealthId());
-
-        // Also verify HealthCodeService is never called
-        verify(mockHealthCodeService, never()).createMapping(any());
     }
 
     @Test
@@ -794,22 +780,6 @@ public class HibernateAccountDaoTest {
         assertEquals(MOCK_NOW_MILLIS, createdHibernateAccount.getPasswordModifiedOn().longValue());
         assertEquals(AccountStatus.ENABLED, createdHibernateAccount.getStatus());
         assertEquals(AccountDao.MIGRATION_VERSION, createdHibernateAccount.getMigrationVersion());
-    }
-
-    @Test
-    public void createAccountForMigration() {
-        // Most of this is tested in createAccountSuccess(). Just test that account ID is correctly propagated and that
-        // email workflow is *not* called despite the flag.
-        dao.createAccountForMigration(STUDY, makeValidGenericAccount(), ACCOUNT_ID);
-
-        // created account has correct account ID account status unverified
-        ArgumentCaptor<HibernateAccount> createdHibernateAccountCaptor = ArgumentCaptor.forClass(
-                HibernateAccount.class);
-        verify(mockHibernateHelper).create(createdHibernateAccountCaptor.capture());
-
-        HibernateAccount createdHibernateAccount = createdHibernateAccountCaptor.getValue();
-        assertEquals(ACCOUNT_ID, createdHibernateAccount.getId());
-        assertEquals(AccountStatus.UNVERIFIED, createdHibernateAccount.getStatus());
     }
 
     @Test
@@ -872,6 +842,33 @@ public class HibernateAccountDaoTest {
     }
     
     @Test
+    public void createAccountAlreadyExistsForExternalIdAccount() {
+        String externalId = "other-account-id";
+        HibernateAccount otherHibernateAccount = new HibernateAccount();
+        otherHibernateAccount.setId("userId");
+        otherHibernateAccount.setExternalId(externalId);
+        
+        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
+        when(mockHibernateHelper.queryGet(queryCaptor.capture(), any(), any(), any()))
+                .thenReturn(ImmutableList.of(otherHibernateAccount));
+
+        doThrow(ConcurrentModificationException.class).when(mockHibernateHelper).create(any());
+
+        // execute
+        try {
+            GenericAccount account = makeValidGenericAccount();
+            account.setEmail(null);
+            account.setPhone(null);
+            account.setExternalId(externalId);
+            dao.createAccount(STUDY, account);
+            fail("expected exception");
+        } catch (EntityAlreadyExistsException ex) {
+            assertEquals("userId", ex.getEntity().get("userId"));
+            assertTrue(queryCaptor.getValue().contains("externalId='"+externalId+"'"));
+        }
+    }
+    
+    @Test
     public void updateSuccess() {
         // Some fields can't be modified. Create the persisted account and set the base fields so we can verify they
         // weren't modified.
@@ -883,6 +880,7 @@ public class HibernateAccountDaoTest {
         persistedAccount.setPhone(PHONE);
         persistedAccount.setEmailVerified(Boolean.TRUE);
         persistedAccount.setPhoneVerified(Boolean.TRUE);
+        persistedAccount.setExternalId(EXTERNAL_ID);
 
         // Set a dummy modifiedOn to make sure we're overwriting it.
         persistedAccount.setModifiedOn(5678L);
@@ -895,6 +893,7 @@ public class HibernateAccountDaoTest {
         account.setPhone(OTHER_PHONE);
         account.setEmailVerified(Boolean.FALSE);
         account.setPhoneVerified(Boolean.FALSE);
+        account.setExternalId("new-external-id");
         
         // Execute. Identifiers not allows to change.
         dao.updateAccount(account, false);
@@ -915,6 +914,7 @@ public class HibernateAccountDaoTest {
         assertEquals(1234, updatedHibernateAccount.getCreatedOn().longValue());
         assertEquals(5678, updatedHibernateAccount.getPasswordModifiedOn().longValue());
         assertEquals(MOCK_NOW_MILLIS, updatedHibernateAccount.getModifiedOn().longValue());
+        assertEquals(EXTERNAL_ID, updatedHibernateAccount.getExternalId());
     }
 
     @Test
@@ -973,6 +973,7 @@ public class HibernateAccountDaoTest {
         persistedAccount.setPhone(PHONE);
         persistedAccount.setEmailVerified(Boolean.TRUE);
         persistedAccount.setPhoneVerified(Boolean.TRUE);
+        persistedAccount.setExternalId("some-other-extid");
 
         // Set a dummy modifiedOn to make sure we're overwriting it.
         persistedAccount.setModifiedOn(5678L);
@@ -986,6 +987,7 @@ public class HibernateAccountDaoTest {
         account.setPhone(OTHER_PHONE);
         account.setEmailVerified(Boolean.FALSE);
         account.setPhoneVerified(Boolean.FALSE);
+        account.setExternalId(EXTERNAL_ID);
         
         // Identifiers ARE allowed to change here.
         dao.updateAccount(account, true);
@@ -1002,6 +1004,7 @@ public class HibernateAccountDaoTest {
                 updatedHibernateAccount.getPhone().getNationalFormat());
         assertEquals(Boolean.FALSE, updatedHibernateAccount.getEmailVerified());
         assertEquals(Boolean.FALSE, updatedHibernateAccount.getPhoneVerified());
+        assertEquals(EXTERNAL_ID, updatedHibernateAccount.getExternalId());
     }
 
     @Test

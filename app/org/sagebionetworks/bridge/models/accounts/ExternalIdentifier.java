@@ -24,7 +24,4 @@ public interface ExternalIdentifier extends BridgeEntity {
     String getHealthCode();
     void setHealthCode(String healthCode);
     
-    long getReservation();
-    void setReservation(long reservation);
-    
 }
