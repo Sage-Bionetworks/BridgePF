@@ -236,9 +236,9 @@ public class StudyParticipantValidatorTest {
     }
     
     @Test
-    public void externalIdForSavedParticipantOK() {
+    public void externalIdUnmanagedButInvalidOnUpdateSucceeds() {
         validator = new StudyParticipantValidator(externalIdService, study, false);
-        study.setExternalIdValidationEnabled(true);
+        study.setExternalIdValidationEnabled(false);
         
         StudyParticipant participant = new StudyParticipant.Builder().withId("id").withEmail("email@email.com")
                 .withPassword("aAz1%_aAz1%").withExternalId("foo").build();
@@ -259,15 +259,14 @@ public class StudyParticipantValidatorTest {
     }
     
     @Test
-    public void externalIdManagedButInvalidOnUpdateOK() {
+    public void externalIdManagedButInvalidOnUpdateFails() {
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
                 .withExternalId("foo").withId("id").withPassword("pAssword1@").build();
         
-        // The ID won't exist and that's fine, because you cannot add an external ID on an update.
-        // We're just going to ignore email, phone, and external ID on updates.
+        // This fails because the ID isn't in the list of managed IDs.
         validator = new StudyParticipantValidator(externalIdService, study, false);
         study.setExternalIdValidationEnabled(true);
-        Validate.entityThrowingException(validator, participant);
+        assertValidatorMessage(validator, participant, "externalId", "is not a valid external ID");
     }
     
     @Test

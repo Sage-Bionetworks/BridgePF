@@ -56,13 +56,6 @@ public class StudyParticipantValidator implements Validator {
             if (study.isExternalIdRequiredOnSignup() && isBlank(participant.getExternalId())) {
                 errors.rejectValue("externalId", "is required");
             }
-            if (study.isExternalIdValidationEnabled() && participant.getExternalId() != null) {
-                ExternalIdentifier externalId = externalIdService.getExternalId(study.getStudyIdentifier(), participant.getExternalId());
-                if (externalId == null) {
-                    errors.rejectValue("externalId", "is not a valid external ID");
-                }
-            }
-            
             // Password is optional, but validation is applied if supplied, any time it is 
             // supplied (such as in the password reset workflow).
             String password = participant.getPassword();
@@ -75,8 +68,17 @@ public class StudyParticipantValidator implements Validator {
                 errors.rejectValue("id", "is required");
             }
         }
+        // External ID can be updated during creation or on update. We validate it is in the list 
+        // of IDs of they are managed... if it's already assigned to another user, the database 
+        // constraints will prevent this record's persistence.
+        if (study.isExternalIdValidationEnabled() && participant.getExternalId() != null) {
+            ExternalIdentifier externalId = externalIdService.getExternalId(study.getStudyIdentifier(),
+                    participant.getExternalId());
+            if (externalId == null) {
+                errors.rejectValue("externalId", "is not a valid external ID");
+            }
+        }
                 
-        // if external ID validation is enabled, it's not covered by the validator.
         for (String dataGroup : participant.getDataGroups()) {
             if (!study.getDataGroups().contains(dataGroup)) {
                 errors.rejectValue("dataGroups", messageForSet(study.getDataGroups(), dataGroup));

@@ -617,9 +617,10 @@ public class ParticipantServiceTest {
 
     @Test
     public void updateParticipantWithExternalIdValidationAddingId() {
+        when(externalIdService.getExternalId(TestConstants.TEST_STUDY, EXTERNAL_ID)).thenReturn(EXT_ID);
         STUDY.setExternalIdValidationEnabled(true);
         mockHealthCodeAndAccountRetrieval();
-        account.setExternalId(null);
+        account.setExternalId(null); // account can be updated because it's null
 
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE)
@@ -647,7 +648,7 @@ public class ParticipantServiceTest {
         assertEquals(Boolean.TRUE, account.getNotifyByEmail());
         assertEquals(Sets.newHashSet("group1","group2"), account.getDataGroups());
         assertEquals(TestUtils.newLinkedHashSet("de","fr"), account.getLanguages());
-        assertNull(account.getExternalId());
+        assertEquals(EXTERNAL_ID, account.getExternalId());
         assertNull(account.getTimeZone());
     }
     
@@ -949,14 +950,14 @@ public class ParticipantServiceTest {
         assertEquals(PHONE, accountId.getPhone());
     }
     
-    @Test(expected = UnsupportedOperationException.class)
-    public void resendVerificationUnsupportedOperation() {
+    @Test(expected = BadRequestException.class)
+    public void resendVerificationBadRequest() {
         mockHealthCodeAndAccountRetrieval();
         
         // Use null so we don't have to create a dummy unsupported channel type
         participantService.resendVerification(STUDY, null, ID);
     }
-    
+
     @Test
     public void resendConsentAgreement() {
         mockHealthCodeAndAccountRetrieval();
@@ -1053,18 +1054,6 @@ public class ParticipantServiceTest {
         // Validated and required, use reservation service and don't set as option
         verify(externalIdService).assignExternalId(studyCaptor.capture(), eq(EXTERNAL_ID), eq(HEALTH_CODE));
         assertTrue(studyCaptor.getAllValues().get(0).isExternalIdValidationEnabled());
-    }
-
-    @Test
-    public void updateParticipantDoesNotChangeExternalId() {
-        STUDY.setExternalIdValidationEnabled(true);
-        STUDY.setExternalIdRequiredOnSignup(true);
-        mockHealthCodeAndAccountRetrieval();
-        
-        participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
-        
-        // Submitting same value again with validation does nothing
-        verify(externalIdService, never()).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
     }
 
     @Test
@@ -1346,19 +1335,15 @@ public class ParticipantServiceTest {
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
     }
     
-    @Test
+    @Test(expected = InvalidEntityException.class)
     public void updateManagedExternalIdFails() {
+        // In this case the ID is not in the external IDs table, so it fails validation.
         mockHealthCodeAndAccountRetrieval();
         STUDY.setExternalIdValidationEnabled(true);
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalId("newExternalId").build();
-        
         participantService.updateParticipant(STUDY, CALLER_ROLES, participant);
-        
-        verify(accountDao).updateAccount(accountCaptor.capture(), eq(false));
-        assertEquals(EXTERNAL_ID, account.getExternalId());
-        verify(externalIdService, never()).assignExternalId(any(), any(), any());
     }
     
     @Test
@@ -1383,18 +1368,19 @@ public class ParticipantServiceTest {
     }
     
     @Test
-    public void cannotUpdateUnmanagedExternalId() {
+    public void canUpdateUnmanagedExternalId() {
         mockHealthCodeAndAccountRetrieval();
+        account.setExternalId(null);
         STUDY.setExternalIdValidationEnabled(false);
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(null);
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalId("newExternalId").build();
         
         participantService.updateParticipant(STUDY, CALLER_ROLES, participant);
         
-        assertEquals(EXTERNAL_ID, account.getExternalId());
-        verify(externalIdService, never()).assignExternalId(any(), any(), any());
+        assertEquals("newExternalId", account.getExternalId());
+        // This is always called, but it does nothing since there's no record in the table.
+        verify(externalIdService).assignExternalId(any(), eq("newExternalId"), any());
     }
 
     

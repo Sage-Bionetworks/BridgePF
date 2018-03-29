@@ -302,6 +302,10 @@ public class ParticipantService {
 
         // Prevent optimistic locking exception until operations are combined into one operation. 
         account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), account.getId()));
+        // Allow external ID to be added on an update if it doesn't exist.
+        if (account.getExternalId() == null) {
+            account.setExternalId(participant.getExternalId());    
+        }
         updateAccountAndRoles(study, callerRoles, account, participant);
         
         // Only Admin and Worker accounts controlled by us should be able to bypass email verification. This is
@@ -313,6 +317,8 @@ public class ParticipantService {
             }
         }
         accountDao.updateAccount(account, false);
+        
+        externalIdService.assignExternalId(study, account.getExternalId(), account.getHealthCode());    
     }
 
     private void throwExceptionIfLimitMetOrExceeded(Study study) {
@@ -334,8 +340,8 @@ public class ParticipantService {
         account.setDataGroups(participant.getDataGroups());
         account.setLanguages(participant.getLanguages());
         account.setMigrationVersion(AccountDao.MIGRATION_VERSION);
-        // Do not copy timezone or external ID. Neither can be updated once set.
         
+        // Do not copy timezone or external ID. Neither can be updated once set.
         for (String attribute : study.getUserProfileAttributes()) {
             String value = participant.getAttributes().get(attribute);
             account.setAttribute(attribute, value);
@@ -398,7 +404,7 @@ public class ParticipantService {
             AccountId accountId = AccountId.forPhone(study.getIdentifier(), participant.getPhone());
             accountWorkflowService.resendVerificationToken(type, accountId);
         } else {
-            throw new UnsupportedOperationException("Channel type not implemented");
+            throw new BadRequestException("Invalid resend verification request.");
         }
     }
 
