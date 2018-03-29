@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dao;
 import java.util.List;
 
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
@@ -17,6 +18,11 @@ public interface ExternalIdDao {
     String CONFIG_KEY_ADD_LIMIT = "external.id.add.limit";
     String CONFIG_KEY_LOCK_DURATION = "external.id.lock.duration";
 
+    /**
+     * Get a single external ID record. Returns null if there is no record.
+     */
+    public ExternalIdentifier getExternalId(StudyIdentifier studyId, String externalId);
+    
     /**
      * Retrieve external IDs that match the ID and/or assignment filters. These records are returned in pages of pageSize 
      * records. Each page is identified by the offsetKey of the last record of the immediately prior page. If that value is 
@@ -44,14 +50,6 @@ public interface ExternalIdDao {
      * Add one or more external IDs. Existing IDs are left alone without changing the assignment status of the ID.
      */
     void addExternalIds(StudyIdentifier studyId, List<String> externalIdentifiers);
-    
-    /**
-     * Reserve this ID. Reserving the ID prevents it from being taken by another caller for a short duration (30 seconds), 
-     * allowing this reserving thread to do other work to set up the user (e.g. creating an account, which can
-     * take a long time to finish). If the code is not assigned by calling assignExternalId(...), it will become available 
-     * again after the duration expires.   
-     */
-    void reserveExternalId(StudyIdentifier studyId, String externalIdentifier);
     
     /**
      * Assign an external identifier. Once assigned, it cannot be re-assigned. If already assigned to this health code, 

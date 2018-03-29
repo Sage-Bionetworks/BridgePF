@@ -17,7 +17,6 @@ public class DynamoExternalIdentifier implements ExternalIdentifier {
     private String studyId;
     private String identifier;
     private String healthCode;
-    private long reservation;
     
     public DynamoExternalIdentifier() {}
     
@@ -56,15 +55,6 @@ public class DynamoExternalIdentifier implements ExternalIdentifier {
     @Override
     public void setHealthCode(String healthCode) {
         this.healthCode = healthCode;
-    }
-    @DynamoDBAttribute
-    @Override
-    public long getReservation() {
-        return reservation;
-    }
-    @Override
-    public void setReservation(long reservation) {
-        this.reservation = reservation;
     }
     
 }

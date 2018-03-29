@@ -251,18 +251,14 @@ public class ParticipantService {
         if (study.getAccountLimit() > 0) {
             throwExceptionIfLimitMetOrExceeded(study);
         }
-
-        Validate.entityThrowingException(new StudyParticipantValidator(study, true), participant);
+        Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, study, true), participant);
         
         Account account = accountDao.constructAccount(study, participant.getEmail(), participant.getPhone(),
-                participant.getPassword());
-        
-        externalIdService.reserveExternalId(study, participant.getExternalId(), account.getHealthCode());
+                participant.getExternalId(), participant.getPassword());
 
         updateAccountAndRoles(study, callerRoles, account, participant);
         
         boolean sendVerifyEmail = requestSendVerifyEmail && study.isEmailVerificationEnabled();
-
         if (sendVerifyEmail) {
             account.setStatus(AccountStatus.UNVERIFIED);
         } else {
@@ -273,8 +269,8 @@ public class ParticipantService {
         }
 
         String accountId = accountDao.createAccount(study, account);
-
-        externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());
+        externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());    
+        
         // send verify email
         if (sendVerifyEmail && !study.isAutoVerificationEmailSuppressed()) {
             accountWorkflowService.sendEmailVerificationToken(study, accountId, account.getEmail());
@@ -287,12 +283,9 @@ public class ParticipantService {
         checkNotNull(callerRoles);
         checkNotNull(participant);
         
-        Validate.entityThrowingException(new StudyParticipantValidator(study, false), participant);
+        Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, study, false), participant);
         
         Account account = getAccountThrowingException(study, participant.getId());
-
-        // Do this first because if the ID has been taken or is invalid, we do not want to update anything else.
-        externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());
 
         // Prevent optimistic locking exception until operations are combined into one operation. 
         account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), account.getId()));
@@ -491,7 +484,7 @@ public class ParticipantService {
         checkNotNull(update);
         
         // Validate
-        Validate.entityThrowingException(IdentifierUpdateValidator.INSTANCE, update);
+        Validate.entityThrowingException(new IdentifierUpdateValidator(study, externalIdService), update);
         
         // Sign in
         Account account = null;
@@ -512,6 +505,7 @@ public class ParticipantService {
         
         // Update if account has an empty field and there's an update
         boolean sendEmailVerification = false;
+        boolean assignExternalId = false;
         boolean accountUpdated = false;
         if (update.getPhoneUpdate() != null && account.getPhone() == null) {
             account.setPhone(update.getPhoneUpdate());
@@ -524,7 +518,12 @@ public class ParticipantService {
             sendEmailVerification = true;
             accountUpdated = true;
         }
-        // save 
+        if (update.getExternalIdUpdate() != null && account.getExternalId() == null) {
+            account.setExternalId(update.getExternalIdUpdate());
+            accountUpdated = true;
+            assignExternalId = true;
+        }
+        // save. if this throws a constraint exception, further services are not called
         if (accountUpdated) {
             accountDao.updateAccount(account, true);   
         }
@@ -532,6 +531,9 @@ public class ParticipantService {
             study.isEmailVerificationEnabled() && 
             !study.isAutoVerificationEmailSuppressed()) {
             accountWorkflowService.sendEmailVerificationToken(study, account.getId(), account.getEmail());
+        }
+        if (assignExternalId) {
+            externalIdService.assignExternalId(study, account.getExternalId(), account.getHealthCode());
         }
         
         // return updated StudyParticipant to update and return session

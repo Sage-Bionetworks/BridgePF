@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.accounts;
 import java.util.Objects;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -11,7 +12,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * We expose only limited information about this entity.
  */
 @BridgeTypeName("ExternalIdentifier")
-public final class ExternalIdentifierInfo {
+public final class ExternalIdentifierInfo implements BridgeEntity {
 
     private final String identifier;
     private final boolean isAssigned;

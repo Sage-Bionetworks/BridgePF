@@ -16,7 +16,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
@@ -158,25 +158,26 @@ public class UserAdminServiceTest {
     
     @Test
     public void creatingUserThenDeletingRemovesExternalIdAssignment() {
-        List<String> idForTest = Lists.newArrayList("AAA");
+        String externalId = BridgeUtils.generateGuid();
+        participant = new StudyParticipant.Builder().copyOf(participant).withExternalId(externalId).build();
+        
+        List<String> idForTest = Lists.newArrayList(externalId);
         externalIdService.addExternalIds(study, idForTest);
         try {
-            session = userAdminService.createUser(study, participant, null, true, true);
             study.setExternalIdValidationEnabled(true);
-            
-            externalIdService.assignExternalId(study, "AAA", session.getHealthCode());
+            session = userAdminService.createUser(study, participant, null, true, true);
 
-            DynamoExternalIdentifier identifier = getDynamoExternalIdentifier(session);
+            DynamoExternalIdentifier identifier = getDynamoExternalIdentifier(session, externalId);
             assertEquals(session.getHealthCode(), identifier.getHealthCode());
             
             // Now delete the user, and the assignment should then be free;
             userAdminService.deleteUser(study, session.getId());
             
-            identifier = getDynamoExternalIdentifier(session);
+            identifier = getDynamoExternalIdentifier(session, externalId);
             assertNull(identifier.getHealthCode());
             
             // Now this works
-            externalIdService.assignExternalId(study, "AAA", session.getHealthCode());
+            externalIdService.assignExternalId(study, externalId, session.getHealthCode());
         } finally {
             session = null;
             // this is a cheat, for sure, but allow deletion
@@ -185,8 +186,8 @@ public class UserAdminServiceTest {
         }
     }
 
-    private DynamoExternalIdentifier getDynamoExternalIdentifier(UserSession session) {
-        DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(study.getStudyIdentifier(), "AAA");
+    private DynamoExternalIdentifier getDynamoExternalIdentifier(UserSession session, String externalId) {
+        DynamoExternalIdentifier keyObject = new DynamoExternalIdentifier(study.getStudyIdentifier(), externalId);
         return mapper.load(keyObject);
     }
 }

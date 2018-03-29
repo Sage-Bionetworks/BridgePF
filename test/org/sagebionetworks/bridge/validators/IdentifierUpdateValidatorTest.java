@@ -1,24 +1,48 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.mockito.Mockito.when;
 
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.ExternalIdService;
 
+@RunWith(MockitoJUnitRunner.class)
 public class IdentifierUpdateValidatorTest {
 
-    // validates sign by phone or email
-    // validates sign in by reauth
+    private static final String UPDATED_EMAIL = "updated@email.com";
+    private static final String UPDATED_EXTERNAL_ID = "updatedExternalId";
+    private static final ExternalIdentifier EXT_ID = ExternalIdentifier.create(TestConstants.TEST_STUDY, UPDATED_EXTERNAL_ID);
+    
+    @Mock
+    private ExternalIdService externalIdService;
+
+    private Study study; 
+    
+    private IdentifierUpdateValidator validator;
+    
+    @Before
+    public void before() {
+        study = Study.create();
+        study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        validator = new IdentifierUpdateValidator(study, externalIdService);
+        
+    }
     
     @Test
     public void signInRequired() {
-        IdentifierUpdate update = new IdentifierUpdate(null, "updated@email.com", null);
+        IdentifierUpdate update = new IdentifierUpdate(null, UPDATED_EMAIL, null, UPDATED_EXTERNAL_ID);
         
-        assertValidatorMessage(IdentifierUpdateValidator.INSTANCE, update, "IdentifierUpdate",
-                "requires a signIn object");
+        assertValidatorMessage(validator, update, "IdentifierUpdate", "requires a signIn object");
     }
     
     @Test
@@ -27,8 +51,8 @@ public class IdentifierUpdateValidatorTest {
         SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
                 .withEmail(TestConstants.EMAIL).build();
         
-        IdentifierUpdate update = new IdentifierUpdate(signIn, "updated@email.com", null);
-        assertValidatorMessage(IdentifierUpdateValidator.INSTANCE, update, "signIn.password", "is required");
+        IdentifierUpdate update = new IdentifierUpdate(signIn, UPDATED_EMAIL, null, UPDATED_EXTERNAL_ID);
+        assertValidatorMessage(validator, update, "signIn.password", "is required");
     }
     
     @Test
@@ -37,8 +61,8 @@ public class IdentifierUpdateValidatorTest {
         SignIn reauth = new SignIn.Builder().withEmail(TestConstants.EMAIL)
                 .withReauthToken("ABDC").build();
         
-        IdentifierUpdate update = new IdentifierUpdate(reauth, null, TestConstants.PHONE);
-        assertValidatorMessage(IdentifierUpdateValidator.INSTANCE, update, "signIn.study", "is required");
+        IdentifierUpdate update = new IdentifierUpdate(reauth, null, TestConstants.PHONE, UPDATED_EXTERNAL_ID);
+        assertValidatorMessage(validator, update, "signIn.study", "is required");
     }
     
     @Test
@@ -46,8 +70,8 @@ public class IdentifierUpdateValidatorTest {
         SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
                 .withEmail(TestConstants.EMAIL).withPassword(TestConstants.PASSWORD).build();
         
-        IdentifierUpdate update = new IdentifierUpdate(signIn, "updated@email.com", null);
-        Validate.entityThrowingException(IdentifierUpdateValidator.INSTANCE, update);
+        IdentifierUpdate update = new IdentifierUpdate(signIn, UPDATED_EMAIL, null, null);
+        Validate.entityThrowingException(validator, update);
     }
     
     @Test
@@ -55,8 +79,8 @@ public class IdentifierUpdateValidatorTest {
         SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
                 .withPhone(TestConstants.PHONE).withPassword(TestConstants.PASSWORD).build();
         
-        IdentifierUpdate update = new IdentifierUpdate(signIn, "updated@email.com", null);
-        Validate.entityThrowingException(IdentifierUpdateValidator.INSTANCE, update);
+        IdentifierUpdate update = new IdentifierUpdate(signIn, UPDATED_EMAIL, null, null);
+        Validate.entityThrowingException(validator, update);
     }
     
     @Test
@@ -64,8 +88,8 @@ public class IdentifierUpdateValidatorTest {
         SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
                 .withEmail(TestConstants.EMAIL).withReauthToken("asdf").build();
         
-        IdentifierUpdate update = new IdentifierUpdate(signIn, "updated@email.com", null);
-        Validate.entityThrowingException(IdentifierUpdateValidator.INSTANCE, update);
+        IdentifierUpdate update = new IdentifierUpdate(signIn, UPDATED_EMAIL, null, null);
+        Validate.entityThrowingException(validator, update);
     }
     
     @Test
@@ -73,9 +97,27 @@ public class IdentifierUpdateValidatorTest {
         SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
                 .withEmail(TestConstants.EMAIL).withReauthToken("asdf").build();
         
-        IdentifierUpdate update = new IdentifierUpdate(signIn, null, null);
-        assertValidatorMessage(IdentifierUpdateValidator.INSTANCE, update, "IdentifierUpdate",
-                "requires at least one updated identifier (email, phone)");
+        IdentifierUpdate update = new IdentifierUpdate(signIn, null, null, null);
+        assertValidatorMessage(validator, update, "IdentifierUpdate",
+                "requires at least one updated identifier (email, phone, externalId)");
+    }
+    
+    @Test
+    public void validPhoneUpdate() {
+        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withEmail(TestConstants.EMAIL).withReauthToken("asdf").build();
+        
+        IdentifierUpdate update = new IdentifierUpdate(signIn, null, new Phone("4082588569", "US"), null);
+        Validate.entityThrowingException(validator, update);
+    }
+    
+    @Test
+    public void validExternalIdUpate() {
+        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withEmail(TestConstants.EMAIL).withReauthToken("asdf").build();
+        
+        IdentifierUpdate update = new IdentifierUpdate(signIn, null, null, "newExternalId");
+        Validate.entityThrowingException(validator, update);
     }
     
     @Test
@@ -83,8 +125,31 @@ public class IdentifierUpdateValidatorTest {
         SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
                 .withEmail(TestConstants.EMAIL).withReauthToken("asdf").build();
         
-        IdentifierUpdate update = new IdentifierUpdate(signIn, null, new Phone("12334578990", "US"));
-        assertValidatorMessage(IdentifierUpdateValidator.INSTANCE, update, "phoneUpdate",
-                "does not appear to be a phone number");
+        IdentifierUpdate update = new IdentifierUpdate(signIn, null, new Phone("12334578990", "US"), null);
+        assertValidatorMessage(validator, update, "phoneUpdate", "does not appear to be a phone number");
+    }
+    
+    @Test
+    public void externalIdValidWithManagement() {
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), UPDATED_EXTERNAL_ID)).thenReturn(EXT_ID);
+        study.setExternalIdValidationEnabled(true);
+        
+        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withEmail(TestConstants.EMAIL).withReauthToken("asdf").build();
+        
+        IdentifierUpdate update = new IdentifierUpdate(signIn, null, null, UPDATED_EXTERNAL_ID);
+        Validate.entityThrowingException(validator, update);
+    }
+    
+    @Test
+    public void externalIdInvalidWithManagement() {
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), UPDATED_EXTERNAL_ID)).thenReturn(null);
+        study.setExternalIdValidationEnabled(true);
+        
+        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withEmail(TestConstants.EMAIL).withReauthToken("asdf").build();
+        
+        IdentifierUpdate update = new IdentifierUpdate(signIn, null, null, UPDATED_EXTERNAL_ID);
+        assertValidatorMessage(validator, update, "externalIdUpdate", "is not a valid external ID");
     }
 }
