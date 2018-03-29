@@ -340,7 +340,6 @@ public class StudyServiceTest {
         study.setPhoneSignInEnabled(false);
         study.setReauthenticationEnabled(false);
         study.setAccountLimit(0);
-        study.setAutoVerificationPhoneSuppressed(false);
         
         study = studyService.createStudy(study);
         study = studyService.getStudy(study.getIdentifier());
@@ -386,7 +385,6 @@ public class StudyServiceTest {
         study.setPhoneSignInEnabled(true);
         study.setReauthenticationEnabled(true);
         study.setAccountLimit(10);
-        study.setAutoVerificationPhoneSuppressed(true);
     }
     
     @Test(expected=InvalidEntityException.class)
