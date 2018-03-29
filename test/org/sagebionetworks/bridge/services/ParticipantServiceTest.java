@@ -237,6 +237,7 @@ public class ParticipantServiceTest {
         ((GenericAccount)account).setHealthCode(HEALTH_CODE);
         account.setEmail(email);
         account.setPhone(phone);
+        account.setExternalId(EXTERNAL_ID);
         when(accountDao.constructAccount(any(), any(), any(), any(), any())).thenReturn(account);
         when(accountDao.createAccount(same(STUDY), same(account))).thenReturn(ID);
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
@@ -295,7 +296,6 @@ public class ParticipantServiceTest {
                 .thenReturn(EXT_ID);
         STUDY.setExternalIdValidationEnabled(true);
         mockHealthCodeAndAccountRetrieval();
-        account.setExternalId(EXTERNAL_ID);
         
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
         verify(accountDao).constructAccount(STUDY, EMAIL, PHONE, EXTERNAL_ID, PASSWORD);
@@ -1241,7 +1241,6 @@ public class ParticipantServiceTest {
         account.setEmailVerified(Boolean.TRUE);
         account.setPhone(TestConstants.PHONE);
         account.setPhoneVerified(Boolean.TRUE);
-        account.setExternalId(EXTERNAL_ID);
         when(accountDao.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
         when(accountDao.getAccount(any())).thenReturn(account);
         
@@ -1264,8 +1263,6 @@ public class ParticipantServiceTest {
     @Test
     public void updateIdentifiersDoesNotReassignExistingExternalId() throws Exception {
         mockHealthCodeAndAccountRetrieval();
-        account.setPhone(null);
-        account.setExternalId(EXTERNAL_ID);
         when(accountDao.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
         when(accountDao.getAccount(any())).thenReturn(account);
         
