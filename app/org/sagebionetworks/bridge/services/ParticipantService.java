@@ -397,8 +397,6 @@ public class ParticipantService {
         } else if (type == ChannelType.PHONE && participant.getPhone() != null) {
             AccountId accountId = AccountId.forPhone(study.getIdentifier(), participant.getPhone());
             accountWorkflowService.resendVerificationToken(type, accountId);
-        } else {
-            throw new UnsupportedOperationException("Channel type not implemented");
         }
     }
 
