@@ -949,7 +949,7 @@ public class ParticipantServiceTest {
         assertEquals(PHONE, accountId.getPhone());
     }
     
-    @Test(expected = BadRequestException.class)
+    @Test(expected = UnsupportedOperationException.class)
     public void resendVerificationUnsupportedOperation() {
         mockHealthCodeAndAccountRetrieval();
 
