@@ -11,11 +11,17 @@ import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 public class AccountIdValidatorTest {
     @Test
-    public void validAccountId() {
+    public void validAccountIdWithEmail() {
         AccountId accountId = AccountId.forEmail(TestConstants.TEST_STUDY_IDENTIFIER, "email@email.com");
         Validate.entityThrowingException(AccountIdValidator.getInstance(ChannelType.EMAIL), accountId);
     }
 
+    @Test
+    public void validAccountIdWithPhone() {
+        AccountId accountId = AccountId.forPhone(TestConstants.TEST_STUDY_IDENTIFIER, TestConstants.PHONE);
+        Validate.entityThrowingException(AccountIdValidator.getInstance(ChannelType.PHONE), accountId);
+    }
+    
     @Test(expected = UnsupportedOperationException.class)
     public void validatorUnsupportedType() {
         AccountId accountId = AccountId.forEmail(TestConstants.TEST_STUDY_IDENTIFIER, "email@email.com");

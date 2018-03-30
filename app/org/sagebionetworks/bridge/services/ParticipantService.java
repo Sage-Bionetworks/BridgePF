@@ -340,8 +340,8 @@ public class ParticipantService {
         account.setDataGroups(participant.getDataGroups());
         account.setLanguages(participant.getLanguages());
         account.setMigrationVersion(AccountDao.MIGRATION_VERSION);
-        
         // Do not copy timezone or external ID. Neither can be updated once set.
+        
         for (String attribute : study.getUserProfileAttributes()) {
             String value = participant.getAttributes().get(attribute);
             account.setAttribute(attribute, value);
@@ -397,14 +397,18 @@ public class ParticipantService {
         checkArgument(isNotBlank(userId));
 
         StudyParticipant participant = getParticipant(study, userId, false);
-        if (type == ChannelType.EMAIL && participant.getEmail() != null) {
-            AccountId accountId = AccountId.forEmail(study.getIdentifier(), participant.getEmail());
-            accountWorkflowService.resendVerificationToken(type, accountId);
-        } else if (type == ChannelType.PHONE && participant.getPhone() != null) {
-            AccountId accountId = AccountId.forPhone(study.getIdentifier(), participant.getPhone());
-            accountWorkflowService.resendVerificationToken(type, accountId);
+        if (type == ChannelType.EMAIL) { 
+            if (participant.getEmail() != null) {
+                AccountId accountId = AccountId.forEmail(study.getIdentifier(), participant.getEmail());
+                accountWorkflowService.resendVerificationToken(type, accountId);
+            }
+        } else if (type == ChannelType.PHONE) {
+            if (participant.getPhone() != null) {
+                AccountId accountId = AccountId.forPhone(study.getIdentifier(), participant.getPhone());
+                accountWorkflowService.resendVerificationToken(type, accountId);
+            }
         } else {
-            throw new BadRequestException("Invalid resend verification request.");
+            throw new UnsupportedOperationException("Channel type not implemented");
         }
     }
 

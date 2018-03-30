@@ -332,7 +332,14 @@ public class StudyServiceTest {
     @Test
     public void adminsCanChangeSomeValuesResearchersCannot() {
         study = TestUtils.getValidStudy(StudyServiceTest.class);
-        setStudyDefaults(study);
+        study.setStudyIdExcludedInExport(true);
+        study.setEmailVerificationEnabled(true);
+        study.setExternalIdValidationEnabled(false);
+        study.setExternalIdRequiredOnSignup(false);
+        study.setEmailSignInEnabled(false);
+        study.setPhoneSignInEnabled(false);
+        study.setReauthenticationEnabled(false);
+        study.setAccountLimit(0);
         
         study = studyService.createStudy(study);
         study = studyService.getStudy(study.getIdentifier());
@@ -346,7 +353,16 @@ public class StudyServiceTest {
         // But administrators can change these
         changeStudyDefaults(study);
         study = studyService.updateStudy(study, true);
-        assertStudyChanged(study); // yep
+        // These values have all successfully been changed from the defaults
+        assertFalse(study.isStudyIdExcludedInExport());
+        assertFalse(study.isEmailVerificationEnabled());
+        assertTrue(study.isAutoVerificationPhoneSuppressed());
+        assertTrue(study.isExternalIdValidationEnabled());
+        assertTrue(study.isExternalIdRequiredOnSignup());
+        assertTrue(study.isEmailSignInEnabled());
+        assertTrue(study.isPhoneSignInEnabled());
+        assertTrue(study.isReauthenticationEnabled());
+        assertEquals(10, study.getAccountLimit());
     }
 
     private void assertStudyDefaults(Study study) {
@@ -360,30 +376,6 @@ public class StudyServiceTest {
         assertEquals(0, study.getAccountLimit());
     }
     
-    private void assertStudyChanged(Study study) {
-        assertFalse(study.isStudyIdExcludedInExport());
-        assertFalse(study.isEmailVerificationEnabled());
-        assertTrue(study.isAutoVerificationPhoneSuppressed());
-        assertTrue(study.isExternalIdValidationEnabled());
-        assertTrue(study.isExternalIdRequiredOnSignup());
-        assertTrue(study.isEmailSignInEnabled());
-        assertTrue(study.isPhoneSignInEnabled());
-        assertTrue(study.isReauthenticationEnabled());
-        assertEquals(10, study.getAccountLimit());
-    }
-    
-    private void setStudyDefaults(Study study) {
-        study.setStudyIdExcludedInExport(true);
-        study.setEmailVerificationEnabled(true);
-        study.setExternalIdValidationEnabled(false);
-        study.setExternalIdRequiredOnSignup(false);
-        study.setEmailSignInEnabled(false);
-        study.setPhoneSignInEnabled(false);
-        study.setReauthenticationEnabled(false);
-        study.setAccountLimit(0);
-        //study.setAutoVerificationPhoneSuppressed(false);
-    }
-    
     private void changeStudyDefaults(Study study) {
         study.setStudyIdExcludedInExport(false);
         study.setEmailVerificationEnabled(false);
@@ -393,7 +385,6 @@ public class StudyServiceTest {
         study.setPhoneSignInEnabled(true);
         study.setReauthenticationEnabled(true);
         study.setAccountLimit(10);
-        //study.setAutoVerificationPhoneSuppressed(true);
     }
     
     @Test(expected=InvalidEntityException.class)

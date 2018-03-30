@@ -68,9 +68,9 @@ public class StudyParticipantValidator implements Validator {
                 errors.rejectValue("id", "is required");
             }
         }
-        // External ID can be updated during creation or on update. We validate it is in the list 
-        // of IDs of they are managed... if it's already assigned to another user, the database 
-        // constraints will prevent this record's persistence.
+        // External ID can be updated during creation or on update. We validate it if IDs are 
+        // managed. If it's already assigned to another user, the database constraints will 
+        // prevent this record's persistence.
         if (study.isExternalIdValidationEnabled() && participant.getExternalId() != null) {
             ExternalIdentifier externalId = externalIdService.getExternalId(study.getStudyIdentifier(),
                     participant.getExternalId());
