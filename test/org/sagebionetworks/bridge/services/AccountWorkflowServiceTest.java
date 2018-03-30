@@ -181,6 +181,7 @@ public class AccountWorkflowServiceTest {
         JsonNode node = BridgeObjectMapper.get().readTree(string);
         assertEquals("api", node.get("studyId").textValue());
         assertEquals("userId", node.get("userId").textValue());
+        assertEquals("email", node.get("type").textValue());
         
         BasicEmailProvider provider = emailProviderCaptor.getValue();
         Map<String,String> tokens = provider.getTokenMap();
@@ -229,6 +230,7 @@ public class AccountWorkflowServiceTest {
         JsonNode node = BridgeObjectMapper.get().readTree(string);
         assertEquals("api", node.get("studyId").textValue());
         assertEquals("userId", node.get("userId").textValue());
+        assertEquals("phone", node.get("type").textValue());
         
         SmsMessageProvider provider = smsMessageProviderCaptor.getValue();
         Map<String,String> tokens = provider.getTokenMap();

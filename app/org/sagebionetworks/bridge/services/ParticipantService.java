@@ -391,12 +391,16 @@ public class ParticipantService {
         checkArgument(isNotBlank(userId));
 
         StudyParticipant participant = getParticipant(study, userId, false);
-        if (type == ChannelType.EMAIL && participant.getEmail() != null) {
-            AccountId accountId = AccountId.forEmail(study.getIdentifier(), participant.getEmail());
-            accountWorkflowService.resendVerificationToken(type, accountId);
-        } else if (type == ChannelType.PHONE && participant.getPhone() != null) {
-            AccountId accountId = AccountId.forPhone(study.getIdentifier(), participant.getPhone());
-            accountWorkflowService.resendVerificationToken(type, accountId);
+        if (type == ChannelType.EMAIL) { 
+            if (participant.getEmail() != null) {
+                AccountId accountId = AccountId.forEmail(study.getIdentifier(), participant.getEmail());
+                accountWorkflowService.resendVerificationToken(type, accountId);
+            }
+        } else if (type == ChannelType.PHONE) {
+            if (participant.getPhone() != null) {
+                AccountId accountId = AccountId.forPhone(study.getIdentifier(), participant.getPhone());
+                accountWorkflowService.resendVerificationToken(type, accountId);
+            }
         } else {
             throw new UnsupportedOperationException("Channel type not implemented");
         }
