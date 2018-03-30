@@ -950,8 +950,8 @@ public class ParticipantServiceTest {
         assertEquals(PHONE, accountId.getPhone());
     }
     
-    @Test(expected = BadRequestException.class)
-    public void resendVerificationBadRequest() {
+    @Test(expected = UnsupportedOperationException.class)
+    public void resendVerificationUnsupportedOperationException() {
         mockHealthCodeAndAccountRetrieval();
         
         // Use null so we don't have to create a dummy unsupported channel type
