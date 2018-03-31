@@ -303,7 +303,9 @@ public class ParticipantService {
         // Prevent optimistic locking exception until operations are combined into one operation. 
         account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), account.getId()));
         // Allow external ID to be added on an update if it doesn't exist.
-        if (account.getExternalId() == null) {
+        
+        boolean assigningExternalId = (account.getExternalId() == null && participant.getExternalId() != null);
+        if (assigningExternalId) {
             account.setExternalId(participant.getExternalId());    
         }
         updateAccountAndRoles(study, callerRoles, account, participant);
@@ -318,7 +320,9 @@ public class ParticipantService {
         }
         accountDao.updateAccount(account, false);
         
-        externalIdService.assignExternalId(study, account.getExternalId(), account.getHealthCode());    
+        if (assigningExternalId) {
+            externalIdService.assignExternalId(study, account.getExternalId(), account.getHealthCode());    
+        }
     }
 
     private void throwExceptionIfLimitMetOrExceeded(Study study) {

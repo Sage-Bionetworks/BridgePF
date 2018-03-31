@@ -652,6 +652,26 @@ public class ParticipantServiceTest {
         assertNull(account.getTimeZone());
     }
     
+    @Test
+    public void updateParticipantWithSameExternalIdDoesntAssignExtId() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        // account and participant have the same ID, so externalIdService is not called
+        participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
+        verify(externalIdService, never()).assignExternalId(any(), any(), any());
+    }
+    
+    @Test
+    public void updateParticipantWithNoExternalIdDoesntAssignExtId() {
+        mockHealthCodeAndAccountRetrieval();
+
+        // Paticipant has no external ID, so externalIdService is not called
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withExternalId(null).build();
+        participantService.updateParticipant(STUDY, CALLER_ROLES, participant);
+        verify(externalIdService, never()).assignExternalId(any(), any(), any());
+    }
+    
     @Test(expected = InvalidEntityException.class)
     public void updateParticipantWithInvalidParticipant() {
         mockHealthCodeAndAccountRetrieval();
@@ -1379,10 +1399,32 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, CALLER_ROLES, participant);
         
         assertEquals("newExternalId", account.getExternalId());
-        // This is always called, but it does nothing since there's no record in the table.
         verify(externalIdService).assignExternalId(any(), eq("newExternalId"), any());
     }
 
+    @Test
+    public void changingExternalIdIgnored() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withExternalId("newExternalId").build();
+        participantService.updateParticipant(STUDY, CALLER_ROLES, participant);
+        
+        assertEquals(EXTERNAL_ID, account.getExternalId());
+        verify(externalIdService, never()).assignExternalId(any(), any(), any());
+    }
+    
+    @Test
+    public void removingExternalIdIgnored() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withExternalId(null).build();
+        participantService.updateParticipant(STUDY, CALLER_ROLES, participant);
+        
+        assertEquals(EXTERNAL_ID, account.getExternalId());
+        verify(externalIdService, never()).assignExternalId(any(), any(), any());
+    }
     
     // There's no actual vs expected here because either we don't set it, or we set it and that's what we're verifying,
     // that it has been set. If the setter is not called, the existing status will be sent back to account store.
