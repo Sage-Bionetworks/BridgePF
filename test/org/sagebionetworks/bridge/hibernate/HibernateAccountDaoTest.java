@@ -880,7 +880,6 @@ public class HibernateAccountDaoTest {
         persistedAccount.setPhone(PHONE);
         persistedAccount.setEmailVerified(Boolean.TRUE);
         persistedAccount.setPhoneVerified(Boolean.TRUE);
-        persistedAccount.setExternalId(EXTERNAL_ID);
 
         // Set a dummy modifiedOn to make sure we're overwriting it.
         persistedAccount.setModifiedOn(5678L);
@@ -893,7 +892,7 @@ public class HibernateAccountDaoTest {
         account.setPhone(OTHER_PHONE);
         account.setEmailVerified(Boolean.FALSE);
         account.setPhoneVerified(Boolean.FALSE);
-        account.setExternalId("new-external-id");
+        account.setExternalId(EXTERNAL_ID);
         
         // Execute. Identifiers not allows to change.
         dao.updateAccount(account, false);
@@ -916,7 +915,7 @@ public class HibernateAccountDaoTest {
         assertEquals(MOCK_NOW_MILLIS, updatedHibernateAccount.getModifiedOn().longValue());
         assertEquals(EXTERNAL_ID, updatedHibernateAccount.getExternalId());
     }
-
+    
     @Test
     public void updateDoesNotChangePasswordOrReauthToken() throws Exception {
         HibernateAccount persistedAccount = makeValidHibernateAccount(true, true);
