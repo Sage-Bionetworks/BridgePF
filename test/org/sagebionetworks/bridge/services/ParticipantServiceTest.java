@@ -1347,16 +1347,7 @@ public class ParticipantServiceTest {
     }
     
     @Test(expected = InvalidEntityException.class)
-    public void missingExternalIdThrows() {
-        mockHealthCodeAndAccountRetrieval();
-        STUDY.setExternalIdValidationEnabled(true);
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(null);
-        
-        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
-    }
-    
-    @Test(expected = InvalidEntityException.class)
-    public void updateManagedExternalIdFails() {
+    public void updateMissingManagedExternalIdFails() {
         // In this case the ID is not in the external IDs table, so it fails validation.
         mockHealthCodeAndAccountRetrieval();
         STUDY.setExternalIdValidationEnabled(true);
@@ -1367,14 +1358,64 @@ public class ParticipantServiceTest {
     }
     
     @Test
-    public void createAnyUnmanagedExternalId() {
+    public void addingManagedExternalIdOnUpdateOK() {
         mockHealthCodeAndAccountRetrieval();
-        STUDY.setExternalIdValidationEnabled(false);
+        account.setExternalId(null);
+        STUDY.setExternalIdValidationEnabled(true);
+        ExternalIdentifier identifier = ExternalIdentifier.create(STUDY.getStudyIdentifier(), EXTERNAL_ID);
+        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(identifier);
         
-        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
+        participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
         
         assertEquals(EXTERNAL_ID, account.getExternalId());
+        verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
     }
+    
+    @Test
+    public void changingManagedExternalIdIgnored() {
+        mockHealthCodeAndAccountRetrieval();
+        STUDY.setExternalIdValidationEnabled(true);
+        ExternalIdentifier identifier = ExternalIdentifier.create(STUDY.getStudyIdentifier(), EXTERNAL_ID);
+        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), "newExternalId")).thenReturn(identifier);
+        
+        // This record has a different external ID than the mocked accound
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withExternalId("newExternalId").build();
+        participantService.updateParticipant(STUDY, CALLER_ROLES, participant);
+        
+        assertEquals(EXTERNAL_ID, account.getExternalId());
+        verify(externalIdService, never()).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
+    }
+    
+    @Test
+    public void sameManagedExternalIdOnUpdateIgnored() {
+        mockHealthCodeAndAccountRetrieval();
+        STUDY.setExternalIdValidationEnabled(true);
+        ExternalIdentifier identifier = ExternalIdentifier.create(STUDY.getStudyIdentifier(), EXTERNAL_ID);
+        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(identifier);
+        
+        participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
+        
+        assertEquals(EXTERNAL_ID, account.getExternalId());
+        verify(externalIdService, never()).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
+    }
+    
+    @Test
+    public void removingManagedExternalIdIgnored() {
+        mockHealthCodeAndAccountRetrieval();
+        STUDY.setExternalIdValidationEnabled(true);
+        ExternalIdentifier identifier = ExternalIdentifier.create(STUDY.getStudyIdentifier(), EXTERNAL_ID);
+        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), "newExternalId")).thenReturn(identifier);
+        
+        // This record has a different external ID than the mocked accound
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withExternalId("newExternalId").build();
+        participantService.updateParticipant(STUDY, CALLER_ROLES, participant);
+        
+        assertEquals(EXTERNAL_ID, account.getExternalId());
+        verify(externalIdService, never()).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
+    }
+
     
     @Test
     public void createUnmanagedExternalIdWillAssign() {
@@ -1388,23 +1429,32 @@ public class ParticipantServiceTest {
     }
     
     @Test
-    public void canUpdateUnmanagedExternalId() {
+    public void addingUnmanagedExternalIdOnUpdateOK() {
         mockHealthCodeAndAccountRetrieval();
-        account.setExternalId(null);
         STUDY.setExternalIdValidationEnabled(false);
+        account.setExternalId(null);
         
-        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
-                .withExternalId("newExternalId").build();
+        participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
         
-        participantService.updateParticipant(STUDY, CALLER_ROLES, participant);
-        
-        assertEquals("newExternalId", account.getExternalId());
-        verify(externalIdService).assignExternalId(any(), eq("newExternalId"), any());
+        assertEquals(EXTERNAL_ID, account.getExternalId());
+        verify(externalIdService).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
     }
 
     @Test
-    public void changingExternalIdIgnored() {
+    public void sameUnmanagedExternalIdOnUpdateIgnored() {
         mockHealthCodeAndAccountRetrieval();
+        STUDY.setExternalIdValidationEnabled(false);
+        
+        participantService.updateParticipant(STUDY, CALLER_ROLES, PARTICIPANT);
+        
+        assertEquals(EXTERNAL_ID, account.getExternalId());
+        verify(externalIdService, never()).assignExternalId(any(), any(), any());
+    }
+    
+    @Test
+    public void changingUnmanagedExternalIdIgnored() {
+        mockHealthCodeAndAccountRetrieval();
+        STUDY.setExternalIdValidationEnabled(false);
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalId("newExternalId").build();
@@ -1415,8 +1465,9 @@ public class ParticipantServiceTest {
     }
     
     @Test
-    public void removingExternalIdIgnored() {
+    public void removingUnmanagedExternalIdIgnored() {
         mockHealthCodeAndAccountRetrieval();
+        STUDY.setExternalIdValidationEnabled(false);
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalId(null).build();
