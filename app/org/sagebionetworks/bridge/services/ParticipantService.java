@@ -510,7 +510,7 @@ public class ParticipantService {
         }
         Account account = getAccountThrowingException(study, userId);
         if (account.getPhone() == null || account.getPhoneVerified() != Boolean.TRUE) {
-            throw new BadRequestException("User account does not have a verified phone number");
+            throw new BadRequestException("Account does not have a verified phone number");
         }
         Map<String,String> variables = BridgeUtils.studyTemplateVariables(study);
         
