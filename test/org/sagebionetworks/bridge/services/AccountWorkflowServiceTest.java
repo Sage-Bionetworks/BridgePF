@@ -137,7 +137,7 @@ public class AccountWorkflowServiceTest {
         SmsTemplate phoneSignInSmsTemplate = new SmsTemplate("Enter ${token} to sign in to ${studyShortName}");
         SmsTemplate resetPasswordSmsTemplate = new SmsTemplate("Reset ${studyShortName} password: ${resetPasswordUrl}"); 
         SmsTemplate accountExistsSmsTemplate = new SmsTemplate("Account for ${studyShortName} already exists. Reset password: ${resetPasswordUrl} or ${token}");
-        SmsTemplate verifyPhoneSmsTemplate = new SmsTemplate("Verify phone with ${sptoken}");
+        SmsTemplate verifyPhoneSmsTemplate = new SmsTemplate("Verify phone with ${token}");
         
         study = Study.create();
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
@@ -219,7 +219,7 @@ public class AccountWorkflowServiceTest {
 
     @Test
     public void sendPhoneVerificationToken() throws Exception {
-        when(service.getNextToken()).thenReturn("012345");
+        when(service.getNextPhoneToken()).thenReturn("012345");
         
         service.sendPhoneVerificationToken(study, USER_ID, TestConstants.PHONE);
         
@@ -234,7 +234,7 @@ public class AccountWorkflowServiceTest {
         
         SmsMessageProvider provider = smsMessageProviderCaptor.getValue();
         Map<String,String> tokens = provider.getTokenMap();
-        assertEquals("012-345", tokens.get("sptoken"));
+        assertEquals("012-345", tokens.get("token"));
         assertEquals("2 hours", tokens.get("phoneVerificationExpirationPeriod"));
         
         String message = provider.getSmsRequest().getMessage();
@@ -314,7 +314,7 @@ public class AccountWorkflowServiceTest {
     
     @Test
     public void resendPhoneVerificationToken() {
-        when(service.getNextToken()).thenReturn("777777");
+        when(service.getNextPhoneToken()).thenReturn("777777");
         when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
         when(mockAccount.getId()).thenReturn(USER_ID);

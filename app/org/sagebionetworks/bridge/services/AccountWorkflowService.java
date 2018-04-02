@@ -246,7 +246,7 @@ public class AccountWorkflowService {
             // Too many requests. Throttle.
             return;
         }
-        String sptoken = getNextToken();
+        String sptoken = getNextPhoneToken();
         
         saveVerification(sptoken, new VerificationData(study.getIdentifier(), ChannelType.PHONE, userId));
         
@@ -254,7 +254,7 @@ public class AccountWorkflowService {
         
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
                 .withStudy(study)
-                .withToken("sptoken", formattedSpToken)
+                .withToken("token", formattedSpToken)
                 .withSmsTemplate(study.getVerifyPhoneSmsTemplate())
                 .withExpirationPeriod(PHONE_VERIFICATION_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS)
                 .withPhone(phone).build();
