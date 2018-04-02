@@ -107,6 +107,33 @@ public class ParticipantController extends BaseController {
         return okResult(UserSessionInfo.toJSON(session));
     }
     
+    public Result getActivityEventsForWorker(String studyId, String userId) {
+        getAuthenticatedSession(Roles.WORKER);
+        Study study = studyService.getStudy(studyId);
+
+        return okResult(participantService.getActivityEvents(study, userId));
+    }
+    
+    public Result getActivityHistoryForWorkerV3(String studyId, String userId, String activityType, String referentGuid,
+            String scheduledOnStart, String scheduledOnEnd, String offsetKey, String pageSize) throws Exception {
+        getAuthenticatedSession(Roles.WORKER);
+        Study study = studyService.getStudy(studyId);
+        
+        return getActivityHistoryV3Internal(study, userId, activityType, referentGuid, scheduledOnStart, scheduledOnEnd,
+                offsetKey, pageSize);
+    }
+    
+    public Result getActivityHistoryForWorkerV2(String studyId, String userId, String activityGuid,
+            String scheduledOnStart, String scheduledOnEnd, String offsetBy, String offsetKey, String pageSize)
+            throws Exception {
+        getAuthenticatedSession(Roles.WORKER);
+        Study study = studyService.getStudy(studyId);
+        
+        return getActivityHistoryInternalV2(study, userId, activityGuid, scheduledOnStart, scheduledOnEnd, offsetBy,
+                offsetKey, pageSize);
+    }
+    
+    
     public Result updateIdentifiers() throws Exception {
         UserSession session = getAuthenticatedSession();
         
@@ -137,40 +164,6 @@ public class ParticipantController extends BaseController {
         Study study = studyService.getStudy(studyId);
         return getParticipantsInternal(study, offsetByString, pageSizeString, emailFilter, phoneFilter, startDateString,
                 endDateString, startTimeString, endTimeString);
-    }
-    
-    private Result getParticipantsInternal(Study study, String offsetByString, String pageSizeString,
-            String emailFilter, String phoneFilter, String startDateString, String endDateString,
-            String startTimeString, String endTimeString) {
-        
-        int offsetBy = getIntOrDefault(offsetByString, 0);
-        int pageSize = getIntOrDefault(pageSizeString, API_DEFAULT_PAGE_SIZE);
-        
-        // For naming consistency, we are changing from the user of startDate/endDate to startTime/endTime
-        // for DateTime parameters. Both are accepted by these participant API endpoints (the only places 
-        // where this needed to change).
-        DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
-        if (startTime == null) {
-            startTime = DateUtils.getDateTimeOrDefault(startDateString, null);
-        }
-        DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
-        if (endTime == null) {
-            endTime = DateUtils.getDateTimeOrDefault(endDateString, null);
-        }
-        PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, offsetBy, pageSize,
-                emailFilter, phoneFilter, startTime, endTime);
-        
-        // Similarly, we will return startTime/endTime in the top-level request parameter properties as 
-        // startDate/endDate while transitioning, to maintain backwards compatibility.
-        ObjectNode node = MAPPER.valueToTree(page);
-        Map<String,Object> rp = page.getRequestParams();
-        if (rp.get(START_TIME) != null) {
-            node.put(START_DATE, (String)rp.get(START_TIME));    
-        }
-        if (rp.get(END_TIME) != null) {
-            node.put(END_DATE, (String)rp.get(END_TIME));    
-        }
-        return ok(node);
     }
     
     public Result createParticipant() throws Exception {
@@ -262,25 +255,8 @@ public class ParticipantController extends BaseController {
             String scheduledOnEndString, String offsetBy, String offsetKey, String pageSizeString) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        
-        if (offsetKey == null) {
-            offsetKey = offsetBy;
-        }
-        
-        DateTime scheduledOnStart = getDateTimeOrDefault(scheduledOnStartString, null);
-        DateTime scheduledOnEnd = getDateTimeOrDefault(scheduledOnEndString, null);
-        int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
-        
-        ForwardCursorPagedResourceList<ScheduledActivity> page = participantService.getActivityHistory(
-                study, userId, activityGuid, scheduledOnStart, scheduledOnEnd, offsetKey, pageSize);
-
-        // If offsetBy was supplied, we return it as a top-level property of the list for backwards compatibility.
-        String json = ScheduledActivity.RESEARCHER_SCHEDULED_ACTIVITY_WRITER.writeValueAsString(page);
-        ObjectNode node = (ObjectNode)MAPPER.readTree(json);
-        if (offsetBy != null) {
-            node.put(OFFSET_BY, offsetBy);    
-        }
-        return ok(node);
+        return getActivityHistoryInternalV2(study, userId, activityGuid, scheduledOnStartString,
+            scheduledOnEndString, offsetBy, offsetKey, pageSizeString);
     }
     
     public Result getActivityHistoryV3(String userId, String activityTypeString, String referentGuid, String scheduledOnStartString,
@@ -288,15 +264,8 @@ public class ParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        ActivityType activityType = ActivityType.fromPlural(activityTypeString);
-        DateTime scheduledOnStart = getDateTimeOrDefault(scheduledOnStartString, null);
-        DateTime scheduledOnEnd = getDateTimeOrDefault(scheduledOnEndString, null);
-        int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
-        
-        ForwardCursorPagedResourceList<ScheduledActivity> page = participantService.getActivityHistory(study, userId,
-                activityType, referentGuid, scheduledOnStart, scheduledOnEnd, offsetKey, pageSize);
-        
-        return okResult(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER, page);
+        return getActivityHistoryV3Internal(study, userId, activityTypeString, referentGuid, scheduledOnStartString,
+                scheduledOnEndString, offsetKey, pageSizeString);
     }
     
     public Result deleteActivities(String userId) throws Exception {
@@ -400,5 +369,77 @@ public class ParticipantController extends BaseController {
         Study study = studyService.getStudy(researcherSession.getStudyIdentifier());
 
         return okResult(participantService.getActivityEvents(study, userId));
+    }
+    
+    private Result getParticipantsInternal(Study study, String offsetByString, String pageSizeString,
+            String emailFilter, String phoneFilter, String startDateString, String endDateString,
+            String startTimeString, String endTimeString) {
+        
+        int offsetBy = getIntOrDefault(offsetByString, 0);
+        int pageSize = getIntOrDefault(pageSizeString, API_DEFAULT_PAGE_SIZE);
+        
+        // For naming consistency, we are changing from the user of startDate/endDate to startTime/endTime
+        // for DateTime parameters. Both are accepted by these participant API endpoints (the only places 
+        // where this needed to change).
+        DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
+        if (startTime == null) {
+            startTime = DateUtils.getDateTimeOrDefault(startDateString, null);
+        }
+        DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
+        if (endTime == null) {
+            endTime = DateUtils.getDateTimeOrDefault(endDateString, null);
+        }
+        PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, offsetBy, pageSize,
+                emailFilter, phoneFilter, startTime, endTime);
+        
+        // Similarly, we will return startTime/endTime in the top-level request parameter properties as 
+        // startDate/endDate while transitioning, to maintain backwards compatibility.
+        ObjectNode node = MAPPER.valueToTree(page);
+        Map<String,Object> rp = page.getRequestParams();
+        if (rp.get(START_TIME) != null) {
+            node.put(START_DATE, (String)rp.get(START_TIME));    
+        }
+        if (rp.get(END_TIME) != null) {
+            node.put(END_DATE, (String)rp.get(END_TIME));    
+        }
+        return ok(node);
+    }
+    
+    private Result getActivityHistoryInternalV2(Study study, String userId, String activityGuid,
+            String scheduledOnStartString, String scheduledOnEndString, String offsetBy, String offsetKey,
+            String pageSizeString) throws Exception {
+        if (offsetKey == null) {
+            offsetKey = offsetBy;
+        }
+        
+        DateTime scheduledOnStart = getDateTimeOrDefault(scheduledOnStartString, null);
+        DateTime scheduledOnEnd = getDateTimeOrDefault(scheduledOnEndString, null);
+        int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> page = participantService.getActivityHistory(
+                study, userId, activityGuid, scheduledOnStart, scheduledOnEnd, offsetKey, pageSize);
+
+        // If offsetBy was supplied, we return it as a top-level property of the list for backwards compatibility.
+        String json = ScheduledActivity.RESEARCHER_SCHEDULED_ACTIVITY_WRITER.writeValueAsString(page);
+        ObjectNode node = (ObjectNode)MAPPER.readTree(json);
+        if (offsetBy != null) {
+            node.put(OFFSET_BY, offsetBy);    
+        }
+        return ok(node);
+    }
+    
+    private Result getActivityHistoryV3Internal(Study study, String userId, String activityTypeString,
+            String referentGuid, String scheduledOnStartString, String scheduledOnEndString, String offsetKey,
+            String pageSizeString) throws Exception {
+        
+        ActivityType activityType = ActivityType.fromPlural(activityTypeString);
+        DateTime scheduledOnStart = getDateTimeOrDefault(scheduledOnStartString, null);
+        DateTime scheduledOnEnd = getDateTimeOrDefault(scheduledOnEndString, null);
+        int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> page = participantService.getActivityHistory(study, userId,
+                activityType, referentGuid, scheduledOnStart, scheduledOnEnd, offsetKey, pageSize);
+        
+        return okResult(ScheduledActivity.SCHEDULED_ACTIVITY_WRITER, page);
     }
 }
