@@ -69,11 +69,13 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
+import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
+import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -203,6 +205,9 @@ public class ParticipantServiceTest {
     
     @Captor
     ArgumentCaptor<String> stringCaptor;
+    
+    @Captor
+    ArgumentCaptor<SmsMessageProvider> providerCaptor;
     
     private Account account;
     
@@ -1395,7 +1400,54 @@ public class ParticipantServiceTest {
         assertEquals(EXTERNAL_ID, account.getExternalId());
         verify(externalIdService, never()).assignExternalId(any(), any(), any());
     }
+    
+    @Test
+    public void sendSmsMessage() {
+        when(accountDao.getAccount(any())).thenReturn(account);
+        account.setPhone(TestConstants.PHONE);
+        account.setPhoneVerified(true);
+        
+        SmsTemplate template = new SmsTemplate("This is a test ${studyShortName}"); 
+        
+        participantService.sendSmsMessage(STUDY, ID, template);
 
+        verify(notificationsService).sendSmsMessage(providerCaptor.capture());
+        
+        SmsMessageProvider provider = providerCaptor.getValue();
+        assertEquals(TestConstants.PHONE, provider.getPhone());
+        assertEquals("This is a test Bridge", provider.getSmsRequest().getMessage());
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void sendSmsMessageThrowsIfNoPhone() { 
+        when(accountDao.getAccount(any())).thenReturn(account);
+        
+        SmsTemplate template = new SmsTemplate("This is a test ${studyShortName}"); 
+        
+        participantService.sendSmsMessage(STUDY, ID, template);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void sendSmsMessageThrowsIfPhoneUnverified() { 
+        when(accountDao.getAccount(any())).thenReturn(account);
+        account.setPhone(TestConstants.PHONE);
+        account.setPhoneVerified(false);
+        
+        SmsTemplate template = new SmsTemplate("This is a test ${studyShortName}"); 
+        
+        participantService.sendSmsMessage(STUDY, ID, template);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void sendSmsMessageThrowsIfBlankMessage() {
+        when(accountDao.getAccount(any())).thenReturn(account);
+        account.setPhone(TestConstants.PHONE);
+        account.setPhoneVerified(true);
+        
+        SmsTemplate template = new SmsTemplate("    "); 
+        
+        participantService.sendSmsMessage(STUDY, ID, template);
+    }
     
     // There's no actual vs expected here because either we don't set it, or we set it and that's what we're verifying,
     // that it has been set. If the setter is not called, the existing status will be sent back to account store.

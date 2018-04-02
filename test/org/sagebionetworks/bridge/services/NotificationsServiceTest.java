@@ -231,7 +231,7 @@ public class NotificationsServiceTest {
                 .withSmsTemplate(new SmsTemplate(message))
                 .withPhone(TestConstants.PHONE).build();
         
-        service.sendSMSMessage(provider);
+        service.sendSmsMessage(provider);
         
         verify(mockSnsClient).publish(requestCaptor.capture());
         
@@ -256,6 +256,6 @@ public class NotificationsServiceTest {
                 .withSmsTemplate(new SmsTemplate(message))
                 .withPhone(TestConstants.PHONE).build();
         
-        service.sendSMSMessage(provider);
+        service.sendSmsMessage(provider);
     }
 }

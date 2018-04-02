@@ -15,6 +15,8 @@ import java.util.Set;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -48,11 +51,13 @@ import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
+import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.validators.IdentifierUpdateValidator;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
@@ -495,6 +500,30 @@ public class ParticipantService {
         notificationsService.sendNotificationToUser(study.getStudyIdentifier(), account.getHealthCode(), message);
     }
 
+    public void sendSmsMessage(Study study, String userId, SmsTemplate template) {
+        checkNotNull(study);
+        checkNotNull(userId);
+        checkNotNull(template);
+        
+        if (StringUtils.isBlank(template.getMessage())) {
+            throw new BadRequestException("Message is required");
+        }
+        Account account = getAccountThrowingException(study, userId);
+        if (account.getPhone() == null || account.getPhoneVerified() != Boolean.TRUE) {
+            throw new BadRequestException("User account does not have a verified phone number");
+        }
+        Map<String,String> variables = BridgeUtils.studyTemplateVariables(study);
+        
+        SmsMessageProvider.Builder builder = new SmsMessageProvider.Builder()
+                .withPhone(account.getPhone())
+                .withSmsTemplate(template)
+                .withStudy(study);
+        for (Map.Entry<String, String> entry : variables.entrySet()) {
+            builder.withToken(entry.getKey(), entry.getValue());
+        }
+        notificationsService.sendSmsMessage(builder.build());
+    }
+    
     public List<ActivityEvent> getActivityEvents(Study study, String userId) {
         Account account = getAccountThrowingException(study, userId);
 

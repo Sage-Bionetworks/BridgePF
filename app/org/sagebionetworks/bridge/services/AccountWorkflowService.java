@@ -258,7 +258,7 @@ public class AccountWorkflowService {
                 .withSmsTemplate(study.getVerifyPhoneSmsTemplate())
                 .withExpirationPeriod(PHONE_VERIFICATION_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS)
                 .withPhone(phone).build();
-        notificationsService.sendSMSMessage(provider);
+        notificationsService.sendSmsMessage(provider);
     }
         
     /**
@@ -407,7 +407,7 @@ public class AccountWorkflowService {
                     builder.withExpirationPeriod(PHONE_SIGNIN_EXPIRATION_PERIOD, SIGNIN_EXPIRE_IN_SECONDS);
                 });
         }
-        notificationsService.sendSMSMessage(builder.build());
+        notificationsService.sendSmsMessage(builder.build());
     }
 
     /**
@@ -462,7 +462,7 @@ public class AccountWorkflowService {
                     .withPhone(signIn.getPhone())
                     .withExpirationPeriod(PHONE_SIGNIN_EXPIRATION_PERIOD, SIGNIN_EXPIRE_IN_SECONDS)
                     .withToken(TOKEN_KEY, formattedToken).build();
-            notificationsService.sendSMSMessage(provider);
+            notificationsService.sendSmsMessage(provider);
         });
     }
     
