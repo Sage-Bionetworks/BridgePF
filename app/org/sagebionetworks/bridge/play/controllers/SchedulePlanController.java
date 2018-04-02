@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import java.util.List;
 
@@ -27,6 +28,15 @@ public class SchedulePlanController extends BaseController {
     @Autowired
     public void setSchedulePlanService(SchedulePlanService schedulePlanService) {
         this.schedulePlanService = schedulePlanService;
+    }
+    
+    public Result getSchedulePlansForWorker(String studyId) throws Exception {
+        getAuthenticatedSession(WORKER);
+        Study study = studyService.getStudy(studyId);
+        
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT,
+                study.getStudyIdentifier());
+        return okResult(plans);
     }
     
     public Result getSchedulePlans() throws Exception {

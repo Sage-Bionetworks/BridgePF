@@ -25,6 +25,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
@@ -32,7 +33,6 @@ import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -66,14 +66,30 @@ public class SchedulePlanControllerMockTest {
         controller = spy(new SchedulePlanController());
         
         study = new DynamoStudy();
-        study.setIdentifier("test-study");
+        study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         
         when(mockStudyService.getStudy(study.getStudyIdentifier())).thenReturn(study);
+        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
         controller.setStudyService(mockStudyService);
         controller.setSchedulePlanService(mockSchedulePlanService);
         
-        when(mockUserSession.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("test-study"));
+        when(mockUserSession.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         doReturn(mockUserSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER);
+    }
+    
+    @Test
+    public void getSchedulePlansForWorker() throws Exception {
+        TestUtils.mockPlayContext();
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(Roles.WORKER);
+        SchedulePlan plan = createSchedulePlan();
+        when(mockSchedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY))
+                .thenReturn(Lists.newArrayList(plan));
+        
+        Result result = controller.getSchedulePlansForWorker(TestConstants.TEST_STUDY_IDENTIFIER);
+        
+        assertEquals(200, result.status());
+        ResourceList<SchedulePlan> plans = TestUtils.getResponsePayload(result, new TypeReference<ResourceList<SchedulePlan>>() {});
+        assertEquals(plan, plans.getItems().get(0));
     }
 
     @Test

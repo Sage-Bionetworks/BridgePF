@@ -47,6 +47,7 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -58,6 +59,7 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
@@ -68,6 +70,7 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
+import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
@@ -193,6 +196,7 @@ public class ParticipantControllerTest {
         
         doReturn(session).when(controller).getSessionIfItExists();
         when(mockStudyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
         
         List<AccountSummary> summaries = Lists.newArrayListWithCapacity(3);
         summaries.add(SUMMARY);
@@ -1083,7 +1087,65 @@ public class ParticipantControllerTest {
         controller.getParticipantForWorker(study.getIdentifier(), ID, false); 
         
         verify(mockParticipantService).getParticipant(study, accountId, false);
-    }    
+    }
+    
+    @Test
+    public void getActivityEventsForWorker() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
+                .withRoles(Sets.newHashSet(Roles.WORKER)).build());
+        DynamoActivityEvent anEvent = new DynamoActivityEvent();
+        anEvent.setEventId("event-id");
+        List<ActivityEvent> events = Lists.newArrayList(anEvent);
+        when(mockParticipantService.getActivityEvents(study, ID)).thenReturn(events);
+        
+        Result result = controller.getActivityEventsForWorker(TestConstants.TEST_STUDY_IDENTIFIER, ID);
+        
+        verify(mockParticipantService).getActivityEvents(study, ID);
+        ResourceList<ActivityEvent> retrievedEvents = TestUtils.getResponsePayload(result, new TypeReference<ResourceList<ActivityEvent>>() {});
+        assertEquals("event-id", retrievedEvents.getItems().get(0).getEventId());
+    }
+    
+    @Test
+    public void getActivityHistoryForWorkerV2() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
+                .withRoles(Sets.newHashSet(Roles.WORKER)).build());
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> cursor = 
+                new ForwardCursorPagedResourceList<>(Lists.newArrayList(ScheduledActivity.create()), "asdf");
+        when(mockParticipantService.getActivityHistory(eq(study), eq(ID), eq("activityGuid"), any(), any(), eq("asdf"),
+                eq(50))).thenReturn(cursor);
+        
+        Result result = controller.getActivityHistoryForWorkerV2(TestConstants.TEST_STUDY_IDENTIFIER, ID,
+                "activityGuid", START_TIME.toString(), END_TIME.toString(), null, "asdf", "50");
+        
+        verify(mockParticipantService).getActivityHistory(eq(study), eq(ID), eq("activityGuid"), any(), any(),
+                eq("asdf"), eq(50));
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> retrieved = TestUtils.getResponsePayload(result,
+            new TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>>() {});
+        assertFalse(retrieved.getItems().isEmpty());
+    }
+    
+    @Test
+    public void getActivityHistoryForWorkerV3() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
+                .withRoles(Sets.newHashSet(Roles.WORKER)).build());
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> cursor = 
+                new ForwardCursorPagedResourceList<>(Lists.newArrayList(ScheduledActivity.create()), "asdf");
+        when(mockParticipantService.getActivityHistory(eq(study), eq(ID), eq(ActivityType.TASK), any(), any(), any(),
+                eq("asdf"), eq(50))).thenReturn(cursor);
+        
+        Result result = controller.getActivityHistoryForWorkerV3(TestConstants.TEST_STUDY_IDENTIFIER, ID,
+                "tasks", START_TIME.toString(), END_TIME.toString(), null, "asdf", "50");
+        
+        verify(mockParticipantService).getActivityHistory(eq(study), eq(ID), eq(ActivityType.TASK), any(), any(),
+                any(), eq("asdf"), eq(50));
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> retrieved = TestUtils.getResponsePayload(result,
+            new TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>>() {});
+        assertFalse(retrieved.getItems().isEmpty());
+    }
     
     @SuppressWarnings("deprecation")
     private <T> void verifyPagedResourceListParameters(Result result) throws Exception {
