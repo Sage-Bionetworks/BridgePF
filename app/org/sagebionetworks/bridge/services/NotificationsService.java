@@ -172,7 +172,7 @@ public class NotificationsService {
         }
     }
     
-    public void sendSMSMessage(SmsMessageProvider provider) {
+    public void sendSmsMessage(SmsMessageProvider provider) {
         checkNotNull(provider);
         
         PublishRequest request = provider.getSmsRequest();

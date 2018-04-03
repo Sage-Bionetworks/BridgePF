@@ -106,7 +106,7 @@ public class IntentService {
                         .withSmsTemplate(study.getAppInstallLinkSmsTemplate())
                         .withPhone(intent.getPhone())
                         .withToken(APP_INSTALL_URL_KEY, url).build();
-                notificationsService.sendSMSMessage(provider);
+                notificationsService.sendSmsMessage(provider);
             }
         }
     }

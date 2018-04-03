@@ -75,6 +75,7 @@ import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -172,6 +173,9 @@ public class ParticipantControllerTest {
     
     @Captor
     private ArgumentCaptor<IdentifierUpdate> identifierUpdateCaptor;
+    
+    @Captor
+    private ArgumentCaptor<SmsTemplate> templateCaptor;
     
     private UserSession session;
     
@@ -1087,6 +1091,35 @@ public class ParticipantControllerTest {
         controller.getParticipantForWorker(study.getIdentifier(), ID, false); 
         
         verify(mockParticipantService).getParticipant(study, accountId, false);
+    }
+    
+    @Test
+    public void sendSMS() throws Exception {
+        TestUtils.mockPlayContextWithJson(new SmsTemplate("This is a message")); 
+        
+        Result result = controller.sendSmsMessage(ID);
+        
+        TestUtils.assertResult(result, 202, "Message sent.");
+        verify(mockParticipantService).sendSmsMessage(eq(study), eq(ID), templateCaptor.capture());
+        
+        SmsTemplate resultTemplate = templateCaptor.getValue();
+        assertEquals("This is a message", resultTemplate.getMessage());
+    }
+    
+    @Test
+    public void sendSMSForWorker() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
+                .withRoles(Sets.newHashSet(Roles.WORKER)).build());
+        
+        TestUtils.mockPlayContextWithJson(new SmsTemplate("This is a message")); 
+        
+        Result result = controller.sendSmsMessageForWorker(TestConstants.TEST_STUDY_IDENTIFIER, ID);
+        
+        TestUtils.assertResult(result, 202, "Message sent.");
+        verify(mockParticipantService).sendSmsMessage(eq(study), eq(ID), templateCaptor.capture());
+        
+        SmsTemplate resultTemplate = templateCaptor.getValue();
+        assertEquals("This is a message", resultTemplate.getMessage());
     }
     
     @Test

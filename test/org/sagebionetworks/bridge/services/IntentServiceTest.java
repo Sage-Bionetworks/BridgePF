@@ -111,7 +111,7 @@ public class IntentServiceTest {
         verify(mockCacheProvider).setObject(stringCaptor.capture(), eq(intent), eq(4 * 60 * 60));
         assertEquals(cacheKey, stringCaptor.getValue());
         
-        verify(mockNotificationsService).sendSMSMessage(smsMessageProviderCaptor.capture());
+        verify(mockNotificationsService).sendSmsMessage(smsMessageProviderCaptor.capture());
         
         SmsMessageProvider provider = smsMessageProviderCaptor.getValue();
         assertEquals(mockStudy, provider.getStudy());
@@ -146,7 +146,7 @@ public class IntentServiceTest {
         assertEquals(cacheKey, stringCaptor.getValue());
         
         // But we don't send a message because installLinks map is empty
-        verify(mockNotificationsService, never()).sendSMSMessage(any());
+        verify(mockNotificationsService, never()).sendSmsMessage(any());
     }
     
     @Test
@@ -171,7 +171,7 @@ public class IntentServiceTest {
         
         // These are not called.
         verify(mockCacheProvider, never()).setObject(cacheKey, intent, (4 * 60 * 60));
-        verify(mockNotificationsService, never()).sendSMSMessage(any());
+        verify(mockNotificationsService, never()).sendSmsMessage(any());
     }
     
     @Test

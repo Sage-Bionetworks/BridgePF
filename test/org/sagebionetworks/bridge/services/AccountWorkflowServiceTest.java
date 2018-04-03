@@ -137,7 +137,7 @@ public class AccountWorkflowServiceTest {
         SmsTemplate phoneSignInSmsTemplate = new SmsTemplate("Enter ${token} to sign in to ${studyShortName}");
         SmsTemplate resetPasswordSmsTemplate = new SmsTemplate("Reset ${studyShortName} password: ${resetPasswordUrl}"); 
         SmsTemplate accountExistsSmsTemplate = new SmsTemplate("Account for ${studyShortName} already exists. Reset password: ${resetPasswordUrl} or ${token}");
-        SmsTemplate verifyPhoneSmsTemplate = new SmsTemplate("Verify phone with ${sptoken}");
+        SmsTemplate verifyPhoneSmsTemplate = new SmsTemplate("Verify phone with ${token}");
         
         study = Study.create();
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
@@ -219,11 +219,11 @@ public class AccountWorkflowServiceTest {
 
     @Test
     public void sendPhoneVerificationToken() throws Exception {
-        when(service.getNextToken()).thenReturn("012345");
+        when(service.getNextPhoneToken()).thenReturn("012345");
         
         service.sendPhoneVerificationToken(study, USER_ID, TestConstants.PHONE);
         
-        verify(mockNotificationsService).sendSMSMessage(smsMessageProviderCaptor.capture());
+        verify(mockNotificationsService).sendSmsMessage(smsMessageProviderCaptor.capture());
         verify(mockCacheProvider).setObject(eq("012345"), stringCaptor.capture(), eq(AccountWorkflowService.VERIFY_OR_RESET_EXPIRE_IN_SECONDS));
         
         String string = stringCaptor.getValue();
@@ -234,7 +234,7 @@ public class AccountWorkflowServiceTest {
         
         SmsMessageProvider provider = smsMessageProviderCaptor.getValue();
         Map<String,String> tokens = provider.getTokenMap();
-        assertEquals("012-345", tokens.get("sptoken"));
+        assertEquals("012-345", tokens.get("token"));
         assertEquals("2 hours", tokens.get("phoneVerificationExpirationPeriod"));
         
         String message = provider.getSmsRequest().getMessage();
@@ -245,7 +245,7 @@ public class AccountWorkflowServiceTest {
     @Test
     public void sendPhoneVerificationTokenNoPhone() throws Exception {
         service.sendPhoneVerificationToken(study, USER_ID, null);
-        verify(mockNotificationsService, never()).sendSMSMessage(any());
+        verify(mockNotificationsService, never()).sendSmsMessage(any());
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
         verifyNoMoreInteractions(mockCacheProvider);
     }
@@ -257,7 +257,7 @@ public class AccountWorkflowServiceTest {
         service.sendPhoneVerificationToken(study, USER_ID, TestConstants.PHONE);
         service.sendPhoneVerificationToken(study, USER_ID, TestConstants.PHONE);
         service.sendPhoneVerificationToken(study, USER_ID, TestConstants.PHONE);
-        verify(mockNotificationsService, times(2)).sendSMSMessage(any());
+        verify(mockNotificationsService, times(2)).sendSmsMessage(any());
     }
     
     @Test
@@ -314,7 +314,7 @@ public class AccountWorkflowServiceTest {
     
     @Test
     public void resendPhoneVerificationToken() {
-        when(service.getNextToken()).thenReturn("777777");
+        when(service.getNextPhoneToken()).thenReturn("777777");
         when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
         when(mockAccount.getId()).thenReturn(USER_ID);
@@ -571,7 +571,7 @@ public class AccountWorkflowServiceTest {
         verify(mockCacheProvider).setObject(SPTOKEN+":phone:api", 
                 BridgeObjectMapper.get().writeValueAsString(TestConstants.PHONE), 
                 AccountWorkflowService.VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
-        verify(mockNotificationsService).sendSMSMessage(smsMessageProviderCaptor.capture());
+        verify(mockNotificationsService).sendSmsMessage(smsMessageProviderCaptor.capture());
         
         String message = smsMessageProviderCaptor.getValue().getSmsRequest().getMessage();
         assertTrue(message.contains("Account for ShortName already exists. Reset password: "));
@@ -621,7 +621,7 @@ public class AccountWorkflowServiceTest {
         service.requestResetPassword(study, ACCOUNT_ID_WITH_PHONE);
         
         verify(mockCacheProvider).setObject(eq(TOKEN+":phone:api"), stringCaptor.capture(), eq(60*60*2));
-        verify(mockNotificationsService).sendSMSMessage(smsMessageProviderCaptor.capture());
+        verify(mockNotificationsService).sendSmsMessage(smsMessageProviderCaptor.capture());
         
         assertEquals(study, smsMessageProviderCaptor.getValue().getStudy());
         assertEquals(TestConstants.PHONE, smsMessageProviderCaptor.getValue().getPhone());
@@ -645,7 +645,7 @@ public class AccountWorkflowServiceTest {
         service.requestResetPassword(study, ACCOUNT_ID_WITH_PHONE);
         
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
-        verify(mockNotificationsService, never()).sendSMSMessage(any());
+        verify(mockNotificationsService, never()).sendSmsMessage(any());
         verifyNoMoreInteractions(mockCacheProvider);
     }
 
@@ -660,7 +660,7 @@ public class AccountWorkflowServiceTest {
         service.requestResetPassword(study, ACCOUNT_ID_WITH_PHONE);
         
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
-        verify(mockNotificationsService, never()).sendSMSMessage(any());
+        verify(mockNotificationsService, never()).sendSmsMessage(any());
         verifyNoMoreInteractions(mockCacheProvider);
     }
     
@@ -918,7 +918,7 @@ public class AccountWorkflowServiceTest {
         
         verify(mockCacheProvider).getObject(cacheKey, String.class);
         verify(mockCacheProvider).setObject(cacheKey, "123456", AccountWorkflowService.SIGNIN_EXPIRE_IN_SECONDS);
-        verify(mockNotificationsService).sendSMSMessage(smsMessageProviderCaptor.capture());
+        verify(mockNotificationsService).sendSmsMessage(smsMessageProviderCaptor.capture());
         
         assertEquals(study, smsMessageProviderCaptor.getValue().getStudy());
         assertEquals(TestConstants.PHONE, smsMessageProviderCaptor.getValue().getPhone());
@@ -936,7 +936,7 @@ public class AccountWorkflowServiceTest {
         service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
         
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
-        verify(mockNotificationsService, never()).sendSMSMessage(any());
+        verify(mockNotificationsService, never()).sendSmsMessage(any());
         verifyNoMoreInteractions(mockCacheProvider);
     }
 
@@ -950,7 +950,7 @@ public class AccountWorkflowServiceTest {
         service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
         service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
         service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
-        verify(mockNotificationsService, times(2)).sendSMSMessage(any());
+        verify(mockNotificationsService, times(2)).sendSmsMessage(any());
     }
 
     @Test

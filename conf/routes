@@ -100,6 +100,7 @@ POST   /v3/participants/:userId/consents/withdraw                      @org.sage
 POST   /v3/participants/:userId/consents/:guid/resendConsent           @org.sagebionetworks.bridge.play.controllers.ParticipantController.resendConsentAgreement(userId: String, guid: String)
 POST   /v3/participants/:userId/consents/:guid/withdraw                @org.sagebionetworks.bridge.play.controllers.ParticipantController.withdrawConsent(userId: String, guid: String)
 GET    /v3/participants/:userId/activityEvents                         @org.sagebionetworks.bridge.play.controllers.ParticipantController.getActivityEvents(userId: String)
+POST   /v3/participants/:userId/sendSmsMessage                         @org.sagebionetworks.bridge.play.controllers.ParticipantController.sendSmsMessage(userId: String)
 
 # Shared Module
 POST   /v3/sharedmodules/:id/import                   @org.sagebionetworks.bridge.play.controllers.SharedModuleController.importModuleByIdLatestPublishedVersion(id: String)
@@ -275,6 +276,7 @@ POST /v3/studies/:studyId/reports/:identifier                                   
 GET  /v3/studies/:studyId/uploads                                                     @org.sagebionetworks.bridge.play.controllers.StudyController.getUploadsForStudy(studyId: String, startTime: String ?= null, endTime: String ?= null, pageSize: java.lang.Integer ?= null, offsetKey: String ?= null)
 GET  /v3/studies/:studyId/participants                                                @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipantsForWorker(studyId: String, offsetBy: String ?= null, pageSize: String ?= null, emailFilter: String ?= null, phoneFilter: String ?= null, startDate: String ?= null, endDate: String ?= null, startTime: String ?= null, endTime: String ?= null)
 GET  /v3/studies/:studyId/participants/:userId                                        @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipantForWorker(studyId: String, userId: String, consents: Boolean ?= true)
+POST /v3/studies/:studyId/participants/:userId/sendSmsMessage                         @org.sagebionetworks.bridge.play.controllers.ParticipantController.sendSmsMessageForWorker(studyId: String, userId: String)
 GET  /v3/studies/:studyId/oauth/:vendorId                                             @org.sagebionetworks.bridge.play.controllers.OAuthController.getHealthCodesGrantingAccess(studyId: String, vendorId: String, offsetKey: String ?= null, pageSize: String ?= null)
 GET  /v3/studies/:studyId/oauth/:vendorId/:healthCode                                 @org.sagebionetworks.bridge.play.controllers.OAuthController.getAccessToken(studyId: String, vendorId: String, healthCode: String)
 GET  /v3/studies/:studyId/scheduleplans                                               @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.getSchedulePlansForWorker(studyId: String)

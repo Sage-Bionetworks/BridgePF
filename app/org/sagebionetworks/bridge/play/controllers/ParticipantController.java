@@ -48,6 +48,7 @@ import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
@@ -371,6 +372,24 @@ public class ParticipantController extends BaseController {
         return okResult(participantService.getActivityEvents(study, userId));
     }
     
+    public Result sendSmsMessage(String userId) throws Exception {
+        UserSession session = getAuthenticatedSession(Roles.RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        SmsTemplate template = parseJson(request(), SmsTemplate.class);
+        
+        participantService.sendSmsMessage(study, userId, template);
+        return acceptedResult("Message sent.");
+    }
+
+    public Result sendSmsMessageForWorker(String studyId, String userId) {
+        getAuthenticatedSession(WORKER);
+        Study study = studyService.getStudy(studyId);
+        SmsTemplate template = parseJson(request(), SmsTemplate.class);
+        
+        participantService.sendSmsMessage(study, userId, template);
+        return acceptedResult("Message sent.");
+    }
+
     private Result getParticipantsInternal(Study study, String offsetByString, String pageSizeString,
             String emailFilter, String phoneFilter, String startDateString, String endDateString,
             String startTimeString, String endTimeString) {
