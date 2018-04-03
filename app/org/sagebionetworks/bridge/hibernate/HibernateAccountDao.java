@@ -333,7 +333,6 @@ public class HibernateAccountDao implements AccountDao {
             accountToUpdate.setPhone(persistedAccount.getPhone());
             accountToUpdate.setEmailVerified(persistedAccount.getEmailVerified());
             accountToUpdate.setPhoneVerified(persistedAccount.getPhoneVerified());
-            accountToUpdate.setExternalId(persistedAccount.getExternalId());
         }
 
         // Update modifiedOn.
