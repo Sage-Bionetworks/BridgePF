@@ -160,7 +160,7 @@ public class ConsentService {
         activityEventService.publishEnrollmentEvent(participant.getHealthCode(), withConsentCreatedOnSignature);
         
         // Send email, if required.
-        if (sendEmail && participant.getEmail() != null) {
+        if (sendEmail && !subpop.isAutoSendConsentSuppressed() && participant.getEmail() != null) {
             MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, participant.getTimeZone(),
                     participant.getEmail(), withConsentCreatedOnSignature, sharingScope,
                     studyConsent.getDocumentContent(), consentTemplate);
@@ -230,8 +230,11 @@ public class ConsentService {
             account.setSharingScope(SharingScope.NO_SHARING);
         }
         accountDao.updateAccount(account, false);
-
-        sendWithdrawEmail(study, participant.getExternalId(), account, withdrawal, withdrewOn);
+        
+        Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
+        if (!subpop.isAutoSendConsentSuppressed()) {
+            sendWithdrawEmail(study, participant.getExternalId(), account, withdrawal, withdrewOn);
+        }
 
         return statuses;
     }
@@ -256,8 +259,12 @@ public class ConsentService {
         account.setSharingScope(SharingScope.NO_SHARING);
         accountDao.updateAccount(account, false);
 
-        sendWithdrawEmail(study, participant.getExternalId(), account, withdrawal, withdrewOn);
-
+        for (SubpopulationGuid subpopGuid : account.getAllConsentSignatureHistories().keySet()) {
+            Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
+            if (!subpop.isAutoSendConsentSuppressed()) {
+                sendWithdrawEmail(study, participant.getExternalId(), account, withdrawal, withdrewOn);
+            }
+        }
         // But we don't need to query, we know these are all withdraw.
         return getConsentStatuses(context, account);
     }
