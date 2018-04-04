@@ -10,8 +10,8 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 
 import java.net.URL;
 
@@ -290,7 +290,7 @@ public class UploadControllerTest {
     @Test
     public void getUploadById() throws Exception {
         TestUtils.mockPlayContext();
-        doReturn(developerSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        doReturn(developerSession).when(controller).getAuthenticatedSession(RESEARCHER, ADMIN);
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setStudyId("dev-study-id");
         upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
@@ -309,7 +309,7 @@ public class UploadControllerTest {
     @Test
     public void getUploadByRecordId() throws Exception {
         TestUtils.mockPlayContext();
-        doReturn(developerSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        doReturn(developerSession).when(controller).getAuthenticatedSession(RESEARCHER, ADMIN);
         
         HealthDataRecord record = HealthDataRecord.create();
         record.setUploadId(UPLOAD_ID);
@@ -333,7 +333,7 @@ public class UploadControllerTest {
     @Test(expected = UnauthorizedException.class)
     public void getUploadFromOtherStudyFails() throws Exception {
         TestUtils.mockPlayContext();
-        doReturn(developerSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        doReturn(developerSession).when(controller).getAuthenticatedSession(RESEARCHER, ADMIN);
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setStudyId("different-study");
         upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
@@ -347,7 +347,7 @@ public class UploadControllerTest {
     @Test(expected = EntityNotFoundException.class)
     public void getUploadByRecordIdRecordMissing() throws Exception {
         TestUtils.mockPlayContext();
-        doReturn(developerSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        doReturn(developerSession).when(controller).getAuthenticatedSession(RESEARCHER, ADMIN);
         
         when(healthDataService.getRecordById("record-id")).thenReturn(null);
 

@@ -196,7 +196,7 @@ public class UploadServiceMockTest {
         UploadView uploadView = svc.getUploadView("with-record-id");
         assertEquals("test-record-id", uploadView.getUpload().getRecordId());
         assertEquals("with-record-id", uploadView.getUpload().getUploadId());
-        assertEquals("schema-id", uploadView.getSchemaId());
+        assertEquals("schema-id", uploadView.getRecord().getSchemaId());
     }
     
     private void setupUploadMocks() {

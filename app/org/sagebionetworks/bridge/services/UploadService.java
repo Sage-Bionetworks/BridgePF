@@ -254,7 +254,7 @@ public class UploadService {
             throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "uploadId"));
         }
         Upload upload = uploadDao.getUpload(uploadId);
-        return uploadToUploadView(upload);
+        return uploadToUploadView(upload, true);
     }
 
     /**
@@ -307,8 +307,9 @@ public class UploadService {
         
         ForwardCursorPagedResourceList<Upload> list = supplier.get(startTime, endTime);
 
+        // This summary view is accessible to developers, so we do not include details of the health data record.
         List<UploadView> views = list.getItems().stream()
-                .map(upload -> uploadToUploadView(upload))
+                .map(upload -> uploadToUploadView(upload, false))
                 .collect(Collectors.toList());
         
         ForwardCursorPagedResourceList<UploadView> page = new ForwardCursorPagedResourceList<>(views, list.getNextPageOffsetKey());
@@ -318,15 +319,19 @@ public class UploadService {
         return page;
     }
     
-    private UploadView uploadToUploadView(Upload upload) {
+    private UploadView uploadToUploadView(Upload upload, boolean includeHealthDataRecord) {
         UploadView.Builder builder = new UploadView.Builder();
         builder.withUpload(upload);
         if (upload.getRecordId() != null) {
             HealthDataRecord record = healthDataService.getRecordById(upload.getRecordId());
             if (record != null) {
-                builder.withSchemaId(record.getSchemaId());
-                builder.withSchemaRevision(record.getSchemaRevision());
-                builder.withHealthRecordExporterStatus(record.getSynapseExporterStatus());
+                if (includeHealthDataRecord) {
+                    builder.withHealthDataRecord(record);
+                } else {
+                    builder.withSchemaId(record.getSchemaId());
+                    builder.withSchemaRevision(record.getSchemaRevision());
+                    builder.withHealthRecordExporterStatus(record.getSynapseExporterStatus());
+                }
             }
         }
         return builder.build();

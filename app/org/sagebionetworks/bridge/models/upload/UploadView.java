@@ -20,12 +20,16 @@ public final class UploadView {
     final Integer schemaRevision;
     @JsonProperty("healthRecordExporterStatus")
     final HealthDataRecord.ExporterStatus healthRecordExporterStatus;
+    @JsonProperty("healthDataRecord")
+    final HealthDataRecord record;
     
-    private UploadView(Upload upload, String schemaId, Integer schemaRevision, HealthDataRecord.ExporterStatus status) {
+    private UploadView(Upload upload, String schemaId, Integer schemaRevision, HealthDataRecord.ExporterStatus status,
+            HealthDataRecord record) {
         this.upload = upload;
         this.schemaId = schemaId;
         this.schemaRevision = schemaRevision;
         this.healthRecordExporterStatus = status;
+        this.record = record;
     }
     
     public Upload getUpload() {
@@ -44,11 +48,16 @@ public final class UploadView {
         return healthRecordExporterStatus;
     }
     
+    public HealthDataRecord getRecord() {
+        return record;
+    }
+    
     public static class Builder {
         private Upload upload;
         private String schemaId;
         private Integer schemaRevision;
         private HealthDataRecord.ExporterStatus healthRecordExporterStatus;
+        private HealthDataRecord record;
         
         public Builder withUpload(Upload upload) {
             this.upload = upload;
@@ -66,8 +75,12 @@ public final class UploadView {
             this.healthRecordExporterStatus = status;
             return this;
         }
+        public Builder withHealthDataRecord(HealthDataRecord record) {
+            this.record = record;
+            return this;
+        }
         public UploadView build() {
-            return new UploadView(upload, schemaId, schemaRevision, healthRecordExporterStatus);
+            return new UploadView(upload, schemaId, schemaRevision, healthRecordExporterStatus, record);
         }
     }
 
