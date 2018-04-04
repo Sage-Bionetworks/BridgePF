@@ -248,6 +248,14 @@ public class UploadService {
         }
         return uploadDao.getUpload(uploadId);
     }
+    
+    public UploadView getUploadView(String uploadId) {
+        if (Strings.isNullOrEmpty(uploadId)) {
+            throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "uploadId"));
+        }
+        Upload upload = uploadDao.getUpload(uploadId);
+        return uploadToUploadView(upload);
+    }
 
     /**
      * <p>Get uploads for a given user in a time window. Start and end time are optional. If neither are provided, they 
@@ -276,10 +284,10 @@ public class UploadService {
         checkNotNull(studyId);
 
         // in case clients didn't set page size up
-        return getUploads(startTime, endTime, (start, end)-> {
-            return uploadDao.getStudyUploads(studyId, start, end,
-                    (pageSize == null ? API_DEFAULT_PAGE_SIZE : pageSize.intValue()), offsetKey);
-        });
+        return getUploads(startTime, endTime, (start, end)-> 
+            uploadDao.getStudyUploads(studyId, start, end,
+                    (pageSize == null ? API_DEFAULT_PAGE_SIZE : pageSize.intValue()), offsetKey)
+        );
     }
     
     private ForwardCursorPagedResourceList<UploadView> getUploads(DateTime startTime, DateTime endTime, UploadSupplier supplier) {
@@ -299,19 +307,9 @@ public class UploadService {
         
         ForwardCursorPagedResourceList<Upload> list = supplier.get(startTime, endTime);
 
-        List<UploadView> views = list.getItems().stream().map(upload -> {
-            UploadView.Builder builder = new UploadView.Builder();
-            builder.withUpload(upload);
-            if (upload.getRecordId() != null) {
-                HealthDataRecord record = healthDataService.getRecordById(upload.getRecordId());
-                if (record != null) {
-                    builder.withSchemaId(record.getSchemaId());
-                    builder.withSchemaRevision(record.getSchemaRevision());
-                    builder.withHealthRecordExporterStatus(record.getSynapseExporterStatus());
-                }
-            }
-            return builder.build();
-        }).collect(Collectors.toList());
+        List<UploadView> views = list.getItems().stream()
+                .map(upload -> uploadToUploadView(upload))
+                .collect(Collectors.toList());
         
         ForwardCursorPagedResourceList<UploadView> page = new ForwardCursorPagedResourceList<>(views, list.getNextPageOffsetKey());
         for (Map.Entry<String,Object> entry : list.getRequestParams().entrySet()) {
@@ -320,6 +318,20 @@ public class UploadService {
         return page;
     }
     
+    private UploadView uploadToUploadView(Upload upload) {
+        UploadView.Builder builder = new UploadView.Builder();
+        builder.withUpload(upload);
+        if (upload.getRecordId() != null) {
+            HealthDataRecord record = healthDataService.getRecordById(upload.getRecordId());
+            if (record != null) {
+                builder.withSchemaId(record.getSchemaId());
+                builder.withSchemaRevision(record.getSchemaRevision());
+                builder.withHealthRecordExporterStatus(record.getSynapseExporterStatus());
+            }
+        }
+        return builder.build();
+    }
+
     /**
      * <p>
      * Gets validation status and messages for the given upload ID. This includes the health data record, if one was

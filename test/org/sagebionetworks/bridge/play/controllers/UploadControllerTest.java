@@ -9,6 +9,9 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import java.net.URL;
 
@@ -31,6 +34,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Metrics;
@@ -44,6 +48,8 @@ import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
+import org.sagebionetworks.bridge.models.upload.UploadView;
+import org.sagebionetworks.bridge.services.HealthDataService;
 import org.sagebionetworks.bridge.services.UploadService;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -63,7 +69,13 @@ public class UploadControllerTest {
     private HealthCodeDao healthCodeDao;
     
     @Mock
+    private HealthDataService healthDataService;
+    
+    @Mock
     private UserSession workerSession;
+    
+    @Mock
+    private UserSession developerSession;
     
     @Mock
     private UserSession consentedUserSession;
@@ -91,6 +103,7 @@ public class UploadControllerTest {
         controller.setUploadService(uploadService);
         controller.setHealthCodeDao(healthCodeDao);
         controller.setCacheProvider(cacheProvider);
+        controller.setHealthDataService(healthDataService);
 
         // mock uploadService.getUpload()
         DynamoUpload2 upload = new DynamoUpload2();
@@ -122,6 +135,12 @@ public class UploadControllerTest {
         doReturn(true).when(workerSession).isInRole(Roles.WORKER);
         StudyParticipant participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.WORKER)).build();
         doReturn(participant).when(workerSession).getParticipant();
+        
+        doReturn("dev-health-code").when(developerSession).getHealthCode();
+        doReturn(new StudyIdentifierImpl("dev-study-id")).when(developerSession).getStudyIdentifier();
+        doReturn(true).when(developerSession).isInRole(Roles.DEVELOPER);
+        participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
+        doReturn(participant).when(developerSession).getParticipant();
         
         doReturn("consented-user-health-code").when(consentedUserSession).getHealthCode();
         doReturn(new StudyIdentifierImpl("consented-user-study-id")).when(consentedUserSession).getStudyIdentifier();
@@ -267,7 +286,74 @@ public class UploadControllerTest {
         doReturn(otherUserSession).when(controller).getSessionEitherConsentedOrInRole(Roles.RESEARCHER);
         controller.getValidationStatus(UPLOAD_ID);
     }
+    
+    @Test
+    public void getUploadById() throws Exception {
+        TestUtils.mockPlayContext();
+        doReturn(developerSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setStudyId("dev-study-id");
+        upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
+        UploadView uploadView = new UploadView.Builder().withUpload(upload).build();
+        
+        when(uploadService.getUploadView(UPLOAD_ID)).thenReturn(uploadView);
+        
+        Result result = controller.getUpload(UPLOAD_ID);
+        
+        assertEquals(200, result.status());
+        JsonNode node = TestUtils.getJson(result);
+        assertEquals("s3_worker", node.get("completedBy").textValue());
+        assertEquals("Upload", node.get("type").textValue());
+    }
 
+    @Test
+    public void getUploadByRecordId() throws Exception {
+        TestUtils.mockPlayContext();
+        doReturn(developerSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        
+        HealthDataRecord record = HealthDataRecord.create();
+        record.setUploadId(UPLOAD_ID);
+        when(healthDataService.getRecordById("record-id")).thenReturn(record);
+        
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setStudyId("dev-study-id");
+        upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
+        UploadView uploadView = new UploadView.Builder().withUpload(upload).build();
+        
+        when(uploadService.getUploadView(UPLOAD_ID)).thenReturn(uploadView);
+
+        Result result = controller.getUpload("recordId:record-id");
+        
+        assertEquals(200, result.status());
+        JsonNode node = TestUtils.getJson(result);
+        assertEquals("s3_worker", node.get("completedBy").textValue());
+        assertEquals("Upload", node.get("type").textValue());
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void getUploadFromOtherStudyFails() throws Exception {
+        TestUtils.mockPlayContext();
+        doReturn(developerSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setStudyId("different-study");
+        upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
+        UploadView uploadView = new UploadView.Builder().withUpload(upload).build();
+        
+        when(uploadService.getUploadView(UPLOAD_ID)).thenReturn(uploadView);
+        
+        controller.getUpload(UPLOAD_ID);
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void getUploadByRecordIdRecordMissing() throws Exception {
+        TestUtils.mockPlayContext();
+        doReturn(developerSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        
+        when(healthDataService.getRecordById("record-id")).thenReturn(null);
+
+        controller.getUpload("recordId:record-id");
+    }
+    
     private static void validateValidationStatus(Result result) throws Exception {
         TestUtils.assertResult(result, 200);
 

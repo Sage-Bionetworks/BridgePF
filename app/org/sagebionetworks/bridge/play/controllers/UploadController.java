@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.Metrics;
@@ -16,6 +17,8 @@ import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
+import org.sagebionetworks.bridge.models.upload.UploadView;
+import org.sagebionetworks.bridge.services.HealthDataService;
 import org.sagebionetworks.bridge.services.UploadService;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -31,11 +34,18 @@ public class UploadController extends BaseController {
 
     private UploadService uploadService;
     
+    private HealthDataService healthDataService;
+    
     private HealthCodeDao healthCodeDao;
 
     @Autowired
     final void setUploadService(UploadService uploadService) {
         this.uploadService = uploadService;
+    }
+    
+    @Autowired
+    final void setHealthDataService(HealthDataService healthDataService) {
+        this.healthDataService = healthDataService;
     }
     
     @Autowired
@@ -134,5 +144,29 @@ public class UploadController extends BaseController {
 
         // Upload validation status may contain the health data record. Use the filter to filter out health code.
         return okResult(HealthDataRecord.PUBLIC_RECORD_WRITER, validationStatus);
+    }
+    
+    public Result getUpload(String uploadId) throws Exception {
+        UserSession session = getAuthenticatedSession(Roles.DEVELOPER, Roles.RESEARCHER);
+
+        if (uploadId.startsWith("recordId:")) {
+            String recordId = uploadId.split(":")[1];
+
+            // This service does not throw an exception if the record is not found
+            HealthDataRecord record = healthDataService.getRecordById(recordId);
+            if (record == null) {
+                throw new EntityNotFoundException(HealthDataRecord.class);
+            }
+            uploadId = record.getUploadId();
+        }
+        UploadView uploadView = uploadService.getUploadView(uploadId);
+
+        // Even if the ID is valid, ultimately you cannot view an upload outside of your study
+        String studyId = session.getStudyIdentifier().getIdentifier();
+        if (!uploadView.getUpload().getStudyId().equals(studyId)) {
+            throw new UnauthorizedException();
+        }
+        // This filters out healthCode
+        return okResult(HealthDataRecord.PUBLIC_RECORD_WRITER, uploadView);
     }
 }

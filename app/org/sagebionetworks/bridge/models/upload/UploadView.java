@@ -4,9 +4,12 @@ import org.sagebionetworks.bridge.json.BridgeTypeName;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
 @BridgeTypeName("Upload")
+@JsonDeserialize(builder = UploadView.Builder.class)
 public final class UploadView {
 
     @JsonUnwrapped
