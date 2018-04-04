@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.models.upload;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
@@ -14,13 +13,9 @@ public final class UploadView {
 
     @JsonUnwrapped
     final Upload upload;
-    @JsonProperty("schemaId")
     final String schemaId;
-    @JsonProperty("schemaRevision")
     final Integer schemaRevision;
-    @JsonProperty("healthRecordExporterStatus")
     final HealthDataRecord.ExporterStatus healthRecordExporterStatus;
-    @JsonProperty("healthDataRecord")
     final HealthDataRecord record;
     
     private UploadView(Upload upload, String schemaId, Integer schemaRevision, HealthDataRecord.ExporterStatus status,
@@ -48,7 +43,7 @@ public final class UploadView {
         return healthRecordExporterStatus;
     }
     
-    public HealthDataRecord getRecord() {
+    public HealthDataRecord getHealthData() {
         return record;
     }
     

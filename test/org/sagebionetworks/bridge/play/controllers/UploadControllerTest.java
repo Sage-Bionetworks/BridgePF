@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -291,10 +292,14 @@ public class UploadControllerTest {
     public void getUploadById() throws Exception {
         TestUtils.mockPlayContext();
         doReturn(developerSession).when(controller).getAuthenticatedSession(RESEARCHER, ADMIN);
+        
+        DynamoHealthDataRecord record = new DynamoHealthDataRecord();
+        record.setHealthCode("healthCode");
+        
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setStudyId("dev-study-id");
         upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
-        UploadView uploadView = new UploadView.Builder().withUpload(upload).build();
+        UploadView uploadView = new UploadView.Builder().withUpload(upload).withHealthDataRecord(record).build();
         
         when(uploadService.getUploadView(UPLOAD_ID)).thenReturn(uploadView);
         

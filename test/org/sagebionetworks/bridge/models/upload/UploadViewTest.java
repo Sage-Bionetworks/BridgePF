@@ -81,7 +81,7 @@ public class UploadViewTest {
         assertEquals("Upload", node.get("type").textValue());
         assertEquals("succeeded", node.get("healthRecordExporterStatus").textValue());
         
-        JsonNode recordNode = node.get("healthDataRecord");
+        JsonNode recordNode = node.get("healthData");
         assertEquals("appVersion", recordNode.get("appVersion").textValue());
         assertEquals(COMPLETED_ON.toString(), recordNode.get("createdOn").textValue());
         assertEquals("+03:00", recordNode.get("createdOnTimeZone").textValue());
@@ -100,11 +100,11 @@ public class UploadViewTest {
         assertEquals("some errors", recordNode.get("validationErrors").textValue());
         assertEquals(1L, recordNode.get("version").longValue());
         assertEquals("succeeded", recordNode.get("synapseExporterStatus").textValue());
+        assertEquals("healthCode", recordNode.get("healthCode").textValue());
         
         assertTrue(recordNode.get("data").isObject());
         assertTrue(recordNode.get("metadata").isObject());
         assertTrue(recordNode.get("userMetadata").isObject());
-        assertNull(recordNode.get("healthCode"));
         
         // Should not be here. If these are not there, @JsonIgnore is working as intended
         // and tested in UploadTest
