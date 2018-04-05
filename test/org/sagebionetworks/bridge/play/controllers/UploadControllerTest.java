@@ -76,9 +76,6 @@ public class UploadControllerTest {
     private UserSession workerSession;
     
     @Mock
-    private UserSession developerSession;
-    
-    @Mock
     private UserSession consentedUserSession;
     
     @Mock
@@ -137,25 +134,19 @@ public class UploadControllerTest {
         StudyParticipant participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.WORKER)).build();
         doReturn(participant).when(workerSession).getParticipant();
         
-        doReturn("dev-health-code").when(developerSession).getHealthCode();
-        doReturn(new StudyIdentifierImpl("dev-study-id")).when(developerSession).getStudyIdentifier();
-        doReturn(true).when(developerSession).isInRole(Roles.DEVELOPER);
-        participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
-        doReturn(participant).when(developerSession).getParticipant();
-        
         doReturn("consented-user-health-code").when(consentedUserSession).getHealthCode();
         doReturn(new StudyIdentifierImpl("consented-user-study-id")).when(consentedUserSession).getStudyIdentifier();
         doReturn(true).when(consentedUserSession).isAuthenticated();
         doReturn(true).when(consentedUserSession).doesConsent();
         doReturn("userId").when(consentedUserSession).getId();
         doReturn(new StudyParticipant.Builder().build()).when(consentedUserSession).getParticipant();
-        
+
         doReturn("researcher-health-code").when(researcherSession).getHealthCode();
         doReturn(new StudyIdentifierImpl("researcher-study-id")).when(researcherSession).getStudyIdentifier();
         doReturn(true).when(researcherSession).isInRole(Roles.RESEARCHER);
         doReturn(true).when(researcherSession).isAuthenticated();
         doReturn(false).when(researcherSession).doesConsent();
-        
+
         doReturn("other-user-health-code").when(otherUserSession).getHealthCode();
         participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet()).build();
         doReturn(participant).when(otherUserSession).getParticipant();
@@ -291,13 +282,13 @@ public class UploadControllerTest {
     @Test
     public void getUploadById() throws Exception {
         TestUtils.mockPlayContext();
-        doReturn(developerSession).when(controller).getAuthenticatedSession(RESEARCHER, ADMIN);
+        doReturn(researcherSession).when(controller).getAuthenticatedSession(RESEARCHER, ADMIN);
         
         DynamoHealthDataRecord record = new DynamoHealthDataRecord();
         record.setHealthCode("healthCode");
         
         DynamoUpload2 upload = new DynamoUpload2();
-        upload.setStudyId("dev-study-id");
+        upload.setStudyId("researcher-study-id");
         upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
         UploadView uploadView = new UploadView.Builder().withUpload(upload).withHealthDataRecord(record).build();
         
@@ -314,14 +305,14 @@ public class UploadControllerTest {
     @Test
     public void getUploadByRecordId() throws Exception {
         TestUtils.mockPlayContext();
-        doReturn(developerSession).when(controller).getAuthenticatedSession(RESEARCHER, ADMIN);
+        doReturn(researcherSession).when(controller).getAuthenticatedSession(RESEARCHER, ADMIN);
         
         HealthDataRecord record = HealthDataRecord.create();
         record.setUploadId(UPLOAD_ID);
         when(healthDataService.getRecordById("record-id")).thenReturn(record);
         
         DynamoUpload2 upload = new DynamoUpload2();
-        upload.setStudyId("dev-study-id");
+        upload.setStudyId("researcher-study-id");
         upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
         UploadView uploadView = new UploadView.Builder().withUpload(upload).build();
         
@@ -338,7 +329,7 @@ public class UploadControllerTest {
     @Test(expected = UnauthorizedException.class)
     public void getUploadFromOtherStudyFails() throws Exception {
         TestUtils.mockPlayContext();
-        doReturn(developerSession).when(controller).getAuthenticatedSession(RESEARCHER, ADMIN);
+        doReturn(researcherSession).when(controller).getAuthenticatedSession(RESEARCHER, ADMIN);
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setStudyId("different-study");
         upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
@@ -352,7 +343,7 @@ public class UploadControllerTest {
     @Test(expected = EntityNotFoundException.class)
     public void getUploadByRecordIdRecordMissing() throws Exception {
         TestUtils.mockPlayContext();
-        doReturn(developerSession).when(controller).getAuthenticatedSession(RESEARCHER, ADMIN);
+        doReturn(researcherSession).when(controller).getAuthenticatedSession(RESEARCHER, ADMIN);
         
         when(healthDataService.getRecordById("record-id")).thenReturn(null);
 
