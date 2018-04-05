@@ -140,13 +140,13 @@ public class UploadControllerTest {
         doReturn(true).when(consentedUserSession).doesConsent();
         doReturn("userId").when(consentedUserSession).getId();
         doReturn(new StudyParticipant.Builder().build()).when(consentedUserSession).getParticipant();
-
+        
         doReturn("researcher-health-code").when(researcherSession).getHealthCode();
         doReturn(new StudyIdentifierImpl("researcher-study-id")).when(researcherSession).getStudyIdentifier();
         doReturn(true).when(researcherSession).isInRole(Roles.RESEARCHER);
         doReturn(true).when(researcherSession).isAuthenticated();
         doReturn(false).when(researcherSession).doesConsent();
-
+        
         doReturn("other-user-health-code").when(otherUserSession).getHealthCode();
         participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet()).build();
         doReturn(participant).when(otherUserSession).getParticipant();
