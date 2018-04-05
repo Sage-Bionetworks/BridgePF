@@ -54,7 +54,6 @@ public class UserSession {
     public void setInternalSessionToken(String internalSessionToken) {
         this.internalSessionToken = internalSessionToken;
     }
-    @JsonIgnore
     public String getReauthToken() {
         return reauthToken;
     }

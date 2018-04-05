@@ -23,6 +23,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -33,6 +34,7 @@ import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -66,6 +68,7 @@ public class AuthenticationServiceMockTest {
     private static final String RECIPIENT_EMAIL = "email@email.com";
     private static final String TOKEN = "ABC-DEF";
     private static final String REAUTH_TOKEN = "GHI-JKL";
+    private static final String REAUTH_CACHE_TOKEN = TOKEN+":api:reauthCacheKey";
     private static final String USER_ID = "user-id";
     private static final String PASSWORD = "Password~!1";
     private static final SignIn SIGN_IN_REQUEST_WITH_EMAIL = new SignIn.Builder().withStudy(STUDY_ID)
@@ -343,6 +346,28 @@ public class AuthenticationServiceMockTest {
         UserSession captured = sessionCaptor.getValue();
         assertEquals(RECIPIENT_EMAIL, captured.getParticipant().getEmail());
         assertEquals(REAUTH_TOKEN, captured.getReauthToken());
+        verify(cacheProvider).setObject(REAUTH_CACHE_TOKEN, captured.getSessionToken(),
+                BridgeConstants.BRIDGE_REAUTH_GRACE_PERIOD);
+    }
+    
+    @Test
+    public void reauthenticationFromCache() {
+        UserSession session = new UserSession();
+        doReturn(TOKEN).when(cacheProvider).getObject(REAUTH_CACHE_TOKEN, String.class);
+        doReturn(session).when(cacheProvider).getUserSession(TOKEN);
+        
+        UserSession returned = service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
+        assertEquals(session, returned);
+        
+        // We don't have to retrieve this.
+        verify(accountDao, never()).reauthenticate(any(), any());
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void reauthenticationWithoutSessionThrows() {
+        doReturn(TOKEN).when(cacheProvider).getObject(REAUTH_CACHE_TOKEN, String.class);
+        
+        service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
     }
     
     @Test(expected = InvalidEntityException.class)

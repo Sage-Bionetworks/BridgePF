@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_REAUTH_GRACE_PERIOD;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
@@ -168,12 +169,28 @@ public class AuthenticationService {
         
         Validate.entityThrowingException(SignInValidator.REAUTH_SIGNIN, signIn);
 
+        String reauthCacheKey = getReauthCacheKey(signIn.getStudyId(), signIn.getReauthToken());
+        // First look to see if reauthCacheKey is in cache. If it is, return the existing session. This 
+        // creates a grace period during which concurent requests with the same reauth token will work.
+        String sessionToken = cacheProvider.getObject(reauthCacheKey, String.class);
+        if (sessionToken != null) {
+            // Is it possible for this not to resolve to a session? Play it safe and check
+            UserSession session = cacheProvider.getUserSession(sessionToken);
+            if (session == null) {
+                throw new EntityNotFoundException(Account.class);
+            }
+            return session;
+        }
+        
         Account account = accountDao.reauthenticate(study, signIn);
 
         // Force recreation of the session, including the session token
         cacheProvider.removeSessionByUserId(account.getId());
+        
         UserSession session = getSessionFromAccount(study, context, account);
+        
         cacheProvider.setUserSession(session);
+        cacheProvider.setObject(reauthCacheKey, session.getSessionToken(), BRIDGE_REAUTH_GRACE_PERIOD);
         
         if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
             throw new ConsentRequiredException(session);
@@ -185,6 +202,8 @@ public class AuthenticationService {
         if (session != null) {
             AccountId accountId = AccountId.forId(session.getStudyIdentifier().getIdentifier(), session.getId());
             accountDao.deleteReauthToken(accountId);
+            String reauthCacheKey = getReauthCacheKey(session.getStudyIdentifier().getIdentifier(), session.getReauthToken());
+            cacheProvider.removeObject(reauthCacheKey);
             cacheProvider.removeSession(session);
         }
     }
@@ -326,5 +345,9 @@ public class AuthenticationService {
         session.setConsentStatuses(consentService.getConsentStatuses(newContext, account));
         
         return session;
+    }
+    
+    private String getReauthCacheKey(String studyId, String reauthToken) {
+        return reauthToken + ":" + studyId + ":reauthCacheKey";
     }
 }
