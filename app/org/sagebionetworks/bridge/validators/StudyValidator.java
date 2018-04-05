@@ -98,10 +98,6 @@ public class StudyValidator implements Validator {
             UploadFieldDefinitionListValidator.INSTANCE.validate(study.getUploadMetadataFieldDefinitions(), errors,
                     "uploadMetadataFieldDefinitions");
         }
-
-        if (StringUtils.isBlank(study.getConsentNotificationEmail())) {
-            errors.rejectValue("consentNotificationEmail", "is required");
-        }
         // These *should* be set if they are null, with defaults
         if (study.getPasswordPolicy() == null) {
             errors.rejectValue("passwordPolicy", "is required");

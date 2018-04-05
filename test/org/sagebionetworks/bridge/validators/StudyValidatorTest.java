@@ -231,12 +231,6 @@ public class StudyValidatorTest {
     }
     
     @Test
-    public void requiresMissingConsentNotificationEmail() {
-        study.setConsentNotificationEmail(null);
-        assertValidatorMessage(INSTANCE, study, "consentNotificationEmail", "is required");
-    }
-    
-    @Test
     public void requiresPasswordPolicy() {
         study.setPasswordPolicy(null);
         assertValidatorMessage(INSTANCE, study, "passwordPolicy", "is required");

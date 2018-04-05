@@ -491,6 +491,46 @@ public class ConsentServiceMockTest {
         assertNull(account.getConsentSignatureHistory(SECOND_SUBPOP).get(0).getWithdrewOn());
     }
     
+    @Test
+    public void notificationOfEnrollmentCanBeSuppressed() {
+        when(subpopulation.isAutoSendConsentSuppressed()).thenReturn(true);
+        
+        // sendEmail = true because the system would otherwise send it based on the call, but hasn't looked to suppress yet.
+        consentService.consentToResearch(study, SUBPOP_GUID, participant, consentSignature,
+                SharingScope.ALL_QUALIFIED_RESEARCHERS, true);
+        
+        verify(sendMailService, never()).sendEmail(any());
+    }
+    
+    @Test
+    public void notificationOfWithdrawalCanBeSuppressed() {
+        setupWithdrawTest(true, true);
+        when(subpopulation.isAutoSendConsentSuppressed()).thenReturn(true);
+        
+        consentService.withdrawConsent(study, SUBPOP_GUID, participant, context, WITHDRAWAL, WITHDREW_ON);
+        
+        verify(sendMailService, never()).sendEmail(any());
+    }
+    
+    @Test
+    public void notificationOfWithdrawalFromAllSubpopulationsCanBeSuppressed() {
+        doReturn(participant.getHealthCode()).when(account).getHealthCode();
+        doReturn(account).when(accountDao).getAccount(AccountId.forId(study.getIdentifier(), participant.getId()));
+        doReturn(ImmutableList.of(subpopulation)).when(subpopService).getSubpopulationsForUser(any());
+        when(subpopulation.getGuid()).thenReturn(SUBPOP_GUID);
+        when(subpopulation.getName()).thenReturn("Name");
+        
+        List<ConsentSignature> consents = ImmutableList.of(new ConsentSignature.Builder().withName("Test User")
+                .withBirthdate("1990-01-01").withSignedOn(SIGNED_ON).build());
+        account.setConsentSignatureHistory(SUBPOP_GUID, consents);
+        account.setEmail(EMAIL); // test succeeds incorrectly if email is not set
+        when(subpopulation.isAutoSendConsentSuppressed()).thenReturn(true);
+        
+        consentService.withdrawAllConsents(study, participant, context, WITHDRAWAL, WITHDREW_ON);
+        
+        verify(sendMailService, never()).sendEmail(any());
+    }
+    
     private void setupWithdrawTest(boolean subpop1Required, boolean subpop2Required) {
         // two consents, withdrawing one does not turn sharing entirely off.
         account.setEmail(EMAIL);

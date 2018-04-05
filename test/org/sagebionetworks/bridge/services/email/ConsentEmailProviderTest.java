@@ -230,6 +230,19 @@ public class ConsentEmailProviderTest {
         assertEquals(1, recipientList.size());
         assertEquals("user@user.com", recipientList.get(0));
     }
+    
+    @Test
+    public void consentCanHandleNullConsentEmail() throws Exception {
+        study.setConsentNotificationEmail(null);
+        ConsentSignature sig = makeSignatureWithoutImage();
+        
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, PST, participant.getEmail(), sig,
+                SharingScope.NO_SHARING, NEW_DOCUMENT_FRAGMENT, consentBodyTemplate);
+        MimeTypeEmail email = provider.getMimeTypeEmail();
+        List<String> recipientList = email.getRecipientAddresses();
+        assertEquals(1, recipientList.size());
+        assertEquals("user@user.com", recipientList.get(0));
+    }
 
     private static ConsentSignature makeSignatureWithoutImage() {
         return new ConsentSignature.Builder().withName("Test Person").withBirthdate("1980-06-06").build();
