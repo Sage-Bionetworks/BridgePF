@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -364,7 +363,7 @@ public class AccountWorkflowService {
             
         if (includeEmailSignIn && study.isEmailSignInEnabled()) {
             SignIn signIn = new SignIn.Builder().withEmail(email).withStudy(study.getIdentifier()).build();
-            requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, EMAIL_CACHE_KEY_FUNC, emailSignInRequestInMillis,
+            requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, emailSignInRequestInMillis,
                 signIn, false, this::getNextToken, (theStudy, token) -> {
                     // get and add the sign in URLs.
                     String emailShortUrl = getShortEmailSignInURL(signIn.getEmail(), theStudy.getIdentifier(), token);
@@ -399,7 +398,7 @@ public class AccountWorkflowService {
         // When phone workflow is fully supported, this will only be done if phone sign in is enabled
         if (includePhoneSignIn /* && study.isPhoneSignInEnabled()*/) {
             SignIn signIn = new SignIn.Builder().withPhone(phone).withStudy(study.getIdentifier()).build();
-            requestChannelSignIn(PHONE, PHONE_SIGNIN_REQUEST, PHONE_CACHE_KEY_FUNC, phoneSignInRequestInMillis,
+            requestChannelSignIn(PHONE, PHONE_SIGNIN_REQUEST, phoneSignInRequestInMillis,
                 signIn, false, this::getNextToken, (theStudy, token) -> {
                     String formattedToken = token.substring(0,3) + "-" + token.substring(3,6);
                     builder.withToken(TOKEN_KEY, formattedToken);
@@ -449,7 +448,7 @@ public class AccountWorkflowService {
      * Request a token to be sent via SMS to the user, that can be used to start a session on the Bridge server.
      */
     public void requestPhoneSignIn(SignIn signIn) {
-        requestChannelSignIn(PHONE, PHONE_SIGNIN_REQUEST, PHONE_CACHE_KEY_FUNC, phoneSignInRequestInMillis, 
+        requestChannelSignIn(PHONE, PHONE_SIGNIN_REQUEST, phoneSignInRequestInMillis, 
                 signIn, true, this::getNextPhoneToken, (study, token) -> {
             // Put a dash in the token so it's easier to enter into the UI. All this should
             // eventually come from a template
@@ -472,7 +471,7 @@ public class AccountWorkflowService {
      * configured by default. That test page will complete the transaction and return a session token.
      */
     public void requestEmailSignIn(SignIn signIn) {
-        requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, EMAIL_CACHE_KEY_FUNC, emailSignInRequestInMillis, 
+        requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, emailSignInRequestInMillis, 
                 signIn, true, this::getNextToken, (study, token) -> {
             String url = getEmailSignInURL(signIn.getEmail(), study.getIdentifier(), token);
             String shortUrl = getShortEmailSignInURL(signIn.getEmail(), study.getIdentifier(), token);
@@ -497,9 +496,9 @@ public class AccountWorkflowService {
         });
     }
     
-    private void requestChannelSignIn(ChannelType channelType, Validator validator,
-            Function<SignIn, CacheKey> cacheKeySupplier, AtomicLong atomicLong, SignIn signIn, boolean shouldThrottle,
-            Supplier<String> tokenSupplier, BiConsumer<Study, String> messageSender) {
+    private void requestChannelSignIn(ChannelType channelType, Validator validator, AtomicLong atomicLong,
+            SignIn signIn, boolean shouldThrottle, Supplier<String> tokenSupplier,
+            BiConsumer<Study, String> messageSender) {
         long startTime = System.currentTimeMillis();
         Validate.entityThrowingException(validator, signIn);
 
@@ -535,7 +534,13 @@ public class AccountWorkflowService {
             return;
         }
 
-        CacheKey cacheKey = cacheKeySupplier.apply(signIn);
+        CacheKey cacheKey = null;
+        if (channelType == EMAIL) {
+            cacheKey = CacheKeys.emailSignInRequest(signIn); 
+        } else if (channelType == PHONE) {
+            cacheKey = CacheKeys.phoneSignInRequest(signIn);
+        }
+
         String token = cacheProvider.getObject(cacheKey, String.class);
         if (token == null) {
             token = tokenSupplier.get();
@@ -560,9 +565,9 @@ public class AccountWorkflowService {
        
         CacheKey cacheKey = null;
         if (channelType == EMAIL) {
-            cacheKey = EMAIL_CACHE_KEY_FUNC.apply(signIn);
+            cacheKey = CacheKeys.emailSignInRequest(signIn);
         } else if (channelType == PHONE) {
-            cacheKey = PHONE_CACHE_KEY_FUNC.apply(signIn);
+            cacheKey = CacheKeys.phoneSignInRequest(signIn);
         } else {
             throw new UnsupportedOperationException("Channel type not implemented");
         }
@@ -632,14 +637,6 @@ public class AccountWorkflowService {
         return SecureTokenGenerator.PHONE_CODE_INSTANCE.nextToken();
     }
     
-    private static Function<SignIn, CacheKey> PHONE_CACHE_KEY_FUNC = (signIn) -> {
-        return CacheKeys.phoneSignInRequest(signIn);
-    };
-    
-    private static Function<SignIn, CacheKey> EMAIL_CACHE_KEY_FUNC = (signIn) -> {
-        return CacheKeys.emailSignInRequest(signIn);
-    };
-
     private String getEmailSignInURL(String email, String studyId, String token) {
         return formatWithEncodedArgs(OLD_EMAIL_SIGNIN_URL, studyId, email, studyId, token);
     }

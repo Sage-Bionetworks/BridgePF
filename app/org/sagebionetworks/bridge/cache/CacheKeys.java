@@ -13,9 +13,8 @@ import com.google.common.collect.Lists;
 
 /**
  * A utility to provide consistency, centralization, and type safety for the keys we use 
- * to store data in Redis. This makes it easier t determine which keys can be returned as 
- * part of the administrative API to clean up model caching, vs. cache entries that include
- * PII. 
+ * to store data in Redis. This makes it easier to determine which keys can be returned as 
+ * part of the administrative API so we can keep PII data out of the cache keys we return.
  */
 public class CacheKeys {
     
@@ -111,6 +110,6 @@ public class CacheKeys {
         List<String> list = Lists.newArrayList(elements);
         list.add(clazz.getSimpleName());
         list.add("view");
-        return new CacheKey(COLON_JOINER.join(elements));
+        return new CacheKey(COLON_JOINER.join(list));
     }
 }
