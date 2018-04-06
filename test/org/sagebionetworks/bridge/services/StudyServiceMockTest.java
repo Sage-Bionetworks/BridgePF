@@ -58,6 +58,8 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.cache.CacheKeys;
+import org.sagebionetworks.bridge.cache.CacheKeys.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -106,6 +108,7 @@ public class StudyServiceMockTest {
     private static final Set<String> EMPTY_SET = ImmutableSet.of();
     private static final String SUPPORT_EMAIL = "bridgeit@sagebase.org";
     private static final String VERIFICATION_TOKEN = "dummy-token";
+    private static final CacheKey VER_CACHE_KEY = CacheKeys.verificationToken("dummy-token");
 
     @Mock
     private BridgeConfig bridgeConfig;
@@ -270,7 +273,7 @@ public class StudyServiceMockTest {
     private void verifyEmailVerificationEmail(String consentNotificationEmail) throws Exception {
         // Verify token in CacheProvider.
         ArgumentCaptor<String> verificationDataCaptor = ArgumentCaptor.forClass(String.class);
-        verify(cacheProvider).setObject(eq(VERIFICATION_TOKEN), verificationDataCaptor.capture(),
+        verify(cacheProvider).setObject(eq(VER_CACHE_KEY), verificationDataCaptor.capture(),
                 eq(StudyService.VERIFY_STUDY_EMAIL_EXPIRE_IN_SECONDS));
         JsonNode verificationData = BridgeObjectMapper.get().readTree(verificationDataCaptor.getValue());
         assertEquals(TEST_STUDY_ID, verificationData.get("studyId").textValue());
@@ -399,7 +402,7 @@ public class StudyServiceMockTest {
 
     @Test(expected = BadRequestException.class)
     public void verifyEmailNullVerificationData() {
-        when(cacheProvider.getObject(VERIFICATION_TOKEN, String.class)).thenReturn(null);
+        when(cacheProvider.getObject(VER_CACHE_KEY, String.class)).thenReturn(null);
         service.verifyEmail(TEST_STUDY_IDENTIFIER, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
     }
 
@@ -410,7 +413,7 @@ public class StudyServiceMockTest {
                 "   \"studyId\":\"wrong-study\",\n" +
                 "   \"email\":\"correct-email@example.com\"\n" +
                 "}";
-        when(cacheProvider.getObject(VERIFICATION_TOKEN, String.class)).thenReturn(verificationDataJson);
+        when(cacheProvider.getObject(VER_CACHE_KEY, String.class)).thenReturn(verificationDataJson);
 
         // Mock getStudy().
         Study study = getTestStudy();
@@ -428,7 +431,7 @@ public class StudyServiceMockTest {
                 "   \"studyId\":\"" + TEST_STUDY_ID + "\",\n" +
                 "   \"email\":\"correct-email@example.com\"\n" +
                 "}";
-        when(cacheProvider.getObject(VERIFICATION_TOKEN, String.class)).thenReturn(verificationDataJson);
+        when(cacheProvider.getObject(VER_CACHE_KEY, String.class)).thenReturn(verificationDataJson);
 
         // Mock getStudy().
         Study study = getTestStudy();
@@ -446,7 +449,7 @@ public class StudyServiceMockTest {
                 "   \"studyId\":\"" + TEST_STUDY_ID + "\",\n" +
                 "   \"email\":\"correct-email@example.com\"\n" +
                 "}";
-        when(cacheProvider.getObject(VERIFICATION_TOKEN, String.class)).thenReturn(verificationDataJson);
+        when(cacheProvider.getObject(VER_CACHE_KEY, String.class)).thenReturn(verificationDataJson);
 
         // Mock getStudy().
         Study study = getTestStudy();
@@ -464,7 +467,7 @@ public class StudyServiceMockTest {
                 "   \"studyId\":\"" + TEST_STUDY_ID + "\",\n" +
                 "   \"email\":\"correct-email@example.com\"\n" +
                 "}";
-        when(cacheProvider.getObject(VERIFICATION_TOKEN, String.class)).thenReturn(verificationDataJson);
+        when(cacheProvider.getObject(VER_CACHE_KEY, String.class)).thenReturn(verificationDataJson);
 
         // Mock getting the study from the cache.
         Study study = getTestStudy();
@@ -484,7 +487,7 @@ public class StudyServiceMockTest {
         verify(cacheProvider).setStudy(savedStudy);
 
         // Verify that we removed the used token.
-        verify(cacheProvider).removeObject(VERIFICATION_TOKEN);
+        verify(cacheProvider).removeObject(VER_CACHE_KEY);
     }
 
     @Test

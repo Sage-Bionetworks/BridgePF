@@ -17,6 +17,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.cache.CacheKeys;
+import org.sagebionetworks.bridge.cache.CacheKeys.CacheKey;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -68,18 +70,6 @@ public class SubpopulationService {
         this.defaultConsentDocument = form;
     }
     
-    private String getListKey(StudyIdentifier studyId) {
-        return studyId.getIdentifier() + ":SubpopulationList";
-    }
-    
-    private String getSubpopKey(Subpopulation subpop) {
-        return getSubpopKey(subpop.getStudyIdentifier(), subpop.getGuid());
-    }
-    
-    private String getSubpopKey(String studyId, SubpopulationGuid subpopGuid) {
-        return subpopGuid.getGuid()  + ":" + studyId + ":Subpopulation";
-    }
-    
     /**
      * Create subpopulation.
      * @param study 
@@ -102,7 +92,7 @@ public class SubpopulationService {
         StudyConsentView view = studyConsentService.addConsent(subpop.getGuid(), defaultConsentDocument);
         studyConsentService.publishConsent(study, subpop, view.getCreatedOn());
         
-        cacheProvider.removeObject(getListKey(study.getStudyIdentifier()));
+        cacheProvider.removeObject(CacheKeys.subpopList(study.getStudyIdentifier()));
         return created;
     }
     
@@ -121,7 +111,7 @@ public class SubpopulationService {
             studyConsentService.publishConsent(study, created, view.getCreatedOn());
         }
         
-        cacheProvider.removeObject(getListKey(study.getStudyIdentifier()));
+        cacheProvider.removeObject(CacheKeys.subpopList(study.getStudyIdentifier()));
         return created;
     }
     
@@ -154,8 +144,8 @@ public class SubpopulationService {
         Validate.entityThrowingException(validator, subpop);
         
         Subpopulation updated = subpopDao.updateSubpopulation(subpop);
-        cacheProvider.removeObject(getSubpopKey(updated));
-        cacheProvider.removeObject(getListKey(study.getStudyIdentifier()));
+        cacheProvider.removeObject(CacheKeys.subpop(updated.getGuid(), study.getStudyIdentifier()));
+        cacheProvider.removeObject(CacheKeys.subpopList(study.getStudyIdentifier()));
         return updated;
     }
     
@@ -169,10 +159,11 @@ public class SubpopulationService {
     public List<Subpopulation> getSubpopulations(StudyIdentifier studyId) {
         checkNotNull(studyId);
         
-        List<Subpopulation> subpops = cacheProvider.getObject(getListKey(studyId), SURVEY_LIST_REF);
+        CacheKey subpopListKey = CacheKeys.subpopList(studyId);
+        List<Subpopulation> subpops = cacheProvider.getObject(subpopListKey, SURVEY_LIST_REF);
         if (subpops == null) {
             subpops = subpopDao.getSubpopulations(studyId, true, false);
-            cacheProvider.setObject(getListKey(studyId), subpops);
+            cacheProvider.setObject(subpopListKey, subpops);
         }
         return subpops;
     }
@@ -187,10 +178,11 @@ public class SubpopulationService {
         checkNotNull(studyId);
         checkNotNull(subpopGuid);
         
-        Subpopulation subpop = cacheProvider.getObject(getSubpopKey(studyId.getIdentifier(), subpopGuid), Subpopulation.class);
+        CacheKey subpopKey = CacheKeys.subpop(subpopGuid, studyId);
+        Subpopulation subpop = cacheProvider.getObject(subpopKey, Subpopulation.class);
         if (subpop == null) {
             subpop = subpopDao.getSubpopulation(studyId, subpopGuid);
-            cacheProvider.setObject(getSubpopKey(subpop), subpop);
+            cacheProvider.setObject(subpopKey, subpop);
         }
         return subpop;
     }
@@ -222,8 +214,8 @@ public class SubpopulationService {
         
         // Will throw EntityNotFoundException if the subpopulation is not in the study
         subpopDao.deleteSubpopulation(studyId, subpopGuid, physicalDelete, false);
-        cacheProvider.removeObject(getSubpopKey(studyId.getIdentifier(), subpopGuid));
-        cacheProvider.removeObject(getListKey(studyId));
+        cacheProvider.removeObject(CacheKeys.subpop(subpopGuid, studyId));
+        cacheProvider.removeObject(CacheKeys.subpopList(studyId));
     }
     
     /**
@@ -238,8 +230,8 @@ public class SubpopulationService {
         if (!subpops.isEmpty()) {
             for (Subpopulation subpop : subpops) {
                 subpopDao.deleteSubpopulation(studyId, subpop.getGuid(), true, true);
-                cacheProvider.removeObject(getSubpopKey(subpop));
-                cacheProvider.removeObject(getListKey(studyId));
+                cacheProvider.removeObject(CacheKeys.subpop(subpop.getGuid(), studyId));
+                cacheProvider.removeObject(CacheKeys.subpopList(studyId));
             }
         }
     }

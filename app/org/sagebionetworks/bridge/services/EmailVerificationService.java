@@ -23,6 +23,8 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.async.AsyncHandler;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.cache.CacheKeys;
+import org.sagebionetworks.bridge.cache.CacheKeys.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 
@@ -44,7 +46,6 @@ public class EmailVerificationService {
 
     static final String CONFIG_KEY_NOTIFICATION_TOPIC_ARN = "ses.notification.topic.arn";
     private static final int VERIFIED_EMAIL_CACHE_IN_SECONDS = 60*5;
-    private static final String KEY_POSTFIX = ":emailVerificationStatus";
 
     // config
     private String notificationTopicArn;
@@ -98,18 +99,14 @@ public class EmailVerificationService {
         sesRateLimiter.setRate(rate);
     }
 
-    private String getVerifiedAddressKey(String emailAddress) {
-        return emailAddress + KEY_POSTFIX;
-    }
-    
     private EmailVerificationStatus cacheAndReturn(String emailAddress, EmailVerificationStatus status) {
-        String key = getVerifiedAddressKey(emailAddress);
+        CacheKey key = CacheKeys.emailVerification(emailAddress);
         cacheProvider.setObject(key, status.name(), VERIFIED_EMAIL_CACHE_IN_SECONDS);
         return status;
     }
     
     public boolean isVerified(String emailAddress) {
-        String key = getVerifiedAddressKey(emailAddress);
+        CacheKey key = CacheKeys.emailVerification(emailAddress);
         String value = cacheProvider.getObject(key, String.class);
         if (value == null) {
             EmailVerificationStatus status = getEmailStatus(emailAddress);

@@ -15,6 +15,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.sagebionetworks.bridge.cache.CacheKeys;
+import org.sagebionetworks.bridge.cache.CacheKeys.CacheKey;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.springframework.test.context.ContextConfiguration;
@@ -40,7 +42,7 @@ public class RedisDistributedLockDaoTest {
     @After
     public void after() {
         if (jedisOps != null) {
-            jedisOps.del(getRedisKey(id));
+            jedisOps.del(CacheKeys.lock(id, getClass()).toString());
         }
     }
 
@@ -49,11 +51,11 @@ public class RedisDistributedLockDaoTest {
         // Acquire lock
         String lockId = lockDao.acquireLock(getClass(), id, 60);
         assertNotNull(lockId);
-        String redisKey = getRedisKey(id);
-        String redisLockId = jedisOps.get(redisKey);
+        CacheKey redisKey = CacheKeys.lock(id, getClass());
+        String redisLockId = jedisOps.get(redisKey.toString());
         assertNotNull(redisLockId);
         assertEquals(redisLockId, lockId);
-        assertTrue(jedisOps.ttl(redisKey) > 0);
+        assertTrue(jedisOps.ttl(redisKey.toString()) > 0);
         // Acquire again should get back an exception
         try {
             assertNull(lockDao.acquireLock(getClass(), id));
@@ -70,9 +72,5 @@ public class RedisDistributedLockDaoTest {
         // Once released, can be re-acquired
         lockId = lockDao.acquireLock(getClass(), id, 1);
         lockDao.releaseLock(getClass(), id, lockId);
-    }
-
-    private String getRedisKey(String id) {
-        return RedisKey.LOCK.getRedisKey(id + RedisKey.SEPARATOR + getClass().getCanonicalName());
     }
 }

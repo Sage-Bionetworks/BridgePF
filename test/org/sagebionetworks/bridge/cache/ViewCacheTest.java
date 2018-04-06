@@ -12,7 +12,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
+import org.sagebionetworks.bridge.cache.CacheKeys.CacheKey;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -43,9 +43,9 @@ public class ViewCacheTest {
         cache.setObjectMapper(BridgeObjectMapper.get());
         cache.setCachePeriod(BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
         
-        ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
+        CacheKey cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
         CacheProvider provider = mock(CacheProvider.class);
-        when(provider.getObject(cacheKey.getKey(), String.class)).thenReturn(null);
+        when(provider.getObject(cacheKey, String.class)).thenReturn(null);
         cache.setCacheProvider(provider);
         
         String json = cache.getView(cacheKey, new Supplier<Study>() {
@@ -66,10 +66,10 @@ public class ViewCacheTest {
         cache.setObjectMapper(BridgeObjectMapper.get());
         cache.setCachePeriod(BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
         
-        ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
+        CacheKey cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
         
         CacheProvider provider = mock(CacheProvider.class);
-        when(provider.getObject(cacheKey.getKey(), String.class)).thenReturn(null);
+        when(provider.getObject(cacheKey, String.class)).thenReturn(null);
         cache.setCacheProvider(provider);
         
         // It doesn't get wrapped or transformed or anything
@@ -93,9 +93,9 @@ public class ViewCacheTest {
         cache.setObjectMapper(BridgeObjectMapper.get());
         cache.setCachePeriod(BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
         
-        ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
+        CacheKey cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
         CacheProvider provider = mock(CacheProvider.class);
-        when(provider.getObject(cacheKey.getKey(), String.class)).thenReturn(originalStudyJson);
+        when(provider.getObject(cacheKey, String.class)).thenReturn(originalStudyJson);
         cache.setCacheProvider(provider);
         
         String json = cache.getView(cacheKey, new Supplier<Study>() {
@@ -117,8 +117,8 @@ public class ViewCacheTest {
         cache.setObjectMapper(BridgeObjectMapper.get());
         cache.setCachePeriod(BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
         
-        final ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
-        cache.setCacheProvider(getSimpleCacheProvider(cacheKey.getKey(), originalStudyJson));
+        final CacheKey cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
+        cache.setCacheProvider(getSimpleCacheProvider(cacheKey, originalStudyJson));
         
         cache.removeView(cacheKey);
         
@@ -137,8 +137,8 @@ public class ViewCacheTest {
     public void getCacheKeyWorks() {
         ViewCache cache = new ViewCache();
         
-        ViewCacheKey<Study> cacheKey = cache.getCacheKey(Study.class, "mostRandom", "leastRandom");
-        assertEquals("mostRandom:leastRandom:Study:view", cacheKey.getKey());
+        CacheKey cacheKey = cache.getCacheKey(Study.class, "mostRandom", "leastRandom");
+        assertEquals("mostRandom:leastRandom:Study:view", cacheKey.toString());
     }
     
     @Test
@@ -158,42 +158,42 @@ public class ViewCacheTest {
         cache.setObjectMapper(mapper);
         cache.setCacheProvider(provider);
         
-        ViewCacheKey<Survey> cacheKey = cache.getCacheKey(Survey.class, survey.getIdentifier());
+        CacheKey cacheKey = cache.getCacheKey(Survey.class, survey.getIdentifier());
         cache.getView(cacheKey, () -> survey);
         
         // The string from this mapper doesn't have the "type" attribute, so if this passes, we
         // can be confident that the right mapper has been used.
-        verify(provider).setObject(cacheKey.getKey(), mapper.writeValueAsString(survey), 1000);
+        verify(provider).setObject(cacheKey, mapper.writeValueAsString(survey), 1000);
     }
     
-    private CacheProvider getSimpleCacheProvider(final String cacheKey, final String originalStudyJson) {
+    private CacheProvider getSimpleCacheProvider(final CacheKey cacheKey, final String originalStudyJson) {
         return new CacheProvider() {
-            private Map<String,String> map = Maps.newHashMap();
+            private Map<CacheKey,String> map = Maps.newHashMap();
             {
                 map.put(cacheKey, originalStudyJson);
             }
-            public <T> T getObject(String cacheKey, Class<T> clazz) {
+            public <T> T getObject(CacheKey cacheKey, Class<T> clazz) {
                 try {
                     return BridgeObjectMapper.get().readValue(map.get(cacheKey), clazz);    
                 } catch(Exception e) {
                     return null;
                 }
             }
-            public void setObject(String cacheKey, Object object) {
+            public void setObject(CacheKey cacheKey, Object object) {
                 try {
                     String ser = BridgeObjectMapper.get().writeValueAsString(object);
                     map.put(cacheKey, ser);
                 } catch(Exception e) {
                 }
             }
-            public void setObject(String cacheKey, Object object, int secondsUntilExpire) {
+            public void setObject(CacheKey cacheKey, Object object, int secondsUntilExpire) {
                 try {
                     String ser = BridgeObjectMapper.get().writeValueAsString(object);
                     map.put(cacheKey, ser);
                 } catch(Exception e) {
                 }
             }
-            public void removeObject(String cacheKey) {
+            public void removeObject(CacheKey cacheKey) {
                 map.remove(cacheKey);
             }
         };

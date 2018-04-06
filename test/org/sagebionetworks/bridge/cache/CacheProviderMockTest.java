@@ -30,6 +30,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.cache.CacheKeys.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
@@ -44,7 +45,6 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.JedisTransaction;
-import org.sagebionetworks.bridge.redis.RedisKey;
 
 import redis.clients.jedis.JedisPool;
 
@@ -56,13 +56,15 @@ import com.google.common.collect.Sets;
 @RunWith(MockitoJUnitRunner.class)
 public class CacheProviderMockTest {
 
-    private static final String CACHE_KEY = "key";
+    private static final CacheKey CACHE_KEY = CacheKeys.study("key");
     private static final Encryptor ENCRYPTOR = new AesGcmEncryptor(BridgeConfigFactory.getConfig().getProperty("bridge.healthcode.redis.key"));
     private static final String USER_ID = "userId";
     private static final String SESSION_TOKEN = "sessionToken";
     private static final String ENCRYPTED_SESSION_TOKEN = "TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=";
     private static final String DECRYPTED_SESSION_TOKEN = "ccea2978-f5b9-4377-8194-f887a3e2a19b";
-    
+    private static final CacheKey SESSION_KEY = CacheKeys.sessionKey(SESSION_TOKEN);
+    private static final CacheKey USER_SESSION_KEY = CacheKeys.userSessionKey(USER_ID);
+
     private CacheProvider cacheProvider;
     
     @Mock
@@ -77,8 +79,7 @@ public class CacheProviderMockTest {
         
         when(jedisOps.getTransaction()).thenReturn(transaction);
         
-        String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
-        when(jedisOps.get(userKey)).thenReturn(SESSION_TOKEN);
+        when(jedisOps.get(USER_SESSION_KEY.toString())).thenReturn(SESSION_TOKEN);
         
         cacheProvider = new CacheProvider();
         cacheProvider.setJedisOps(jedisOps);
@@ -102,12 +103,9 @@ public class CacheProviderMockTest {
         UserSession session = new UserSession(participant);
         session.setSessionToken(SESSION_TOKEN);
         cacheProvider.setUserSession(session);
-
-        String sessionKey = RedisKey.SESSION.getRedisKey(SESSION_TOKEN);
-        String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
         
-        verify(transaction).setex(eq(sessionKey), anyInt(), anyString());
-        verify(transaction).setex(eq(userKey), anyInt(), eq(SESSION_TOKEN));
+        verify(transaction).setex(eq(SESSION_KEY.toString()), anyInt(), anyString());
+        verify(transaction).setex(eq(USER_SESSION_KEY.toString()), anyInt(), eq(SESSION_TOKEN));
         verify(transaction).exec();
     }
 
@@ -126,11 +124,8 @@ public class CacheProviderMockTest {
         } catch(Throwable e) {
             fail(e.getMessage());
         }
-        String sessionKey = RedisKey.SESSION.getRedisKey(SESSION_TOKEN);
-        String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
-        
-        verify(transaction, never()).setex(eq(sessionKey), anyInt(), anyString());
-        verify(transaction, never()).setex(eq(userKey), anyInt(), eq(SESSION_TOKEN));
+        verify(transaction, never()).setex(eq(SESSION_KEY.toString()), anyInt(), anyString());
+        verify(transaction, never()).setex(eq(USER_SESSION_KEY.toString()), anyInt(), eq(SESSION_TOKEN));
         verify(transaction, never()).exec();
     }
 
@@ -145,11 +140,8 @@ public class CacheProviderMockTest {
         } catch(Throwable e) {
             fail(e.getMessage());
         }
-        String sessionKey = RedisKey.SESSION.getRedisKey(SESSION_TOKEN);
-        String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
-        
-        verify(transaction, never()).setex(eq(sessionKey), anyInt(), anyString());
-        verify(transaction, never()).setex(eq(userKey), anyInt(), eq(SESSION_TOKEN));
+        verify(transaction, never()).setex(eq(SESSION_KEY.toString()), anyInt(), anyString());
+        verify(transaction, never()).setex(eq(USER_SESSION_KEY.toString()), anyInt(), eq(SESSION_TOKEN));
         verify(transaction, never()).exec();
     }
 
@@ -168,11 +160,8 @@ public class CacheProviderMockTest {
         } catch(Throwable e) {
             fail(e.getMessage());
         }
-        String sessionKey = RedisKey.SESSION.getRedisKey(SESSION_TOKEN);
-        String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
-        
-        verify(transaction, never()).setex(eq(sessionKey), anyInt(), anyString());
-        verify(transaction, never()).setex(eq(userKey), anyInt(), eq(SESSION_TOKEN));
+        verify(transaction, never()).setex(eq(SESSION_KEY.toString()), anyInt(), anyString());
+        verify(transaction, never()).setex(eq(USER_SESSION_KEY.toString()), anyInt(), eq(SESSION_TOKEN));
         verify(transaction, never()).exec();
     }
 
@@ -194,22 +183,18 @@ public class CacheProviderMockTest {
         
         cacheProvider.removeSession(session);
         cacheProvider.getUserSession(SESSION_TOKEN);
-        String sessionKey = RedisKey.SESSION.getRedisKey(SESSION_TOKEN);
-        String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
         
-        verify(transaction).del(sessionKey);
-        verify(transaction).del(userKey);
+        verify(transaction).del(SESSION_KEY.toString());
+        verify(transaction).del(USER_SESSION_KEY.toString());
         verify(transaction).exec();
     }
 
     @Test
     public void testRemoveSessionByUserId() {
         cacheProvider.removeSessionByUserId(USER_ID);
-        String sessionKey = RedisKey.SESSION.getRedisKey(SESSION_TOKEN);
-        String userKey = RedisKey.USER_SESSION.getRedisKey(USER_ID);
         
-        verify(transaction).del(sessionKey);
-        verify(transaction).del(userKey);
+        verify(transaction).del(SESSION_KEY.toString());
+        verify(transaction).del(USER_SESSION_KEY.toString());
         verify(transaction).exec();
     }
 
@@ -225,14 +210,15 @@ public class CacheProviderMockTest {
         String json = BridgeObjectMapper.get().writeValueAsString(study);
         assertTrue(json != null && json.length() > 0);
 
-        final String cacheKey = study.getIdentifier() + ":Study";
+        final CacheKey cacheKey = CacheKeys.study(study.getIdentifier());
         simpleCacheProvider.setObject(cacheKey, json, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
 
         String cachedString = simpleCacheProvider.getObject(cacheKey, String.class);
         assertEquals(json, cachedString);
 
         // Remove something that's not the key
-        simpleCacheProvider.removeObject(cacheKey+"2");
+        final CacheKey brokenCacheKey = CacheKeys.study(study.getIdentifier()+"2");
+        simpleCacheProvider.removeObject(brokenCacheKey);
         cachedString = simpleCacheProvider.getObject(cacheKey, String.class);
         assertEquals(json, cachedString);
 
@@ -280,11 +266,11 @@ public class CacheProviderMockTest {
     public void getObject() throws Exception {
         OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint", "callbackUrl");
         String ser = BridgeObjectMapper.get().writeValueAsString(provider);
-        when(jedisOps.get(CACHE_KEY)).thenReturn(ser);
+        when(jedisOps.get(CACHE_KEY.toString())).thenReturn(ser);
         
         OAuthProvider returned = cacheProvider.getObject(CACHE_KEY, OAuthProvider.class);
         assertEquals(provider, returned);
-        verify(jedisOps).get(CACHE_KEY);
+        verify(jedisOps).get(CACHE_KEY.toString());
     }
     
     @Test
@@ -293,7 +279,7 @@ public class CacheProviderMockTest {
         OAuthProvider provider2 = new OAuthProvider("clientId2", "secret2", "endpoint2", "callbackUrl2");
         List<OAuthProvider> providers = Lists.newArrayList(provider1, provider2);
         String ser = BridgeObjectMapper.get().writeValueAsString(providers);
-        when(jedisOps.get(CACHE_KEY)).thenReturn(ser);
+        when(jedisOps.get(CACHE_KEY.toString())).thenReturn(ser);
         
         TypeReference<List<OAuthProvider>> typeRef = new TypeReference<List<OAuthProvider>>() {};
         
@@ -307,85 +293,85 @@ public class CacheProviderMockTest {
     public void getObjectWithReexpire() throws Exception {
         OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint", "callbackUrl");
         String ser = BridgeObjectMapper.get().writeValueAsString(provider);
-        when(jedisOps.get(CACHE_KEY)).thenReturn(ser);
+        when(jedisOps.get(CACHE_KEY.toString())).thenReturn(ser);
         
         OAuthProvider returned = cacheProvider.getObject(CACHE_KEY, OAuthProvider.class, 100);
         assertEquals(provider, returned);
-        verify(jedisOps).get(CACHE_KEY);
-        verify(jedisOps).expire(CACHE_KEY, 100);
+        verify(jedisOps).get(CACHE_KEY.toString());
+        verify(jedisOps).expire(CACHE_KEY.toString(), 100);
     }
     
     @Test
     public void setObject() throws Exception {
         OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint", "callbackUrl");
         String ser = BridgeObjectMapper.get().writeValueAsString(provider);
-        when(jedisOps.set(CACHE_KEY, ser)).thenReturn("OK");
+        when(jedisOps.set(CACHE_KEY.toString(), ser)).thenReturn("OK");
         
         cacheProvider.setObject(CACHE_KEY, provider);
-        verify(jedisOps).set(CACHE_KEY, ser);
+        verify(jedisOps).set(CACHE_KEY.toString(), ser);
     }
     
     @Test
     public void setObjectWithExpire() throws Exception {
         OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint", "callbackUrl");
         String ser = BridgeObjectMapper.get().writeValueAsString(provider);
-        when(jedisOps.setex(CACHE_KEY, 100, ser)).thenReturn("OK");
+        when(jedisOps.setex(CACHE_KEY.toString(), 100, ser)).thenReturn("OK");
         
         cacheProvider.setObject(CACHE_KEY, provider, 100);
-        verify(jedisOps).setex(CACHE_KEY, 100, ser);
+        verify(jedisOps).setex(CACHE_KEY.toString(), 100, ser);
     }
 
     @Test
     public void getObjectOfString() throws Exception {
         String ser = BridgeObjectMapper.get().writeValueAsString("Test");
-        when(jedisOps.get(CACHE_KEY)).thenReturn(ser);
+        when(jedisOps.get(CACHE_KEY.toString())).thenReturn(ser);
         
         String result = cacheProvider.getObject(CACHE_KEY, String.class);
         assertEquals("Test", result);
-        verify(jedisOps).get(CACHE_KEY);
+        verify(jedisOps).get(CACHE_KEY.toString());
     }
     
     @Test
     public void getObjectWithReexpireOfString() throws Exception {
         String ser = BridgeObjectMapper.get().writeValueAsString("Test");
-        when(jedisOps.get(CACHE_KEY)).thenReturn(ser);
+        when(jedisOps.get(CACHE_KEY.toString())).thenReturn(ser);
         
         String result = cacheProvider.getObject(CACHE_KEY, String.class, 100);
         assertEquals("Test", result);
-        verify(jedisOps).expire(CACHE_KEY, 100);
+        verify(jedisOps).expire(CACHE_KEY.toString(), 100);
     }
     
     @Test
     public void setObjectOfString() {
-        when(jedisOps.set(CACHE_KEY, "\"test\"")).thenReturn("OK");
+        when(jedisOps.set(CACHE_KEY.toString(), "\"test\"")).thenReturn("OK");
         
         cacheProvider.setObject(CACHE_KEY, "test");
-        verify(jedisOps).set(CACHE_KEY, "\"test\"");
+        verify(jedisOps).set(CACHE_KEY.toString(), "\"test\"");
     }
     
     @Test
     public void addToSet() {
         cacheProvider.addCacheKeyToSet(CACHE_KEY, "member");
         
-        verify(jedisOps).sadd(CACHE_KEY, "member");
+        verify(jedisOps).sadd(CACHE_KEY.toString(), "member");
     }
     
     @Test
     public void removeSetOfCacheKeys() {
-        doReturn(Sets.newHashSet("key1", "key2")).when(jedisOps).smembers(CACHE_KEY);
-        doReturn(transaction).when(jedisOps).getTransaction(CACHE_KEY);
+        doReturn(Sets.newHashSet("key1", "key2")).when(jedisOps).smembers(CACHE_KEY.toString());
+        doReturn(transaction).when(jedisOps).getTransaction(CACHE_KEY.toString());
         
         cacheProvider.removeSetOfCacheKeys(CACHE_KEY);
         verify(transaction).del("key1");
         verify(transaction).del("key2");
-        verify(transaction).del(CACHE_KEY);
+        verify(transaction).del(CACHE_KEY.toString());
         verify(transaction).exec();
     }
     
     @Test
     public void nullSetDoesNotDelete() {
-        doReturn(null).when(jedisOps).smembers(CACHE_KEY);
-        doReturn(transaction).when(jedisOps).getTransaction(CACHE_KEY);
+        doReturn(null).when(jedisOps).smembers(CACHE_KEY.toString());
+        doReturn(transaction).when(jedisOps).getTransaction(CACHE_KEY.toString());
         
         cacheProvider.removeSetOfCacheKeys(CACHE_KEY);
         verify(transaction, never()).del(anyString());
@@ -394,8 +380,8 @@ public class CacheProviderMockTest {
 
     @Test
     public void emptySetDoesNotDelete() {
-        doReturn(Sets.newHashSet()).when(jedisOps).smembers(CACHE_KEY);
-        doReturn(transaction).when(jedisOps).getTransaction(CACHE_KEY);
+        doReturn(Sets.newHashSet()).when(jedisOps).smembers(CACHE_KEY.toString());
+        doReturn(transaction).when(jedisOps).getTransaction(CACHE_KEY.toString());
         
         cacheProvider.removeSetOfCacheKeys(CACHE_KEY);
         verify(transaction, never()).del(anyString());
@@ -405,10 +391,9 @@ public class CacheProviderMockTest {
     private void assertSession(String json) {
         JedisOps jedisOps = mock(JedisOps.class);
         
-        String sessionKey = RedisKey.SESSION.getRedisKey("sessionToken");
-        doReturn(sessionKey).when(jedisOps).get("sessionToken");
-        doReturn(transaction).when(jedisOps).getTransaction(sessionKey);
-        doReturn(json).when(jedisOps).get(sessionKey);
+        doReturn(SESSION_KEY.toString()).when(jedisOps).get("sessionToken");
+        doReturn(transaction).when(jedisOps).getTransaction(SESSION_KEY.toString());
+        doReturn(json).when(jedisOps).get(SESSION_KEY.toString());
         
         cacheProvider.setJedisOps(jedisOps);
         cacheProvider.setBridgeObjectMapper(BridgeObjectMapper.get());

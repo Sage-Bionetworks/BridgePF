@@ -19,6 +19,8 @@ import java.util.function.Supplier;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.cache.CacheKeys;
+import org.sagebionetworks.bridge.cache.CacheKeys.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -92,10 +94,6 @@ public class AccountWorkflowService {
     private static final String PHONE_VERIFICATION_EXPIRATION_PERIOD = "phoneVerificationExpirationPeriod";
     private static final String PHONE_SIGNIN_EXPIRATION_PERIOD = "phoneSignInExpirationPeriod";
     private static final String EMAIL_SIGNIN_EXPIRATION_PERIOD = "emailSignInExpirationPeriod";
-    
-    // Cache keys
-    private static final String EMAIL_SIGNIN_REQUEST_KEY = "%s:%s:signInRequest";
-    private static final String PHONE_SIGNIN_REQUEST_KEY = "%s:%s:phoneSignInRequest";
     
     private final AtomicLong emailSignInRequestInMillis = new AtomicLong(200L);
     private final AtomicLong phoneSignInRequestInMillis = new AtomicLong(200L);
@@ -346,7 +344,7 @@ public class AccountWorkflowService {
             EmailTemplate template) {
         String sptoken = getNextToken();
         
-        String cacheKey = sptoken + ":" + study.getIdentifier();
+        CacheKey cacheKey = CacheKeys.passwordResetForEmail(sptoken, study.getIdentifier());
         cacheProvider.setObject(cacheKey, email, VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         
         String url = getResetPasswordURL(study, sptoken);
@@ -384,7 +382,8 @@ public class AccountWorkflowService {
     
     private void sendPasswordResetRelatedSMS(Study study, Phone phone, boolean includePhoneSignIn, SmsTemplate template) {
         String sptoken = getNextToken();
-        String cacheKey = sptoken + ":phone:" + study.getIdentifier();
+        
+        CacheKey cacheKey = CacheKeys.passwordResetForPhone(sptoken, study.getIdentifier());
         cacheProvider.setObject(cacheKey, getPhoneString(phone), VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         
         String url = getShortResetPasswordURL(study, sptoken);
@@ -419,8 +418,8 @@ public class AccountWorkflowService {
         checkNotNull(passwordReset);
         
         // This pathway is unusual as the token may have been sent via email or phone, so test for both.
-        String emailCacheKey = passwordReset.getSptoken() + ":" + passwordReset.getStudyIdentifier();
-        String phoneCacheKey = passwordReset.getSptoken() + ":phone:" + passwordReset.getStudyIdentifier();
+        CacheKey emailCacheKey = CacheKeys.passwordResetForEmail(passwordReset.getSptoken(), passwordReset.getStudyIdentifier());
+        CacheKey phoneCacheKey = CacheKeys.passwordResetForPhone(passwordReset.getSptoken(), passwordReset.getStudyIdentifier());
         
         String email = cacheProvider.getObject(emailCacheKey, String.class);
         String phoneJson = cacheProvider.getObject(phoneCacheKey, String.class);
@@ -499,7 +498,7 @@ public class AccountWorkflowService {
     }
     
     private void requestChannelSignIn(ChannelType channelType, Validator validator,
-            Function<SignIn, String> cacheKeySupplier, AtomicLong atomicLong, SignIn signIn, boolean shouldThrottle,
+            Function<SignIn, CacheKey> cacheKeySupplier, AtomicLong atomicLong, SignIn signIn, boolean shouldThrottle,
             Supplier<String> tokenSupplier, BiConsumer<Study, String> messageSender) {
         long startTime = System.currentTimeMillis();
         Validate.entityThrowingException(validator, signIn);
@@ -536,7 +535,7 @@ public class AccountWorkflowService {
             return;
         }
 
-        String cacheKey = cacheKeySupplier.apply(signIn);
+        CacheKey cacheKey = cacheKeySupplier.apply(signIn);
         String token = cacheProvider.getObject(cacheKey, String.class);
         if (token == null) {
             token = tokenSupplier.get();
@@ -559,7 +558,7 @@ public class AccountWorkflowService {
             Validator validator) {
         Validate.entityThrowingException(validator, signIn);
        
-        String cacheKey = null;
+        CacheKey cacheKey = null;
         if (channelType == EMAIL) {
             cacheKey = EMAIL_CACHE_KEY_FUNC.apply(signIn);
         } else if (channelType == PHONE) {
@@ -583,7 +582,9 @@ public class AccountWorkflowService {
         checkNotNull(data);
                  
         try {
-            cacheProvider.setObject(sptoken, BridgeObjectMapper.get().writeValueAsString(data), VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
+            CacheKey cacheKey = CacheKeys.verificationToken(sptoken);
+            cacheProvider.setObject(cacheKey, BridgeObjectMapper.get().writeValueAsString(data),
+                    VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         } catch (IOException e) {
             throw new BridgeServiceException(e);
         }
@@ -592,10 +593,11 @@ public class AccountWorkflowService {
     private VerificationData restoreVerification(String sptoken) {
         checkArgument(isNotBlank(sptoken));
                  
-        String json = cacheProvider.getObject(sptoken, String.class);
+        CacheKey cacheKey = CacheKeys.verificationToken(sptoken);
+        String json = cacheProvider.getObject(cacheKey, String.class);
         if (json != null) {
             try {
-                cacheProvider.removeObject(sptoken);
+                cacheProvider.removeObject(cacheKey);
                 return BridgeObjectMapper.get().readValue(json, VerificationData.class);
             } catch (IOException e) {
                 throw new BridgeServiceException(e);
@@ -630,12 +632,12 @@ public class AccountWorkflowService {
         return SecureTokenGenerator.PHONE_CODE_INSTANCE.nextToken();
     }
     
-    private static Function<SignIn, String> PHONE_CACHE_KEY_FUNC = (signIn) -> {
-        return String.format(PHONE_SIGNIN_REQUEST_KEY, signIn.getPhone().getNumber(), signIn.getStudyId());
+    private static Function<SignIn, CacheKey> PHONE_CACHE_KEY_FUNC = (signIn) -> {
+        return CacheKeys.phoneSignInRequest(signIn);
     };
     
-    private static Function<SignIn, String> EMAIL_CACHE_KEY_FUNC = (signIn) -> {
-        return String.format(EMAIL_SIGNIN_REQUEST_KEY, signIn.getEmail(), signIn.getStudyId());
+    private static Function<SignIn, CacheKey> EMAIL_CACHE_KEY_FUNC = (signIn) -> {
+        return CacheKeys.emailSignInRequest(signIn);
     };
 
     private String getEmailSignInURL(String email, String studyId, String token) {

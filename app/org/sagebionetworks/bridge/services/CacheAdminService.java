@@ -5,8 +5,8 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.Set;
 
+import org.sagebionetworks.bridge.cache.CacheKeys;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.redis.RedisKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -17,10 +17,6 @@ import com.google.common.collect.Sets;
 
 @Component
 public class CacheAdminService {
-
-    private final String SESSION_SUFFIX = RedisKey.SEPARATOR + RedisKey.SESSION.getSuffix();
-    private final String USER_SESSION_SUFFIX = RedisKey.SEPARATOR + RedisKey.SESSION.getSuffix() + RedisKey.SEPARATOR + RedisKey.USER.getSuffix();
-    private final String REQUEST_INFO_SUFFIX = RedisKey.SEPARATOR + RedisKey.REQUEST_INFO.getSuffix();
     
     private JedisPool jedisPool;
     
@@ -38,7 +34,7 @@ public class CacheAdminService {
             Set<String> allKeys = jedis.keys("*");
             Set<String> set = Sets.newHashSet();
             for (String key : allKeys) {
-                if (notASessionKey(key)) {
+                if (CacheKeys.isPublic(key)) {
                     set.add(key);
                 }
             }
@@ -54,7 +50,7 @@ public class CacheAdminService {
         checkArgument(isNotBlank(cacheKey));
         Long removed = null;
         
-        if (notASessionKey(cacheKey)) {
+        if (CacheKeys.isPublic(cacheKey)) {
             try (Jedis jedis = jedisPool.getResource()) {
                 removed = jedis.del(cacheKey);
             }
@@ -64,7 +60,4 @@ public class CacheAdminService {
         }
     }
     
-    private boolean notASessionKey(String key) {
-        return !(key.endsWith(SESSION_SUFFIX) || key.endsWith(USER_SESSION_SUFFIX) || key.endsWith(REQUEST_INFO_SUFFIX));
-    }
 }

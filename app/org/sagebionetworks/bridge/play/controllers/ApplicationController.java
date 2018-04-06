@@ -11,7 +11,7 @@ import javax.annotation.Resource;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.ViewCache;
-import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
+import org.sagebionetworks.bridge.cache.CacheKeys.CacheKey;
 import org.sagebionetworks.bridge.models.AndroidAppSiteAssociation;
 import org.sagebionetworks.bridge.models.AppleAppSiteAssociation;
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
@@ -73,7 +73,7 @@ public class ApplicationController extends BaseController {
     }
     
     public Result androidAppLinks() throws Exception {
-        ViewCacheKey<AndroidAppLinkList> cacheKey = viewCache.getCacheKey(AndroidAppLinkList.class);
+        CacheKey cacheKey = viewCache.getCacheKey(AndroidAppLinkList.class);
         
         String json = viewCache.getView(cacheKey, () -> {
             AndroidAppLinkList links = new AndroidAppLinkList();
@@ -89,7 +89,7 @@ public class ApplicationController extends BaseController {
     }
     
     public Result appleAppLinks() throws Exception {
-        ViewCacheKey<AppleAppSiteAssociation> cacheKey = viewCache.getCacheKey(AppleAppSiteAssociation.class);
+        CacheKey cacheKey = viewCache.getCacheKey(AppleAppSiteAssociation.class);
         
         String json = viewCache.getView(cacheKey, () -> {
             List<AppleAppLink> links = Lists.newArrayList();
