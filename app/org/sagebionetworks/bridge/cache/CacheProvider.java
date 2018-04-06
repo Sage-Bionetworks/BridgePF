@@ -98,8 +98,8 @@ public class CacheProvider {
         final String userId = session.getId();
         final String sessionToken = session.getSessionToken();
         
-        final CacheKey userKey = CacheKeys.userSessionKey(userId);
-        final CacheKey sessionKey = CacheKeys.sessionKey(sessionToken);
+        final CacheKey userKey = CacheKeys.sessionByUserId(userId);
+        final CacheKey sessionKey = CacheKeys.session(sessionToken);
         
         try (JedisTransaction transaction = jedisOps.getTransaction()) {
             
@@ -132,7 +132,7 @@ public class CacheProvider {
     public UserSession getUserSession(final String sessionToken) {
         checkNotNull(sessionToken);
         try {
-            final CacheKey sessionKey = CacheKeys.sessionKey(sessionToken);
+            final CacheKey sessionKey = CacheKeys.session(sessionToken);
             String ser = jedisOps.get(sessionKey.toString());
             if (ser == null) {
                 return null;
@@ -148,7 +148,7 @@ public class CacheProvider {
         checkNotNull(userId);
         
         try {
-            final CacheKey userKey = CacheKeys.userSessionKey(userId);
+            final CacheKey userKey = CacheKeys.sessionByUserId(userId);
             // This key isn't stored as a JSON string, retrieve it directly
             String sessionToken = jedisOps.get(userKey.toString());
             return (sessionToken == null) ? null : getUserSession(sessionToken);
@@ -162,8 +162,8 @@ public class CacheProvider {
         checkNotNull(session.getSessionToken());
         checkNotNull(session.getId());
         try {
-            final CacheKey sessionKey = CacheKeys.sessionKey(session.getSessionToken());
-            final CacheKey userKey = CacheKeys.userSessionKey(session.getId());
+            final CacheKey sessionKey = CacheKeys.session(session.getSessionToken());
+            final CacheKey userKey = CacheKeys.sessionByUserId(session.getId());
             try (JedisTransaction transaction = jedisOps.getTransaction()) {
                 transaction.del(sessionKey.toString())
                     .del(userKey.toString()).exec();
@@ -177,10 +177,10 @@ public class CacheProvider {
     public void removeSessionByUserId(final String userId) {
         checkNotNull(userId);
         try {
-            final CacheKey userKey = CacheKeys.userSessionKey(userId);
+            final CacheKey userKey = CacheKeys.sessionByUserId(userId);
             String sessionToken = jedisOps.get(userKey.toString());
             if (sessionToken != null) {
-                final CacheKey sessionKey = CacheKeys.sessionKey(sessionToken);
+                final CacheKey sessionKey = CacheKeys.session(sessionToken);
                 try (JedisTransaction transaction = jedisOps.getTransaction()) {
                     transaction.del(sessionKey.toString())
                         .del(userKey.toString()).exec();

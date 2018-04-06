@@ -83,7 +83,7 @@ public class CacheKeysTest {
     
     @Test
     public void sessionKey() {
-        assertEquals("sessionToken:session", CacheKeys.sessionKey("sessionToken").toString());
+        assertEquals("sessionToken:session", CacheKeys.session("sessionToken").toString());
     }
     
     @Test
@@ -103,7 +103,7 @@ public class CacheKeysTest {
     
     @Test
     public void userSessionKey() {
-        assertEquals("userId:session:user", CacheKeys.userSessionKey("userId").toString());
+        assertEquals("userId:session:user", CacheKeys.sessionByUserId("userId").toString());
     }
     
     @Test

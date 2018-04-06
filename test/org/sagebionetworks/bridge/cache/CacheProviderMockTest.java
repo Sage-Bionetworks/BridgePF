@@ -62,8 +62,8 @@ public class CacheProviderMockTest {
     private static final String SESSION_TOKEN = "sessionToken";
     private static final String ENCRYPTED_SESSION_TOKEN = "TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=";
     private static final String DECRYPTED_SESSION_TOKEN = "ccea2978-f5b9-4377-8194-f887a3e2a19b";
-    private static final CacheKey SESSION_KEY = CacheKeys.sessionKey(SESSION_TOKEN);
-    private static final CacheKey USER_SESSION_KEY = CacheKeys.userSessionKey(USER_ID);
+    private static final CacheKey SESSION_KEY = CacheKeys.session(SESSION_TOKEN);
+    private static final CacheKey USER_SESSION_KEY = CacheKeys.sessionByUserId(USER_ID);
 
     private CacheProvider cacheProvider;
     

@@ -88,7 +88,7 @@ public final class CacheKeys {
     public static final CacheKey requestInfo(String userId) {
         return new CacheKey(userId, "request-info");
     }
-    public static final CacheKey sessionKey(String sessionToken) {
+    public static final CacheKey session(String sessionToken) {
         return new CacheKey(sessionToken, "session");
     }
     public static final CacheKey study(String studyId) {
@@ -100,7 +100,7 @@ public final class CacheKeys {
     public static final CacheKey subpopList(StudyIdentifier studyId) {
         return new CacheKey(studyId.getIdentifier(), "SubpopulationList");
     }
-    public static final CacheKey userSessionKey(String userId) {
+    public static final CacheKey sessionByUserId(String userId) {
         return new CacheKey(userId, "session", "user");
     }
     public static final CacheKey verificationToken(String sptoken) {
