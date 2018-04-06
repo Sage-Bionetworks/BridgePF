@@ -16,13 +16,13 @@ import com.google.common.collect.Lists;
  * to store data in Redis. This makes it easier to determine which keys can be returned as 
  * part of the administrative API so we can keep PII data out of the cache keys we return.
  */
-public class CacheKeys {
+public final class CacheKeys {
     
     private static final Joiner COLON_JOINER = Joiner.on(":");
     private static final String[] PRIVATE_KEYS = new String[] {
             "session", "user", "request-info", "signInRequest", "phoneSignInRequest", "itp"};
     
-    public static boolean isPublic(String key) {
+    public final static boolean isPublic(String key) {
         for (String suffix : PRIVATE_KEYS) {
             if (key.endsWith(":"+suffix)) {
                 return false;
@@ -31,7 +31,7 @@ public class CacheKeys {
         return true;
     }
     
-    public static class CacheKey {
+    public final static class CacheKey {
         private final String key;
         private CacheKey(String... elements) {
             this.key = COLON_JOINER.join(elements);
@@ -42,7 +42,7 @@ public class CacheKeys {
         }
         @Override
         public int hashCode() {
-            return key.hashCode();
+            return Objects.hashCode(key);
         }
         @Override
         public boolean equals(Object obj) {
@@ -51,12 +51,12 @@ public class CacheKeys {
             if (obj == null || getClass() != obj.getClass())
                 return false;
             CacheKey other = (CacheKey) obj;
-            return Objects.equals(key, other.key);
+            return Objects.equals(this.key, other.key);
         }
     }
     
-    public static final CacheKey appConfigList(String studyId) {
-        return new CacheKey(studyId, "AppConfigList");
+    public static final CacheKey appConfigList(StudyIdentifier studyId) {
+        return new CacheKey(studyId.getIdentifier(), "AppConfigList");
     }
     public static final CacheKey channelThrottling(String throttleType, String userId) {
         return new CacheKey(userId, throttleType, "channel-throttling");

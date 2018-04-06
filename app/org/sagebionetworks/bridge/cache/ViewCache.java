@@ -42,7 +42,7 @@ public class ViewCache {
             if (value == null) {
                 value = cacheView(key, supplier);
             } else {
-                logger.debug("Retrieving " +key+"' JSON from cache");
+                logger.debug("Retrieving "+key+"' JSON from cache");
             }
             return value;
         } catch(JsonProcessingException e) {
@@ -55,7 +55,7 @@ public class ViewCache {
      * @param key
      */
     public <T> void removeView(CacheKey key) {
-        logger.debug("Deleting JSON for '" +key +"'");
+        logger.debug("Deleting JSON for '"+key+"'");
         cache.removeObject(key);
     }
     
@@ -71,7 +71,7 @@ public class ViewCache {
     }
     
     private <T> String cacheView(CacheKey key, Supplier<T> supplier) throws JsonProcessingException {
-        logger.debug("Caching JSON for " +key+"'");
+        logger.debug("Caching JSON for "+key+"'");
         T object = supplier.get();
         String value = objectMapper.writeValueAsString(object);
         cache.setObject(key, value, cachePeriod);

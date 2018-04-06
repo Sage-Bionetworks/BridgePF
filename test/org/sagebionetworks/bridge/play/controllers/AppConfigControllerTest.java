@@ -56,7 +56,7 @@ public class AppConfigControllerTest {
     private static final String TEST_UA = "Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4";
     private static final String TEST_LANG = "en-US,en;q=0.9";
     private static final String GUID = "guid";
-    private static final CacheKey CACHE_KEY = CacheKeys.appConfigList("api");
+    private static final CacheKey CACHE_KEY = CacheKeys.appConfigList(TestConstants.TEST_STUDY);
     
     @Spy
     private AppConfigController controller;

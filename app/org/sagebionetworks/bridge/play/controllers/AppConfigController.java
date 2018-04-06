@@ -54,7 +54,7 @@ public class AppConfigController extends BaseController {
         String json = viewCache.getView(cacheKey, () -> {
             AppConfig appConfig = appConfigService.getAppConfigForUser(context, true);
             // So we can delete all the relevant cached versions, keep track of them under the study
-            cacheProvider.addCacheKeyToSet(CacheKeys.appConfigList(study.getIdentifier()), cacheKey.toString());
+            cacheProvider.addCacheKeyToSet(CacheKeys.appConfigList(study.getStudyIdentifier()), cacheKey.toString());
             return appConfig;
         });
         return ok(json).as(JSON_MIME_TYPE);
@@ -82,7 +82,7 @@ public class AppConfigController extends BaseController {
         AppConfig appConfig = parseJson(request(), AppConfig.class);
         
         AppConfig created = appConfigService.createAppConfig(session.getStudyIdentifier(), appConfig);
-        cacheProvider.removeSetOfCacheKeys(CacheKeys.appConfigList(session.getStudyIdentifier().getIdentifier()));
+        cacheProvider.removeSetOfCacheKeys(CacheKeys.appConfigList(session.getStudyIdentifier()));
         
         return createdResult(new GuidVersionHolder(created.getGuid(), created.getVersion()));
     }
@@ -94,7 +94,7 @@ public class AppConfigController extends BaseController {
         appConfig.setGuid(guid);
         
         AppConfig updated = appConfigService.updateAppConfig(session.getStudyIdentifier(), appConfig);
-        cacheProvider.removeSetOfCacheKeys(CacheKeys.appConfigList(session.getStudyIdentifier().getIdentifier()));
+        cacheProvider.removeSetOfCacheKeys(CacheKeys.appConfigList(session.getStudyIdentifier()));
 
         return okResult(new GuidVersionHolder(updated.getGuid(), updated.getVersion()));
     }
@@ -103,7 +103,7 @@ public class AppConfigController extends BaseController {
         UserSession session = getAuthenticatedSession(ADMIN);
         
         appConfigService.deleteAppConfig(session.getStudyIdentifier(), guid);
-        cacheProvider.removeSetOfCacheKeys(CacheKeys.appConfigList(session.getStudyIdentifier().getIdentifier()));
+        cacheProvider.removeSetOfCacheKeys(CacheKeys.appConfigList(session.getStudyIdentifier()));
 
         return okResult("App config deleted.");
     }
