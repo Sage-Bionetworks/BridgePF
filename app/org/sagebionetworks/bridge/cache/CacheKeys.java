@@ -19,16 +19,16 @@ import com.google.common.collect.Lists;
 public final class CacheKeys {
     
     private static final Joiner COLON_JOINER = Joiner.on(":");
-    private static final String[] PRIVATE_KEYS = new String[] {
-            "session", "user", "request-info", "signInRequest", "phoneSignInRequest", "itp"};
+    private static final String[] PUBLIC_KEYS = new String[] {
+        "AppConfigList", "channel-throttling", "lock", "study", "Subpopulation", "SubpopulationList"};
     
     public final static boolean isPublic(String key) {
-        for (String suffix : PRIVATE_KEYS) {
+        for (String suffix : PUBLIC_KEYS) {
             if (key.endsWith(":"+suffix)) {
-                return false;
+                return true;
             }
         }
-        return true;
+        return false;
     }
     
     public final static class CacheKey {
