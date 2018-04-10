@@ -1468,14 +1468,15 @@ public class StudyServiceMockTest {
         String originalEmail = TestUtils.getValidStudy(StudyServiceMockTest.class).getConsentNotificationEmail();
         String newEmail = "changed@changed.com";
         
-        setupConsentEmailChangeTest(null, null);
-        setupConsentEmailChangeTest(originalEmail, originalEmail);
-        setupConsentEmailChangeTest(null, newEmail);
-        setupConsentEmailChangeTest(originalEmail, null);
-        setupConsentEmailChangeTest(originalEmail, newEmail);
+        setupConsentEmailChangeTest(null, null, false, false);
+        setupConsentEmailChangeTest(originalEmail, originalEmail, false, false);
+        setupConsentEmailChangeTest(null, newEmail, true, true);
+        setupConsentEmailChangeTest(originalEmail, null, true, false);
+        setupConsentEmailChangeTest(originalEmail, newEmail, true, true);
     }
     
-    private void setupConsentEmailChangeTest(String originalEmail, String newEmail) {
+    private void setupConsentEmailChangeTest(String originalEmail, String newEmail, boolean shouldBeChanged,
+            boolean expectedSendEmail) {
         reset(sendMailService);
         Study original = TestUtils.getValidStudy(StudyServiceMockTest.class);
         original.setConsentNotificationEmail(originalEmail);
@@ -1488,18 +1489,15 @@ public class StudyServiceMockTest {
         
         service.updateStudy(update, true);
         
-        boolean hasChanged = !Objects.equals(original.getConsentNotificationEmail(),
-                update.getConsentNotificationEmail());
-        
-        if (update.getConsentNotificationEmail() == null) {
-            verify(sendMailService, never()).sendEmail(any());
-            assertEquals(hasChanged, !update.isConsentNotificationEmailVerified());
-        } else if (hasChanged) {
+        if (shouldBeChanged && expectedSendEmail) {
             verify(sendMailService).sendEmail(any());
-            assertFalse(update.isConsentNotificationEmailVerified()); // this is always true
         } else {
             verify(sendMailService, never()).sendEmail(any());
-            assertEquals(hasChanged, !update.isConsentNotificationEmailVerified());
+        }
+        if (shouldBeChanged) {
+            assertFalse(update.isConsentNotificationEmailVerified());
+        } else {
+            assertTrue(update.isConsentNotificationEmailVerified());
         }
     }
 

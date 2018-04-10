@@ -231,6 +231,12 @@ public class StudyValidatorTest {
     }
     
     @Test
+    public void missingConsentNotificationEmailOK() {
+        study.setConsentNotificationEmail(null);
+        Validate.entityThrowingException(INSTANCE, study);
+    }    
+    
+    @Test
     public void requiresPasswordPolicy() {
         study.setPasswordPolicy(null);
         assertValidatorMessage(INSTANCE, study, "passwordPolicy", "is required");
