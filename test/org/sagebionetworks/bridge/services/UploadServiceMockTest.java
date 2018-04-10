@@ -288,6 +288,7 @@ public class UploadServiceMockTest {
         assertEquals("schema-id", view.getSchemaId());
         assertEquals(new Integer(10), view.getSchemaRevision());
         assertEquals(HealthDataRecord.ExporterStatus.SUCCEEDED, view.getHealthRecordExporterStatus());
+        assertNull(view.getHealthData());
 
         UploadView failedView = uploadList.get(1);
         assertEquals(UploadStatus.REQUESTED, failedView.getUpload().getStatus());

@@ -55,7 +55,7 @@ public class UploadController extends BaseController {
 
     /** Gets validation status and messages for the given upload ID. */
     public Result getValidationStatus(String uploadId) throws JsonProcessingException, IOException {
-        UserSession session = getSessionEitherConsentedOrInRole(Roles.RESEARCHER);
+        UserSession session = getAuthenticatedAndConsentedSession();
         
         // If not a researcher, validate that this user owns the upload
         if (!session.isInRole(Roles.RESEARCHER)) {
@@ -147,7 +147,7 @@ public class UploadController extends BaseController {
     }
     
     public Result getUpload(String uploadId) throws Exception {
-        UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.ADMIN);
+        UserSession session = getAuthenticatedSession(Roles.ADMIN);
 
         if (uploadId.startsWith("recordId:")) {
             String recordId = uploadId.split(":")[1];
@@ -161,12 +161,6 @@ public class UploadController extends BaseController {
         }
         UploadView uploadView = uploadService.getUploadView(uploadId);
 
-        // Even if the ID is valid, ultimately you cannot view an upload outside of your study
-        String studyId = session.getStudyIdentifier().getIdentifier();
-        if (!uploadView.getUpload().getStudyId().equals(studyId)) {
-            throw new UnauthorizedException();
-        }
-        // This filters out healthCode
-        return okResult(HealthDataRecord.PUBLIC_RECORD_WRITER, uploadView);
+        return okResult(uploadView);
     }
 }

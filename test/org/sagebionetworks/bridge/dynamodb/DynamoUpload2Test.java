@@ -52,25 +52,25 @@ public class DynamoUpload2Test {
         upload.setVersion(2L);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(upload);
-        assertEquals("s3_worker", node.get("completedBy").asText());
-        assertEquals(requestedOn.toString(), node.get("requestedOn").asText());
-        assertEquals(completedOn.toString(), node.get("completedOn").asText());
-        assertEquals(10000L, node.get("contentLength").asLong());
+        assertEquals("s3_worker", node.get("completedBy").textValue());
+        assertEquals(requestedOn.toString(), node.get("requestedOn").textValue());
+        assertEquals(completedOn.toString(), node.get("completedOn").textValue());
+        assertEquals(10000L, node.get("contentLength").longValue());
         assertEquals("original-upload-id", node.get("duplicateUploadId").textValue());
-        assertEquals("succeeded", node.get("status").asText());
-        assertEquals("2016-10-10", node.get("uploadDate").asText());
-        assertEquals("ABC", node.get("recordId").asText());
-        assertEquals("DEF", node.get("uploadId").asText());
-        assertNull(node.get("contentMd5"));
-        assertNull(node.get("contentType"));
-        assertNull(node.get("filename"));
-        assertNull(node.get("studyId"));
-        assertNull(node.get("version"));
-        assertNull(node.get("healthCode"));
+        assertEquals("succeeded", node.get("status").textValue());
+        assertEquals("2016-10-10", node.get("uploadDate").textValue());
+        assertEquals("ABC", node.get("recordId").textValue());
+        assertEquals("DEF", node.get("uploadId").textValue());
+        assertEquals("abc", node.get("contentMd5").textValue());
+        assertEquals("application/json", node.get("contentType").textValue());
+        assertEquals("filename.zip", node.get("filename").textValue());
+        assertEquals("api", node.get("studyId").textValue());
+        assertEquals(2L, node.get("version").longValue());
+        assertEquals("healthCode", node.get("healthCode").textValue());
         
         ArrayNode messages = (ArrayNode)node.get("validationMessageList");
-        assertEquals("message 1", messages.get(0).asText());
-        assertEquals("message 2", messages.get(1).asText());
+        assertEquals("message 1", messages.get(0).textValue());
+        assertEquals("message 2", messages.get(1).textValue());
     }
     
     @Test

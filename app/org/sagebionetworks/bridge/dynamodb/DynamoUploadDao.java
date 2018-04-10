@@ -218,12 +218,14 @@ public class DynamoUploadDao implements UploadDao {
         if (offsetKey != null) {
             // load table again to get the one last evaluated upload
             DynamoUpload2 retLastEvaluatedUpload = mapper.load(DynamoUpload2.class, offsetKey);
-
-            Map<String,AttributeValue> map = new HashMap<>();
-            map.put(UPLOAD_ID, new AttributeValue().withS(offsetKey));
-            map.put(REQUESTED_ON, new AttributeValue().withN(String.valueOf(retLastEvaluatedUpload.getRequestedOn())));
-            map.put(STUDY_ID, new AttributeValue().withS(studyId.getIdentifier()));
-            query.withExclusiveStartKey(map);
+            
+            if (retLastEvaluatedUpload != null) {
+                Map<String,AttributeValue> map = new HashMap<>();
+                map.put(UPLOAD_ID, new AttributeValue().withS(offsetKey));
+                map.put(REQUESTED_ON, new AttributeValue().withN(String.valueOf(retLastEvaluatedUpload.getRequestedOn())));
+                map.put(STUDY_ID, new AttributeValue().withS(studyId.getIdentifier()));
+                query.withExclusiveStartKey(map);
+            }
         }
         query.withLimit(pageSize);
         return query;

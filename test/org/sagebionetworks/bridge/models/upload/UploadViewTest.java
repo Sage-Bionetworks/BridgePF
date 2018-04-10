@@ -9,7 +9,6 @@ import org.joda.time.LocalDate;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
@@ -30,7 +29,7 @@ public class UploadViewTest {
     
     @Test
     public void canSerialize() throws Exception {
-        DynamoHealthDataRecord record = new DynamoHealthDataRecord();
+        HealthDataRecord record = HealthDataRecord.create();
         record.setAppVersion("appVersion");
         record.setCreatedOn(COMPLETED_ON.getMillis());
         record.setCreatedOnTimeZone("+03:00");
@@ -106,10 +105,9 @@ public class UploadViewTest {
         assertTrue(recordNode.get("metadata").isObject());
         assertTrue(recordNode.get("userMetadata").isObject());
         
-        // Should not be here. If these are not there, @JsonIgnore is working as intended
-        // and tested in UploadTest
-        assertNull(node.get("contentMd5"));
-        assertNull(node.get("healthCode"));
+        // With recent changes to expose to admin, these should be present in JSON
+        assertEquals("some-content", node.get("contentMd5").textValue());
+        assertEquals("health-code", node.get("healthCode").textValue());
     }
 
 }
