@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.models.upload;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import org.joda.time.DateTime;

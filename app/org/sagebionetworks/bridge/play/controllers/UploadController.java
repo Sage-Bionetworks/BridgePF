@@ -147,7 +147,7 @@ public class UploadController extends BaseController {
     }
     
     public Result getUpload(String uploadId) throws Exception {
-        UserSession session = getAuthenticatedSession(Roles.ADMIN);
+        getAuthenticatedSession(Roles.ADMIN);
 
         if (uploadId.startsWith("recordId:")) {
             String recordId = uploadId.split(":")[1];
