@@ -27,7 +27,6 @@ import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.email.ConsentEmailProvider;
-import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 import org.sagebionetworks.bridge.services.email.WithdrawConsentEmailProvider;
 import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -159,13 +158,16 @@ public class ConsentService {
         // Publish an enrollment event, set sharing scope 
         activityEventService.publishEnrollmentEvent(participant.getHealthCode(), withConsentCreatedOnSignature);
         
-        // Send email, if required.
-        if (sendEmail && !subpop.isAutoSendConsentSuppressed() && participant.getEmail() != null) {
-            MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, participant.getTimeZone(),
-                    participant.getEmail(), withConsentCreatedOnSignature, sharingScope,
+        if (sendEmail) {
+            // If the user's email exists and email notification is not suppressed, add the user to the provider
+            String participantEmail = subpop.isAutoSendConsentSuppressed() ? null : participant.getEmail();
+            ConsentEmailProvider consentEmail = new ConsentEmailProvider(study, participant.getTimeZone(),
+                    participantEmail, withConsentCreatedOnSignature, sharingScope,
                     studyConsent.getDocumentContent(), consentTemplate);
-
-            sendMailService.sendEmail(consentEmail);
+            
+            if (!consentEmail.getRecipients().isEmpty()) {
+                sendMailService.sendEmail(consentEmail);
+            }
         }
     }
 
@@ -231,10 +233,7 @@ public class ConsentService {
         }
         accountDao.updateAccount(account, false);
         
-        Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
-        if (!subpop.isAutoSendConsentSuppressed()) {
-            sendWithdrawEmail(study, participant.getExternalId(), account, withdrawal, withdrewOn);
-        }
+        sendWithdrawEmail(study, participant.getExternalId(), account, withdrawal, withdrewOn);
 
         return statuses;
     }
@@ -259,12 +258,8 @@ public class ConsentService {
         account.setSharingScope(SharingScope.NO_SHARING);
         accountDao.updateAccount(account, false);
 
-        for (SubpopulationGuid subpopGuid : account.getAllConsentSignatureHistories().keySet()) {
-            Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
-            if (!subpop.isAutoSendConsentSuppressed()) {
-                sendWithdrawEmail(study, participant.getExternalId(), account, withdrawal, withdrewOn);
-            }
-        }
+        sendWithdrawEmail(study, participant.getExternalId(), account, withdrawal, withdrewOn);
+
         // But we don't need to query, we know these are all withdraw.
         return getConsentStatuses(context, account);
     }
@@ -280,9 +275,11 @@ public class ConsentService {
             // For backwards-compatibility, a null value means the email is verified.
             return;
         }
-        MimeTypeEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account, withdrawal,
-                withdrewOn);
-        sendMailService.sendEmail(consentEmail);
+        WithdrawConsentEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, externalId, account,
+                withdrawal, withdrewOn);
+        if (!consentEmail.getRecipients().isEmpty()) {
+            sendMailService.sendEmail(consentEmail);    
+        }
     }
 
     /**
@@ -302,10 +299,11 @@ public class ConsentService {
         
         String htmlTemplate = studyConsentService.getActiveConsent(subpop).getDocumentContent();
         
-        if (participant.getEmail() != null) {
-            MimeTypeEmailProvider consentEmail = new ConsentEmailProvider(study, participant.getTimeZone(),
-                    participant.getEmail(), consentSignature, sharingScope, htmlTemplate, consentTemplate);
-            sendMailService.sendEmail(consentEmail);
+        String participantEmail = subpop.isAutoSendConsentSuppressed() ? null : participant.getEmail();
+        ConsentEmailProvider consentEmail = new ConsentEmailProvider(study, participant.getTimeZone(),
+                participantEmail, consentSignature, sharingScope, htmlTemplate, consentTemplate);
+        if (!consentEmail.getRecipients().isEmpty()) {
+            sendMailService.sendEmail(consentEmail);    
         }
     }
 

@@ -39,6 +39,7 @@ public class WithdrawConsentEmailProviderTest {
     @Test
     public void canGenerateMinimalEmail() throws Exception {
         when(study.getConsentNotificationEmail()).thenReturn("a@a.com");
+        when(study.isConsentNotificationEmailVerified()).thenReturn(true);
         when(study.getName()).thenReturn("Study Name");
         when(study.getSupportEmail()).thenReturn("c@c.com");
 
@@ -61,6 +62,7 @@ public class WithdrawConsentEmailProviderTest {
     @Test
     public void canGenerateMaximalEmail() throws Exception {
         when(study.getConsentNotificationEmail()).thenReturn("a@a.com, b@b.com");
+        when(study.isConsentNotificationEmailVerified()).thenReturn(true);
         when(study.getName()).thenReturn("Study Name");
         when(study.getSupportEmail()).thenReturn("c@c.com");
         account.setFirstName("<b>Jack</b>");

@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services.email;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Set;
 
 import javax.mail.MessagingException;
@@ -16,6 +17,8 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.Study;
+
+import com.google.common.collect.Lists;
 
 public class WithdrawConsentEmailProvider extends MimeTypeEmailProvider {
     
@@ -36,6 +39,19 @@ public class WithdrawConsentEmailProvider extends MimeTypeEmailProvider {
         this.withdrewOn = withdrewOn;
     }
     
+    public List<String> getRecipients() {
+        List<String> recipients = Lists.newArrayList();
+        // Check if consent notification email is verified. For backwards-compatibility, a null 
+        // value means the email is verified.
+        Boolean consentNotificationEmailVerified = getStudy().isConsentNotificationEmailVerified();
+        if (consentNotificationEmailVerified == null || consentNotificationEmailVerified) {
+            // Must wrap in new list because set from BridgeUtils.commaListToSet() is immutable
+            Set<String> studyRecipients = BridgeUtils.commaListToOrderedSet(getStudy().getConsentNotificationEmail());
+            recipients.addAll( studyRecipients );
+        }
+        return recipients;
+    }
+    
     @Override
     public MimeTypeEmail getMimeTypeEmail() throws MessagingException {
         MimeTypeEmailBuilder builder = new MimeTypeEmailBuilder();
@@ -46,10 +62,7 @@ public class WithdrawConsentEmailProvider extends MimeTypeEmailProvider {
         final String sendFromEmail = getFormattedSenderEmail();
         builder.withSender(sendFromEmail);
         
-        if (getStudy().getConsentNotificationEmail() != null) {
-            Set<String> emailAddresses = BridgeUtils.commaListToOrderedSet(getStudy().getConsentNotificationEmail());
-            builder.withRecipients(emailAddresses);
-        }
+        builder.withRecipients(getRecipients());
 
         String content = String.format("<p>User %s withdrew from the study on %s. </p>", 
                 getUserLabel(), FORMATTER.print(withdrewOn));

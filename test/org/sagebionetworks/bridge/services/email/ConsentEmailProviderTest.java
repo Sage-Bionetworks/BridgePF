@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services.email;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.FileInputStream;
@@ -242,6 +243,26 @@ public class ConsentEmailProviderTest {
         List<String> recipientList = email.getRecipientAddresses();
         assertEquals(1, recipientList.size());
         assertEquals("user@user.com", recipientList.get(0));
+    }
+    
+    @Test
+    public void providerWithoutRecipientsWorks() {
+        study.setConsentNotificationEmail(null);
+        ConsentSignature sig = makeSignatureWithoutImage();
+        
+        // The provider reports that there are no addresses to send to, which is correct
+        ConsentEmailProvider provider = new ConsentEmailProvider(study, PST, null, sig,
+                SharingScope.NO_SHARING, NEW_DOCUMENT_FRAGMENT, consentBodyTemplate);
+        assertTrue(provider.getRecipients().isEmpty());
+        
+        provider = new ConsentEmailProvider(study, PST, "email@email.com", sig, SharingScope.NO_SHARING,
+                NEW_DOCUMENT_FRAGMENT, consentBodyTemplate);
+        assertFalse(provider.getRecipients().isEmpty());
+        
+        study.setConsentNotificationEmail("email@email.com");
+        provider = new ConsentEmailProvider(study, PST, null, sig, SharingScope.NO_SHARING, NEW_DOCUMENT_FRAGMENT,
+                consentBodyTemplate);
+        assertFalse(provider.getRecipients().isEmpty());
     }
 
     private static ConsentSignature makeSignatureWithoutImage() {

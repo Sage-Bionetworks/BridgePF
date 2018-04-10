@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services.email;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -11,6 +12,7 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.PreencodedMimeBodyPart;
 import javax.mail.util.ByteArrayDataSource;
 
+import com.google.common.collect.Lists;
 import com.google.common.net.MediaType;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
@@ -61,6 +63,22 @@ public class ConsentEmailProvider extends MimeTypeEmailProvider {
         this.consentTemplate = consentTemplate;
     }
 
+    public List<String> getRecipients() {
+        List<String> recipients = Lists.newArrayList();
+        // Check if consent notification email is verified. For backwards-compatibility, a null 
+        // value means the email is verified.
+        Boolean consentNotificationEmailVerified = getStudy().isConsentNotificationEmailVerified();
+        if (consentNotificationEmailVerified == null || consentNotificationEmailVerified) {
+            // Must wrap in new list because set from BridgeUtils.commaListToSet() is immutable
+            Set<String> studyRecipients = BridgeUtils.commaListToOrderedSet(getStudy().getConsentNotificationEmail());
+            recipients.addAll( studyRecipients );
+        }
+        if (userEmail != null) {
+            recipients.add(userEmail);
+        }
+        return recipients;
+    }
+    
     @Override
     public MimeTypeEmail getMimeTypeEmail() throws MessagingException {
         MimeTypeEmailBuilder builder = new MimeTypeEmailBuilder();
@@ -71,15 +89,7 @@ public class ConsentEmailProvider extends MimeTypeEmailProvider {
         final String sendFromEmail = getFormattedSenderEmail();
         builder.withSender(sendFromEmail);
 
-        // Check if consent notification email is verified. For backwards-compatibility, a null value means the email
-        // is verified.
-        Boolean consentNotificationEmailVerified = getStudy().isConsentNotificationEmailVerified();
-        if (consentNotificationEmailVerified == null || consentNotificationEmailVerified) {
-            // Must wrap in new list because set from BridgeUtils.commaListToSet() is immutable
-            Set<String> recipients = BridgeUtils.commaListToOrderedSet(getStudy().getConsentNotificationEmail());
-            builder.withRecipients(recipients);
-        }
-        builder.withRecipient(userEmail);
+        builder.withRecipients(getRecipients());
 
         final String consentDoc = createSignedDocument();
 
