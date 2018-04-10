@@ -38,6 +38,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -125,6 +126,8 @@ public class AuthenticationServiceMockTest {
     private ArgumentCaptor<StudyParticipant> participantCaptor;
     @Captor
     private ArgumentCaptor<AccountId> accountIdCaptor;
+    @Captor
+    private ArgumentCaptor<Tuple<String>> tupleCaptor;
     @Spy
     private AuthenticationService service;
 
@@ -233,11 +236,13 @@ public class AuthenticationServiceMockTest {
         
         UserSession session = new UserSession();
         session.setStudyIdentifier(studyIdentifier);
+        session.setReauthToken("reauthToken");
         session.setParticipant(new StudyParticipant.Builder().withEmail("email@email.com").withId(USER_ID).build());
         service.signOut(session);
         
         verify(accountDao).deleteReauthToken(ACCOUNT_ID);
         verify(cacheProvider).removeSession(session);
+        verify(cacheProvider).removeObject("reauthToken:api:reauthCacheKey");
     }
     
     @Test
@@ -346,18 +351,25 @@ public class AuthenticationServiceMockTest {
         UserSession captured = sessionCaptor.getValue();
         assertEquals(RECIPIENT_EMAIL, captured.getParticipant().getEmail());
         assertEquals(REAUTH_TOKEN, captured.getReauthToken());
-        verify(cacheProvider).setObject(REAUTH_CACHE_TOKEN, captured.getSessionToken(),
-                BridgeConstants.BRIDGE_REAUTH_GRACE_PERIOD);
+        verify(cacheProvider).setObject(eq(REAUTH_CACHE_TOKEN), tupleCaptor.capture(),
+                eq(BridgeConstants.BRIDGE_REAUTH_GRACE_PERIOD));
+        
+        Tuple<String> tuple = tupleCaptor.getValue();
+        assertEquals(session.getSessionToken(), tuple.getLeft());
+        assertEquals(REAUTH_TOKEN, tuple.getRight());
     }
     
     @Test
     public void reauthenticationFromCache() {
+        Tuple<String> tuple = new Tuple<String>(TOKEN, "newReauthToken");
+        
         UserSession session = new UserSession();
-        doReturn(TOKEN).when(cacheProvider).getObject(REAUTH_CACHE_TOKEN, String.class);
+        doReturn(tuple).when(cacheProvider).getObject(REAUTH_CACHE_TOKEN, AuthenticationService.TUPLE_TYPE);
         doReturn(session).when(cacheProvider).getUserSession(TOKEN);
         
         UserSession returned = service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
         assertEquals(session, returned);
+        assertEquals("newReauthToken", session.getReauthToken());
         
         // We don't have to retrieve this.
         verify(accountDao, never()).reauthenticate(any(), any());
@@ -365,7 +377,8 @@ public class AuthenticationServiceMockTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void reauthenticationWithoutSessionThrows() {
-        doReturn(TOKEN).when(cacheProvider).getObject(REAUTH_CACHE_TOKEN, String.class);
+        Tuple<String> tuple = new Tuple<>("left", "right");
+        doReturn(tuple).when(cacheProvider).getObject(REAUTH_CACHE_TOKEN, AuthenticationService.TUPLE_TYPE);
         
         service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
     }
