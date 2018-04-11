@@ -190,8 +190,8 @@ public class ConsentServiceMockTest {
         assertNull(updatedConsentList.get(1).getWithdrewOn());
 
         // Consent we send to activityEventService is same as the second consent.
-        verify(activityEventService).publishEnrollmentEvent(participant.getHealthCode(), updatedConsentList.get(1));
-        
+        verify(activityEventService).publishEnrollmentEvent(study, participant.getHealthCode(), updatedConsentList.get(1));
+
         verify(sendMailService).sendEmail(consentProviderCaptor.capture());
         assertEquals(2, consentProviderCaptor.getValue().getRecipients().size());
         assertEquals(study.getConsentNotificationEmail(), consentProviderCaptor.getValue().getRecipients().get(0));

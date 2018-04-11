@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ActivityEventService;
 
 @Controller
@@ -27,7 +28,8 @@ public class ActivityEventController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
         CustomActivityEventRequest activityEvent = parseJson(request(), CustomActivityEventRequest.class);
 
-        activityEventService.publishCustomEvent(session.getStudyIdentifier(), session.getHealthCode(),
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        activityEventService.publishCustomEvent(study, session.getHealthCode(),
                 activityEvent.getEventKey(), activityEvent.getTimestamp());
 
         return createdResult("Event recorded");

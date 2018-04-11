@@ -156,7 +156,7 @@ public class ConsentService {
         accountDao.updateAccount(account, false);
         
         // Publish an enrollment event, set sharing scope 
-        activityEventService.publishEnrollmentEvent(participant.getHealthCode(), withConsentCreatedOnSignature);
+        activityEventService.publishEnrollmentEvent(study, participant.getHealthCode(), withConsentCreatedOnSignature);
         
         if (sendEmail) {
             // If the user's email exists and email notification is not suppressed, add the user to the provider
