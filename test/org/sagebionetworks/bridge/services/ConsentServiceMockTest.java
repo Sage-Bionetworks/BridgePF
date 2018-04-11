@@ -18,7 +18,6 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -530,6 +529,14 @@ public class ConsentServiceMockTest {
     }
     
     @Test
+    public void consentToResearchSucceedsWithoutNotification() {
+        // In this call, we explicitly override any other settings to suppress notifications
+        consentService.consentToResearch(study, SUBPOP_GUID, participant, consentSignature, SharingScope.NO_SHARING, false);
+        
+        verify(sendMailService, never()).sendEmail(any());
+    }
+    
+    @Test
     public void withdrawConsentNoConsentAdministratorEmail() {
         setupWithdrawTest(true, true);
         study.setConsentNotificationEmail(null);
@@ -549,8 +556,12 @@ public class ConsentServiceMockTest {
         verify(sendMailService, never()).sendEmail(any());
     }
     
+    @Test
     public void emailConsentAgreementNoConsentAdministratorEmail() {
         study.setConsentNotificationEmail(null);
+        consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("2014-01-01")
+                .withSignedOn(SIGNED_ON).build();
+        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
         
         consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
         
@@ -560,7 +571,7 @@ public class ConsentServiceMockTest {
     }
     
     @Test
-    public void emailConsentAgreementSuppressEmailNotification() {
+    public void emailConsentAgreementDoesNotSuppressEmailNotification() {
         consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("2014-01-01")
                 .withSignedOn(SIGNED_ON).build();
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
@@ -569,9 +580,11 @@ public class ConsentServiceMockTest {
         
         consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
         
+        // Despite explicitly suppressing email, if the user makes this call, we will send the email.
         verify(sendMailService).sendEmail(consentProviderCaptor.capture());
-        assertEquals(1, consentProviderCaptor.getValue().getRecipients().size());
+        assertEquals(2, consentProviderCaptor.getValue().getRecipients().size());
         assertEquals(study.getConsentNotificationEmail(), consentProviderCaptor.getValue().getRecipients().get(0));
+        assertEquals(participant.getEmail(), consentProviderCaptor.getValue().getRecipients().get(1));
     }
     
     @Test

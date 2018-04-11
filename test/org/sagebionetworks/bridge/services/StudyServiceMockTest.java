@@ -1489,7 +1489,7 @@ public class StudyServiceMockTest {
         
         service.updateStudy(update, true);
         
-        if (shouldBeChanged && expectedSendEmail) {
+        if (expectedSendEmail) {
             verify(sendMailService).sendEmail(any());
         } else {
             verify(sendMailService, never()).sendEmail(any());

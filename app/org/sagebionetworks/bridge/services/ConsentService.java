@@ -299,9 +299,8 @@ public class ConsentService {
         
         String htmlTemplate = studyConsentService.getActiveConsent(subpop).getDocumentContent();
         
-        String participantEmail = subpop.isAutoSendConsentSuppressed() ? null : participant.getEmail();
         ConsentEmailProvider consentEmail = new ConsentEmailProvider(study, participant.getTimeZone(),
-                participantEmail, consentSignature, sharingScope, htmlTemplate, consentTemplate);
+                participant.getEmail(), consentSignature, sharingScope, htmlTemplate, consentTemplate);
         if (!consentEmail.getRecipients().isEmpty()) {
             sendMailService.sendEmail(consentEmail);    
         }

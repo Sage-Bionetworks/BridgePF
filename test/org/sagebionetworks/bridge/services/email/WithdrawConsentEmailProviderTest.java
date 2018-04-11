@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services.email;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -85,4 +86,21 @@ public class WithdrawConsentEmailProviderTest {
         assertEquals("<p>User Jack Aubrey &lt;d@d.com&gt; (external ID: AAA)  withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>Because, reasons.</p>", body.getContent());
     }
     
+    @Test
+    public void unverifiedStudyConsentEmailGeneratesNoRecipients() {
+        study.setConsentNotificationEmailVerified(false);
+        provider = new WithdrawConsentEmailProvider(study, EXTERNAL_ID, account, WITHDRAWAL, UNIX_TIMESTAMP);
+        
+        assertTrue(provider.getRecipients().isEmpty());
+    }
+    
+    @Test
+    public void nullStudyConsentEmailGeneratesNoRecipients() {
+        // email shouldn't be verified if it is null, but regardless, there should still be no recipients
+        study.setConsentNotificationEmailVerified(true); 
+        study.setConsentNotificationEmail(null);
+        provider = new WithdrawConsentEmailProvider(study, EXTERNAL_ID, account, WITHDRAWAL, UNIX_TIMESTAMP);
+        
+        assertTrue(provider.getRecipients().isEmpty());
+    }
 }

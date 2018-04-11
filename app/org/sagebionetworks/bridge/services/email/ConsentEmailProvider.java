@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.services.email;
 
+import static org.sagebionetworks.bridge.BridgeUtils.commaListToOrderedSet;
+
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +52,7 @@ public class ConsentEmailProvider extends MimeTypeEmailProvider {
     private String consentAgreementHTML;
     private String consentTemplate;
     private DateTimeZone userTimeZone;
+    private List<String> recipients;
 
     public ConsentEmailProvider(Study study, DateTimeZone userTimeZone, String userEmail,
             ConsentSignature consentSignature, SharingScope sharingScope, String consentAgreementHTML,
@@ -61,21 +64,20 @@ public class ConsentEmailProvider extends MimeTypeEmailProvider {
         this.sharingScope = sharingScope;
         this.consentAgreementHTML = consentAgreementHTML;
         this.consentTemplate = consentTemplate;
-    }
-
-    public List<String> getRecipients() {
-        List<String> recipients = Lists.newArrayList();
+        this.recipients = Lists.newArrayList();
         // Check if consent notification email is verified. For backwards-compatibility, a null 
         // value means the email is verified.
         Boolean consentNotificationEmailVerified = getStudy().isConsentNotificationEmailVerified();
         if (consentNotificationEmailVerified == null || consentNotificationEmailVerified) {
-            // Must wrap in new list because set from BridgeUtils.commaListToSet() is immutable
-            Set<String> studyRecipients = BridgeUtils.commaListToOrderedSet(getStudy().getConsentNotificationEmail());
+            Set<String> studyRecipients = commaListToOrderedSet(getStudy().getConsentNotificationEmail());
             recipients.addAll( studyRecipients );
         }
         if (userEmail != null) {
             recipients.add(userEmail);
         }
+    }
+
+    public List<String> getRecipients() {
         return recipients;
     }
     
@@ -89,7 +91,7 @@ public class ConsentEmailProvider extends MimeTypeEmailProvider {
         final String sendFromEmail = getFormattedSenderEmail();
         builder.withSender(sendFromEmail);
 
-        builder.withRecipients(getRecipients());
+        builder.withRecipients(recipients);
 
         final String consentDoc = createSignedDocument();
 
