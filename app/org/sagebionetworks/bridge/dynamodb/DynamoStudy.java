@@ -59,6 +59,7 @@ public final class DynamoStudy implements Study {
     private String shortName;
     private String sponsorName;
     private String identifier;
+    private Map<String, String> automaticCustomEvents;
     private boolean autoVerificationEmailSuppressed;
     private boolean studyIdExcludedInExport;
     private String supportEmail;
@@ -106,6 +107,7 @@ public final class DynamoStudy implements Study {
     private List<AndroidAppLink> androidAppLinks;
 
     public DynamoStudy() {
+        automaticCustomEvents = new HashMap<>();
         uploadMetadataFieldDefinitions = new ArrayList<>();
         profileAttributes = new HashSet<>();
         taskIdentifiers = new HashSet<>();
@@ -181,6 +183,18 @@ public final class DynamoStudy implements Study {
 
     public void setVersion(Long version) {
         this.version = version;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Map<String, String> getAutomaticCustomEvents() {
+        return automaticCustomEvents;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setAutomaticCustomEvents(Map<String, String> automaticCustomEvents) {
+        this.automaticCustomEvents = automaticCustomEvents == null ? new HashMap<>() : automaticCustomEvents;
     }
 
     /** {@inheritDoc} */
@@ -692,7 +706,7 @@ public final class DynamoStudy implements Study {
     
     @Override
     public int hashCode() {
-        return Objects.hash(name, shortName, sponsorName, identifier, autoVerificationEmailSuppressed,
+        return Objects.hash(name, shortName, sponsorName, identifier, automaticCustomEvents, autoVerificationEmailSuppressed,
                 studyIdExcludedInExport, supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail,
                 usesCustomExportSchedule, uploadMetadataFieldDefinitions, uploadValidationStrictness,
                 consentNotificationEmail, consentNotificationEmailVerified, minAgeOfConsent, accountLimit, version,
@@ -715,6 +729,7 @@ public final class DynamoStudy implements Study {
         DynamoStudy other = (DynamoStudy) obj;
 
         return (Objects.equals(identifier, other.identifier)
+                && Objects.equals(automaticCustomEvents, other.automaticCustomEvents)
                 && Objects.equals(autoVerificationEmailSuppressed, other.autoVerificationEmailSuppressed)
                 && Objects.equals(studyIdExcludedInExport, other.studyIdExcludedInExport)
                 && Objects.equals(supportEmail, other.supportEmail)
@@ -768,7 +783,7 @@ public final class DynamoStudy implements Study {
     @Override
     public String toString() {
         return String.format(
-                "DynamoStudy [name=%s, shortName=%s, active=%s, sponsorName=%s, identifier=%s, "
+                "DynamoStudy [name=%s, shortName=%s, active=%s, sponsorName=%s, identifier=%s, automaticCustomEvents=%s"
                         + "autoVerificationEmailSuppressed=%b, minAgeOfConsent=%s, studyIdExcludedInExport=%b, "
                         + "supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, technicalEmail=%s, "
                         + "uploadValidationStrictness=%s, consentNotificationEmail=%s, consentNotificationEmailVerified=%s, "
@@ -781,7 +796,7 @@ public final class DynamoStudy implements Study {
                         + "oauthProviders=%s, appleAppLinks=%s, androidAppLinks=%s, reauthenticationEnabled=%s, "
                         + "resetPasswordSmsTemplate=%s, phoneSignInSmsTemplate=%s, appInstallLinkSmsTemplate=%s, "
                         + "verifyPhoneSmsTemplate=%s, accountExistsSmsTemplate=%s, autoVerificationPhoneSuppressed=%s]",
-                name, shortName, active, sponsorName, identifier, autoVerificationEmailSuppressed, minAgeOfConsent,
+                name, shortName, active, sponsorName, identifier, automaticCustomEvents, autoVerificationEmailSuppressed, minAgeOfConsent,
                 studyIdExcludedInExport, supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail,
                 uploadValidationStrictness, consentNotificationEmail, consentNotificationEmailVerified, version,
                 profileAttributes, taskIdentifiers, activityEventKeys, dataGroups, passwordPolicy, verifyEmailTemplate,
