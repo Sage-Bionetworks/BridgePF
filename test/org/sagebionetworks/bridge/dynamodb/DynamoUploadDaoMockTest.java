@@ -30,7 +30,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -444,6 +444,23 @@ public class DynamoUploadDaoMockTest {
         assertEquals(endTime.toString(), page1.getRequestParams().get("endTime"));
     }
     
+    @Test
+    public void getStudyUploadsBadOffsetKey() {
+        StudyIdentifier studyId = new StudyIdentifierImpl("test-study");
+        DateTime startTime = DateTime.now().minusDays(4);
+        DateTime endTime = DateTime.now();
+        int pageSize = 2;
+        
+        // Before getting to paging, this should fail on the fact that the offsetKey does not return a record
+        when(mockMapper.load(DynamoUpload2.class, upload3.getUploadId())).thenReturn(null);
+        
+        try {
+            dao.getStudyUploads(studyId, startTime, endTime, pageSize, "bad-key");
+            fail("Should have thrown an exception");
+        } catch(BadRequestException e) {
+            assertEquals("Invalid offsetKey: bad-key", e.getMessage());
+        }
+    }
     
     private static UploadRequest createUploadRequest() {
         final String text = "test upload dao";

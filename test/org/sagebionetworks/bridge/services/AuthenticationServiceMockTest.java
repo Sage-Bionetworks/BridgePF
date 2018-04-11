@@ -23,6 +23,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -33,9 +34,11 @@ import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -66,6 +69,7 @@ public class AuthenticationServiceMockTest {
     private static final String RECIPIENT_EMAIL = "email@email.com";
     private static final String TOKEN = "ABC-DEF";
     private static final String REAUTH_TOKEN = "GHI-JKL";
+    private static final String REAUTH_CACHE_TOKEN = TOKEN+":api:reauthCacheKey";
     private static final String USER_ID = "user-id";
     private static final String PASSWORD = "Password~!1";
     private static final SignIn SIGN_IN_REQUEST_WITH_EMAIL = new SignIn.Builder().withStudy(STUDY_ID)
@@ -122,6 +126,8 @@ public class AuthenticationServiceMockTest {
     private ArgumentCaptor<StudyParticipant> participantCaptor;
     @Captor
     private ArgumentCaptor<AccountId> accountIdCaptor;
+    @Captor
+    private ArgumentCaptor<Tuple<String>> tupleCaptor;
     @Spy
     private AuthenticationService service;
 
@@ -230,11 +236,13 @@ public class AuthenticationServiceMockTest {
         
         UserSession session = new UserSession();
         session.setStudyIdentifier(studyIdentifier);
+        session.setReauthToken("reauthToken");
         session.setParticipant(new StudyParticipant.Builder().withEmail("email@email.com").withId(USER_ID).build());
         service.signOut(session);
         
         verify(accountDao).deleteReauthToken(ACCOUNT_ID);
         verify(cacheProvider).removeSession(session);
+        verify(cacheProvider).removeObject("reauthToken:api:reauthCacheKey");
     }
     
     @Test
@@ -343,6 +351,36 @@ public class AuthenticationServiceMockTest {
         UserSession captured = sessionCaptor.getValue();
         assertEquals(RECIPIENT_EMAIL, captured.getParticipant().getEmail());
         assertEquals(REAUTH_TOKEN, captured.getReauthToken());
+        verify(cacheProvider).setObject(eq(REAUTH_CACHE_TOKEN), tupleCaptor.capture(),
+                eq(BridgeConstants.BRIDGE_REAUTH_GRACE_PERIOD));
+        
+        Tuple<String> tuple = tupleCaptor.getValue();
+        assertEquals(session.getSessionToken(), tuple.getLeft());
+        assertEquals(REAUTH_TOKEN, tuple.getRight());
+    }
+    
+    @Test
+    public void reauthenticationFromCache() {
+        Tuple<String> tuple = new Tuple<String>(TOKEN, "newReauthToken");
+        
+        UserSession session = new UserSession();
+        doReturn(tuple).when(cacheProvider).getObject(REAUTH_CACHE_TOKEN, AuthenticationService.TUPLE_TYPE);
+        doReturn(session).when(cacheProvider).getUserSession(TOKEN);
+        
+        UserSession returned = service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
+        assertEquals(session, returned);
+        assertEquals("newReauthToken", session.getReauthToken());
+        
+        // We don't have to retrieve this.
+        verify(accountDao, never()).reauthenticate(any(), any());
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void reauthenticationWithoutSessionThrows() {
+        Tuple<String> tuple = new Tuple<>("left", "right");
+        doReturn(tuple).when(cacheProvider).getObject(REAUTH_CACHE_TOKEN, AuthenticationService.TUPLE_TYPE);
+        
+        service.reauthenticate(study, CONTEXT, REAUTH_REQUEST);
     }
     
     @Test(expected = InvalidEntityException.class)
