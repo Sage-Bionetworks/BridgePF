@@ -1435,6 +1435,16 @@ public class StudyServiceMockTest {
     }
     
     @Test
+    public void htmlTemplatePreservesLinksWithTemplateVariables() {
+        EmailTemplate source = new EmailTemplate("", "<p><a href=\"http://www.google.com/\"></a><a href=\"/foo.html\">Foo</a><a href=\"${url}\">${url}</a></p>", MimeType.HTML); 
+        
+        EmailTemplate result = service.sanitizeEmailTemplate(source);
+        
+        // The absolute, relative, and template URLs are all preserved correctly. 
+        assertEquals("<p><a href=\"http://www.google.com/\"></a><a href=\"/foo.html\">Foo</a><a href=\"${url}\">${url}</a></p>", result.getBody());
+    }
+    
+    @Test
     public void emptyTemplateIsSanitized() {
         EmailTemplate source = new EmailTemplate("", "", MimeType.HTML); 
         EmailTemplate result = service.sanitizeEmailTemplate(source);

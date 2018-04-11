@@ -120,9 +120,10 @@ public class BridgeConstants {
      * we have displayed in the UI.
      */
     public static final Whitelist CKEDITOR_WHITELIST = Whitelist.relaxed()
+            .preserveRelativeLinks(true)
             .addTags("hr", "s", "caption")
-            .addAttributes(":all", "style", "scope")
-            .addAttributes("a", "target")
+            .addAttributes(":all", "style", "scope", "href")
+            .addAttributes("a", "target", "href")
             .addAttributes("table", "align", "border", "cellpadding", "cellspacing", "summary");
     
 }
