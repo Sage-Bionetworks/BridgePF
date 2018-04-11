@@ -19,8 +19,8 @@ import com.google.common.collect.Lists;
 public final class CacheKeys {
     
     private static final Joiner COLON_JOINER = Joiner.on(":");
-    private static final String[] PUBLIC_KEYS = new String[] {
-        "AppConfigList", "channel-throttling", "lock", "study", "Subpopulation", "SubpopulationList"};
+    private static final String[] PUBLIC_KEYS = new String[] { "emailVerificationStatus", "AppConfigList",
+            "channel-throttling", "lock", "study", "Subpopulation", "SubpopulationList" };
     
     public final static boolean isPublic(String key) {
         for (String suffix : PUBLIC_KEYS) {
