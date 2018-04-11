@@ -194,6 +194,7 @@ POST   /v4/activities                              @org.sagebionetworks.bridge.p
 POST   /v3/uploads                     @org.sagebionetworks.bridge.play.controllers.UploadController.upload
 POST   /v3/uploads/:uploadId/complete  @org.sagebionetworks.bridge.play.controllers.UploadController.uploadComplete(uploadId: String, synchronous: String ?= "false")
 GET    /v3/uploadstatuses/:uploadId    @org.sagebionetworks.bridge.play.controllers.UploadController.getValidationStatus(uploadId: String)
+GET    /v3/uploads/:uploadId           @org.sagebionetworks.bridge.play.controllers.UploadController.getUpload(uploadId: String)
 
 # Upload Schemas
 GET    /v3/uploadschemas                               @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemasForStudy

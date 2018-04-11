@@ -21,7 +21,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -85,7 +84,6 @@ public class DynamoUpload2 implements Upload {
     }
 
     /** The base64-encoded, 128-bit MD5 digest of the object body. */
-    @JsonIgnore
     public String getContentMd5() {
         return contentMd5;
     }
@@ -96,7 +94,6 @@ public class DynamoUpload2 implements Upload {
     }
 
     /** MIME content type. */
-    @JsonIgnore
     public String getContentType() {
         return contentType;
     }
@@ -119,7 +116,6 @@ public class DynamoUpload2 implements Upload {
 
     /** {@inheritDoc} */
     @Override
-    @JsonIgnore
     public String getFilename() {
         return filename;
     }
@@ -131,7 +127,6 @@ public class DynamoUpload2 implements Upload {
 
     /** {@inheritDoc} */
     @DynamoDBIndexHashKey(attributeName = "healthCode", globalSecondaryIndexName = "healthCode-requestedOn-index")
-    @JsonIgnore
     @Override
     public String getHealthCode() {
         return healthCode;
@@ -145,7 +140,6 @@ public class DynamoUpload2 implements Upload {
 
     /** {@inheritDoc} */
     @DynamoDBIgnore
-    @JsonIgnore
     @Override
     public String getObjectId() {
         // In DynamoUpload2, object ID and upload ID are the same.
@@ -177,7 +171,6 @@ public class DynamoUpload2 implements Upload {
     
     /** {@inheritDoc} */
     @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "studyId-requestedOn-index")
-    @JsonIgnore
     public String getStudyId() {
         return studyId;
     }
@@ -292,7 +285,6 @@ public class DynamoUpload2 implements Upload {
 
     /** DynamoDB version, used for optimistic locking */
     @DynamoDBVersionAttribute
-    @JsonIgnore
     public Long getVersion() {
         return version;
     }
