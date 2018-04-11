@@ -65,6 +65,9 @@ public class BridgeConstants {
     // 5 minutes
     public static final int BRIDGE_UPDATE_ATTEMPT_EXPIRE_IN_SECONDS = 5 * 60;
     
+    // 1 minute
+    public static final int BRIDGE_REAUTH_GRACE_PERIOD = 1 * 60;
+    
     // 5 hrs
     public static final int BRIDGE_VIEW_EXPIRE_IN_SECONDS = 5 * 60 * 60;
     
