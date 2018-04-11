@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_REAUTH_GRACE_PERIOD;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -14,6 +16,7 @@ import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -36,9 +39,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 @Component("authenticationService")
 public class AuthenticationService {
     private static final Logger LOG = LoggerFactory.getLogger(AuthenticationService.class);
+    
+    static final TypeReference<Tuple<String>> TUPLE_TYPE = new TypeReference<Tuple<String>>() {};
     
     public static enum ChannelType {
         EMAIL,
@@ -168,12 +175,34 @@ public class AuthenticationService {
         
         Validate.entityThrowingException(SignInValidator.REAUTH_SIGNIN, signIn);
 
+        String reauthCacheKey = getReauthCacheKey(signIn.getStudyId(), signIn.getReauthToken());
+
+        // First look to see if reauthCacheKey is in cache. If it is, return the existing session. This 
+        // creates a grace period during which concurrent requests with the same reauth token will work.
+        Tuple<String> persisedReauthTuple = cacheProvider.getObject(reauthCacheKey, TUPLE_TYPE);
+        if (persisedReauthTuple != null) {
+            String sessionToken = persisedReauthTuple.getLeft();
+            String reauthToken = persisedReauthTuple.getRight();
+            
+            // Is it possible for this not to resolve to a session? Play it safe and check
+            UserSession session = cacheProvider.getUserSession(sessionToken);
+            if (session == null) {
+                throw new EntityNotFoundException(Account.class);
+            }
+            session.setReauthToken(reauthToken);
+            return session;
+        }
+        
         Account account = accountDao.reauthenticate(study, signIn);
 
         // Force recreation of the session, including the session token
         cacheProvider.removeSessionByUserId(account.getId());
+        
         UserSession session = getSessionFromAccount(study, context, account);
+        
+        Tuple<String> reauthTuple = new Tuple<>(session.getSessionToken(), session.getReauthToken());
         cacheProvider.setUserSession(session);
+        cacheProvider.setObject(reauthCacheKey, reauthTuple, BRIDGE_REAUTH_GRACE_PERIOD);
         
         if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
             throw new ConsentRequiredException(session);
@@ -185,6 +214,8 @@ public class AuthenticationService {
         if (session != null) {
             AccountId accountId = AccountId.forId(session.getStudyIdentifier().getIdentifier(), session.getId());
             accountDao.deleteReauthToken(accountId);
+            String reauthCacheKey = getReauthCacheKey(session.getStudyIdentifier().getIdentifier(), session.getReauthToken());
+            cacheProvider.removeObject(reauthCacheKey);
             cacheProvider.removeSession(session);
         }
     }
@@ -326,5 +357,9 @@ public class AuthenticationService {
         session.setConsentStatuses(consentService.getConsentStatuses(newContext, account));
         
         return session;
+    }
+    
+    private String getReauthCacheKey(String studyId, String reauthToken) {
+        return reauthToken + ":" + studyId + ":reauthCacheKey";
     }
 }
