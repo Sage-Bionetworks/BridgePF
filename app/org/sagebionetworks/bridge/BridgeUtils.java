@@ -116,8 +116,10 @@ public class BridgeUtils {
                 Iterables.getFirst(commaListToOrderedSet(study.getSupportEmail()), ""));
         map.put("technicalEmail", 
                 Iterables.getFirst(commaListToOrderedSet(study.getTechnicalEmail()), ""));
-        map.put("consentEmail", 
-                Iterables.getFirst(commaListToOrderedSet(study.getConsentNotificationEmail()), ""));
+        if (study.getConsentNotificationEmail() != null) {
+            map.put("consentEmail", 
+                    Iterables.getFirst(commaListToOrderedSet(study.getConsentNotificationEmail()), ""));
+        }
         map.put("host", BridgeConfigFactory.getConfig().getHostnameWithPostfix("ws"));
         if (escaper != null) {
             for (Map.Entry<String,String> entry : map.entrySet()) {
