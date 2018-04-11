@@ -231,10 +231,10 @@ public class StudyValidatorTest {
     }
     
     @Test
-    public void requiresMissingConsentNotificationEmail() {
+    public void missingConsentNotificationEmailOK() {
         study.setConsentNotificationEmail(null);
-        assertValidatorMessage(INSTANCE, study, "consentNotificationEmail", "is required");
-    }
+        Validate.entityThrowingException(INSTANCE, study);
+    }    
     
     @Test
     public void requiresPasswordPolicy() {

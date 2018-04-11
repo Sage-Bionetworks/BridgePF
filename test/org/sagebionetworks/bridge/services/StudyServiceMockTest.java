@@ -14,6 +14,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -24,6 +25,7 @@ import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -1458,6 +1460,45 @@ public class StudyServiceMockTest {
         assertHtmlTemplateSanitized( study.getResetPasswordTemplate() );
         assertHtmlTemplateSanitized( study.getVerifyEmailTemplate() );
         assertHtmlTemplateSanitized( study.getAccountExistsTemplate() );
+    }
+    
+    @Test
+    public void updateStudyCorrectlyDetectsEmailChangesInvolvingNulls() {
+        // consent email still correctly detected
+        String originalEmail = TestUtils.getValidStudy(StudyServiceMockTest.class).getConsentNotificationEmail();
+        String newEmail = "changed@changed.com";
+        
+        setupConsentEmailChangeTest(null, null, false, false);
+        setupConsentEmailChangeTest(originalEmail, originalEmail, false, false);
+        setupConsentEmailChangeTest(null, newEmail, true, true);
+        setupConsentEmailChangeTest(originalEmail, null, true, false);
+        setupConsentEmailChangeTest(originalEmail, newEmail, true, true);
+    }
+    
+    private void setupConsentEmailChangeTest(String originalEmail, String newEmail, boolean shouldBeChanged,
+            boolean expectedSendEmail) {
+        reset(sendMailService);
+        Study original = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        original.setConsentNotificationEmail(originalEmail);
+        when(studyDao.getStudy(any())).thenReturn(original);
+        
+        Study update = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        update.setConsentNotificationEmail(newEmail);
+        // just assume this is true for the test so defaults aren't set
+        update.setConsentNotificationEmailVerified(true);
+        
+        service.updateStudy(update, true);
+        
+        if (expectedSendEmail) {
+            verify(sendMailService).sendEmail(any());
+        } else {
+            verify(sendMailService, never()).sendEmail(any());
+        }
+        if (shouldBeChanged) {
+            assertFalse(update.isConsentNotificationEmailVerified());
+        } else {
+            assertTrue(update.isConsentNotificationEmailVerified());
+        }
     }
 
     private void assertHtmlTemplateSanitized(EmailTemplate result) {

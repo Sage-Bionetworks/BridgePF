@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.services.email;
 
+import static org.sagebionetworks.bridge.BridgeUtils.commaListToOrderedSet;
+
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Set;
 
 import javax.mail.MessagingException;
@@ -12,10 +15,11 @@ import org.joda.time.format.DateTimeFormatter;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Whitelist;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.Study;
+
+import com.google.common.collect.Lists;
 
 public class WithdrawConsentEmailProvider extends MimeTypeEmailProvider {
     
@@ -23,10 +27,11 @@ public class WithdrawConsentEmailProvider extends MimeTypeEmailProvider {
     private static final String CONSENT_EMAIL_SUBJECT = "Notification of consent withdrawal for %s";
     private static final String SUB_TYPE_HTML = "html";
 
-    private String externalId;
-    private Account account;
-    private Withdrawal withdrawal;
-    private long withdrewOn;
+    private final String externalId;
+    private final Account account;
+    private final Withdrawal withdrawal;
+    private final long withdrewOn;
+    private final List<String> recipients;
     
     public WithdrawConsentEmailProvider(Study study, String externalId, Account account, Withdrawal withdrawal, long withdrewOn) {
         super(study);
@@ -34,6 +39,18 @@ public class WithdrawConsentEmailProvider extends MimeTypeEmailProvider {
         this.account = account;
         this.withdrawal = withdrawal;
         this.withdrewOn = withdrewOn;
+        this.recipients = Lists.newArrayList();
+        // Check if consent notification email is verified. For backwards-compatibility, a null 
+        // value means the email is verified.
+        Boolean consentNotificationEmailVerified = getStudy().isConsentNotificationEmailVerified();
+        if (consentNotificationEmailVerified == null || consentNotificationEmailVerified) {
+            Set<String> studyRecipients = commaListToOrderedSet(getStudy().getConsentNotificationEmail());
+            recipients.addAll( studyRecipients );
+        }
+    }
+    
+    public List<String> getRecipients() {
+        return recipients;
     }
     
     @Override
@@ -45,9 +62,8 @@ public class WithdrawConsentEmailProvider extends MimeTypeEmailProvider {
 
         final String sendFromEmail = getFormattedSenderEmail();
         builder.withSender(sendFromEmail);
-
-        Set<String> emailAddresses = BridgeUtils.commaListToOrderedSet(getStudy().getConsentNotificationEmail());
-        builder.withRecipients(emailAddresses);
+        
+        builder.withRecipients(recipients);
 
         String content = String.format("<p>User %s withdrew from the study on %s. </p>", 
                 getUserLabel(), FORMATTER.print(withdrewOn));

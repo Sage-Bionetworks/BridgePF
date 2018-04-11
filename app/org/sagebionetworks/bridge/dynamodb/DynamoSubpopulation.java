@@ -38,6 +38,7 @@ public final class DynamoSubpopulation implements Subpopulation {
     private boolean required;
     private boolean deleted;
     private boolean defaultGroup;
+    private boolean autoSendConsentSuppressed;
     private Long version;
     private long publishedConsentCreatedOn;
     private Criteria criteria;
@@ -164,11 +165,20 @@ public final class DynamoSubpopulation implements Subpopulation {
     public Criteria getCriteria() {
         return criteria;
     }
+    @DynamoDBAttribute
+    @Override
+    public boolean isAutoSendConsentSuppressed() {
+        return autoSendConsentSuppressed;
+    }
+    @Override
+    public void setAutoSendConsentSuppressed(boolean autoSendConsentSuppressed) {
+        this.autoSendConsentSuppressed = autoSendConsentSuppressed;
+    }
     
     @Override
     public int hashCode() {
         return Objects.hash(name, description, required, deleted, defaultGroup, guid, studyIdentifier,
-                publishedConsentCreatedOn, version, criteria);
+                publishedConsentCreatedOn, version, criteria, autoSendConsentSuppressed);
     }
     @Override
     public boolean equals(Object obj) {
@@ -182,13 +192,15 @@ public final class DynamoSubpopulation implements Subpopulation {
                 && Objects.equals(deleted, other.deleted) && Objects.equals(studyIdentifier, other.studyIdentifier)
                 && Objects.equals(publishedConsentCreatedOn, other.publishedConsentCreatedOn)
                 && Objects.equals(version, other.version) && Objects.equals(defaultGroup, other.defaultGroup)
-                && Objects.equals(criteria, other.criteria);
+                && Objects.equals(criteria, other.criteria)
+                && Objects.equals(autoSendConsentSuppressed,  other.autoSendConsentSuppressed);
     }
     @Override
     public String toString() {
         return "DynamoSubpopulation [studyIdentifier=" + studyIdentifier + ", guid=" + guid + ", name=" + name
                 + ", description=" + description + ", required=" + required + ", deleted=" + deleted + ", criteria="
-                + criteria + ", publishedConsentCreatedOn=" + publishedConsentCreatedOn + ", version=" + version + "]";
+                + criteria + ", publishedConsentCreatedOn=" + publishedConsentCreatedOn + ", version=" + version 
+                + ", autoSendConsentSuppressed=" + autoSendConsentSuppressed + "]";
     }
 
 }

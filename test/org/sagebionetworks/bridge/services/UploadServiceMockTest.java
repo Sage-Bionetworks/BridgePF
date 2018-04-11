@@ -180,6 +180,25 @@ public class UploadServiceMockTest {
         assertEquals("getStatusRecordIdWithNoRecord - message", status.getMessageList().get(0));
     }
     
+    @Test
+    public void getUploadView() {
+        DynamoUpload2 mockUpload = new DynamoUpload2();
+        mockUpload.setRecordId("test-record-id");
+        mockUpload.setUploadId("with-record-id");
+        when(mockDao.getUpload("with-record-id")).thenReturn(mockUpload);
+
+        // mock health data service
+        HealthDataRecord dummyRecord = HealthDataRecord.create();
+        dummyRecord.setSchemaId("schema-id");
+        when(mockHealthDataService.getRecordById("test-record-id")).thenReturn(dummyRecord);
+
+        // execute and validate
+        UploadView uploadView = svc.getUploadView("with-record-id");
+        assertEquals("test-record-id", uploadView.getUpload().getRecordId());
+        assertEquals("with-record-id", uploadView.getUpload().getUploadId());
+        assertEquals("schema-id", uploadView.getHealthData().getSchemaId());
+    }
+    
     private void setupUploadMocks() {
         // Mock upload
         doReturn("upload-id").when(mockUpload).getUploadId();
@@ -269,6 +288,7 @@ public class UploadServiceMockTest {
         assertEquals("schema-id", view.getSchemaId());
         assertEquals(new Integer(10), view.getSchemaRevision());
         assertEquals(HealthDataRecord.ExporterStatus.SUCCEEDED, view.getHealthRecordExporterStatus());
+        assertNull(view.getHealthData());
 
         UploadView failedView = uploadList.get(1);
         assertEquals(UploadStatus.REQUESTED, failedView.getUpload().getStatus());
