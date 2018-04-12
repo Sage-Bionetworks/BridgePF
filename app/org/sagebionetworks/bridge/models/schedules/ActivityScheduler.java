@@ -40,7 +40,11 @@ public abstract class ActivityScheduler {
         if (eventIdString == null) {
             eventIdString = "enrollment";
         }
-        List<DateTime> eventTimeList = getEventDateTimes(context, eventIdString, true);
+
+        // For one-time and persistent schedules, schedule off the first event specified in the list. For recurring
+        // schedules, schedule off _all_ events specified.
+        boolean getAll = schedule.getScheduleType() == ScheduleType.RECURRING;
+        List<DateTime> eventTimeList = getEventDateTimes(context, eventIdString, getAll);
 
         List<RangeTuple<DateTime>> scheduleWindowList = new ArrayList<>();
         for (DateTime oneEventTime : eventTimeList) {

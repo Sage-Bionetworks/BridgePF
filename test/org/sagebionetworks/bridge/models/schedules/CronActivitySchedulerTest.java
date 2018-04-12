@@ -161,6 +161,18 @@ public class CronActivitySchedulerTest {
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusWeeks(2)));
         assertDates(scheduledActivities, "2015-03-28 09:15");
     }
+
+    @Test
+    public void onceCronScheduleWithMultipleEventsOnlyReturnsOneActivity() {
+        Schedule schedule = createScheduleWith(ONCE);
+        schedule.setCronTrigger("0 0 6 * * ?"); // at 6am
+        schedule.setEventId("two_weeks_before_enrollment,enrollment");
+
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan,
+                getContext(ENROLLMENT.plusDays(14)));
+        assertDates(scheduledActivities, "2015-03-10 06:00");
+    }
+
     @Test
     public void recurringCronScheduleWorks() {
         Schedule schedule = createScheduleWith(RECURRING);

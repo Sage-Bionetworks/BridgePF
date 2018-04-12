@@ -397,6 +397,21 @@ public class IntervalActivitySchedulerTest {
         // Pulled back to yesterday midnight to avoid TZ changes causing activity to be unavailable
         assertDates(scheduledActivities, "2015-04-02 12:22");
     }
+
+    @Test
+    public void onceScheduleWithMultipleEventsOnlyReturnsOneActivity() {
+        Schedule schedule = createScheduleWith(ONCE);
+        schedule.setTimes(ImmutableList.of(LocalTime.parse("06:00")));
+        schedule.setInterval("P1D");
+        schedule.setEventId("two_weeks_before_enrollment,enrollment");
+
+        events.put("two_weeks_before_enrollment", ENROLLMENT.minusWeeks(2));
+
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan,
+                getContext(ENROLLMENT.plusDays(14)));
+        assertDates(scheduledActivities, "2015-03-09 06:00");
+    }
+
     @Test
     public void onceEventDelayExpiresStartEndsOnScheduleWorks() {
         Schedule schedule = createScheduleWith(ONCE);
