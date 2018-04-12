@@ -14,7 +14,7 @@ public class PersistentActivityScheduler extends ActivityScheduler {
     
     @Override
     public List<ScheduledActivity> getScheduledActivities(SchedulePlan plan, ScheduleContext context) {
-        // similar to a safety check in ActivityScheduler.getScheduledTimeBasedOnEvent
+        // similar to a safety check in ActivityScheduler.getScheduleWindowsBasedOnEvents
         if (schedule.getEventId() == null) {
             schedule.setEventId("enrollment");
         }
@@ -26,9 +26,11 @@ public class PersistentActivityScheduler extends ActivityScheduler {
             // when creating a schedule. It's clearer if you don't include this "finished" event, though it 
             // won't break anything if a user does include it in the eventId.
             String finishedId = "activity:"+activity.getGuid()+":finished";
-            DateTime scheduledTime = getFirstEventDateTime(context, finishedId+"," + schedule.getEventId());
+            List<DateTime> scheduledTimeList = getEventDateTimes(context,
+                    finishedId+"," + schedule.getEventId(), false);
 
-            if (scheduledTime != null) {
+            if (!scheduledTimeList.isEmpty()) {
+                DateTime scheduledTime = scheduledTimeList.get(0);
                 DateTime localDateTime = scheduledTime.withZone(context.getInitialTimeZone());
                 
                 addScheduledActivityAtTimeForOneActivity(scheduledActivities, plan, context,

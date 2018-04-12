@@ -282,7 +282,20 @@ public class ActivitySchedulerTest {
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(NOW.plusDays(1)));
         assertEquals(0, scheduledActivities.size());
     }
-    
+
+    // branch coverage
+    @Test
+    public void contextWithEmptyEventMap() {
+        Schedule schedule = new Schedule();
+        schedule.addActivity(TestUtils.getActivity3());
+        schedule.setScheduleType(ONCE);
+
+        events.clear();
+
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(NOW.plusDays(14)));
+        assertTrue(scheduledActivities.isEmpty());
+    }
+
     @Test
     public void activitiesMarkedPersistentUnderCorrectCircumstances() throws Exception {
         Schedule schedule = new Schedule();

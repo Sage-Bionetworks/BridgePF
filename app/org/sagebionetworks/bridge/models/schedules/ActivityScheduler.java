@@ -2,50 +2,66 @@ package org.sagebionetworks.bridge.models.schedules;
 
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 import org.joda.time.LocalTime;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.models.RangeTuple;
 
 public abstract class ActivityScheduler {
     
     protected final Schedule schedule;
-    protected DateTime sequenceEndsOn;
-    
+
     ActivityScheduler(Schedule schedule) {
         this.schedule = schedule;
     }
     
     public abstract List<ScheduledActivity> getScheduledActivities(SchedulePlan plan, ScheduleContext context);
-    
-    protected DateTime getScheduledTimeBasedOnEvent(ScheduleContext context) {
+
+    /**
+     * Given the schedule context and the schedule, return a list of start/end time windows in which we should
+     * schedule events. In each window, start time the time we should start scheduling after. End time is the time we
+     * should stop scheduling the event. If end time is not specified, we schedule the event indefinitely.
+     */
+    protected List<RangeTuple<DateTime>> getScheduleWindowsBasedOnEvents(ScheduleContext context) {
         if (!context.hasEvents()) {
-            return null;
+            // Short-cut: If there are no events in the event map, return an empty list.
+            return ImmutableList.of();
         }
+
         // If no event is specified, it's enrollment by default.
         String eventIdString = schedule.getEventId();
         if (eventIdString == null) {
             eventIdString = "enrollment";
         }
-        DateTime eventTime = getFirstEventDateTime(context, eventIdString);
+        List<DateTime> eventTimeList = getEventDateTimes(context, eventIdString, true);
 
-        // An event was specified, but it hasn't happened yet.. So no activities are generated.
-        if (eventTime == null) {
-            return null;
-        }
-        if (schedule.getDelay() != null) {
-            eventTime = eventTime.plus(schedule.getDelay());
-        }
-        // Sequence period is measured from the first timestamp plus the delay, to the end of the period.
-        if (schedule.getSequencePeriod() != null) {
-            sequenceEndsOn = eventTime.plus(schedule.getSequencePeriod());
+        List<RangeTuple<DateTime>> scheduleWindowList = new ArrayList<>();
+        for (DateTime oneEventTime : eventTimeList) {
+            // Start time is event time, with added delay if it's present.
+            DateTime startTime = oneEventTime;
+            if (schedule.getDelay() != null) {
+                startTime = oneEventTime.plus(schedule.getDelay());
+            }
+
+            // End time is only present if a sequence period is specified.
+            // Sequence period is measured from the first timestamp plus the delay, to the end of the period.
+            DateTime endTime = null;
+            if (schedule.getSequencePeriod() != null) {
+                endTime = startTime.plus(schedule.getSequencePeriod());
+            }
+
+            // Construct the range tuple.
+            scheduleWindowList.add(new RangeTuple<>(startTime, endTime));
         }
         
-        return eventTime;
+        return scheduleWindowList;
     }
     
     protected void addScheduledActivityForAllTimes(List<ScheduledActivity> scheduledActivities, SchedulePlan plan,
@@ -125,28 +141,43 @@ public abstract class ActivityScheduler {
         return localDate.toLocalDateTime(localTime).plus(schedule.getExpires());
     }
 
-    protected DateTime getFirstEventDateTime(ScheduleContext context, String eventIdsString) {
-        DateTime eventDateTime = null;
+    /**
+     * Helper method used to get specified event date times from the schedule context.
+     *
+     * @param context
+     *         schedule context, which contains the event map
+     * @param eventIdsString
+     *         event ID string as specified by the schedule; this is a comma-delimited list
+     * @param getAll
+     *         true to get all events; false to just get any one event (generally useful for persistent activities)
+     * @return list of one or all specified event date-times
+     */
+    protected List<DateTime> getEventDateTimes(ScheduleContext context, String eventIdsString, boolean getAll) {
+        List<DateTime> eventDateTimeList = new ArrayList<>();
         if (eventIdsString != null) {
             Iterable<String> eventIds = Schedule.EVENT_ID_SPLITTER.split(eventIdsString.trim());
             for (String thisEventId : eventIds) {
                 if (context.getEvent(thisEventId) != null) {
-                    eventDateTime = context.getEvent(thisEventId);
-                    break;
+                    eventDateTimeList.add(context.getEvent(thisEventId));
+
+                    if (!getAll) {
+                        // We only wanted one event, and we found it, so break.
+                        break;
+                    }
                 }
             }
         }
-        return eventDateTime;
+        return eventDateTimeList;
     }
-    
+
     /**
      * If scheduling hasn't reached the end time, or hasn't accumulated the minimum number of tasks, returns true, or 
      * false otherwise. 
      */
     protected boolean shouldContinueScheduling(ScheduleContext context, DateTime scheduledTime,
-            List<ScheduledActivity> scheduledActivities) {
+            RangeTuple<DateTime> scheduleWindow, List<ScheduledActivity> scheduledActivities) {
 
-        if (scheduledOnAfterSequencePeriod(context, scheduledTime, scheduledActivities.size())) {
+        if (scheduledOnAfterSequencePeriod(scheduledTime, scheduleWindow)) {
             return false;
         }
         if (scheduledOnAfterEndsOnNoMinimumCount(context, scheduledTime)) {
@@ -161,7 +192,8 @@ public abstract class ActivityScheduler {
         return boundaryNotMet;
     }
     
-    private boolean scheduledOnAfterSequencePeriod(ScheduleContext context, DateTime scheduledTime, int currentCount) {
+    private boolean scheduledOnAfterSequencePeriod(DateTime scheduledTime, RangeTuple<DateTime> scheduleWindow) {
+        DateTime sequenceEndsOn = scheduleWindow.getEnd();
         return sequenceEndsOn != null && !scheduledTime.isBefore(sequenceEndsOn);
     }
     
