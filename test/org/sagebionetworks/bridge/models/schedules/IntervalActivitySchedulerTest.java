@@ -12,9 +12,11 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,7 +29,7 @@ public class IntervalActivitySchedulerTest {
 
     private static final DateTime NOW = DateTime.parse("2015-03-26T14:40:00-07:00");
     private static final DateTimeZone PST = DateTimeZone.forOffsetHours(-7);
-    private static DateTime ENROLLMENT = DateTime.parse("2015-03-23T10:00:00Z");
+    private static final DateTime ENROLLMENT = DateTime.parse("2015-03-23T10:00:00Z");
     
     private Map<String, DateTime> events;
     private List<ScheduledActivity> scheduledActivities;
@@ -395,6 +397,21 @@ public class IntervalActivitySchedulerTest {
         // Pulled back to yesterday midnight to avoid TZ changes causing activity to be unavailable
         assertDates(scheduledActivities, "2015-04-02 12:22");
     }
+
+    @Test
+    public void onceScheduleWithMultipleEventsOnlyReturnsOneActivity() {
+        Schedule schedule = createScheduleWith(ONCE);
+        schedule.setTimes(ImmutableList.of(LocalTime.parse("06:00")));
+        schedule.setInterval("P1D");
+        schedule.setEventId("two_weeks_before_enrollment,enrollment");
+
+        events.put("two_weeks_before_enrollment", ENROLLMENT.minusWeeks(2));
+
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan,
+                getContext(ENROLLMENT.plusDays(14)));
+        assertDates(scheduledActivities, "2015-03-09 06:00");
+    }
+
     @Test
     public void onceEventDelayExpiresStartEndsOnScheduleWorks() {
         Schedule schedule = createScheduleWith(ONCE);
@@ -598,6 +615,32 @@ public class IntervalActivitySchedulerTest {
         
         assertDates(scheduledActivities, 
                 "2015-04-07 09:40", "2015-04-07 13:40", "2015-04-09 09:40", "2015-04-09 13:40");
+    }
+
+    @Test
+    public void recurringScheduleWithNoEvents() {
+        Schedule schedule = createScheduleWith(RECURRING);
+        schedule.setInterval("P1D");
+        schedule.setEventId("non-existent-event");
+
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusDays(4)));
+        assertTrue(scheduledActivities.isEmpty());
+    }
+
+    @Test
+    public void recurringScheduleWithMultipleEvents() {
+        Schedule schedule = createScheduleWith(RECURRING);
+        schedule.setTimes(ImmutableList.of(LocalTime.parse("06:00")));
+        schedule.setInterval("P1D");
+        schedule.setSequencePeriod("P3D");
+        schedule.setEventId("two_weeks_before_enrollment,enrollment");
+
+        events.put("two_weeks_before_enrollment", ENROLLMENT.minusWeeks(2));
+
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan,
+                getContext(ENROLLMENT.plusDays(14)));
+        assertDates(scheduledActivities, "2015-03-09 06:00", "2015-03-10 06:00", "2015-03-11 06:00",
+                "2015-03-23 06:00", "2015-03-24 06:00", "2015-03-25 06:00");
     }
 
     // This is a specific scenario in one of our studies and I wanted to have a test specifically to verify this works.
