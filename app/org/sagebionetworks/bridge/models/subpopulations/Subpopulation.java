@@ -34,6 +34,14 @@ public interface Subpopulation extends BridgeEntity {
      */
     void setRequired(boolean required);
     boolean isRequired();
+
+    /**
+     * When a consent is signed by a participant, we send the signed consent to them via email or 
+     * via an SMS link. If this is true, suppress this behavior.
+     */
+    boolean isAutoSendConsentSuppressed();
+
+    void setAutoSendConsentSuppressed(boolean autoSendConsentSuppressed);
     
     /**
      * Has this subpopulation been deleted? The record remains for reconstructing historical 

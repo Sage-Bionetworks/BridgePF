@@ -108,6 +108,14 @@ public class BridgeUtilsTest {
         assertEquals(host, map.get("host"));
     }
     
+    @Test
+    public void templateResolverHandlesNullConsentEmail() {
+        Study study = TestUtils.getValidStudy(BridgeUtilsTest.class);
+        study.setConsentNotificationEmail(null);
+        
+        Map<String,String> map = BridgeUtils.studyTemplateVariables(study);
+        assertNull(map.get("consentEmail"));
+    }
     
     @Test
     public void templateResolverWorks() {

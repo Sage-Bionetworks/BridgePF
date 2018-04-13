@@ -10,6 +10,8 @@ import org.quartz.spi.MutableTrigger;
 
 import com.google.common.collect.Lists;
 
+import org.sagebionetworks.bridge.models.RangeTuple;
+
 class CronActivityScheduler extends ActivityScheduler {
 
     CronActivityScheduler(Schedule schedule) {
@@ -19,12 +21,13 @@ class CronActivityScheduler extends ActivityScheduler {
     @Override
     public List<ScheduledActivity> getScheduledActivities(SchedulePlan plan, ScheduleContext context) {
         List<ScheduledActivity> scheduledActivities = Lists.newArrayList();
-        DateTime scheduledTime = getScheduledTimeBasedOnEvent(context);
-        
-        if (scheduledTime != null) {
+        List<RangeTuple<DateTime>> scheduleWindowList = getScheduleWindowsBasedOnEvents(context);
+
+        for (RangeTuple<DateTime> oneScheduleWindow : scheduleWindowList) {
+            DateTime scheduledTime = oneScheduleWindow.getStart();
             MutableTrigger trigger = parseTrigger(scheduledTime);
             
-            while (shouldContinueScheduling(context, scheduledTime, scheduledActivities)) {
+            while (shouldContinueScheduling(context, scheduledTime, oneScheduleWindow, scheduledActivities)) {
                 // We use the scheduler to generate times in UTC (cron doesn't specify time zones
                 // and is usually in UTC), but when we add them, we add using localDate and 
                 // localTime, and then shift that to the user's time zone. So '0 0 10 1/1 * ? *' 
@@ -32,7 +35,7 @@ class CronActivityScheduler extends ActivityScheduler {
                 Date next = trigger.getFireTimeAfter(scheduledTime.toDate());
                 scheduledTime = new DateTime(next, DateTimeZone.UTC);
                 
-                if (shouldContinueScheduling(context, scheduledTime, scheduledActivities)) {
+                if (shouldContinueScheduling(context, scheduledTime, oneScheduleWindow, scheduledActivities)) {
                     addScheduledActivityAtTime(scheduledActivities, plan, context, scheduledTime.toLocalDate(), scheduledTime.toLocalTime());
                 }
             }

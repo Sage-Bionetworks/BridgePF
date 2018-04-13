@@ -7,13 +7,16 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDateTime;
 import org.junit.Before;
@@ -23,12 +26,11 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent.Builder;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 
@@ -38,34 +40,27 @@ import com.google.common.collect.Maps;
 public class ActivityEventServiceTest {
 
     private ActivityEventService activityEventService;
-    private StudyService studyService;
-    
+
     private ActivityEventDao activityEventDao;
     
     @Before
     public void before() {
         activityEventDao = mock(ActivityEventDao.class);
-        studyService = mock(StudyService.class);
 
         activityEventService = new ActivityEventService();
         activityEventService.setActivityEventDao(activityEventDao);
-        activityEventService.setStudyService(studyService);
     }
 
     @Test
     public void canPublishCustomEvent() throws Exception {
-        StudyIdentifier studyIdentifier = new StudyIdentifierImpl("id");
-        Study study = mock(Study.class);
-        when(study.getActivityEventKeys()).thenReturn(Sets.newHashSet("eventKey1", "eventKey2"));
-
-        studyService.getStudy(studyIdentifier);
-        when(studyService.getStudy(studyIdentifier)).thenReturn(study);
+        Study study = Study.create();
+        study.setActivityEventKeys(ImmutableSet.of("eventKey1", "eventKey2"));
 
         ArgumentCaptor<ActivityEvent> activityEventArgumentCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
         doNothing().when(activityEventDao).publishEvent(activityEventArgumentCaptor.capture());
 
         DateTime timestamp = DateTime.now();
-        activityEventService.publishCustomEvent(studyIdentifier, "healthCode", "eventKey1", timestamp);
+        activityEventService.publishCustomEvent(study, "healthCode", "eventKey1", timestamp);
 
         ActivityEvent activityEvent = activityEventArgumentCaptor.getValue();
 
@@ -74,20 +69,34 @@ public class ActivityEventServiceTest {
         assertEquals(timestamp.getMillis(), activityEvent.getTimestamp().longValue());
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test
+    public void canPublishCustomEventFromAutomaticEvents() {
+        Study study = Study.create();
+        study.setAutomaticCustomEvents(ImmutableMap.of("3-days-after-enrollment", "P3D"));
+
+        ArgumentCaptor<ActivityEvent> activityEventArgumentCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
+        doNothing().when(activityEventDao).publishEvent(activityEventArgumentCaptor.capture());
+
+        DateTime timestamp = DateTime.now().plusDays(3);
+        activityEventService.publishCustomEvent(study, "healthCode", "3-days-after-enrollment",
+                timestamp);
+
+        ActivityEvent activityEvent = activityEventArgumentCaptor.getValue();
+
+        assertEquals("custom:3-days-after-enrollment", activityEvent.getEventId());
+        assertEquals("healthCode", activityEvent.getHealthCode());
+        assertEquals(timestamp.getMillis(), activityEvent.getTimestamp().longValue());
+    }
+
+    @Test
     public void cannotPublishUnknownCustomEvent() throws Exception {
-        StudyIdentifier studyIdentifier = new StudyIdentifierImpl("id");
-        Study study = mock(Study.class);
-        when(study.getActivityEventKeys()).thenReturn(Sets.newHashSet("eventKey1", "eventKey2"));
-
-        studyService.getStudy(studyIdentifier);
-        when(studyService.getStudy(studyIdentifier)).thenReturn(study);
-
+        Study study = Study.create();
         try {
-            activityEventService.publishCustomEvent(studyIdentifier, "healthCode", "eventKey5", DateTime.now());
+            activityEventService.publishCustomEvent(study, "healthCode", "eventKey5",
+                    DateTime.now());
+            fail("expected exception");
         } catch (BadRequestException e) {
             assertThat(e.getMessage(), endsWith("eventKey5"));
-            throw e;
         }
     }
     
@@ -154,7 +163,7 @@ public class ActivityEventServiceTest {
     }
 
     @Test
-    public void canPublishConsent() {
+    public void canPublishEnrollmentEvent() {
         DateTime now = DateTime.now();
         
         ConsentSignature signature = new ConsentSignature.Builder()
@@ -163,7 +172,7 @@ public class ActivityEventServiceTest {
                 .withConsentCreatedOn(now.minusDays(10).getMillis())
                 .withSignedOn(now.getMillis()).build();
 
-        activityEventService.publishEnrollmentEvent("AAA-BBB-CCC", signature);
+        activityEventService.publishEnrollmentEvent(Study.create(),"AAA-BBB-CCC", signature);
         
         ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
         verify(activityEventDao).publishEvent(argument.capture());
@@ -172,8 +181,51 @@ public class ActivityEventServiceTest {
         assertEquals(new Long(now.getMillis()), argument.getValue().getTimestamp());
         assertEquals("AAA-BBB-CCC", argument.getValue().getHealthCode());
     }
-    
-    
+
+    @Test
+    public void canPublishEnrollmentEventWithAutomaticCustomEvents() {
+        // Configure study with automatic custom events
+        Study study = Study.create();
+        study.setAutomaticCustomEvents(ImmutableMap.<String, String>builder().put("3-days-after", "P3D")
+                .put("1-week-after", "P1W").put("13-weeks-after", "P13W").build());
+
+        // Create consent signature
+        DateTime enrollment = DateTime.parse("2018-04-04T16:00-0700");
+        ConsentSignature signature = new ConsentSignature.Builder()
+                .withBirthdate("1980-01-01")
+                .withName("A Name")
+                .withConsentCreatedOn(enrollment.minusDays(10).getMillis())
+                .withSignedOn(enrollment.getMillis()).build();
+
+        // Execute
+        activityEventService.publishEnrollmentEvent(study,"AAA-BBB-CCC", signature);
+
+        // Verify published events (4)
+        ArgumentCaptor<ActivityEvent> publishedEventCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
+        verify(activityEventDao, times(4)).publishEvent(publishedEventCaptor.capture());
+
+        List<ActivityEvent> publishedEventList = publishedEventCaptor.getAllValues();
+
+        assertEquals("enrollment", publishedEventList.get(0).getEventId());
+        assertEquals(enrollment.getMillis(), publishedEventList.get(0).getTimestamp().longValue());
+        assertEquals("AAA-BBB-CCC", publishedEventList.get(0).getHealthCode());
+
+        assertEquals("custom:3-days-after", publishedEventList.get(1).getEventId());
+        assertEquals(DateUtils.convertToMillisFromEpoch("2018-04-07T16:00-0700"), publishedEventList.get(1)
+                .getTimestamp().longValue());
+        assertEquals("AAA-BBB-CCC", publishedEventList.get(1).getHealthCode());
+
+        assertEquals("custom:1-week-after", publishedEventList.get(2).getEventId());
+        assertEquals(DateUtils.convertToMillisFromEpoch("2018-04-11T16:00-0700"), publishedEventList.get(2)
+                .getTimestamp().longValue());
+        assertEquals("AAA-BBB-CCC", publishedEventList.get(2).getHealthCode());
+
+        assertEquals("custom:13-weeks-after", publishedEventList.get(3).getEventId());
+        assertEquals(DateUtils.convertToMillisFromEpoch("2018-07-04T16:00-0700"), publishedEventList.get(3)
+                .getTimestamp().longValue());
+        assertEquals("AAA-BBB-CCC", publishedEventList.get(3).getHealthCode());
+    }
+
     @Test
     public void canPublishSurveyAnswer() {
         DateTime now = DateTime.now();

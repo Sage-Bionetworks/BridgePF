@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asDT;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.assertDates;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
@@ -32,7 +33,7 @@ public class CronActivitySchedulerTest {
     
     private static final DateTime NOW = DateTime.parse("2015-03-26T14:40:00-07:00");
     private static final DateTimeZone PST = DateTimeZone.forOffsetHours(-7);
-    private static DateTime ENROLLMENT = DateTime.parse("2015-03-23T10:00:00Z");
+    private static final DateTime ENROLLMENT = DateTime.parse("2015-03-23T10:00:00Z");
     
     private Map<String, DateTime> events;
     private List<ScheduledActivity> scheduledActivities;
@@ -160,6 +161,18 @@ public class CronActivitySchedulerTest {
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusWeeks(2)));
         assertDates(scheduledActivities, "2015-03-28 09:15");
     }
+
+    @Test
+    public void onceCronScheduleWithMultipleEventsOnlyReturnsOneActivity() {
+        Schedule schedule = createScheduleWith(ONCE);
+        schedule.setCronTrigger("0 0 6 * * ?"); // at 6am
+        schedule.setEventId("two_weeks_before_enrollment,enrollment");
+
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan,
+                getContext(ENROLLMENT.plusDays(14)));
+        assertDates(scheduledActivities, "2015-03-10 06:00");
+    }
+
     @Test
     public void recurringCronScheduleWorks() {
         Schedule schedule = createScheduleWith(RECURRING);
@@ -228,7 +241,7 @@ public class CronActivitySchedulerTest {
         // We'd expect, based on that schedule, to have a task:
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(now.plusDays(4)));
         assertDates(scheduledActivities, "2016-03-14 00:00");
-        
+
         DateTimeUtils.setCurrentMillisSystem();
     }
     
@@ -257,7 +270,30 @@ public class CronActivitySchedulerTest {
         
         DateTimeUtils.setCurrentMillisSystem();
     }
-    
+
+    @Test
+    public void recurringCronScheduleWithNoEvents() {
+        Schedule schedule = createScheduleWith(RECURRING);
+        schedule.setCronTrigger("0 0 6 * * ?"); // daily at 6am
+        schedule.setEventId("non-existent-event");
+
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(ENROLLMENT.plusDays(4)));
+        assertTrue(scheduledActivities.isEmpty());
+    }
+
+    @Test
+    public void recurringCronScheduleWithMultipleEvents() {
+        Schedule schedule = createScheduleWith(RECURRING);
+        schedule.setCronTrigger("0 0 6 * * ?"); // daily at 6am
+        schedule.setSequencePeriod("P3D");
+        schedule.setEventId("two_weeks_before_enrollment,enrollment");
+
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan,
+                getContext(ENROLLMENT.plusDays(14)));
+        assertDates(scheduledActivities, "2015-03-10 06:00", "2015-03-11 06:00", "2015-03-12 06:00",
+                "2015-03-24 06:00", "2015-03-25 06:00", "2015-03-26 06:00");
+    }
+
     @Test
     public void verifyTimesAreConvertedCorrectly() {
         DateTimeZone initialTimeZone = DateTimeZone.forOffsetHours(4);

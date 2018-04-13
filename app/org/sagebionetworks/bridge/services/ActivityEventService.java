@@ -8,6 +8,8 @@ import java.util.Map;
 
 import com.google.common.collect.Lists;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.Period;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -19,7 +21,6 @@ import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 
@@ -27,25 +28,23 @@ import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 public class ActivityEventService {
 
     private ActivityEventDao activityEventDao;
-    private StudyService studyService;
 
     @Autowired
     final void setActivityEventDao(ActivityEventDao activityEventDao) {
         this.activityEventDao = activityEventDao;
     }
-    
-    @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
-    }
-    
-    public void publishCustomEvent(StudyIdentifier studyId, String healthCode, String eventKey, DateTime timestamp) {
+
+    /**
+     * Publishes a custom event. Note that this automatically prepends "custom:" to the event key to form the event ID
+     * (eg, event key "studyBurstStart" becomes event ID "custom:studyBurstStart"). Also note that the event key must
+     * defined in the study (either in activityEventKeys or in AutomaticCustomEvents).
+     */
+    public void publishCustomEvent(Study study, String healthCode, String eventKey, DateTime timestamp) {
         checkNotNull(healthCode);
         checkNotNull(eventKey);
 
-        Study study = studyService.getStudy(studyId);
-
-        if (!study.getActivityEventKeys().contains(eventKey)) {
+        if (!study.getActivityEventKeys().contains(eventKey)
+                && !study.getAutomaticCustomEvents().containsKey(eventKey)) {
             throw new BadRequestException("Study's ActivityEventKeys does not contain eventKey: " + eventKey);
         }
 
@@ -57,14 +56,29 @@ public class ActivityEventService {
         activityEventDao.publishEvent(event);
     }
 
-    public void publishEnrollmentEvent(String healthCode, ConsentSignature signature) {
+    /**
+     * Publishes the enrollment event for a user, as well as all of the automatic custom events that trigger on
+     * enrollment time.
+     */
+    public void publishEnrollmentEvent(Study study, String healthCode, ConsentSignature signature) {
         checkNotNull(signature);
-        
+
+        // Create enrollment event. Use UTC for the timezone. DateTimes are used for period calculations, but since we
+        // store everything as epoch milliseconds, the timezone should have very little affect.
+        DateTime enrollment = new DateTime(signature.getSignedOn(), DateTimeZone.UTC);
         ActivityEvent event = new DynamoActivityEvent.Builder()
             .withHealthCode(healthCode)
-            .withTimestamp(signature.getSignedOn())
+            .withTimestamp(enrollment)
             .withObjectType(ActivityEventObjectType.ENROLLMENT).build();
-        activityEventDao.publishEvent(event);    
+        activityEventDao.publishEvent(event);
+
+        // Create automatic events, as defined in the study
+        for (Map.Entry<String, String> oneAutomaticEvent : study.getAutomaticCustomEvents().entrySet()) {
+            String automaticEventKey = oneAutomaticEvent.getKey();
+            Period automaticEventDelay = Period.parse(oneAutomaticEvent.getValue());
+            DateTime automaticEventTime = enrollment.plus(automaticEventDelay);
+            publishCustomEvent(study, healthCode, automaticEventKey, automaticEventTime);
+        }
     }
     
     public void publishQuestionAnsweredEvent(String healthCode, SurveyAnswer answer) {
@@ -106,8 +120,6 @@ public class ActivityEventService {
      * specific service method that should be preferred. This method can be used for 
      * edge cases (like answering a question or finishing a survey through the bulk import 
      * system).
-     * 
-     * @param event
      */
     public void publishActivityEvent(ActivityEvent event) {
         checkNotNull(event);
@@ -116,8 +128,6 @@ public class ActivityEventService {
 
     /**
      * Gets the activity events times for a specific user in order to schedule against them.
-     * @param healthCode
-     * @return
      */
     public Map<String, DateTime> getActivityEventMap(String healthCode) {
         checkNotNull(healthCode);

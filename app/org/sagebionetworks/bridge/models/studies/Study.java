@@ -72,6 +72,17 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     void setVersion(Long version);
 
     /**
+     * Custom events that should be generated for participant upon enrollment. The key in this map is the eventKey, and
+     * the value is the offset after the enrollment event (eg, "P1D" for one day after enrollment, "P2W" for 2 weeks
+     * after enrollment). Note that this API will automatically pre-pend "custom:" in front of the event key when
+     * generating the eventId (eg, eventKey "studyBurstStart" becomes event ID "custom:studyBurstStart").
+     */
+    Map<String, String> getAutomaticCustomEvents();
+
+    /** @see #getAutomaticCustomEvents */
+    void setAutomaticCustomEvents(Map<String, String> automaticCustomEvents);
+
+    /**
      * True if the automatic email verification email on sign-up should be suppressed. False if the email should be
      * sent on sign-up. This is generally used in conjunction with email sign-in, where sending a separate email
      * verification email would be redundant.

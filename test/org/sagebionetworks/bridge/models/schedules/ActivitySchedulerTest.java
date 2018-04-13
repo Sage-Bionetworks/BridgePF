@@ -248,10 +248,12 @@ public class ActivitySchedulerTest {
         schedule.setScheduleType(ONCE);
         
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(NOW.plusDays(1)));
+        assertEquals(1, scheduledActivities.size());
         assertEquals(ENROLLMENT.plusDays(2).withZone(PST), scheduledActivities.get(0).getScheduledOn());
-        
+
         events.remove("survey:event");
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(NOW.plusDays(1)));
+        assertEquals(1, scheduledActivities.size());
         assertEquals(ENROLLMENT.withZone(PST), scheduledActivities.get(0).getScheduledOn());
         
         // BUT this produces nothing because the system doesn't fallback to enrollment if an event has been set
@@ -271,10 +273,12 @@ public class ActivitySchedulerTest {
         schedule.addTimes(localTime);
         
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(NOW.plusDays(1)));
+        assertEquals(1, scheduledActivities.size());
         assertEquals(ENROLLMENT.withTime(localTime).plusDays(2).withZoneRetainFields(PST), scheduledActivities.get(0).getScheduledOn());
-        
+
         events.remove("survey:event");
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(NOW.plusDays(1)));
+        assertEquals(1, scheduledActivities.size());
         assertEquals(ENROLLMENT.withZone(PST).withTime(localTime), scheduledActivities.get(0).getScheduledOn());
         
         // BUT this produces nothing because the system doesn't fallback to enrollment if an event has been set
@@ -282,7 +286,20 @@ public class ActivitySchedulerTest {
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(NOW.plusDays(1)));
         assertEquals(0, scheduledActivities.size());
     }
-    
+
+    // branch coverage
+    @Test
+    public void contextWithEmptyEventMap() {
+        Schedule schedule = new Schedule();
+        schedule.addActivity(TestUtils.getActivity3());
+        schedule.setScheduleType(ONCE);
+
+        events.clear();
+
+        scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, getContext(NOW.plusDays(14)));
+        assertTrue(scheduledActivities.isEmpty());
+    }
+
     @Test
     public void activitiesMarkedPersistentUnderCorrectCircumstances() throws Exception {
         Schedule schedule = new Schedule();

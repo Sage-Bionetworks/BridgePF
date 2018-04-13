@@ -48,6 +48,7 @@ public class DynamoSubpopulationTest {
         subpop.setDefaultGroup(true);
         subpop.setPublishedConsentCreatedOn(PUBLISHED_CONSENT_TIMESTAMP.getMillis());
         subpop.setDeleted(true);
+        subpop.setAutoSendConsentSuppressed(true);
         subpop.setVersion(3L);
         
         Criteria criteria = TestUtils.createCriteria(2, 10, ALL_OF_GROUPS, NONE_OF_GROUPS);
@@ -58,14 +59,15 @@ public class DynamoSubpopulationTest {
         // This does not need to be passed to the user; the user is never allowed to set it.
         // This should be standard across the API, BTW, but this is leaked out by some classes.
         assertNull(node.get("studyIdentifier"));
-        assertEquals("Name", node.get("name").asText());
-        assertEquals("Description", node.get("description").asText());
-        assertEquals("guid", node.get("guid").asText());
-        assertEquals(PUBLISHED_CONSENT_TIMESTAMP.toString(), node.get("publishedConsentCreatedOn").asText());
-        assertTrue(node.get("required").asBoolean());
-        assertTrue(node.get("defaultGroup").asBoolean());
+        assertEquals("Name", node.get("name").textValue());
+        assertEquals("Description", node.get("description").textValue());
+        assertEquals("guid", node.get("guid").textValue());
+        assertEquals(PUBLISHED_CONSENT_TIMESTAMP.toString(), node.get("publishedConsentCreatedOn").textValue());
+        assertTrue(node.get("required").booleanValue());
+        assertTrue(node.get("defaultGroup").booleanValue());
+        assertTrue(node.get("autoSendConsentSuppressed").booleanValue());
         assertNull(node.get("deleted")); // users do not see this flag, they never get deleted items
-        assertEquals(3L, node.get("version").asLong());
+        assertEquals(3L, node.get("version").longValue());
         
         JsonNode critNode = node.get("criteria");
         assertEquals(ALL_OF_GROUPS, JsonUtils.asStringSet(critNode, "allOfGroups"));

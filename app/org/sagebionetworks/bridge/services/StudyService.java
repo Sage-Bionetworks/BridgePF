@@ -568,6 +568,12 @@ public class StudyService {
             // You can't use the updateStudy() API to set consentNotificationEmailVerified from false to true.
             study.setConsentNotificationEmailVerified(false);
         }
+        // This needs to happen before the study is updated.
+        boolean consentHasChanged = !Objects.equals(originalStudy.getConsentNotificationEmail(),
+                study.getConsentNotificationEmail());
+        if (consentHasChanged) {
+            study.setConsentNotificationEmailVerified(false);
+        }
 
         // Only admins can delete or modify upload metadata fields. Check this after validation, so we don't have to
         // deal with duplicates.
@@ -581,12 +587,9 @@ public class StudyService {
         if (!originalStudy.getSupportEmail().equals(study.getSupportEmail())) {
             emailVerificationService.verifyEmailAddress(study.getSupportEmail());
         }
-
-        if (!originalStudy.getConsentNotificationEmail().equals(study.getConsentNotificationEmail())) {
-            study.setConsentNotificationEmailVerified(false);
-            sendVerifyEmail(study, StudyEmailType.CONSENT_NOTIFICATION);
+        if (consentHasChanged && study.getConsentNotificationEmail() != null) {
+            sendVerifyEmail(study, StudyEmailType.CONSENT_NOTIFICATION);    
         }
-
         return updatedStudy;
     }
 

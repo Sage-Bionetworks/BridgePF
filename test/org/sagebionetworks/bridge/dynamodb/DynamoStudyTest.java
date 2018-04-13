@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -43,7 +44,23 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 public class DynamoStudyTest {
     private static final List<AppleAppLink> APPLE_APP_LINKS = Lists.newArrayList(TestConstants.APPLE_APP_LINK);
     private static final List<AndroidAppLink> ANDROID_APP_LINKS = Lists.newArrayList(TestConstants.ANDROID_APP_LINK);
-    
+
+    @Test
+    public void automaticCustomEventsIsNeverNull() {
+        // Starts as empty
+        Study study = Study.create();
+        assertTrue(study.getAutomaticCustomEvents().isEmpty());
+
+        // Set value works
+        Map<String, String> dummyMap = ImmutableMap.of("3-days-after-enrollment", "P3D");
+        study.setAutomaticCustomEvents(dummyMap);
+        assertEquals(dummyMap, study.getAutomaticCustomEvents());
+
+        // Set to null makes it empty again
+        study.setAutomaticCustomEvents(null);
+        assertTrue(study.getAutomaticCustomEvents().isEmpty());
+    }
+
     @Test
     public void uploadMetadataFieldDefListIsNeverNull() {
         // make field for test
@@ -80,7 +97,8 @@ public class DynamoStudyTest {
         OAuthProvider oauthProvider = new OAuthProvider("clientId", "secret", "endpoint",
                 OAuthProviderTest.CALLBACK_URL);
         study.getOAuthProviders().put("myProvider", oauthProvider);
-        
+
+        study.setAutomaticCustomEvents(ImmutableMap.of("3-days-after-enrollment", "P3D"));
         study.setVersion(2L);
         study.setMinSupportedAppVersions(ImmutableMap.<String, Integer>builder().put(OperatingSystem.IOS, 2).build());
         study.setUploadMetadataFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder()
@@ -145,7 +163,11 @@ public class DynamoStudyTest {
                 node.get("pushNotificationARNs").get(OperatingSystem.IOS).asText());
         assertEqualsAndNotNull(study.getPushNotificationARNs().get(OperatingSystem.ANDROID),
                 node.get("pushNotificationARNs").get(OperatingSystem.ANDROID).asText());
-        
+
+        JsonNode automaticCustomEventsNode = node.get("automaticCustomEvents");
+        assertEquals(1, automaticCustomEventsNode.size());
+        assertEquals("P3D", automaticCustomEventsNode.get("3-days-after-enrollment").textValue());
+
         JsonNode appleLink = node.get("appleAppLinks").get(0);
         assertEquals("studyId", appleLink.get("appID").textValue());
         assertEquals("/appId/", appleLink.get("paths").get(0).textValue());

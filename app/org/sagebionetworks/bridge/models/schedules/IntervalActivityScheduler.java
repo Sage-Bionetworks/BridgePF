@@ -6,6 +6,8 @@ import org.joda.time.DateTime;
 
 import com.google.common.collect.Lists;
 
+import org.sagebionetworks.bridge.models.RangeTuple;
+
 /**
  * This scheduler handles schedules that include an interval, times of day, and/or a delay 
  * in order to schedule (rather than a cron expression). In addition, it also handles one-time, 
@@ -20,10 +22,11 @@ class IntervalActivityScheduler extends ActivityScheduler {
     @Override
     public List<ScheduledActivity> getScheduledActivities(SchedulePlan plan, ScheduleContext context) {
         List<ScheduledActivity> scheduledActivities = Lists.newArrayList();
-        DateTime datetime = getScheduledTimeBasedOnEvent(context);
+        List<RangeTuple<DateTime>> scheduleWindowList = getScheduleWindowsBasedOnEvents(context);
 
-        if (datetime != null) {
-            while(shouldContinueScheduling(context, datetime, scheduledActivities)) {
+        for (RangeTuple<DateTime> oneScheduleWindow : scheduleWindowList) {
+            DateTime datetime = oneScheduleWindow.getStart();
+            while(shouldContinueScheduling(context, datetime, oneScheduleWindow, scheduledActivities)) {
                 addScheduledActivityForAllTimes(scheduledActivities, plan, context, datetime);
                 // A one-time activity with no interval (for example); don't loop
                 if (schedule.getInterval() == null) {
