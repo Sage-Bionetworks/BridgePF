@@ -776,7 +776,10 @@ public class StudyService {
             if (template.getMimeType() == MimeType.TEXT) {
                 body = Jsoup.clean(body, Whitelist.none());
             } else {
-                body = Jsoup.clean(body, BridgeConstants.CKEDITOR_WHITELIST);
+                // Providing the baseUrl allows relative URLs to be preserved, which we're interested in 
+                // so users can link template variables, e.g. <a href="${url}">${url}</a>
+                String baseUrl = BridgeConfigFactory.getConfig().get("webservices.url");
+                body = Jsoup.clean(body, baseUrl, BridgeConstants.CKEDITOR_WHITELIST);
             }
         }
         return new EmailTemplate(subject, body, template.getMimeType());
