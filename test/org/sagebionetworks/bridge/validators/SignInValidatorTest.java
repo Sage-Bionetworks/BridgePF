@@ -79,7 +79,7 @@ public class SignInValidatorTest {
     @Test
     public void passwordSignInWithEmailAndPhoneInvalid() {
         SignIn signIn = new SignIn.Builder().withEmail(EMAIL).withPhone(TestConstants.PHONE).build();
-        assertValidatorMessage(SignInValidator.PASSWORD_SIGNIN, signIn, "SignIn", "email or phone is required, but not both");
+        assertValidatorMessage(SignInValidator.PASSWORD_SIGNIN, signIn, "SignIn", "only provide one of email, phone, or external ID");
     }
     @Test
     public void passwordSignInWithInvalidPhoneInvalid() {
@@ -88,7 +88,7 @@ public class SignInValidatorTest {
     }
     @Test
     public void passwordSignInInvalid() {
-        assertValidatorMessage(SignInValidator.PASSWORD_SIGNIN, EMPTY_SIGNIN, "SignIn", "email or phone is required");
+        assertValidatorMessage(SignInValidator.PASSWORD_SIGNIN, EMPTY_SIGNIN, "SignIn", "email, phone, or external ID is required");
         assertValidatorMessage(SignInValidator.PASSWORD_SIGNIN, EMPTY_SIGNIN, "study", "is required");
         assertValidatorMessage(SignInValidator.PASSWORD_SIGNIN, EMPTY_SIGNIN, "password", "is required");
     }
@@ -105,7 +105,7 @@ public class SignInValidatorTest {
     @Test
     public void reauthWithEmailAndPhoneInvalid() {
         SignIn signIn = new SignIn.Builder().withEmail(EMAIL).withPhone(TestConstants.PHONE).build();
-        assertValidatorMessage(SignInValidator.REAUTH_SIGNIN, signIn, "SignIn", "email or phone is required, but not both");
+        assertValidatorMessage(SignInValidator.REAUTH_SIGNIN, signIn, "SignIn", "only provide one of email, phone, or external ID");
     }
     @Test
     public void reauthWithInvalidPhoneInvalid() {
@@ -114,7 +114,7 @@ public class SignInValidatorTest {
     }
     @Test
     public void reauthInvalid() {
-        assertValidatorMessage(SignInValidator.REAUTH_SIGNIN, EMPTY_SIGNIN, "SignIn", "email or phone is required");
+        assertValidatorMessage(SignInValidator.REAUTH_SIGNIN, EMPTY_SIGNIN, "SignIn", "email, phone, or external ID is required");
         assertValidatorMessage(SignInValidator.REAUTH_SIGNIN, EMPTY_SIGNIN, "study", "is required");
         assertValidatorMessage(SignInValidator.REAUTH_SIGNIN, EMPTY_SIGNIN, "reauthToken", "is required");
     }
@@ -128,7 +128,7 @@ public class SignInValidatorTest {
     }
     @Test
     public void requestResetPassword() {
-        assertValidatorMessage(SignInValidator.REQUEST_RESET_PASSWORD, EMPTY_SIGNIN, "SignIn", "email or phone is required");
+        assertValidatorMessage(SignInValidator.REQUEST_RESET_PASSWORD, EMPTY_SIGNIN, "SignIn", "email, phone, or external ID is required");
         assertValidatorMessage(SignInValidator.REQUEST_RESET_PASSWORD, EMPTY_SIGNIN, "study", "is required");
     }
     @Test
@@ -141,7 +141,17 @@ public class SignInValidatorTest {
     }
     @Test
     public void minimal() {
-        assertValidatorMessage(SignInValidator.MINIMAL, EMPTY_SIGNIN, "SignIn", "email or phone is required");
+        assertValidatorMessage(SignInValidator.MINIMAL, EMPTY_SIGNIN, "SignIn", "email, phone, or external ID is required");
         assertValidatorMessage(SignInValidator.MINIMAL, EMPTY_SIGNIN, "study", "is required");
+    }
+    @Test
+    public void blankExternalIdSignInInvalid() {
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).withExternalId("").build();
+        assertValidatorMessage(SignInValidator.MINIMAL, signIn, "SignIn", "email, phone, or external ID is required");
+    }
+    @Test
+    public void externalIdSignInOk() {
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).withExternalId("external-id").build();
+        Validate.entityThrowingException(SignInValidator.MINIMAL, signIn);
     }
 }

@@ -15,6 +15,7 @@ public final class AccountSummary {
     private final String lastName;
     private final String email;
     private final Phone phone;
+    private final String externalId;
     private final String id;
     private final DateTime createdOn;
     private final AccountStatus status;
@@ -22,13 +23,15 @@ public final class AccountSummary {
     
     @JsonCreator
     public AccountSummary(@JsonProperty("firstName") String firstName, @JsonProperty("lastName") String lastName,
-            @JsonProperty("email") String email, @JsonProperty("phone") Phone phone, @JsonProperty("id") String id,
+            @JsonProperty("email") String email, @JsonProperty("phone") Phone phone,
+            @JsonProperty("externalId") String externalId, @JsonProperty("id") String id,
             @JsonProperty("createdOn") DateTime createdOn, @JsonProperty("status") AccountStatus status,
             @JsonProperty("studyIdentifier") StudyIdentifier studyIdentifier) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.phone = phone;
+        this.externalId = externalId;
         this.id = id;
         this.createdOn = (createdOn == null) ? null : createdOn.withZone(DateTimeZone.UTC);
         this.status = status;
@@ -51,6 +54,10 @@ public final class AccountSummary {
         return phone;
     }
     
+    public String getExternalId() {
+        return externalId;
+    }
+    
     public String getId() {
         return id;
     }
@@ -69,7 +76,7 @@ public final class AccountSummary {
 
     @Override
     public int hashCode() {
-        return Objects.hash(firstName, lastName, email, phone, id, createdOn, status, studyIdentifier);
+        return Objects.hash(firstName, lastName, email, phone, externalId, id, createdOn, status, studyIdentifier);
     }
 
     @Override
@@ -81,8 +88,9 @@ public final class AccountSummary {
         AccountSummary other = (AccountSummary) obj;
         return Objects.equals(firstName, other.firstName) && Objects.equals(lastName, other.lastName)
                 && Objects.equals(email, other.email) && Objects.equals(phone, other.phone)
-                && Objects.equals(createdOn, other.createdOn) && Objects.equals(status, other.status)
-                && Objects.equals(id, other.id) && Objects.equals(studyIdentifier, other.studyIdentifier);
+                && Objects.equals(externalId, other.externalId) && Objects.equals(createdOn, other.createdOn)
+                && Objects.equals(status, other.status) && Objects.equals(id, other.id)
+                && Objects.equals(studyIdentifier, other.studyIdentifier);
     }
     
     // no toString() method as the information is sensitive.

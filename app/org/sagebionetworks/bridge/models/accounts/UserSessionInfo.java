@@ -59,12 +59,17 @@ public class UserSessionInfo {
         node.put(SESSION_TOKEN, session.getSessionToken());
         node.put(ENVIRONMENT, ENVIRONMENTS.get(session.getEnvironment()));
         node.put(DATA_SHARING, session.getParticipant().getSharingScope() != SharingScope.NO_SHARING);
-        node.put(USERNAME, session.getParticipant().getEmail());
         node.put(SIGNED_MOST_RECENT_CONSENT, ConsentStatus.isConsentCurrent(session.getConsentStatuses()));
         node.put(CONSENTED, ConsentStatus.isUserConsented(session.getConsentStatuses()));
-        node.put(REAUTH_TOKEN, session.getReauthToken());
+        // Don't set these so they are null, skip them as BridgeObjectMapper does
+        if (session.getParticipant().getEmail() != null) {
+            node.put(USERNAME, session.getParticipant().getEmail());    
+        }
+        if (session.getReauthToken() != null) {
+            node.put(REAUTH_TOKEN, session.getReauthToken());    
+        }
         node.put(TYPE, USER_SESSION_INFO);
-        
+
         ObjectNode statuses = node.with(CONSENT_STATUSES);
         for (Map.Entry<SubpopulationGuid, ConsentStatus> stats : session.getConsentStatuses().entrySet()) {
             statuses.set(stats.getKey().getGuid(), MAPPER.valueToTree(stats.getValue()));
