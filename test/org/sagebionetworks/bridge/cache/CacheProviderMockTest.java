@@ -30,7 +30,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.cache.CacheKeys.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
@@ -56,14 +56,14 @@ import com.google.common.collect.Sets;
 @RunWith(MockitoJUnitRunner.class)
 public class CacheProviderMockTest {
 
-    private static final CacheKey CACHE_KEY = CacheKeys.study("key");
+    private static final CacheKey CACHE_KEY = CacheKey.study("key");
     private static final Encryptor ENCRYPTOR = new AesGcmEncryptor(BridgeConfigFactory.getConfig().getProperty("bridge.healthcode.redis.key"));
     private static final String USER_ID = "userId";
     private static final String SESSION_TOKEN = "sessionToken";
     private static final String ENCRYPTED_SESSION_TOKEN = "TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=";
     private static final String DECRYPTED_SESSION_TOKEN = "ccea2978-f5b9-4377-8194-f887a3e2a19b";
-    private static final CacheKey SESSION_KEY = CacheKeys.session(SESSION_TOKEN);
-    private static final CacheKey USER_SESSION_KEY = CacheKeys.sessionByUserId(USER_ID);
+    private static final CacheKey SESSION_KEY = CacheKey.session(SESSION_TOKEN);
+    private static final CacheKey USER_SESSION_KEY = CacheKey.sessionByUserId(USER_ID);
 
     private CacheProvider cacheProvider;
     
@@ -210,14 +210,14 @@ public class CacheProviderMockTest {
         String json = BridgeObjectMapper.get().writeValueAsString(study);
         assertTrue(json != null && json.length() > 0);
 
-        final CacheKey cacheKey = CacheKeys.study(study.getIdentifier());
+        final CacheKey cacheKey = CacheKey.study(study.getIdentifier());
         simpleCacheProvider.setObject(cacheKey, json, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
 
         String cachedString = simpleCacheProvider.getObject(cacheKey, String.class);
         assertEquals(json, cachedString);
 
         // Remove something that's not the key
-        final CacheKey brokenCacheKey = CacheKeys.study(study.getIdentifier()+"2");
+        final CacheKey brokenCacheKey = CacheKey.study(study.getIdentifier()+"2");
         simpleCacheProvider.removeObject(brokenCacheKey);
         cachedString = simpleCacheProvider.getObject(cacheKey, String.class);
         assertEquals(json, cachedString);

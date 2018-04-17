@@ -4,8 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.cache.CacheKeys;
-import org.sagebionetworks.bridge.cache.CacheKeys.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -92,7 +91,7 @@ public class IntentService {
         subpopService.getSubpopulation(study, guid);
         
         // validate it has not yet been submitted
-        CacheKey cacheKey = CacheKeys.itp(guid, study.getStudyIdentifier(), intent.getPhone());
+        CacheKey cacheKey = CacheKey.itp(guid, study.getStudyIdentifier(), intent.getPhone());
 
         if (cacheProvider.getObject(cacheKey, IntentToParticipate.class) == null) {
             cacheProvider.setObject(cacheKey, intent, EXPIRATION_IN_SECONDS);
@@ -121,7 +120,7 @@ public class IntentService {
         
         List<Subpopulation> subpops = subpopService.getSubpopulations(study.getStudyIdentifier());
         for (Subpopulation subpop : subpops) {
-            CacheKey cacheKey = CacheKeys.itp(subpop.getGuid(), study.getStudyIdentifier(), phone);
+            CacheKey cacheKey = CacheKey.itp(subpop.getGuid(), study.getStudyIdentifier(), phone);
             IntentToParticipate intent = cacheProvider.getObject(cacheKey, IntentToParticipate.class);
             if (intent != null) {
                 consentService.consentToResearch(study, subpop.getGuid(), participant, 

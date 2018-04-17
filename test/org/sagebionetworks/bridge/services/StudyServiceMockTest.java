@@ -59,8 +59,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.cache.CacheKeys;
-import org.sagebionetworks.bridge.cache.CacheKeys.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -109,7 +108,7 @@ public class StudyServiceMockTest {
     private static final Set<String> EMPTY_SET = ImmutableSet.of();
     private static final String SUPPORT_EMAIL = "bridgeit@sagebase.org";
     private static final String VERIFICATION_TOKEN = "dummy-token";
-    private static final CacheKey VER_CACHE_KEY = CacheKeys.verificationToken("dummy-token");
+    private static final CacheKey VER_CACHE_KEY = CacheKey.verificationToken("dummy-token");
 
     @Mock
     private BridgeConfig bridgeConfig;

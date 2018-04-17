@@ -5,7 +5,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.Set;
 
-import org.sagebionetworks.bridge.cache.CacheKeys;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -34,7 +34,7 @@ public class CacheAdminService {
             Set<String> allKeys = jedis.keys("*");
             Set<String> set = Sets.newHashSet();
             for (String key : allKeys) {
-                if (CacheKeys.isPublic(key)) {
+                if (CacheKey.isPublic(key)) {
                     set.add(key);
                 }
             }
@@ -50,7 +50,7 @@ public class CacheAdminService {
         checkArgument(isNotBlank(cacheKey));
         Long removed = null;
         
-        if (CacheKeys.isPublic(cacheKey)) {
+        if (CacheKey.isPublic(cacheKey)) {
             try (Jedis jedis = jedisPool.getResource()) {
                 removed = jedis.del(cacheKey);
             }

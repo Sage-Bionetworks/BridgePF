@@ -16,11 +16,7 @@ import com.google.common.collect.Lists;
  * to store data in Redis. This makes it easier to determine which keys can be returned as 
  * part of the administrative API so we can keep PII data out of the cache keys we return.
  */
-public final class CacheKeys {
-    
-    private static final Joiner COLON_JOINER = Joiner.on(":");
-    private static final String[] PUBLIC_KEYS = new String[] { "emailVerificationStatus", "AppConfigList",
-            "channel-throttling", "lock", "study", "Subpopulation", "SubpopulationList" };
+public final class CacheKey {
     
     public final static boolean isPublic(String key) {
         for (String suffix : PUBLIC_KEYS) {
@@ -29,30 +25,6 @@ public final class CacheKeys {
             }
         }
         return false;
-    }
-    
-    public final static class CacheKey {
-        private final String key;
-        private CacheKey(String... elements) {
-            this.key = COLON_JOINER.join(elements);
-        }
-        @Override
-        public String toString() {
-            return key;
-        }
-        @Override
-        public int hashCode() {
-            return Objects.hashCode(key);
-        }
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null || getClass() != obj.getClass())
-                return false;
-            CacheKey other = (CacheKey) obj;
-            return Objects.equals(this.key, other.key);
-        }
     }
     
     public static final CacheKey appConfigList(StudyIdentifier studyId) {
@@ -80,7 +52,7 @@ public final class CacheKeys {
         return new CacheKey(sptoken, studyId); // no type, not great
     }
     public static final CacheKey reauthCacheKey(String reauthToken, String studyId) {
-        return new CacheKey(reauthToken, studyId, ":reauthCacheKey");
+        return new CacheKey(reauthToken, studyId, "reauthCacheKey");
     }
     public static final CacheKey passwordResetForPhone(String sptoken, String studyId) { 
         return new CacheKey(sptoken, "phone", studyId); // no type, not great
@@ -114,5 +86,32 @@ public final class CacheKeys {
         list.add(clazz.getSimpleName());
         list.add("view");
         return new CacheKey(COLON_JOINER.join(list));
+    }
+    
+    private static final Joiner COLON_JOINER = Joiner.on(":");
+    private static final String[] PUBLIC_KEYS = new String[] { "emailVerificationStatus", "AppConfigList",
+            "channel-throttling", "lock", "study", "Subpopulation", "SubpopulationList", "view" };
+    
+    private final String key;
+    
+    private CacheKey(String... elements) {
+        this.key = COLON_JOINER.join(elements);
+    }
+    @Override
+    public String toString() {
+        return key;
+    }
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(key);
+    }
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+        CacheKey other = (CacheKey) obj;
+        return Objects.equals(this.key, other.key);
     }
 }

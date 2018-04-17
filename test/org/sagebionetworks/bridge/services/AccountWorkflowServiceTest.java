@@ -33,8 +33,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.cache.CacheKeys;
-import org.sagebionetworks.bridge.cache.CacheKeys.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
@@ -89,16 +88,16 @@ public class AccountWorkflowServiceTest {
     private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
             .withStudyIdentifier(TestConstants.TEST_STUDY).build();
     
-    private static final CacheKey PHONE_CACHE_KEY = CacheKeys.phoneSignInRequest(SIGN_IN_REQUEST_WITH_PHONE);
+    private static final CacheKey PHONE_CACHE_KEY = CacheKey.phoneSignInRequest(SIGN_IN_REQUEST_WITH_PHONE);
     
-    private static final CacheKey PHONE_TOKEN_CACHE_KEY = CacheKeys.verificationToken(PHONE_TOKEN);
-    private static final CacheKey TOKEN_CACHE_KEY = CacheKeys.verificationToken(TOKEN);
-    private static final CacheKey SPTOKEN_CACHE_KEY = CacheKeys.verificationToken(SPTOKEN);
+    private static final CacheKey PHONE_TOKEN_CACHE_KEY = CacheKey.verificationToken(PHONE_TOKEN);
+    private static final CacheKey TOKEN_CACHE_KEY = CacheKey.verificationToken(TOKEN);
+    private static final CacheKey SPTOKEN_CACHE_KEY = CacheKey.verificationToken(SPTOKEN);
     
-    private static final CacheKey EMAIL_SIGNIN_CACHE_KEY = CacheKeys.emailSignInRequest(SIGN_IN_WITH_EMAIL);
-    private static final CacheKey PHONE_SIGNIN_CACHE_KEY = CacheKeys.phoneSignInRequest(SIGN_IN_WITH_PHONE);
-    private static final CacheKey PASSWORD_RESET_FOR_EMAIL = CacheKeys.passwordResetForEmail(SPTOKEN, STUDY_ID);
-    private static final CacheKey PASSWORD_RESET_FOR_PHONE = CacheKeys.passwordResetForPhone(SPTOKEN, STUDY_ID);
+    private static final CacheKey EMAIL_SIGNIN_CACHE_KEY = CacheKey.emailSignInRequest(SIGN_IN_WITH_EMAIL);
+    private static final CacheKey PHONE_SIGNIN_CACHE_KEY = CacheKey.phoneSignInRequest(SIGN_IN_WITH_PHONE);
+    private static final CacheKey PASSWORD_RESET_FOR_EMAIL = CacheKey.passwordResetForEmail(SPTOKEN, STUDY_ID);
+    private static final CacheKey PASSWORD_RESET_FOR_PHONE = CacheKey.passwordResetForPhone(SPTOKEN, STUDY_ID);
 
     @Mock
     private BridgeConfig mockBridgeConfig;

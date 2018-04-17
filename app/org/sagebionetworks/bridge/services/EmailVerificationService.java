@@ -23,8 +23,7 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.async.AsyncHandler;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.cache.CacheKeys;
-import org.sagebionetworks.bridge.cache.CacheKeys.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 
@@ -100,13 +99,13 @@ public class EmailVerificationService {
     }
 
     private EmailVerificationStatus cacheAndReturn(String emailAddress, EmailVerificationStatus status) {
-        CacheKey key = CacheKeys.emailVerification(emailAddress);
+        CacheKey key = CacheKey.emailVerification(emailAddress);
         cacheProvider.setObject(key, status.name(), VERIFIED_EMAIL_CACHE_IN_SECONDS);
         return status;
     }
     
     public boolean isVerified(String emailAddress) {
-        CacheKey key = CacheKeys.emailVerification(emailAddress);
+        CacheKey key = CacheKey.emailVerification(emailAddress);
         String value = cacheProvider.getObject(key, String.class);
         if (value == null) {
             EmailVerificationStatus status = getEmailStatus(emailAddress);

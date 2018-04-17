@@ -18,8 +18,7 @@ import java.util.function.Supplier;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.cache.CacheKeys;
-import org.sagebionetworks.bridge.cache.CacheKeys.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -343,7 +342,7 @@ public class AccountWorkflowService {
             EmailTemplate template) {
         String sptoken = getNextToken();
         
-        CacheKey cacheKey = CacheKeys.passwordResetForEmail(sptoken, study.getIdentifier());
+        CacheKey cacheKey = CacheKey.passwordResetForEmail(sptoken, study.getIdentifier());
         cacheProvider.setObject(cacheKey, email, VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         
         String url = getResetPasswordURL(study, sptoken);
@@ -382,7 +381,7 @@ public class AccountWorkflowService {
     private void sendPasswordResetRelatedSMS(Study study, Phone phone, boolean includePhoneSignIn, SmsTemplate template) {
         String sptoken = getNextToken();
         
-        CacheKey cacheKey = CacheKeys.passwordResetForPhone(sptoken, study.getIdentifier());
+        CacheKey cacheKey = CacheKey.passwordResetForPhone(sptoken, study.getIdentifier());
         cacheProvider.setObject(cacheKey, getPhoneString(phone), VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         
         String url = getShortResetPasswordURL(study, sptoken);
@@ -417,8 +416,8 @@ public class AccountWorkflowService {
         checkNotNull(passwordReset);
         
         // This pathway is unusual as the token may have been sent via email or phone, so test for both.
-        CacheKey emailCacheKey = CacheKeys.passwordResetForEmail(passwordReset.getSptoken(), passwordReset.getStudyIdentifier());
-        CacheKey phoneCacheKey = CacheKeys.passwordResetForPhone(passwordReset.getSptoken(), passwordReset.getStudyIdentifier());
+        CacheKey emailCacheKey = CacheKey.passwordResetForEmail(passwordReset.getSptoken(), passwordReset.getStudyIdentifier());
+        CacheKey phoneCacheKey = CacheKey.passwordResetForPhone(passwordReset.getSptoken(), passwordReset.getStudyIdentifier());
         
         String email = cacheProvider.getObject(emailCacheKey, String.class);
         String phoneJson = cacheProvider.getObject(phoneCacheKey, String.class);
@@ -536,9 +535,9 @@ public class AccountWorkflowService {
 
         CacheKey cacheKey = null;
         if (channelType == EMAIL) {
-            cacheKey = CacheKeys.emailSignInRequest(signIn); 
+            cacheKey = CacheKey.emailSignInRequest(signIn); 
         } else if (channelType == PHONE) {
-            cacheKey = CacheKeys.phoneSignInRequest(signIn);
+            cacheKey = CacheKey.phoneSignInRequest(signIn);
         }
 
         String token = cacheProvider.getObject(cacheKey, String.class);
@@ -565,9 +564,9 @@ public class AccountWorkflowService {
        
         CacheKey cacheKey = null;
         if (channelType == EMAIL) {
-            cacheKey = CacheKeys.emailSignInRequest(signIn);
+            cacheKey = CacheKey.emailSignInRequest(signIn);
         } else if (channelType == PHONE) {
-            cacheKey = CacheKeys.phoneSignInRequest(signIn);
+            cacheKey = CacheKey.phoneSignInRequest(signIn);
         } else {
             throw new UnsupportedOperationException("Channel type not implemented");
         }
@@ -587,7 +586,7 @@ public class AccountWorkflowService {
         checkNotNull(data);
                  
         try {
-            CacheKey cacheKey = CacheKeys.verificationToken(sptoken);
+            CacheKey cacheKey = CacheKey.verificationToken(sptoken);
             cacheProvider.setObject(cacheKey, BridgeObjectMapper.get().writeValueAsString(data),
                     VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         } catch (IOException e) {
@@ -598,7 +597,7 @@ public class AccountWorkflowService {
     private VerificationData restoreVerification(String sptoken) {
         checkArgument(isNotBlank(sptoken));
                  
-        CacheKey cacheKey = CacheKeys.verificationToken(sptoken);
+        CacheKey cacheKey = CacheKey.verificationToken(sptoken);
         String json = cacheProvider.getObject(cacheKey, String.class);
         if (json != null) {
             try {

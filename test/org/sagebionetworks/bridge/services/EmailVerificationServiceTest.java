@@ -23,8 +23,7 @@ import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.cache.CacheKeys;
-import org.sagebionetworks.bridge.cache.CacheKeys.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheKey;
 
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.amazonaws.services.simpleemail.model.GetIdentityVerificationAttributesRequest;
@@ -37,7 +36,7 @@ public class EmailVerificationServiceTest {
 
     private static final String EMAIL_ADDRESS = "foo@foo.com";
     
-    private static final CacheKey EMAIL_ADDRESS_KEY = CacheKeys.emailVerification(EMAIL_ADDRESS);
+    private static final CacheKey EMAIL_ADDRESS_KEY = CacheKey.emailVerification(EMAIL_ADDRESS);
 
     @Mock
     private AmazonSimpleEmailServiceClient sesClient;

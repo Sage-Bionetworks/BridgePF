@@ -27,8 +27,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.cache.CacheKeys;
-import org.sagebionetworks.bridge.cache.CacheKeys.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -71,7 +70,7 @@ public class AuthenticationServiceMockTest {
     private static final String RECIPIENT_EMAIL = "email@email.com";
     private static final String TOKEN = "ABC-DEF";
     private static final String REAUTH_TOKEN = "GHI-JKL";
-    private static final CacheKey REAUTH_CACHE_TOKEN = CacheKeys.reauthCacheKey(TOKEN, "api");
+    private static final CacheKey REAUTH_CACHE_TOKEN = CacheKey.reauthCacheKey(TOKEN, "api");
     private static final String USER_ID = "user-id";
     private static final String PASSWORD = "Password~!1";
     private static final SignIn SIGN_IN_REQUEST_WITH_EMAIL = new SignIn.Builder().withStudy(STUDY_ID)
@@ -244,7 +243,6 @@ public class AuthenticationServiceMockTest {
         
         verify(accountDao).deleteReauthToken(ACCOUNT_ID);
         verify(cacheProvider).removeSession(session);
-        verify(cacheProvider).removeObject(REAUTH_CACHE_TOKEN);
     }
     
     @Test

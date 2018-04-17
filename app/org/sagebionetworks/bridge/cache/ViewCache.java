@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.cache;
 
-import org.sagebionetworks.bridge.cache.CacheKeys.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +67,7 @@ public class ViewCache {
      * @return
      */
     public <T> CacheKey getCacheKey(Class<T> clazz, String... identifiers) {
-        return CacheKeys.viewKey(clazz, identifiers);
+        return CacheKey.viewKey(clazz, identifiers);
     }
     
     private <T> String cacheView(CacheKey key, Supplier<T> supplier) throws JsonProcessingException {

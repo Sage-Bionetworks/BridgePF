@@ -8,7 +8,7 @@ import java.util.Set;
 import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.cache.CacheKeys.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -72,19 +72,19 @@ public class CacheProvider {
     
     public void removeRequestInfo(String userId) {
         checkNotNull(userId);
-        CacheKey redisKey = CacheKeys.requestInfo(userId);
+        CacheKey redisKey = CacheKey.requestInfo(userId);
         removeObject(redisKey);
     }
     
     private void setRequestInfo(RequestInfo requestInfo) {
         checkNotNull(requestInfo);
-        CacheKey redisKey = CacheKeys.requestInfo(requestInfo.getUserId());
+        CacheKey redisKey = CacheKey.requestInfo(requestInfo.getUserId());
         setObject(redisKey, requestInfo);
     }
     
     public RequestInfo getRequestInfo(String userId) {
         checkNotNull(userId);
-        CacheKey redisKey = CacheKeys.requestInfo(userId);
+        CacheKey redisKey = CacheKey.requestInfo(userId);
         return getObject(redisKey, RequestInfo.class);
     }
 
@@ -98,8 +98,8 @@ public class CacheProvider {
         final String userId = session.getId();
         final String sessionToken = session.getSessionToken();
         
-        final CacheKey userKey = CacheKeys.sessionByUserId(userId);
-        final CacheKey sessionKey = CacheKeys.session(sessionToken);
+        final CacheKey userKey = CacheKey.sessionByUserId(userId);
+        final CacheKey sessionKey = CacheKey.session(sessionToken);
         
         try (JedisTransaction transaction = jedisOps.getTransaction()) {
             
@@ -132,7 +132,7 @@ public class CacheProvider {
     public UserSession getUserSession(final String sessionToken) {
         checkNotNull(sessionToken);
         try {
-            final CacheKey sessionKey = CacheKeys.session(sessionToken);
+            final CacheKey sessionKey = CacheKey.session(sessionToken);
             String ser = jedisOps.get(sessionKey.toString());
             if (ser == null) {
                 return null;
@@ -148,7 +148,7 @@ public class CacheProvider {
         checkNotNull(userId);
         
         try {
-            final CacheKey userKey = CacheKeys.sessionByUserId(userId);
+            final CacheKey userKey = CacheKey.sessionByUserId(userId);
             // This key isn't stored as a JSON string, retrieve it directly
             String sessionToken = jedisOps.get(userKey.toString());
             return (sessionToken == null) ? null : getUserSession(sessionToken);
@@ -162,8 +162,9 @@ public class CacheProvider {
         checkNotNull(session.getSessionToken());
         checkNotNull(session.getId());
         try {
-            final CacheKey sessionKey = CacheKeys.session(session.getSessionToken());
-            final CacheKey userKey = CacheKeys.sessionByUserId(session.getId());
+            final CacheKey sessionKey = CacheKey.session(session.getSessionToken());
+            final CacheKey userKey = CacheKey.sessionByUserId(session.getId());
+            
             try (JedisTransaction transaction = jedisOps.getTransaction()) {
                 transaction.del(sessionKey.toString())
                     .del(userKey.toString()).exec();
@@ -177,10 +178,10 @@ public class CacheProvider {
     public void removeSessionByUserId(final String userId) {
         checkNotNull(userId);
         try {
-            final CacheKey userKey = CacheKeys.sessionByUserId(userId);
+            final CacheKey userKey = CacheKey.sessionByUserId(userId);
             String sessionToken = jedisOps.get(userKey.toString());
             if (sessionToken != null) {
-                final CacheKey sessionKey = CacheKeys.session(sessionToken);
+                final CacheKey sessionKey = CacheKey.session(sessionToken);
                 try (JedisTransaction transaction = jedisOps.getTransaction()) {
                     transaction.del(sessionKey.toString())
                         .del(userKey.toString()).exec();
@@ -194,19 +195,19 @@ public class CacheProvider {
 
     public void setStudy(Study study) {
         checkNotNull(study);
-        CacheKey redisKey = CacheKeys.study(study.getIdentifier());
+        CacheKey redisKey = CacheKey.study(study.getIdentifier());
         setObject(redisKey, study, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
     }
 
     public Study getStudy(String identifier) {
         checkNotNull(identifier);
-        CacheKey redisKey = CacheKeys.study(identifier);
+        CacheKey redisKey = CacheKey.study(identifier);
         return getObject(redisKey, Study.class, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
     }
 
     public void removeStudy(String identifier) {
         checkNotNull(identifier);
-        CacheKey redisKey = CacheKeys.study(identifier);
+        CacheKey redisKey = CacheKey.study(identifier);
         removeObject(redisKey);
     }
 

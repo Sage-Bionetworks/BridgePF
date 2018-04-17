@@ -15,8 +15,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.bridge.cache.CacheKeys;
-import org.sagebionetworks.bridge.cache.CacheKeys.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.springframework.test.context.ContextConfiguration;
@@ -42,7 +41,7 @@ public class RedisDistributedLockDaoTest {
     @After
     public void after() {
         if (jedisOps != null) {
-            jedisOps.del(CacheKeys.lock(id, getClass()).toString());
+            jedisOps.del(CacheKey.lock(id, getClass()).toString());
         }
     }
 
@@ -51,7 +50,7 @@ public class RedisDistributedLockDaoTest {
         // Acquire lock
         String lockId = lockDao.acquireLock(getClass(), id, 60);
         assertNotNull(lockId);
-        CacheKey redisKey = CacheKeys.lock(id, getClass());
+        CacheKey redisKey = CacheKey.lock(id, getClass());
         String redisLockId = jedisOps.get(redisKey.toString());
         assertNotNull(redisLockId);
         assertEquals(redisLockId, lockId);

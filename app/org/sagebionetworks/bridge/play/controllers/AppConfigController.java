@@ -9,9 +9,8 @@ import java.util.List;
 import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.cache.CacheKeys;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.ViewCache;
-import org.sagebionetworks.bridge.cache.CacheKeys.CacheKey;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
@@ -54,7 +53,7 @@ public class AppConfigController extends BaseController {
         String json = viewCache.getView(cacheKey, () -> {
             AppConfig appConfig = appConfigService.getAppConfigForUser(context, true);
             // So we can delete all the relevant cached versions, keep track of them under the study
-            cacheProvider.addCacheKeyToSet(CacheKeys.appConfigList(study.getStudyIdentifier()), cacheKey.toString());
+            cacheProvider.addCacheKeyToSet(CacheKey.appConfigList(study.getStudyIdentifier()), cacheKey.toString());
             return appConfig;
         });
         return ok(json).as(JSON_MIME_TYPE);
@@ -82,7 +81,7 @@ public class AppConfigController extends BaseController {
         AppConfig appConfig = parseJson(request(), AppConfig.class);
         
         AppConfig created = appConfigService.createAppConfig(session.getStudyIdentifier(), appConfig);
-        cacheProvider.removeSetOfCacheKeys(CacheKeys.appConfigList(session.getStudyIdentifier()));
+        cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getStudyIdentifier()));
         
         return createdResult(new GuidVersionHolder(created.getGuid(), created.getVersion()));
     }
@@ -94,7 +93,7 @@ public class AppConfigController extends BaseController {
         appConfig.setGuid(guid);
         
         AppConfig updated = appConfigService.updateAppConfig(session.getStudyIdentifier(), appConfig);
-        cacheProvider.removeSetOfCacheKeys(CacheKeys.appConfigList(session.getStudyIdentifier()));
+        cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getStudyIdentifier()));
 
         return okResult(new GuidVersionHolder(updated.getGuid(), updated.getVersion()));
     }
@@ -103,7 +102,7 @@ public class AppConfigController extends BaseController {
         UserSession session = getAuthenticatedSession(ADMIN);
         
         appConfigService.deleteAppConfig(session.getStudyIdentifier(), guid);
-        cacheProvider.removeSetOfCacheKeys(CacheKeys.appConfigList(session.getStudyIdentifier()));
+        cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getStudyIdentifier()));
 
         return okResult("App config deleted.");
     }
@@ -118,6 +117,6 @@ public class AppConfigController extends BaseController {
         // them, so it's important they be part of the key
         String langs = BridgeUtils.SPACE_JOINER.join(context.getLanguages());
         
-        return CacheKeys.viewKey(AppConfig.class, appVersion, osName, langs, studyId);
+        return CacheKey.viewKey(AppConfig.class, appVersion, osName, langs, studyId);
     }
 }

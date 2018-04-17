@@ -20,8 +20,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.cache.CacheKeys;
-import org.sagebionetworks.bridge.cache.CacheKeys.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -104,7 +103,7 @@ public class IntentServiceTest {
         when(mockStudy.getAppInstallLinkSmsTemplate()).thenReturn(new SmsTemplate("this-is-a-link"));
         when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
         
-        CacheKey cacheKey = CacheKeys.itp(SubpopulationGuid.create("subpopGuid"), TestConstants.TEST_STUDY,
+        CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), TestConstants.TEST_STUDY,
                 TestConstants.PHONE);
         
         service.submitIntentToParticipate(intent);
@@ -138,7 +137,7 @@ public class IntentServiceTest {
         when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
         
-        CacheKey cacheKey = CacheKeys.itp(SubpopulationGuid.create("subpopGuid"), TestConstants.TEST_STUDY,
+        CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), TestConstants.TEST_STUDY,
                 TestConstants.PHONE);
         
         service.submitIntentToParticipate(intent);
@@ -161,7 +160,7 @@ public class IntentServiceTest {
         Map<String,String> installLinks = Maps.newHashMap();
         installLinks.put("Android", "this-is-a-link");
         
-        CacheKey cacheKey = CacheKeys.itp(SubpopulationGuid.create("subpopGuid"), new StudyIdentifierImpl("testStudy"),
+        CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), new StudyIdentifierImpl("testStudy"),
                 TestConstants.PHONE);
         
         when(mockStudy.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("testStudy"));
@@ -220,7 +219,7 @@ public class IntentServiceTest {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withPhone(TestConstants.PHONE).build();
         
-        CacheKey key = CacheKeys.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE);
+        CacheKey key = CacheKey.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE);
         
         when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         when(mockStudy.getIdentifier()).thenReturn(TestConstants.TEST_STUDY_IDENTIFIER);
@@ -257,7 +256,7 @@ public class IntentServiceTest {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withPhone(TestConstants.PHONE).build();
         
-        CacheKey key = CacheKeys.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE);
+        CacheKey key = CacheKey.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE);
         
         when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         when(mockStudy.getIdentifier()).thenReturn(TestConstants.TEST_STUDY_IDENTIFIER);
