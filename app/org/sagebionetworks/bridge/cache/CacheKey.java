@@ -18,6 +18,9 @@ import com.google.common.collect.Lists;
  */
 public final class CacheKey {
     
+    private static final String[] PUBLIC_KEYS = new String[] { "emailVerificationStatus", "AppConfigList",
+            "channel-throttling", "lock", "study", "Subpopulation", "SubpopulationList", "view" };
+    
     public final static boolean isPublic(String key) {
         for (String suffix : PUBLIC_KEYS) {
             if (key.endsWith(":"+suffix)) {
@@ -89,8 +92,6 @@ public final class CacheKey {
     }
     
     private static final Joiner COLON_JOINER = Joiner.on(":");
-    private static final String[] PUBLIC_KEYS = new String[] { "emailVerificationStatus", "AppConfigList",
-            "channel-throttling", "lock", "study", "Subpopulation", "SubpopulationList", "view" };
     
     private final String key;
     

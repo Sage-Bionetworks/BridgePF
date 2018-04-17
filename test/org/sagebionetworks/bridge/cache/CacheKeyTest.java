@@ -11,7 +11,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
-public class CacheKeysTest {
+public class CacheKeyTest {
     
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("guid");
     
