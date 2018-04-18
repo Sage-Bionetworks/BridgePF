@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
@@ -12,7 +13,6 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
@@ -36,6 +36,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -59,6 +60,8 @@ import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.Password;
+import org.sagebionetworks.bridge.models.accounts.PasswordGeneration;
 import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -98,6 +101,7 @@ public class AuthenticationControllerMockTest {
     private static final SignIn PHONE_SIGN_IN = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING)
             .withPhone(TestConstants.PHONE).withToken(TEST_TOKEN).build();
 
+    @Spy
     AuthenticationController controller;
 
     @Mock
@@ -132,6 +136,9 @@ public class AuthenticationControllerMockTest {
     @Captor
     ArgumentCaptor<CriteriaContext> contextCaptor;
     
+    @Captor
+    ArgumentCaptor<PasswordGeneration> passwordGenerationCaptor;
+    
     UserSession userSession;
     
     // This is manually mocked along with a request payload and captured in some tests
@@ -150,7 +157,6 @@ public class AuthenticationControllerMockTest {
         when(mockConfig.get("domain")).thenReturn(DOMAIN);
         when(mockConfig.getEnvironment()).thenReturn(Environment.UAT);
         
-        controller = spy(new AuthenticationController());
         controller.setBridgeConfig(mockConfig);
         controller.setAuthenticationService(authenticationService);
         controller.setCacheProvider(cacheProvider);
@@ -852,6 +858,7 @@ public class AuthenticationControllerMockTest {
         assertEquals(TEST_PASSWORD, captured.getPassword());
     }
     
+    @Test
     public void requestPhoneSignIn() throws Exception {
         mockPlayContextWithJson(PHONE_SIGN_IN_REQUEST);
         
@@ -968,6 +975,29 @@ public class AuthenticationControllerMockTest {
         } catch(ConsentRequiredException e) {
         }
         verifyCommonLoggingForSignIns();
+    }
+    
+    @Test
+    public void generatePassword() throws Exception {
+        doReturn(userSession).when(controller).getAuthenticatedSession(Roles.RESEARCHER);
+        TestUtils.mockPlayContextWithJson(
+                TestUtils.createJson("{'externalId':'extid','createAccount':false}"));
+        Password password = new Password("extid", "user-id", "some-password");
+        when(authenticationService.generatePassword(any(), any())).thenReturn(password);
+
+        Result result = controller.generatePassword();
+        TestUtils.assertResult(result, 200);
+        
+        Password retrieved = TestUtils.getResponsePayload(result, Password.class);
+        assertEquals("extid", retrieved.getExternalId());
+        assertEquals("user-id", retrieved.getUserId());
+        assertEquals("some-password", retrieved.getPassword());
+        
+        verify(authenticationService).generatePassword(eq(study), passwordGenerationCaptor.capture());
+        
+        PasswordGeneration passgen = passwordGenerationCaptor.getValue();
+        assertEquals("extid", passgen.getExternalId());
+        assertFalse(passgen.isCreateAccount());
     }
     
     private void mockSignInWithEmailPayload() throws Exception {

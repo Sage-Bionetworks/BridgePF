@@ -30,7 +30,7 @@ POST   /v3/auth/email/signIn            @org.sagebionetworks.bridge.play.control
 POST   /v3/auth/phone                   @org.sagebionetworks.bridge.play.controllers.AuthenticationController.requestPhoneSignIn
 POST   /v3/auth/phone/signIn            @org.sagebionetworks.bridge.play.controllers.AuthenticationController.phoneSignIn
 POST   /v4/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signIn
-
+POST   /v3/auth/password                @org.sagebionetworks.bridge.play.controllers.AuthenticationController.generatePassword
 # OAuth
 POST /v3/oauth/:vendorId    @org.sagebionetworks.bridge.play.controllers.OAuthController.requestAccessToken(vendorId: String)
 

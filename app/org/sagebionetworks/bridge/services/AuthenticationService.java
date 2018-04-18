@@ -3,14 +3,18 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 
+import org.apache.commons.lang3.StringUtils;
+
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_REAUTH_GRACE_PERIOD;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -20,8 +24,11 @@ import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
+import org.sagebionetworks.bridge.models.accounts.Password;
+import org.sagebionetworks.bridge.models.accounts.PasswordGeneration;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -40,6 +47,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.ImmutableSet;
 
 @Component("authenticationService")
 public class AuthenticationService {
@@ -61,6 +69,7 @@ public class AuthenticationService {
     private PasswordResetValidator passwordResetValidator;
     private AccountWorkflowService accountWorkflowService;
     private IntentService intentService;
+    private ExternalIdService externalIdService;
 
     @Autowired
     final void setCacheProvider(CacheProvider cache) {
@@ -97,6 +106,10 @@ public class AuthenticationService {
     @Autowired
     final void setIntentToParticipateService(IntentService intentService) {
         this.intentService = intentService;
+    }
+    @Autowired
+    final void setExternalIdService(ExternalIdService externalIdService) {
+        this.externalIdService = externalIdService;
     }
     
     /**
@@ -286,6 +299,72 @@ public class AuthenticationService {
         Validate.entityThrowingException(passwordResetValidator, passwordReset);
         
         accountWorkflowService.resetPassword(passwordReset);
+    }
+    
+    public Password generatePassword(Study study, PasswordGeneration passGen) {
+        checkNotNull(study);
+        checkNotNull(passGen);
+        
+        if (!study.isExternalIdValidationEnabled()) {
+            throw new BadRequestException("External ID management disabled for this study");
+        }
+        if (StringUtils.isBlank(passGen.getExternalId())) {
+            throw new BadRequestException("External ID is required");
+        }
+        ExternalIdentifier externalIdentifier = externalIdService.getExternalId(
+                study.getStudyIdentifier(), passGen.getExternalId());        
+        if (externalIdentifier == null) {
+            throw new EntityNotFoundException(ExternalIdentifier.class);
+        }
+        AccountId accountId = AccountId.forExternalId(study.getIdentifier(), passGen.getExternalId());
+        Account account = accountDao.getAccount(accountId);
+
+        String password = generatePassword(study.getPasswordPolicy().getMinLength());
+        String userId = null;
+
+        if (account == null) {
+            if (!passGen.isCreateAccount()) {
+                throw new EntityNotFoundException(Account.class);
+            }
+            // Any assignment of the external id is a problem because since this account doesn't 
+            // exist yet, and so the assigned healthCode can't be this account's health code.
+            if (externalIdentifier.getHealthCode() != null) {
+                throw new EntityAlreadyExistsException(ExternalIdentifier.class, "externalId",
+                        externalIdentifier.getIdentifier());
+            }
+            // Participant creation sets the password and assigns the external identifier
+            StudyParticipant participant = new StudyParticipant.Builder()
+                    .withExternalId(passGen.getExternalId()).withPassword(password).build();
+            userId = participantService.createParticipant(
+                    study, ImmutableSet.of(), participant, false).getIdentifier();
+        } else {
+            // If the external ID is taken and it's not the users health code, it's an error.
+            // We don't want to silently ignore it.
+            String extIdHealthCode = externalIdentifier.getHealthCode();
+            if (extIdHealthCode != null && !account.getHealthCode().equals(extIdHealthCode)) {
+                throw new EntityAlreadyExistsException(ExternalIdentifier.class, "externalId",
+                        externalIdentifier.getIdentifier());
+            }
+            // Change the password
+            accountDao.changePassword(account, password);
+
+            // Add the external ID, which also assigns it in the external ID table.
+            StudyParticipant updated = new StudyParticipant.Builder()
+                    .copyOf(participantService.getParticipant(study, account, false))
+                    .withExternalId(passGen.getExternalId()).build();
+            participantService.updateParticipant(study, ImmutableSet.of(), updated);
+            userId = account.getId();
+        }
+        return new Password(passGen.getExternalId(), userId, password);
+    };
+    
+    public String generatePassword(int policyLength) {
+        // as long as required, but not less than 32
+        int length = Math.max(32, policyLength); 
+        
+        // This is sufficient to pass password validation
+        SecureTokenGenerator generator = new SecureTokenGenerator(length);
+        return generator.nextToken() + "Br4!";
     }
     
     private UserSession channelSignIn(ChannelType channelType, CriteriaContext context, SignIn signIn,

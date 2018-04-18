@@ -32,6 +32,10 @@ public class SecureTokenGenerator {
         this.random = Objects.requireNonNull(random);
         this.characters = characters.toCharArray();
     }
+    
+    public SecureTokenGenerator(int length) {
+        this(length, new SecureRandom(), ALPHANUMERIC);
+    }
 
     /**
      * Create session identifiers. This is 4.36e+37 unique values, which is enough
