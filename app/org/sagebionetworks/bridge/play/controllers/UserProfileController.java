@@ -9,7 +9,7 @@ import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.cache.ViewCache;
-import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -72,7 +72,7 @@ public class UserProfileController extends BaseController {
         final Study study = studyService.getStudy(session.getStudyIdentifier());
         final String userId = session.getId();
         
-        ViewCacheKey<ObjectNode> cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, study.getIdentifier());
+        CacheKey cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, study.getIdentifier());
         String json = viewCache.getView(cacheKey, new Supplier<ObjectNode>() {
             @Override public ObjectNode get() {
                 StudyParticipant participant = participantService.getParticipant(study, userId, false);
@@ -122,7 +122,7 @@ public class UserProfileController extends BaseController {
         
         sessionUpdateService.updateParticipant(session, context, updated);
         
-        ViewCacheKey<ObjectNode> cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, study.getIdentifier());
+        CacheKey cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, study.getIdentifier());
         viewCache.removeView(cacheKey);
         
         return okResult(UserSessionInfo.toJSON(session));

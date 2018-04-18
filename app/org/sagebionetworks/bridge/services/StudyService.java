@@ -54,6 +54,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.StudyDao;
@@ -774,7 +775,10 @@ public class StudyService {
             if (template.getMimeType() == MimeType.TEXT) {
                 body = Jsoup.clean(body, Whitelist.none());
             } else {
-                body = Jsoup.clean(body, BridgeConstants.CKEDITOR_WHITELIST);
+                // Providing the baseUrl allows relative URLs to be preserved, which we're interested in 
+                // so users can link template variables, e.g. <a href="${url}">${url}</a>
+                String baseUrl = BridgeConfigFactory.getConfig().get("webservices.url");
+                body = Jsoup.clean(body, baseUrl, BridgeConstants.CKEDITOR_WHITELIST);
             }
         }
         return new EmailTemplate(subject, body, template.getMimeType());
@@ -890,7 +894,8 @@ public class StudyService {
         checkNotNull(data);
 
         try {
-            cacheProvider.setObject(sptoken, BridgeObjectMapper.get().writeValueAsString(data),
+            CacheKey cacheKey = CacheKey.verificationToken(sptoken);
+            cacheProvider.setObject(cacheKey, BridgeObjectMapper.get().writeValueAsString(data),
                     VERIFY_STUDY_EMAIL_EXPIRE_IN_SECONDS);
         } catch (IOException e) {
             throw new BridgeServiceException(e);
@@ -901,10 +906,11 @@ public class StudyService {
     private VerificationData restoreVerification(String sptoken) {
         checkArgument(isNotBlank(sptoken));
 
-        String json = cacheProvider.getObject(sptoken, String.class);
+        CacheKey cacheKey = CacheKey.verificationToken(sptoken);
+        String json = cacheProvider.getObject(cacheKey, String.class);
         if (json != null) {
             try {
-                cacheProvider.removeObject(sptoken);
+                cacheProvider.removeObject(cacheKey);
                 return BridgeObjectMapper.get().readValue(json, VerificationData.class);
             } catch (IOException e) {
                 throw new BridgeServiceException(e);
