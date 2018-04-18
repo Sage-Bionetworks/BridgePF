@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -54,6 +55,7 @@ public class AppConfigControllerTest {
     private static final String TEST_UA = "Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4";
     private static final String TEST_LANG = "en-US,en;q=0.9";
     private static final String GUID = "guid";
+    private static final CacheKey CACHE_KEY = CacheKey.appConfigList(TestConstants.TEST_STUDY);
     
     @Spy
     private AppConfigController controller;
@@ -202,7 +204,7 @@ public class AppConfigControllerTest {
         
         controller.getStudyAppConfig(TestConstants.TEST_STUDY_IDENTIFIER);
         
-        verify(mockCacheProvider).addCacheKeyToSet("api:AppConfigList", "26:iPhone OS:en:api:AppConfig:view");
+        verify(mockCacheProvider).addCacheKeyToSet(CACHE_KEY, "26:iPhone OS:en:api:AppConfig:view");
     }
     
     @Test
@@ -212,7 +214,7 @@ public class AppConfigControllerTest {
         
         controller.createAppConfig();
         
-        verify(mockCacheProvider).removeSetOfCacheKeys("api:AppConfigList");
+        verify(mockCacheProvider).removeSetOfCacheKeys(CACHE_KEY);
     }
     
     @Test
@@ -222,14 +224,14 @@ public class AppConfigControllerTest {
         
         controller.updateAppConfig("guid");
         
-        verify(mockCacheProvider).removeSetOfCacheKeys("api:AppConfigList");
+        verify(mockCacheProvider).removeSetOfCacheKeys(CACHE_KEY);
     }
     
     @Test
     public void deleteAppConfigDeletesCache() {
         controller.deleteAppConfig("guid");
         
-        verify(mockCacheProvider).removeSetOfCacheKeys("api:AppConfigList");
+        verify(mockCacheProvider).removeSetOfCacheKeys(CACHE_KEY);
     }
     
     private void mockContext(String userAgent, String langs) throws Exception {

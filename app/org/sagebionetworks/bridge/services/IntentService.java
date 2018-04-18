@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -12,7 +13,6 @@ import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
@@ -91,7 +91,7 @@ public class IntentService {
         subpopService.getSubpopulation(study, guid);
         
         // validate it has not yet been submitted
-        String cacheKey = getCacheKey(study, guid, intent.getPhone());
+        CacheKey cacheKey = CacheKey.itp(guid, study.getStudyIdentifier(), intent.getPhone());
 
         if (cacheProvider.getObject(cacheKey, IntentToParticipate.class) == null) {
             cacheProvider.setObject(cacheKey, intent, EXPIRATION_IN_SECONDS);
@@ -120,7 +120,7 @@ public class IntentService {
         
         List<Subpopulation> subpops = subpopService.getSubpopulations(study.getStudyIdentifier());
         for (Subpopulation subpop : subpops) {
-            String cacheKey = getCacheKey(study, subpop.getGuid(), phone);
+            CacheKey cacheKey = CacheKey.itp(subpop.getGuid(), study.getStudyIdentifier(), phone);
             IntentToParticipate intent = cacheProvider.getObject(cacheKey, IntentToParticipate.class);
             if (intent != null) {
                 consentService.consentToResearch(study, subpop.getGuid(), participant, 
@@ -130,10 +130,6 @@ public class IntentService {
         }
     }
     
-    private String getCacheKey(StudyIdentifier studyId, SubpopulationGuid subpopGuid, Phone phone) {
-        return subpopGuid.getGuid() + ":" + phone.getNumber() + ":" + studyId.getIdentifier() + ":itp";
-    }
-
     protected String getInstallLink(String osName, Map<String,String> installLinks) {
         String installLink = installLinks.get(osName);
         // OS name wasn't submitted or it's wrong, use the universal link
