@@ -5,6 +5,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.anyObject;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -34,6 +35,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
@@ -93,7 +95,7 @@ public class SurveyControllerTest {
     
     private ViewCache viewCache;
     
-    private Map<String,String> cacheMap;
+    private Map<CacheKey,String> cacheMap;
     
     private UserSession session;
     
@@ -109,30 +111,30 @@ public class SurveyControllerTest {
         viewCache.setCachePeriod(BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
         
         CacheProvider provider = mock(CacheProvider.class);
-        when(provider.getObject(anyString(), eq(String.class))).thenAnswer(new Answer<String>() {
+        when(provider.getObject(anyObject(), eq(String.class))).thenAnswer(new Answer<String>() {
             @Override
             public String answer(InvocationOnMock invocation) throws Throwable {
-                String key = invocation.getArgumentAt(0, String.class);
+                CacheKey key = invocation.getArgumentAt(0, CacheKey.class);
                 return cacheMap.get(key);
             }
         });
         doAnswer(new Answer<Void>() {
             @Override
             public Void answer(InvocationOnMock invocation) throws Throwable {
-                String key = invocation.getArgumentAt(0, String.class);
+                CacheKey key = invocation.getArgumentAt(0, CacheKey.class);
                 String value = invocation.getArgumentAt(1, String.class);
                 cacheMap.put(key, value);
                 return null;
             }
-        }).when(provider).setObject(anyString(), anyString(), anyInt());
+        }).when(provider).setObject(anyObject(), anyString(), anyInt());
         doAnswer(new Answer<Void>() {
             @Override
             public Void answer(InvocationOnMock invocation) throws Throwable {
-                String key = invocation.getArgumentAt(0, String.class);
+                CacheKey key = invocation.getArgumentAt(0, CacheKey.class);
                 cacheMap.remove(key);
                 return null;
             }
-        }).when(provider).removeObject(anyString());
+        }).when(provider).removeObject(anyObject());
         viewCache.setCacheProvider(provider);
         
         studyService = mock(StudyService.class);

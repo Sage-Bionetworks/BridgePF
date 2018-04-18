@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_REAUTH_GRACE_PER
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -175,8 +176,8 @@ public class AuthenticationService {
         
         Validate.entityThrowingException(SignInValidator.REAUTH_SIGNIN, signIn);
 
-        String reauthCacheKey = getReauthCacheKey(signIn.getStudyId(), signIn.getReauthToken());
-
+        CacheKey reauthCacheKey = CacheKey.reauthCacheKey(signIn.getReauthToken(), signIn.getStudyId());
+        
         // First look to see if reauthCacheKey is in cache. If it is, return the existing session. This 
         // creates a grace period during which concurrent requests with the same reauth token will work.
         Tuple<String> persisedReauthTuple = cacheProvider.getObject(reauthCacheKey, TUPLE_TYPE);
@@ -214,10 +215,11 @@ public class AuthenticationService {
         if (session != null) {
             AccountId accountId = AccountId.forId(session.getStudyIdentifier().getIdentifier(), session.getId());
             accountDao.deleteReauthToken(accountId);
-            String reauthCacheKey = getReauthCacheKey(session.getStudyIdentifier().getIdentifier(), session.getReauthToken());
-            cacheProvider.removeObject(reauthCacheKey);
+            // session does not have the reauth token so the reauthToken-->sessionToken Redis entry cannot be 
+            // removed, but once the reauth token is removed from the user table, the reauth token will no 
+            // longer work (and is short-lived in the cache).
             cacheProvider.removeSession(session);
-        }
+        } 
     }
 
     public IdentifierHolder signUp(Study study, StudyParticipant participant, boolean checkForConsent) {
@@ -357,9 +359,5 @@ public class AuthenticationService {
         session.setConsentStatuses(consentService.getConsentStatuses(newContext, account));
         
         return session;
-    }
-    
-    private String getReauthCacheKey(String studyId, String reauthToken) {
-        return reauthToken + ":" + studyId + ":reauthCacheKey";
     }
 }

@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import javax.annotation.Resource;
 
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.dao.DistributedLockDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -34,8 +35,8 @@ public class RedisDistributedLockDao implements DistributedLockDao {
         checkNotNull(identifier);
         checkArgument(expireInSeconds > 0);
         try {
-            final String redisKey = createRedisKey(clazz, identifier);
-            return redisLock.acquireLock(redisKey, expireInSeconds);
+            final CacheKey redisKey = CacheKey.lock(identifier, clazz);
+            return redisLock.acquireLock(redisKey.toString(), expireInSeconds);
         } catch (LockNotAvailableException e) {
             throw new ConcurrentModificationException("Lock already set.");
         }
@@ -47,15 +48,10 @@ public class RedisDistributedLockDao implements DistributedLockDao {
         checkNotNull(identifier);
         checkNotNull(lock);
         try {
-            final String redisKey = createRedisKey(clazz, identifier);
-            return redisLock.releaseLock(redisKey, lock);
+            final CacheKey redisKey = CacheKey.lock(identifier, clazz);
+            return redisLock.releaseLock(redisKey.toString(), lock);
         } catch (RedisException e) {
             throw new BridgeServiceException("Lock not released.");
         }
-    }
-
-    private String createRedisKey(Class<?> clazz, String identifier) {
-        String key = identifier + RedisKey.SEPARATOR + clazz.getCanonicalName();
-        return RedisKey.LOCK.getRedisKey(key);
     }
 }
