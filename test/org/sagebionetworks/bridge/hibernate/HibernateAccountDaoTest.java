@@ -1731,6 +1731,7 @@ public class HibernateAccountDaoTest {
         hibernateAccount.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         hibernateAccount.setEmail(EMAIL);
         hibernateAccount.setPhone(TestConstants.PHONE);
+        hibernateAccount.setExternalId(EXTERNAL_ID);
         hibernateAccount.setFirstName(FIRST_NAME);
         hibernateAccount.setLastName(LAST_NAME);
         hibernateAccount.setCreatedOn(CREATED_ON.getMillis());
@@ -1742,6 +1743,7 @@ public class HibernateAccountDaoTest {
         assertEquals(TestConstants.TEST_STUDY, accountSummary.getStudyIdentifier());
         assertEquals(EMAIL, accountSummary.getEmail());
         assertEquals(TestConstants.PHONE, accountSummary.getPhone());
+        assertEquals(EXTERNAL_ID, accountSummary.getExternalId());
         assertEquals(FIRST_NAME, accountSummary.getFirstName());
         assertEquals(LAST_NAME, accountSummary.getLastName());
         assertEquals(AccountStatus.ENABLED, accountSummary.getStatus());
@@ -1890,6 +1892,7 @@ public class HibernateAccountDaoTest {
         hibernateAccount.setId(ACCOUNT_ID);
         hibernateAccount.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         hibernateAccount.setPhone(TestConstants.PHONE);
+        hibernateAccount.setExternalId(EXTERNAL_ID);
         hibernateAccount.setEmail(EMAIL);
         hibernateAccount.setStatus(AccountStatus.ENABLED);
         hibernateAccount.setMigrationVersion(AccountDao.MIGRATION_VERSION);

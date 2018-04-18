@@ -56,15 +56,13 @@ public class UserSessionInfo {
     public static JsonNode toJSON(UserSession session) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put(AUTHENTICATED, session.isAuthenticated());
-        node.put(SESSION_TOKEN, session.getSessionToken());
-        node.put(ENVIRONMENT, ENVIRONMENTS.get(session.getEnvironment()));
         node.put(DATA_SHARING, session.getParticipant().getSharingScope() != SharingScope.NO_SHARING);
-        node.put(USERNAME, session.getParticipant().getEmail());
         node.put(SIGNED_MOST_RECENT_CONSENT, ConsentStatus.isConsentCurrent(session.getConsentStatuses()));
         node.put(CONSENTED, ConsentStatus.isUserConsented(session.getConsentStatuses()));
-        node.put(REAUTH_TOKEN, session.getReauthToken());
-        node.put(TYPE, USER_SESSION_INFO);
-        
+        addNotNull(node, USERNAME, session.getParticipant().getEmail());
+        addNotNull(node, REAUTH_TOKEN, session.getReauthToken());
+        addNotNull(node, SESSION_TOKEN, session.getSessionToken());
+        addNotNull(node, ENVIRONMENT, ENVIRONMENTS.get(session.getEnvironment()));
         ObjectNode statuses = node.with(CONSENT_STATUSES);
         for (Map.Entry<SubpopulationGuid, ConsentStatus> stats : session.getConsentStatuses().entrySet()) {
             statuses.set(stats.getKey().getGuid(), MAPPER.valueToTree(stats.getValue()));
@@ -78,6 +76,14 @@ public class UserSessionInfo {
                 node.set(fieldName, child);
             }
         }
+        node.put(TYPE, USER_SESSION_INFO);
+
         return node;
+    }
+    
+    private static void addNotNull(ObjectNode node, String fieldName, String value) {
+        if (value != null) {
+            node.put(fieldName, value);
+        }
     }
 }

@@ -42,8 +42,9 @@ public class StudyParticipantValidator implements Validator {
         if (isNew) {
             Phone phone = participant.getPhone();
             String email = participant.getEmail();
-            if (isBlank(email) && phone == null) {
-                errors.reject("email or phone is required");
+            String externalId = participant.getExternalId();
+            if (isBlank(email) && isBlank(externalId) && phone == null) {
+                errors.reject("email, phone, or externalId is required");
             }
             // If provided, phone must be valid
             if (phone != null && !Phone.isValid(phone)) {
