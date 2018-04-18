@@ -618,5 +618,7 @@ public class AuthenticationServiceMockTest {
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withEmail(null).withPhone(null).withExternalId("id").build();
         service.signUp(study, participant, false);
+        
+        verify(participantService).createParticipant(study, NO_CALLER_ROLES, participant, true);
     }
 }

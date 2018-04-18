@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.accounts;
 import static org.junit.Assert.*;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
+import java.util.Iterator;
 import java.util.Map;
 
 import org.junit.Test;
@@ -76,6 +77,15 @@ public class UserSessionInfoTest {
         
         // ... and no things that shouldn't be there
         assertEquals(20, node.size());
+    }
+    
+    @Test
+    public void assertNoNullFields() {
+        JsonNode node = UserSessionInfo.toJSON(new UserSession());
+        for (Iterator<String> i = node.fieldNames(); i.hasNext();) {
+            String fieldName = i.next();
+            assertFalse(fieldName + " should not be null", node.get(fieldName).isNull());
+        }
     }
     
 }

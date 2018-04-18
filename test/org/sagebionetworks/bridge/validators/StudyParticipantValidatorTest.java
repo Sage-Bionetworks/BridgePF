@@ -127,6 +127,13 @@ public class StudyParticipantValidatorTest {
     }
     
     @Test
+    public void externalIdOnlyOK() {
+        StudyParticipant participant = new StudyParticipant.Builder().withExternalId("external-id").build();
+        validator = new StudyParticipantValidator(externalIdService, study, true);
+        Validate.entityThrowingException(validator, participant);
+    }
+    
+    @Test
     public void emptyStringPasswordRequired() {
         validator = new StudyParticipantValidator(externalIdService, study, true);
         assertValidatorMessage(validator, withPassword(""), "password", "is required");
