@@ -42,6 +42,7 @@ import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Tuple;
@@ -765,4 +766,23 @@ public class AuthenticationServiceMockTest {
         assertEquals(104, password.length());
     }
 
+    @Test(expected = UnauthorizedException.class)
+    public void creatingExternalIdOnlyAccountFailsIfIdsNotManaged() {
+        study.setExternalIdValidationEnabled(false);
+        
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withEmail(null).withPhone(null).withExternalId("id").build();
+        service.signUp(study, participant, false);
+    }
+    
+    @Test
+    public void creatingExternalIdOnlyAccountSucceedsIfIdsManaged() {
+        study.setExternalIdValidationEnabled(true);
+        
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withEmail(null).withPhone(null).withExternalId("id").build();
+        service.signUp(study, participant, false);
+        
+        verify(participantService).createParticipant(study, NO_CALLER_ROLES, participant, true);
+    }
 }

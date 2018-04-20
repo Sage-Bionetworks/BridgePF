@@ -64,7 +64,7 @@ public class StudyParticipantValidatorTest {
                 .withAttributes(attrs)
                 .withPassword("bad")
                 .build();
-        assertValidatorMessage(validator, participant, "StudyParticipant", "email or phone is required");
+        assertValidatorMessage(validator, participant, "StudyParticipant", "email, phone, or externalId is required");
         assertValidatorMessage(validator, participant, "externalId", "is required");
         assertValidatorMessage(validator, participant, "dataGroups", "'badGroup' is not defined for study (use group1, group2, bluebell)");
         assertValidatorMessage(validator, participant, "attributes", "'badValue' is not defined for study (use attr1, attr2, phone)");
@@ -121,9 +121,16 @@ public class StudyParticipantValidatorTest {
     }
     
     @Test
-    public void emailOrPhoneRequired() {
+    public void emailPhoneOrExternalIdRequired() {
         validator = new StudyParticipantValidator(externalIdService, study, true);
-        assertValidatorMessage(validator, withEmail(null), "StudyParticipant", "email or phone is required");
+        assertValidatorMessage(validator, withEmail(null), "StudyParticipant", "email, phone, or externalId is required");
+    }
+    
+    @Test
+    public void externalIdOnlyOK() {
+        StudyParticipant participant = new StudyParticipant.Builder().withExternalId("external-id").build();
+        validator = new StudyParticipantValidator(externalIdService, study, true);
+        Validate.entityThrowingException(validator, participant);
     }
     
     @Test

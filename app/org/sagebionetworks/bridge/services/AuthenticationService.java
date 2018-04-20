@@ -20,6 +20,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -166,7 +167,7 @@ public class AuthenticationService {
         checkNotNull(study);
         checkNotNull(context);
         checkNotNull(signIn);
-
+        
         Validate.entityThrowingException(SignInValidator.PASSWORD_SIGNIN, signIn);
         
         Account account = accountDao.authenticate(study, signIn);
@@ -239,6 +240,13 @@ public class AuthenticationService {
         checkNotNull(study);
         checkNotNull(participant);
         
+        // External ID accounts are created enabled, so we do not allow public API callers to enter random 
+        // strings, they must be known and assignable. This logic is not applied to accounts created through 
+        // the administrative APIs.
+        if (BridgeUtils.isExternalIdAccount(participant) && !study.isExternalIdValidationEnabled()) {
+            throw new UnauthorizedException("External ID management is not enabled for this study");
+        }
+
         try {
             // Since caller has no roles, no roles can be assigned on sign up.
             IdentifierHolder holder = participantService.createParticipant(study, NO_CALLER_ROLES, participant, true);
