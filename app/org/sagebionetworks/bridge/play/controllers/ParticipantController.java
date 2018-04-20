@@ -31,7 +31,6 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -336,8 +335,8 @@ public class ParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
-        DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
+        DateTime startTime = getDateTimeOrDefault(startTimeString, null);
+        DateTime endTime = getDateTimeOrDefault(endTimeString, null);
 
         ForwardCursorPagedResourceList<UploadView> uploads = participantService.getUploads(
                 study, userId, startTime, endTime, pageSize, offsetKey);
@@ -400,13 +399,13 @@ public class ParticipantController extends BaseController {
         // For naming consistency, we are changing from the user of startDate/endDate to startTime/endTime
         // for DateTime parameters. Both are accepted by these participant API endpoints (the only places 
         // where this needed to change).
-        DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
+        DateTime startTime = getDateTimeOrDefault(startTimeString, null);
         if (startTime == null) {
-            startTime = DateUtils.getDateTimeOrDefault(startDateString, null);
+            startTime = getDateTimeOrDefault(startDateString, null);
         }
-        DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
+        DateTime endTime = getDateTimeOrDefault(endTimeString, null);
         if (endTime == null) {
-            endTime = DateUtils.getDateTimeOrDefault(endDateString, null);
+            endTime = getDateTimeOrDefault(endDateString, null);
         }
         PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, offsetBy, pageSize,
                 emailFilter, phoneFilter, startTime, endTime);

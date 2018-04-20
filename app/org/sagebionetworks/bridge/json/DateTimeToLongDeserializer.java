@@ -7,6 +7,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 
+import org.sagebionetworks.bridge.time.DateUtils;
+
 public final class DateTimeToLongDeserializer extends JsonDeserializer<Long> {
 
     @Override

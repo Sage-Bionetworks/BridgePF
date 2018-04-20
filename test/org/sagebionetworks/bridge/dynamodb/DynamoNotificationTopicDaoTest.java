@@ -32,7 +32,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 
 import com.amazonaws.AmazonServiceException;

@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import org.joda.time.DateTime;
 
+import org.sagebionetworks.bridge.time.DateUtils;
+
 /**
  * Custom Joda DateTime deserializer, because the one in jackson-datatype-joda doesn't work. This one deserializes from
  * a string in yyyy-MM-dd'T'HH:mm:ss.SSSZZ format.
