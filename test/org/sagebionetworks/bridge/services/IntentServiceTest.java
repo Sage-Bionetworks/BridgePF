@@ -20,6 +20,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -30,6 +31,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -70,7 +72,7 @@ public class IntentServiceTest {
     ArgumentCaptor<SubpopulationGuid> subpopGuidCaptor;
 
     @Captor
-    ArgumentCaptor<String> stringCaptor;
+    ArgumentCaptor<CacheKey> keyCaptor;
 
     @Captor
     ArgumentCaptor<IntentToParticipate> intentCaptor;
@@ -96,20 +98,21 @@ public class IntentServiceTest {
         Map<String,String> installLinks = Maps.newHashMap();
         installLinks.put("Android", "this-is-a-link");
         
-        when(mockStudy.getIdentifier()).thenReturn("testStudy");
+        when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         when(mockStudy.getInstallLinks()).thenReturn(installLinks);
         when(mockStudy.getAppInstallLinkSmsTemplate()).thenReturn(new SmsTemplate("this-is-a-link"));
         when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
         
-        String cacheKey = "subpopGuid:"+TestConstants.PHONE.getNumber()+":testStudy:itp";
+        CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), TestConstants.TEST_STUDY,
+                TestConstants.PHONE);
         
         service.submitIntentToParticipate(intent);
         
         verify(mockSubpopService).getSubpopulation(eq(mockStudy), subpopGuidCaptor.capture());
         assertEquals(intent.getSubpopGuid(), subpopGuidCaptor.getValue().getGuid());
         
-        verify(mockCacheProvider).setObject(stringCaptor.capture(), eq(intent), eq(4 * 60 * 60));
-        assertEquals(cacheKey, stringCaptor.getValue());
+        verify(mockCacheProvider).setObject(keyCaptor.capture(), eq(intent), eq(4 * 60 * 60));
+        assertEquals(cacheKey, keyCaptor.getValue());
         
         verify(mockNotificationsService).sendSmsMessage(smsMessageProviderCaptor.capture());
         
@@ -131,10 +134,11 @@ public class IntentServiceTest {
     public void submitIntentToParticipateWithoutInstallLinks() {
         IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP);
         
-        when(mockStudy.getIdentifier()).thenReturn("testStudy");
+        when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
         
-        String cacheKey = "subpopGuid:"+TestConstants.PHONE.getNumber()+":testStudy:itp";
+        CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), TestConstants.TEST_STUDY,
+                TestConstants.PHONE);
         
         service.submitIntentToParticipate(intent);
         
@@ -142,8 +146,8 @@ public class IntentServiceTest {
         assertEquals(intent.getSubpopGuid(), subpopGuidCaptor.getValue().getGuid());
         
         // We do store the intent
-        verify(mockCacheProvider).setObject(stringCaptor.capture(), eq(intent), eq(4 * 60 * 60));
-        assertEquals(cacheKey, stringCaptor.getValue());
+        verify(mockCacheProvider).setObject(keyCaptor.capture(), eq(intent), eq(4 * 60 * 60));
+        assertEquals(cacheKey, keyCaptor.getValue());
         
         // But we don't send a message because installLinks map is empty
         verify(mockNotificationsService, never()).sendSmsMessage(any());
@@ -156,9 +160,10 @@ public class IntentServiceTest {
         Map<String,String> installLinks = Maps.newHashMap();
         installLinks.put("Android", "this-is-a-link");
         
-        String cacheKey = "subpopGuid:"+TestConstants.PHONE.getNumber()+":testStudy:itp";
+        CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), new StudyIdentifierImpl("testStudy"),
+                TestConstants.PHONE);
         
-        when(mockStudy.getIdentifier()).thenReturn("testStudy");
+        when(mockStudy.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("testStudy"));
         when(mockStudy.getInstallLinks()).thenReturn(installLinks);
         when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
         when(mockCacheProvider.getObject(cacheKey, IntentToParticipate.class))
@@ -213,7 +218,8 @@ public class IntentServiceTest {
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withPhone(TestConstants.PHONE).build();
-        String key = "BBB:"+TestConstants.PHONE.getNumber()+":api:itp";
+        
+        CacheKey key = CacheKey.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE);
         
         when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         when(mockStudy.getIdentifier()).thenReturn(TestConstants.TEST_STUDY_IDENTIFIER);
@@ -249,7 +255,8 @@ public class IntentServiceTest {
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withPhone(TestConstants.PHONE).build();
-        String key = "BBB:"+TestConstants.PHONE.getNumber()+":api:itp";
+        
+        CacheKey key = CacheKey.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE);
         
         when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         when(mockStudy.getIdentifier()).thenReturn(TestConstants.TEST_STUDY_IDENTIFIER);

@@ -33,6 +33,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -397,8 +398,8 @@ public class SubpopulationServiceTest {
         
         verify(subpopDao).deleteSubpopulation(TEST_STUDY, subpop1.getGuid(), true, true);
         verify(subpopDao).deleteSubpopulation(TEST_STUDY, subpop2.getGuid(), true, true);
-        verify(cacheProvider).removeObject(subpop1.getGuidString() + ":api:Subpopulation");
-        verify(cacheProvider, times(2)).removeObject("api:SubpopulationList");
+        verify(cacheProvider).removeObject(CacheKey.subpop(subpop1.getGuid(), TEST_STUDY));
+        verify(cacheProvider, times(2)).removeObject(CacheKey.subpopList(TEST_STUDY));
     }
     
     private CriteriaContext createContext() {

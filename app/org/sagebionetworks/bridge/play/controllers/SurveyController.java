@@ -11,7 +11,7 @@ import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.ViewCache;
-import org.sagebionetworks.bridge.cache.ViewCache.ViewCacheKey;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -133,7 +133,7 @@ public class SurveyController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
-        ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, MOSTRECENT_KEY, studyId.getIdentifier());
+        CacheKey cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, MOSTRECENT_KEY, studyId.getIdentifier());
         
         String json = getView(cacheKey, session, () -> {
             return surveyService.getSurveyMostRecentVersion(studyId, surveyGuid);
@@ -254,7 +254,7 @@ public class SurveyController extends BaseController {
         long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
 
-        ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString,
+        CacheKey cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString,
                 session.getStudyIdentifier().getIdentifier());
         
         String json = getView(cacheKey, session, () -> {
@@ -265,7 +265,7 @@ public class SurveyController extends BaseController {
     }
     
     private Result getCachedSurveyMostRecentlyPublishedInternal(String surveyGuid, UserSession session) {
-        ViewCacheKey<Survey> cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, PUBLISHED_KEY,
+        CacheKey cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, PUBLISHED_KEY,
                 session.getStudyIdentifier().getIdentifier());
         
         String json = getView(cacheKey, session, () -> {
@@ -275,7 +275,7 @@ public class SurveyController extends BaseController {
         return ok(json).as(JSON_MIME_TYPE);
     }
     
-    private String getView(ViewCacheKey<Survey> cacheKey, UserSession session, Supplier<Survey> supplier) {
+    private String getView(CacheKey cacheKey, UserSession session, Supplier<Survey> supplier) {
         return viewCache.getView(cacheKey, () -> {
             Survey survey = supplier.get();
             verifySurveyIsInStudy(session, survey);

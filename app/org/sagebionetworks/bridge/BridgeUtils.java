@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -59,6 +60,12 @@ public class BridgeUtils {
     private static final int ONE_MINUTE = 60;
     
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    
+    public static boolean isExternalIdAccount(StudyParticipant participant) {
+        return (StringUtils.isNotBlank(participant.getExternalId()) && 
+                StringUtils.isBlank(participant.getEmail()) && 
+                participant.getPhone() == null);
+    }
     
     /**
      * Convert expiration measures in seconds to an English language explanation of

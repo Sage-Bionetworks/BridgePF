@@ -11,15 +11,18 @@ public final class SignIn implements BridgeEntity {
 
     private final String email;
     private final Phone phone;
+    private final String externalId;
     private final String password;
     private final String studyId;
     private final String token;
     private final String reauthToken;
     
-    private SignIn(String studyId, String email, Phone phone, String password, String token, String reauthToken) {
+    private SignIn(String studyId, String email, Phone phone, String externalId, String password, String token,
+            String reauthToken) {
         this.studyId = studyId;
         this.email = email;
         this.phone = phone;
+        this.externalId = externalId;
         this.password = password;
         this.token = token;
         this.reauthToken = reauthToken;
@@ -40,6 +43,10 @@ public final class SignIn implements BridgeEntity {
         return phone;
     }
 
+    public String getExternalId() {
+        return externalId;
+    }
+    
     public String getPassword() {
         return password;
     }
@@ -58,6 +65,8 @@ public final class SignIn implements BridgeEntity {
             return AccountId.forEmail(studyId, email);
         } else if (phone != null) {
             return AccountId.forPhone(studyId, phone);
+        } else if (externalId != null) {
+            return AccountId.forExternalId(studyId, externalId);
         }
         throw new IllegalArgumentException("SignIn not constructed with enough information to retrieve an account");
     }
@@ -66,6 +75,7 @@ public final class SignIn implements BridgeEntity {
         private String username;
         private String email;
         private Phone phone;
+        private String externalId;
         private String password;
         private String studyId;
         private String token;
@@ -81,6 +91,10 @@ public final class SignIn implements BridgeEntity {
         }
         public Builder withPhone(Phone phone) {
             this.phone = phone;
+            return this;
+        }
+        public Builder withExternalId(String externalId) {
+            this.externalId = externalId;
             return this;
         }
         public Builder withPassword(String password) {
@@ -101,7 +115,7 @@ public final class SignIn implements BridgeEntity {
         }
         public SignIn build() {
             String identifier = (username != null) ? username : email;
-            return new SignIn(studyId, identifier, phone, password, token, reauthToken);
+            return new SignIn(studyId, identifier, phone, externalId, password, token, reauthToken);
         }
     }
 }

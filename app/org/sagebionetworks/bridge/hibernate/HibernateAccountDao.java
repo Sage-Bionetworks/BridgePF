@@ -66,7 +66,7 @@ public class HibernateAccountDao implements AccountDao {
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
 
     static final String ACCOUNT_SUMMARY_QUERY_PREFIX = "select new " + HibernateAccount.class.getCanonicalName() +
-            "(createdOn, studyId, firstName, lastName, email, phone, id, status) ";
+            "(createdOn, studyId, firstName, lastName, email, phone, externalId, id, status) ";
     static final String EMAIL_QUERY = "from HibernateAccount where studyId='%s' and email='%s'";
     static final String HEALTH_CODE_QUERY = "from HibernateAccount where studyId='%s' and healthCode='%s'";
     static final String PHONE_QUERY = "from HibernateAccount where studyId='%s' and phone.number='%s' and phone.regionCode='%s'";
@@ -756,7 +756,7 @@ public class HibernateAccountDao implements AccountDao {
 
         // Unmarshall single account
         return new AccountSummary(hibernateAccount.getFirstName(), hibernateAccount.getLastName(),
-                hibernateAccount.getEmail(), hibernateAccount.getPhone(), hibernateAccount.getId(), createdOn,
-                hibernateAccount.getStatus(), studyId);
+                hibernateAccount.getEmail(), hibernateAccount.getPhone(), hibernateAccount.getExternalId(),
+                hibernateAccount.getId(), createdOn, hibernateAccount.getStatus(), studyId);
     }
 }

@@ -9,7 +9,9 @@ import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.models.surveys.Survey;
 
 import com.google.common.collect.Sets;
 
@@ -18,10 +20,11 @@ import redis.clients.jedis.JedisPool;
 
 public class CacheAdminServiceTest {
 
-    private static final String REQUEST_INFO_KEY = "10E9SFUz9BYrqCrTzfiaNW:request-info";
+    private static final String REQUEST_INFO_KEY = CacheKey.requestInfo("10E9SFUz9BYrqCrTzfiaNW").toString();
     
-    private final static Set<String> KEYS = Sets.newHashSet("foo:study", "bar:session", "baz:Survey:view",
-            "xh7YDmjGQuTKnfdv9iJb0:session:user", REQUEST_INFO_KEY);
+    private final static Set<String> KEYS = Sets.newHashSet(CacheKey.study("foo").toString(),
+            CacheKey.viewKey(Survey.class, "baz").toString(),
+            CacheKey.sessionByUserId("xh7YDmjGQuTKnfdv9iJb0").toString(), REQUEST_INFO_KEY);
     
     private CacheAdminService adminService;
     

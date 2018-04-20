@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_REAUTH_GRACE_PER
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -15,6 +16,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -152,7 +154,7 @@ public class AuthenticationService {
         checkNotNull(study);
         checkNotNull(context);
         checkNotNull(signIn);
-
+        
         Validate.entityThrowingException(SignInValidator.PASSWORD_SIGNIN, signIn);
         
         Account account = accountDao.authenticate(study, signIn);
@@ -175,8 +177,8 @@ public class AuthenticationService {
         
         Validate.entityThrowingException(SignInValidator.REAUTH_SIGNIN, signIn);
 
-        String reauthCacheKey = getReauthCacheKey(signIn.getStudyId(), signIn.getReauthToken());
-
+        CacheKey reauthCacheKey = CacheKey.reauthCacheKey(signIn.getReauthToken(), signIn.getStudyId());
+        
         // First look to see if reauthCacheKey is in cache. If it is, return the existing session. This 
         // creates a grace period during which concurrent requests with the same reauth token will work.
         Tuple<String> persisedReauthTuple = cacheProvider.getObject(reauthCacheKey, TUPLE_TYPE);
@@ -214,16 +216,24 @@ public class AuthenticationService {
         if (session != null) {
             AccountId accountId = AccountId.forId(session.getStudyIdentifier().getIdentifier(), session.getId());
             accountDao.deleteReauthToken(accountId);
-            String reauthCacheKey = getReauthCacheKey(session.getStudyIdentifier().getIdentifier(), session.getReauthToken());
-            cacheProvider.removeObject(reauthCacheKey);
+            // session does not have the reauth token so the reauthToken-->sessionToken Redis entry cannot be 
+            // removed, but once the reauth token is removed from the user table, the reauth token will no 
+            // longer work (and is short-lived in the cache).
             cacheProvider.removeSession(session);
-        }
+        } 
     }
 
     public IdentifierHolder signUp(Study study, StudyParticipant participant, boolean checkForConsent) {
         checkNotNull(study);
         checkNotNull(participant);
         
+        // External ID accounts are created enabled, so we do not allow public API callers to enter random 
+        // strings, they must be known and assignable. This logic is not applied to accounts created through 
+        // the administrative APIs.
+        if (BridgeUtils.isExternalIdAccount(participant) && !study.isExternalIdValidationEnabled()) {
+            throw new UnauthorizedException("External ID management is not enabled for this study");
+        }
+
         try {
             // Since caller has no roles, no roles can be assigned on sign up.
             IdentifierHolder holder = participantService.createParticipant(study, NO_CALLER_ROLES, participant, true);
@@ -357,9 +367,5 @@ public class AuthenticationService {
         session.setConsentStatuses(consentService.getConsentStatuses(newContext, account));
         
         return session;
-    }
-    
-    private String getReauthCacheKey(String studyId, String reauthToken) {
-        return reauthToken + ":" + studyId + ":reauthCacheKey";
     }
 }

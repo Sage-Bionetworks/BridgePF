@@ -37,10 +37,9 @@ public class SignInTest {
     @Test
     public void canSerialize() throws Exception {
         // We set up tests with this object so verify it creates the correct JSON
-        SignIn signIn = new SignIn.Builder().withEmail("email@email.com")
-                .withPassword("password").withPhone(TestConstants.PHONE)
-                .withReauthToken("reauthToken").withStudy("study-key")
-                .withToken("token").build();
+        SignIn signIn = new SignIn.Builder().withEmail("email@email.com").withExternalId("external-id")
+                .withPassword("password").withPhone(TestConstants.PHONE).withReauthToken("reauthToken")
+                .withStudy("study-key").withToken("token").build();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(signIn);
         assertEquals("email@email.com", node.get("email").textValue());
@@ -49,6 +48,7 @@ public class SignInTest {
         assertEquals(TestConstants.PHONE.getRegionCode(), node.get("phone").get("regionCode").textValue());
         assertEquals("reauthToken", node.get("reauthToken").textValue());
         assertEquals("study-key", node.get("study").textValue());
+        assertEquals("external-id", node.get("externalId").textValue());
         assertEquals("token", node.get("token").textValue());
     }
     
@@ -76,6 +76,7 @@ public class SignInTest {
     public void test() throws Exception {
         JsonNode node = BridgeObjectMapper.get().readTree(TestUtils.createJson("{"+
                 "'email':'emailValue',"+
+                "'externalId':'external-id',"+
                 "'password':'passwordValue',"+
                 "'study':'studyValue',"+
                 "'token':'tokenValue',"+
@@ -86,6 +87,7 @@ public class SignInTest {
         
         SignIn signIn = BridgeObjectMapper.get().readValue(node.toString(), SignIn.class);
         assertEquals("emailValue", signIn.getEmail());
+        assertEquals("external-id", signIn.getExternalId());
         assertEquals("passwordValue", signIn.getPassword());
         assertEquals("studyValue", signIn.getStudyId());
         assertEquals("tokenValue", signIn.getToken());
@@ -127,6 +129,15 @@ public class SignInTest {
         AccountId accountId = signIn.getAccountId();
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, accountId.getStudyId());
         assertEquals(TestConstants.PHONE.getNumber(), accountId.getPhone().getNumber());
+    }
+    
+    @Test
+    public void signInAccountIdWithExternalId() {
+        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withExternalId("external-id").withPassword("password").build();
+        AccountId accountId = signIn.getAccountId();
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, accountId.getStudyId());
+        assertEquals("external-id", accountId.getExternalId());
     }
     
     @Test
