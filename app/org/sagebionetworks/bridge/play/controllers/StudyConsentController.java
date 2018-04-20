@@ -5,7 +5,7 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;

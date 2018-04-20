@@ -10,7 +10,7 @@ import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
-import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;

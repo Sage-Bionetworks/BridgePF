@@ -22,10 +22,10 @@ import play.libs.Json;
 import play.mvc.BodyParser;
 import play.mvc.Result;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.json.DateUtils;
 import org.sagebionetworks.bridge.models.CmsPublicKey;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -232,8 +232,8 @@ public class StudyController extends BaseController {
     public Result getUploads(String startTimeString, String endTimeString, Integer pageSize, String offsetKey) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
-        DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
-        DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
+        DateTime startTime = BridgeUtils.getDateTimeOrDefault(startTimeString, null);
+        DateTime endTime = BridgeUtils.getDateTimeOrDefault(endTimeString, null);
 
         ForwardCursorPagedResourceList<UploadView> uploads = uploadService.getStudyUploads(
                 session.getStudyIdentifier(), startTime, endTime, pageSize, offsetKey);
@@ -250,8 +250,8 @@ public class StudyController extends BaseController {
     public Result getUploadsForStudy(String studyIdString, String startTimeString, String endTimeString, Integer pageSize, String offsetKey) throws EntityNotFoundException {
         getAuthenticatedSession(WORKER);
 
-        DateTime startTime = DateUtils.getDateTimeOrDefault(startTimeString, null);
-        DateTime endTime = DateUtils.getDateTimeOrDefault(endTimeString, null);
+        DateTime startTime = BridgeUtils.getDateTimeOrDefault(startTimeString, null);
+        DateTime endTime = BridgeUtils.getDateTimeOrDefault(endTimeString, null);
 
         StudyIdentifier studyId = new StudyIdentifierImpl(studyIdString);
 

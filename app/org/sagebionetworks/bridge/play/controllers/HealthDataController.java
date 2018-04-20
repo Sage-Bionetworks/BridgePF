@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.UserSession;

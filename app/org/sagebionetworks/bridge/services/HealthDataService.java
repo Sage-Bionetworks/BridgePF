@@ -43,7 +43,7 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.HealthDataDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.validators.HealthDataRecordValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.validation.Validator;

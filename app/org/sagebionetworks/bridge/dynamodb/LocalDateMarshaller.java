@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import org.joda.time.LocalDate;
-import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.time.DateUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverter;
 
