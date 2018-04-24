@@ -252,6 +252,7 @@ public class AccountWorkflowService {
                 .withStudy(study)
                 .withToken("token", formattedSpToken)
                 .withSmsTemplate(study.getVerifyPhoneSmsTemplate())
+                .withTransactionType()
                 .withExpirationPeriod(PHONE_VERIFICATION_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS)
                 .withPhone(phone).build();
         notificationsService.sendSmsMessage(provider);
@@ -388,6 +389,7 @@ public class AccountWorkflowService {
 
         SmsMessageProvider.Builder builder = new SmsMessageProvider.Builder();
         builder.withSmsTemplate(template);
+        builder.withTransactionType();
         builder.withStudy(study);
         builder.withPhone(phone);
         builder.withToken(SPTOKEN_KEY, sptoken);
@@ -456,6 +458,7 @@ public class AccountWorkflowService {
             SmsMessageProvider provider = new SmsMessageProvider.Builder()
                     .withStudy(study)
                     .withSmsTemplate(study.getPhoneSignInSmsTemplate())
+                    .withTransactionType()
                     .withPhone(signIn.getPhone())
                     .withExpirationPeriod(PHONE_SIGNIN_EXPIRATION_PERIOD, SIGNIN_EXPIRE_IN_SECONDS)
                     .withToken(TOKEN_KEY, formattedToken).build();

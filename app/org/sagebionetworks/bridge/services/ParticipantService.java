@@ -510,6 +510,10 @@ public class ParticipantService {
         notificationsService.sendNotificationToUser(study.getStudyIdentifier(), account.getHealthCode(), message);
     }
 
+    /**
+     * Send an SMS message to this user if they have a verified phone number. This message will be 
+     * sent with AWS' non-critical, "Promotional" level of delivery that optimizes for cost.
+     */
     public void sendSmsMessage(Study study, String userId, SmsTemplate template) {
         checkNotNull(study);
         checkNotNull(userId);
@@ -527,6 +531,7 @@ public class ParticipantService {
         SmsMessageProvider.Builder builder = new SmsMessageProvider.Builder()
                 .withPhone(account.getPhone())
                 .withSmsTemplate(template)
+                .withPromotionType()
                 .withStudy(study);
         for (Map.Entry<String, String> entry : variables.entrySet()) {
             builder.withToken(entry.getKey(), entry.getValue());
