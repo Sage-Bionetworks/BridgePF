@@ -12,7 +12,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
 public class GenericUploadFormatHandlerCreatedOnTest {

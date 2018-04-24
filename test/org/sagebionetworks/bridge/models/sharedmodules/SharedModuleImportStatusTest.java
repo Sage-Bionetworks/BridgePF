@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.time.DateUtils;
 
 public class SharedModuleImportStatusTest {
     private static final String SCHEMA_ID = "test-schema";

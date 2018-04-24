@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.file.FileHelper;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.upload.Upload;

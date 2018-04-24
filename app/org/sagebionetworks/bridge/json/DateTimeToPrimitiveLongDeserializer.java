@@ -7,6 +7,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 
+import org.sagebionetworks.bridge.time.DateUtils;
+
 /**
  * The normal DateTimeJsonDeserializer will treat JSON empty and null values as null Longs. But when 
  * these are sent for fields that are primitive longs, a JSON deserialization exception occurs. 

@@ -17,7 +17,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.ReportDataDao;
 import org.sagebionetworks.bridge.dao.ReportIndexDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.json.DateUtils;
+import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.RangeTuple;
