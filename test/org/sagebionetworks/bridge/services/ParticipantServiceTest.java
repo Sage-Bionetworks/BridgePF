@@ -1497,6 +1497,7 @@ public class ParticipantServiceTest {
         SmsMessageProvider provider = providerCaptor.getValue();
         assertEquals(TestConstants.PHONE, provider.getPhone());
         assertEquals("This is a test Bridge", provider.getSmsRequest().getMessage());
+        assertEquals("Promotional", provider.getSmsType());
     }
     
     @Test(expected = BadRequestException.class)

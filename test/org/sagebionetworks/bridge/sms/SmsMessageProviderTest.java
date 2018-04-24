@@ -33,6 +33,7 @@ public class SmsMessageProviderTest {
             .withStudy(study)
             .withPhone(TestConstants.PHONE)
             .withSmsTemplate(template)
+            .withTransactionType()
             .withExpirationPeriod("expirationPeriod", 60*60*4) // 4 hours
             .withToken("url", "some-url").build();
         
@@ -40,9 +41,9 @@ public class SmsMessageProviderTest {
         PublishRequest request = provider.getSmsRequest();
         assertEquals("ShortName some-url support@email.com 4 hours", request.getMessage());
         assertEquals(study.getShortName(),
-                request.getMessageAttributes().get(BridgeConstants.SENDER_ID).getStringValue());
-        assertEquals(BridgeConstants.SMS_TYPE_TRANSACTIONAL,
-                request.getMessageAttributes().get(BridgeConstants.SMS_TYPE).getStringValue());
+                request.getMessageAttributes().get(BridgeConstants.AWS_SMS_SENDER_ID).getStringValue());
+        assertEquals("Transactional",
+                request.getMessageAttributes().get(BridgeConstants.AWS_SMS_TYPE).getStringValue());
         
         assertEquals("some-url", provider.getTokenMap().get("url"));
         assertEquals("4 hours", provider.getTokenMap().get("expirationPeriod"));
@@ -67,6 +68,7 @@ public class SmsMessageProviderTest {
             .withStudy(study)
             .withPhone(TestConstants.PHONE)
             .withSmsTemplate(template)
+            .withPromotionType()
             .withToken("url", "some-url").build();
         PublishRequest request = provider.getSmsRequest();
         assertEquals("Bridge some-url", request.getMessage());
@@ -78,10 +80,21 @@ public class SmsMessageProviderTest {
                 .withStudy(Study.create())
                 .withPhone(TestConstants.PHONE)
                 .withSmsTemplate(new SmsTemplate(""))
+                .withPromotionType()
                 .withToken("url", null).build();
         
         Map<String,String> tokenMap = provider.getTokenMap();
         assertNull(tokenMap.get("supportName"));
+    }
+    
+    @Test
+    public void canConstructPromotionalMessage() {
+        SmsMessageProvider provider = new SmsMessageProvider.Builder()
+                .withStudy(Study.create())
+                .withPhone(TestConstants.PHONE)
+                .withSmsTemplate(new SmsTemplate(""))
+                .withPromotionType().build();
+        assertEquals("Promotional", provider.getSmsType());
     }
 
 }

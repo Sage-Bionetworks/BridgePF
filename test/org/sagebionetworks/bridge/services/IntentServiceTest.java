@@ -120,6 +120,7 @@ public class IntentServiceTest {
         assertEquals(mockStudy, provider.getStudy());
         assertEquals(intent.getPhone(), provider.getPhone());
         assertEquals("this-is-a-link", provider.getSmsRequest().getMessage());
+        assertEquals("Transactional", provider.getSmsType());
     }
     
     @Test(expected = InvalidEntityException.class)

@@ -100,10 +100,13 @@ public class IntentService {
             if (!study.getInstallLinks().isEmpty()) {
                 String url = getInstallLink(intent.getOsName(), study.getInstallLinks());
                 
-                // The URL being sent does not expire.
+                // The URL being sent does not expire. We send with a transaction delivery type because
+                // this is a critical step in onboarding through this workflow and message needs to be 
+                // sent immediately after consenting.
                 SmsMessageProvider provider = new SmsMessageProvider.Builder()
                         .withStudy(study)
                         .withSmsTemplate(study.getAppInstallLinkSmsTemplate())
+                        .withTransactionType()
                         .withPhone(intent.getPhone())
                         .withToken(APP_INSTALL_URL_KEY, url).build();
                 notificationsService.sendSmsMessage(provider);

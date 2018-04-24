@@ -222,13 +222,14 @@ public class NotificationsServiceTest {
     }
     
     @Test
-    public void sendSMSMessageOK() throws Exception {
+    public void sendTransactionalSMSMessageOK() throws Exception {
         doReturn(mockPublishResult).when(mockSnsClient).publish(any());
         
         String message = "This is my SMS message.";
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
                 .withStudy(mockStudy)
                 .withSmsTemplate(new SmsTemplate(message))
+                .withTransactionType()
                 .withPhone(TestConstants.PHONE).build();
         
         service.sendSmsMessage(provider);
@@ -239,9 +240,33 @@ public class NotificationsServiceTest {
         assertEquals(TestConstants.PHONE.getNumber(), request.getPhoneNumber());
         assertEquals(message, request.getMessage());
         assertEquals("Transactional",
-                request.getMessageAttributes().get(BridgeConstants.SMS_TYPE).getStringValue());
+                request.getMessageAttributes().get(BridgeConstants.AWS_SMS_TYPE).getStringValue());
         assertEquals("Bridge", 
-                request.getMessageAttributes().get(BridgeConstants.SENDER_ID).getStringValue());
+                request.getMessageAttributes().get(BridgeConstants.AWS_SMS_SENDER_ID).getStringValue());
+    }
+    
+    @Test
+    public void sendPromotionalSMSMessageOK() throws Exception {
+        doReturn(mockPublishResult).when(mockSnsClient).publish(any());
+        
+        String message = "This is my SMS message.";
+        SmsMessageProvider provider = new SmsMessageProvider.Builder()
+                .withStudy(mockStudy)
+                .withSmsTemplate(new SmsTemplate(message))
+                .withPromotionType()
+                .withPhone(TestConstants.PHONE).build();
+        
+        service.sendSmsMessage(provider);
+        
+        verify(mockSnsClient).publish(requestCaptor.capture());
+        
+        PublishRequest request = requestCaptor.getValue();
+        assertEquals(TestConstants.PHONE.getNumber(), request.getPhoneNumber());
+        assertEquals(message, request.getMessage());
+        assertEquals("Promotional",
+                request.getMessageAttributes().get(BridgeConstants.AWS_SMS_TYPE).getStringValue());
+        assertEquals("Bridge", 
+                request.getMessageAttributes().get(BridgeConstants.AWS_SMS_SENDER_ID).getStringValue());
     }
     
     @Test(expected = BridgeServiceException.class)
@@ -254,6 +279,7 @@ public class NotificationsServiceTest {
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
                 .withStudy(mockStudy)
                 .withSmsTemplate(new SmsTemplate(message))
+                .withTransactionType()
                 .withPhone(TestConstants.PHONE).build();
         
         service.sendSmsMessage(provider);
