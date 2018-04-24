@@ -250,6 +250,7 @@ public class AccountWorkflowServiceTest {
         Map<String,String> tokens = provider.getTokenMap();
         assertEquals("012-345", tokens.get("token"));
         assertEquals("2 hours", tokens.get("phoneVerificationExpirationPeriod"));
+        assertEquals("Transactional", provider.getSmsType());
         
         String message = provider.getSmsRequest().getMessage();
         assertTrue(message.contains("012-345"));
@@ -593,6 +594,7 @@ public class AccountWorkflowServiceTest {
         assertTrue(message.contains("Account for ShortName already exists. Reset password: "));
         assertTrue(message.contains("/rp?study=api&sptoken="+SPTOKEN));
         assertTrue(message.contains(" or "+TOKEN.substring(0,3) + "-" + TOKEN.substring(3,6)));
+        assertEquals("Transactional", smsMessageProviderCaptor.getValue().getSmsType());
     }
     
     @Test
@@ -641,6 +643,7 @@ public class AccountWorkflowServiceTest {
         
         assertEquals(study, smsMessageProviderCaptor.getValue().getStudy());
         assertEquals(TestConstants.PHONE, smsMessageProviderCaptor.getValue().getPhone());
+        assertEquals("Transactional", smsMessageProviderCaptor.getValue().getSmsType());
         String message = smsMessageProviderCaptor.getValue().getSmsRequest().getMessage();
         assertTrue(message.contains("Reset ShortName password: "));
         assertTrue(message.contains("/rp?study=api&sptoken="+SPTOKEN));
@@ -937,6 +940,7 @@ public class AccountWorkflowServiceTest {
         
         assertEquals(study, smsMessageProviderCaptor.getValue().getStudy());
         assertEquals(TestConstants.PHONE, smsMessageProviderCaptor.getValue().getPhone());
+        assertEquals("Transactional", smsMessageProviderCaptor.getValue().getSmsType());
         String message = smsMessageProviderCaptor.getValue().getSmsRequest().getMessage();
         assertEquals("Enter 123-456 to sign in to AppName", message);
         verifyNoMoreInteractions(mockCacheProvider);
