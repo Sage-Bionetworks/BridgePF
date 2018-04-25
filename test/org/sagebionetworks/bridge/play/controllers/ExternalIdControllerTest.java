@@ -41,6 +41,7 @@ import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -191,10 +192,11 @@ public class ExternalIdControllerTest {
         Result result = controller.generatePassword("extid", false);
         TestUtils.assertResult(result, 200);
         
-        GeneratedPassword retrieved = TestUtils.getResponsePayload(result, GeneratedPassword.class);
-        assertEquals("extid", retrieved.getExternalId());
-        assertEquals("user-id", retrieved.getUserId());
-        assertEquals("some-password", retrieved.getPassword());
+        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
+        assertEquals("extid", node.get("externalId").textValue());
+        assertEquals("user-id", node.get("userId").textValue());
+        assertEquals("some-password", node.get("password").textValue());
+        assertEquals("GeneratedPassword", node.get("type").textValue());
         
         verify(authenticationService).generatePassword(eq(study), eq("extid"), eq(false));
     }
