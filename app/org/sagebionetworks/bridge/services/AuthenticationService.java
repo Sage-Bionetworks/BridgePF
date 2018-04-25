@@ -326,45 +326,29 @@ public class AuthenticationService {
         if (externalIdentifier == null) {
             throw new EntityNotFoundException(ExternalIdentifier.class);
         }
+        String password = generatePassword(study.getPasswordPolicy().getMinLength());
         AccountId accountId = AccountId.forExternalId(study.getIdentifier(), passGen.getExternalId());
         Account account = accountDao.getAccount(accountId);
+        
+        // No account and user doesn't want to create it, treat as a 404
+        if (account == null && !passGen.isCreateAccount()) {
+            throw new EntityNotFoundException(Account.class);
+        }
 
-        String password = generatePassword(study.getPasswordPolicy().getMinLength());
         String userId = null;
-
         if (account == null) {
-            if (!passGen.isCreateAccount()) {
-                throw new EntityNotFoundException(Account.class);
-            }
-            // Any assignment of the external id is a problem because since this account doesn't 
-            // exist yet, and so the assigned healthCode can't be this account's health code.
-            if (externalIdentifier.getHealthCode() != null) {
-                throw new EntityAlreadyExistsException(ExternalIdentifier.class, "externalId",
-                        externalIdentifier.getIdentifier());
-            }
-            // Participant creation sets the password and assigns the external identifier
+            // Create an account with password and external ID assigned. If the external ID has been 
+            // assigned to another account, this creation will fail (external ID is a unique column).
             StudyParticipant participant = new StudyParticipant.Builder()
                     .withExternalId(passGen.getExternalId()).withPassword(password).build();
             userId = participantService.createParticipant(
                     study, ImmutableSet.of(), participant, false).getIdentifier();
         } else {
-            // If the external ID is taken and it's not the users health code, it's an error.
-            // We don't want to silently ignore it.
-            String extIdHealthCode = externalIdentifier.getHealthCode();
-            if (extIdHealthCode != null && !account.getHealthCode().equals(extIdHealthCode)) {
-                throw new EntityAlreadyExistsException(ExternalIdentifier.class, "externalId",
-                        externalIdentifier.getIdentifier());
-            }
-            // Change the password
+            // Account exists, so rotate the password
             accountDao.changePassword(account, password);
-
-            // Add the external ID, which also assigns it in the external ID table.
-            StudyParticipant updated = new StudyParticipant.Builder()
-                    .copyOf(participantService.getParticipant(study, account, false))
-                    .withExternalId(passGen.getExternalId()).build();
-            participantService.updateParticipant(study, ImmutableSet.of(), updated);
             userId = account.getId();
         }
+        // Return the password and the user ID in case the account was just created.
         return new Password(passGen.getExternalId(), userId, password);
     };
     
@@ -372,7 +356,8 @@ public class AuthenticationService {
         // as long as required, but not less than 32
         int length = Math.max(32, policyLength); 
         
-        // This is sufficient to pass password validation
+        // We add one of each type of character class to the end of the string. This is 
+        // sufficient to pass password validation. 
         SecureTokenGenerator generator = new SecureTokenGenerator(length);
         return generator.nextToken() + "Br4%";
     }

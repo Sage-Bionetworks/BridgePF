@@ -13,6 +13,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 
@@ -659,16 +660,14 @@ public class AuthenticationServiceMockTest {
         study.setExternalIdValidationEnabled(true);
         when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(externalIdentifier);
         
-        IdentifierHolder idHolder = new IdentifierHolder("userId");
         when(participantService.createParticipant(eq(study), eq(ImmutableSet.of()), participantCaptor.capture(),
-                eq(false))).thenReturn(idHolder);
+                eq(false))).thenThrow(new EntityAlreadyExistsException(Account.class, "id", "asdf"));
         
         try {
             service.generatePassword(study, PASSWORD_GENERATION_CREATE_ACCOUNT);
             fail("Should have thrown an exception");
         } catch(EntityAlreadyExistsException e) {
         }
-        verify(participantService, never()).createParticipant(any(), any(), any(), anyBoolean());
     }
     
     @Test
@@ -692,26 +691,7 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test
-    public void generatePasswordAccountExistsExternalIdTaken() {
-        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
-        externalIdentifier.setHealthCode("someone-elses-health-code");
-        study.setExternalIdValidationEnabled(true);
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(externalIdentifier);
-        doReturn(PASSWORD).when(service).generatePassword(anyInt());
-        when(accountDao.getAccount(any())).thenReturn(account);
-        ((GenericAccount)account).setHealthCode(HEALTH_CODE);
-        
-        try {
-            service.generatePassword(study, PASSWORD_GENERATION_CREATE_ACCOUNT);
-            fail("Should have thrown an exception");
-        } catch(EntityAlreadyExistsException e) {
-        }
-        verify(externalIdService, never()).assignExternalId(study, EXTERNAL_ID, HEALTH_CODE);
-        verify(accountDao, never()).changePassword(account, PASSWORD);
-    }
-    
-    @Test
-    public void generatePasswordAccountExistsExternalIdAssignedOK() {
+    public void generatePasswordAccountExistsPasswordChangedOK() {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         study.setExternalIdValidationEnabled(true);
         when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(externalIdentifier);
@@ -727,33 +707,7 @@ public class AuthenticationServiceMockTest {
         assertEquals(EXTERNAL_ID, password.getExternalId());
         assertEquals(PASSWORD, password.getPassword());
         
-        verify(participantService).updateParticipant(eq(study), eq(ImmutableSet.of()), participantCaptor.capture());
         verify(accountDao).changePassword(account, PASSWORD);
-        assertEquals(EXTERNAL_ID, participantCaptor.getValue().getExternalId());
-    }
-    
-    @Test
-    public void generatePasswordAccountExistsExternalIdCannotBeAssigned() {
-        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
-        externalIdentifier.setHealthCode("some-other-health-code");
-        study.setExternalIdValidationEnabled(true);
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(externalIdentifier);
-        doReturn(PASSWORD).when(service).generatePassword(anyInt());
-        
-        StudyParticipant participant = new StudyParticipant.Builder().build();
-        when(participantService.getParticipant(study, account, false)).thenReturn(participant);
-        
-        when(accountDao.getAccount(any())).thenReturn(account);
-        ((GenericAccount)account).setHealthCode(HEALTH_CODE);
-        
-        try {
-            service.generatePassword(study, PASSWORD_GENERATION_CREATE_ACCOUNT);
-            fail("Should have thrown exception");
-        } catch(EntityAlreadyExistsException e) {
-            
-        }
-        verify(participantService, never()).updateParticipant(any(), any(), any());
-        verify(accountDao, never()).changePassword(any(), any());
     }
     
     @Test
