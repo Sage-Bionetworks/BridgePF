@@ -654,24 +654,7 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test
-    public void generatePasswordNoAccountCreateAccountExternalIdTaken() {
-        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
-        externalIdentifier.setHealthCode("someoneElsesHealthCode");
-        study.setExternalIdValidationEnabled(true);
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(externalIdentifier);
-        
-        when(participantService.createParticipant(eq(study), eq(ImmutableSet.of()), participantCaptor.capture(),
-                eq(false))).thenThrow(new EntityAlreadyExistsException(Account.class, "id", "asdf"));
-        
-        try {
-            service.generatePassword(study, PASSWORD_GENERATION_CREATE_ACCOUNT);
-            fail("Should have thrown an exception");
-        } catch(EntityAlreadyExistsException e) {
-        }
-    }
-    
-    @Test
-    public void generatePasswordNoAccountCreateAccountOK() {
+    public void generatePasswordAndAccountOK() {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         study.setExternalIdValidationEnabled(true);
         doReturn(PASSWORD).when(service).generatePassword(anyInt());
@@ -691,7 +674,28 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test
-    public void generatePasswordAccountExistsPasswordChangedOK() {
+    public void generatePasswordAndAccountWhenExternalIdTaken() {
+        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
+        externalIdentifier.setHealthCode("someoneElsesHealthCode");
+        study.setExternalIdValidationEnabled(true);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(externalIdentifier);
+        
+        when(participantService.createParticipant(eq(study), eq(ImmutableSet.of()), participantCaptor.capture(),
+                eq(false))).thenThrow(new EntityAlreadyExistsException(Account.class, "id", "asdf"));
+        
+        try {
+            service.generatePassword(study, PASSWORD_GENERATION_CREATE_ACCOUNT);
+            fail("Should have thrown an exception");
+        } catch(EntityAlreadyExistsException e) {
+        }
+        verify(accountDao).getAccount(AccountId.forExternalId(STUDY_ID, EXTERNAL_ID));
+        verify(participantService).createParticipant(eq(study), eq(ImmutableSet.of()), any(), eq(false));
+        verifyNoMoreInteractions(accountDao);
+        verifyNoMoreInteractions(participantService);
+    }
+    
+    @Test
+    public void generatePasswordOK() {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         study.setExternalIdValidationEnabled(true);
         when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(externalIdentifier);
@@ -711,9 +715,10 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test
-    public void passwordPassesValidation() {
+    public void generatedPasswordPassesValidation() {
+        // This is a very large password, which you could set in a study like this
         String password = service.generatePassword(100);
-        
+
         Errors errors = Validate.getErrorsFor(password);
         ValidatorUtils.validatePassword(errors, PasswordPolicy.DEFAULT_PASSWORD_POLICY, password);
         assertFalse(errors.hasErrors());

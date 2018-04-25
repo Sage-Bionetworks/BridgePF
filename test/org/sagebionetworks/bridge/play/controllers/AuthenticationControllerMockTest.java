@@ -977,6 +977,15 @@ public class AuthenticationControllerMockTest {
         verifyCommonLoggingForSignIns();
     }
     
+    @Test(expected = NotAuthenticatedException.class)
+    public void generatePasswordRequiresResearcher() throws Exception {
+        when(controller.getAuthenticatedSession(Roles.RESEARCHER)).thenThrow(new UnauthorizedException());
+        TestUtils.mockPlayContextWithJson(
+                TestUtils.createJson("{'externalId':'extid','createAccount':false}"));
+        
+        controller.generatePassword();
+    }
+    
     @Test
     public void generatePassword() throws Exception {
         doReturn(userSession).when(controller).getAuthenticatedSession(Roles.RESEARCHER);
