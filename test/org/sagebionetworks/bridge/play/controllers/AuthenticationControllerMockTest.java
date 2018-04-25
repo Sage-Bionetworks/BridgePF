@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
@@ -60,8 +59,6 @@ import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
-import org.sagebionetworks.bridge.models.accounts.Password;
-import org.sagebionetworks.bridge.models.accounts.PasswordGeneration;
 import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -135,9 +132,6 @@ public class AuthenticationControllerMockTest {
 
     @Captor
     ArgumentCaptor<CriteriaContext> contextCaptor;
-    
-    @Captor
-    ArgumentCaptor<PasswordGeneration> passwordGenerationCaptor;
     
     UserSession userSession;
     
@@ -976,39 +970,6 @@ public class AuthenticationControllerMockTest {
         }
         verifyCommonLoggingForSignIns();
     }
-    
-    @Test(expected = NotAuthenticatedException.class)
-    public void generatePasswordRequiresResearcher() throws Exception {
-        when(controller.getAuthenticatedSession(Roles.RESEARCHER)).thenThrow(new UnauthorizedException());
-        TestUtils.mockPlayContextWithJson(
-                TestUtils.createJson("{'externalId':'extid','createAccount':false}"));
-        
-        controller.generatePassword();
-    }
-    
-    @Test
-    public void generatePassword() throws Exception {
-        doReturn(userSession).when(controller).getAuthenticatedSession(Roles.RESEARCHER);
-        TestUtils.mockPlayContextWithJson(
-                TestUtils.createJson("{'externalId':'extid','createAccount':false}"));
-        Password password = new Password("extid", "user-id", "some-password");
-        when(authenticationService.generatePassword(any(), any())).thenReturn(password);
-
-        Result result = controller.generatePassword();
-        TestUtils.assertResult(result, 200);
-        
-        Password retrieved = TestUtils.getResponsePayload(result, Password.class);
-        assertEquals("extid", retrieved.getExternalId());
-        assertEquals("user-id", retrieved.getUserId());
-        assertEquals("some-password", retrieved.getPassword());
-        
-        verify(authenticationService).generatePassword(eq(study), passwordGenerationCaptor.capture());
-        
-        PasswordGeneration passgen = passwordGenerationCaptor.getValue();
-        assertEquals("extid", passgen.getExternalId());
-        assertFalse(passgen.isCreateAccount());
-    }
-    
     private void mockSignInWithEmailPayload() throws Exception {
         Map<String, String[]> headers = new ImmutableMap.Builder<String, String[]>()
                 .put("User-Agent", new String[] { "App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4" }).build();

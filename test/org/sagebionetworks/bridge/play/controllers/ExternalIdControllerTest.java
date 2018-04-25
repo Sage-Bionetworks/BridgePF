@@ -1,9 +1,10 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.any;
+import static org.junit.Assert.assertFalse;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -26,13 +27,18 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
+import org.sagebionetworks.bridge.models.accounts.GeneratePasswordRequest;
+import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -63,10 +69,16 @@ public class ExternalIdControllerTest {
     StudyService studyService;
     
     @Mock
+    AuthenticationService authenticationService;
+    
+    @Mock
     UserSession session;
     
     @Captor
     ArgumentCaptor<List<String>> externalIdCaptor;
+    
+    @Captor
+    ArgumentCaptor<GeneratePasswordRequest> passwordGenerationCaptor;
     
     Study study;
     
@@ -77,6 +89,7 @@ public class ExternalIdControllerTest {
         controller = spy(new ExternalIdController());
         controller.setExternalIdService(externalIdService);
         controller.setStudyService(studyService);
+        controller.setAuthenticationService(authenticationService);
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("BBB").build();
@@ -167,6 +180,35 @@ public class ExternalIdControllerTest {
         controller.deleteExternalIds();
     }
     
+    @Test(expected = NotAuthenticatedException.class)
+    public void generatePasswordRequiresResearcher() throws Exception {
+        when(controller.getAuthenticatedSession(Roles.RESEARCHER)).thenThrow(new UnauthorizedException());
+        
+        controller.generatePassword("extid", false);
+    }
+    
+    @Test
+    public void generatePassword() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(Roles.RESEARCHER);
+        GeneratedPassword password = new GeneratedPassword("extid", "user-id", "some-password");
+        when(authenticationService.generatePassword(any(), any())).thenReturn(password);
+
+        Result result = controller.generatePassword("extid", false);
+        TestUtils.assertResult(result, 200);
+        
+        GeneratedPassword retrieved = TestUtils.getResponsePayload(result, GeneratedPassword.class);
+        assertEquals("extid", retrieved.getExternalId());
+        assertEquals("user-id", retrieved.getUserId());
+        assertEquals("some-password", retrieved.getPassword());
+        
+        verify(authenticationService).generatePassword(eq(study), passwordGenerationCaptor.capture());
+        
+        GeneratePasswordRequest passgen = passwordGenerationCaptor.getValue();
+        assertEquals("extid", passgen.getExternalId());
+        assertFalse(passgen.isCreateAccount());
+    }
+    
+
     private void mockRequestWithQueryString(Map<String,String[]> query) {
         Http.Request request = mock(Http.Request.class);
         

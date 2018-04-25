@@ -30,7 +30,6 @@ POST   /v3/auth/email/signIn            @org.sagebionetworks.bridge.play.control
 POST   /v3/auth/phone                   @org.sagebionetworks.bridge.play.controllers.AuthenticationController.requestPhoneSignIn
 POST   /v3/auth/phone/signIn            @org.sagebionetworks.bridge.play.controllers.AuthenticationController.phoneSignIn
 POST   /v4/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signIn
-POST   /v3/auth/password                @org.sagebionetworks.bridge.play.controllers.AuthenticationController.generatePassword
 
 # OAuth
 POST /v3/oauth/:vendorId    @org.sagebionetworks.bridge.play.controllers.OAuthController.requestAccessToken(vendorId: String)
@@ -266,9 +265,10 @@ DELETE /v3/studies/:identifier         @org.sagebionetworks.bridge.play.controll
 POST   /v3/studies/:identifier/emails/verify @org.sagebionetworks.bridge.play.controllers.StudyController.verifyEmail(identifier: String, token: String ?= null, type: String ?= null)
 GET    /v3/studies/:identifier/appconfig     @org.sagebionetworks.bridge.play.controllers.AppConfigController.getStudyAppConfig(identifier: String)
 
-GET    /v3/externalIds    @org.sagebionetworks.bridge.play.controllers.ExternalIdController.getExternalIds(offsetKey: String ?= null, pageSize: String ?= null, idFilter: String ?= null, assignmentFilter: String ?= null)
-POST   /v3/externalIds    @org.sagebionetworks.bridge.play.controllers.ExternalIdController.addExternalIds
-DELETE /v3/externalIds    @org.sagebionetworks.bridge.play.controllers.ExternalIdController.deleteExternalIds
+GET    /v3/externalIds                      @org.sagebionetworks.bridge.play.controllers.ExternalIdController.getExternalIds(offsetKey: String ?= null, pageSize: String ?= null, idFilter: String ?= null, assignmentFilter: String ?= null)
+POST   /v3/externalIds                      @org.sagebionetworks.bridge.play.controllers.ExternalIdController.addExternalIds
+DELETE /v3/externalIds                      @org.sagebionetworks.bridge.play.controllers.ExternalIdController.deleteExternalIds
+POST   /v3/externalIds/:externalId/password @org.sagebionetworks.bridge.play.controllers.ExternalIdController.generatePassword(externalId: String, createAccount: Boolean)
 
 # Worker APIs for getting entities across studies
 GET  /v3/studies/:studyId/surveys/published                                           @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentlyPublishedVersionForStudy(studyId: String)

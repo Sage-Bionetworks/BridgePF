@@ -11,9 +11,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import play.mvc.Result;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
+import org.sagebionetworks.bridge.models.accounts.GeneratePasswordRequest;
+import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ExternalIdService;
@@ -65,6 +68,17 @@ public class ExternalIdController extends BaseController {
         externalIdService.deleteExternalIds(study, identifiers);
         
         return okResult("External identifiers deleted.");
+    }
+    
+    public Result generatePassword(String externalId, Boolean createAccount) throws Exception {
+        UserSession session = getAuthenticatedSession(Roles.RESEARCHER);
+        
+        GeneratePasswordRequest passwordGeneration = new GeneratePasswordRequest(externalId, createAccount);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        GeneratedPassword password = authenticationService.generatePassword(study, passwordGeneration);
+        
+        return okResult(password);
     }
 
 }

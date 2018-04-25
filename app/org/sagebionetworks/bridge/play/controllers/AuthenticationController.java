@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -15,8 +14,6 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.accounts.Password;
-import org.sagebionetworks.bridge.models.accounts.PasswordGeneration;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -241,17 +238,6 @@ public class AuthenticationController extends BaseController {
         getStudyOrThrowException(passwordReset.getStudyIdentifier());
         authenticationService.resetPassword(passwordReset);
         return okResult("Password has been changed.");
-    }
-    
-    public Result generatePassword() throws Exception {
-        UserSession session = getAuthenticatedSession(Roles.RESEARCHER);
-        
-        PasswordGeneration passwordGeneration = parseJson(request(), PasswordGeneration.class);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
-        
-        Password password = authenticationService.generatePassword(study, passwordGeneration);
-        
-        return okResult(password);
     }
 
     private void setCookieAndRecordMetrics(UserSession session) {

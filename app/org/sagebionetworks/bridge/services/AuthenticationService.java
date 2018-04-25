@@ -29,8 +29,8 @@ import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
-import org.sagebionetworks.bridge.models.accounts.Password;
-import org.sagebionetworks.bridge.models.accounts.PasswordGeneration;
+import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
+import org.sagebionetworks.bridge.models.accounts.GeneratePasswordRequest;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -311,7 +311,7 @@ public class AuthenticationService {
         accountWorkflowService.resetPassword(passwordReset);
     }
     
-    public Password generatePassword(Study study, PasswordGeneration passGen) {
+    public GeneratedPassword generatePassword(Study study, GeneratePasswordRequest passGen) {
         checkNotNull(study);
         checkNotNull(passGen);
         
@@ -349,7 +349,7 @@ public class AuthenticationService {
             userId = account.getId();
         }
         // Return the password and the user ID in case the account was just created.
-        return new Password(passGen.getExternalId(), userId, password);
+        return new GeneratedPassword(passGen.getExternalId(), userId, password);
     };
     
     public String generatePassword(int policyLength) {
