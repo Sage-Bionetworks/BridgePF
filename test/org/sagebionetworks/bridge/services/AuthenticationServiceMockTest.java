@@ -55,7 +55,6 @@ import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
-import org.sagebionetworks.bridge.models.accounts.GeneratePasswordRequest;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -116,9 +115,6 @@ public class AuthenticationServiceMockTest {
     private static final AccountId ACCOUNT_ID = AccountId.forId(STUDY_ID, USER_ID);
     private static final String EXTERNAL_ID = "ext-id";
     private static final String HEALTH_CODE = "health-code";
-    private static final GeneratePasswordRequest GENERATE_PASSWORD_WITH_ACCOUNT = new GeneratePasswordRequest(EXTERNAL_ID, true);
-    private static final GeneratePasswordRequest GENERATE_PASSWORD_NO_ACCOUNT = new GeneratePasswordRequest(EXTERNAL_ID, false);
-    private static final GeneratePasswordRequest GENERATE_PASSWORD_BLANK_ID = new GeneratePasswordRequest(null, true);
             
     @Mock
     private CacheProvider cacheProvider;
@@ -627,19 +623,19 @@ public class AuthenticationServiceMockTest {
     @Test(expected = BadRequestException.class)
     public void generatePasswordExternalIdManagementDisabled() {
         study.setExternalIdValidationEnabled(false);
-        service.generatePassword(study, GENERATE_PASSWORD_WITH_ACCOUNT);
+        service.generatePassword(study, EXTERNAL_ID, true);
     }
     
     @Test(expected = BadRequestException.class)
     public void generatePasswordExternalIdNotSubmitted() {
         study.setExternalIdValidationEnabled(true);
-        service.generatePassword(study, GENERATE_PASSWORD_BLANK_ID);
+        service.generatePassword(study, null, true);
     }
     
     @Test(expected = EntityNotFoundException.class)
     public void generatePasswordExternalIdRecordMissiong() {
         study.setExternalIdValidationEnabled(true);
-        service.generatePassword(study, GENERATE_PASSWORD_WITH_ACCOUNT);
+        service.generatePassword(study, EXTERNAL_ID, false);
     }
     
     @Test(expected = EntityNotFoundException.class)
@@ -649,7 +645,7 @@ public class AuthenticationServiceMockTest {
         doReturn(PASSWORD).when(service).generatePassword(anyInt());
         when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(externalIdentifier);
         
-        service.generatePassword(study, GENERATE_PASSWORD_NO_ACCOUNT);
+        service.generatePassword(study, EXTERNAL_ID, false);
     }
     
     @Test
@@ -663,7 +659,7 @@ public class AuthenticationServiceMockTest {
         when(participantService.createParticipant(eq(study), eq(ImmutableSet.of()), participantCaptor.capture(),
                 eq(false))).thenReturn(idHolder);
         
-        GeneratedPassword password = service.generatePassword(study, GENERATE_PASSWORD_WITH_ACCOUNT);
+        GeneratedPassword password = service.generatePassword(study, EXTERNAL_ID, true);
         assertEquals(EXTERNAL_ID, password.getExternalId());
         assertEquals(PASSWORD, password.getPassword());
         
@@ -683,7 +679,7 @@ public class AuthenticationServiceMockTest {
                 eq(false))).thenThrow(new EntityAlreadyExistsException(Account.class, "id", "asdf"));
         
         try {
-            service.generatePassword(study, GENERATE_PASSWORD_WITH_ACCOUNT);
+            service.generatePassword(study, EXTERNAL_ID, true);
             fail("Should have thrown an exception");
         } catch(EntityAlreadyExistsException e) {
         }
@@ -706,7 +702,7 @@ public class AuthenticationServiceMockTest {
         when(accountDao.getAccount(any())).thenReturn(account);
         ((GenericAccount)account).setHealthCode(HEALTH_CODE);
         
-        GeneratedPassword password = service.generatePassword(study, GENERATE_PASSWORD_WITH_ACCOUNT);
+        GeneratedPassword password = service.generatePassword(study, EXTERNAL_ID, true);
         assertEquals(EXTERNAL_ID, password.getExternalId());
         assertEquals(PASSWORD, password.getPassword());
         

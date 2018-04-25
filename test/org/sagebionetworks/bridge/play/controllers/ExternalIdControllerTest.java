@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -33,7 +32,6 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
-import org.sagebionetworks.bridge.models.accounts.GeneratePasswordRequest;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -76,9 +74,6 @@ public class ExternalIdControllerTest {
     
     @Captor
     ArgumentCaptor<List<String>> externalIdCaptor;
-    
-    @Captor
-    ArgumentCaptor<GeneratePasswordRequest> passwordGenerationCaptor;
     
     Study study;
     
@@ -191,7 +186,7 @@ public class ExternalIdControllerTest {
     public void generatePassword() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(Roles.RESEARCHER);
         GeneratedPassword password = new GeneratedPassword("extid", "user-id", "some-password");
-        when(authenticationService.generatePassword(any(), any())).thenReturn(password);
+        when(authenticationService.generatePassword(study, "extid", false)).thenReturn(password);
 
         Result result = controller.generatePassword("extid", false);
         TestUtils.assertResult(result, 200);
@@ -201,14 +196,9 @@ public class ExternalIdControllerTest {
         assertEquals("user-id", retrieved.getUserId());
         assertEquals("some-password", retrieved.getPassword());
         
-        verify(authenticationService).generatePassword(eq(study), passwordGenerationCaptor.capture());
-        
-        GeneratePasswordRequest passgen = passwordGenerationCaptor.getValue();
-        assertEquals("extid", passgen.getExternalId());
-        assertFalse(passgen.isCreateAccount());
+        verify(authenticationService).generatePassword(eq(study), eq("extid"), eq(false));
     }
     
-
     private void mockRequestWithQueryString(Map<String,String[]> query) {
         Http.Request request = mock(Http.Request.class);
         

@@ -268,7 +268,7 @@ GET    /v3/studies/:identifier/appconfig     @org.sagebionetworks.bridge.play.co
 GET    /v3/externalIds                      @org.sagebionetworks.bridge.play.controllers.ExternalIdController.getExternalIds(offsetKey: String ?= null, pageSize: String ?= null, idFilter: String ?= null, assignmentFilter: String ?= null)
 POST   /v3/externalIds                      @org.sagebionetworks.bridge.play.controllers.ExternalIdController.addExternalIds
 DELETE /v3/externalIds                      @org.sagebionetworks.bridge.play.controllers.ExternalIdController.deleteExternalIds
-POST   /v3/externalIds/:externalId/password @org.sagebionetworks.bridge.play.controllers.ExternalIdController.generatePassword(externalId: String, createAccount: Boolean)
+POST   /v3/externalIds/:externalId/password @org.sagebionetworks.bridge.play.controllers.ExternalIdController.generatePassword(externalId: String, createAccount: Boolean ?= true)
 
 # Worker APIs for getting entities across studies
 GET  /v3/studies/:studyId/surveys/published                                           @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentlyPublishedVersionForStudy(studyId: String)

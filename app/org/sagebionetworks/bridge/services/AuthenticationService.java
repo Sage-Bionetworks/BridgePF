@@ -30,7 +30,6 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
-import org.sagebionetworks.bridge.models.accounts.GeneratePasswordRequest;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -311,27 +310,26 @@ public class AuthenticationService {
         accountWorkflowService.resetPassword(passwordReset);
     }
     
-    public GeneratedPassword generatePassword(Study study, GeneratePasswordRequest passGen) {
+    public GeneratedPassword generatePassword(Study study, String externalId, boolean createAccount) {
         checkNotNull(study);
-        checkNotNull(passGen);
         
         if (!study.isExternalIdValidationEnabled()) {
             throw new BadRequestException("External ID management disabled for this study");
         }
-        if (StringUtils.isBlank(passGen.getExternalId())) {
+        if (StringUtils.isBlank(externalId)) {
             throw new BadRequestException("External ID is required");
         }
         ExternalIdentifier externalIdentifier = externalIdService.getExternalId(
-                study.getStudyIdentifier(), passGen.getExternalId());        
+                study.getStudyIdentifier(), externalId);        
         if (externalIdentifier == null) {
             throw new EntityNotFoundException(ExternalIdentifier.class);
         }
         String password = generatePassword(study.getPasswordPolicy().getMinLength());
-        AccountId accountId = AccountId.forExternalId(study.getIdentifier(), passGen.getExternalId());
+        AccountId accountId = AccountId.forExternalId(study.getIdentifier(), externalId);
         Account account = accountDao.getAccount(accountId);
         
         // No account and user doesn't want to create it, treat as a 404
-        if (account == null && !passGen.isCreateAccount()) {
+        if (account == null && !createAccount) {
             throw new EntityNotFoundException(Account.class);
         }
 
@@ -340,7 +338,7 @@ public class AuthenticationService {
             // Create an account with password and external ID assigned. If the external ID has been 
             // assigned to another account, this creation will fail (external ID is a unique column).
             StudyParticipant participant = new StudyParticipant.Builder()
-                    .withExternalId(passGen.getExternalId()).withPassword(password).build();
+                    .withExternalId(externalId).withPassword(password).build();
             userId = participantService.createParticipant(
                     study, ImmutableSet.of(), participant, false).getIdentifier();
         } else {
@@ -349,7 +347,7 @@ public class AuthenticationService {
             userId = account.getId();
         }
         // Return the password and the user ID in case the account was just created.
-        return new GeneratedPassword(passGen.getExternalId(), userId, password);
+        return new GeneratedPassword(externalId, userId, password);
     };
     
     public String generatePassword(int policyLength) {
