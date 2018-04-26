@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge;
 
 import java.security.SecureRandom;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
