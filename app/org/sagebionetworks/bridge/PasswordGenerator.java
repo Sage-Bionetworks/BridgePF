@@ -1,6 +1,11 @@
 package org.sagebionetworks.bridge;
 
 import java.security.SecureRandom;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+
+import com.google.common.base.Preconditions;
 
 public class PasswordGenerator {
     public static final PasswordGenerator INSTANCE = new PasswordGenerator();
@@ -22,23 +27,33 @@ public class PasswordGenerator {
     }
     
     public String nextPassword(int length) {
+        // Looping until we have 4 indices can take a long time or hang if length is <4, prevent either
+        Preconditions.checkArgument(length >= 16);
+        
         final char[] buffer = new char[length];
         for (int i = 0; i < buffer.length; ++i) {
             buffer[i] = ALPHANUMERIC_ARRAY[RANDOM.nextInt(ALPHANUMERIC_ARRAY.length)];
         }
-        // absolutely ensure that all character types are present, and add a symbol
-        replace(buffer, UPPERCASE_ARRAY);
-        replace(buffer, LOWERCASE_ARRAY);
-        replace(buffer, NUMERIC_ARRAY);
-        replace(buffer, SYMBOLIC_ARRAY);
+        // ensure that all character types are always present
+        Iterator<Integer> indices = getFourUniqueIntegers(length).iterator();
+        replace(buffer, UPPERCASE_ARRAY, indices.next());
+        replace(buffer, LOWERCASE_ARRAY, indices.next());
+        replace(buffer, NUMERIC_ARRAY, indices.next());
+        replace(buffer, SYMBOLIC_ARRAY, indices.next());
         return new String(buffer);
     }
     
-    /** Select a position at random and put a random character from the array there */
-    private void replace(char[] buffer, char[] charArray) {
-        char charAt = charArray[RANDOM.nextInt(charArray.length)];
-        int pos = RANDOM.nextInt(buffer.length);
-        buffer[pos] = charAt;
+    private Set<Integer> getFourUniqueIntegers(int max) {
+        Set<Integer> set = new HashSet<>();
+        while (set.size() < 4) {
+            set.add(RANDOM.nextInt(max));
+        }
+        return set;
+    }
+    
+    /** Insert a randomly selected character at position in the array */
+    private void replace(char[] buffer, char[] charArray, int pos) {
+        buffer[pos] = charArray[RANDOM.nextInt(charArray.length)];
     }
 
 }

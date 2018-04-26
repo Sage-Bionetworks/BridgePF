@@ -11,7 +11,7 @@ public class PasswordGeneratorTest {
 
     @Test
     public void generatesPasswordCorrectLength() {
-        assertEquals(6,PasswordGenerator.INSTANCE.nextPassword(6).length());
+        assertEquals(16,PasswordGenerator.INSTANCE.nextPassword(16).length());
         assertEquals(101,PasswordGenerator.INSTANCE.nextPassword(101).length());
     }
     
