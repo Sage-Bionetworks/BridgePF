@@ -34,9 +34,9 @@ public class PasswordGenerator {
         return new String(buffer);
     }
     
-    /** Select a position at random and put the string character there */
-    private void replace(char[] buffer, char[] charSet) {
-        char charAt = charSet[RANDOM.nextInt(charSet.length)];
+    /** Select a position at random and put a random character from the array there */
+    private void replace(char[] buffer, char[] charArray) {
+        char charAt = charArray[RANDOM.nextInt(charArray.length)];
         int pos = RANDOM.nextInt(buffer.length);
         buffer[pos] = charAt;
     }
