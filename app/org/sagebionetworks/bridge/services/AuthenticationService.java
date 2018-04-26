@@ -8,8 +8,8 @@ import org.apache.commons.lang3.StringUtils;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_REAUTH_GRACE_PERIOD;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.PasswordGenerator;
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -324,7 +324,6 @@ public class AuthenticationService {
         if (externalIdentifier == null) {
             throw new EntityNotFoundException(ExternalIdentifier.class);
         }
-        String password = generatePassword(study.getPasswordPolicy().getMinLength());
         AccountId accountId = AccountId.forExternalId(study.getIdentifier(), externalId);
         Account account = accountDao.getAccount(accountId);
         
@@ -333,6 +332,7 @@ public class AuthenticationService {
             throw new EntityNotFoundException(Account.class);
         }
 
+        String password = generatePassword(study.getPasswordPolicy().getMinLength());
         String userId = null;
         if (account == null) {
             // Create an account with password and external ID assigned. If the external ID has been 
@@ -351,13 +351,7 @@ public class AuthenticationService {
     };
     
     public String generatePassword(int policyLength) {
-        // as long as required, but not less than 32
-        int length = Math.max(32, policyLength); 
-        
-        // We add one of each type of character class to the end of the string. This is 
-        // sufficient to pass password validation. 
-        SecureTokenGenerator generator = new SecureTokenGenerator(length);
-        return generator.nextToken() + "Br4%";
+        return PasswordGenerator.INSTANCE.nextPassword(Math.max(32, policyLength));
     }
     
     private UserSession channelSignIn(ChannelType channelType, CriteriaContext context, SignIn signIn,

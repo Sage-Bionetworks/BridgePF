@@ -717,7 +717,7 @@ public class AuthenticationServiceMockTest {
         Errors errors = Validate.getErrorsFor(password);
         ValidatorUtils.validatePassword(errors, PasswordPolicy.DEFAULT_PASSWORD_POLICY, password);
         assertFalse(errors.hasErrors());
-        assertEquals(104, password.length());
+        assertEquals(100, password.length());
     }
 
     @Test(expected = UnauthorizedException.class)
