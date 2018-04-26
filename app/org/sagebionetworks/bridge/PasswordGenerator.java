@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 
 public class PasswordGenerator {
     public static final PasswordGenerator INSTANCE = new PasswordGenerator();
@@ -44,7 +45,7 @@ public class PasswordGenerator {
     }
     
     private Set<Integer> getFourUniqueIntegers(int max) {
-        Set<Integer> set = new HashSet<>();
+        Set<Integer> set = Sets.newHashSetWithExpectedSize(4);
         while (set.size() < 4) {
             set.add(RANDOM.nextInt(max));
         }
