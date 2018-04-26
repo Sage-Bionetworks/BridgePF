@@ -35,8 +35,10 @@ public class UserDataDownloadController extends BaseController {
         
         // At least for now, if the user does not have a verified email address, do not allow this service.
         StudyParticipant participant = session.getParticipant();
-        if (participant.getEmail() == null || participant.getEmailVerified() != Boolean.TRUE) {
-            throw new BadRequestException("Cannot request user data, account has no verified email address.");
+        boolean verifiedEmail = (participant.getEmail() != null && Boolean.TRUE.equals(participant.getEmailVerified()));
+        boolean verifiedPhone = (participant.getPhone() != null && Boolean.TRUE.equals(participant.getPhoneVerified()));
+        if (!verifiedEmail && !verifiedPhone) {
+            throw new BadRequestException("Cannot request user data, account has no verified email address or phone number.");
         }
 
         DateRange dateRange = parseJson(request(), DateRange.class);

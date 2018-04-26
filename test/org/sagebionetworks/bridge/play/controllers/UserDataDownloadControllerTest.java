@@ -16,6 +16,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import play.mvc.Result;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.DateRange;
@@ -54,7 +55,7 @@ public class UserDataDownloadControllerTest {
     }
     
     @Test
-    public void test() throws Exception {
+    public void testWithEmail() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withEmail(EMAIL)
                 .withEmailVerified(Boolean.TRUE).build();
         doReturn(participant).when(mockSession).getParticipant();
@@ -72,6 +73,25 @@ public class UserDataDownloadControllerTest {
         assertEquals("2015-08-19", dateRange.getEndDate().toString());
     }
 
+    @Test
+    public void testWithPhone() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID)
+                .withPhone(TestConstants.PHONE).withPhoneVerified(Boolean.TRUE).build();
+        doReturn(participant).when(mockSession).getParticipant();
+        mockWithJson();
+
+        // execute and validate
+        Result result = controller.requestUserData();
+        TestUtils.assertResult(result, 202);
+
+        verify(mockService).requestUserData(eq(STUDY_ID), eq(USER_ID), dateRangeCaptor.capture());
+        
+        // validate args sent to mock service
+        DateRange dateRange = dateRangeCaptor.getValue();
+        assertEquals("2015-08-15", dateRange.getStartDate().toString());
+        assertEquals("2015-08-19", dateRange.getEndDate().toString());
+    }
+    
     @Test(expected = BadRequestException.class)
     public void throwExceptionIfAccountHasNoEmail() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).build();
@@ -91,6 +111,26 @@ public class UserDataDownloadControllerTest {
         controller.requestUserData();
     }
 
+    @Test(expected = BadRequestException.class)
+    public void throwExceptionIfAccountHasNoPhone() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID)
+                .withPhoneVerified(Boolean.TRUE).build();
+        doReturn(participant).when(mockSession).getParticipant();
+        mockWithJson();
+
+        controller.requestUserData();
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void throwExceptionIfAccountPhoneUnverified() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID)
+                .withPhone(TestConstants.PHONE).withPhoneVerified(Boolean.FALSE).build();
+        doReturn(participant).when(mockSession).getParticipant();
+        mockWithJson();
+
+        controller.requestUserData();
+    }
+    
     private void mockWithJson() throws Exception {
         // This isn't in the before(), because we don't want to mock the JSON body for the query params test.
         String dateRangeJsonText = "{\n" +
