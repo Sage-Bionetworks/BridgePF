@@ -123,14 +123,19 @@ public class StudyService {
     private String defaultEmailSignInTemplateSubject;
     private String defaultAccountExistsTemplate;
     private String defaultAccountExistsTemplateSubject;
-    private String studyEmailVerificationTemplate;
-    private String studyEmailVerificationTemplateSubject;
+    private String defaultSignedConsentTemplate;
+    private String defaultSignedConsentTemplateSubject;
     private String defaultResetPasswordSmsTemplate;
     private String defaultPhoneSignInSmsTemplate;
     private String defaultAppInstallLinkSmsTemplate;
     private String defaultVerifyPhoneSmsTemplate;
     private String defaultAccountExistsSmsTemplate;
+    private String defaultSignedConsentSmsTemplate;
 
+    // Not defaults, if you wish to change these, change in source. Not configurable per study
+    private String studyEmailVerificationTemplate;
+    private String studyEmailVerificationTemplateSubject;
+    
     @Value("classpath:study-defaults/email-verification.txt")
     final void setDefaultEmailVerificationTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultEmailVerificationTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
@@ -163,6 +168,16 @@ public class StudyService {
     final void setDefaultAccountExistsTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultAccountExistsTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
+    
+    @Value("classpath:study-defaults/signed-consent.txt")
+    final void setSignedConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
+        this.defaultSignedConsentTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
+    }
+    @Value("classpath:study-defaults/signed-consent-subject.txt")
+    final void setSignedConsentTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
+        this.defaultSignedConsentTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
+    }
+    
     @Value("classpath:templates/study-email-verification.txt")
     final void setStudyEmailVerificationTemplate(org.springframework.core.io.Resource resource)
             throws IOException {
@@ -194,6 +209,11 @@ public class StudyService {
     final void setAccountExistsSmsTemplate(String template) {
         this.defaultAccountExistsSmsTemplate = template;
     }
+    @Value("${sms.signed.consent}")
+    final void setSignedConsentSmsTemplate(String template) {
+        this.defaultSignedConsentSmsTemplate = template;
+    }
+    
     /** Bridge config. */
     @Autowired
     public final void setBridgeConfig(BridgeConfig bridgeConfig) {
@@ -270,6 +290,10 @@ public class StudyService {
     
     private EmailTemplate getAccountExistsTemplate() {
         return getTemplate(defaultAccountExistsTemplateSubject, defaultAccountExistsTemplate);
+    }
+    
+    private EmailTemplate getSignedConsentTemplate() {
+        return getTemplate(defaultSignedConsentTemplateSubject, defaultSignedConsentTemplate);
     }
     
     private EmailTemplate getTemplate(String subject, String body) {
@@ -391,7 +415,7 @@ public class StudyService {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         if (study.getVersion() != null){
             throw new EntityAlreadyExistsException(Study.class, "Study has a version value; it may already exist",
-                new ImmutableMap.Builder<String,Object>().put(IDENTIFIER_PROPERTY, study.getIdentifier()).build());
+                new ImmutableMap.Builder<String,Object>().put(IDENTIFIER_PROPERTY, study.getIdentifier()).build()); 
         }
 
         study.setActive(true);
@@ -721,8 +745,8 @@ public class StudyService {
         if (study.getEmailSignInTemplate() == null) {
             study.setEmailSignInTemplate( getEmailSignInTemplate() );
         }
-        if (study.getAccountExistsTemplate() == null) {
-            study.setAccountExistsTemplate( getAccountExistsTemplate() );
+        if (study.getSignedConsentTemplate() == null) {
+            study.setSignedConsentTemplate( getSignedConsentTemplate() );
         }
         if (study.getResetPasswordSmsTemplate() == null) {
             study.setResetPasswordSmsTemplate(new SmsTemplate(defaultResetPasswordSmsTemplate));
@@ -738,6 +762,9 @@ public class StudyService {
         }
         if (study.getAccountExistsSmsTemplate() == null) {
             study.setAccountExistsSmsTemplate(new SmsTemplate(defaultAccountExistsSmsTemplate));
+        }
+        if (study.getSignedConsentSmsTemplate() == null) {
+            study.setSignedConsentSmsTemplate(new SmsTemplate(defaultSignedConsentSmsTemplate));
         }
     }
 
@@ -758,6 +785,9 @@ public class StudyService {
 
         template = study.getAccountExistsTemplate();
         study.setAccountExistsTemplate(sanitizeEmailTemplate(template));
+        
+        template = study.getSignedConsentTemplate();
+        study.setSignedConsentTemplate(sanitizeEmailTemplate(template));
     }
     
     protected EmailTemplate sanitizeEmailTemplate(EmailTemplate template) {

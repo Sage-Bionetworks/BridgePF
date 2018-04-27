@@ -84,11 +84,13 @@ public final class DynamoStudy implements Study {
     private EmailTemplate resetPasswordTemplate;
     private EmailTemplate emailSignInTemplate;
     private EmailTemplate accountExistsTemplate;
+    private EmailTemplate signedConsentTemplate;
     private SmsTemplate resetPasswordSmsTemplate;
     private SmsTemplate phoneSignInSmsTemplate;
     private SmsTemplate appInstallLinkSmsTemplate;
     private SmsTemplate verifyPhoneSmsTemplate;
     private SmsTemplate accountExistsSmsTemplate;
+    private SmsTemplate signedConsentSmsTemplate;
     private boolean strictUploadValidationEnabled;
     private boolean healthCodeExportEnabled;
     private boolean emailVerificationEnabled;
@@ -457,6 +459,19 @@ public final class DynamoStudy implements Study {
     }
     
     @Override
+    public void setSignedConsentTemplate(EmailTemplate template) {
+        this.signedConsentTemplate = template;
+    }
+    
+    /** {@inheritDoc} */
+    @DynamoDBTypeConvertedJson
+    @Override
+    public EmailTemplate getSignedConsentTemplate() {
+        return signedConsentTemplate;
+    }
+    
+    
+    @Override
     public void setAccountExistsTemplate(EmailTemplate template) {
         this.accountExistsTemplate = template;
     }
@@ -693,6 +708,17 @@ public final class DynamoStudy implements Study {
     public void setAccountExistsSmsTemplate(SmsTemplate accountExistsSmsTemplate) {
         this.accountExistsSmsTemplate = accountExistsSmsTemplate;
     }
+    
+    @DynamoDBTypeConvertedJson
+    @Override
+    public SmsTemplate getSignedConsentSmsTemplate() {
+        return signedConsentSmsTemplate;
+    }
+    
+    @Override
+    public void setSignedConsentSmsTemplate(SmsTemplate template) {
+        this.signedConsentSmsTemplate = template;
+    }
 
     @Override
     public boolean isAutoVerificationPhoneSuppressed() {
@@ -717,7 +743,7 @@ public final class DynamoStudy implements Study {
                 minSupportedAppVersions, pushNotificationARNs, installLinks, disableExport, oauthProviders,
                 appleAppLinks, androidAppLinks, reauthenticationEnabled, resetPasswordSmsTemplate,
                 phoneSignInSmsTemplate, appInstallLinkSmsTemplate, verifyPhoneSmsTemplate, accountExistsSmsTemplate,
-                autoVerificationPhoneSuppressed);
+                autoVerificationPhoneSuppressed, signedConsentTemplate, signedConsentSmsTemplate);
     }
 
     @Override
@@ -777,7 +803,9 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(appInstallLinkSmsTemplate, other.appInstallLinkSmsTemplate)
                 && Objects.equals(verifyPhoneSmsTemplate, other.verifyPhoneSmsTemplate)
                 && Objects.equals(accountExistsSmsTemplate, other.accountExistsSmsTemplate)
-                && Objects.equals(autoVerificationPhoneSuppressed, other.autoVerificationPhoneSuppressed);
+                && Objects.equals(autoVerificationPhoneSuppressed, other.autoVerificationPhoneSuppressed)
+                && Objects.equals(signedConsentTemplate, other.signedConsentTemplate)
+                && Objects.equals(signedConsentSmsTemplate, other.signedConsentSmsTemplate);
     }
 
     @Override
@@ -795,8 +823,9 @@ public final class DynamoStudy implements Study {
                         + "emailSignInTemplate=%s, emailSignInEnabled=%s, phoneSignInEnabled=%s, accountLimit=%s, "
                         + "oauthProviders=%s, appleAppLinks=%s, androidAppLinks=%s, reauthenticationEnabled=%s, "
                         + "resetPasswordSmsTemplate=%s, phoneSignInSmsTemplate=%s, appInstallLinkSmsTemplate=%s, "
-                        + "verifyPhoneSmsTemplate=%s, accountExistsSmsTemplate=%s, autoVerificationPhoneSuppressed=%s]",
-                name, shortName, active, sponsorName, identifier, automaticCustomEvents, autoVerificationEmailSuppressed, minAgeOfConsent,
+                        + "verifyPhoneSmsTemplate=%s, accountExistsSmsTemplate=%s, autoVerificationPhoneSuppressed=%s, "
+                        + "signedConsentTemplate=%s, signedConsentSmsTemplate=%s",
+                name, shortName, active, sponsorName, identifier, autoVerificationEmailSuppressed, minAgeOfConsent,
                 studyIdExcludedInExport, supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail,
                 uploadValidationStrictness, consentNotificationEmail, consentNotificationEmailVerified, version,
                 profileAttributes, taskIdentifiers, activityEventKeys, dataGroups, passwordPolicy, verifyEmailTemplate,
@@ -805,6 +834,7 @@ public final class DynamoStudy implements Study {
                 usesCustomExportSchedule, pushNotificationARNs, installLinks, disableExport, emailSignInTemplate,
                 emailSignInEnabled, phoneSignInEnabled, accountLimit, oauthProviders, appleAppLinks, androidAppLinks,
                 reauthenticationEnabled, resetPasswordSmsTemplate, phoneSignInSmsTemplate, appInstallLinkSmsTemplate,
-                verifyPhoneSmsTemplate, accountExistsSmsTemplate, autoVerificationPhoneSuppressed);
+                verifyPhoneSmsTemplate, accountExistsSmsTemplate, autoVerificationPhoneSuppressed,
+                signedConsentTemplate, signedConsentSmsTemplate);
     }
 }

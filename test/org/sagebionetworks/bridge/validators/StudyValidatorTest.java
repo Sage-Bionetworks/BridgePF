@@ -255,11 +255,23 @@ public class StudyValidatorTest {
     }
 
     @Test
+    public void requiresSignedConsentTemplateWithSubject() {
+        study.setSignedConsentTemplate(new EmailTemplate("  ", "body", MimeType.HTML));
+        assertValidatorMessage(INSTANCE, study, "signedConsentTemplate.subject", "cannot be blank");
+    }
+    
+    @Test
     public void requiresVerifyEmailTemplateWithBody() {
         study.setVerifyEmailTemplate(new EmailTemplate("subject", null, MimeType.HTML));
         assertValidatorMessage(INSTANCE, study, "verifyEmailTemplate.body", "cannot be blank");
     }
 
+    @Test
+    public void requiresSignedConsentTemplateWithBody() {
+        study.setSignedConsentTemplate(new EmailTemplate("subject", null, MimeType.HTML));
+        assertValidatorMessage(INSTANCE, study, "signedConsentTemplate.body", "cannot be blank");
+    }
+    
     @Test
     public void requiresResetPasswordTemplate() {
         study.setResetPasswordTemplate(null);
@@ -592,6 +604,12 @@ public class StudyValidatorTest {
     }
     
     @Test
+    public void signedConsentSmsTemplateCanBeNull() {
+        study.setSignedConsentSmsTemplate(null);
+        Validate.entityThrowingException(INSTANCE, study);
+    }
+    
+    @Test
     public void accountExistsSmsTemplateCanBeNull() {
         study.setAccountExistsSmsTemplate(null);
         Validate.entityThrowingException(INSTANCE, study);
@@ -619,6 +637,12 @@ public class StudyValidatorTest {
     public void verifyPhoneSmsTemplateMessageRequired() {
         study.setVerifyPhoneSmsTemplate(new SmsTemplate(null));
         assertValidatorMessage(INSTANCE, study, "verifyPhoneSmsTemplate.message", "cannot be blank");
+    }
+    
+    @Test
+    public void signedConsentSmsTemplateMessageRequired() {
+        study.setSignedConsentSmsTemplate(new SmsTemplate(null));
+        assertValidatorMessage(INSTANCE, study, "signedConsentSmsTemplate.message", "cannot be blank");
     }
     
     @Test
@@ -652,6 +676,12 @@ public class StudyValidatorTest {
     }
     
     @Test
+    public void signedConsentSmsTemplateHasMaxLength() {
+        study.setSignedConsentSmsTemplate(new SmsTemplate(TOO_LONG_STRING));
+        assertValidatorMessage(INSTANCE, study, "signedConsentSmsTemplate.message", "cannot be more than 160 characters");
+    }
+    
+    @Test
     public void accountExistsSmsTemplateHasMaxLength() {
         study.setAccountExistsSmsTemplate(new SmsTemplate(TOO_LONG_STRING));
         assertValidatorMessage(INSTANCE, study, "accountExistsSmsTemplate.message", "cannot be more than 160 characters");
@@ -679,6 +709,12 @@ public class StudyValidatorTest {
     public void verifyPhoneSmsTemplateRequiresTemplateVar() {
         study.setVerifyPhoneSmsTemplate(new SmsTemplate("content"));
         assertValidatorMessage(INSTANCE, study, "verifyPhoneSmsTemplate.message", "must contain one of these template variables: ${token}");
+    }
+    
+    @Test
+    public void signedConsentSmsTemplateRequiresTemplateVar() {
+        study.setSignedConsentSmsTemplate(new SmsTemplate("content"));
+        assertValidatorMessage(INSTANCE, study, "signedConsentSmsTemplate.message", "must contain one of these template variables: ${consentUrl}");
     }
     
     @Test

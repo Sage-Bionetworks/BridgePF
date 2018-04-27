@@ -632,6 +632,16 @@ public class StudyServiceMockTest {
     }
     
     @Test
+    public void loadingStudyWithoutSignedConsentSmsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setSignedConsentSmsTemplate(null);
+        when(studyDao.getStudy("foo")).thenReturn(study);
+        
+        Study retStudy = service.getStudy("foo");
+        assertNotNull(retStudy.getAccountExistsSmsTemplate());
+    }
+    
+    @Test
     public void updateStudyWithoutResetPasswordSmsTemplateAddsADefault() {
         Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
         study.setResetPasswordSmsTemplate(null);
@@ -675,6 +685,16 @@ public class StudyServiceMockTest {
     public void updateStudyWithoutAccountExistsSmsTemplateAddsADefault() {
         Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
         study.setAccountExistsSmsTemplate(null);
+        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
+        
+        Study retStudy = service.updateStudy(study, false);
+        assertNotNull(retStudy.getAccountExistsSmsTemplate());
+    }
+    
+    @Test
+    public void updateStudyWithoutSignedConsentSmsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setSignedConsentSmsTemplate(null);
         when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
         
         Study retStudy = service.updateStudy(study, false);
@@ -729,7 +749,18 @@ public class StudyServiceMockTest {
         
         Study retStudy = service.createStudy(study);
         assertNotNull(retStudy.getAccountExistsSmsTemplate());
-    }    
+    }
+    
+    @Test
+    public void createStudyWithoutSignedConsentSmsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setSignedConsentSmsTemplate(null);
+        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
+        
+        Study retStudy = service.createStudy(study);
+        assertNotNull(retStudy.getAccountExistsSmsTemplate());
+    }
+    
     @Test
     public void physicallyDeleteStudy() {
         // execute
@@ -1458,19 +1489,21 @@ public class StudyServiceMockTest {
     }
     
     @Test
-    public void testAllFourTemplatesAreSanitized() {
+    public void testAllFiveTemplatesAreSanitized() {
         EmailTemplate source = new EmailTemplate("<p>${studyName} test</p>", "<p>This should remove: <iframe src=''></iframe></p>", MimeType.HTML);
         Study study = new DynamoStudy();
         study.setEmailSignInTemplate(source);
         study.setResetPasswordTemplate(source);
         study.setVerifyEmailTemplate(source);
         study.setAccountExistsTemplate(source);
+        study.setSignedConsentTemplate(source);
         
         service.sanitizeHTML(study);
         assertHtmlTemplateSanitized( study.getEmailSignInTemplate() );
         assertHtmlTemplateSanitized( study.getResetPasswordTemplate() );
         assertHtmlTemplateSanitized( study.getVerifyEmailTemplate() );
         assertHtmlTemplateSanitized( study.getAccountExistsTemplate() );
+        assertHtmlTemplateSanitized( study.getSignedConsentTemplate() );
     }
     
     @Test

@@ -278,7 +278,14 @@ public interface Study extends BridgeEntity, StudyIdentifier {
      */
     EmailTemplate getAccountExistsTemplate();
     void setAccountExistsTemplate(EmailTemplate template);
-        
+    
+    /**
+     * The template for an email that is sent to a user when they sign a consent agreement to 
+     * participate in a study. 
+     */
+    EmailTemplate getSignedConsentTemplate();
+    void setSignedConsentTemplate(EmailTemplate template);
+    
     /**
      * The template for an SMS message sent to a user that triggers the reset password workflow, 
      * on an account that only has a phone number.
@@ -311,6 +318,13 @@ public interface Study extends BridgeEntity, StudyIdentifier {
      */
     SmsTemplate getAccountExistsSmsTemplate();
     void setAccountExistsSmsTemplate(SmsTemplate template);
+    
+    /**
+     * The template for an SMS message that is sent to a user when they sign a consent agreement to 
+     * participate in a study. 
+     */
+    SmsTemplate getSignedConsentSmsTemplate();
+    void setSignedConsentSmsTemplate(SmsTemplate template);
     
     /**
      * Is this study active? Currently not in use, a de-activated study will be hidden from the 
