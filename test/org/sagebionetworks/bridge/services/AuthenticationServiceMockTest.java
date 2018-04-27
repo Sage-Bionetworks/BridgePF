@@ -1,15 +1,19 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 
 import java.util.LinkedHashSet;
@@ -33,6 +37,7 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -45,8 +50,11 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
+import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
+import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -59,8 +67,12 @@ import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 import org.sagebionetworks.bridge.validators.SignInValidator;
+import org.sagebionetworks.bridge.validators.Validate;
+import org.sagebionetworks.bridge.validators.ValidatorUtils;
+import org.springframework.validation.Errors;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -101,7 +113,9 @@ public class AuthenticationServiceMockTest {
             .withStudyIdentifier(TestConstants.TEST_STUDY).build();
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder().build();
     private static final AccountId ACCOUNT_ID = AccountId.forId(STUDY_ID, USER_ID);
-
+    private static final String EXTERNAL_ID = "ext-id";
+    private static final String HEALTH_CODE = "health-code";
+            
     @Mock
     private CacheProvider cacheProvider;
     @Mock
@@ -118,6 +132,8 @@ public class AuthenticationServiceMockTest {
     private PasswordResetValidator passwordResetValidator;
     @Mock
     private AccountWorkflowService accountWorkflowService;
+    @Mock
+    private ExternalIdService externalIdService;
     @Captor
     private ArgumentCaptor<String> stringCaptor;
     @Captor
@@ -143,6 +159,7 @@ public class AuthenticationServiceMockTest {
         study.setIdentifier(STUDY_ID);
         study.setSupportEmail(SUPPORT_EMAIL);
         study.setName("Sender");
+        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         
         account = new GenericAccount();
         
@@ -154,6 +171,7 @@ public class AuthenticationServiceMockTest {
         service.setParticipantService(participantService);
         service.setStudyService(studyService);
         service.setAccountWorkflowService(accountWorkflowService);
+        service.setExternalIdService(externalIdService);
 
         doReturn(study).when(studyService).getStudy(STUDY_ID);
     }
@@ -602,6 +620,106 @@ public class AuthenticationServiceMockTest {
         service.resendVerification(ChannelType.PHONE, accountId);
     }
     
+    @Test(expected = BadRequestException.class)
+    public void generatePasswordExternalIdManagementDisabled() {
+        study.setExternalIdValidationEnabled(false);
+        service.generatePassword(study, EXTERNAL_ID, true);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void generatePasswordExternalIdNotSubmitted() {
+        study.setExternalIdValidationEnabled(true);
+        service.generatePassword(study, null, true);
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void generatePasswordExternalIdRecordMissiong() {
+        study.setExternalIdValidationEnabled(true);
+        service.generatePassword(study, EXTERNAL_ID, false);
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void generatePasswordNoAccountDoNotCreateAccount() {
+        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
+        study.setExternalIdValidationEnabled(true);
+        doReturn(PASSWORD).when(service).generatePassword(anyInt());
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(externalIdentifier);
+        
+        service.generatePassword(study, EXTERNAL_ID, false);
+    }
+    
+    @Test
+    public void generatePasswordAndAccountOK() {
+        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
+        study.setExternalIdValidationEnabled(true);
+        doReturn(PASSWORD).when(service).generatePassword(anyInt());
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(externalIdentifier);
+        
+        IdentifierHolder idHolder = new IdentifierHolder("userId");
+        when(participantService.createParticipant(eq(study), eq(ImmutableSet.of()), participantCaptor.capture(),
+                eq(false))).thenReturn(idHolder);
+        
+        GeneratedPassword password = service.generatePassword(study, EXTERNAL_ID, true);
+        assertEquals(EXTERNAL_ID, password.getExternalId());
+        assertEquals(PASSWORD, password.getPassword());
+        
+        StudyParticipant participant = participantCaptor.getValue();
+        assertEquals(EXTERNAL_ID, participant.getExternalId());
+        assertEquals(PASSWORD, participant.getPassword());
+    }
+    
+    @Test
+    public void generatePasswordAndAccountWhenExternalIdTaken() {
+        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
+        externalIdentifier.setHealthCode("someoneElsesHealthCode");
+        study.setExternalIdValidationEnabled(true);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(externalIdentifier);
+        
+        when(participantService.createParticipant(eq(study), eq(ImmutableSet.of()), participantCaptor.capture(),
+                eq(false))).thenThrow(new EntityAlreadyExistsException(Account.class, "id", "asdf"));
+        
+        try {
+            service.generatePassword(study, EXTERNAL_ID, true);
+            fail("Should have thrown an exception");
+        } catch(EntityAlreadyExistsException e) {
+        }
+        verify(accountDao).getAccount(AccountId.forExternalId(STUDY_ID, EXTERNAL_ID));
+        verify(participantService).createParticipant(eq(study), eq(ImmutableSet.of()), any(), eq(false));
+        verifyNoMoreInteractions(accountDao);
+        verifyNoMoreInteractions(participantService);
+    }
+    
+    @Test
+    public void generatePasswordOK() {
+        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
+        study.setExternalIdValidationEnabled(true);
+        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(externalIdentifier);
+        doReturn(PASSWORD).when(service).generatePassword(anyInt());
+        
+        StudyParticipant participant = new StudyParticipant.Builder().build();
+        when(participantService.getParticipant(study, account, false)).thenReturn(participant);
+        
+        when(accountDao.getAccount(any())).thenReturn(account);
+        ((GenericAccount)account).setHealthCode(HEALTH_CODE);
+        
+        GeneratedPassword password = service.generatePassword(study, EXTERNAL_ID, true);
+        assertEquals(EXTERNAL_ID, password.getExternalId());
+        assertEquals(PASSWORD, password.getPassword());
+        
+        verify(accountDao).changePassword(account, PASSWORD);
+    }
+    
+    @Test
+    public void generatedPasswordPassesValidation() {
+        // This is a very large password, which you could set in a study like this
+        String password = service.generatePassword(100);
+
+        Errors errors = Validate.getErrorsFor(password);
+        ValidatorUtils.validatePassword(errors, PasswordPolicy.DEFAULT_PASSWORD_POLICY, password);
+        assertFalse(errors.hasErrors());
+        assertEquals(100, password.length());
+    }
+
     @Test(expected = UnauthorizedException.class)
     public void creatingExternalIdOnlyAccountFailsIfIdsNotManaged() {
         study.setExternalIdValidationEnabled(false);

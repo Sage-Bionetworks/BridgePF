@@ -12,7 +12,6 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
@@ -36,6 +35,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -98,6 +98,7 @@ public class AuthenticationControllerMockTest {
     private static final SignIn PHONE_SIGN_IN = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING)
             .withPhone(TestConstants.PHONE).withToken(TEST_TOKEN).build();
 
+    @Spy
     AuthenticationController controller;
 
     @Mock
@@ -150,7 +151,6 @@ public class AuthenticationControllerMockTest {
         when(mockConfig.get("domain")).thenReturn(DOMAIN);
         when(mockConfig.getEnvironment()).thenReturn(Environment.UAT);
         
-        controller = spy(new AuthenticationController());
         controller.setBridgeConfig(mockConfig);
         controller.setAuthenticationService(authenticationService);
         controller.setCacheProvider(cacheProvider);
@@ -852,6 +852,7 @@ public class AuthenticationControllerMockTest {
         assertEquals(TEST_PASSWORD, captured.getPassword());
     }
     
+    @Test
     public void requestPhoneSignIn() throws Exception {
         mockPlayContextWithJson(PHONE_SIGN_IN_REQUEST);
         
@@ -969,7 +970,6 @@ public class AuthenticationControllerMockTest {
         }
         verifyCommonLoggingForSignIns();
     }
-    
     private void mockSignInWithEmailPayload() throws Exception {
         Map<String, String[]> headers = new ImmutableMap.Builder<String, String[]>()
                 .put("User-Agent", new String[] { "App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4" }).build();
