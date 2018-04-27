@@ -825,11 +825,12 @@ public final class DynamoStudy implements Study {
                         + "resetPasswordSmsTemplate=%s, phoneSignInSmsTemplate=%s, appInstallLinkSmsTemplate=%s, "
                         + "verifyPhoneSmsTemplate=%s, accountExistsSmsTemplate=%s, autoVerificationPhoneSuppressed=%s, "
                         + "signedConsentTemplate=%s, signedConsentSmsTemplate=%s",
-                name, shortName, active, sponsorName, identifier, autoVerificationEmailSuppressed, minAgeOfConsent,
-                studyIdExcludedInExport, supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail,
-                uploadValidationStrictness, consentNotificationEmail, consentNotificationEmailVerified, version,
-                profileAttributes, taskIdentifiers, activityEventKeys, dataGroups, passwordPolicy, verifyEmailTemplate,
-                resetPasswordTemplate, strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
+                name, shortName, active, sponsorName, identifier, automaticCustomEvents,
+                autoVerificationEmailSuppressed, minAgeOfConsent, studyIdExcludedInExport, supportEmail,
+                synapseDataAccessTeamId, synapseProjectId, technicalEmail, uploadValidationStrictness,
+                consentNotificationEmail, consentNotificationEmailVerified, version, profileAttributes, taskIdentifiers,
+                activityEventKeys, dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate,
+                strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled,
                 externalIdValidationEnabled, externalIdRequiredOnSignup, minSupportedAppVersions,
                 usesCustomExportSchedule, pushNotificationARNs, installLinks, disableExport, emailSignInTemplate,
                 emailSignInEnabled, phoneSignInEnabled, accountLimit, oauthProviders, appleAppLinks, androidAppLinks,

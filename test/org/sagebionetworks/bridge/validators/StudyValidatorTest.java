@@ -722,4 +722,10 @@ public class StudyValidatorTest {
         study.setAccountExistsSmsTemplate(new SmsTemplate("content"));
         assertValidatorMessage(INSTANCE, study, "accountExistsSmsTemplate.message", "must contain one of these template variables: ${token}, ${resetPasswordUrl}");
     }
+    
+    @Test
+    public void signedConsentTemplateRequiresNoTemplateVars() {
+        study.setSignedConsentTemplate(new EmailTemplate("subject", "no template var", MimeType.TEXT));
+        Validate.entityThrowingException(INSTANCE, study);
+    }
 }
