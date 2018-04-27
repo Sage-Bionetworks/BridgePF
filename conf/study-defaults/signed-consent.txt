@@ -1,0 +1,11 @@
+<p>Hi,</p>
+
+<p>For your reference, here’s a copy of the consent agreement you just signed to participate in ${studyName}.</p>
+
+<p>Regards,</p>
+
+<p>${sponsorName}</p>
+
+<hr/>
+
+<p>For general inquiries or to request support with your account, please email ${supportEmail}</p>

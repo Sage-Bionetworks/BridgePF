@@ -175,6 +175,8 @@ public class StudyServiceMockTest {
                 "Verify your study email"));
         service.setStudyEmailVerificationTemplate(mockTemplateAsSpringResource(
                 "Click here ${studyEmailVerificationUrl} ${studyEmailVerificationExpirationPeriod}"));
+        service.setSignedConsentTemplateSubject(mockTemplateAsSpringResource("subject"));
+        service.setSignedConsentTemplate(mockTemplateAsSpringResource("Test this"));
 
         when(service.getNameScopingToken()).thenReturn(TEST_NAME_SCOPING_TOKEN);
         
@@ -202,6 +204,7 @@ public class StudyServiceMockTest {
         service.setAppInstallLinkSmsTemplate(study.getAppInstallLinkSmsTemplate().getMessage());
         service.setVerifyPhoneSmsTemplate(study.getVerifyPhoneSmsTemplate().getMessage());
         service.setAccountExistsSmsTemplate(study.getAccountExistsSmsTemplate().getMessage());
+        service.setSignedConsentSmsTemplate(study.getSignedConsentSmsTemplate().getMessage());
 
         // Spy StudyService.createTimeLimitedToken() to create a known token instead of a random one. This makes our
         // tests easier.
@@ -580,7 +583,37 @@ public class StudyServiceMockTest {
         assertNotNull(retStudy.getEmailSignInTemplate());
         assertNotNull(retStudy.getAccountExistsTemplate());
     }
+
+    @Test
+    public void loadingStudyWithoutSignedConsentTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setSignedConsentTemplate(null);
+        when(studyDao.getStudy("foo")).thenReturn(study);
+        
+        Study retStudy = service.getStudy("foo");
+        assertNotNull(retStudy.getSignedConsentTemplate());
+    }
+
+    @Test
+    public void createStudyWithoutSignedConsentTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setSignedConsentTemplate(null);
+        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
+        
+        Study retStudy = service.createStudy(study);
+        assertNotNull(retStudy.getSignedConsentTemplate());
+    }
     
+    @Test
+    public void updateStudyWithoutSignedConsentTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setSignedConsentTemplate(null);
+        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
+        
+        Study retStudy = service.updateStudy(study, false);
+        assertNotNull(retStudy.getSignedConsentTemplate());
+    }
+
     @Test
     public void loadingStudyWithoutResetPasswordSmsTemplateAddsADefault() {
         Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
@@ -629,6 +662,16 @@ public class StudyServiceMockTest {
         
         Study retStudy = service.getStudy("foo");
         assertNotNull(retStudy.getAccountExistsSmsTemplate());
+    }
+    
+    @Test
+    public void loadingStudyWithoutSignedConsentSmsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setSignedConsentSmsTemplate(null);
+        when(studyDao.getStudy("foo")).thenReturn(study);
+        
+        Study retStudy = service.getStudy("foo");
+        assertNotNull(retStudy.getSignedConsentSmsTemplate());
     }
     
     @Test
@@ -682,6 +725,16 @@ public class StudyServiceMockTest {
     }
     
     @Test
+    public void updateStudyWithoutSignedConsentSmsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setSignedConsentSmsTemplate(null);
+        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
+        
+        Study retStudy = service.updateStudy(study, false);
+        assertNotNull(retStudy.getSignedConsentSmsTemplate());
+    }
+    
+    @Test
     public void createStudyWithoutResetPasswordSmsTemplateAddsADefault() {
         Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
         study.setResetPasswordSmsTemplate(null);
@@ -729,7 +782,18 @@ public class StudyServiceMockTest {
         
         Study retStudy = service.createStudy(study);
         assertNotNull(retStudy.getAccountExistsSmsTemplate());
-    }    
+    }
+    
+    @Test
+    public void createStudyWithoutSignedConsentSmsTemplateAddsADefault() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setSignedConsentSmsTemplate(null);
+        when(studyDao.getStudy(study.getIdentifier())).thenReturn(study);
+        
+        Study retStudy = service.createStudy(study);
+        assertNotNull(retStudy.getSignedConsentSmsTemplate());
+    }
+    
     @Test
     public void physicallyDeleteStudy() {
         // execute
@@ -1458,19 +1522,21 @@ public class StudyServiceMockTest {
     }
     
     @Test
-    public void testAllFourTemplatesAreSanitized() {
+    public void testAllFiveTemplatesAreSanitized() {
         EmailTemplate source = new EmailTemplate("<p>${studyName} test</p>", "<p>This should remove: <iframe src=''></iframe></p>", MimeType.HTML);
         Study study = new DynamoStudy();
         study.setEmailSignInTemplate(source);
         study.setResetPasswordTemplate(source);
         study.setVerifyEmailTemplate(source);
         study.setAccountExistsTemplate(source);
+        study.setSignedConsentTemplate(source);
         
         service.sanitizeHTML(study);
         assertHtmlTemplateSanitized( study.getEmailSignInTemplate() );
         assertHtmlTemplateSanitized( study.getResetPasswordTemplate() );
         assertHtmlTemplateSanitized( study.getVerifyEmailTemplate() );
         assertHtmlTemplateSanitized( study.getAccountExistsTemplate() );
+        assertHtmlTemplateSanitized( study.getSignedConsentTemplate() );
     }
     
     @Test

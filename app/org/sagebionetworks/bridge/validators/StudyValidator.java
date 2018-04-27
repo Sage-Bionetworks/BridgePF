@@ -118,6 +118,9 @@ public class StudyValidator implements Validator {
         validateEmailTemplate(errors, study.getVerifyEmailTemplate(), "verifyEmailTemplate", "${url}", "${emailVerificationUrl}");
         validateEmailTemplate(errors, study.getResetPasswordTemplate(), "resetPasswordTemplate", "${url}", "${resetPasswordUrl}");
         // Existing studies don't have the template, we use a default template. Okay to be missing.
+        if (study.getSignedConsentTemplate() != null) {
+            validateEmailTemplate(errors, study.getSignedConsentTemplate(), "signedConsentTemplate");    
+        }
         if (study.getEmailSignInTemplate() != null) {
             validateEmailTemplate(errors, study.getEmailSignInTemplate(), "emailSignInTemplate", "${url}", "${emailSignInUrl}",
                     "${token}");
@@ -132,6 +135,10 @@ public class StudyValidator implements Validator {
         validateSmsTemplate(errors, study.getVerifyPhoneSmsTemplate(), "verifyPhoneSmsTemplate", "${token}");
         validateSmsTemplate(errors, study.getAccountExistsSmsTemplate(), "accountExistsSmsTemplate", "${token}",
                 "${resetPasswordUrl}");
+        // Existing studies don't have the template, we use a default template. Okay to be missing.
+        if (study.getSignedConsentSmsTemplate() != null) {
+            validateSmsTemplate(errors, study.getSignedConsentSmsTemplate(), "signedConsentSmsTemplate", "${consentUrl}");    
+        }
         
         for (String userProfileAttribute : study.getUserProfileAttributes()) {
             if (RESERVED_ATTR_NAMES.contains(userProfileAttribute)) {
@@ -283,7 +290,7 @@ public class StudyValidator implements Validator {
             }
             if (StringUtils.isBlank(template.getBody())) {
                 errors.rejectValue("body", "cannot be blank");
-            } else {
+            } else if (templateVariables.length > 0) {
                 boolean missingTemplateVariable = true;
                 for (int i=0; i < templateVariables.length; i++) {
                     if (template.getBody().contains(templateVariables[i])) {

@@ -133,6 +133,8 @@ public class DynamoStudyTest {
                 JsonUtils.asEntity(node, "emailSignInTemplate", EmailTemplate.class));
         assertEqualsAndNotNull(study.getAccountExistsTemplate(),
                 JsonUtils.asEntity(node, "accountExistsTemplate", EmailTemplate.class));
+        assertEqualsAndNotNull(study.getSignedConsentTemplate(),
+                JsonUtils.asEntity(node, "signedConsentTemplate", EmailTemplate.class));
         assertEquals(study.getResetPasswordSmsTemplate(),
                 JsonUtils.asEntity(node, "resetPasswordSmsTemplate", SmsTemplate.class));
         assertEquals(study.getPhoneSignInSmsTemplate(),
@@ -143,6 +145,8 @@ public class DynamoStudyTest {
                 JsonUtils.asEntity(node, "verifyPhoneSmsTemplate", SmsTemplate.class));
         assertEquals(study.getAccountExistsSmsTemplate(),
                 JsonUtils.asEntity(node, "accountExistsSmsTemplate", SmsTemplate.class));
+        assertEquals(study.getSignedConsentSmsTemplate(),
+                JsonUtils.asEntity(node, "signedConsentSmsTemplate", SmsTemplate.class));
         assertEqualsAndNotNull(study.getUserProfileAttributes(), JsonUtils.asStringSet(node, "userProfileAttributes"));
         assertEqualsAndNotNull(study.getTaskIdentifiers(), JsonUtils.asStringSet(node, "taskIdentifiers"));
         assertEqualsAndNotNull(study.getActivityEventKeys(), JsonUtils.asStringSet(node, "activityEventKeys"));
