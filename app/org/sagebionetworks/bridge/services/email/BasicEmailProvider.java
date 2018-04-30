@@ -21,9 +21,9 @@ import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.newrelic.agent.deps.com.google.common.collect.Lists;
 
 public class BasicEmailProvider extends MimeTypeEmailProvider {
     private final String overrideSenderEmail;
