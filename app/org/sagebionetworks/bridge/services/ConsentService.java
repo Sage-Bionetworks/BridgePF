@@ -172,7 +172,7 @@ public class ConsentService {
                     .withStudy(study)
                     .withEmailTemplate(study.getSignedConsentTemplate())
                     .withRecipientEmail(participantEmail)
-                    .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.PDF);
+                    .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes());
             addStudyConsentRecipients(study, consentEmailBuilder);
             
             BasicEmailProvider provider = consentEmailBuilder.build();
@@ -316,7 +316,7 @@ public class ConsentService {
         BasicEmailProvider.Builder builder = new BasicEmailProvider.Builder()
                 .withStudy(study)
                 .withEmailTemplate(study.getSignedConsentTemplate())
-                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.PDF)
+                .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                 .withRecipientEmail(participant.getEmail());
         addStudyConsentRecipients(study, builder);
         // If the user doesn't have an email, we won't send anything. Note that as of this refactor, 

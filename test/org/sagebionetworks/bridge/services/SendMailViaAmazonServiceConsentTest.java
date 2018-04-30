@@ -109,7 +109,7 @@ public class SendMailViaAmazonServiceConsentTest {
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
                 .withEmailTemplate(study.getSignedConsentTemplate())
-                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.PDF)
+                .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                 .withRecipientEmail("test-user@sagebase.org").build();
         service.sendEmail(provider);
 
@@ -150,7 +150,7 @@ public class SendMailViaAmazonServiceConsentTest {
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
                 .withEmailTemplate(study.getSignedConsentTemplate())
-                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.PDF)
+                .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                 .withRecipientEmail("test-user@sagebase.org").build();
         
         service.sendEmail(provider);
@@ -197,7 +197,7 @@ public class SendMailViaAmazonServiceConsentTest {
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
                 .withEmailTemplate(study.getSignedConsentTemplate())
-                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.PDF)
+                .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                 .withRecipientEmail("test-user@sagebase.org").build();
 
         // execute
@@ -225,7 +225,7 @@ public class SendMailViaAmazonServiceConsentTest {
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
                 .withEmailTemplate(study.getSignedConsentTemplate())
-                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.PDF)
+                .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                 .withRecipientEmail("test-user@sagebase.org").build();
 
         // execute

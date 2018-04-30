@@ -93,7 +93,7 @@ public class BasicEmailProviderTest {
         EmailTemplate template = new EmailTemplate("Subject ${url}", "Body ${url}", MimeType.HTML);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withBinaryAttachment("content.pdf", "some data".getBytes(), MimeType.PDF)
+                .withBinaryAttachment("content.pdf", MimeType.PDF, "some data".getBytes())
                 .withRecipientEmail("email@email.com")
                 .withOverrideSenderEmail("example@example.com")
                 .withEmailTemplate(template)

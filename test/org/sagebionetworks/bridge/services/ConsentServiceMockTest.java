@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -646,7 +647,7 @@ public class ConsentServiceMockTest {
     // Tests of the construction of recipients for email, originally part of special email builder.
 
     @Test
-    public void consentNotificationEmailVerifiedNull() throws Exception {
+    public void emailConsentAgreementNotificationEmailVerifiedNull() throws Exception {
         consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("2014-01-01")
                 .withSignedOn(SIGNED_ON).build();
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
@@ -667,7 +668,7 @@ public class ConsentServiceMockTest {
     }
 
     @Test
-    public void consentNotificationEmailVerifiedFalse() throws Exception {
+    public void emailConsentAgreementNotificationEmailVerifiedFalse() throws Exception {
         consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("2014-01-01")
                 .withSignedOn(SIGNED_ON).build();
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
@@ -688,27 +689,7 @@ public class ConsentServiceMockTest {
     }
     
     @Test
-    public void consentCanHandleNullConsentEmail() throws Exception {
-        consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("2014-01-01")
-                .withSignedOn(SIGNED_ON).build();
-        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
-        
-        study.setConsentNotificationEmail(null);
-        
-        consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
-        
-        verify(sendMailService).sendEmail(emailCaptor.capture());
-        
-        MimeTypeEmailProvider provider = emailCaptor.getValue();
-
-        MimeTypeEmail email = provider.getMimeTypeEmail();
-        List<String> recipientList = email.getRecipientAddresses();
-        assertEquals(1, recipientList.size());
-        assertEquals("email@email.com", recipientList.get(0));
-    }
-    
-    @Test
-    public void providerWithoutRecipientsWorks() {
+    public void emailConsentAgreementWithNoRecipientsDoesNotSend() {
         consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("2014-01-01")
                 .withSignedOn(SIGNED_ON).build();
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
@@ -720,16 +701,125 @@ public class ConsentServiceMockTest {
         consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
         
         verify(sendMailService, never()).sendEmail(emailCaptor.capture());
-        /* TODO
-        provider = new ConsentEmailProvider(study, participant.getEmail(), BYTE_ARRAY);
-        assertFalse(provider.getRecipientEmails().isEmpty());
+    }
+    
+    @Test
+    public void emailConsentAgreementWithoutStudyRecipientsDoesSend() {
+        consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("2014-01-01")
+                .withSignedOn(SIGNED_ON).build();
+        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
+        study.setConsentNotificationEmail(null);
         
-        study.setConsentNotificationEmail("email@email.com");
-        provider = new ConsentEmailProvider(study, participant.getEmail(), BYTE_ARRAY);
-        assertFalse(provider.getRecipients().isEmpty());
-        */
+        consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
+        
+        verify(sendMailService).sendEmail(emailCaptor.capture());
+        
+        assertFalse(emailCaptor.getValue().getRecipientEmails().isEmpty());
+        assertEquals(participant.getEmail(), emailCaptor.getValue().getRecipientEmails().iterator().next());
+    }
+    
+    @Test
+    public void emailConsentAgreementWithoutParticipantEmailDoesSend() {
+        consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("2014-01-01")
+                .withSignedOn(SIGNED_ON).build();
+        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
+        participant = new StudyParticipant.Builder().copyOf(participant).withEmail(null).build();
+        
+        consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
+        
+        verify(sendMailService).sendEmail(emailCaptor.capture());
+        
+        assertFalse(emailCaptor.getValue().getRecipientEmails().isEmpty());
+        assertEquals(study.getConsentNotificationEmail(), emailCaptor.getValue().getRecipientEmails().iterator().next());
     }
 
+    @Test
+    public void consentToResearchNoNotificationEmailSends() throws Exception {
+        consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("2014-01-01")
+                .withSignedOn(SIGNED_ON).build();
+        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
+        
+        // For backwards-compatibility, consentNotificationEmailVerified=null means we still send it to the consent
+        // notification email.
+        study.setConsentNotificationEmailVerified(null);
+
+        consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
+        
+        verify(sendMailService).sendEmail(emailCaptor.capture());
+        
+        MimeTypeEmailProvider provider = emailCaptor.getValue();
+
+        // Validate common elements.
+        MimeTypeEmail email = provider.getMimeTypeEmail();
+        validateCommonElements(email);
+    }
+
+    @Test
+    public void consentToResearchNoNotificationEmailVerifiedSends() throws Exception {
+        consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("1980-01-01")
+                .withSignedOn(SIGNED_ON).build();
+        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
+
+        study.setConsentNotificationEmailVerified(false);
+
+        consentService.consentToResearch(study, SUBPOP_GUID, participant, consentSignature, SharingScope.NO_SHARING, true);
+        
+        verify(sendMailService).sendEmail(emailCaptor.capture());
+        
+        MimeTypeEmailProvider provider = emailCaptor.getValue();
+
+        // Validate email recipients does not include consent notification email.
+        MimeTypeEmail email = provider.getMimeTypeEmail();
+        List<String> recipientList = email.getRecipientAddresses();
+        assertEquals(1, recipientList.size());
+        assertEquals("email@email.com", recipientList.get(0));
+    }
+    
+    @Test
+    public void consentToResearchWithNoRecipientsDoesNotSend() {
+        consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("1980-01-01")
+                .withSignedOn(SIGNED_ON).build();
+        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
+        
+        study.setConsentNotificationEmail(null);
+        
+        // The provider reports that there are no addresses to send to, which is correct
+        participant = new StudyParticipant.Builder().copyOf(participant).withEmail(null).build();
+        consentService.consentToResearch(study, SUBPOP_GUID, participant, consentSignature, SharingScope.NO_SHARING, true);
+        
+        verify(sendMailService, never()).sendEmail(emailCaptor.capture());
+    }
+    
+    @Test
+    public void consentToResearchWithoutStudyRecipientsDoesSend() {
+        consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("1980-01-01")
+                .withSignedOn(SIGNED_ON).build();
+        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
+        study.setConsentNotificationEmail(null);
+        
+        consentService.consentToResearch(study, SUBPOP_GUID, participant, consentSignature, SharingScope.NO_SHARING, true);
+        
+        verify(sendMailService).sendEmail(emailCaptor.capture());
+        
+        assertFalse(emailCaptor.getValue().getRecipientEmails().isEmpty());
+        assertEquals(participant.getEmail(), emailCaptor.getValue().getRecipientEmails().iterator().next());
+    }
+    
+    @Test
+    public void consentToResearchWithoutParticipantEmailDoesSend() {
+        consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("1980-01-01")
+                .withSignedOn(SIGNED_ON).build();
+        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
+        participant = new StudyParticipant.Builder().copyOf(participant).withEmail(null).build();
+        
+        consentService.consentToResearch(study, SUBPOP_GUID, participant, consentSignature, SharingScope.NO_SHARING, true);
+        
+        verify(sendMailService).sendEmail(emailCaptor.capture());
+        
+        assertFalse(emailCaptor.getValue().getRecipientEmails().isEmpty());
+        assertEquals(study.getConsentNotificationEmail(), emailCaptor.getValue().getRecipientEmails().iterator().next());
+    }    
+    
     private static void validateCommonElements(MimeTypeEmail email) {
         assertEquals("Subject", email.getSubject());
         assertEquals("\"Test Study [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>",

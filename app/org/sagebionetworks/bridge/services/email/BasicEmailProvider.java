@@ -104,10 +104,10 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
             return this;
         }
 
-        public Builder withBinaryAttachment(String partName, byte[] data, MimeType mimeType) {
+        public Builder withBinaryAttachment(String partName, MimeType mimeType, byte[] data) {
             checkNotNull(isNotBlank(partName));
-            checkArgument(data != null && data.length > 0);
             checkNotNull(mimeType);
+            checkArgument(data != null && data.length > 0);
             try {
                 final MimeBodyPart attachment = new MimeBodyPart();
                 DataSource source = new ByteArrayDataSource(data, mimeType.toString());
