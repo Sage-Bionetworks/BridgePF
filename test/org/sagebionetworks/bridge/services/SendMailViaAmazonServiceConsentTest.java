@@ -109,7 +109,7 @@ public class SendMailViaAmazonServiceConsentTest {
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
                 .withEmailTemplate(study.getSignedConsentTemplate())
-                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.JSON)
+                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.PDF)
                 .withRecipientEmail("test-user@sagebase.org").build();
         service.sendEmail(provider);
 
@@ -150,7 +150,7 @@ public class SendMailViaAmazonServiceConsentTest {
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
                 .withEmailTemplate(study.getSignedConsentTemplate())
-                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.JSON)
+                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.PDF)
                 .withRecipientEmail("test-user@sagebase.org").build();
         
         service.sendEmail(provider);
@@ -169,8 +169,14 @@ public class SendMailViaAmazonServiceConsentTest {
 
         // Validate message content. MIME message must be ASCII
         String rawMessage = new String(req.getRawMessage().getData().array(), Charsets.US_ASCII);
-        assertTrue("Contains PDF attachment", rawMessage.contains("Content-Type: application/json; name=consent.pdf"));
-        assertTrue("Contains template", rawMessage.contains("Body of Template"));
+        // The  HTML
+        assertTrue("Contains body text", rawMessage.contains("Content-Type: text/html; charset=utf-8"));
+        assertTrue("Contains body template", rawMessage.contains("Body of Template"));
+        
+        // The PDF attachment
+        assertTrue("Contains PDF attachment", rawMessage.contains("Content-Type: application/pdf; name=consent.pdf"));
+        assertTrue("Contains correct disposition", rawMessage.contains("Content-Disposition: attachment; filename=consent.pdf"));
+        assertTrue("Contains base 64 encoded image", rawMessage.contains("JVBERi0xLjQKJeLjz9"));
     }
 
     @Test
@@ -191,7 +197,7 @@ public class SendMailViaAmazonServiceConsentTest {
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
                 .withEmailTemplate(study.getSignedConsentTemplate())
-                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.JSON)
+                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.PDF)
                 .withRecipientEmail("test-user@sagebase.org").build();
 
         // execute
@@ -219,7 +225,7 @@ public class SendMailViaAmazonServiceConsentTest {
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
                 .withEmailTemplate(study.getSignedConsentTemplate())
-                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.JSON)
+                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.PDF)
                 .withRecipientEmail("test-user@sagebase.org").build();
 
         // execute

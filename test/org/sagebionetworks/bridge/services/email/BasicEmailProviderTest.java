@@ -93,7 +93,7 @@ public class BasicEmailProviderTest {
         EmailTemplate template = new EmailTemplate("Subject ${url}", "Body ${url}", MimeType.HTML);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withBinaryAttachment("content.pdf", "some bytes".getBytes(), MimeType.PDF)
+                .withBinaryAttachment("content.pdf", "some data".getBytes(), MimeType.PDF)
                 .withRecipientEmail("email@email.com")
                 .withOverrideSenderEmail("example@example.com")
                 .withEmailTemplate(template)
@@ -105,7 +105,7 @@ public class BasicEmailProviderTest {
         
         String bodyContent = IOUtils.toString((InputStream)attachment.getContent()); 
         assertEquals("content.pdf", attachment.getFileName());
-        assertEquals("some bytes", bodyContent);
+        assertEquals("some data", bodyContent);
         assertEquals(Part.ATTACHMENT, attachment.getDisposition());
         // the mime type isn't changed because headers are not updated until you call
         // MimeMessage.saveChanges(), and these objects do not include the final 

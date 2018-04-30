@@ -165,16 +165,16 @@ public class ConsentService {
                     withConsentCreatedOnSignature, sharingScope, studyConsent.getDocumentContent(),
                     xmlTemplateWithSignatureBlock);
             
+            // If the user's email exists and email notification is not suppressed, add the user to the provider
+            String participantEmail = subpop.isAutoSendConsentSuppressed() ? null : participant.getEmail();
+            
             BasicEmailProvider.Builder consentEmailBuilder = new BasicEmailProvider.Builder()
                     .withStudy(study)
                     .withEmailTemplate(study.getSignedConsentTemplate())
-                    .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.JSON);
+                    .withRecipientEmail(participantEmail)
+                    .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.PDF);
             addStudyConsentRecipients(study, consentEmailBuilder);
-            // If the user's email exists and email notification is not suppressed, add the user to the provider
-            String participantEmail = subpop.isAutoSendConsentSuppressed() ? null : participant.getEmail();
-            if (participantEmail != null) {
-                consentEmailBuilder.withRecipientEmail(participantEmail);
-            }
+            
             BasicEmailProvider provider = consentEmailBuilder.build();
             if (!provider.getRecipientEmails().isEmpty()) {
                 sendMailService.sendEmail(provider);
@@ -316,7 +316,7 @@ public class ConsentService {
         BasicEmailProvider.Builder builder = new BasicEmailProvider.Builder()
                 .withStudy(study)
                 .withEmailTemplate(study.getSignedConsentTemplate())
-                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.JSON)
+                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.PDF)
                 .withRecipientEmail(participant.getEmail());
         addStudyConsentRecipients(study, builder);
         // If the user doesn't have an email, we won't send anything. Note that as of this refactor, 

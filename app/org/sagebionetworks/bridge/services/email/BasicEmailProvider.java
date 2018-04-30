@@ -78,9 +78,9 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
         for (String recipientEmail : recipientEmails) {
             emailBuilder.withRecipient(recipientEmail);    
         }
-        final String formattedBody = BridgeUtils.resolveTemplate(template.getBody(), tokenMap);
         
         final MimeBodyPart bodyPart = new MimeBodyPart();
+        final String formattedBody = BridgeUtils.resolveTemplate(template.getBody(), tokenMap);
         bodyPart.setContent(formattedBody, template.getMimeType().toString() + "; charset=utf-8");
         emailBuilder.withMessageParts(bodyPart);
         
@@ -96,8 +96,8 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
         private String overrideSenderEmail;
         private Map<String,String> tokenMap = Maps.newHashMap();
         private Set<String> recipientEmails = Sets.newHashSet();
-        private EmailTemplate template;
         private List<MimeBodyPart> attachments = Lists.newArrayList();
+        private EmailTemplate template;
 
         public Builder withStudy(Study study) {
             this.study = study;
@@ -110,7 +110,7 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
             checkNotNull(mimeType);
             try {
                 final MimeBodyPart attachment = new MimeBodyPart();
-                DataSource source = new ByteArrayDataSource(data, mimeType.toString() + "; charset=utf-8");
+                DataSource source = new ByteArrayDataSource(data, mimeType.toString());
                 attachment.setDataHandler(new DataHandler(source));
                 attachment.setFileName(partName);
                 attachments.add(attachment);

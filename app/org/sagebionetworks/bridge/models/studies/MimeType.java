@@ -16,16 +16,12 @@ public enum MimeType {
     
     TEXT("text/plain"),
     HTML("text/html"),
-    PDF("application/pdf"),
-    JSON("application/json");
+    PDF("application/pdf");
     
     @JsonCreator
     public static MimeType fromString(String mimeType) {
         if (mimeType != null) {
             switch(mimeType.toLowerCase()) {
-            case "json":
-            case "application/json":
-                return MimeType.JSON;
             case "text/plain":
             case "text":
             case "plain":

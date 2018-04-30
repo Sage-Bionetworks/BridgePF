@@ -74,7 +74,7 @@ public class SendEmailIntegTest {
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
                 .withEmailTemplate(study.getSignedConsentTemplate())
-                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.JSON)
+                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.PDF)
                 .withRecipientEmail("bridge-testing@sagebase.org").build();        
         sendEmailService.sendEmail(provider);
     }
