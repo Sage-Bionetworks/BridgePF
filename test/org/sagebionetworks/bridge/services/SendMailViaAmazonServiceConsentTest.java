@@ -23,12 +23,14 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
-import org.sagebionetworks.bridge.services.email.ConsentEmailProvider;
+import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 
 import com.amazonaws.regions.Region;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
@@ -64,6 +66,7 @@ public class SendMailViaAmazonServiceConsentTest {
         study.setName("Test Study (Sage)");
         study.setIdentifier("api");
         study.setSupportEmail(SUPPORT_EMAIL);
+        study.setSignedConsentTemplate(new EmailTemplate("Subject of Template", "Body of Template", MimeType.HTML));
 
         studyService = mock(StudyService.class);
         when(studyService.getStudy(study.getIdentifier())).thenReturn(study);
@@ -100,8 +103,14 @@ public class SendMailViaAmazonServiceConsentTest {
         
         String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
         
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, MSK, "test-user@sagebase.org", consent,
+        ConsentPdf consentPdf = new ConsentPdf(study, MSK, "test-user@sagebase.org", consent,
                 SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate);
+        
+        BasicEmailProvider provider = new BasicEmailProvider.Builder()
+                .withStudy(study)
+                .withEmailTemplate(study.getSignedConsentTemplate())
+                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.JSON)
+                .withRecipientEmail("test-user@sagebase.org").build();
         service.sendEmail(provider);
 
         verify(emailClient).setRegion(any(Region.class));
@@ -118,11 +127,7 @@ public class SendMailViaAmazonServiceConsentTest {
 
         // Validate message content. MIME message must be ASCII
         String rawMessage = new String(req.getRawMessage().getData().array(), Charsets.US_ASCII);
-        assertTrue("Contains consent content", rawMessage.contains("Had this been a real study"));
-        assertTrue("Name transposed to document", rawMessage.contains("Test 2"));
-        assertTrue("Email transposed to document", rawMessage.contains("test-user@sagebase.org"));
-        assertTrue("Has the PDF consent document", rawMessage.contains("pdf"));
-        assertTrue("Has sharing option", rawMessage.contains("Sponsors and Partners"));
+        assertTrue("Contains consent content", rawMessage.contains("Body of Template"));
     }
 
     @Test
@@ -139,8 +144,15 @@ public class SendMailViaAmazonServiceConsentTest {
         
         String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
         
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, MSK, "test-user@sagebase.org", consent,
+        ConsentPdf consentPdf = new ConsentPdf(study, MSK, "test-user@sagebase.org", consent,
                 SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate);
+        
+        BasicEmailProvider provider = new BasicEmailProvider.Builder()
+                .withStudy(study)
+                .withEmailTemplate(study.getSignedConsentTemplate())
+                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.JSON)
+                .withRecipientEmail("test-user@sagebase.org").build();
+        
         service.sendEmail(provider);
 
         verify(emailClient).setRegion(any(Region.class));
@@ -157,15 +169,8 @@ public class SendMailViaAmazonServiceConsentTest {
 
         // Validate message content. MIME message must be ASCII
         String rawMessage = new String(req.getRawMessage().getData().array(), Charsets.US_ASCII);
-        assertTrue("Contains consent content", rawMessage.contains("Had this been a real study"));
-        assertTrue("Name transposed to document", rawMessage.contains("Eggplant McTester"));
-        assertTrue("Email transposed to document", rawMessage.contains("test-user@sagebase.org"));
-
-        // Validate message contains signature image. To avoid coupling too closely with MIME implementation, just
-        // validate that our content type shows up and that we contain the first few chars of the image data.
-        assertTrue("Contains signature image MIME type", rawMessage.contains("image/fake"));
-        assertTrue("Contains signature image data", rawMessage.contains(TestConstants.DUMMY_IMAGE_DATA.substring(
-                0, 10)));
+        assertTrue("Contains PDF attachment", rawMessage.contains("Content-Type: application/json; name=consent.pdf"));
+        assertTrue("Contains template", rawMessage.contains("Body of Template"));
     }
 
     @Test
@@ -179,9 +184,15 @@ public class SendMailViaAmazonServiceConsentTest {
                 .withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
         
         String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
-
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, MSK, "test-user@sagebase.org", consent,
+        
+        ConsentPdf consentPdf = new ConsentPdf(study, MSK, "test-user@sagebase.org", consent,
                 SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate);
+        
+        BasicEmailProvider provider = new BasicEmailProvider.Builder()
+                .withStudy(study)
+                .withEmailTemplate(study.getSignedConsentTemplate())
+                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.JSON)
+                .withRecipientEmail("test-user@sagebase.org").build();
 
         // execute
         service.sendEmail(provider);
@@ -202,8 +213,14 @@ public class SendMailViaAmazonServiceConsentTest {
         
         String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
 
-        ConsentEmailProvider provider = new ConsentEmailProvider(study, MSK, "test-user@sagebase.org", consent,
+        ConsentPdf consentPdf = new ConsentPdf(study, MSK, "test-user@sagebase.org", consent,
                 SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate);
+        
+        BasicEmailProvider provider = new BasicEmailProvider.Builder()
+                .withStudy(study)
+                .withEmailTemplate(study.getSignedConsentTemplate())
+                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.JSON)
+                .withRecipientEmail("test-user@sagebase.org").build();
 
         // execute
         service.sendEmail(provider);

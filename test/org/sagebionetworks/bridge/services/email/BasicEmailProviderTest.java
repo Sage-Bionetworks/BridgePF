@@ -3,10 +3,13 @@ package org.sagebionetworks.bridge.services.email;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+import java.io.InputStream;
 import java.util.Map;
 
+import javax.mail.Part;
 import javax.mail.internet.MimeBodyPart;
 
+import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
@@ -72,6 +75,7 @@ public class BasicEmailProviderTest {
         // Check provider attributes
         assertEquals("example@example.com", provider.getPlainSenderEmail());
     }
+    
     @Test
     public void nullTokenMapEntryDoesntBreakMap() throws Exception {
         EmailTemplate template = new EmailTemplate("asdf", "asdf", MimeType.TEXT);
@@ -84,4 +88,27 @@ public class BasicEmailProviderTest {
         assertNull(tokenMap.get("supportName"));
     }    
     
+    @Test
+    public void canAddBinaryAttachment() throws Exception {
+        EmailTemplate template = new EmailTemplate("Subject ${url}", "Body ${url}", MimeType.HTML);
+        
+        BasicEmailProvider provider = new BasicEmailProvider.Builder()
+                .withBinaryAttachment("content.pdf", "some bytes".getBytes(), MimeType.PDF)
+                .withRecipientEmail("email@email.com")
+                .withOverrideSenderEmail("example@example.com")
+                .withEmailTemplate(template)
+                .withStudy(Study.create()).build();
+        
+        MimeTypeEmail email = provider.getMimeTypeEmail();
+        
+        MimeBodyPart attachment = email.getMessageParts().get(1);
+        
+        String bodyContent = IOUtils.toString((InputStream)attachment.getContent()); 
+        assertEquals("content.pdf", attachment.getFileName());
+        assertEquals("some bytes", bodyContent);
+        assertEquals(Part.ATTACHMENT, attachment.getDisposition());
+        // the mime type isn't changed because headers are not updated until you call
+        // MimeMessage.saveChanges(), and these objects do not include the final 
+        // Java Mail MimeMessage object.
+    }
 }

@@ -35,6 +35,7 @@ public abstract class MimeTypeEmailProvider {
         String senderEmail = getPlainSenderEmail();
         return String.format("%s <%s>", getStudy().getName(), senderEmail);
     }
+
     public Study getStudy() {
         return study;
     }

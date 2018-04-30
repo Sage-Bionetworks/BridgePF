@@ -1,36 +1,45 @@
 package org.sagebionetworks.bridge.services.email;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeBodyPart;
+import javax.mail.util.ByteArrayDataSource;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.commons.lang3.StringUtils;
+import com.newrelic.agent.deps.com.google.common.collect.Lists;
 
 public class BasicEmailProvider extends MimeTypeEmailProvider {
     private final String overrideSenderEmail;
     private final Set<String> recipientEmails;
     private final Map<String,String> tokenMap;
     private final EmailTemplate template;
+    private final List<MimeBodyPart> attachments;
     
     private BasicEmailProvider(Study study, String overrideSenderEmail, Map<String,String> tokenMap,
-            Set<String> recipientEmails, EmailTemplate template) {
+            Set<String> recipientEmails, EmailTemplate template, List<MimeBodyPart> attachments) {
         super(study);
         this.overrideSenderEmail = overrideSenderEmail;
         this.recipientEmails = recipientEmails;
         this.tokenMap = tokenMap;
         this.template = template;
+        this.attachments = attachments;
     }
 
     /**
@@ -39,7 +48,7 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
      */
     @Override
     public String getPlainSenderEmail() {
-        if (StringUtils.isNotBlank(overrideSenderEmail)) {
+        if (isNotBlank(overrideSenderEmail)) {
             return overrideSenderEmail;
         } else {
             return super.getPlainSenderEmail();
@@ -72,8 +81,12 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
         final String formattedBody = BridgeUtils.resolveTemplate(template.getBody(), tokenMap);
         
         final MimeBodyPart bodyPart = new MimeBodyPart();
-        bodyPart.setContent(formattedBody, template.getMimeType().toString());
+        bodyPart.setContent(formattedBody, template.getMimeType().toString() + "; charset=utf-8");
         emailBuilder.withMessageParts(bodyPart);
+        
+        for (MimeBodyPart attachment : attachments) {
+            emailBuilder.withMessageParts(attachment);
+        }
         
         return emailBuilder.build();
     }
@@ -84,12 +97,29 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
         private Map<String,String> tokenMap = Maps.newHashMap();
         private Set<String> recipientEmails = Sets.newHashSet();
         private EmailTemplate template;
+        private List<MimeBodyPart> attachments = Lists.newArrayList();
 
         public Builder withStudy(Study study) {
             this.study = study;
             return this;
         }
 
+        public Builder withBinaryAttachment(String partName, byte[] data, MimeType mimeType) {
+            checkNotNull(isNotBlank(partName));
+            checkArgument(data != null && data.length > 0);
+            checkNotNull(mimeType);
+            try {
+                final MimeBodyPart attachment = new MimeBodyPart();
+                DataSource source = new ByteArrayDataSource(data, mimeType.toString() + "; charset=utf-8");
+                attachment.setDataHandler(new DataHandler(source));
+                attachment.setFileName(partName);
+                attachments.add(attachment);
+                return this;
+            } catch(MessagingException me) {
+                throw new RuntimeException(me);
+            }
+        }
+        
         /**
          * Specify the sender email, instead of getting it from the study. This is the plain, unformmated email, for
          * example "example@example.com".
@@ -100,7 +130,9 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
         }
 
         public Builder withRecipientEmail(String recipientEmail) {
-            this.recipientEmails.add(recipientEmail);
+            if (recipientEmail != null) {
+                this.recipientEmails.add(recipientEmail);    
+            }
             return this;
         }
         public Builder withEmailTemplate(EmailTemplate template) {
@@ -123,7 +155,8 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
             // Nulls will cause ImmutableMap.of to fail
             tokenMap.values().removeIf(Objects::isNull);
             
-            return new BasicEmailProvider(study, overrideSenderEmail, ImmutableMap.copyOf(tokenMap), recipientEmails, template);
+            return new BasicEmailProvider(study, overrideSenderEmail, ImmutableMap.copyOf(tokenMap), recipientEmails,
+                    template, attachments);
         }
     }
 }

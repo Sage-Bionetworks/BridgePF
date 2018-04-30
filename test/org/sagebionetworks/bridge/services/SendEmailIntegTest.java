@@ -14,11 +14,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
+import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.services.email.ConsentEmailProvider;
+import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -62,12 +63,20 @@ public class SendEmailIntegTest {
         final ConsentSignature signature = new ConsentSignature.Builder().withName("Eggplant McTester")
                 .withBirthdate("1970-05-01").withImageData(IMG).withImageMimeType("image/png")
                 .withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
+        
         final Study study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         
         Subpopulation subpopulation = subpopService.getSubpopulation(TEST_STUDY, SUBPOP_GUID);
         String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
-        sendEmailService.sendEmail(new ConsentEmailProvider(study, DateTimeZone.UTC, "bridge-testing@sagebase.org",
-                signature, SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate));
+        ConsentPdf consentPdf = new ConsentPdf(study, DateTimeZone.UTC, "bridge-testing@sagebase.org", signature,
+                SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate);
+        
+        BasicEmailProvider provider = new BasicEmailProvider.Builder()
+                .withStudy(study)
+                .withEmailTemplate(study.getSignedConsentTemplate())
+                .withBinaryAttachment("consent.pdf", consentPdf.getBytes(), MimeType.JSON)
+                .withRecipientEmail("bridge-testing@sagebase.org").build();        
+        sendEmailService.sendEmail(provider);
     }
     
 }

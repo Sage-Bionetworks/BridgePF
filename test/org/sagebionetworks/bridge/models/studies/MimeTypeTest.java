@@ -29,6 +29,9 @@ public class MimeTypeTest {
         
         deser = mapper.readValue("\"TEXT/PLAIN\"", MimeType.class);
         assertEquals(MimeType.TEXT, deser);
+        
+        deser = mapper.readValue("\"APPLICATION/JSON\"", MimeType.class);
+        assertEquals(MimeType.JSON, deser);
     }
     
     @Test
@@ -38,6 +41,7 @@ public class MimeTypeTest {
         assertEquals("\"text/html\"", mapper.writeValueAsString(MimeType.HTML));
         assertEquals("\"text/plain\"", mapper.writeValueAsString(MimeType.TEXT));
         assertEquals("\"application/pdf\"", mapper.writeValueAsString(MimeType.PDF));
+        assertEquals("\"application/json\"", mapper.writeValueAsString(MimeType.JSON));
     }
     
     /**

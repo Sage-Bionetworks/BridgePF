@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -15,10 +16,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 
+import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,16 +47,19 @@ import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.services.email.ConsentEmailProvider;
+import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 import org.sagebionetworks.bridge.services.email.WithdrawConsentEmailProvider;
+import org.springframework.core.io.ByteArrayResource;
 
 @RunWith(MockitoJUnitRunner.class)
 @SuppressWarnings("ConstantConditions")
@@ -65,7 +74,6 @@ public class ConsentServiceMockTest {
     private static final String HEALTH_CODE = "health-code";
     private static final String EMAIL = "email@email.com";
     private static final SubpopulationGuid SECOND_SUBPOP = SubpopulationGuid.create("anotherSubpop");
-    
     private ConsentService consentService;
 
     @Mock
@@ -81,9 +89,11 @@ public class ConsentServiceMockTest {
     @Mock
     private Subpopulation subpopulation;
     @Captor
-    private ArgumentCaptor<ConsentEmailProvider> consentProviderCaptor;
+    private ArgumentCaptor<BasicEmailProvider> emailCaptor;
     @Captor
     private ArgumentCaptor<WithdrawConsentEmailProvider> withdrawalProviderCaptor;
+    
+    private String documentString;
         
     private CriteriaContext context;
     private Study study;
@@ -92,19 +102,23 @@ public class ConsentServiceMockTest {
     private Account account;
     
     @Before
-    public void before() {
+    public void before() throws IOException {
+        documentString = IOUtils.toString(new FileInputStream("conf/study-defaults/consent-page.xhtml"));
+                
         consentService = new ConsentService();
         consentService.setAccountDao(accountDao);
         consentService.setSendMailService(sendMailService);
         consentService.setActivityEventService(activityEventService);
         consentService.setStudyConsentService(studyConsentService);
         consentService.setSubpopulationService(subpopService);
+        consentService.setConsentTemplate(new ByteArrayResource((documentString).getBytes()));
 
         study = TestUtils.getValidStudy(ConsentServiceMockTest.class);
         study.setConsentNotificationEmailVerified(true);
+        study.setSignedConsentTemplate(new EmailTemplate("Subject", "Body", MimeType.HTML));
 
         participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE).withId(ID).withEmail(EMAIL)
-                .withExternalId(EXTERNAL_ID).build();
+                .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS).withExternalId(EXTERNAL_ID).build();
         
         consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("1990-01-01")
                 .withSignedOn(SIGNED_ON).build();
@@ -115,6 +129,7 @@ public class ConsentServiceMockTest {
         
         StudyConsentView studyConsentView = mock(StudyConsentView.class);
         when(studyConsentView.getCreatedOn()).thenReturn(CONSENT_CREATED_ON);
+        when(studyConsentView.getDocumentContent()).thenReturn("<p>This is content of the final HTML document we assemble.</p>");
         when(studyConsentService.getActiveConsent(subpopulation)).thenReturn(studyConsentView);
         when(subpopService.getSubpopulation(study.getStudyIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
 
@@ -157,6 +172,7 @@ public class ConsentServiceMockTest {
         StudyConsentView view = mock(StudyConsentView.class);
         when(view.getStudyConsent()).thenReturn(consent);
         when(view.getCreatedOn()).thenReturn(CONSENT_CREATED_ON);
+        when(view.getDocumentContent()).thenReturn(documentString);
         when(studyConsentService.getActiveConsent(subpopulation)).thenReturn(view);
 
         // Account already has a withdrawn consent, to make sure we're correctly appending consents.
@@ -192,10 +208,12 @@ public class ConsentServiceMockTest {
         // Consent we send to activityEventService is same as the second consent.
         verify(activityEventService).publishEnrollmentEvent(study, participant.getHealthCode(), updatedConsentList.get(1));
 
-        verify(sendMailService).sendEmail(consentProviderCaptor.capture());
-        assertEquals(2, consentProviderCaptor.getValue().getRecipients().size());
-        assertEquals(study.getConsentNotificationEmail(), consentProviderCaptor.getValue().getRecipients().get(0));
-        assertEquals(participant.getEmail(), consentProviderCaptor.getValue().getRecipients().get(1));
+        verify(sendMailService).sendEmail(emailCaptor.capture());
+        
+        Set<String> recipients = emailCaptor.getValue().getRecipientEmails();
+        assertEquals(2, recipients.size());
+        assertTrue(recipients.contains(study.getConsentNotificationEmail()));
+        assertTrue(recipients.contains(participant.getEmail()));
     }
 
     @Test
@@ -206,10 +224,10 @@ public class ConsentServiceMockTest {
         
         consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
         
-        verify(sendMailService).sendEmail(consentProviderCaptor.capture());
-        assertEquals(2, consentProviderCaptor.getValue().getRecipients().size());
-        assertEquals(study.getConsentNotificationEmail(), consentProviderCaptor.getValue().getRecipients().get(0));
-        assertEquals(participant.getEmail(), consentProviderCaptor.getValue().getRecipients().get(1));
+        verify(sendMailService).sendEmail(emailCaptor.capture());
+        assertEquals(2, emailCaptor.getValue().getRecipientEmails().size());
+        assertTrue(emailCaptor.getValue().getRecipientEmails().contains(study.getConsentNotificationEmail()));
+        assertTrue(emailCaptor.getValue().getRecipientEmails().contains(participant.getEmail()));
     }
     
     @Test
@@ -488,9 +506,10 @@ public class ConsentServiceMockTest {
         
         consentService.consentToResearch(study, SUBPOP_GUID, participant, consentSignature, SharingScope.NO_SHARING, true);
         
-        verify(sendMailService).sendEmail(consentProviderCaptor.capture());
-        assertEquals(1, consentProviderCaptor.getValue().getRecipients().size());
-        assertEquals(participant.getEmail(), consentProviderCaptor.getValue().getRecipients().get(0));
+        verify(sendMailService).sendEmail(emailCaptor.capture());
+        Set<String> recipients = emailCaptor.getValue().getRecipientEmails();
+        assertEquals(1, recipients.size());
+        assertTrue(recipients.contains(participant.getEmail()));
     }
     
     @Test
@@ -499,9 +518,10 @@ public class ConsentServiceMockTest {
         
         consentService.consentToResearch(study, SUBPOP_GUID, participant, consentSignature, SharingScope.NO_SHARING, true);
         
-        verify(sendMailService).sendEmail(consentProviderCaptor.capture());
-        assertEquals(1, consentProviderCaptor.getValue().getRecipients().size());
-        assertEquals(study.getConsentNotificationEmail(), consentProviderCaptor.getValue().getRecipients().get(0));
+        verify(sendMailService).sendEmail(emailCaptor.capture());
+        Set<String> recipients = emailCaptor.getValue().getRecipientEmails();
+        assertEquals(1, recipients.size());
+        assertTrue(recipients.contains(study.getConsentNotificationEmail()));
     }
     
     @Test
@@ -510,9 +530,10 @@ public class ConsentServiceMockTest {
         
         consentService.consentToResearch(study, SUBPOP_GUID, noEmail, consentSignature, SharingScope.NO_SHARING, true);
         
-        verify(sendMailService).sendEmail(consentProviderCaptor.capture());
-        assertEquals(1, consentProviderCaptor.getValue().getRecipients().size());
-        assertEquals(study.getConsentNotificationEmail(), consentProviderCaptor.getValue().getRecipients().get(0));
+        verify(sendMailService).sendEmail(emailCaptor.capture());
+        Set<String> recipients = emailCaptor.getValue().getRecipientEmails();
+        assertEquals(1, recipients.size());
+        assertTrue(recipients.contains(study.getConsentNotificationEmail()));
     }
 
     @Test
@@ -565,9 +586,10 @@ public class ConsentServiceMockTest {
         
         consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
         
-        verify(sendMailService).sendEmail(consentProviderCaptor.capture());
-        assertEquals(1, consentProviderCaptor.getValue().getRecipients().size());
-        assertEquals(participant.getEmail(), consentProviderCaptor.getValue().getRecipients().get(0));
+        verify(sendMailService).sendEmail(emailCaptor.capture());
+        
+        assertEquals(1, emailCaptor.getValue().getRecipientEmails().size());
+        assertEquals(participant.getEmail(), emailCaptor.getValue().getRecipientEmails().iterator().next());
     }
     
     @Test
@@ -581,10 +603,11 @@ public class ConsentServiceMockTest {
         consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
         
         // Despite explicitly suppressing email, if the user makes this call, we will send the email.
-        verify(sendMailService).sendEmail(consentProviderCaptor.capture());
-        assertEquals(2, consentProviderCaptor.getValue().getRecipients().size());
-        assertEquals(study.getConsentNotificationEmail(), consentProviderCaptor.getValue().getRecipients().get(0));
-        assertEquals(participant.getEmail(), consentProviderCaptor.getValue().getRecipients().get(1));
+        verify(sendMailService).sendEmail(emailCaptor.capture());
+        Set<String> recipients = emailCaptor.getValue().getRecipientEmails();
+        assertEquals(2, recipients.size());
+        assertTrue(recipients.contains(study.getConsentNotificationEmail()));
+        assertTrue(recipients.contains(participant.getEmail()));
     }
     
     @Test
@@ -597,9 +620,10 @@ public class ConsentServiceMockTest {
         
         consentService.emailConsentAgreement(study, SUBPOP_GUID, noEmail);
         
-        verify(sendMailService).sendEmail(consentProviderCaptor.capture());
-        assertEquals(1, consentProviderCaptor.getValue().getRecipients().size());
-        assertEquals(study.getConsentNotificationEmail(), consentProviderCaptor.getValue().getRecipients().get(0));
+        verify(sendMailService).sendEmail(emailCaptor.capture());
+        Set<String> recipients = emailCaptor.getValue().getRecipientEmails();        
+        assertEquals(1, recipients.size());
+        assertTrue(recipients.contains(study.getConsentNotificationEmail()));
     }
 
     @Test
@@ -618,6 +642,101 @@ public class ConsentServiceMockTest {
         
         verify(sendMailService, never()).sendEmail(any());
     }
+    
+    // Tests of the construction of recipients for email, originally part of special email builder.
+
+    @Test
+    public void consentNotificationEmailVerifiedNull() throws Exception {
+        consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("2014-01-01")
+                .withSignedOn(SIGNED_ON).build();
+        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
+        
+        // For backwards-compatibility, consentNotificationEmailVerified=null means we still send it to the consent
+        // notification email.
+        study.setConsentNotificationEmailVerified(null);
+
+        consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
+        
+        verify(sendMailService).sendEmail(emailCaptor.capture());
+        
+        MimeTypeEmailProvider provider = emailCaptor.getValue();
+
+        // Validate common elements.
+        MimeTypeEmail email = provider.getMimeTypeEmail();
+        validateCommonElements(email);
+    }
+
+    @Test
+    public void consentNotificationEmailVerifiedFalse() throws Exception {
+        consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("2014-01-01")
+                .withSignedOn(SIGNED_ON).build();
+        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
+
+        study.setConsentNotificationEmailVerified(false);
+
+        consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
+        
+        verify(sendMailService).sendEmail(emailCaptor.capture());
+        
+        MimeTypeEmailProvider provider = emailCaptor.getValue();
+
+        // Validate email recipients does not include consent notification email.
+        MimeTypeEmail email = provider.getMimeTypeEmail();
+        List<String> recipientList = email.getRecipientAddresses();
+        assertEquals(1, recipientList.size());
+        assertEquals("email@email.com", recipientList.get(0));
+    }
+    
+    @Test
+    public void consentCanHandleNullConsentEmail() throws Exception {
+        consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("2014-01-01")
+                .withSignedOn(SIGNED_ON).build();
+        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
+        
+        study.setConsentNotificationEmail(null);
+        
+        consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
+        
+        verify(sendMailService).sendEmail(emailCaptor.capture());
+        
+        MimeTypeEmailProvider provider = emailCaptor.getValue();
+
+        MimeTypeEmail email = provider.getMimeTypeEmail();
+        List<String> recipientList = email.getRecipientAddresses();
+        assertEquals(1, recipientList.size());
+        assertEquals("email@email.com", recipientList.get(0));
+    }
+    
+    @Test
+    public void providerWithoutRecipientsWorks() {
+        consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("2014-01-01")
+                .withSignedOn(SIGNED_ON).build();
+        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
+        
+        study.setConsentNotificationEmail(null);
+        
+        // The provider reports that there are no addresses to send to, which is correct
+        participant = new StudyParticipant.Builder().copyOf(participant).withEmail(null).build();
+        consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
+        
+        verify(sendMailService, never()).sendEmail(emailCaptor.capture());
+        /* TODO
+        provider = new ConsentEmailProvider(study, participant.getEmail(), BYTE_ARRAY);
+        assertFalse(provider.getRecipientEmails().isEmpty());
+        
+        study.setConsentNotificationEmail("email@email.com");
+        provider = new ConsentEmailProvider(study, participant.getEmail(), BYTE_ARRAY);
+        assertFalse(provider.getRecipients().isEmpty());
+        */
+    }
+
+    private static void validateCommonElements(MimeTypeEmail email) {
+        assertEquals("Subject", email.getSubject());
+        assertEquals("\"Test Study [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>",
+                email.getSenderAddress());
+        assertEquals(Sets.newHashSet("email@email.com","bridge-testing+consent@sagebase.org"),
+                Sets.newHashSet(email.getRecipientAddresses()));
+    }    
     
     private void setupWithdrawTest(boolean subpop1Required, boolean subpop2Required) {
         // two consents, withdrawing one does not turn sharing entirely off.
