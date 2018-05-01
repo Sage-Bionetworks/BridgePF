@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertTrue;
 
-import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 
 import org.apache.commons.io.IOUtils;
@@ -15,8 +14,6 @@ import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
-
-import com.sun.xml.internal.messaging.saaj.util.ByteInputStream;
 
 public class ConsentPdfTest {
     private static final String LEGACY_DOCUMENT = "<html><head></head><body>Passed through as is." +
