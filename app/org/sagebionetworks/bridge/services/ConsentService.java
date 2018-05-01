@@ -2,15 +2,16 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.BridgeUtils.commaListToOrderedSet;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
-
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -21,12 +22,13 @@ import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
+import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.services.email.ConsentEmailProvider;
+import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.WithdrawConsentEmailProvider;
 import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -49,11 +51,11 @@ public class ConsentService {
     private StudyConsentService studyConsentService;
     private ActivityEventService activityEventService;
     private SubpopulationService subpopService;
-    private String consentTemplate;
+    private String xmlTemplateWithSignatureBlock;
     
     @Value("classpath:study-defaults/consent-page.xhtml")
     final void setConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
-        this.consentTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
+        this.xmlTemplateWithSignatureBlock = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
@@ -110,7 +112,7 @@ public class ConsentService {
      * @param participant
      * @param consentSignature
      * @param sharingScope
-     * @param sendEmail
+     * @param sendSignedConsentToUser
      *      if true, send the consent document to the user's email address
      * @return
      * @throws EntityNotFoundException
@@ -121,7 +123,7 @@ public class ConsentService {
      *      if the user has already signed the consent for this subpopulation
      */
     public void consentToResearch(Study study, SubpopulationGuid subpopGuid, StudyParticipant participant,
-            ConsentSignature consentSignature, SharingScope sharingScope, boolean sendEmail) {
+            ConsentSignature consentSignature, SharingScope sharingScope, boolean sendSignedConsentToUser) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         checkNotNull(subpopGuid, Validate.CANNOT_BE_NULL, "subpopulationGuid");
         checkNotNull(participant, Validate.CANNOT_BE_NULL, "participant");
@@ -157,16 +159,25 @@ public class ConsentService {
         
         // Publish an enrollment event, set sharing scope 
         activityEventService.publishEnrollmentEvent(study, participant.getHealthCode(), withConsentCreatedOnSignature);
-        
-        if (sendEmail) {
+
+        if (sendSignedConsentToUser) {
+            ConsentPdf consentPdf = new ConsentPdf(study, participant.getTimeZone(), participant.getEmail(),
+                    withConsentCreatedOnSignature, sharingScope, studyConsent.getDocumentContent(),
+                    xmlTemplateWithSignatureBlock);
+            
             // If the user's email exists and email notification is not suppressed, add the user to the provider
             String participantEmail = subpop.isAutoSendConsentSuppressed() ? null : participant.getEmail();
-            ConsentEmailProvider consentEmail = new ConsentEmailProvider(study, participant.getTimeZone(),
-                    participantEmail, withConsentCreatedOnSignature, sharingScope,
-                    studyConsent.getDocumentContent(), consentTemplate);
             
-            if (!consentEmail.getRecipients().isEmpty()) {
-                sendMailService.sendEmail(consentEmail);
+            BasicEmailProvider.Builder consentEmailBuilder = new BasicEmailProvider.Builder()
+                    .withStudy(study)
+                    .withEmailTemplate(study.getSignedConsentTemplate())
+                    .withRecipientEmail(participantEmail)
+                    .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes());
+            addStudyConsentRecipients(study, consentEmailBuilder);
+            
+            BasicEmailProvider provider = consentEmailBuilder.build();
+            if (!provider.getRecipientEmails().isEmpty()) {
+                sendMailService.sendEmail(provider);
             }
         }
     }
@@ -297,12 +308,32 @@ public class ConsentService {
         SharingScope sharingScope = participant.getSharingScope();
         Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
         
-        String htmlTemplate = studyConsentService.getActiveConsent(subpop).getDocumentContent();
+        String studyConsentDocument = studyConsentService.getActiveConsent(subpop).getDocumentContent();
+
+        ConsentPdf consentPdf = new ConsentPdf(study, participant.getTimeZone(), participant.getEmail(),
+                consentSignature, sharingScope, studyConsentDocument, xmlTemplateWithSignatureBlock);            
         
-        ConsentEmailProvider consentEmail = new ConsentEmailProvider(study, participant.getTimeZone(),
-                participant.getEmail(), consentSignature, sharingScope, htmlTemplate, consentTemplate);
-        if (!consentEmail.getRecipients().isEmpty()) {
-            sendMailService.sendEmail(consentEmail);    
+        BasicEmailProvider.Builder builder = new BasicEmailProvider.Builder()
+                .withStudy(study)
+                .withEmailTemplate(study.getSignedConsentTemplate())
+                .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
+                .withRecipientEmail(participant.getEmail());
+        addStudyConsentRecipients(study, builder);
+        // If the user doesn't have an email, we won't send anything. Note that as of this refactor, 
+        // we're not verifying the email address. Change this when SMS is added.
+        BasicEmailProvider provider = builder.build();
+        if (!provider.getRecipientEmails().isEmpty()) {
+            sendMailService.sendEmail(provider);
+        }
+    }
+    
+    private void addStudyConsentRecipients(Study study, BasicEmailProvider.Builder consentEmailBuilder) {
+        Boolean consentNotificationEmailVerified = study.isConsentNotificationEmailVerified();
+        if (consentNotificationEmailVerified == null || consentNotificationEmailVerified) {
+            Set<String> studyRecipients = commaListToOrderedSet(study.getConsentNotificationEmail());
+            for (String oneRecipient : studyRecipients) {
+                consentEmailBuilder.withRecipientEmail(oneRecipient);
+            }
         }
     }
 
