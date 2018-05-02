@@ -208,7 +208,7 @@ public class ApplicationControllerMockTest {
         when(urlShortenerService.retrieveUrl("ABC")).thenReturn("https://long.url.com/");
         
         Result result = controller.redirectToURL("ABC");
-        assertEquals(307, result.status()); // temporary redirect
+        assertEquals(302, result.status()); // Found
         assertEquals("https://long.url.com/", result.header("Location"));
     }
     

@@ -119,7 +119,7 @@ public class ApplicationController extends BaseController {
         }
         String url = urlShortenerService.retrieveUrl(token);
         if (url != null) {
-            return temporaryRedirect(url);
+            return found(url);
         }
         return notFound(views.html.redirect.render());
     }
