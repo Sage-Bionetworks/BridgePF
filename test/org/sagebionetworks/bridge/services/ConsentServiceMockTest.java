@@ -223,7 +223,7 @@ public class ConsentServiceMockTest {
                 .withSignedOn(SIGNED_ON).build();
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
         
-        consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
+        consentService.resendConsentAgreement(study, SUBPOP_GUID, participant);
         
         verify(sendMailService).sendEmail(emailCaptor.capture());
         assertEquals(2, emailCaptor.getValue().getRecipientEmails().size());
@@ -585,7 +585,7 @@ public class ConsentServiceMockTest {
                 .withSignedOn(SIGNED_ON).build();
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
         
-        consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
+        consentService.resendConsentAgreement(study, SUBPOP_GUID, participant);
         
         verify(sendMailService).sendEmail(emailCaptor.capture());
         
@@ -601,7 +601,7 @@ public class ConsentServiceMockTest {
         
         when(subpopulation.isAutoSendConsentSuppressed()).thenReturn(true);
         
-        consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
+        consentService.resendConsentAgreement(study, SUBPOP_GUID, participant);
         
         // Despite explicitly suppressing email, if the user makes this call, we will send the email.
         verify(sendMailService).sendEmail(emailCaptor.capture());
@@ -619,7 +619,7 @@ public class ConsentServiceMockTest {
         
         StudyParticipant noEmail = new StudyParticipant.Builder().copyOf(participant).withEmail(null).build();
         
-        consentService.emailConsentAgreement(study, SUBPOP_GUID, noEmail);
+        consentService.resendConsentAgreement(study, SUBPOP_GUID, noEmail);
         
         verify(sendMailService).sendEmail(emailCaptor.capture());
         Set<String> recipients = emailCaptor.getValue().getRecipientEmails();        
@@ -639,7 +639,7 @@ public class ConsentServiceMockTest {
         
         StudyParticipant noEmail = new StudyParticipant.Builder().copyOf(participant).withEmail(null).build();
         
-        consentService.emailConsentAgreement(study, SUBPOP_GUID, noEmail);
+        consentService.resendConsentAgreement(study, SUBPOP_GUID, noEmail);
         
         verify(sendMailService, never()).sendEmail(any());
     }
@@ -656,7 +656,7 @@ public class ConsentServiceMockTest {
         // notification email.
         study.setConsentNotificationEmailVerified(null);
 
-        consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
+        consentService.resendConsentAgreement(study, SUBPOP_GUID, participant);
         
         verify(sendMailService).sendEmail(emailCaptor.capture());
         
@@ -675,7 +675,7 @@ public class ConsentServiceMockTest {
 
         study.setConsentNotificationEmailVerified(false);
 
-        consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
+        consentService.resendConsentAgreement(study, SUBPOP_GUID, participant);
         
         verify(sendMailService).sendEmail(emailCaptor.capture());
         
@@ -698,7 +698,7 @@ public class ConsentServiceMockTest {
         
         // The provider reports that there are no addresses to send to, which is correct
         participant = new StudyParticipant.Builder().copyOf(participant).withEmail(null).build();
-        consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
+        consentService.resendConsentAgreement(study, SUBPOP_GUID, participant);
         
         verify(sendMailService, never()).sendEmail(emailCaptor.capture());
     }
@@ -710,7 +710,7 @@ public class ConsentServiceMockTest {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
         study.setConsentNotificationEmail(null);
         
-        consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
+        consentService.resendConsentAgreement(study, SUBPOP_GUID, participant);
         
         verify(sendMailService).sendEmail(emailCaptor.capture());
         
@@ -725,7 +725,7 @@ public class ConsentServiceMockTest {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
         participant = new StudyParticipant.Builder().copyOf(participant).withEmail(null).build();
         
-        consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
+        consentService.resendConsentAgreement(study, SUBPOP_GUID, participant);
         
         verify(sendMailService).sendEmail(emailCaptor.capture());
         
@@ -743,7 +743,7 @@ public class ConsentServiceMockTest {
         // notification email.
         study.setConsentNotificationEmailVerified(null);
 
-        consentService.emailConsentAgreement(study, SUBPOP_GUID, participant);
+        consentService.resendConsentAgreement(study, SUBPOP_GUID, participant);
         
         verify(sendMailService).sendEmail(emailCaptor.capture());
         

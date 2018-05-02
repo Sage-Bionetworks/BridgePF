@@ -989,7 +989,7 @@ public class ParticipantServiceTest {
         
         participantService.resendConsentAgreement(STUDY, SUBPOP_GUID, ID);
         
-        verify(consentService).emailConsentAgreement(eq(STUDY), eq(SUBPOP_GUID), participantCaptor.capture());
+        verify(consentService).resendConsentAgreement(eq(STUDY), eq(SUBPOP_GUID), participantCaptor.capture());
         
         StudyParticipant participant = participantCaptor.getValue();
         assertEquals(ID, participant.getId());

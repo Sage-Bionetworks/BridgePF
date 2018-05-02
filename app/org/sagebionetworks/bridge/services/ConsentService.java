@@ -3,16 +3,27 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeUtils.commaListToOrderedSet;
+import static org.sagebionetworks.bridge.BridgeConstants.EXPIRATION_PERIOD_KEY;
+import static org.sagebionetworks.bridge.BridgeConstants.SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS;
 
 import java.io.IOException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Resource;
+
 import org.apache.commons.io.IOUtils;
+import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.SecureTokenGenerator;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -28,12 +39,17 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.WithdrawConsentEmailProvider;
+import org.sagebionetworks.bridge.sms.SmsMessageProvider;
+import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
+import com.amazonaws.HttpMethod;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,13 +61,16 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ConsentService {
-
+    
+    private static final String USERSIGNED_CONSENTS_BUCKET = BridgeConfigFactory.getConfig().get("usersigned.consents.bucket");
     private AccountDao accountDao;
     private SendMailService sendMailService;
+    private NotificationsService notificationsService;
     private StudyConsentService studyConsentService;
     private ActivityEventService activityEventService;
     private SubpopulationService subpopService;
     private String xmlTemplateWithSignatureBlock;
+    private S3Helper s3ConsentWriter;
     
     @Value("classpath:study-defaults/consent-page.xhtml")
     final void setConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
@@ -66,6 +85,10 @@ public class ConsentService {
         this.sendMailService = sendMailService;
     }
     @Autowired
+    final void setNotificationsService(NotificationsService notificationsService) {
+        this.notificationsService = notificationsService;
+    }
+    @Autowired
     final void setStudyConsentService(StudyConsentService studyConsentService) {
         this.studyConsentService = studyConsentService;
     }
@@ -76,6 +99,10 @@ public class ConsentService {
     @Autowired
     final void setSubpopulationService(SubpopulationService subpopService) {
         this.subpopService = subpopService;
+    }
+    @Resource(name = "s3ConsentWriter")
+    final void setS3Helper(S3Helper s3ConsentWriter) {
+        this.s3ConsentWriter = s3ConsentWriter;
     }
     
     /**
@@ -105,14 +132,15 @@ public class ConsentService {
     /**
      * Consent this user to research. User will be updated to reflect consent. This method will ensure the 
      * user is not already consented to this subpopulation, but it does not validate that the user is a 
-     * validate member of this subpopulation (that is checked in the controller).
+     * validate member of this subpopulation (that is checked in the controller). Will optionally send 
+     * a signed copy of the consent to the user via email or phone (whichever is verified).
      * 
      * @param study
      * @param subpopGuid
      * @param participant
      * @param consentSignature
      * @param sharingScope
-     * @param sendSignedConsentToUser
+     * @param sendSignedConsent
      *      if true, send the consent document to the user's email address
      * @return
      * @throws EntityNotFoundException
@@ -123,7 +151,7 @@ public class ConsentService {
      *      if the user has already signed the consent for this subpopulation
      */
     public void consentToResearch(Study study, SubpopulationGuid subpopGuid, StudyParticipant participant,
-            ConsentSignature consentSignature, SharingScope sharingScope, boolean sendSignedConsentToUser) {
+            ConsentSignature consentSignature, SharingScope sharingScope, boolean sendSignedConsent) {
         checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
         checkNotNull(subpopGuid, Validate.CANNOT_BE_NULL, "subpopulationGuid");
         checkNotNull(participant, Validate.CANNOT_BE_NULL, "participant");
@@ -160,24 +188,34 @@ public class ConsentService {
         // Publish an enrollment event, set sharing scope 
         activityEventService.publishEnrollmentEvent(study, participant.getHealthCode(), withConsentCreatedOnSignature);
 
-        if (sendSignedConsentToUser) {
+        // Administrative actions, almost exclusively for testing, will send no consent documents
+        if (sendSignedConsent) {
             ConsentPdf consentPdf = new ConsentPdf(study, participant.getTimeZone(), participant.getEmail(),
                     withConsentCreatedOnSignature, sharingScope, studyConsent.getDocumentContent(),
                     xmlTemplateWithSignatureBlock);
             
-            // If the user's email exists and email notification is not suppressed, add the user to the provider
-            String participantEmail = subpop.isAutoSendConsentSuppressed() ? null : participant.getEmail();
+            boolean verifiedEmail = (participant.getEmail() != null
+                    && Boolean.TRUE.equals(participant.getEmailVerified()));
+            boolean verifiedPhone = (participant.getPhone() != null
+                    && Boolean.TRUE.equals(participant.getPhoneVerified()));
             
-            BasicEmailProvider.Builder consentEmailBuilder = new BasicEmailProvider.Builder()
-                    .withStudy(study)
-                    .withEmailTemplate(study.getSignedConsentTemplate())
-                    .withRecipientEmail(participantEmail)
-                    .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes());
-            addStudyConsentRecipients(study, consentEmailBuilder);
-            
-            BasicEmailProvider provider = consentEmailBuilder.build();
-            if (!provider.getRecipientEmails().isEmpty()) {
-                sendMailService.sendEmail(provider);
+            Set<String> recipientEmails = Sets.newHashSet();
+            if (verifiedEmail && !subpop.isAutoSendConsentSuppressed()) {
+                recipientEmails.add(participant.getEmail());    
+            }
+            addStudyConsentRecipients(study, recipientEmails);
+            if (!recipientEmails.isEmpty()) {
+                BasicEmailProvider.Builder consentEmailBuilder = new BasicEmailProvider.Builder()
+                        .withStudy(study)
+                        .withEmailTemplate(study.getSignedConsentTemplate())
+                        .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes());
+                for (String recipientEmail : recipientEmails) {
+                    consentEmailBuilder.withRecipientEmail(recipientEmail);
+                }
+                sendMailService.sendEmail(consentEmailBuilder.build());
+            }
+            if (!subpop.isAutoSendConsentSuppressed() && !verifiedEmail && verifiedPhone) {
+                sendConsentViaSMS(study, subpop, participant, consentPdf);    
             }
         }
     }
@@ -294,12 +332,10 @@ public class ConsentService {
     }
 
     /**
-     * Email the participant's signed consent agreement to the user's email address.
-     * @param study
-     * @param subpopGuid
-     * @param participant
+     * Resend the participant's signed consent agreement via the user's email address or their phone number. 
+     * It is an error to call this method if no channel exists to send the consent to the user.
      */
-    public void emailConsentAgreement(Study study, SubpopulationGuid subpopGuid, StudyParticipant participant) {
+    public void resendConsentAgreement(Study study, SubpopulationGuid subpopGuid, StudyParticipant participant) {
         checkNotNull(study);
         checkNotNull(subpopGuid);
         checkNotNull(participant);
@@ -307,32 +343,66 @@ public class ConsentService {
         ConsentSignature consentSignature = getConsentSignature(study, subpopGuid, participant.getId());
         SharingScope sharingScope = participant.getSharingScope();
         Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
-        
         String studyConsentDocument = studyConsentService.getActiveConsent(subpop).getDocumentContent();
 
+        boolean verifiedEmail = (participant.getEmail() != null
+                && Boolean.TRUE.equals(participant.getEmailVerified()));
+        boolean verifiedPhone = (participant.getPhone() != null
+                && Boolean.TRUE.equals(participant.getPhoneVerified()));
+        
         ConsentPdf consentPdf = new ConsentPdf(study, participant.getTimeZone(), participant.getEmail(),
                 consentSignature, sharingScope, studyConsentDocument, xmlTemplateWithSignatureBlock);            
         
-        BasicEmailProvider.Builder builder = new BasicEmailProvider.Builder()
-                .withStudy(study)
-                .withEmailTemplate(study.getSignedConsentTemplate())
-                .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
-                .withRecipientEmail(participant.getEmail());
-        addStudyConsentRecipients(study, builder);
-        // If the user doesn't have an email, we won't send anything. Note that as of this refactor, 
-        // we're not verifying the email address. Change this when SMS is added.
-        BasicEmailProvider provider = builder.build();
-        if (!provider.getRecipientEmails().isEmpty()) {
+        if (verifiedEmail) {
+            BasicEmailProvider provider = new BasicEmailProvider.Builder()
+                    .withStudy(study)
+                    .withEmailTemplate(study.getSignedConsentTemplate())
+                    .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
+                    .withRecipientEmail(participant.getEmail()).build();
             sendMailService.sendEmail(provider);
+        } else if (verifiedPhone) {
+            sendConsentViaSMS(study, subpop, participant, consentPdf);
+        } else {
+            throw new BadRequestException("Participant does not have a valid email address or phone number");
         }
     }
     
-    private void addStudyConsentRecipients(Study study, BasicEmailProvider.Builder consentEmailBuilder) {
+    private void sendConsentViaSMS(Study study, Subpopulation subpop, StudyParticipant participant,
+            ConsentPdf consentPdf) {
+        URL url = null;
+        try {
+            String fileName = getSignedConsentUrl();
+            DateTime expiresOn = getDownloadExpiration();
+            s3ConsentWriter.writeBytesToS3(USERSIGNED_CONSENTS_BUCKET, fileName, consentPdf.getBytes());
+            url = s3ConsentWriter.generatePresignedUrl(USERSIGNED_CONSENTS_BUCKET, fileName, expiresOn, HttpMethod.GET);
+        } catch(IOException e) {
+            throw new BridgeServiceException(e);
+        }
+        SmsMessageProvider provider = new SmsMessageProvider.Builder()
+                .withStudy(study)
+                .withPhone(participant.getPhone())
+                .withExpirationPeriod(EXPIRATION_PERIOD_KEY, SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS)
+                .withPromotionType()
+                .withSmsTemplate(study.getSignedConsentSmsTemplate())
+                .withToken(BridgeConstants.CONSENT_URL, url.toString())
+                .build();
+        notificationsService.sendSmsMessage(provider);
+    }
+    
+    protected String getSignedConsentUrl() {
+        return SecureTokenGenerator.INSTANCE.nextToken() + ".pdf";
+    }
+    
+    protected DateTime getDownloadExpiration() {
+        return DateUtils.getCurrentDateTime().plusHours(2);
+    }
+    
+    private void addStudyConsentRecipients(Study study, Set<String> recipientEmails) {
         Boolean consentNotificationEmailVerified = study.isConsentNotificationEmailVerified();
         if (consentNotificationEmailVerified == null || consentNotificationEmailVerified) {
             Set<String> studyRecipients = commaListToOrderedSet(study.getConsentNotificationEmail());
             for (String oneRecipient : studyRecipients) {
-                consentEmailBuilder.withRecipientEmail(oneRecipient);
+                recipientEmails.add(oneRecipient);
             }
         }
     }

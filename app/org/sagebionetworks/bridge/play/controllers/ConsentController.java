@@ -55,7 +55,7 @@ public class ConsentController extends BaseController {
     public Result emailCopy() throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
         
-        return emailCopyV2(session.getStudyIdentifier().getIdentifier());
+        return resendConsentAgreement(session.getStudyIdentifier().getIdentifier());
     }
 
     @Deprecated
@@ -131,12 +131,12 @@ public class ConsentController extends BaseController {
     }
     
     @BodyParser.Of(BodyParser.Empty.class)
-    public Result emailCopyV2(String guid) {
+    public Result resendConsentAgreement(String guid) {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        consentService.emailConsentAgreement(study, SubpopulationGuid.create(guid), session.getParticipant());
-        return okResult("Emailed consent.");
+        consentService.resendConsentAgreement(study, SubpopulationGuid.create(guid), session.getParticipant());
+        return okResult("Signed consent resent.");
     }
     
     Result changeSharingScope(SharingScope sharingScope, String message) {
