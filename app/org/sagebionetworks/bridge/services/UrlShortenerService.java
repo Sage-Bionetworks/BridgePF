@@ -26,14 +26,15 @@ public class UrlShortenerService {
         // We are using a relatively short, randomized URL, so verify it isn't being
         // used by another URL. If it's being used by the same URL, don't reset the 
         // expiration
-        String token = getToken();
-        CacheKey cacheKey = CacheKey.shortenUrl(token);
-        String foundValue = cacheProvider.getObject(cacheKey, String.class);
-        while(foundValue != null && !foundValue.equals(url)) {
+        String token = null;
+        CacheKey cacheKey = null;
+        String foundValue = null;
+        do {
             token = getToken();
             cacheKey = CacheKey.shortenUrl(token);
             foundValue = cacheProvider.getObject(cacheKey, String.class);
-        }
+        } while(foundValue != null && !foundValue.equals(url));
+        
         if (foundValue == null) {
             cacheProvider.setObject(cacheKey, url, expireInSeconds);    
         }
