@@ -12,6 +12,7 @@ GET    /rp                                     @org.sagebionetworks.bridge.play.
 GET    /s/:study                               @org.sagebionetworks.bridge.play.controllers.ApplicationController.startSession(study: String, email: String ?= null, token: String ?= null)
 GET    /.well-known/assetlinks.json            @org.sagebionetworks.bridge.play.controllers.ApplicationController.androidAppLinks
 GET    /.well-known/apple-app-site-association @org.sagebionetworks.bridge.play.controllers.ApplicationController.appleAppLinks
+GET    /r/:token                               @org.sagebionetworks.bridge.play.controllers.ApplicationController.redirectToURL(token: String)
 
 # Authentication
 POST   /v3/auth/signIn                  @org.sagebionetworks.bridge.play.controllers.AuthenticationController.signInV3
