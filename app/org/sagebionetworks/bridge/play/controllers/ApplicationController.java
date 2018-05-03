@@ -9,14 +9,18 @@ import java.util.List;
 import javax.annotation.Resource;
 
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.ViewCache;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.models.AndroidAppSiteAssociation;
 import org.sagebionetworks.bridge.models.AppleAppSiteAssociation;
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
 import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.UrlShortenerService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import com.google.common.collect.Lists;
@@ -32,10 +36,17 @@ public class ApplicationController extends BaseController {
     private static final String ASSETS_BUILD = "201501291830";
 
     private ViewCache viewCache;
+    
+    private UrlShortenerService urlShortenerService;
 
     @Resource(name = "appLinkViewCache")
     final void setViewCache(ViewCache viewCache) {
         this.viewCache = viewCache;
+    }
+    
+    @Autowired
+    final void setUrlShortenerService(UrlShortenerService urlShortenerService) {
+        this.urlShortenerService = urlShortenerService;
     }
     
     public Result loadApp() throws Exception {
@@ -100,5 +111,16 @@ public class ApplicationController extends BaseController {
             return new AppleAppSiteAssociation(links);
         });
         return ok(json).as(JSON_MIME_TYPE);
+    }
+    
+    public Result redirectToURL(String token) throws Exception {
+        if (StringUtils.isBlank(token)) {
+            throw new BadRequestException("URL is malformed.");
+        }
+        String url = urlShortenerService.retrieveUrl(token);
+        if (url != null) {
+            return found(url);
+        }
+        return notFound(views.html.redirect.render());
     }
 }
