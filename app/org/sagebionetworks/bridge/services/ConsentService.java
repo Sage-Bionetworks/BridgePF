@@ -71,6 +71,7 @@ public class ConsentService {
     private SubpopulationService subpopService;
     private String xmlTemplateWithSignatureBlock;
     private S3Helper s3ConsentWriter;
+    private UrlShortenerService urlShortenerService;
     
     @Value("classpath:study-defaults/consent-page.xhtml")
     final void setConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
@@ -103,6 +104,10 @@ public class ConsentService {
     @Resource(name = "s3ConsentWriter")
     final void setS3Helper(S3Helper s3ConsentWriter) {
         this.s3ConsentWriter = s3ConsentWriter;
+    }
+    @Autowired
+    final void setUrlShortenerService(UrlShortenerService urlShortenerService) {
+        this.urlShortenerService = urlShortenerService;
     }
     
     /**
@@ -369,12 +374,13 @@ public class ConsentService {
     
     private void sendConsentViaSMS(Study study, Subpopulation subpop, StudyParticipant participant,
             ConsentPdf consentPdf) {
-        URL url = null;
+        String shortUrl = null;
         try {
             String fileName = getSignedConsentUrl();
             DateTime expiresOn = getDownloadExpiration();
             s3ConsentWriter.writeBytesToS3(USERSIGNED_CONSENTS_BUCKET, fileName, consentPdf.getBytes());
-            url = s3ConsentWriter.generatePresignedUrl(USERSIGNED_CONSENTS_BUCKET, fileName, expiresOn, HttpMethod.GET);
+            URL url = s3ConsentWriter.generatePresignedUrl(USERSIGNED_CONSENTS_BUCKET, fileName, expiresOn, HttpMethod.GET);
+            shortUrl = urlShortenerService.shortenUrl(url.toString(), SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS);
         } catch(IOException e) {
             throw new BridgeServiceException(e);
         }
@@ -384,7 +390,7 @@ public class ConsentService {
                 .withExpirationPeriod(EXPIRATION_PERIOD_KEY, SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS)
                 .withPromotionType()
                 .withSmsTemplate(study.getSignedConsentSmsTemplate())
-                .withToken(BridgeConstants.CONSENT_URL, url.toString())
+                .withToken(BridgeConstants.CONSENT_URL, shortUrl)
                 .build();
         notificationsService.sendSmsMessage(provider);
     }
@@ -394,7 +400,9 @@ public class ConsentService {
     }
     
     protected DateTime getDownloadExpiration() {
-        return DateUtils.getCurrentDateTime().plusHours(2);
+        // Add 15 seconds so that the delay of uploading the consent doesn't cause the download link to expire before
+        // the file is no longer available on S3.
+        return DateUtils.getCurrentDateTime().plusSeconds(SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS + 15);
     }
     
     private void addStudyConsentRecipients(Study study, Set<String> recipientEmails) {
