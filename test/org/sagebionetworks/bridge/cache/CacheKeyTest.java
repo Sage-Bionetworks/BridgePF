@@ -26,6 +26,11 @@ public class CacheKeyTest {
     }
     
     @Test
+    public void shortenUrl() {
+        assertEquals("ABC:ShortenedUrl", CacheKey.shortenUrl("ABC").toString());
+    }
+    
+    @Test
     public void appConfigList() {
         assertEquals("api:AppConfigList", CacheKey.appConfigList(TestConstants.TEST_STUDY).toString());
     }

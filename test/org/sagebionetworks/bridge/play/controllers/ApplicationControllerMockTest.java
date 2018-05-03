@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -22,6 +23,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -32,6 +34,7 @@ import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.UrlShortenerService;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,6 +56,9 @@ public class ApplicationControllerMockTest {
     
     @Mock
     CacheProvider cacheProvider;
+    
+    @Mock
+    UrlShortenerService urlShortenerService;
     
     @Captor
     ArgumentCaptor<CriteriaContext> contextCaptor;
@@ -76,6 +82,7 @@ public class ApplicationControllerMockTest {
         controller.setStudyService(studyService);
         controller.setAuthenticationService(authenticationService);
         controller.setViewCache(viewCache);
+        controller.setUrlShortenerService(urlShortenerService);
         
         study = new DynamoStudy();
         study.setIdentifier("test-study");
@@ -194,5 +201,27 @@ public class ApplicationControllerMockTest {
         assertEquals(TestConstants.APPLE_APP_LINK_2, link1);
         assertEquals(TestConstants.APPLE_APP_LINK_3, link2);
         assertEquals(TestConstants.APPLE_APP_LINK_4, link3);        
+    }
+    
+    @Test
+    public void redirectOk() throws Exception {
+        when(urlShortenerService.retrieveUrl("ABC")).thenReturn("https://long.url.com/");
+        
+        Result result = controller.redirectToURL("ABC");
+        assertEquals(302, result.status()); // Found
+        assertEquals("https://long.url.com/", result.header("Location"));
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void redirectBad() throws Exception {
+        controller.redirectToURL(" ");
+    }
+    
+    @Test
+    public void redirectFails() throws Exception {
+        when(urlShortenerService.retrieveUrl("ABC")).thenReturn(null);
+        
+        Result result = controller.redirectToURL("ABC");
+        assertEquals(404, result.status()); // temporary redirect
     }
 }
