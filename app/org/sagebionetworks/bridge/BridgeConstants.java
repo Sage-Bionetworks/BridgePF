@@ -62,8 +62,8 @@ public class BridgeConstants {
     // 12 hrs after last activity
     public static final int BRIDGE_SESSION_EXPIRE_IN_SECONDS = 12 * 60 * 60;
 
-    // 2 hrs
-    public static final int SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS = 2 * 60 * 60;
+    // 7 days
+    public static final int SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS = (7 * 24 * 60 * 60);
     
     // 5 minutes
     public static final int BRIDGE_UPDATE_ATTEMPT_EXPIRE_IN_SECONDS = 5 * 60;
