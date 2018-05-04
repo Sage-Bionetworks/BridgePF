@@ -148,13 +148,6 @@ public class BridgeSpringConfig {
                 bridgeConfig.getProperty("aws.secret.key.upload.cms"));
     }
 
-    @Bean(name = "consentWriterCredentials")
-    @Resource(name = "bridgeConfig")
-    public BasicAWSCredentials consentWriterCredentials(BridgeConfig bridgeConfig) {
-        return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key.usersigned.consents.writer"),
-                bridgeConfig.getProperty("aws.secret.key.usersigned.consents.writer"));
-    }
-    
     @Bean(name = "dynamoDbClient")
     @Resource(name = "awsCredentials")
     public AmazonDynamoDBClient dynamoDbClient() {
@@ -215,7 +208,7 @@ public class BridgeSpringConfig {
         s3Helper.setS3Client(s3Client);
         return s3Helper;
     }
-    
+
     @Bean(name = "s3ConsentsCredentials")
     @Resource(name = "bridgeConfig")
     public BasicAWSCredentials s3ConsentsCredentials(BridgeConfig bridgeConfig) {
