@@ -16,7 +16,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
  */
 @DynamoDBTable(tableName = "Subpopulation")
 @BridgeTypeName("Subpopulation")
+@JsonFilter("filter")
 public final class DynamoSubpopulation implements Subpopulation {
 
     private static final String DOCS_HOST = BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs");
@@ -47,7 +48,6 @@ public final class DynamoSubpopulation implements Subpopulation {
         criteria = Criteria.create();
     }
     
-    @JsonIgnore
     @Override
     @DynamoDBHashKey
     public String getStudyIdentifier() {
@@ -69,7 +69,6 @@ public final class DynamoSubpopulation implements Subpopulation {
     }
     @Override
     @DynamoDBIgnore
-    @JsonIgnore
     public SubpopulationGuid getGuid() {
         return (guid == null) ? null : SubpopulationGuid.create(guid);
     }    
@@ -105,7 +104,6 @@ public final class DynamoSubpopulation implements Subpopulation {
         this.required = required;
     }
     @DynamoDBAttribute
-    @JsonIgnore
     @Override
     public boolean isDeleted() {
         return deleted;
