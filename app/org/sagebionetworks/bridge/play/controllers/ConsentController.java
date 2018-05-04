@@ -136,7 +136,7 @@ public class ConsentController extends BaseController {
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
         consentService.resendConsentAgreement(study, SubpopulationGuid.create(guid), session.getParticipant());
-        return okResult("Signed consent resent.");
+        return okResult("Signed consent agreement resent.");
     }
     
     Result changeSharingScope(SharingScope sharingScope, String message) {

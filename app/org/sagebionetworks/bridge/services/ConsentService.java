@@ -62,7 +62,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ConsentService {
     
-    private static final String USERSIGNED_CONSENTS_BUCKET = BridgeConfigFactory.getConfig().get("usersigned.consents.bucket");
+    protected static final String USERSIGNED_CONSENTS_BUCKET = BridgeConfigFactory.getConfig().get("usersigned.consents.bucket");
     private AccountDao accountDao;
     private SendMailService sendMailService;
     private NotificationsService notificationsService;
@@ -400,9 +400,7 @@ public class ConsentService {
     }
     
     protected DateTime getDownloadExpiration() {
-        // Add 15 seconds so that the delay of uploading the consent doesn't cause the download link to expire before
-        // the file is no longer available on S3.
-        return DateUtils.getCurrentDateTime().plusSeconds(SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS + 15);
+        return DateUtils.getCurrentDateTime().plusSeconds(SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS);
     }
     
     private void addStudyConsentRecipients(Study study, Set<String> recipientEmails) {

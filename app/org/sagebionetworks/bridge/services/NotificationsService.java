@@ -182,6 +182,7 @@ public class NotificationsService {
         if (request.getMessage().getBytes(Charset.forName("US-ASCII")).length > BridgeConstants.SMS_CHARACTER_LIMIT) {
             throw new BridgeServiceException("SMS message cannot be longer than 140 UTF-8/ASCII characters.");
         }
+        
         PublishResult result = snsClient.publish(request);
 
         LOG.debug("Sent SMS message, study=" + provider.getStudy().getStudyIdentifier().getIdentifier()
