@@ -204,6 +204,8 @@ public class ConsentService {
             boolean verifiedPhone = (participant.getPhone() != null
                     && Boolean.TRUE.equals(participant.getPhoneVerified()));
             
+            // Send an email to the user if they have an email address and we're not suppressing the send, 
+            // and/or to any study consent administrators.
             Set<String> recipientEmails = Sets.newHashSet();
             if (verifiedEmail && !subpop.isAutoSendConsentSuppressed()) {
                 recipientEmails.add(participant.getEmail());    
@@ -219,6 +221,7 @@ public class ConsentService {
                 }
                 sendMailService.sendEmail(consentEmailBuilder.build());
             }
+            // Otherwise if there's no verified email but there is a phone and we're not suppressing, send it there
             if (!subpop.isAutoSendConsentSuppressed() && !verifiedEmail && verifiedPhone) {
                 sendConsentViaSMS(study, subpop, participant, consentPdf);    
             }
