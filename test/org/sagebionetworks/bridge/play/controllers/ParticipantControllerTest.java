@@ -86,6 +86,7 @@ import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.UserAdminService;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ParticipantControllerTest {
@@ -146,6 +147,9 @@ public class ParticipantControllerTest {
     
     @Mock
     private CacheProvider mockCacheProvider;
+    
+    @Mock
+    private UserAdminService userAdminService;
     
     @Captor
     private ArgumentCaptor<StudyParticipant> participantCaptor;
@@ -221,6 +225,7 @@ public class ParticipantControllerTest {
         controller.setStudyService(mockStudyService);
         controller.setAuthenticationService(authService);
         controller.setCacheProvider(mockCacheProvider);
+        controller.setUserAdminService(userAdminService);
 
         SessionUpdateService sessionUpdateService = new SessionUpdateService();
         sessionUpdateService.setCacheProvider(mockCacheProvider);
@@ -1178,6 +1183,37 @@ public class ParticipantControllerTest {
         ForwardCursorPagedResourceList<ScheduledActivity> retrieved = TestUtils.getResponsePayload(result,
             new TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>>() {});
         assertFalse(retrieved.getItems().isEmpty());
+    }
+    
+    @Test
+    public void deleteTestUserWorks() {
+        participant = new StudyParticipant.Builder().copyOf(participant).withDataGroups(Sets.newHashSet("test_user"))
+                .build();
+        
+        AccountId accountId = AccountId.forId(study.getIdentifier(), ID);
+        when(mockParticipantService.getParticipant(study, accountId, false)).thenReturn(participant);
+        controller.deleteTestParticipant(ID);
+        
+        verify(userAdminService).deleteUser(study, ID);
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void deleteTestUserNotAResearcher() {
+        participant = new StudyParticipant.Builder().copyOf(participant)
+                .withRoles(Sets.newHashSet(Roles.ADMIN)).build();
+        session.setParticipant(participant);
+        
+        controller.deleteTestParticipant(ID);
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void deleteTestUserNotATestAccount() {
+        participant = new StudyParticipant.Builder().copyOf(participant)
+                .withDataGroups(Sets.newHashSet()).build();
+        
+        AccountId accountId = AccountId.forId(study.getIdentifier(), ID);
+        when(mockParticipantService.getParticipant(study, accountId, false)).thenReturn(participant);
+        controller.deleteTestParticipant(ID);
     }
     
     @SuppressWarnings("deprecation")
