@@ -8,9 +8,10 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -29,11 +30,13 @@ public class SubpopulationController extends BaseController {
         this.subpopService = subpopService;
     }
 
-    public Result getAllSubpopulations() {
+    public Result getAllSubpopulations() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         List<Subpopulation> subpopulations = subpopService.getSubpopulations(session.getStudyIdentifier());
-        return okResult(subpopulations);
+        
+        String ser = Subpopulation.SUBPOP_WRITER.writeValueAsString(new ResourceList<Subpopulation>(subpopulations));
+        return ok(ser).as(BridgeConstants.JSON_MIME_TYPE);
     }
     public Result createSubpopulation() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
@@ -55,12 +58,14 @@ public class SubpopulationController extends BaseController {
         
         return okResult(new GuidVersionHolder(subpop.getGuidString(), subpop.getVersion()));
     }
-    public Result getSubpopulation(String guid) {
+    public Result getSubpopulation(String guid) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
 
         Subpopulation subpop = subpopService.getSubpopulation(session.getStudyIdentifier(), subpopGuid);
-        return okResult(subpop);
+        
+        String ser = Subpopulation.SUBPOP_WRITER.writeValueAsString(subpop);
+        return ok(ser).as(BridgeConstants.JSON_MIME_TYPE);
     }
     public Result deleteSubpopulation(String guid, String physicalDeleteString) {
         UserSession session = getAuthenticatedSession(ADMIN, DEVELOPER);
