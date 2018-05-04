@@ -122,7 +122,7 @@ public class ParticipantController extends BaseController {
         AccountId accountId = AccountId.forId(study.getIdentifier(), userId);
         
         StudyParticipant participant = participantService.getParticipant(study, accountId, false);
-        if (!participant.getDataGroups().contains("test_user")) {
+        if (!participant.getDataGroups().contains(BridgeConstants.TEST_USER_GROUP)) {
             throw new UnauthorizedException("Account is not a test account.");
         }
         userAdminService.deleteUser(study, userId);
