@@ -804,7 +804,6 @@ public class ConsentServiceMockTest {
     
     private void setupWithdrawTest(boolean subpop1Required, boolean subpop2Required) {
         // two consents, withdrawing one does not turn sharing entirely off.
-        account.setEmail(EMAIL);
         account.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         
         Subpopulation subpop1 = Subpopulation.create();
@@ -817,25 +816,17 @@ public class ConsentServiceMockTest {
         subpop2.setGuid(SECOND_SUBPOP);
         subpop2.setRequired(subpop2Required);
         
-        account.setHealthCode(PARTICIPANT.getHealthCode());
         doReturn(ImmutableList.of(subpop1, subpop2)).when(subpopService).getSubpopulationsForUser(any());
-        
-        List<ConsentSignature> consents = ImmutableList.of(CONSENT_SIGNATURE);
         
         ConsentSignature secondConsentSignature = new ConsentSignature.Builder().withName("Test User")
                 .withBirthdate("1990-01-01").withSignedOn(SIGNED_ON).build();
-        List<ConsentSignature> secondConsents = ImmutableList.of(secondConsentSignature);
         
-        account.setConsentSignatureHistory(SUBPOP_GUID, consents);
-        account.setConsentSignatureHistory(SECOND_SUBPOP, secondConsents);
+        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
+        account.setConsentSignatureHistory(SECOND_SUBPOP, ImmutableList.of(secondConsentSignature));
     }
     
     private void setupWithdrawTest() {
         account.setEmail(EMAIL);
-
-        doReturn(PARTICIPANT.getHealthCode()).when(account).getHealthCode();
-        doReturn(account).when(accountDao).getAccount(AccountId.forId(STUDY.getIdentifier(), PARTICIPANT.getId()));
-
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
     }
 }
