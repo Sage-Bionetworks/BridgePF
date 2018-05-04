@@ -70,7 +70,7 @@ public class ConsentService {
     private ActivityEventService activityEventService;
     private SubpopulationService subpopService;
     private String xmlTemplateWithSignatureBlock;
-    private S3Helper s3ConsentWriter;
+    private S3Helper s3Helper;
     private UrlShortenerService urlShortenerService;
     
     @Value("classpath:study-defaults/consent-page.xhtml")
@@ -101,9 +101,9 @@ public class ConsentService {
     final void setSubpopulationService(SubpopulationService subpopService) {
         this.subpopService = subpopService;
     }
-    @Resource(name = "s3ConsentWriter")
-    final void setS3Helper(S3Helper s3ConsentWriter) {
-        this.s3ConsentWriter = s3ConsentWriter;
+    @Resource(name = "s3Helper")
+    final void setS3Helper(S3Helper s3Helper) {
+        this.s3Helper = s3Helper;
     }
     @Autowired
     final void setUrlShortenerService(UrlShortenerService urlShortenerService) {
@@ -381,8 +381,8 @@ public class ConsentService {
         try {
             String fileName = getSignedConsentUrl();
             DateTime expiresOn = getDownloadExpiration();
-            s3ConsentWriter.writeBytesToS3(USERSIGNED_CONSENTS_BUCKET, fileName, consentPdf.getBytes());
-            URL url = s3ConsentWriter.generatePresignedUrl(USERSIGNED_CONSENTS_BUCKET, fileName, expiresOn, HttpMethod.GET);
+            s3Helper.writeBytesToS3(USERSIGNED_CONSENTS_BUCKET, fileName, consentPdf.getBytes());
+            URL url = s3Helper.generatePresignedUrl(USERSIGNED_CONSENTS_BUCKET, fileName, expiresOn, HttpMethod.GET);
             shortUrl = urlShortenerService.shortenUrl(url.toString(), SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS);
         } catch(IOException e) {
             throw new BridgeServiceException(e);

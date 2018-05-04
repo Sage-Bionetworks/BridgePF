@@ -13,15 +13,12 @@ import javax.annotation.Resource;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.PredefinedClientConfigurations;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.datapipeline.DataPipelineClient;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.amazonaws.services.sns.AmazonSNSClient;
@@ -214,19 +211,6 @@ public class BridgeSpringConfig {
     @Bean(name = "s3Helper")
     @Resource(name = "s3Client")
     public S3Helper s3Helper(AmazonS3Client s3Client) {
-        S3Helper s3Helper = new S3Helper();
-        s3Helper.setS3Client(s3Client);
-        return s3Helper;
-    }
-    
-    @Bean(name = "consentWriterS3Client")
-    public AmazonS3Client consentWriterS3Client(BasicAWSCredentials consentWriterCredentials) {
-        return new AmazonS3Client(consentWriterCredentials);
-    }
-
-    @Bean(name = "s3ConsentWriter")
-    @Resource(name = "consentWriterS3Client")
-    public S3Helper s3ConsentWriter(AmazonS3Client s3Client) {
         S3Helper s3Helper = new S3Helper();
         s3Helper.setS3Client(s3Client);
         return s3Helper;

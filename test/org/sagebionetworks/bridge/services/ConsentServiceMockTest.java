@@ -108,7 +108,7 @@ public class ConsentServiceMockTest {
     @Mock
     private NotificationsService notificationsService;
     @Mock
-    private S3Helper s3ConsentWriter;
+    private S3Helper s3Helper;
     @Mock
     private UrlShortenerService urlShortenerService; 
     @Mock
@@ -138,7 +138,7 @@ public class ConsentServiceMockTest {
         consentService.setActivityEventService(activityEventService);
         consentService.setStudyConsentService(studyConsentService);
         consentService.setSubpopulationService(subpopService);
-        consentService.setS3Helper(s3ConsentWriter);
+        consentService.setS3Helper(s3Helper);
         consentService.setUrlShortenerService(urlShortenerService);
         consentService.setNotificationsService(notificationsService);
         consentService.setConsentTemplate(new ByteArrayResource((documentString).getBytes()));
@@ -153,7 +153,7 @@ public class ConsentServiceMockTest {
         account.setId(ID);
         when(accountDao.getAccount(any(AccountId.class))).thenReturn(account);
         
-        when(s3ConsentWriter.generatePresignedUrl(eq(ConsentService.USERSIGNED_CONSENTS_BUCKET), any(), any(),
+        when(s3Helper.generatePresignedUrl(eq(ConsentService.USERSIGNED_CONSENTS_BUCKET), any(), any(),
                 eq(HttpMethod.GET))).thenReturn(new URL(LONG_URL));
         when(urlShortenerService.shortenUrl(LONG_URL, BridgeConstants.SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS))
             .thenReturn(SHORT_URL);
