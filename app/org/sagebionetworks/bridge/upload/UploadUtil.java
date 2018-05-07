@@ -50,7 +50,7 @@ public class UploadUtil {
     public static final String FIELD_SCHEMA_REV = "schemaRevision";
     public static final String FIELD_SURVEY_GUID = "surveyGuid";
     public static final String FIELD_SURVEY_CREATED_ON = "surveyCreatedOn";
-    public static final int FILE_SIZE_LIMIT_SURVEY_ANSWER = 1024;
+    public static final int FILE_SIZE_LIMIT_SURVEY_ANSWER = 3 * 1024;
     public static final int FILE_SIZE_LIMIT_INLINE_FIELD = 10 * 1024;
     public static final int FILE_SIZE_LIMIT_DATA_FILE = 2 * 1024 * 1024;
     public static final int WARNING_LIMIT_PARSED_JSON = 5 * 1024 * 1024;
