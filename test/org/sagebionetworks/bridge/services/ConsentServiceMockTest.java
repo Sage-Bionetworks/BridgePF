@@ -119,7 +119,8 @@ public class ConsentServiceMockTest {
         study.setSignedConsentTemplate(new EmailTemplate("Subject", "Body", MimeType.HTML));
 
         participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE).withId(ID).withEmail(EMAIL)
-                .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS).withExternalId(EXTERNAL_ID).build();
+                .withEmailVerified(true).withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
+                .withExternalId(EXTERNAL_ID).build();
         
         consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("1990-01-01")
                 .withSignedOn(SIGNED_ON).build();

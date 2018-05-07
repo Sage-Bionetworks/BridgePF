@@ -171,6 +171,10 @@ public class AuthenticationService {
         
         Account account = accountDao.authenticate(study, signIn);
 
+        if (intentService.registerIntentToParticipate(study, account)) {
+            account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), account.getId()));    
+        }
+
         UserSession session = getSessionFromAccount(study, context, account);
         // Do not call sessionUpdateService as we assume system is in sync with the session on sign in
         cacheProvider.setUserSession(session);
@@ -235,7 +239,7 @@ public class AuthenticationService {
         } 
     }
 
-    public IdentifierHolder signUp(Study study, StudyParticipant participant, boolean checkForConsent) {
+    public IdentifierHolder signUp(Study study, StudyParticipant participant) {
         checkNotNull(study);
         checkNotNull(participant);
         
@@ -248,14 +252,7 @@ public class AuthenticationService {
 
         try {
             // Since caller has no roles, no roles can be assigned on sign up.
-            IdentifierHolder holder = participantService.createParticipant(study, NO_CALLER_ROLES, participant, true);
-            if (checkForConsent) {
-                // Check to see if this user has saved consent records for the study. Consent them now, so sign in  
-                // will not return 412 (consent required). Need to retrieve the full participant record (w/ healthCode).
-                StudyParticipant updatedParticipant = participantService.getParticipant(study, holder.getIdentifier(), false);
-                intentService.registerIntentToParticipate(study, updatedParticipant);
-            }
-            return holder;
+            return participantService.createParticipant(study, NO_CALLER_ROLES, participant, true);
         } catch(EntityAlreadyExistsException e) {
             // Suppress this and send an email to notify the user that the account already exists. From 
             // this call, we simply return a 200 the same as any other sign up. Otherwise the response 
@@ -372,6 +369,10 @@ public class AuthenticationService {
         accountDao.verifyChannel(channelType, account);
 
         Study study = studyService.getStudy(signIn.getStudyId());
+        
+        if (intentService.registerIntentToParticipate(study, account)) {
+            account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), account.getId()));    
+        }
         UserSession session = getSessionFromAccount(study, context, account);
         cacheProvider.setUserSession(session);
         

@@ -14,6 +14,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
@@ -66,10 +67,13 @@ public class SendEmailIntegTest {
         
         final Study study = studyService.getStudy(TEST_STUDY_IDENTIFIER);
         
+        StudyParticipant participant = new StudyParticipant.Builder().withTimeZone(DateTimeZone.UTC)
+                .withEmail("bridge-testing@sagebase.org").withEmailVerified(true).build();
+        
         Subpopulation subpopulation = subpopService.getSubpopulation(TEST_STUDY, SUBPOP_GUID);
         String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
-        ConsentPdf consentPdf = new ConsentPdf(study, DateTimeZone.UTC, "bridge-testing@sagebase.org", signature,
-                SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate);
+        ConsentPdf consentPdf = new ConsentPdf(study, participant, signature, SharingScope.SPONSORS_AND_PARTNERS,
+                htmlTemplate, consentBodyTemplate);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)

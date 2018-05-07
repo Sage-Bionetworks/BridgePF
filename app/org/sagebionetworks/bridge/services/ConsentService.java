@@ -161,9 +161,8 @@ public class ConsentService {
         activityEventService.publishEnrollmentEvent(study, participant.getHealthCode(), withConsentCreatedOnSignature);
 
         if (sendSignedConsentToUser) {
-            ConsentPdf consentPdf = new ConsentPdf(study, participant.getTimeZone(), participant.getEmail(),
-                    withConsentCreatedOnSignature, sharingScope, studyConsent.getDocumentContent(),
-                    xmlTemplateWithSignatureBlock);
+            ConsentPdf consentPdf = new ConsentPdf(study, participant, withConsentCreatedOnSignature, sharingScope,
+                    studyConsent.getDocumentContent(), xmlTemplateWithSignatureBlock);
             
             // If the user's email exists and email notification is not suppressed, add the user to the provider
             String participantEmail = subpop.isAutoSendConsentSuppressed() ? null : participant.getEmail();
@@ -310,8 +309,8 @@ public class ConsentService {
         
         String studyConsentDocument = studyConsentService.getActiveConsent(subpop).getDocumentContent();
 
-        ConsentPdf consentPdf = new ConsentPdf(study, participant.getTimeZone(), participant.getEmail(),
-                consentSignature, sharingScope, studyConsentDocument, xmlTemplateWithSignatureBlock);            
+        ConsentPdf consentPdf = new ConsentPdf(study, participant, consentSignature, sharingScope, studyConsentDocument,
+                xmlTemplateWithSignatureBlock);
         
         BasicEmailProvider.Builder builder = new BasicEmailProvider.Builder()
                 .withStudy(study)

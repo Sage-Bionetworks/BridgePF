@@ -7,7 +7,6 @@ import java.util.Map;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.jsoup.Jsoup;
@@ -15,6 +14,7 @@ import org.jsoup.safety.Whitelist;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.xhtmlrenderer.pdf.ITextRenderer;
@@ -29,22 +29,20 @@ import com.lowagie.text.DocumentException;
  */
 public final class ConsentPdf {
 
-    public static final DateTimeFormatter FORMATTER = DateTimeFormat.forPattern("MMMM d, yyyy (z)");
+    public static final DateTimeFormatter FORMATTER = DateTimeFormat.forPattern("MMMM d, yyyy");
     
     private final Study study;
-    private final String userEmail;
+    private final StudyParticipant signer;
     private final ConsentSignature consentSignature;
     private final SharingScope sharingScope;
     private final String studyConsentAgreement;
     private final String xmlTemplateWithSignatureBlock;
-    private final DateTimeZone userTimeZone;
     private String formattedConsentDocument;
 
-    public ConsentPdf(Study study, DateTimeZone userTimeZone, String userEmail, ConsentSignature consentSignature,
+    public ConsentPdf(Study study, StudyParticipant signer, ConsentSignature consentSignature,
             SharingScope sharingScope, String studyConsentAgreement, String xmlTemplateWithSignatureBlock) {
         this.study = checkNotNull(study);
-        this.userTimeZone = (userTimeZone != null) ? userTimeZone : DateTimeZone.UTC;
-        this.userEmail = userEmail;
+        this.signer = signer;
         this.consentSignature = checkNotNull(consentSignature);
         this.sharingScope = checkNotNull(sharingScope);
         this.studyConsentAgreement = checkNotNull(studyConsentAgreement);
@@ -100,8 +98,8 @@ public final class ConsentPdf {
      * runtime. Here we branch based on the detection of a complete HTML document and do either one or the other.
      */
     private String createSignedDocument() {
-        DateTime localSignedOn = new DateTime(consentSignature.getSignedOn()).withZone(userTimeZone);
-        String signingDate = FORMATTER.print(localSignedOn);
+        DateTime localSignedOn = new DateTime(consentSignature.getSignedOn());
+        String signingDate = FORMATTER.print(localSignedOn) + " (GMT)";
         String sharingLabel = (sharingScope == null) ? "" : sharingScope.getLabel();
 
         // User's name may contain HTML. Clean it up
@@ -109,20 +107,36 @@ public final class ConsentPdf {
         
         if (studyConsentAgreement.contains("<html")) {
             // proceed as we used to
+            String userEmail = signer.getEmail();
             String html = studyConsentAgreement.replace("@@name@@", username);
             html = html.replace("@@signing.date@@", signingDate);
             html = html.replace("@@email@@", userEmail);
             html = html.replace("@@sharing@@", sharingLabel);
             return html;
         } else {
+            String contactInfo = "";
+            String contactLabel = "";
+            if (signer.getEmail() != null && Boolean.TRUE.equals(signer.getEmailVerified())) {
+                contactInfo = signer.getEmail();
+                contactLabel = "Email Address";
+            } else if (signer.getPhone() != null && Boolean.TRUE.equals(signer.getPhoneVerified())) {
+                contactInfo = signer.getPhone().getNationalFormat();
+                contactLabel = "Phone Number";
+            } else if (signer.getExternalId() != null) {
+                contactInfo = signer.getExternalId();
+                contactLabel = "ID";
+            } else {
+                throw new BridgeServiceException("Attempting to send a consent to a user with no verified communication channel.");
+            }
             // This is now a fragment, assemble accordingly
             Map<String,String> map = BridgeUtils.studyTemplateVariables(study);
             String resolvedStudyConsentAgreement = BridgeUtils.resolveTemplate(studyConsentAgreement, map);
-
+            
             map.put("consent.body", resolvedStudyConsentAgreement);
             map.put("participant.name", username);
             map.put("participant.signing.date", signingDate);
-            map.put("participant.email", userEmail);
+            map.put("participant.contactInfo", contactInfo);
+            map.put("participant.contactLabel", contactLabel);
             map.put("participant.sharing", sharingLabel);
             return BridgeUtils.resolveTemplate(xmlTemplateWithSignatureBlock, map);
         }

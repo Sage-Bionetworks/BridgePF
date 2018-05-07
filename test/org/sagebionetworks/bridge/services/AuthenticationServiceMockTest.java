@@ -111,7 +111,7 @@ public class AuthenticationServiceMockTest {
             .put(SUBPOP_GUID, UNCONSENTED_STATUS).build();
     private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
             .withStudyIdentifier(TestConstants.TEST_STUDY).build();
-    private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder().build();
+    private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder().withId(USER_ID).build();
     private static final AccountId ACCOUNT_ID = AccountId.forId(STUDY_ID, USER_ID);
     private static final String EXTERNAL_ID = "ext-id";
     private static final String HEALTH_CODE = "health-code";
@@ -134,6 +134,8 @@ public class AuthenticationServiceMockTest {
     private AccountWorkflowService accountWorkflowService;
     @Mock
     private ExternalIdService externalIdService;
+    @Mock
+    private IntentService intentService;
     @Captor
     private ArgumentCaptor<String> stringCaptor;
     @Captor
@@ -151,7 +153,7 @@ public class AuthenticationServiceMockTest {
 
     private Study study;
 
-    private Account account;
+    private GenericAccount account;
 
     @Before
     public void before() {
@@ -172,7 +174,8 @@ public class AuthenticationServiceMockTest {
         service.setStudyService(studyService);
         service.setAccountWorkflowService(accountWorkflowService);
         service.setExternalIdService(externalIdService);
-
+        service.setIntentToParticipateService(intentService);
+        
         doReturn(study).when(studyService).getStudy(STUDY_ID);
     }
     
@@ -440,7 +443,7 @@ public class AuthenticationServiceMockTest {
         StudyParticipant participant = new StudyParticipant.Builder().withEmail(RECIPIENT_EMAIL).withPassword(PASSWORD)
                 .build();
         
-        service.signUp(study, participant, false);
+        service.signUp(study, participant);
         
         verify(participantService).createParticipant(eq(study), eq(NO_CALLER_ROLES), participantCaptor.capture(), eq(true));
         StudyParticipant captured = participantCaptor.getValue();
@@ -454,7 +457,7 @@ public class AuthenticationServiceMockTest {
         StudyParticipant participant = new StudyParticipant.Builder().withPhone(TestConstants.PHONE)
                 .withPassword(PASSWORD).build();
         
-        service.signUp(study, participant, false);
+        service.signUp(study, participant);
         
         verify(participantService).createParticipant(eq(study), eq(NO_CALLER_ROLES), participantCaptor.capture(), eq(true));
         StudyParticipant captured = participantCaptor.getValue();
@@ -470,7 +473,7 @@ public class AuthenticationServiceMockTest {
         doThrow(new EntityAlreadyExistsException(StudyParticipant.class, "userId", "AAA")).when(participantService)
                 .createParticipant(study, NO_CALLER_ROLES, participant, true);
         
-        service.signUp(study, participant, false);
+        service.signUp(study, participant);
         
         ArgumentCaptor<AccountId> accountIdCaptor = ArgumentCaptor.forClass(AccountId.class);
         
@@ -726,7 +729,7 @@ public class AuthenticationServiceMockTest {
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withEmail(null).withPhone(null).withExternalId("id").build();
-        service.signUp(study, participant, false);
+        service.signUp(study, participant);
     }
     
     @Test
@@ -735,8 +738,58 @@ public class AuthenticationServiceMockTest {
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withEmail(null).withPhone(null).withExternalId("id").build();
-        service.signUp(study, participant, false);
+        service.signUp(study, participant);
         
         verify(participantService).createParticipant(study, NO_CALLER_ROLES, participant, true);
+    }
+    
+    @Test
+    public void signInWithIntentToPartipate() {
+        when(accountDao.authenticate(study, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(participantService.getParticipant(study, account, false)).thenReturn(PARTICIPANT);
+        when(intentService.registerIntentToParticipate(study, account)).thenReturn(true);
+        when(accountDao.getAccount(any(AccountId.class))).thenReturn(account);
+        when(consentService.getConsentStatuses(any(), any())).thenReturn(TestConstants.CONSENTED_STATUS_MAP);
+        account.setId(USER_ID);
+        
+        // consent required is not thrown
+        service.signIn(study, CONTEXT, PHONE_PASSWORD_SIGN_IN);
+        
+        verify(intentService).registerIntentToParticipate(study, account);
+        verify(accountDao).getAccount(AccountId.forId(study.getIdentifier(), account.getId()));
+    }
+    
+    @Test
+    public void emailSignInWithIntentToParticipate() {
+        AccountId accountId = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER,  USER_ID);
+        when(accountWorkflowService.channelSignIn(any(), any(), any(), any())).thenReturn(accountId);
+        when(accountDao.getAccountAfterAuthentication(accountId)).thenReturn(account);
+        when(accountDao.getAccount(accountId)).thenReturn(account);
+        when(intentService.registerIntentToParticipate(study, account)).thenReturn(true);
+        when(participantService.getParticipant(study, account, false)).thenReturn(PARTICIPANT);
+        when(consentService.getConsentStatuses(any(), any())).thenReturn(TestConstants.CONSENTED_STATUS_MAP);
+        account.setId(USER_ID);
+        
+        service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+        
+        verify(intentService).registerIntentToParticipate(study, account);
+        verify(accountDao).getAccount(AccountId.forId(study.getIdentifier(), account.getId()));
+    }
+    
+    @Test
+    public void phoneSignInWithIntentToParticipate() {
+        AccountId accountId = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER,  USER_ID);
+        when(accountWorkflowService.channelSignIn(any(), any(), any(), any())).thenReturn(accountId);
+        when(accountDao.getAccountAfterAuthentication(accountId)).thenReturn(account);
+        when(accountDao.getAccount(accountId)).thenReturn(account);
+        when(intentService.registerIntentToParticipate(study, account)).thenReturn(true);
+        when(participantService.getParticipant(study, account, false)).thenReturn(PARTICIPANT);
+        when(consentService.getConsentStatuses(any(), any())).thenReturn(TestConstants.CONSENTED_STATUS_MAP);
+        account.setId(USER_ID);
+        
+        service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
+        
+        verify(intentService).registerIntentToParticipate(study, account);
+        verify(accountDao).getAccount(AccountId.forId(study.getIdentifier(), account.getId()));
     }
 }

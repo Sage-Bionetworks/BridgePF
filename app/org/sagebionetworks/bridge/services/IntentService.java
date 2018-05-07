@@ -43,6 +43,8 @@ public class IntentService {
     
     private AccountDao accountDao;
     
+    private ParticipantService participantService;
+    
     @Autowired
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
@@ -71,6 +73,11 @@ public class IntentService {
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
+    }
+    
+    @Autowired
+    final void setParticipantService(ParticipantService participantService) {
+        this.participantService = participantService;
     }
     
     public void submitIntentToParticipate(IntentToParticipate intent) {
@@ -131,6 +138,27 @@ public class IntentService {
                 cacheProvider.removeObject(cacheKey);
             }
         }
+    }
+    
+    public boolean registerIntentToParticipate(Study study, Account account) {
+        Phone phone = account.getPhone();
+        // Somehow, this is being called but the user has no phone number.
+        if (phone == null) {
+            return false;
+        }
+        List<Subpopulation> subpops = subpopService.getSubpopulations(study.getStudyIdentifier());
+        for (Subpopulation subpop : subpops) {
+            CacheKey cacheKey = CacheKey.itp(subpop.getGuid(), study.getStudyIdentifier(), phone);
+            IntentToParticipate intent = cacheProvider.getObject(cacheKey, IntentToParticipate.class);
+            if (intent != null) {
+                StudyParticipant participant = participantService.getParticipant(study, account.getId(), true);
+                consentService.consentToResearch(study, subpop.getGuid(), participant, 
+                        intent.getConsentSignature(), intent.getScope(), true);
+                cacheProvider.removeObject(cacheKey);
+                return true;
+            }
+        }
+        return false;
     }
     
     protected String getInstallLink(String osName, Map<String,String> installLinks) {
