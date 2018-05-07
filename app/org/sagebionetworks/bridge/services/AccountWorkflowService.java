@@ -575,7 +575,8 @@ public class AccountWorkflowService {
         }
 
         String storedToken = cacheProvider.getObject(cacheKey, String.class);
-        if (storedToken == null || !storedToken.equals(signIn.getToken())) {
+        String unformattedSubmittedToken = signIn.getToken().replaceAll("[-\\s]", "");
+        if (storedToken == null || !storedToken.equals(unformattedSubmittedToken)) {
             throw new AuthenticationFailedException();
         }
         // Consume the key regardless of what happens
