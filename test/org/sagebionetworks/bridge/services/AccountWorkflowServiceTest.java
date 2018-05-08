@@ -1002,6 +1002,36 @@ public class AccountWorkflowServiceTest {
         verifyNoMoreInteractions(mockCacheProvider);
     }
     
+    @Test
+    public void phoneChannelSignInWithFormattingDashWorks() {
+        when(mockCacheProvider.getObject(PHONE_CACHE_KEY, String.class)).thenReturn(TOKEN);
+        
+        SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID)
+                .withPhone(TestConstants.PHONE).withToken("ABC-DEF").build();
+        
+        AccountId returnedAccount = service.channelSignIn(ChannelType.PHONE, CONTEXT, signIn, SignInValidator.PHONE_SIGNIN);
+        
+        verify(mockCacheProvider).getObject(PHONE_CACHE_KEY, String.class);
+        verify(mockCacheProvider).removeObject(PHONE_CACHE_KEY);
+        assertEquals(SIGN_IN_WITH_PHONE.getAccountId(), returnedAccount);
+        verifyNoMoreInteractions(mockCacheProvider);
+    }
+    
+    @Test
+    public void phoneChannelSignInWithFormattingSpaceWorks() {
+        when(mockCacheProvider.getObject(PHONE_CACHE_KEY, String.class)).thenReturn(TOKEN);
+        
+        SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID)
+                .withPhone(TestConstants.PHONE).withToken("ABC DEF").build();
+        
+        AccountId returnedAccount = service.channelSignIn(ChannelType.PHONE, CONTEXT, signIn, SignInValidator.PHONE_SIGNIN);
+        
+        verify(mockCacheProvider).getObject(PHONE_CACHE_KEY, String.class);
+        verify(mockCacheProvider).removeObject(PHONE_CACHE_KEY);
+        assertEquals(SIGN_IN_WITH_PHONE.getAccountId(), returnedAccount);
+        verifyNoMoreInteractions(mockCacheProvider);
+    }
+    
     @Test(expected = InvalidEntityException.class)
     public void channelSignInValidates() {
         // study is missing here.
