@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -53,15 +54,23 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.ParticipantService;
+import org.sagebionetworks.bridge.services.UserAdminService;
 
 @Controller
 public class ParticipantController extends BaseController {
     
     private ParticipantService participantService;
     
+    private UserAdminService userAdminService;
+    
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
+    }
+    
+    @Autowired
+    final void setUserAdminService(UserAdminService userAdminService) {
+        this.userAdminService = userAdminService;
     }
     
     public Result getSelfParticipant() throws Exception {
@@ -105,6 +114,20 @@ public class ParticipantController extends BaseController {
         sessionUpdateService.updateParticipant(session, context, updated);
         
         return okResult(UserSessionInfo.toJSON(session));
+    }
+    
+    public Result deleteTestParticipant(String userId) {
+        UserSession session = getAuthenticatedSession(Roles.RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        AccountId accountId = AccountId.forId(study.getIdentifier(), userId);
+        
+        StudyParticipant participant = participantService.getParticipant(study, accountId, false);
+        if (!participant.getDataGroups().contains(BridgeConstants.TEST_USER_GROUP)) {
+            throw new UnauthorizedException("Account is not a test account.");
+        }
+        userAdminService.deleteUser(study, userId);
+        
+        return okResult("User deleted.");
     }
     
     public Result getActivityEventsForWorker(String studyId, String userId) {

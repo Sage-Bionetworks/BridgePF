@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -99,6 +100,11 @@ public class SubpopulationControllerTest {
 
         String json = Helpers.contentAsString(result);
         
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        JsonNode oneSubpop = node.get("items").get(0);
+        assertNull(oneSubpop.get("studyIdentifier"));
+        assertNull(oneSubpop.get("deleted"));
+        
         ResourceList<Subpopulation> rList = BridgeObjectMapper.get().readValue(json, subpopType);
         assertEquals(list, rList.getItems());
         assertEquals(2, rList.getItems().size());
@@ -184,6 +190,8 @@ public class SubpopulationControllerTest {
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         assertEquals("Subpopulation", node.get("type").asText());
         assertEquals("AAA", node.get("guid").asText());
+        assertNull(node.get("studyIdentifier"));
+        assertNull(node.get("deleted"));
         
         verify(subpopService).getSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID);
     }
