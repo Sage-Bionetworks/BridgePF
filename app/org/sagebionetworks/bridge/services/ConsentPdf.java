@@ -129,10 +129,6 @@ public final class ConsentPdf {
                 contactInfo = signer.getExternalId();
                 contactLabel = "ID";
             }
-            // Some integration tests enable the account without verifying either phone or email. Just
-            // silently fill out the consent without contact information (don't throw an error or these 
-            // integration tests will fail).
-            
             // This is now a fragment, assemble accordingly
             Map<String,String> map = BridgeUtils.studyTemplateVariables(study);
             String resolvedStudyConsentAgreement = BridgeUtils.resolveTemplate(studyConsentAgreement, map);
