@@ -6,7 +6,9 @@ import java.io.FileInputStream;
 
 import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
@@ -18,6 +20,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 
 public class ConsentPdfTest {
+    private static final long TIMESTAMP = DateTime.parse("2017-10-04").getMillis();
     private static final String LEGACY_DOCUMENT = "<html><head></head><body>Passed through as is." +
             "|@@name@@|@@signing.date@@|@@email@@|@@sharing@@|" +
             "<img src=\"cid:consentSignature\" /></body></html>";
@@ -33,6 +36,7 @@ public class ConsentPdfTest {
     
     @Before
     public void before() throws Exception {
+        DateTimeUtils.setCurrentMillisFixed(TIMESTAMP);
         consentBodyTemplate = IOUtils.toString(new FileInputStream("conf/study-defaults/consent-page.xhtml"));
         
         study = new DynamoStudy();
@@ -41,6 +45,11 @@ public class ConsentPdfTest {
         study.setSupportEmail("sender@default.com");
         study.setConsentNotificationEmail("consent@consent.com");
         study.setConsentNotificationEmailVerified(true);
+    }
+    
+    @After
+    public void after() {
+        DateTimeUtils.setCurrentMillisSystem();
     }
     
     @Test
@@ -167,14 +176,15 @@ public class ConsentPdfTest {
         consentPdf.getFormattedConsentDocument();
     }
     
+    @Test 
     public void dateFormattedCorrectly() throws Exception {
         ConsentSignature sig = makeSignatureWithoutImage();
         
         ConsentPdf consentPdf = new ConsentPdf(study, EMAIL_PARTICIPANT, sig, SharingScope.NO_SHARING,
                 NEW_DOCUMENT_FRAGMENT, consentBodyTemplate);
         String output = consentPdf.getFormattedConsentDocument();
-        
-        assertTrue("Contains formatted date", output.contains(ConsentPdf.FORMATTER.print(DateTime.now()) + " (GMT)"));
+
+        assertTrue("Contains formatted date", output.contains("October 4, 2017 (GMT)"));
     }
     
     private static ConsentSignature makeSignatureWithoutImage() {

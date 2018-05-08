@@ -78,6 +78,7 @@ public interface Account extends BridgeEntity {
     void setStatus(AccountStatus status);
 
     StudyIdentifier getStudyIdentifier();
+    void setStudyId(StudyIdentifier studyId);
 
     /** Gets an immutable copy of the set of roles attached to this account. */
     Set<Roles> getRoles();
@@ -93,7 +94,8 @@ public interface Account extends BridgeEntity {
      * address or a user-chosen (possibly identifying) username.
      */
     String getId();
-    
+    void setId(String id);
+
     DateTime getCreatedOn();
     
     /**

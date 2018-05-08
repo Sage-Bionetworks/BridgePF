@@ -130,7 +130,6 @@ public class HibernateAccountDao implements AccountDao {
         }
     }
 
-
     /** {@inheritDoc} */
     @Override
     public void changePassword(Account account, String newPassword) {

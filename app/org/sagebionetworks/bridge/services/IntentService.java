@@ -121,44 +121,29 @@ public class IntentService {
         }
     }
     
-    public void registerIntentToParticipate(Study study, StudyParticipant participant) {
-        Phone phone = participant.getPhone();
-        // Somehow, this is being called but the user has no phone number.
-        if (phone == null) {
-            return;
-        }
-        
-        List<Subpopulation> subpops = subpopService.getSubpopulations(study.getStudyIdentifier());
-        for (Subpopulation subpop : subpops) {
-            CacheKey cacheKey = CacheKey.itp(subpop.getGuid(), study.getStudyIdentifier(), phone);
-            IntentToParticipate intent = cacheProvider.getObject(cacheKey, IntentToParticipate.class);
-            if (intent != null) {
-                consentService.consentToResearch(study, subpop.getGuid(), participant, 
-                        intent.getConsentSignature(), intent.getScope(), true);
-                cacheProvider.removeObject(cacheKey);
-            }
-        }
-    }
-    
     public boolean registerIntentToParticipate(Study study, Account account) {
         Phone phone = account.getPhone();
         // Somehow, this is being called but the user has no phone number.
         if (phone == null) {
             return false;
         }
+        boolean intentWasRegistered = false;
+        StudyParticipant participant = null;
         List<Subpopulation> subpops = subpopService.getSubpopulations(study.getStudyIdentifier());
         for (Subpopulation subpop : subpops) {
             CacheKey cacheKey = CacheKey.itp(subpop.getGuid(), study.getStudyIdentifier(), phone);
             IntentToParticipate intent = cacheProvider.getObject(cacheKey, IntentToParticipate.class);
             if (intent != null) {
-                StudyParticipant participant = participantService.getParticipant(study, account.getId(), true);
+                if (participant == null) {
+                    participant = participantService.getParticipant(study, account.getId(), true);
+                }
                 consentService.consentToResearch(study, subpop.getGuid(), participant, 
                         intent.getConsentSignature(), intent.getScope(), true);
                 cacheProvider.removeObject(cacheKey);
-                return true;
+                intentWasRegistered = true;
             }
         }
-        return false;
+        return intentWasRegistered;
     }
     
     protected String getInstallLink(String osName, Map<String,String> installLinks) {

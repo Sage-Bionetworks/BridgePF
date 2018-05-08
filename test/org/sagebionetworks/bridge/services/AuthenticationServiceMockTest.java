@@ -153,7 +153,7 @@ public class AuthenticationServiceMockTest {
 
     private Study study;
 
-    private GenericAccount account;
+    private Account account;
 
     @Before
     public void before() {
@@ -164,6 +164,7 @@ public class AuthenticationServiceMockTest {
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         
         account = new GenericAccount();
+        account.setStudyId(TestConstants.TEST_STUDY);
         
         service.setCacheProvider(cacheProvider);
         service.setBridgeConfig(config);
@@ -177,6 +178,7 @@ public class AuthenticationServiceMockTest {
         service.setIntentToParticipateService(intentService);
         
         doReturn(study).when(studyService).getStudy(STUDY_ID);
+        doReturn(study).when(studyService).getStudy(TestConstants.TEST_STUDY);
     }
     
     @Test
@@ -276,8 +278,9 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test
-    public void emailSignIn() {
+    public void emailSignIn() { 
         account.setReauthToken(REAUTH_TOKEN);
+        account.setEmailVerified(true); // with no intent to participate consents processed
         doReturn(SIGN_IN_WITH_EMAIL.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.EMAIL,
                 CONTEXT, SIGN_IN_WITH_EMAIL, SignInValidator.EMAIL_SIGNIN);
         doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
@@ -289,8 +292,8 @@ public class AuthenticationServiceMockTest {
         assertNotNull(retSession);
         assertEquals(REAUTH_TOKEN, retSession.getReauthToken());
         verify(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
-        verify(accountDao).verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
         verify(cacheProvider).setUserSession(retSession);
+        verify(intentService, never()).registerIntentToParticipate(any(Study.class), any(Account.class));
     }
     
     @Test(expected = AuthenticationFailedException.class)
@@ -487,6 +490,7 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void phoneSignIn() {
+        account.setPhoneVerified(true);
         // Put some stuff in participant to verify session is initialized
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withEmail(RECIPIENT_EMAIL).withFirstName("Test").withLastName("Tester").build();
@@ -504,7 +508,7 @@ public class AuthenticationServiceMockTest {
         
         // this doesn't pass if our mock calls above aren't executed, but verify these:
         verify(cacheProvider).setUserSession(session);
-        verify(accountDao).verifyChannel(ChannelType.PHONE, account);
+        verify(intentService, never()).registerIntentToParticipate(any(Study.class), any(Account.class));
     }
 
     @Test(expected = AuthenticationFailedException.class)
@@ -538,11 +542,15 @@ public class AuthenticationServiceMockTest {
     public void verifyEmail() {
         Verification ev = new Verification("sptoken");
         doReturn(account).when(accountWorkflowService).verifyChannel(ChannelType.EMAIL, ev);
+        when(intentService.registerIntentToParticipate(study, account)).thenReturn(false);
         
         service.verifyChannel(ChannelType.EMAIL, ev);
         
         verify(accountWorkflowService).verifyChannel(ChannelType.EMAIL, ev);
         verify(accountDao).verifyChannel(ChannelType.EMAIL, account);
+        // should not be called because there was no ITP consent. Compare with test where there is an
+        // ITP consent, and this is called to update the accounts consent status map.
+        verify(accountDao, never()).getAccount(any()); 
     }
     
     @Test(expected = InvalidEntityException.class)
@@ -555,11 +563,15 @@ public class AuthenticationServiceMockTest {
     public void verifyPhone() {
         Verification ev = new Verification("sptoken");
         doReturn(account).when(accountWorkflowService).verifyChannel(ChannelType.PHONE, ev);
+        when(intentService.registerIntentToParticipate(study, account)).thenReturn(false);
         
         service.verifyChannel(ChannelType.PHONE, ev);
         
         verify(accountWorkflowService).verifyChannel(ChannelType.PHONE, ev);
         verify(accountDao).verifyChannel(ChannelType.PHONE, account);
+        // should not be called because there was no ITP consent. Compare with test where there is an
+        // ITP consent, and this is called to update the accounts consent status map.
+        verify(accountDao, never()).getAccount(any()); 
     }
     
     @Test(expected = InvalidEntityException.class)
@@ -744,33 +756,32 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test
-    public void signInWithIntentToPartipate() {
-        when(accountDao.authenticate(study, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(participantService.getParticipant(study, account, false)).thenReturn(PARTICIPANT);
+    public void verifyPhoneWithIntentToPartipate() {
+        account.setPhoneVerified(false);
+        when(accountWorkflowService.verifyChannel(eq(ChannelType.PHONE), any())).thenReturn(account);
+        
         when(intentService.registerIntentToParticipate(study, account)).thenReturn(true);
         when(accountDao.getAccount(any(AccountId.class))).thenReturn(account);
         when(consentService.getConsentStatuses(any(), any())).thenReturn(TestConstants.CONSENTED_STATUS_MAP);
         account.setId(USER_ID);
         
-        // consent required is not thrown
-        service.signIn(study, CONTEXT, PHONE_PASSWORD_SIGN_IN);
+        service.verifyChannel(ChannelType.PHONE, new Verification(TOKEN));
         
         verify(intentService).registerIntentToParticipate(study, account);
         verify(accountDao).getAccount(AccountId.forId(study.getIdentifier(), account.getId()));
     }
     
     @Test
-    public void emailSignInWithIntentToParticipate() {
-        AccountId accountId = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER,  USER_ID);
-        when(accountWorkflowService.channelSignIn(any(), any(), any(), any())).thenReturn(accountId);
-        when(accountDao.getAccountAfterAuthentication(accountId)).thenReturn(account);
-        when(accountDao.getAccount(accountId)).thenReturn(account);
+    public void verifyEmailWithIntentToParticipate() {
+        account.setEmailVerified(false);
+        when(accountWorkflowService.verifyChannel(eq(ChannelType.EMAIL), any())).thenReturn(account);
+        
         when(intentService.registerIntentToParticipate(study, account)).thenReturn(true);
-        when(participantService.getParticipant(study, account, false)).thenReturn(PARTICIPANT);
+        when(accountDao.getAccount(any(AccountId.class))).thenReturn(account);
         when(consentService.getConsentStatuses(any(), any())).thenReturn(TestConstants.CONSENTED_STATUS_MAP);
         account.setId(USER_ID);
         
-        service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+        service.verifyChannel(ChannelType.EMAIL, new Verification(TOKEN));
         
         verify(intentService).registerIntentToParticipate(study, account);
         verify(accountDao).getAccount(AccountId.forId(study.getIdentifier(), account.getId()));
@@ -788,6 +799,23 @@ public class AuthenticationServiceMockTest {
         account.setId(USER_ID);
         
         service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
+        
+        verify(intentService).registerIntentToParticipate(study, account);
+        verify(accountDao).getAccount(AccountId.forId(study.getIdentifier(), account.getId()));
+    }
+
+    @Test
+    public void emailSignInWithIntentToParticipate() {
+        AccountId accountId = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER,  USER_ID);
+        when(accountWorkflowService.channelSignIn(any(), any(), any(), any())).thenReturn(accountId);
+        when(accountDao.getAccountAfterAuthentication(accountId)).thenReturn(account);
+        when(accountDao.getAccount(accountId)).thenReturn(account);
+        when(intentService.registerIntentToParticipate(study, account)).thenReturn(true);
+        when(participantService.getParticipant(study, account, false)).thenReturn(PARTICIPANT);
+        when(consentService.getConsentStatuses(any(), any())).thenReturn(TestConstants.CONSENTED_STATUS_MAP);
+        account.setId(USER_ID);
+        
+        service.phoneSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
         
         verify(intentService).registerIntentToParticipate(study, account);
         verify(accountDao).getAccount(AccountId.forId(study.getIdentifier(), account.getId()));

@@ -171,10 +171,6 @@ public class AuthenticationService {
         
         Account account = accountDao.authenticate(study, signIn);
 
-        if (intentService.registerIntentToParticipate(study, account)) {
-            account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), account.getId()));    
-        }
-
         UserSession session = getSessionFromAccount(study, context, account);
         // Do not call sessionUpdateService as we assume system is in sync with the session on sign in
         cacheProvider.setUserSession(session);
@@ -269,7 +265,19 @@ public class AuthenticationService {
 
         Validate.entityThrowingException(VerificationValidator.INSTANCE, verification);
         Account account = accountWorkflowService.verifyChannel(type, verification);
+        updateChannelAfterVerification(type, account);
+    }
+    
+    // Channel is verified to exist, either by token or by successful sign in, so adjust the 
+    // account and process any pending ITP consents.
+    protected Account updateChannelAfterVerification(ChannelType type, Account account) {
+        Study study = studyService.getStudy(account.getStudyIdentifier());
+        
         accountDao.verifyChannel(type, account);
+        if (intentService.registerIntentToParticipate(study, account)) {
+            account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), account.getId()));    
+        }
+        return account;
     }
     
     public void resendVerification(ChannelType type, AccountId accountId) {
@@ -358,21 +366,22 @@ public class AuthenticationService {
         AccountId accountId = accountWorkflowService.channelSignIn(channelType, context, signIn, validator);
         
         Account account = accountDao.getAccountAfterAuthentication(accountId);
-        // This should be unlikley, but if someone deleted the account while the token was outstanding
+        // This should be unlikely, but if someone deleted the account while the token was outstanding
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
         if (account.getStatus() == AccountStatus.DISABLED) {
             throw new AccountDisabledException();
         }
-        // Update account state before we create the session, so it's accurate...
-        accountDao.verifyChannel(channelType, account);
-
+        // Channel can be verified by signing in successfully, so if it has not yet been verified, 
+        // perform the work around verifying the account (setting state and processing ITP consents).
+        // Then update the account to pick up the new consent state.
+        if (!isChannelVerified(channelType, account)) {
+            account = updateChannelAfterVerification(channelType, account);
+        }
+        
         Study study = studyService.getStudy(signIn.getStudyId());
         
-        if (intentService.registerIntentToParticipate(study, account)) {
-            account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), account.getId()));    
-        }
         UserSession session = getSessionFromAccount(study, context, account);
         cacheProvider.setUserSession(session);
         
@@ -380,6 +389,15 @@ public class AuthenticationService {
             throw new ConsentRequiredException(session);
         }
         return session;
+    }
+    
+    private boolean isChannelVerified(ChannelType channelType, Account account) {
+        if (channelType == ChannelType.EMAIL) {
+            return Boolean.TRUE.equals(account.getEmailVerified());
+        } else if (channelType == ChannelType.PHONE) {
+            return Boolean.TRUE.equals(account.getPhoneVerified());
+        }
+        throw new BridgeServiceException("Unsupported channel type: " + channelType);
     }
     
     private UserSession getSessionFromAccount(Study study, CriteriaContext context, Account account) {

@@ -308,6 +308,7 @@ public class GenericAccount implements Account {
     }
 
     /** @see #getStudyIdentifier */
+    @Override
     public void setStudyId(StudyIdentifier studyId) {
         this.studyId = studyId;
     }
@@ -331,6 +332,7 @@ public class GenericAccount implements Account {
     }
 
     /** @see #getId */
+    @Override
     public void setId(String id) {
         this.id = id;
     }
