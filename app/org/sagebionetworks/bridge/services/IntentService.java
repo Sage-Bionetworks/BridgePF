@@ -127,7 +127,7 @@ public class IntentService {
         if (phone == null) {
             return false;
         }
-        boolean intentWasRegistered = false;
+        boolean consentsUpdated = false;
         StudyParticipant participant = null;
         List<Subpopulation> subpops = subpopService.getSubpopulations(study.getStudyIdentifier());
         for (Subpopulation subpop : subpops) {
@@ -140,10 +140,10 @@ public class IntentService {
                 consentService.consentToResearch(study, subpop.getGuid(), participant, 
                         intent.getConsentSignature(), intent.getScope(), true);
                 cacheProvider.removeObject(cacheKey);
-                intentWasRegistered = true;
+                consentsUpdated = true;
             }
         }
-        return intentWasRegistered;
+        return consentsUpdated;
     }
     
     protected String getInstallLink(String osName, Map<String,String> installLinks) {

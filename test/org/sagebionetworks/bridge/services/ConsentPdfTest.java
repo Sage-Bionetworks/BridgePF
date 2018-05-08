@@ -164,17 +164,6 @@ public class ConsentPdfTest {
         assertTrue(output.contains(">anId<"));
         assertTrue(output.contains(">ID<"));
     }
-
-    @Test(expected = BridgeServiceException.class)
-    public void noVerifiedCommunicationChannelThrows() throws Exception {
-        ConsentSignature sig = makeSignatureWithoutImage();
-        
-        StudyParticipant noChannelParticipant = new StudyParticipant.Builder().build();
-        
-        ConsentPdf consentPdf = new ConsentPdf(study, noChannelParticipant, sig, SharingScope.NO_SHARING,
-                NEW_DOCUMENT_FRAGMENT, consentBodyTemplate);
-        consentPdf.getFormattedConsentDocument();
-    }
     
     @Test 
     public void dateFormattedCorrectly() throws Exception {

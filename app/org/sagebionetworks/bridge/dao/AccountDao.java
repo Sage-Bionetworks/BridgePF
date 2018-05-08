@@ -27,7 +27,6 @@ public interface AccountDao {
     
     /**
      * Set the verified flag for the channel (email or phone) to true, and enable the account (if needed).
-     * Returns true if the account is updated, false if not.
      */
     void verifyChannel(AuthenticationService.ChannelType channelType, Account account);
     

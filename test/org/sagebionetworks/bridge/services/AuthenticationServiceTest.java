@@ -43,6 +43,7 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
@@ -162,9 +163,12 @@ public class AuthenticationServiceTest {
             study.setAutoVerificationPhoneSuppressed(true);
             holder = authService.signUp(study, participant);
             
-            AccountId accountId = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, holder.getIdentifier());
-            Account account = accountDao.getAccount(accountId);
-            authService.updateChannelAfterVerification(ChannelType.EMAIL, account);
+            Account account = accountDao.getAccount(
+                    AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, holder.getIdentifier()));
+            account.setPhoneVerified(true);
+            account.setEmailVerified(true);
+            account.setStatus(AccountStatus.ENABLED);
+            accountDao.updateAccount(account, true);
             
             CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY)
                     .build();
