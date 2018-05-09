@@ -131,7 +131,6 @@ public class ConsentServiceMockTest {
     @Before
     public void before() throws IOException {
         documentString = IOUtils.toString(new FileInputStream("conf/study-defaults/consent-page.xhtml"));
-        account = Account.create();
         
         consentService = new ConsentService();
         consentService.setAccountDao(accountDao);
