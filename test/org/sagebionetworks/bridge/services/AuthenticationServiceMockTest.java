@@ -163,7 +163,7 @@ public class AuthenticationServiceMockTest {
         study.setName("Sender");
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         
-        account = new GenericAccount();
+        account = Account.create();
         
         service.setCacheProvider(cacheProvider);
         service.setBridgeConfig(config);
@@ -746,7 +746,7 @@ public class AuthenticationServiceMockTest {
     @Test
     public void signInWithIntentToParticipate() throws Exception {
         account.setId(USER_ID);
-        Account consentedAccount = new GenericAccount();
+        Account consentedAccount = Account.create();
         StudyParticipant consentedParticipant = new StudyParticipant.Builder().build();
         
         doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
@@ -765,7 +765,7 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void emailSignInWithIntentToParticipate() throws Exception {
-        Account consentedAccount = new GenericAccount();
+        Account consentedAccount = Account.create();
         StudyParticipant consentedParticipant = new StudyParticipant.Builder().build();
         
         when(accountWorkflowService.channelSignIn(ChannelType.EMAIL, CONTEXT, SIGN_IN_WITH_EMAIL,
@@ -786,7 +786,7 @@ public class AuthenticationServiceMockTest {
 
     @Test
     public void phoneSignInWithIntentToParticipate() throws Exception {
-        Account consentedAccount = new GenericAccount();
+        Account consentedAccount = Account.create();
         StudyParticipant consentedParticipant = new StudyParticipant.Builder().build();
         
         when(accountWorkflowService.channelSignIn(ChannelType.PHONE, CONTEXT, SIGN_IN_WITH_PHONE,

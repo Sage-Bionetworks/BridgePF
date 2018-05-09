@@ -41,6 +41,7 @@ import org.sagebionetworks.bridge.file.InMemoryFileHelper;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
@@ -248,7 +249,7 @@ public class UploadHandlersEndToEndTest {
         strictValidationHandler.setStudyService(mockStudyService);
 
         // set up TranscribeConsentHandler
-        GenericAccount account = new GenericAccount();
+        Account account = Account.create();
         account.setDataGroups(ImmutableSet.of("parkinson","test_user"));
         account.setExternalId(EXTERNAL_ID);
         account.setSharingScope(SharingScope.SPONSORS_AND_PARTNERS);

@@ -125,8 +125,8 @@ public class ConsentServiceMockTest {
         consentSignature = new ConsentSignature.Builder().withName("Test User").withBirthdate("1990-01-01")
                 .withSignedOn(SIGNED_ON).build();
         
-        account = spy(new GenericAccount()); // mock(Account.class);
-        ((GenericAccount)account).setId(ID);
+        account = Account.create(); // mock(Account.class);
+        account.setId(ID);
         when(accountDao.getAccount(any(AccountId.class))).thenReturn(account);
         
         StudyConsentView studyConsentView = mock(StudyConsentView.class);
@@ -273,8 +273,8 @@ public class ConsentServiceMockTest {
     @Test
     public void withdrawConsentWithParticipant() throws Exception {
         account.setEmail(EMAIL);
+        account.setHealthCode(participant.getHealthCode());
 
-        doReturn(participant.getHealthCode()).when(account).getHealthCode();
         doReturn(account).when(accountDao).getAccount(AccountId.forId(study.getIdentifier(), participant.getId()));
 
         // Add two consents to the account, one withdrawn, one active. This tests to make sure we're not accidentally
@@ -346,7 +346,7 @@ public class ConsentServiceMockTest {
         ArgumentCaptor<Account> accountCaptor = ArgumentCaptor.forClass(Account.class);
         
         verify(accountDao).updateAccount(accountCaptor.capture(), eq(false));
-        verify(account).setSharingScope(SharingScope.NO_SHARING);
+        assertEquals(SharingScope.NO_SHARING, account.getSharingScope());
 
         ArgumentCaptor<MimeTypeEmailProvider> emailCaptor = ArgumentCaptor.forClass(MimeTypeEmailProvider.class);
         verify(sendMailService).sendEmail(emailCaptor.capture());
@@ -373,8 +373,8 @@ public class ConsentServiceMockTest {
     public void withdrawAllConsentsWithPhone() {
         TestUtils.mockEditAccount(accountDao, account);
         account.setPhone(TestConstants.PHONE);
+        account.setHealthCode(participant.getHealthCode());
 
-        doReturn(participant.getHealthCode()).when(account).getHealthCode();
         doReturn(account).when(accountDao).getAccount(AccountId.forId(study.getIdentifier(), participant.getId()));
 
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));
@@ -385,7 +385,7 @@ public class ConsentServiceMockTest {
         ArgumentCaptor<Account> accountCaptor = ArgumentCaptor.forClass(Account.class);
         
         verify(accountDao).updateAccount(accountCaptor.capture(), eq(false));
-        verify(account).setSharingScope(SharingScope.NO_SHARING);
+        assertEquals(SharingScope.NO_SHARING, account.getSharingScope());
         verify(sendMailService, never()).sendEmail(any(MimeTypeEmailProvider.class));
         
         Account updatedAccount = accountCaptor.getValue();
@@ -833,6 +833,7 @@ public class ConsentServiceMockTest {
         // two consents, withdrawing one does not turn sharing entirely off.
         account.setEmail(EMAIL);
         account.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
+        account.setHealthCode(participant.getHealthCode());
         
         Subpopulation subpop1 = Subpopulation.create();
         subpop1.setName(SUBPOP_GUID.getGuid());
@@ -844,7 +845,6 @@ public class ConsentServiceMockTest {
         subpop2.setGuid(SECOND_SUBPOP);
         subpop2.setRequired(subpop2Required);
         
-        doReturn(participant.getHealthCode()).when(account).getHealthCode();
         doReturn(account).when(accountDao).getAccount(AccountId.forId(study.getIdentifier(), participant.getId()));
         doReturn(ImmutableList.of(subpop1, subpop2)).when(subpopService).getSubpopulationsForUser(any());
         
@@ -862,8 +862,8 @@ public class ConsentServiceMockTest {
     
     private void setupWithdrawTest() {
         account.setEmail(EMAIL);
+        account.setHealthCode(participant.getHealthCode());
 
-        doReturn(participant.getHealthCode()).when(account).getHealthCode();
         doReturn(account).when(accountDao).getAccount(AccountId.forId(study.getIdentifier(), participant.getId()));
 
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(consentSignature));

@@ -191,7 +191,7 @@ public class IntentServiceTest {
         
         AccountId accountId = AccountId.forPhone(intent.getStudyId(), intent.getPhone()); 
         
-        Account account = new GenericAccount();
+        Account account = Account.create();
         when(accountDao.getAccount(accountId)).thenReturn(account);
         
         service.submitIntentToParticipate(intent);
@@ -222,7 +222,7 @@ public class IntentServiceTest {
                         .build())
                 .build();
         
-        Account account = new GenericAccount();
+        Account account = Account.create();
         account.setPhone(TestConstants.PHONE);
         
         CacheKey key = CacheKey.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE);
@@ -272,7 +272,7 @@ public class IntentServiceTest {
                         .build())
                 .build();
         
-        Account account = new GenericAccount();
+        Account account = Account.create();
         account.setId("id");
         account.setPhone(TestConstants.PHONE);
         
@@ -304,7 +304,7 @@ public class IntentServiceTest {
     
     @Test
     public void noPhoneDoesNothing() {
-        Account account = new GenericAccount();
+        Account account = Account.create();
         
         service.registerIntentToParticipate(mockStudy, account);
         
@@ -320,7 +320,7 @@ public class IntentServiceTest {
         Subpopulation subpopB = Subpopulation.create();
         subpopB.setGuidString("BBB");
         
-        Account account = new GenericAccount();
+        Account account = Account.create();
         account.setPhone(TestConstants.PHONE);
         
         StudyParticipant participant = new StudyParticipant.Builder().build();

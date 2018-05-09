@@ -21,6 +21,10 @@ import com.fasterxml.jackson.databind.JsonNode;
  */
 public interface Account extends BridgeEntity {
 
+    static Account create() {
+        return new GenericAccount();
+    }
+    
     default ConsentSignature getActiveConsentSignature(SubpopulationGuid subpopGuid) {
         List<ConsentSignature> history = getConsentSignatureHistory(subpopGuid);
         if (!history.isEmpty()) {
@@ -71,6 +75,7 @@ public interface Account extends BridgeEntity {
     Map<SubpopulationGuid,List<ConsentSignature>> getAllConsentSignatureHistories();
     
     String getHealthCode();
+    void setHealthCode(String healthCode);
 
     void setHealthId(HealthId healthId);
 

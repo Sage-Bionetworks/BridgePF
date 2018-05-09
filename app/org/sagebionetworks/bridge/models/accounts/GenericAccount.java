@@ -268,6 +268,7 @@ public class GenericAccount implements Account {
     }
 
     /** @see #getHealthCode */
+    @Override
     public void setHealthCode(String healthCode) {
         this.healthCode = healthCode;
     }
