@@ -71,6 +71,7 @@ public interface Account extends BridgeEntity {
     Map<SubpopulationGuid,List<ConsentSignature>> getAllConsentSignatureHistories();
     
     String getHealthCode();
+    void setHealthCode(String healthCode);
 
     void setHealthId(HealthId healthId);
 
@@ -93,6 +94,7 @@ public interface Account extends BridgeEntity {
      * address or a user-chosen (possibly identifying) username.
      */
     String getId();
+    void setId(String id);
     
     DateTime getCreatedOn();
     

@@ -391,7 +391,7 @@ public class ConsentService {
                 .withStudy(study)
                 .withPhone(participant.getPhone())
                 .withExpirationPeriod(EXPIRATION_PERIOD_KEY, SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS)
-                .withPromotionType()
+                .withTransactionType()
                 .withSmsTemplate(study.getSignedConsentSmsTemplate())
                 .withToken(BridgeConstants.CONSENT_URL, shortUrl)
                 .build();
