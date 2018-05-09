@@ -161,7 +161,7 @@ public class AuthenticationServiceTest {
             
             study.setAutoVerificationEmailSuppressed(true);
             study.setAutoVerificationPhoneSuppressed(true);
-            holder = authService.signUp(study, participant, true);
+            holder = authService.signUp(study, participant);
             
             Account account = accountDao.getAccount(
                     AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, holder.getIdentifier()));
@@ -170,8 +170,8 @@ public class AuthenticationServiceTest {
             account.setStatus(AccountStatus.ENABLED);
             accountDao.updateAccount(account, true);
             
-            CriteriaContext context = new CriteriaContext.Builder()
-                    .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+            CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY)
+                    .build();
             
             // You should be able to sign in, and be consented. No exception.
             SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
@@ -296,7 +296,7 @@ public class AuthenticationServiceTest {
         StudyParticipant participant = TestUtils.getStudyParticipant(AuthenticationServiceTest.class);
         IdentifierHolder holder = null;
         try {
-            holder = authService.signUp(study, participant, false);
+            holder = authService.signUp(study, participant);
             
             StudyParticipant persisted = participantService.getParticipant(study, holder.getIdentifier(), false);
             assertEquals(participant.getFirstName(), persisted.getFirstName());
@@ -324,7 +324,7 @@ public class AuthenticationServiceTest {
                 .withEmail(email).withPassword("P@ssword1").withDataGroups(groups).build();
         IdentifierHolder holder = null;
         try {
-            holder = authService.signUp(study, participant, false);
+            holder = authService.signUp(study, participant);
             
             Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), holder.getIdentifier()));
             assertEquals(groups, account.getDataGroups());
@@ -367,7 +367,7 @@ public class AuthenticationServiceTest {
         authService.setAccountWorkflowService(accountWorkflowServiceSpy);
 
         // Second sign up
-        authService.signUp(testUser.getStudy(), testUser.getStudyParticipant(), false);
+        authService.signUp(testUser.getStudy(), testUser.getStudyParticipant());
         
         ArgumentCaptor<AccountId> accountIdCaptor = ArgumentCaptor.forClass(AccountId.class);
         verify(accountWorkflowServiceSpy).notifyAccountExists(eq(testUser.getStudy()), accountIdCaptor.capture());
@@ -472,7 +472,7 @@ public class AuthenticationServiceTest {
                 .withEmail(email).withPassword(PASSWORD).withRoles(roles).build();
         IdentifierHolder holder = null;
         try {
-            holder = authService.signUp(study, participant, false);    
+            holder = authService.signUp(study, participant);    
             participant = participantService.getParticipant(study, holder.getIdentifier(), false);
             assertTrue(participant.getRoles().isEmpty());
         } finally {

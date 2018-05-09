@@ -180,11 +180,9 @@ public class AuthenticationController extends BaseController {
         JsonNode node = requestToJSON(request());
         StudyParticipant participant = MAPPER.treeToValue(node, StudyParticipant.class);
         
-        boolean checkForConsent = JsonUtils.asBoolean(node, "checkForConsent");
-        
         String studyId = JsonUtils.asText(node, BridgeConstants.STUDY_PROPERTY);
         Study study = getStudyOrThrowException(studyId);
-        authenticationService.signUp(study, participant, checkForConsent);
+        authenticationService.signUp(study, participant);
         return createdResult("Signed up.");
     }
 

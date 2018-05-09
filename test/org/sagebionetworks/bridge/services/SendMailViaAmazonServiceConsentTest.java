@@ -14,7 +14,6 @@ import java.util.List;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.simpleemail.model.MessageRejectedException;
 import org.apache.commons.io.IOUtils;
-import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -23,6 +22,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -46,8 +46,8 @@ import com.google.common.base.Charsets;
 public class SendMailViaAmazonServiceConsentTest {
     private static final String SUPPORT_EMAIL = "study-support-email@study.com";
     private static final String FROM_STUDY_AS_FORMATTED = "\"Test Study (Sage)\" <"+SUPPORT_EMAIL+">";
-    private static final DateTimeZone MSK = DateTimeZone.forID("Europe/Moscow");
-
+    private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder()
+            .withEmail("test-user@sagebase.org").withEmailVerified(true).build();;
     private SendMailViaAmazonService service;
     private AmazonSimpleEmailServiceClient emailClient;
     private StudyService studyService;
@@ -103,8 +103,8 @@ public class SendMailViaAmazonServiceConsentTest {
         
         String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
         
-        ConsentPdf consentPdf = new ConsentPdf(study, MSK, "test-user@sagebase.org", consent,
-                SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate);
+        ConsentPdf consentPdf = new ConsentPdf(study, PARTICIPANT, consent, SharingScope.SPONSORS_AND_PARTNERS,
+                htmlTemplate, consentBodyTemplate);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
@@ -144,7 +144,7 @@ public class SendMailViaAmazonServiceConsentTest {
         
         String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
         
-        ConsentPdf consentPdf = new ConsentPdf(study, MSK, "test-user@sagebase.org", consent,
+        ConsentPdf consentPdf = new ConsentPdf(study, PARTICIPANT, consent,
                 SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
@@ -191,8 +191,8 @@ public class SendMailViaAmazonServiceConsentTest {
         
         String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
         
-        ConsentPdf consentPdf = new ConsentPdf(study, MSK, "test-user@sagebase.org", consent,
-                SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate);
+        ConsentPdf consentPdf = new ConsentPdf(study, PARTICIPANT, consent, SharingScope.SPONSORS_AND_PARTNERS,
+                htmlTemplate, consentBodyTemplate);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
@@ -219,8 +219,8 @@ public class SendMailViaAmazonServiceConsentTest {
         
         String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
 
-        ConsentPdf consentPdf = new ConsentPdf(study, MSK, "test-user@sagebase.org", consent,
-                SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate);
+        ConsentPdf consentPdf = new ConsentPdf(study, PARTICIPANT, consent, SharingScope.SPONSORS_AND_PARTNERS,
+                htmlTemplate, consentBodyTemplate);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
