@@ -35,7 +35,7 @@ import org.springframework.validation.Validator;
 public class StudyValidator implements Validator {
     public static final StudyValidator INSTANCE = new StudyValidator();
     
-    private static final int MAX_SYNAPSE_LENGTH = 100;
+    private static final int MAX_SYNAPSE_LENGTH = 250;
     private static final Pattern FINGERPRINT_PATTERN = Pattern.compile("^[0-9a-fA-F:]{95,95}$");
     
     /**

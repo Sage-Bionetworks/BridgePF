@@ -3,11 +3,14 @@ package org.sagebionetworks.bridge.validators;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
@@ -386,8 +389,14 @@ public class StudyValidatorTest {
     
     @Test
     public void longListOfDataGroupsInvalid() {
-        study.setDataGroups(Sets.newTreeSet(Lists.newArrayList("Antwerp", "Ghent", "Charleroi", "Liege", "Brussels-City", "Bruges", "Schaerbeek", "Anderlecht", "Namur", "Leuven", "Mons", "Molenbeek-Saint-Jean")));
-        assertValidatorMessage(INSTANCE, study, "dataGroups", "will not export to Synapse (string is over 100 characters: 'Anderlecht, Antwerp, Bruges, Brussels-City, Charleroi, Ghent, Leuven, Liege, Molenbeek-Saint-Jean, Mons, Namur, Schaerbeek')");
+        // Make 25 data groups, each with at least 10 chars in length. This will be long enough to hit the limit.
+        Set<String> dataGroupSet = new TreeSet<>();
+        for (int i = 0; i < 25; i++) {
+            dataGroupSet.add("data-group-" + i);
+        }
+        study.setDataGroups(dataGroupSet);
+        assertValidatorMessage(INSTANCE, study, "dataGroups", "will not export to Synapse (string is over 250 characters: '" +
+                BridgeUtils.COMMA_SPACE_JOINER.join(dataGroupSet) + "')");
     }
     
     @Test
