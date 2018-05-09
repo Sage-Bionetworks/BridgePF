@@ -229,7 +229,7 @@ public class ParticipantServiceTest {
         participantService.setScheduledActivityService(scheduledActivityService);
         participantService.setAccountWorkflowService(accountWorkflowService);
         
-        account = new GenericAccount();
+        account = Account.create();
     }
     
     private void mockHealthCodeAndAccountRetrieval() {

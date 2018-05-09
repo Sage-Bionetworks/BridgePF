@@ -365,7 +365,7 @@ public class AuthenticationControllerMockTest {
         Result result = controller.signUp();
         assertResult(result, 201, "Signed up.");
         
-        verify(authenticationService).signUp(eq(study), participantCaptor.capture(), eq(false));
+        verify(authenticationService).signUp(eq(study), participantCaptor.capture());
         
         StudyParticipant persistedParticipant = participantCaptor.getValue();
         assertEquals(originalParticipant.getFirstName(), persistedParticipant.getFirstName());
@@ -808,7 +808,7 @@ public class AuthenticationControllerMockTest {
         Result result = controller.signUp();
         TestUtils.assertResult(result, 201, "Signed up.");
         
-        verify(authenticationService).signUp(eq(study), participantCaptor.capture(), eq(false));
+        verify(authenticationService).signUp(eq(study), participantCaptor.capture());
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals(TEST_EMAIL, captured.getEmail());
         assertEquals(TEST_PASSWORD, captured.getPassword());
@@ -827,7 +827,7 @@ public class AuthenticationControllerMockTest {
         Result result = controller.signUp();
         TestUtils.assertResult(result, 201, "Signed up.");
         
-        verify(authenticationService).signUp(eq(study), participantCaptor.capture(), eq(false));
+        verify(authenticationService).signUp(eq(study), participantCaptor.capture());
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals(TEST_EMAIL, captured.getEmail());
         assertEquals(TEST_PASSWORD, captured.getPassword());
@@ -846,7 +846,7 @@ public class AuthenticationControllerMockTest {
         Result result = controller.signUp();
         TestUtils.assertResult(result, 201, "Signed up.");
         
-        verify(authenticationService).signUp(eq(study), participantCaptor.capture(), eq(true));
+        verify(authenticationService).signUp(eq(study), participantCaptor.capture());
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals(TEST_EMAIL, captured.getEmail());
         assertEquals(TEST_PASSWORD, captured.getPassword());

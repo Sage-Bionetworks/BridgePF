@@ -195,9 +195,8 @@ public class ConsentService {
 
         // Administrative actions, almost exclusively for testing, will send no consent documents
         if (sendSignedConsent) {
-            ConsentPdf consentPdf = new ConsentPdf(study, participant.getTimeZone(), participant.getEmail(),
-                    withConsentCreatedOnSignature, sharingScope, studyConsent.getDocumentContent(),
-                    xmlTemplateWithSignatureBlock);
+            ConsentPdf consentPdf = new ConsentPdf(study, participant, withConsentCreatedOnSignature, sharingScope,
+                    studyConsent.getDocumentContent(), xmlTemplateWithSignatureBlock);
             
             boolean verifiedEmail = (participant.getEmail() != null
                     && Boolean.TRUE.equals(participant.getEmailVerified()));
@@ -358,8 +357,8 @@ public class ConsentService {
         boolean verifiedPhone = (participant.getPhone() != null
                 && Boolean.TRUE.equals(participant.getPhoneVerified()));
         
-        ConsentPdf consentPdf = new ConsentPdf(study, participant.getTimeZone(), participant.getEmail(),
-                consentSignature, sharingScope, studyConsentDocument, xmlTemplateWithSignatureBlock);            
+        ConsentPdf consentPdf = new ConsentPdf(study, participant, consentSignature, sharingScope, studyConsentDocument,
+                xmlTemplateWithSignatureBlock);
         
         if (verifiedEmail) {
             BasicEmailProvider provider = new BasicEmailProvider.Builder()

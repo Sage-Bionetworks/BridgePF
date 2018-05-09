@@ -21,6 +21,10 @@ import com.fasterxml.jackson.databind.JsonNode;
  */
 public interface Account extends BridgeEntity {
 
+    static Account create() {
+        return new GenericAccount();
+    }
+    
     default ConsentSignature getActiveConsentSignature(SubpopulationGuid subpopGuid) {
         List<ConsentSignature> history = getConsentSignatureHistory(subpopGuid);
         if (!history.isEmpty()) {
@@ -79,6 +83,7 @@ public interface Account extends BridgeEntity {
     void setStatus(AccountStatus status);
 
     StudyIdentifier getStudyIdentifier();
+    void setStudyId(StudyIdentifier studyId);
 
     /** Gets an immutable copy of the set of roles attached to this account. */
     Set<Roles> getRoles();
@@ -95,7 +100,7 @@ public interface Account extends BridgeEntity {
      */
     String getId();
     void setId(String id);
-    
+
     DateTime getCreatedOn();
     
     /**

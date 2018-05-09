@@ -131,7 +131,7 @@ public class ConsentServiceMockTest {
     @Before
     public void before() throws IOException {
         documentString = IOUtils.toString(new FileInputStream("conf/study-defaults/consent-page.xhtml"));
-        account = new GenericAccount();
+        account = Account.create();
         
         consentService = new ConsentService();
         consentService.setAccountDao(accountDao);
@@ -146,7 +146,9 @@ public class ConsentServiceMockTest {
         
         study = TestUtils.getValidStudy(ConsentServiceMockTest.class);
 
+        account = Account.create(); // mock(Account.class);
         account.setId(ID);
+        
         when(accountDao.getAccount(any(AccountId.class))).thenReturn(account);
         
         when(s3Helper.generatePresignedUrl(eq(ConsentService.USERSIGNED_CONSENTS_BUCKET), any(), any(),
@@ -332,6 +334,8 @@ public class ConsentServiceMockTest {
 
         verify(accountDao).updateAccount(accountCaptor.capture(), eq(false));
         assertEquals(SharingScope.NO_SHARING, account.getSharingScope());
+
+        ArgumentCaptor<MimeTypeEmailProvider> emailCaptor = ArgumentCaptor.forClass(MimeTypeEmailProvider.class);
         verify(sendMailService).sendEmail(emailCaptor.capture());
 
         MimeTypeEmailProvider provider = emailCaptor.getValue();
@@ -801,6 +805,7 @@ public class ConsentServiceMockTest {
     private void setupWithdrawTest(boolean subpop1Required, boolean subpop2Required) {
         // two consents, withdrawing one does not turn sharing entirely off.
         account.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
+        account.setHealthCode(PARTICIPANT.getHealthCode());
         
         Subpopulation subpop1 = Subpopulation.create();
         subpop1.setName(SUBPOP_GUID.getGuid());

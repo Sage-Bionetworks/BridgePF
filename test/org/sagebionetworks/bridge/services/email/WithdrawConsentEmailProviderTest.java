@@ -31,7 +31,7 @@ public class WithdrawConsentEmailProviderTest {
     public void before() {
         study = mock(Study.class);
         
-        account = new GenericAccount();
+        account = Account.create();
         account.setEmail("d@d.com");
         
         provider = new WithdrawConsentEmailProvider(study, EXTERNAL_ID, account, WITHDRAWAL, UNIX_TIMESTAMP);

@@ -309,6 +309,7 @@ public class GenericAccount implements Account {
     }
 
     /** @see #getStudyIdentifier */
+    @Override
     public void setStudyId(StudyIdentifier studyId) {
         this.studyId = studyId;
     }

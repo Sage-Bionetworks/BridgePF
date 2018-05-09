@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -63,6 +64,9 @@ public class IntentServiceTest {
     NotificationsService mockNotificationsService;
     
     @Mock
+    ParticipantService mockParticipantService;
+    
+    @Mock
     Study mockStudy;
     
     @Mock
@@ -89,6 +93,7 @@ public class IntentServiceTest {
         service.setCacheProvider(mockCacheProvider);
         service.setNotificationsService(mockNotificationsService);
         service.setAccountDao(accountDao);
+        service.setParticipantService(mockParticipantService);
     }
     
     @Test
@@ -186,7 +191,7 @@ public class IntentServiceTest {
         
         AccountId accountId = AccountId.forPhone(intent.getStudyId(), intent.getPhone()); 
         
-        Account account = new GenericAccount();
+        Account account = Account.create();
         when(accountDao.getAccount(accountId)).thenReturn(account);
         
         service.submitIntentToParticipate(intent);
@@ -217,8 +222,8 @@ public class IntentServiceTest {
                         .build())
                 .build();
         
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withPhone(TestConstants.PHONE).build();
+        Account account = Account.create();
+        account.setPhone(TestConstants.PHONE);
         
         CacheKey key = CacheKey.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE);
         
@@ -228,19 +233,80 @@ public class IntentServiceTest {
                 .thenReturn(Lists.newArrayList(subpopA, subpopB));
         when(mockCacheProvider.getObject(key, IntentToParticipate.class)).thenReturn(intent);
         
-        service.registerIntentToParticipate(mockStudy, participant);
+        service.registerIntentToParticipate(mockStudy, account);
         
         verify(mockSubpopService).getSubpopulations(TestConstants.TEST_STUDY);
         verify(mockCacheProvider).removeObject(key);
-        verify(mockConsentService).consentToResearch(mockStudy, SubpopulationGuid.create("BBB"), 
-                participant, intent.getConsentSignature(), intent.getScope(), true);
+        verify(mockConsentService).consentToResearch(eq(mockStudy), eq(SubpopulationGuid.create("BBB")), 
+                any(), eq(intent.getConsentSignature()), eq(intent.getScope()), eq(true));
+    }
+    
+    @Test
+    public void registerIntentToParticipateWithMultipleConsents() throws Exception {
+        Subpopulation subpopA = Subpopulation.create();
+        subpopA.setGuidString("AAA");
+        Subpopulation subpopB = Subpopulation.create();
+        subpopB.setGuidString("BBB");
+        
+        IntentToParticipate intentAAA = new IntentToParticipate.Builder()
+                .withOsName("Android")
+                .withPhone(TestConstants.PHONE)
+                .withScope(SharingScope.NO_SHARING)
+                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withSubpopGuid("AAA")
+                .withConsentSignature(new ConsentSignature.Builder()
+                        .withName("Test Name")
+                        .withBirthdate("1975-01-01")
+                        .build())
+                .build();
+        
+        IntentToParticipate intentBBB = new IntentToParticipate.Builder()
+                .withOsName("Android")
+                .withPhone(TestConstants.PHONE)
+                .withScope(SharingScope.NO_SHARING)
+                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withSubpopGuid("BBB")
+                .withConsentSignature(new ConsentSignature.Builder()
+                        .withName("Test Name")
+                        .withBirthdate("1975-01-01")
+                        .build())
+                .build();
+        
+        Account account = Account.create();
+        account.setId("id");
+        account.setPhone(TestConstants.PHONE);
+        
+        StudyParticipant participant = new StudyParticipant.Builder().build(); 
+        
+        CacheKey keyAAA = CacheKey.itp(SubpopulationGuid.create("AAA"), TestConstants.TEST_STUDY, TestConstants.PHONE);
+        CacheKey keyBBB = CacheKey.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE);
+        
+        when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
+        when(mockStudy.getIdentifier()).thenReturn(TestConstants.TEST_STUDY_IDENTIFIER);
+        when(mockSubpopService.getSubpopulations(TestConstants.TEST_STUDY))
+                .thenReturn(Lists.newArrayList(subpopA, subpopB));
+        when(mockCacheProvider.getObject(keyAAA, IntentToParticipate.class)).thenReturn(intentAAA);
+        when(mockCacheProvider.getObject(keyBBB, IntentToParticipate.class)).thenReturn(intentBBB);
+        when(mockParticipantService.getParticipant(mockStudy, "id", true)).thenReturn(participant);
+        
+        service.registerIntentToParticipate(mockStudy, account);
+        
+        verify(mockSubpopService).getSubpopulations(TestConstants.TEST_STUDY);
+        verify(mockCacheProvider).removeObject(keyAAA);
+        verify(mockCacheProvider).removeObject(keyBBB);
+        verify(mockConsentService).consentToResearch(eq(mockStudy), eq(SubpopulationGuid.create("AAA")), 
+                any(), eq(intentAAA.getConsentSignature()), eq(intentAAA.getScope()), eq(true));
+        verify(mockConsentService).consentToResearch(eq(mockStudy), eq(SubpopulationGuid.create("BBB")), 
+                any(), eq(intentBBB.getConsentSignature()), eq(intentBBB.getScope()), eq(true));
+        // Only loaded the participant once...
+        verify(mockParticipantService, times(1)).getParticipant(mockStudy, "id", true);
     }
     
     @Test
     public void noPhoneDoesNothing() {
-        StudyParticipant participant = new StudyParticipant.Builder().build();
+        Account account = Account.create();
         
-        service.registerIntentToParticipate(mockStudy, participant);
+        service.registerIntentToParticipate(mockStudy, account);
         
         verifyNoMoreInteractions(mockSubpopService);
         verifyNoMoreInteractions(mockCacheProvider);
@@ -254,8 +320,10 @@ public class IntentServiceTest {
         Subpopulation subpopB = Subpopulation.create();
         subpopB.setGuidString("BBB");
         
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withPhone(TestConstants.PHONE).build();
+        Account account = Account.create();
+        account.setPhone(TestConstants.PHONE);
+        
+        StudyParticipant participant = new StudyParticipant.Builder().build();
         
         CacheKey key = CacheKey.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE);
         
@@ -263,8 +331,9 @@ public class IntentServiceTest {
         when(mockStudy.getIdentifier()).thenReturn(TestConstants.TEST_STUDY_IDENTIFIER);
         when(mockSubpopService.getSubpopulations(TestConstants.TEST_STUDY))
                 .thenReturn(Lists.newArrayList(subpopA, subpopB));
+        when(mockParticipantService.getParticipant(any(Study.class), any(String.class), eq(false))).thenReturn(participant);
         
-        service.registerIntentToParticipate(mockStudy, participant);
+        service.registerIntentToParticipate(mockStudy, account);
         
         verify(mockSubpopService).getSubpopulations(TestConstants.TEST_STUDY);
         verify(mockCacheProvider, never()).removeObject(key);
@@ -283,4 +352,5 @@ public class IntentServiceTest {
         assertEquals("iphone-os-link", service.getInstallLink("iPhone OS", installLinks));
         assertEquals("universal-link", service.getInstallLink("Android", installLinks));
     }
+
 }
