@@ -23,7 +23,7 @@ public class UrlShortenerService {
     public String shortenUrl(String url, int expireInSeconds) {
         Preconditions.checkNotNull(url);
         
-        // We are using a relatively short, randomized URL, so verify it isn't being
+        // We are using a relatively short, randomized token, so verify it isn't being
         // used by another URL. If it's being used by the same URL, don't reset the 
         // expiration
         String token = null;

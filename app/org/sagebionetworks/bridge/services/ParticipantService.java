@@ -453,7 +453,7 @@ public class ParticipantService {
         checkArgument(isNotBlank(userId));
 
         StudyParticipant participant = getParticipant(study, userId, false);
-        consentService.emailConsentAgreement(study, subpopGuid, participant);
+        consentService.resendConsentAgreement(study, subpopGuid, participant);
     }
 
     /**

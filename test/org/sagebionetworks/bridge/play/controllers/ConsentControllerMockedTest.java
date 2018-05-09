@@ -451,12 +451,12 @@ public class ConsentControllerMockedTest {
     }
     
     @Test
-    public void emailCopyV2() throws Exception {
-        Result result = controller.emailCopyV2(SUBPOP_GUID.getGuid());
+    public void resendConsentAgreement() throws Exception {
+        Result result = controller.resendConsentAgreement(SUBPOP_GUID.getGuid());
         
-        assertResult(result, 200, "Emailed consent.");
+        assertResult(result, 200, "Signed consent agreement resent.");
         
-        verify(consentService).emailConsentAgreement(study, SUBPOP_GUID, session.getParticipant());
+        verify(consentService).resendConsentAgreement(study, SUBPOP_GUID, session.getParticipant());
     }
     
     @Test

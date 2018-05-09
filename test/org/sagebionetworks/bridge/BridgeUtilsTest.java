@@ -62,6 +62,7 @@ public class BridgeUtilsTest {
         assertEquals("36 hours", BridgeUtils.secondsToPeriodString(60*60*36));
         assertEquals("1 day", BridgeUtils.secondsToPeriodString(60*60*24));
         assertEquals("2 days", BridgeUtils.secondsToPeriodString(60*60*24*2));
+        assertEquals("7 days", BridgeUtils.secondsToPeriodString(60*60*24*7));
     }
     
     @Test

@@ -62,6 +62,9 @@ public class BridgeConstants {
     // 12 hrs after last activity
     public static final int BRIDGE_SESSION_EXPIRE_IN_SECONDS = 12 * 60 * 60;
 
+    // 7 days
+    public static final int SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS = (7 * 24 * 60 * 60);
+    
     // 5 minutes
     public static final int BRIDGE_UPDATE_ATTEMPT_EXPIRE_IN_SECONDS = 5 * 60;
     
@@ -92,13 +95,15 @@ public class BridgeConstants {
     
     public static final int API_MAXIMUM_PAGE_SIZE = 100;
     
-    public static final String PAGE_SIZE_ERROR = "pageSize must be from "+API_MAXIMUM_PAGE_SIZE+"-"+API_MAXIMUM_PAGE_SIZE+" records";
+    public static final String PAGE_SIZE_ERROR = "pageSize must be from "+API_MINIMUM_PAGE_SIZE+"-"+API_MAXIMUM_PAGE_SIZE+" records";
     
     public static final String TEST_USER_GROUP = "test_user";
     
     public static final Set<Roles> NO_CALLER_ROLES = ImmutableSet.of();
     
     public static final String EXPIRATION_PERIOD_KEY = "expirationPeriod";
+    
+    public static final String CONSENT_URL = "consentUrl"; 
     
     /**
      * Limited to 140 characters (Java is UTF-16, so two bytes per character, assuming for now that 

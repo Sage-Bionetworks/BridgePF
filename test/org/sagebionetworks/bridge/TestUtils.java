@@ -454,6 +454,7 @@ public class TestUtils {
         study.setMinAgeOfConsent(18);
         study.setSponsorName("The Council on Test Studies");
         study.setConsentNotificationEmail("bridge-testing+consent@sagebase.org");
+        study.setConsentNotificationEmailVerified(true);
         study.setSynapseDataAccessTeamId(1234L);
         study.setSynapseProjectId("test-synapse-project-id");
         study.setTechnicalEmail("bridge-testing+technical@sagebase.org");
