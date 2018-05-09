@@ -145,10 +145,6 @@ public class ConsentServiceMockTest {
         consentService.setConsentTemplate(new ByteArrayResource((documentString).getBytes()));
         
         study = TestUtils.getValidStudy(ConsentServiceMockTest.class);
-        study.setConsentNotificationEmail(study.getConsentNotificationEmail());
-        study.setConsentNotificationEmailVerified(study.isConsentNotificationEmailVerified());
-        study.setSignedConsentTemplate(study.getSignedConsentTemplate());
-        study.setSignedConsentSmsTemplate(study.getSignedConsentSmsTemplate());
 
         account.setId(ID);
         when(accountDao.getAccount(any(AccountId.class))).thenReturn(account);
