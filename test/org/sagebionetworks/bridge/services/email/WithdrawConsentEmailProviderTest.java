@@ -13,7 +13,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.Study;
 
