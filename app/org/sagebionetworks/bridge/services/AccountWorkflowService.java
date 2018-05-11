@@ -396,7 +396,6 @@ public class AccountWorkflowService {
         builder.withToken(RESET_PASSWORD_URL_KEY, url);
         builder.withExpirationPeriod(RESET_PASSWORD_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         
-        // When phone workflow is fully supported, this will only be done if phone sign in is enabled
         if (includePhoneSignIn && study.isPhoneSignInEnabled()) {
             SignIn signIn = new SignIn.Builder().withPhone(phone).withStudy(study.getIdentifier()).build();
             requestChannelSignIn(PHONE, PHONE_SIGNIN_REQUEST, phoneSignInRequestInMillis,
