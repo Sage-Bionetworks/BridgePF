@@ -397,10 +397,10 @@ public class AccountWorkflowService {
         builder.withExpirationPeriod(RESET_PASSWORD_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         
         // When phone workflow is fully supported, this will only be done if phone sign in is enabled
-        if (includePhoneSignIn /* && study.isPhoneSignInEnabled()*/) {
+        if (includePhoneSignIn && study.isPhoneSignInEnabled()) {
             SignIn signIn = new SignIn.Builder().withPhone(phone).withStudy(study.getIdentifier()).build();
             requestChannelSignIn(PHONE, PHONE_SIGNIN_REQUEST, phoneSignInRequestInMillis,
-                signIn, false, this::getNextToken, (theStudy, token) -> {
+                signIn, false, this::getNextPhoneToken, (theStudy, token) -> {
                     String formattedToken = token.substring(0,3) + "-" + token.substring(3,6);
                     builder.withToken(TOKEN_KEY, formattedToken);
                     builder.withExpirationPeriod(PHONE_SIGNIN_EXPIRATION_PERIOD, SIGNIN_EXPIRE_IN_SECONDS);

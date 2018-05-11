@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -509,6 +510,53 @@ public class AccountWorkflowServiceTest {
     }
 
     @Test
+    public void notifyAccountExistsForEmailNoSignIn() throws Exception {
+        // In this path email sign in is also enabled, so we will generate a link to sign in that can 
+        // be used in lieu of directing the user to a password reset.
+        study.setEmailSignInEnabled(false);
+        AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        when(service.getNextToken()).thenReturn(SPTOKEN);
+        when(mockAccount.getEmail()).thenReturn(EMAIL);
+        when(mockAccount.getEmailVerified()).thenReturn(Boolean.TRUE);
+        when(mockAccountDao.getAccount(accountId)).thenReturn(mockAccount);
+        when(mockAccountDao.getAccount(AccountId.forEmail(TEST_STUDY_IDENTIFIER, EMAIL))).thenReturn(mockAccount);
+        
+        service.notifyAccountExists(study, accountId);
+        
+        verify(mockCacheProvider).setObject(PASSWORD_RESET_FOR_EMAIL, EMAIL, 60*60*2);
+        verify(mockSendMailService).sendEmail(emailProviderCaptor.capture());
+        
+        BasicEmailProvider provider = emailProviderCaptor.getValue();
+        
+        // not set, no email sign in
+        assertNull(provider.getTokenMap().get("token"));
+        assertNull(provider.getTokenMap().get("email"));
+        
+        assertEquals(SPTOKEN, provider.getTokenMap().get("sptoken"));
+        assertEquals("2 hours", provider.getTokenMap().get("expirationPeriod"));
+        assertEquals("2", provider.getTokenMap().get("expirationWindow"));
+        
+        MimeTypeEmail email = provider.getMimeTypeEmail();
+        assertEquals("\"This study name\" <support@support.com>", email.getSenderAddress());
+        assertEquals(1, email.getRecipientAddresses().size());
+        assertEquals(EMAIL, email.getRecipientAddresses().get(0));
+        assertEquals("AE This study name", email.getSubject());
+        
+        MimeBodyPart body = email.getMessageParts().get(0);
+        String bodyString = (String)body.getContent();
+        assertTrue(bodyString.contains("/mobile/resetPassword.html?study=api&sptoken="+SPTOKEN));
+        assertTrue(bodyString.contains("/rp?study=api&sptoken="+SPTOKEN));
+        assertTrue(bodyString.contains("${emailSignInUrl}"));
+        
+        // The remaining template variables have been replaced.
+        assertFalse(bodyString.contains("${url}"));
+        assertFalse(bodyString.contains("${resetPasswordUrl}"));
+        assertFalse(bodyString.contains("${shortUrl}"));
+        assertFalse(bodyString.contains("${shortResetPasswordUrl}"));
+        assertFalse(bodyString.contains("${shortEmailSignInUrl}"));
+    }    
+    @Test
     public void notifyAccountForEmailSignInDoesntThrottle() throws Exception {
         study.setEmailSignInEnabled(true);
         AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
@@ -578,7 +626,8 @@ public class AccountWorkflowServiceTest {
         when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         study.setPhoneSignInEnabled(true);
         AccountId accountId = AccountId.forPhone(TEST_STUDY_IDENTIFIER, TestConstants.PHONE);
-        when(service.getNextToken()).thenReturn(SPTOKEN, TOKEN);
+        when(service.getNextToken()).thenReturn(SPTOKEN);
+        when(service.getNextPhoneToken()).thenReturn(PHONE_TOKEN);
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
         when(mockAccount.getPhoneVerified()).thenReturn(Boolean.TRUE);
         when(mockAccountDao.getAccount(accountId)).thenReturn(mockAccount);
@@ -593,8 +642,34 @@ public class AccountWorkflowServiceTest {
         String message = smsMessageProviderCaptor.getValue().getSmsRequest().getMessage();
         assertTrue(message.contains("Account for ShortName already exists. Reset password: "));
         assertTrue(message.contains("/rp?study=api&sptoken="+SPTOKEN));
-        assertTrue(message.contains(" or "+TOKEN.substring(0,3) + "-" + TOKEN.substring(3,6)));
+        assertTrue(message.contains(" or "+PHONE_TOKEN.substring(0,3) + "-" + PHONE_TOKEN.substring(3,6)));
         assertEquals("Transactional", smsMessageProviderCaptor.getValue().getSmsType());
+    }
+    
+    @Test
+    public void notifyAccountExistsForPhoneNoSignIn() throws Exception {
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        study.setPhoneSignInEnabled(false);
+        AccountId accountId = AccountId.forPhone(TEST_STUDY_IDENTIFIER, TestConstants.PHONE);
+        when(service.getNextToken()).thenReturn(SPTOKEN);
+        when(service.getNextPhoneToken()).thenReturn(PHONE_TOKEN);
+        when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
+        when(mockAccount.getPhoneVerified()).thenReturn(Boolean.TRUE);
+        when(mockAccountDao.getAccount(accountId)).thenReturn(mockAccount);
+        
+        service.notifyAccountExists(study, accountId);
+        
+        verify(mockCacheProvider).setObject(PASSWORD_RESET_FOR_PHONE, 
+                BridgeObjectMapper.get().writeValueAsString(TestConstants.PHONE), 
+                AccountWorkflowService.VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
+        verify(mockNotificationsService).sendSmsMessage(smsMessageProviderCaptor.capture());
+        
+        String message = smsMessageProviderCaptor.getValue().getSmsRequest().getMessage();
+        assertTrue(message.contains("Account for ShortName already exists. Reset password: "));
+        assertTrue(message.contains("/rp?study=api&sptoken="+SPTOKEN));
+        assertTrue(message.contains(" or ${token}"));
+        assertEquals("Transactional", smsMessageProviderCaptor.getValue().getSmsType());
+        verify(service, never()).getNextPhoneToken();
     }
     
     @Test
