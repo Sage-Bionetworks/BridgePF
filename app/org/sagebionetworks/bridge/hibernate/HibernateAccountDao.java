@@ -67,10 +67,10 @@ public class HibernateAccountDao implements AccountDao {
 
     static final String ACCOUNT_SUMMARY_QUERY_PREFIX = "select new " + HibernateAccount.class.getCanonicalName() +
             "(createdOn, studyId, firstName, lastName, email, phone, externalId, id, status) ";
-    static final String EMAIL_QUERY = "from HibernateAccount where studyId='%s' and email='%s'";
-    static final String HEALTH_CODE_QUERY = "from HibernateAccount where studyId='%s' and healthCode='%s'";
-    static final String PHONE_QUERY = "from HibernateAccount where studyId='%s' and phone.number='%s' and phone.regionCode='%s'";
-    static final String EXTID_QUERY = "from HibernateAccount where studyId='%s' and externalId='%s'";
+    static final String EMAIL_QUERY = "from HibernateAccount where studyId=:studyId and email=:email";
+    static final String HEALTH_CODE_QUERY = "from HibernateAccount where studyId=:studyId and healthCode=:healthCode";
+    static final String PHONE_QUERY = "from HibernateAccount where studyId=:studyId and phone.number=:number and phone.regionCode=:regionCode";
+    static final String EXTID_QUERY = "from HibernateAccount where studyId=:studyId and externalId=:externalId";
     
     private HealthCodeService healthCodeService;
     private HibernateHelper hibernateHelper;
@@ -416,16 +416,26 @@ public class HibernateAccountDao implements AccountDao {
             }
         } else {
             String query = null;
+            Map<String,Object> parameters = new HashMap<>();
             if (unguarded.getEmail() != null) {
-                query = String.format(EMAIL_QUERY, unguarded.getStudyId(), unguarded.getEmail());
+                query = EMAIL_QUERY;
+                parameters.put("studyId", unguarded.getStudyId());
+                parameters.put("email", unguarded.getEmail());
             } else if (unguarded.getHealthCode() != null) {
-                query = String.format(HEALTH_CODE_QUERY, unguarded.getStudyId(), unguarded.getHealthCode());
+                query = HEALTH_CODE_QUERY;
+                parameters.put("studyId", unguarded.getStudyId());
+                parameters.put("healthCode", unguarded.getHealthCode());
             } else if (unguarded.getPhone() != null) {
-                query = String.format(PHONE_QUERY, unguarded.getStudyId(), unguarded.getPhone().getNumber(), unguarded.getPhone().getRegionCode());
+                query = PHONE_QUERY;
+                parameters.put("studyId", unguarded.getStudyId());
+                parameters.put("number", unguarded.getPhone().getNumber());
+                parameters.put("regionCode", unguarded.getPhone().getRegionCode());
             } else {
-                query = String.format(EXTID_QUERY, unguarded.getStudyId(), unguarded.getExternalId());
+                query = EXTID_QUERY;
+                parameters.put("studyId", unguarded.getStudyId());
+                parameters.put("externalId", unguarded.getExternalId());
             }
-            List<HibernateAccount> accountList = hibernateHelper.queryGet(query, null, null, HibernateAccount.class);
+            List<HibernateAccount> accountList = hibernateHelper.queryGet(query, parameters, null, null, HibernateAccount.class);
             if (accountList.isEmpty()) {
                 return null;
             }
@@ -452,15 +462,17 @@ public class HibernateAccountDao implements AccountDao {
     @Override
     public Iterator<AccountSummary> getAllAccounts() {
         List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet("from HibernateAccount", null, null,
-                HibernateAccount.class);
+                null, HibernateAccount.class);
         return hibernateAccountList.stream().map(HibernateAccountDao::unmarshallAccountSummary).iterator();
     }
 
     /** {@inheritDoc} */
     @Override
     public Iterator<AccountSummary> getStudyAccounts(Study study) {
-        List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet("from HibernateAccount where " +
-                "studyId='" + study.getIdentifier() + "'", null, null, HibernateAccount.class);
+        Map<String,Object> parameters = new HashMap<>();
+        parameters.put("studyId", study.getIdentifier());
+        List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet(
+                "from HibernateAccount where studyId=:studyId", parameters, null, null, HibernateAccount.class);
         return hibernateAccountList.stream().map(HibernateAccountDao::unmarshallAccountSummary).iterator();
     }
 
@@ -471,27 +483,27 @@ public class HibernateAccountDao implements AccountDao {
         // Note: emailFilter can be any substring, not just prefix/suffix. Same with phone.
         // Note: start- and endTime are inclusive.
         StringBuilder queryBuilder = new StringBuilder();
-        queryBuilder.append("from HibernateAccount where studyId='");
-        queryBuilder.append(study.getIdentifier());
-        queryBuilder.append("'");
+        Map<String,Object> parameters = new HashMap<>();
+
+        queryBuilder.append("from HibernateAccount where studyId=:studyId");
+        parameters.put("studyId", study.getIdentifier());
+
         if (StringUtils.isNotBlank(emailFilter)) {
-            queryBuilder.append(" and email like '%");
-            queryBuilder.append(emailFilter);
-            queryBuilder.append("%'");
+            queryBuilder.append(" and email like :email");
+            parameters.put("email", "%"+emailFilter+"%");
         }
         if (StringUtils.isNotBlank(phoneFilter)) {
             String phoneString = phoneFilter.replaceAll("\\D*", "");
-            queryBuilder.append(" and phone.number like '%");
-            queryBuilder.append(phoneString);
-            queryBuilder.append("%'");
+            queryBuilder.append(" and phone.number like :number");
+            parameters.put("number", "%"+phoneString+"%");
         }
         if (startTime != null) {
-            queryBuilder.append(" and createdOn >= ");
-            queryBuilder.append(startTime.getMillis());
+            queryBuilder.append(" and createdOn >= :startTime");
+            parameters.put("startTime", startTime.getMillis());
         }
         if (endTime != null) {
-            queryBuilder.append(" and createdOn <= ");
-            queryBuilder.append(endTime.getMillis());
+            queryBuilder.append(" and createdOn <= :endTime");
+            parameters.put("endTime", endTime.getMillis());
         }
         String query = queryBuilder.toString();
         
@@ -499,13 +511,13 @@ public class HibernateAccountDao implements AccountDao {
         String getQuery = ACCOUNT_SUMMARY_QUERY_PREFIX + query;
 
         // Get page of accounts.
-        List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet(getQuery, offsetBy, pageSize,
+        List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet(getQuery, parameters, offsetBy, pageSize,
                 HibernateAccount.class);
         List<AccountSummary> accountSummaryList = hibernateAccountList.stream()
                 .map(HibernateAccountDao::unmarshallAccountSummary).collect(Collectors.toList());
 
         // Get count of accounts.
-        int count = hibernateHelper.queryCount(query);
+        int count = hibernateHelper.queryCount(query, parameters);
 
         // Package results and return.
         return new PagedResourceList<>(accountSummaryList, count)

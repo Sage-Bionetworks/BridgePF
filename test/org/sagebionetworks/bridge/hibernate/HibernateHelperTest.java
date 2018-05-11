@@ -13,17 +13,20 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import javax.persistence.OptimisticLockException;
 import javax.persistence.PersistenceException;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
-import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.query.Query;
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -33,6 +36,8 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 @SuppressWarnings("unchecked")
 public class HibernateHelperTest {
     private static final String QUERY = "from DummyTable";
+    private static final Map<String, Object> PARAMETERS = new ImmutableMap.Builder<String, Object>().put("id", 10L)
+            .put("studyId", "study-test").build();
 
     private HibernateHelper helper;
     private Session mockSession;
@@ -107,7 +112,7 @@ public class HibernateHelperTest {
         when(mockSession.createQuery("select count(*) " + QUERY, Long.class)).thenReturn(mockQuery);
 
         // execute and validate
-        int count = helper.queryCount(QUERY);
+        int count = helper.queryCount(QUERY, null);
         assertEquals(42, count);
     }
 
@@ -120,8 +125,24 @@ public class HibernateHelperTest {
         when(mockSession.createQuery("select count(*) " + QUERY, Long.class)).thenReturn(mockQuery);
 
         // execute and validate
-        int count = helper.queryCount(QUERY);
+        int count = helper.queryCount(QUERY, null);
         assertEquals(0, count);
+    }
+    
+    @Test
+    public void queryCountWithParameters() {
+        // mock query
+        Query<Long> mockQuery = mock(Query.class);
+        when(mockQuery.uniqueResult()).thenReturn(42L);
+
+        when(mockSession.createQuery("select count(*) " + QUERY, Long.class)).thenReturn(mockQuery);
+
+        // execute and validate
+        int count = helper.queryCount(QUERY, PARAMETERS);
+        assertEquals(42, count);
+        
+        verify(mockQuery).setParameter("studyId", "study-test");
+        verify(mockQuery).setParameter("id", 10L);
     }
 
     @Test
@@ -134,7 +155,7 @@ public class HibernateHelperTest {
         when(mockSession.createQuery(QUERY, Object.class)).thenReturn(mockQuery);
 
         // execute and validate
-        List<Object> helperOutputList = helper.queryGet(QUERY, null, null, Object.class);
+        List<Object> helperOutputList = helper.queryGet(QUERY, null, null, null, Object.class);
         assertSame(hibernateOutputList, helperOutputList);
     }
 
@@ -147,9 +168,26 @@ public class HibernateHelperTest {
         when(mockSession.createQuery(QUERY, Object.class)).thenReturn(mockQuery);
 
         // execute and verify we pass through the offset and limit
-        helper.queryGet(QUERY, 100, 25, Object.class);
+        helper.queryGet(QUERY, null, 100, 25, Object.class);
         verify(mockQuery).setFirstResult(100);
         verify(mockQuery).setMaxResults(25);
+    }
+    
+    @Test
+    public void queryGetWithParameters() {
+        // mock query
+        List<Object> hibernateOutputList = ImmutableList.of();
+        Query<Object> mockQuery = mock(Query.class);
+        when(mockQuery.list()).thenReturn(hibernateOutputList);
+
+        when(mockSession.createQuery(QUERY, Object.class)).thenReturn(mockQuery);
+
+        // execute and validate
+        List<Object> helperOutputList = helper.queryGet(QUERY, PARAMETERS, null, null, Object.class);
+        assertSame(hibernateOutputList, helperOutputList);
+        
+        verify(mockQuery).setParameter("studyId", "study-test");
+        verify(mockQuery).setParameter("id", 10L);
     }
 
     @Test
@@ -161,8 +199,24 @@ public class HibernateHelperTest {
         when(mockSession.createQuery(QUERY)).thenReturn(mockQuery);
 
         // execute and validate
-        int numRows = helper.queryUpdate(QUERY);
+        int numRows = helper.queryUpdate(QUERY, null);
         assertEquals(7, numRows);
+    }
+    
+    @Test
+    public void queryUpdateWithParameters() {
+        // mock query
+        Query<Object> mockQuery = mock(Query.class);
+        when(mockQuery.executeUpdate()).thenReturn(7);
+
+        when(mockSession.createQuery(QUERY)).thenReturn(mockQuery);
+
+        // execute and validate
+        int numRows = helper.queryUpdate(QUERY, PARAMETERS);
+        assertEquals(7, numRows);
+        
+        verify(mockQuery).setParameter("studyId", "study-test");
+        verify(mockQuery).setParameter("id", 10L);
     }
 
     @Test

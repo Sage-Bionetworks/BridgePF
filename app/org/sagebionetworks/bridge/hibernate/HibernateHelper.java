@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.hibernate;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import javax.persistence.OptimisticLockException;
@@ -67,11 +68,18 @@ public class HibernateHelper {
     /**
      * Executes the query and returns the count. Note that this prepends "select count(*) " to the query automatically.
      */
-    public int queryCount(String queryString) {
+    public int queryCount(String queryString, Map<String,Object> parameters) {
         // Hibernate returns a long for a count. However, we never expect more than 2 billion rows, for obvious
         // reasons.
-        Long count = execute(session -> session.createQuery("select count(*) " + queryString, Long.class)
-                .uniqueResult());
+        Long count = execute(session -> {
+            Query<Long> query = session.createQuery("select count(*) " + queryString, Long.class);
+            if (parameters != null) {
+                for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+                    query.setParameter(entry.getKey(), entry.getValue());
+                }
+            }
+            return query.uniqueResult();
+        });
         if (count != null) {
             return count.intValue();
         } else {
@@ -84,9 +92,14 @@ public class HibernateHelper {
      * Executes the query and returns a list of results. Returns an empty list if there's no result. Optional offset
      * and limit for pagination.
      */
-    public <T> List<T> queryGet(String queryString, Integer offset, Integer limit, Class<T> clazz) {
+    public <T> List<T> queryGet(String queryString, Map<String,Object> parameters, Integer offset, Integer limit, Class<T> clazz) {
         return execute(session -> {
             Query<T> query = session.createQuery(queryString, clazz);
+            if (parameters != null) {
+                for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+                    query.setParameter(entry.getKey(), entry.getValue());
+                }
+            }
             if (offset != null) {
                 query.setFirstResult(offset);
             }
@@ -101,8 +114,16 @@ public class HibernateHelper {
      * Executes the given query as an update. Can either be an UPDATE query or a DELETE query. Returns the number of
      * rows affected by this query.
      */
-    public int queryUpdate(String queryString) {
-        return execute(session -> session.createQuery(queryString).executeUpdate());
+    public int queryUpdate(String queryString, Map<String,Object> parameters) {
+        return execute(session -> { 
+            Query<?> query = session.createQuery(queryString);
+            if (parameters != null) {
+                for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+                    query.setParameter(entry.getKey(), entry.getValue());
+                }
+            }
+            return query.executeUpdate();
+        });
     }
 
     /** Updates a single object. */
