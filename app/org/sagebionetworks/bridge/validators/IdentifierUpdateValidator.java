@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import org.apache.commons.validator.routines.EmailValidator;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -11,6 +12,7 @@ import org.springframework.validation.Validator;
 
 public class IdentifierUpdateValidator implements Validator {
 
+    private static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
     private Study study;
     private ExternalIdService externalIdService;
     
@@ -44,9 +46,15 @@ public class IdentifierUpdateValidator implements Validator {
         int updateFields = 0;
         if (update.getPhoneUpdate() != null) {
             updateFields++;
+            if (!Phone.isValid(update.getPhoneUpdate())) {
+                errors.rejectValue("phoneUpdate", "does not appear to be a phone number");
+            }            
         }
         if (update.getEmailUpdate() != null) {
             updateFields++;
+            if (!EMAIL_VALIDATOR.isValid(update.getEmailUpdate())) {
+                errors.rejectValue("emailUpdate", "does not appear to be an email address");
+            }
         }
         if (update.getExternalIdUpdate() != null) {
             updateFields++;
@@ -61,9 +69,6 @@ public class IdentifierUpdateValidator implements Validator {
         }
         if (updateFields < 1) {
             errors.reject("requires at least one updated identifier (email, phone, externalId)");
-        }
-        if (update.getPhoneUpdate() != null && !Phone.isValid(update.getPhoneUpdate())) {
-            errors.rejectValue("phoneUpdate", "does not appear to be a phone number");
         }
     }
     

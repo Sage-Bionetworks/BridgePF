@@ -37,5 +37,5 @@ public class IdentifierUpdateTest {
         assertEquals(TestConstants.EMAIL, deser.getSignIn().getEmail());
         assertEquals(TestConstants.PASSWORD, deser.getSignIn().getPassword());
     }
-
+    
 }
