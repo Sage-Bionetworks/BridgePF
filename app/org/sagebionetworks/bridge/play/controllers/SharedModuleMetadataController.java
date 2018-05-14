@@ -13,6 +13,7 @@ import play.mvc.Result;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.hibernate.HqlWhereClause;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
@@ -68,21 +69,25 @@ public class SharedModuleMetadataController extends BaseController {
      * Queries module metadata using the set of given parameters. See
      * {@link SharedModuleMetadataService#queryAllMetadata} for details.
      */
-    public Result queryAllMetadata(String mostRecentString, String publishedString, String where, String tagsString) {
+    public Result queryAllMetadata(String mostRecentString, String publishedString, String q, String tagsString) {
         // Parse inputs
         boolean mostRecent = Boolean.parseBoolean(mostRecentString);
         boolean published = Boolean.parseBoolean(publishedString);
         Set<String> tagSet = parseTags(tagsString);
 
         // Call service
-        List<SharedModuleMetadata> metadataList = metadataService.queryAllMetadata(mostRecent, published, where,
+        HqlWhereClause clause = new HqlWhereClause(true);
+        clause.addExpression("name like :name", q);
+        clause.addExpression("notes like :notes", q);
+        
+        List<SharedModuleMetadata> metadataList = metadataService.queryAllMetadata(mostRecent, published, clause,
                 tagSet);
         ResourceList<SharedModuleMetadata> resourceList = new ResourceList<>(metadataList);
         return okResult(resourceList);
     }
-
+    
     /** Similar to queryAllMetadata, except this only queries on module versions of the specified ID. */
-    public Result queryMetadataById(String id, String mostRecentString, String publishedString, String where,
+    public Result queryMetadataById(String id, String mostRecentString, String publishedString, String q,
             String tagsString) {
         // Parse inputs
         boolean mostRecent = Boolean.parseBoolean(mostRecentString);
@@ -90,12 +95,17 @@ public class SharedModuleMetadataController extends BaseController {
         Set<String> tagSet = parseTags(tagsString);
 
         // Call service
-        List<SharedModuleMetadata> metadataList = metadataService.queryMetadataById(id, mostRecent, published, where,
+        HqlWhereClause clause = new HqlWhereClause(true);
+        clause.addExpression("name like :name", q);
+        clause.addExpression("notes like :notes", q);
+
+        List<SharedModuleMetadata> metadataList = metadataService.queryMetadataById(id, mostRecent, published, clause,
                 tagSet);
+
         ResourceList<SharedModuleMetadata> resourceList = new ResourceList<>(metadataList);
         return okResult(resourceList);
     }
-
+    
     // Helper method to parse tags from URL query params. Package-scoped for unit tests.
     static Set<String> parseTags(String tagsString) {
         // Parse set of tags from a comma-delimited list.

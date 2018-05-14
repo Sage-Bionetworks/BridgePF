@@ -6,7 +6,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anySetOf;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
@@ -36,6 +35,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.hibernate.HqlWhereClause;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
@@ -118,11 +118,13 @@ public class SurveyServiceMockTest {
         service.deleteSurvey(survey);
 
         // verify query args
-        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
-        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(),  eq(null));
+        ArgumentCaptor<HqlWhereClause> clauseCaptor = ArgumentCaptor.forClass(HqlWhereClause.class);
+        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), clauseCaptor.capture(),  eq(null));
 
-        String queryStr = queryCaptor.getValue();
-        assertEquals("surveyGuid=\'" + survey.getGuid() + "\' AND surveyCreatedOn=" + survey.getCreatedOn(), queryStr);
+        HqlWhereClause clause = clauseCaptor.getValue();
+        assertEquals("surveyGuid=:surveyGuid AND surveyCreatedOn=:surveyCreatedOn", clause.getClause());
+        assertEquals(survey.getGuid(), clause.getParameters().get("surveyGuid"));
+        assertEquals(survey.getCreatedOn(), clause.getParameters().get("surveyCreatedOn"));
 
         verify(mockSurveyDao).deleteSurvey(surveyCaptor.capture());
         assertEquals(survey, surveyCaptor.getValue());
@@ -143,11 +145,13 @@ public class SurveyServiceMockTest {
         service.deleteSurveyPermanently(TEST_STUDY, survey);
 
         // verify query args
-        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
-        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(),  eq(null));
+        ArgumentCaptor<HqlWhereClause> clauseCaptor = ArgumentCaptor.forClass(HqlWhereClause.class);
+        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), clauseCaptor.capture(),  eq(null));
 
-        String queryStr = queryCaptor.getValue();
-        assertEquals("surveyGuid=\'" + survey.getGuid() + "\' AND surveyCreatedOn=" + survey.getCreatedOn(), queryStr);
+        HqlWhereClause clause = clauseCaptor.getValue();
+        assertEquals("surveyGuid=:surveyGuid AND surveyCreatedOn=:surveyCreatedOn", clause.getClause());
+        assertEquals(survey.getGuid(), clause.getParameters().get("surveyGuid"));
+        assertEquals(survey.getCreatedOn(), clause.getParameters().get("surveyCreatedOn"));
 
         verify(mockSurveyDao).deleteSurveyPermanently(keysCaptor.capture());
         assertEquals(survey, keysCaptor.getValue());
@@ -155,8 +159,8 @@ public class SurveyServiceMockTest {
 
     @Test(expected = BadRequestException.class)
     public void logicallyDeleteSurveyNotEmptySharedModules() {
-        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), anySetOf(String.class)))
-                .thenReturn(ImmutableList.of(makeValidMetadata()));
+        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), any(HqlWhereClause.class),
+                anySetOf(String.class))).thenReturn(ImmutableList.of(makeValidMetadata()));
 
         Survey survey = createSurvey();
         doReturn(survey).when(mockSurveyDao).getSurvey(any());
@@ -165,8 +169,8 @@ public class SurveyServiceMockTest {
 
     @Test(expected = BadRequestException.class)
     public void physicallyDeleteSurveyNotEmptySharedModules() {
-        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), anySetOf(String.class)))
-                .thenReturn(ImmutableList.of(makeValidMetadata()));
+        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), any(HqlWhereClause.class),
+                anySetOf(String.class))).thenReturn(ImmutableList.of(makeValidMetadata()));
 
         doReturn(ImmutableList.of()).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
         Survey survey = createSurvey();

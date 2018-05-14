@@ -1,16 +1,17 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import javax.persistence.PersistenceException;
 
-import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.hql.internal.ast.QuerySyntaxException;
+import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -53,7 +54,9 @@ public class HibernateSharedModuleMetadataDao implements SharedModuleMetadataDao
     @Override
     public void deleteMetadataByIdAllVersions(String id) {
         sessionHelper(session -> {
-            session.createQuery("delete from HibernateSharedModuleMetadata where id='" + id + "'").executeUpdate();
+            Query<?> query = session.createQuery("delete from HibernateSharedModuleMetadata where id=:id");
+            query.setParameter("id", id);
+            query.executeUpdate();
             return null;
         });
     }
@@ -62,8 +65,10 @@ public class HibernateSharedModuleMetadataDao implements SharedModuleMetadataDao
     @Override
     public void deleteMetadataByIdAndVersion(String id, int version) {
         sessionHelper(session -> {
-            session.createQuery("delete from HibernateSharedModuleMetadata where id='" + id + "' and version=" +
-                    version).executeUpdate();
+            Query<?> query = session.createQuery("delete from HibernateSharedModuleMetadata where id=:id and version=:version");
+            query.setParameter("id", id);
+            query.setParameter("version", version);
+            query.executeUpdate();
             return null;
         });
     }
@@ -77,18 +82,29 @@ public class HibernateSharedModuleMetadataDao implements SharedModuleMetadataDao
 
     /** {@inheritDoc} */
     @Override
-    public List<SharedModuleMetadata> queryMetadata(String whereClause) {
+    public List<SharedModuleMetadata> queryMetadata(HqlWhereClause clause) {
         // build query
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("from HibernateSharedModuleMetadata");
-        if (StringUtils.isNotBlank(whereClause)) {
-            queryBuilder.append(" where ").append(whereClause);
+        if (clause != null && clause.getClause() != null) {
+            queryBuilder.append(" where ").append(clause.getClause());
         }
 
         // execute query
         try {
-            return sessionHelper(session -> session.createQuery(queryBuilder.toString(), SharedModuleMetadata.class)
-                    .list());
+            return sessionHelper(session -> {
+                Query<SharedModuleMetadata> query = session.createQuery(queryBuilder.toString(), SharedModuleMetadata.class);
+                if (clause != null) {
+                    for (Map.Entry<String, Object> entry : clause.getParameters().entrySet()) {
+                        if (entry.getValue() instanceof List) {
+                            query.setParameterList(entry.getKey(), (List<?>)entry.getValue());
+                        } else {
+                            query.setParameter(entry.getKey(), entry.getValue());
+                        }
+                    }
+                }
+                return query.list();
+            });
         } catch (IllegalArgumentException ex) {
             // Similarly, an invalid query will result in an IllegalArgumentException which wraps a
             // QuerySyntaxException.

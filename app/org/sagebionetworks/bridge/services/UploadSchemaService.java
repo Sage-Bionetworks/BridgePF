@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.hibernate.HqlWhereClause;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -533,17 +534,15 @@ public class UploadSchemaService {
 
         List<UploadSchema> schemaList = getUploadSchemaAllRevisions(studyId, schemaId);
 
-        StringBuilder sb = new StringBuilder("(");
+        List<Integer> revisions = new ArrayList<>();
         for (int i = 0; i < schemaList.size(); i++) {
-            sb.append(schemaList.get(i).getRevision());
-            if (i + 1 != schemaList.size()) {
-                sb.append(", ");
-            }
+            revisions.add(schemaList.get(i).getRevision());
         }
-        sb.append(")");
-
-        List<SharedModuleMetadata> sharedModuleMetadataList = sharedModuleMetadataService.queryAllMetadata(false, false,
-                "schemaId=\'" + schemaId + "\'" + " AND schemaRevision IN " + sb, null);
+        HqlWhereClause clause = new HqlWhereClause(false);
+        clause.addExpression("schemaId=:schemaId", schemaId);
+        clause.addExpression("schemaRevision IN :schemaRevision", revisions);
+        List<SharedModuleMetadata> sharedModuleMetadataList = sharedModuleMetadataService.queryAllMetadata(
+                false, false, clause, null);
 
         if (sharedModuleMetadataList.size() != 0) {
             throw new BadRequestException("Cannot delete specified Upload Schema because a shared module still refers to it.");
@@ -561,8 +560,11 @@ public class UploadSchemaService {
 
         UploadSchema schema = getUploadSchemaByIdAndRev(studyId, schemaId, rev);
 
-        List<SharedModuleMetadata> sharedModuleMetadataList = sharedModuleMetadataService.queryAllMetadata(false, false,
-                "schemaId=\'" + schemaId + "\'" + " AND schemaRevision=" + rev, null);
+        HqlWhereClause clause = new HqlWhereClause(false);
+        clause.addExpression("schemaId=:schemaId", schemaId);
+        clause.addExpression("schemaRevision=:schemaRevision", rev);
+        List<SharedModuleMetadata> sharedModuleMetadataList = sharedModuleMetadataService.queryAllMetadata(
+                false, false, clause, null);
 
         if (sharedModuleMetadataList.size() != 0) {
             throw new BadRequestException("Cannot delete specified Upload Schema because a shared module still refers to it.");

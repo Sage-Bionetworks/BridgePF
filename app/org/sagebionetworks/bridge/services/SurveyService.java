@@ -16,6 +16,7 @@ import org.sagebionetworks.bridge.dao.SurveyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.hibernate.HqlWhereClause;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -208,8 +209,11 @@ public class SurveyService {
 
     // Helper method to verify if there is any shared module related to specified survey
     private void verifySharedModuleExistence(GuidCreatedOnVersionHolder keys) {
+        HqlWhereClause clause = new HqlWhereClause(false);
+        clause.addExpression("surveyGuid=:surveyGuid", keys.getGuid());
+        clause.addExpression("surveyCreatedOn=:surveyCreatedOn", keys.getCreatedOn());
         List<SharedModuleMetadata> sharedModuleMetadataList = sharedModuleMetadataService.queryAllMetadata(false, false,
-                "surveyGuid=\'" + keys.getGuid() + "\' AND surveyCreatedOn=" + keys.getCreatedOn(), null);
+                clause, null);
 
         if (sharedModuleMetadataList.size() != 0) {
             throw new BadRequestException("Cannot delete specified survey because a shared module still refers to it.");

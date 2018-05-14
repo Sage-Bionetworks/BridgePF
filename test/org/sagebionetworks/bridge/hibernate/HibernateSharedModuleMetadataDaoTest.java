@@ -29,6 +29,7 @@ import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
 public class HibernateSharedModuleMetadataDaoTest {
     private static final String MODULE_ID = "test-module";
     private static final int MODULE_VERSION = 3;
+    private static final HqlWhereClause FOOBAR_CLAUSE = new HqlWhereClause(false).addExpression("foo='bar'");
 
     private HibernateSharedModuleMetadataDao dao;
     private Session mockSession;
@@ -91,7 +92,7 @@ public class HibernateSharedModuleMetadataDaoTest {
     public void deleteByIdAllVersions() {
         // mock query
         Query mockQuery = mock(Query.class);
-        when(mockSession.createQuery("delete from HibernateSharedModuleMetadata where id='" + MODULE_ID + "'"))
+        when(mockSession.createQuery("delete from HibernateSharedModuleMetadata where id=:id"))
                 .thenReturn(mockQuery);
 
         // execute
@@ -106,8 +107,8 @@ public class HibernateSharedModuleMetadataDaoTest {
     public void deleteByIdAndVersion() {
         // mock query
         Query mockQuery = mock(Query.class);
-        when(mockSession.createQuery("delete from HibernateSharedModuleMetadata where id='" + MODULE_ID +
-                "' and version=" + MODULE_VERSION)).thenReturn(mockQuery);
+        when(mockSession.createQuery("delete from HibernateSharedModuleMetadata where id=:id and version=:version"))
+                .thenReturn(mockQuery);
 
         // execute
         dao.deleteMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION);
@@ -143,7 +144,7 @@ public class HibernateSharedModuleMetadataDaoTest {
         when(mockQuery.list()).thenReturn(hibernateOutputMetadataList);
 
         // execute and validate
-        List<SharedModuleMetadata> daoOutputMetadataList = dao.queryMetadata("foo='bar'");
+        List<SharedModuleMetadata> daoOutputMetadataList = dao.queryMetadata(FOOBAR_CLAUSE);
         assertSame(hibernateOutputMetadataList, daoOutputMetadataList);
 
         // validate backends
@@ -172,14 +173,14 @@ public class HibernateSharedModuleMetadataDaoTest {
     public void queryBadQuery() {
         when(mockSession.createQuery("from HibernateSharedModuleMetadata where blargg", SharedModuleMetadata.class))
                 .thenThrow(new IllegalArgumentException(new QuerySyntaxException("error message")));
-        dao.queryMetadata("blargg");
+        dao.queryMetadata(new HqlWhereClause(false).addExpression("blargg"));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void queryOtherException() {
         when(mockSession.createQuery("from HibernateSharedModuleMetadata where foo='bar'", SharedModuleMetadata.class))
                 .thenThrow(new IllegalArgumentException());
-        dao.queryMetadata("foo='bar'");
+        dao.queryMetadata(FOOBAR_CLAUSE);
     }
 
     @Test

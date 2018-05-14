@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.SharedModuleMetadataDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.hibernate.HqlWhereClause;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleType;
@@ -202,35 +203,22 @@ public class SharedModuleMetadataService {
      * Example where clause: "published = true AND os = 'iOS'"
      * </p>
      */
-    public List<SharedModuleMetadata> queryAllMetadata(boolean mostRecent, boolean published, String where,
+    public List<SharedModuleMetadata> queryAllMetadata(boolean mostRecent, boolean published, HqlWhereClause clause,
             Set<String> tags) {
-        boolean hasWhere = StringUtils.isNotBlank(where);
-        String whereInternal = null;
-        if (mostRecent) {
-            if (hasWhere) {
-                // This is disallowed because of the confusion (both from Bridge developers and from Study managers) on
-                // how this would actually work.
-                throw new BadRequestException("mostrecent=true cannot be specified with where clause");
-            }
-
-            if (published) {
-                // Most recent published version is a special case. This is implemented by first querying for published
-                // versions, then filtering for most recent.
-                whereInternal = "published=true";
-            }
-        } else {
-            if (published && hasWhere) {
-                // Published and where both contribute to the query.
-                whereInternal = "published=true AND " + where;
-            } else if (published) {
-                whereInternal = "published=true";
-            } else if (hasWhere) {
-                whereInternal = where;
-            }
+        if (clause == null) {
+            clause = new HqlWhereClause(false);
+        }
+        if (mostRecent && clause.getClause() != null) {
+            // This is disallowed because of the confusion (both from Bridge developers and from Study managers) on
+            // how this would actually work.
+            throw new BadRequestException("mostrecent=true cannot be specified with where clause");
+        }
+        if (published) {
+            clause.addExpression("published=true");
         }
 
         // Run actual query.
-        List<SharedModuleMetadata> metadataList = metadataDao.queryMetadata(whereInternal);
+        List<SharedModuleMetadata> metadataList = metadataDao.queryMetadata(clause);
 
         // Map to find latest versions for each metadata by ID. This is applied before tags.
         if (mostRecent) {
@@ -256,14 +244,14 @@ public class SharedModuleMetadataService {
     }
 
     /** Similar to queryAllMetadata, except this only queries on module versions of the specified ID. */
-    public List<SharedModuleMetadata> queryMetadataById(String id, boolean mostRecent, boolean published, String where,
+    public List<SharedModuleMetadata> queryMetadataById(String id, boolean mostRecent, boolean published, HqlWhereClause clause,
             Set<String> tags) {
         if (StringUtils.isBlank(id)) {
             throw new BadRequestException("id must be specified");
         }
 
         // Query all metadata and just filter by ID.
-        List<SharedModuleMetadata> queryAllMetadataList = queryAllMetadata(mostRecent, published, where, tags);
+        List<SharedModuleMetadata> queryAllMetadataList = queryAllMetadata(mostRecent, published, clause, tags);
         return queryAllMetadataList.stream().filter(metadata -> id.equals(metadata.getId())).collect(Collectors
                 .toList());
     }

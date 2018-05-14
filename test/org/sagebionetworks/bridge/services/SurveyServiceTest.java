@@ -5,9 +5,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anySetOf;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.GSI_WAIT_DURATION;
@@ -35,6 +35,7 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
+import org.sagebionetworks.bridge.hibernate.HqlWhereClause;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
@@ -69,8 +70,8 @@ public class SurveyServiceTest {
     @Before
     public void before() {
         mockSharedModuleMetadataService = mock(SharedModuleMetadataService.class);
-        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), anySetOf(String.class))).thenReturn(
-                ImmutableList.of());
+        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), any(HqlWhereClause.class),
+                anySetOf(String.class))).thenReturn(ImmutableList.of());
         testSurvey = new TestSurvey(SurveyServiceTest.class, true);
         surveysToDelete = new HashSet<>();
         surveyService.setSharedModuleMetadataService(mockSharedModuleMetadataService);

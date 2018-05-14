@@ -26,6 +26,7 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.hibernate.HqlWhereClause;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -141,29 +142,42 @@ public class SharedModuleMetadataControllerTest {
     @Test
     public void queryAll() throws Exception {
         // mock service
-        when(mockSvc.queryAllMetadata(true, true, "foo='bar'", ImmutableSet.of("foo", "bar", "baz"))).thenReturn(
-                ImmutableList.of(makeValidMetadata()));
+        when(mockSvc.queryAllMetadata(eq(true), eq(true), any(), eq(ImmutableSet.of("foo", "bar", "baz"))))
+                .thenReturn(ImmutableList.of(makeValidMetadata()));
 
         // setup, execute, and validate
-        Result result = controller.queryAllMetadata("true", "true", "foo='bar'", "foo,bar,baz");
+        Result result = controller.queryAllMetadata("true", "true", "search", "foo,bar,baz");
         TestUtils.assertResult(result, 200);
         assertMetadataListInResult(result);
 
+        ArgumentCaptor<HqlWhereClause> clause = ArgumentCaptor.forClass(HqlWhereClause.class);
+        verify(mockSvc).queryAllMetadata(eq(true), eq(true), clause.capture(),
+                eq(ImmutableSet.of("foo", "bar", "baz")));
         verify(controller, times(0)).getAuthenticatedSession(any());
+        
+        assertEquals("%search%", clause.getValue().getParameters().get("name"));
+        assertEquals("%search%", clause.getValue().getParameters().get("notes"));
+        assertEquals("name like :name OR notes like :notes", clause.getValue().getClause());
     }
 
     @Test
     public void queryById() throws Exception {
         // mock service
-        when(mockSvc.queryMetadataById(MODULE_ID, true, true, "foo='bar'", ImmutableSet.of("foo", "bar", "baz")))
+        when(mockSvc.queryMetadataById(eq(MODULE_ID), eq(true), eq(true), any(), eq(ImmutableSet.of("foo", "bar", "baz"))))
                 .thenReturn(ImmutableList.of(makeValidMetadata()));
 
         // setup, execute, and validate
-        Result result = controller.queryMetadataById(MODULE_ID, "true", "true", "foo='bar'", "foo,bar,baz");
+        Result result = controller.queryMetadataById(MODULE_ID, "true", "true", "search", "foo,bar,baz");
         TestUtils.assertResult(result, 200);
         assertMetadataListInResult(result);
 
+        ArgumentCaptor<HqlWhereClause> clause = ArgumentCaptor.forClass(HqlWhereClause.class);
+        verify(mockSvc).queryMetadataById(eq(MODULE_ID), eq(true), eq(true), clause.capture(), eq(ImmutableSet.of("foo", "bar", "baz")));
         verify(controller, times(0)).getAuthenticatedSession(any());
+        
+        assertEquals("%search%", clause.getValue().getParameters().get("name"));
+        assertEquals("%search%", clause.getValue().getParameters().get("notes"));
+        assertEquals("name like :name OR notes like :notes", clause.getValue().getClause());
     }
 
     @Test

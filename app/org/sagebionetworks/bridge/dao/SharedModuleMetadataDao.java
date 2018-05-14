@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
 
+import org.sagebionetworks.bridge.hibernate.HqlWhereClause;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
 
 /** DAO for Shared Module Metadata. */
@@ -20,13 +21,16 @@ public interface SharedModuleMetadataDao {
 
     /**
      * <p>
-     * Queries module metadata using the given SQL-like WHERE clause.
+     * Queries module metadata using the given HqlWhereClause clause.
      * </p>
      * <p>
-     * Example: "published = true AND os = 'iOS'"
+     * Example: "published = true AND os = 'iOS'" would be written as:
+     * clause.addExpression("published = :published").setParameter("published", true)
+     *      .addExpression("os = :os").setParameter("os","iOS");
+     * 
      * </p>
      */
-    List<SharedModuleMetadata> queryMetadata(String whereClause);
+    List<SharedModuleMetadata> queryMetadata(HqlWhereClause clause);
 
     /** Updates the specified metadata object. */
     SharedModuleMetadata updateMetadata(SharedModuleMetadata metadata);

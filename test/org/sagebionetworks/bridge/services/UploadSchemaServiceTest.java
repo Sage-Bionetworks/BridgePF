@@ -8,7 +8,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anySetOf;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -20,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.hibernate.HqlWhereClause;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
@@ -241,7 +242,7 @@ public class UploadSchemaServiceTest {
 
     @Test(expected = BadRequestException.class)
     public void deleteByIdNotEmptySharedModules() {
-        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), anySetOf(String.class)))
+        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), any(HqlWhereClause.class), anySetOf(String.class)))
                 .thenReturn(ImmutableList.of(makeValidMetadata()));
         List<UploadSchema> schemaListToDelete = ImmutableList.of(makeSimpleSchema());
         when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID)).thenReturn(schemaListToDelete);
@@ -259,11 +260,13 @@ public class UploadSchemaServiceTest {
         verify(dao).deleteUploadSchemas(schemaListToDelete);
 
         // verify query args
-        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
-        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(), eq(null));
+        ArgumentCaptor<HqlWhereClause> clauseCaptor = ArgumentCaptor.forClass(HqlWhereClause.class);
+        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), clauseCaptor.capture(), eq(null));
 
-        String queryStr = queryCaptor.getValue();
-        assertEquals("schemaId=\'" + SCHEMA_ID + "\'" + " AND schemaRevision IN (0)", queryStr);
+        HqlWhereClause clause = clauseCaptor.getValue();
+        assertEquals("schemaId=:schemaId AND schemaRevision IN :schemaRevision", clause.getClause());
+        assertEquals(SCHEMA_ID, clause.getParameters().get("schemaId"));
+        assertEquals(Lists.newArrayList(0), clause.getParameters().get("schemaRevision"));
     }
 
     @Test(expected = BadRequestException.class)
@@ -306,8 +309,8 @@ public class UploadSchemaServiceTest {
 
     @Test(expected = BadRequestException.class)
     public void deleteByIdAndRevNotEmptySharedModules() {
-        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), anySetOf(String.class)))
-                .thenReturn(ImmutableList.of(makeValidMetadata()));
+        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), any(HqlWhereClause.class),
+                anySetOf(String.class))).thenReturn(ImmutableList.of(makeValidMetadata()));
         UploadSchema schemaToDelete = makeSimpleSchema();
         when(dao.getUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(
                 schemaToDelete);
@@ -326,11 +329,13 @@ public class UploadSchemaServiceTest {
         verify(dao).deleteUploadSchemas(ImmutableList.of(schemaToDelete));
 
         // verify query args
-        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
-        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(), eq(null));
+        ArgumentCaptor<HqlWhereClause> clauseCaptor = ArgumentCaptor.forClass(HqlWhereClause.class);
+        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), clauseCaptor.capture(), eq(null));
 
-        String queryStr = queryCaptor.getValue();
-        assertEquals("schemaId=\'" + SCHEMA_ID + "\'" + " AND schemaRevision=" + SCHEMA_REV, queryStr);
+        HqlWhereClause clause = clauseCaptor.getValue();
+        assertEquals("schemaId=:schemaId AND schemaRevision=:schemaRevision", clause.getClause());
+        assertEquals(SCHEMA_ID, clause.getParameters().get("schemaId"));
+        assertEquals(SCHEMA_REV, clause.getParameters().get("schemaRevision"));
     }
 
     @Test

@@ -30,6 +30,7 @@ import org.sagebionetworks.bridge.dao.SharedModuleMetadataDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.hibernate.HqlWhereClause;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
@@ -37,6 +38,7 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 
 public class SharedModuleMetadataServiceTest {
+    private static final HqlWhereClause FOOBAR_CLAUSE = new HqlWhereClause(false).addExpression("foo='bar'");
     private static final String MODULE_ID = "test-module";
     private static final String MODULE_NAME = "Test Module";
     private static final int MODULE_VERSION = 3;
@@ -316,20 +318,21 @@ public class SharedModuleMetadataServiceTest {
 
     @Test(expected = BadRequestException.class)
     public void queryAllMostRecentWithWhere() {
-        svc.queryAllMetadata(true, false, "foo='bar'", null);
+        svc.queryAllMetadata(true, false, FOOBAR_CLAUSE, null);
     }
 
     @Test
     public void queryAllMostRecentPublished() {
-        queryMostRecentHelper("published=true", true);
+        HqlWhereClause clause = new HqlWhereClause(false).addExpression("published=true");
+        queryMostRecentHelper(clause, true);
     }
 
     @Test
     public void queryAllMostRecent() {
-        queryMostRecentHelper(null, false);
+        queryMostRecentHelper(new HqlWhereClause(false), false);
     }
 
-    private void queryMostRecentHelper(String expectedWhereClause, boolean published) {
+    private void queryMostRecentHelper(HqlWhereClause expectedWhereClause, boolean published) {
         // set up mock dao - We want 2 different modules with 2 different versions each.
         SharedModuleMetadata moduleAVersion1 = makeValidMetadata();
         moduleAVersion1.setId("module-A");
@@ -359,32 +362,35 @@ public class SharedModuleMetadataServiceTest {
 
     @Test
     public void queryAllPublishedAndWhere() {
-        queryHelper("published=true AND foo='bar'", true, "foo='bar'");
+        HqlWhereClause clause = new HqlWhereClause(false).addExpression("foo='bar'").addExpression("published=true");
+        queryHelper(clause, true, FOOBAR_CLAUSE);
     }
 
     @Test
     public void queryAllPublishedWithoutWhere() {
-        queryHelper("published=true", true, null);
+        HqlWhereClause clause = new HqlWhereClause(false).addExpression("published=true");
+        queryHelper(clause, true, null);
     }
 
     @Test
     public void queryAllWhereWithoutPublished() {
-        queryHelper("foo='bar'", false, "foo='bar'");
+        queryHelper(FOOBAR_CLAUSE, false, FOOBAR_CLAUSE);
     }
 
     @Test
     public void queryAllGetAll() {
-        queryHelper(null, false, null);
+        queryHelper(new HqlWhereClause(false), false, null);
     }
 
-    private void queryHelper(String expectedWhereClause, boolean published, String inputWhereClause) {
+    private void queryHelper(HqlWhereClause expectedWhereClause, boolean published, HqlWhereClause inputWhereClause) {
         // set up mock dao - Dummy list is fine.
         List<SharedModuleMetadata> daoOutputMetadataList = ImmutableList.of(makeValidMetadata());
         when(mockDao.queryMetadata(expectedWhereClause)).thenReturn(daoOutputMetadataList);
 
         // execute and validate
-        List<SharedModuleMetadata> svcOutputMetadataList = svc.queryAllMetadata(false, published, inputWhereClause,
-                null);
+        List<SharedModuleMetadata> svcOutputMetadataList = svc.queryAllMetadata(
+                false, published, inputWhereClause, null);
+        
         assertSame(daoOutputMetadataList, svcOutputMetadataList);
     }
 
@@ -433,10 +439,10 @@ public class SharedModuleMetadataServiceTest {
         // set up mock dao
         List<SharedModuleMetadata> daoOutputMetadataList = ImmutableList.of(metadata1, metadata2, metadata3, metadata4,
                 metadata5, metadata6);
-        when(mockDao.queryMetadata("foo='bar'")).thenReturn(daoOutputMetadataList);
+        when(mockDao.queryMetadata(FOOBAR_CLAUSE)).thenReturn(daoOutputMetadataList);
 
         // execute and validate
-        List<SharedModuleMetadata> svcOutputMetadataList = svc.queryAllMetadata(false, false, "foo='bar'", tags);
+        List<SharedModuleMetadata> svcOutputMetadataList = svc.queryAllMetadata(false, false, FOOBAR_CLAUSE, tags);
         assertEquals(4, svcOutputMetadataList.size());
         assertTrue(svcOutputMetadataList.contains(metadata2));
         assertTrue(svcOutputMetadataList.contains(metadata3));
@@ -446,17 +452,17 @@ public class SharedModuleMetadataServiceTest {
 
     @Test(expected = BadRequestException.class)
     public void queryByIdNullId() {
-        svc.queryMetadataById(null, true, true, "foo='bar'", ImmutableSet.of("foo", "bar", "baz"));
+        svc.queryMetadataById(null, true, true, FOOBAR_CLAUSE, ImmutableSet.of("foo", "bar", "baz"));
     }
 
     @Test(expected = BadRequestException.class)
     public void queryByIdEmptyId() {
-        svc.queryMetadataById("", true, true, "foo='bar'", ImmutableSet.of("foo", "bar", "baz"));
+        svc.queryMetadataById("", true, true, FOOBAR_CLAUSE, ImmutableSet.of("foo", "bar", "baz"));
     }
 
     @Test(expected = BadRequestException.class)
     public void queryByIdBlankId() {
-        svc.queryMetadataById("   ", true, true, "foo='bar'", ImmutableSet.of("foo", "bar", "baz"));
+        svc.queryMetadataById("   ", true, true, FOOBAR_CLAUSE, ImmutableSet.of("foo", "bar", "baz"));
     }
 
     @Test
@@ -482,10 +488,10 @@ public class SharedModuleMetadataServiceTest {
 
         // Spy query all, so we don't have to depend on that complex logic.
         doReturn(ImmutableList.of(moduleAVersion1, moduleAVersion2, moduleBVersion3, moduleBVersion4)).when(svc)
-                .queryAllMetadata(true, true, "foo='bar'", tags);
+                .queryAllMetadata(true, true, FOOBAR_CLAUSE, tags);
 
         // execute and validate
-        List<SharedModuleMetadata> svcOutputMetadataList = svc.queryMetadataById("module-B", true, true, "foo='bar'",
+        List<SharedModuleMetadata> svcOutputMetadataList = svc.queryMetadataById("module-B", true, true, FOOBAR_CLAUSE,
                 tags);
         assertEquals(2, svcOutputMetadataList.size());
         assertTrue(svcOutputMetadataList.contains(moduleBVersion3));
