@@ -3,7 +3,8 @@ package org.sagebionetworks.bridge.validators;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
-
+import org.joda.time.LocalDate;
+import org.joda.time.Period;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 
 import com.google.common.base.Strings;
@@ -11,8 +12,15 @@ import com.google.common.base.Strings;
 @Component
 public class ConsentSignatureValidator implements Validator {
     
+    private static final String TOO_YOUNG = "too recent (the study requires participants to be %s years of age or older).";
     private static final String CANNOT_BE_BLANK = "cannot be missing, null, or blank";
     private static final String CANNOT_BE_EMPTY_STRING = "cannot be an empty string";
+    
+    private final int minAgeOfConsent;
+
+    public ConsentSignatureValidator(int minAgeOfConsent) {
+        this.minAgeOfConsent = minAgeOfConsent;
+    }
     
     @Override
     public boolean supports(Class<?> clazz) {
@@ -22,11 +30,23 @@ public class ConsentSignatureValidator implements Validator {
     @Override
     public void validate(Object target, Errors errors) {
         ConsentSignature sig = (ConsentSignature) target;
+        
         if (Strings.isNullOrEmpty(sig.getName())) {
             errors.rejectValue("name", CANNOT_BE_BLANK);
         }
-        if (Strings.isNullOrEmpty(sig.getBirthdate())) {
-            errors.rejectValue("birthdate", CANNOT_BE_BLANK);
+        if (minAgeOfConsent > 0) {
+            if (Strings.isNullOrEmpty(sig.getBirthdate())) {
+                errors.rejectValue("birthdate", CANNOT_BE_BLANK);
+            } else {
+                LocalDate birthdate = LocalDate.parse(sig.getBirthdate());
+                LocalDate now = LocalDate.now();
+                Period period = new Period(birthdate, now);
+
+                if (period.getYears() < minAgeOfConsent) {
+                    String message = String.format(TOO_YOUNG, minAgeOfConsent);
+                    errors.rejectValue("birthdate", message);
+                }
+            }
         }
         if (sig.getSignedOn() <= 0L) {
             errors.rejectValue("signedOn", "must be a valid signature timestamp");
@@ -44,7 +64,7 @@ public class ConsentSignatureValidator implements Validator {
 
         // if one of them is not null, but not both
         if (imageData != null ^ imageMimeType != null) {
-            errors.reject("If you specify one of imageData or imageMimeType, you must specify both");
+            errors.reject("must specify imageData and imageMimeType if you specify either of them");
         }
     }
 }

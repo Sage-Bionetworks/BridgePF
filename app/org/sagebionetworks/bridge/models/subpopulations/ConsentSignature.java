@@ -11,8 +11,6 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.validators.ConsentSignatureValidator;
-import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -38,8 +36,6 @@ public final class ConsentSignature implements BridgeEntity {
                 .withImageMimeType(JsonUtils.asText(node, "imageMimeType"))
                 .build();
     }
-    
-    private static final ConsentSignatureValidator VALIDATOR = new ConsentSignatureValidator();
 
     private final @Nonnull String name;
     private final @Nonnull String birthdate;
@@ -175,7 +171,7 @@ public final class ConsentSignature implements BridgeEntity {
             long signatureTime = (signedOn > 0L) ? signedOn : DateTime.now().getMillis();
             ConsentSignature signature = new ConsentSignature(name, birthdate, imageData, imageMimeType,
                     consentCreatedOn, signatureTime, withdrewOn);
-            Validate.entityThrowingException(VALIDATOR, signature);
+            //Validate.entityThrowingException(VALIDATOR, signature);
             return signature;
         }
         
