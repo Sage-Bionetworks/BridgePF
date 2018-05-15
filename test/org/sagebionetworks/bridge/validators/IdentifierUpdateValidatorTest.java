@@ -130,6 +130,24 @@ public class IdentifierUpdateValidatorTest {
     }
     
     @Test
+    public void emailInvalidValue() {
+        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withEmail(TestConstants.EMAIL).withReauthToken("asdf").build();
+        
+        IdentifierUpdate update = new IdentifierUpdate(signIn, "junk", null, null);
+        assertValidatorMessage(validator, update, "emailUpdate", "does not appear to be an email address");
+    }
+    
+    @Test
+    public void emailEmptyValue() {
+        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withEmail(TestConstants.EMAIL).withReauthToken("asdf").build();
+        
+        IdentifierUpdate update = new IdentifierUpdate(signIn, "", null, null);
+        assertValidatorMessage(validator, update, "emailUpdate", "does not appear to be an email address");
+    }
+    
+    @Test
     public void externalIdValidWithManagement() {
         when(externalIdService.getExternalId(study.getStudyIdentifier(), UPDATED_EXTERNAL_ID)).thenReturn(EXT_ID);
         study.setExternalIdValidationEnabled(true);

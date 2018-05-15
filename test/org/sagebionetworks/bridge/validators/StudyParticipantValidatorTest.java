@@ -127,15 +127,21 @@ public class StudyParticipantValidatorTest {
     }
     
     @Test
-    public void emailCannotBeBlank() {
+    public void emailCannotBeEmptyString() {
         validator = new StudyParticipantValidator(externalIdService, study, true);
-        assertValidatorMessage(validator, withEmail(""), "StudyParticipant", "email, phone, or externalId is required");
+        assertValidatorMessage(validator, withEmail(""), "email", "does not appear to be an email address");
+    }
+    
+    @Test
+    public void emailCannotBeBlankString() {
+        validator = new StudyParticipantValidator(externalIdService, study, true);
+        assertValidatorMessage(validator, withEmail("    \n    \t "), "email", "does not appear to be an email address");
     }
     
     @Test
     public void emailCannotBeInvalid() {
         validator = new StudyParticipantValidator(externalIdService, study, true);
-        assertValidatorMessage(validator, withEmail("a"), "StudyParticipant", "email does not appear to be an email address");
+        assertValidatorMessage(validator, withEmail("a"), "email", "does not appear to be an email address");
     }
     
     @Test
