@@ -1149,21 +1149,27 @@ public class ParticipantServiceTest {
         STUDY.setEmailVerificationEnabled(true);
         STUDY.setAutoVerificationEmailSuppressed(false);
         
-        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, TestConstants.EMAIL, null, null);
+        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "email@email.com", null, null);
         
         StudyParticipant returned = participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
-        assertEquals(TestConstants.EMAIL, account.getEmail());
+        assertEquals("email@email.com", account.getEmail());
         assertEquals(Boolean.FALSE, account.getEmailVerified());
         verify(accountDao).authenticate(STUDY, PHONE_PASSWORD_SIGN_IN);
         verify(accountDao).updateAccount(account, true);
-        verify(accountWorkflowService).sendEmailVerificationToken(STUDY, ID, TestConstants.EMAIL);
+        verify(accountWorkflowService).sendEmailVerificationToken(STUDY, ID, "email@email.com");
         assertEquals(PARTICIPANT.getId(), returned.getId());
     }
     
     @Test(expected = InvalidEntityException.class)
     public void updateIdentifiersValidates() {
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, null);
+        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void updateIdentifiersValidatesWithBlanks() {
+        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, "", null, "");
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
     }
     
@@ -1188,11 +1194,11 @@ public class ParticipantServiceTest {
         STUDY.setEmailVerificationEnabled(false);
         STUDY.setAutoVerificationEmailSuppressed(false); // can be true or false, doesn't matter
         
-        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, TestConstants.EMAIL, null, null);
+        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "email@email.com", null, null);
 
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
-        assertEquals(TestConstants.EMAIL, account.getEmail());
+        assertEquals("email@email.com", account.getEmail());
         assertEquals(Boolean.TRUE, account.getEmailVerified());
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
     }
@@ -1237,7 +1243,7 @@ public class ParticipantServiceTest {
         ((GenericAccount)account).setId("another-user-id");
         when(accountDao.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
         
-        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, TestConstants.EMAIL, null, null);
+        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "email@email.com", null, null);
         
         try {
             participantService.updateIdentifiers(STUDY, CONTEXT, update);

@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.Set;
 
@@ -43,7 +42,7 @@ public class StudyParticipantValidator implements Validator {
             Phone phone = participant.getPhone();
             String email = participant.getEmail();
             String externalId = participant.getExternalId();
-            if (isBlank(email) && isBlank(externalId) && phone == null) {
+            if (email == null && isBlank(externalId) && phone == null) {
                 errors.reject("email, phone, or externalId is required");
             }
             // If provided, phone must be valid
@@ -51,7 +50,7 @@ public class StudyParticipantValidator implements Validator {
                 errors.rejectValue("phone", "does not appear to be a phone number");
             }
             // If provided, email must be valid
-            if (isNotBlank(email) && !EMAIL_VALIDATOR.isValid(email)) {
+            if (email != null && !EMAIL_VALIDATOR.isValid(email)) {
                 errors.rejectValue("email", "does not appear to be an email address");
             }
             if (study.isExternalIdRequiredOnSignup() && isBlank(participant.getExternalId())) {
