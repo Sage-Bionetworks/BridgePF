@@ -42,8 +42,8 @@ import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.newrelic.agent.deps.com.google.common.collect.Maps;
 
 import play.mvc.Result;
 

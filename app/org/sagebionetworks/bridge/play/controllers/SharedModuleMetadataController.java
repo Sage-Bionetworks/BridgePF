@@ -11,8 +11,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
-import com.newrelic.agent.deps.com.google.common.base.Joiner;
-import com.newrelic.agent.deps.com.google.common.collect.Maps;
+import com.google.common.base.Joiner;
+import com.google.common.collect.Maps;
 
 import play.mvc.Result;
 
