@@ -6,8 +6,6 @@ import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
-import org.joda.time.LocalDate;
-import org.joda.time.Period;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -16,8 +14,6 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.time.DateUtils;
-
-import com.google.common.base.Strings;
 
 public class ConsentSignatureValidatorTest {
     private static final long SIGNED_ON_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch();
@@ -232,6 +228,12 @@ public class ConsentSignatureValidatorTest {
     @Test
     public void minAgeLimitBirthdateGarbled() {
         validator = new ConsentSignatureValidator(18);
+        ConsentSignature sig = new ConsentSignature.Builder().withName("test name").withBirthdate("15 May 2018").build();
+        assertValidatorMessage(validator, sig, "birthdate", "is invalid (required format: YYYY-MM-DD)");
+    }
+    
+    @Test
+    public void optionalBirthdateGarbled() {
         ConsentSignature sig = new ConsentSignature.Builder().withName("test name").withBirthdate("15 May 2018").build();
         assertValidatorMessage(validator, sig, "birthdate", "is invalid (required format: YYYY-MM-DD)");
     }

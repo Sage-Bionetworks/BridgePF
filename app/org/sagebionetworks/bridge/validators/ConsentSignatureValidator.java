@@ -6,7 +6,6 @@ import org.springframework.validation.Validator;
 import org.joda.time.LocalDate;
 import org.joda.time.Period;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
-import org.sagebionetworks.bridge.time.DateUtils;
 
 import com.google.common.base.Strings;
 
@@ -50,6 +49,9 @@ public class ConsentSignatureValidator implements Validator {
                     }
                 }
             }
+        } else if (sig.getBirthdate() != null) {
+            // Just verify it parses because it wasn't required, but they supplied it anyway
+            parseBirthday(errors, sig.getBirthdate());
         }
         if (sig.getSignedOn() <= 0L) {
             errors.rejectValue("signedOn", "must be a valid signature timestamp");
