@@ -13,7 +13,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
 
@@ -22,10 +21,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 public class ConsentSignatureTest {
     private static final long CONSENT_CREATED_ON_TIMESTAMP = DateTime.now().minusDays(1).getMillis();
     private static final long SIGNED_ON_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch();
-    
-    private void assertMessage(InvalidEntityException e, String fieldName, String message) {
-        assertEquals(message, e.getErrors().get(fieldName).get(0));
-    }
     
     @Before
     public void before() {

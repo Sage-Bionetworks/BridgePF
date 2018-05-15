@@ -4,7 +4,10 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
+import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
+import org.joda.time.LocalDate;
+import org.joda.time.Period;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -13,6 +16,8 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.time.DateUtils;
+
+import com.google.common.base.Strings;
 
 public class ConsentSignatureValidatorTest {
     private static final long SIGNED_ON_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch();
@@ -199,5 +204,35 @@ public class ConsentSignatureValidatorTest {
             assertTrue(e.getMessage().contains(
                     "ConsentSignature must specify imageData and imageMimeType if you specify either of them"));
         }
+    }
+
+    @Test
+    public void minAgeLimitButNoBirthdate() {
+        validator = new ConsentSignatureValidator(18);
+        ConsentSignature sig = new ConsentSignature.Builder().withName("test name").build();
+        assertValidatorMessage(validator, sig, "birthdate", "cannot be missing, null, or blank");
+    }
+    
+    @Test
+    public void minAgeLimitButBirthdateTooRecent() {
+        String birthdate = new DateTime(SIGNED_ON_TIMESTAMP).minusYears(18).plusDays(1).toLocalDate().toString();
+        validator = new ConsentSignatureValidator(18);
+        ConsentSignature sig = new ConsentSignature.Builder().withName("test name").withBirthdate(birthdate).build();
+        assertValidatorMessage(validator, sig, "birthdate", "too recent (the study requires participants to be 18 years of age or older).");
+    }
+    
+    @Test
+    public void minAgeLimitBirthdateOK() {
+        String birthdate = new DateTime(SIGNED_ON_TIMESTAMP).minusYears(18).toLocalDate().toString();
+        validator = new ConsentSignatureValidator(18);
+        ConsentSignature sig = new ConsentSignature.Builder().withName("test name").withBirthdate(birthdate).build();
+        Validate.entityThrowingException(validator, sig);
+    }
+    
+    @Test
+    public void minAgeLimitBirthdateGarbled() {
+        validator = new ConsentSignatureValidator(18);
+        ConsentSignature sig = new ConsentSignature.Builder().withName("test name").withBirthdate("15 May 2018").build();
+        assertValidatorMessage(validator, sig, "birthdate", "is invalid (required format: YYYY-MM-DD)");
     }
 }

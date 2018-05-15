@@ -171,7 +171,6 @@ public final class ConsentSignature implements BridgeEntity {
             long signatureTime = (signedOn > 0L) ? signedOn : DateTime.now().getMillis();
             ConsentSignature signature = new ConsentSignature(name, birthdate, imageData, imageMimeType,
                     consentCreatedOn, signatureTime, withdrewOn);
-            //Validate.entityThrowingException(VALIDATOR, signature);
             return signature;
         }
         

@@ -6,6 +6,7 @@ import org.springframework.validation.Validator;
 import org.joda.time.LocalDate;
 import org.joda.time.Period;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
+import org.sagebionetworks.bridge.time.DateUtils;
 
 import com.google.common.base.Strings;
 
@@ -38,13 +39,15 @@ public class ConsentSignatureValidator implements Validator {
             if (Strings.isNullOrEmpty(sig.getBirthdate())) {
                 errors.rejectValue("birthdate", CANNOT_BE_BLANK);
             } else {
-                LocalDate birthdate = LocalDate.parse(sig.getBirthdate());
-                LocalDate now = LocalDate.now();
-                Period period = new Period(birthdate, now);
+                LocalDate birthdate = parseBirthday(errors, sig.getBirthdate());
+                if (birthdate != null) {
+                    LocalDate now = LocalDate.now();
+                    Period period = new Period(birthdate, now);
 
-                if (period.getYears() < minAgeOfConsent) {
-                    String message = String.format(TOO_YOUNG, minAgeOfConsent);
-                    errors.rejectValue("birthdate", message);
+                    if (period.getYears() < minAgeOfConsent) {
+                        String message = String.format(TOO_YOUNG, minAgeOfConsent);
+                        errors.rejectValue("birthdate", message);
+                    }
                 }
             }
         }
@@ -66,5 +69,14 @@ public class ConsentSignatureValidator implements Validator {
         if (imageData != null ^ imageMimeType != null) {
             errors.reject("must specify imageData and imageMimeType if you specify either of them");
         }
+    }
+    
+    private LocalDate parseBirthday(Errors errors, String birthdate) {
+        try {
+            return LocalDate.parse(birthdate);
+        } catch(IllegalArgumentException e) {
+            errors.rejectValue("birthdate", "is invalid (required format: YYYY-MM-DD)");
+            return null;
+        }        
     }
 }
