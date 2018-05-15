@@ -17,6 +17,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.services.SharedModuleMetadataServiceTest.makeValidMetadata;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import com.google.common.collect.ImmutableList;
@@ -119,11 +120,16 @@ public class SurveyServiceMockTest {
 
         // verify query args
         ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
-        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(),  eq(null));
+        ArgumentCaptor<Map> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(),
+                paramsCaptor.capture(), eq(null));
 
         String queryStr = queryCaptor.getValue();
-        assertEquals("surveyGuid=\'" + survey.getGuid() + "\' AND surveyCreatedOn=" + survey.getCreatedOn(), queryStr);
+        assertEquals("surveyGuid=:surveyGuid AND surveyCreatedOn=:surveyCreatedOn", queryStr);
 
+        assertEquals(survey.getGuid(), paramsCaptor.getValue().get("surveyGuid"));
+        assertEquals(survey.getCreatedOn(), paramsCaptor.getValue().get("surveyCreatedOn"));        
+        
         verify(mockSurveyDao).deleteSurvey(surveyCaptor.capture());
         assertEquals(survey, surveyCaptor.getValue());
     }
@@ -144,19 +150,23 @@ public class SurveyServiceMockTest {
 
         // verify query args
         ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
-        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(),  eq(null));
+        ArgumentCaptor<Map> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(),
+                paramsCaptor.capture(), eq(null));
 
         String queryStr = queryCaptor.getValue();
-        assertEquals("surveyGuid=\'" + survey.getGuid() + "\' AND surveyCreatedOn=" + survey.getCreatedOn(), queryStr);
-
+        assertEquals("surveyGuid=:surveyGuid AND surveyCreatedOn=:surveyCreatedOn", queryStr);
+        assertEquals(survey.getGuid(), paramsCaptor.getValue().get("surveyGuid"));
+        assertEquals(survey.getCreatedOn(), paramsCaptor.getValue().get("surveyCreatedOn"));
+        
         verify(mockSurveyDao).deleteSurveyPermanently(keysCaptor.capture());
         assertEquals(survey, keysCaptor.getValue());
     }
 
     @Test(expected = BadRequestException.class)
     public void logicallyDeleteSurveyNotEmptySharedModules() {
-        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), anySetOf(String.class)))
-                .thenReturn(ImmutableList.of(makeValidMetadata()));
+        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
+                anySetOf(String.class))).thenReturn(ImmutableList.of(makeValidMetadata()));
 
         Survey survey = createSurvey();
         doReturn(survey).when(mockSurveyDao).getSurvey(any());
@@ -165,8 +175,8 @@ public class SurveyServiceMockTest {
 
     @Test(expected = BadRequestException.class)
     public void physicallyDeleteSurveyNotEmptySharedModules() {
-        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), anySetOf(String.class)))
-                .thenReturn(ImmutableList.of(makeValidMetadata()));
+        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
+                anySetOf(String.class))).thenReturn(ImmutableList.of(makeValidMetadata()));
 
         doReturn(ImmutableList.of()).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
         Survey survey = createSurvey();

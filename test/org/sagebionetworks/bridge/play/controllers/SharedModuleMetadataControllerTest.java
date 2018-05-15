@@ -10,7 +10,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
@@ -140,12 +142,16 @@ public class SharedModuleMetadataControllerTest {
 
     @Test
     public void queryAll() throws Exception {
+        Map<String,Object> parameters = new HashMap<>();
+        parameters.put("name", "%name%");
+        parameters.put("notes", "%notes%");
+        
         // mock service
-        when(mockSvc.queryAllMetadata(true, true, "foo='bar'", ImmutableSet.of("foo", "bar", "baz"))).thenReturn(
-                ImmutableList.of(makeValidMetadata()));
+        when(mockSvc.queryAllMetadata(true, true, "name like :name or notes like :notes", parameters,
+                ImmutableSet.of("foo", "bar", "baz"))).thenReturn(ImmutableList.of(makeValidMetadata()));
 
         // setup, execute, and validate
-        Result result = controller.queryAllMetadata("true", "true", "foo='bar'", "foo,bar,baz");
+        Result result = controller.queryAllMetadata("true", "true", "name", "notes", "foo,bar,baz");
         TestUtils.assertResult(result, 200);
         assertMetadataListInResult(result);
 
@@ -154,12 +160,16 @@ public class SharedModuleMetadataControllerTest {
 
     @Test
     public void queryById() throws Exception {
+        Map<String,Object> parameters = new HashMap<>();
+        parameters.put("name", "%name%");
+        parameters.put("notes", "%notes%");
+        
         // mock service
-        when(mockSvc.queryMetadataById(MODULE_ID, true, true, "foo='bar'", ImmutableSet.of("foo", "bar", "baz")))
-                .thenReturn(ImmutableList.of(makeValidMetadata()));
+        when(mockSvc.queryMetadataById(MODULE_ID, true, true, "name like :name or notes like :notes", parameters,
+                ImmutableSet.of("foo", "bar", "baz"))).thenReturn(ImmutableList.of(makeValidMetadata()));
 
         // setup, execute, and validate
-        Result result = controller.queryMetadataById(MODULE_ID, "true", "true", "foo='bar'", "foo,bar,baz");
+        Result result = controller.queryMetadataById(MODULE_ID, "true", "true", "name", "notes", "foo,bar,baz");
         TestUtils.assertResult(result, 200);
         assertMetadataListInResult(result);
 

@@ -1,13 +1,19 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+
+import com.newrelic.agent.deps.com.google.common.base.Joiner;
+import com.newrelic.agent.deps.com.google.common.collect.Maps;
+
 import play.mvc.Result;
 
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -64,34 +70,53 @@ public class SharedModuleMetadataController extends BaseController {
         return okResult(metadata);
     }
 
+    private String createQuery(String name, String notes, Map<String,Object> parameters) {
+        List<String> clauses = new ArrayList<>();
+        if (StringUtils.isNotBlank(name)) {
+            clauses.add("name like :name");
+            parameters.put("name", "%"+name+"%");
+        }
+        if (StringUtils.isNotBlank(notes)) {
+            clauses.add("notes like :notes");
+            parameters.put("notes", "%"+notes+"%");
+        }
+        return Joiner.on(" or ").join(clauses);
+    }
+    
     /**
      * Queries module metadata using the set of given parameters. See
      * {@link SharedModuleMetadataService#queryAllMetadata} for details.
      */
-    public Result queryAllMetadata(String mostRecentString, String publishedString, String where, String tagsString) {
+    public Result queryAllMetadata(String mostRecentString, String publishedString, String name, String notes, String tagsString) {
         // Parse inputs
         boolean mostRecent = Boolean.parseBoolean(mostRecentString);
         boolean published = Boolean.parseBoolean(publishedString);
         Set<String> tagSet = parseTags(tagsString);
 
+        Map<String,Object> parameters = Maps.newHashMap();
+        String where = createQuery(name, notes, parameters);
+        
         // Call service
         List<SharedModuleMetadata> metadataList = metadataService.queryAllMetadata(mostRecent, published, where,
-                tagSet);
+                parameters, tagSet);
         ResourceList<SharedModuleMetadata> resourceList = new ResourceList<>(metadataList);
         return okResult(resourceList);
     }
 
     /** Similar to queryAllMetadata, except this only queries on module versions of the specified ID. */
-    public Result queryMetadataById(String id, String mostRecentString, String publishedString, String where,
-            String tagsString) {
+    public Result queryMetadataById(String id, String mostRecentString, String publishedString, String name,
+            String notes, String tagsString) {
         // Parse inputs
         boolean mostRecent = Boolean.parseBoolean(mostRecentString);
         boolean published = Boolean.parseBoolean(publishedString);
         Set<String> tagSet = parseTags(tagsString);
 
+        Map<String,Object> parameters = Maps.newHashMap();
+        String where = createQuery(name, notes, parameters);
+        
         // Call service
         List<SharedModuleMetadata> metadataList = metadataService.queryMetadataById(id, mostRecent, published, where,
-                tagSet);
+                parameters, tagSet);
         ResourceList<SharedModuleMetadata> resourceList = new ResourceList<>(metadataList);
         return okResult(resourceList);
     }

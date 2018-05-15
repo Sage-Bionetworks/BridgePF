@@ -6,7 +6,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.persistence.PersistenceException;
 
@@ -143,7 +145,7 @@ public class HibernateSharedModuleMetadataDaoTest {
         when(mockQuery.list()).thenReturn(hibernateOutputMetadataList);
 
         // execute and validate
-        List<SharedModuleMetadata> daoOutputMetadataList = dao.queryMetadata("foo='bar'");
+        List<SharedModuleMetadata> daoOutputMetadataList = dao.queryMetadata("foo='bar'", null);
         assertSame(hibernateOutputMetadataList, daoOutputMetadataList);
 
         // validate backends
@@ -161,7 +163,7 @@ public class HibernateSharedModuleMetadataDaoTest {
         when(mockQuery.list()).thenReturn(hibernateOutputMetadataList);
 
         // execute and validate
-        List<SharedModuleMetadata> daoOutputMetadataList = dao.queryMetadata(null);
+        List<SharedModuleMetadata> daoOutputMetadataList = dao.queryMetadata(null, null);
         assertSame(hibernateOutputMetadataList, daoOutputMetadataList);
 
         // validate backends
@@ -172,14 +174,14 @@ public class HibernateSharedModuleMetadataDaoTest {
     public void queryBadQuery() {
         when(mockSession.createQuery("from HibernateSharedModuleMetadata where blargg", SharedModuleMetadata.class))
                 .thenThrow(new IllegalArgumentException(new QuerySyntaxException("error message")));
-        dao.queryMetadata("blargg");
+        dao.queryMetadata("blargg", null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void queryOtherException() {
         when(mockSession.createQuery("from HibernateSharedModuleMetadata where foo='bar'", SharedModuleMetadata.class))
                 .thenThrow(new IllegalArgumentException());
-        dao.queryMetadata("foo='bar'");
+        dao.queryMetadata("foo='bar'", null);
     }
 
     @Test
@@ -198,6 +200,30 @@ public class HibernateSharedModuleMetadataDaoTest {
         SharedModuleMetadata hibernateInputMetadata = hibernateInputMetadataCaptor.getValue();
         assertSame(daoInputMetadata, hibernateInputMetadata);
         assertSame(hibernateInputMetadata, daoOutputMetadata);
+    }
+    
+    @Test
+    public void parametersAreSetForQuery() {
+        // mock query
+        Query<SharedModuleMetadata> mockQuery = mock(Query.class);
+        when(mockSession.createQuery("from HibernateSharedModuleMetadata where foo='bar'", SharedModuleMetadata.class))
+                .thenReturn(mockQuery);
+
+        List<SharedModuleMetadata> hibernateOutputMetadataList = ImmutableList.of(SharedModuleMetadata.create());
+        when(mockQuery.list()).thenReturn(hibernateOutputMetadataList);
+
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("name", "name");
+        parameters.put("notes", ImmutableList.of(1,2,3));
+        
+        // execute and validate
+        List<SharedModuleMetadata> daoOutputMetadataList = dao.queryMetadata("foo='bar'", parameters);
+        assertSame(hibernateOutputMetadataList, daoOutputMetadataList);
+
+        // validate backends
+        verifySessionAndTransaction();
+        verify(mockQuery).setParameter("name", "name");
+        verify(mockQuery).setParameterList("notes", ImmutableList.of(1,2,3));
     }
 
     private void verifySessionAndTransaction() {
