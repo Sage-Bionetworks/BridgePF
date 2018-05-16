@@ -34,24 +34,25 @@ public class ConsentSignatureValidator implements Validator {
         if (Strings.isNullOrEmpty(sig.getName())) {
             errors.rejectValue("name", CANNOT_BE_BLANK);
         }
+        LocalDate birthdate = parseBirthday(sig.getBirthdate());
+        // There was a value, but it didn't parse
+        if (birthdate == null && !Strings.isNullOrEmpty(sig.getBirthdate())) {
+            errors.rejectValue("birthdate", "is invalid (required format: YYYY-MM-DD)");
+        }
         if (minAgeOfConsent > 0) {
             if (Strings.isNullOrEmpty(sig.getBirthdate())) {
+                // A value wasn't provided, though it was required
                 errors.rejectValue("birthdate", CANNOT_BE_BLANK);
-            } else {
-                LocalDate birthdate = parseBirthday(errors, sig.getBirthdate());
-                if (birthdate != null) {
-                    LocalDate now = LocalDate.now();
-                    Period period = new Period(birthdate, now);
+            } else if (birthdate != null) {
+                // A valid birthdate was provided, ensure the user is old enough
+                LocalDate now = LocalDate.now();
+                Period period = new Period(birthdate, now);
 
-                    if (period.getYears() < minAgeOfConsent) {
-                        String message = String.format(TOO_YOUNG, minAgeOfConsent);
-                        errors.rejectValue("birthdate", message);
-                    }
+                if (period.getYears() < minAgeOfConsent) {
+                    String message = String.format(TOO_YOUNG, minAgeOfConsent);
+                    errors.rejectValue("birthdate", message);
                 }
             }
-        } else if (sig.getBirthdate() != null) {
-            // Just verify it parses because it wasn't required, but they supplied it anyway
-            parseBirthday(errors, sig.getBirthdate());
         }
         if (sig.getSignedOn() <= 0L) {
             errors.rejectValue("signedOn", "must be a valid signature timestamp");
@@ -73,12 +74,13 @@ public class ConsentSignatureValidator implements Validator {
         }
     }
     
-    private LocalDate parseBirthday(Errors errors, String birthdate) {
-        try {
-            return LocalDate.parse(birthdate);
-        } catch(IllegalArgumentException e) {
-            errors.rejectValue("birthdate", "is invalid (required format: YYYY-MM-DD)");
-            return null;
-        }        
+    private LocalDate parseBirthday(String birthdate) {
+        if (birthdate != null) {
+            try {
+                return LocalDate.parse(birthdate);
+            } catch(IllegalArgumentException e) {
+            }
+        }
+        return null;
     }
 }
