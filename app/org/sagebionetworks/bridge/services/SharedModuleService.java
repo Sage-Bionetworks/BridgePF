@@ -79,7 +79,7 @@ public class SharedModuleService {
 
         // Query for most recent published version.
         List<SharedModuleMetadata> metadataList = moduleMetadataService.queryMetadataById(moduleId, true, true, null,
-                null);
+                null, null);
         if (metadataList.isEmpty()) {
             throw new EntityNotFoundException(SharedModuleMetadata.class);
         }

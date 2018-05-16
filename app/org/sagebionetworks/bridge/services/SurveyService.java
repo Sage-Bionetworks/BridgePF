@@ -5,7 +5,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
@@ -208,8 +210,12 @@ public class SurveyService {
 
     // Helper method to verify if there is any shared module related to specified survey
     private void verifySharedModuleExistence(GuidCreatedOnVersionHolder keys) {
+        Map<String,Object> parameters = new HashMap<>();
+        parameters.put("surveyGuid", keys.getGuid());
+        parameters.put("surveyCreatedOn", keys.getCreatedOn());
+        
         List<SharedModuleMetadata> sharedModuleMetadataList = sharedModuleMetadataService.queryAllMetadata(false, false,
-                "surveyGuid=\'" + keys.getGuid() + "\' AND surveyCreatedOn=" + keys.getCreatedOn(), null);
+                "surveyGuid=:surveyGuid AND surveyCreatedOn=:surveyCreatedOn", parameters, null);
 
         if (sharedModuleMetadataList.size() != 0) {
             throw new BadRequestException("Cannot delete specified survey because a shared module still refers to it.");

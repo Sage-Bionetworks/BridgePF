@@ -30,8 +30,8 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.model.NotFoundException;
 import com.amazonaws.services.sns.model.PublishRequest;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.newrelic.agent.deps.com.google.common.collect.Lists;
 
 @Component
 public class NotificationTopicService {

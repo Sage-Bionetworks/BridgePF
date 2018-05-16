@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
+import java.util.Map;
 
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
 
@@ -26,7 +27,7 @@ public interface SharedModuleMetadataDao {
      * Example: "published = true AND os = 'iOS'"
      * </p>
      */
-    List<SharedModuleMetadata> queryMetadata(String whereClause);
+    List<SharedModuleMetadata> queryMetadata(String whereClause, Map<String,Object> parameters);
 
     /** Updates the specified metadata object. */
     SharedModuleMetadata updateMetadata(SharedModuleMetadata metadata);

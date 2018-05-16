@@ -533,17 +533,16 @@ public class UploadSchemaService {
 
         List<UploadSchema> schemaList = getUploadSchemaAllRevisions(studyId, schemaId);
 
-        StringBuilder sb = new StringBuilder("(");
+        List<Integer> revisions = new ArrayList<>();
         for (int i = 0; i < schemaList.size(); i++) {
-            sb.append(schemaList.get(i).getRevision());
-            if (i + 1 != schemaList.size()) {
-                sb.append(", ");
-            }
+            revisions.add(schemaList.get(i).getRevision());
         }
-        sb.append(")");
+        Map<String,Object> parameters = new HashMap<>();
+        parameters.put("schemaId", schemaId);
+        parameters.put("schemaRevisions", revisions);
 
         List<SharedModuleMetadata> sharedModuleMetadataList = sharedModuleMetadataService.queryAllMetadata(false, false,
-                "schemaId=\'" + schemaId + "\'" + " AND schemaRevision IN " + sb, null);
+                "schemaId=:schemaId AND schemaRevision IN :schemaRevisions", parameters, null);
 
         if (sharedModuleMetadataList.size() != 0) {
             throw new BadRequestException("Cannot delete specified Upload Schema because a shared module still refers to it.");
@@ -560,9 +559,13 @@ public class UploadSchemaService {
         // Schema ID and rev are validated by getUploadSchemaByIdAndRev()
 
         UploadSchema schema = getUploadSchemaByIdAndRev(studyId, schemaId, rev);
+        
+        Map<String,Object> parameters = new HashMap<>();
+        parameters.put("schemaId", schemaId);
+        parameters.put("schemaRevision", rev);
 
         List<SharedModuleMetadata> sharedModuleMetadataList = sharedModuleMetadataService.queryAllMetadata(false, false,
-                "schemaId=\'" + schemaId + "\'" + " AND schemaRevision=" + rev, null);
+                "schemaId=:schemaId AND schemaRevision=:schemaRevision", parameters, null);
 
         if (sharedModuleMetadataList.size() != 0) {
             throw new BadRequestException("Cannot delete specified Upload Schema because a shared module still refers to it.");

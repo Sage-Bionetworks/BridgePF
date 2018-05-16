@@ -43,9 +43,9 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AppConfigService;
 import org.sagebionetworks.bridge.services.StudyService;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.newrelic.agent.deps.com.google.common.collect.Lists;
 
 import play.mvc.Result;
 

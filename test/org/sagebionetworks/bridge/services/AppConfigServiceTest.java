@@ -31,7 +31,7 @@ import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.studies.Study;
 
-import com.newrelic.agent.deps.com.google.common.collect.Lists;
+import com.google.common.collect.Lists;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AppConfigServiceTest {

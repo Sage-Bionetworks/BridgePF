@@ -127,6 +127,24 @@ public class StudyParticipantValidatorTest {
     }
     
     @Test
+    public void emailCannotBeEmptyString() {
+        validator = new StudyParticipantValidator(externalIdService, study, true);
+        assertValidatorMessage(validator, withEmail(""), "email", "does not appear to be an email address");
+    }
+    
+    @Test
+    public void emailCannotBeBlankString() {
+        validator = new StudyParticipantValidator(externalIdService, study, true);
+        assertValidatorMessage(validator, withEmail("    \n    \t "), "email", "does not appear to be an email address");
+    }
+    
+    @Test
+    public void emailCannotBeInvalid() {
+        validator = new StudyParticipantValidator(externalIdService, study, true);
+        assertValidatorMessage(validator, withEmail("a"), "email", "does not appear to be an email address");
+    }
+    
+    @Test
     public void externalIdOnlyOK() {
         StudyParticipant participant = new StudyParticipant.Builder().withExternalId("external-id").build();
         validator = new StudyParticipantValidator(externalIdService, study, true);

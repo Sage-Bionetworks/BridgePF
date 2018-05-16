@@ -166,7 +166,7 @@ public class SharedModuleMetadataService {
         if (StringUtils.isBlank(id)) {
             throw new BadRequestException("id must be specified");
         }
-        List<SharedModuleMetadata> queryMetadataList = queryMetadataById(id, true, false, null, null);
+        List<SharedModuleMetadata> queryMetadataList = queryMetadataById(id, true, false, null, null, null);
 
         if (queryMetadataList.isEmpty()) {
             // If there are no results, return null instead of throwing.
@@ -203,7 +203,7 @@ public class SharedModuleMetadataService {
      * </p>
      */
     public List<SharedModuleMetadata> queryAllMetadata(boolean mostRecent, boolean published, String where,
-            Set<String> tags) {
+            Map<String, Object> parameters, Set<String> tags) {
         boolean hasWhere = StringUtils.isNotBlank(where);
         String whereInternal = null;
         if (mostRecent) {
@@ -230,7 +230,7 @@ public class SharedModuleMetadataService {
         }
 
         // Run actual query.
-        List<SharedModuleMetadata> metadataList = metadataDao.queryMetadata(whereInternal);
+        List<SharedModuleMetadata> metadataList = metadataDao.queryMetadata(whereInternal, parameters);
 
         // Map to find latest versions for each metadata by ID. This is applied before tags.
         if (mostRecent) {
@@ -257,13 +257,13 @@ public class SharedModuleMetadataService {
 
     /** Similar to queryAllMetadata, except this only queries on module versions of the specified ID. */
     public List<SharedModuleMetadata> queryMetadataById(String id, boolean mostRecent, boolean published, String where,
-            Set<String> tags) {
+            Map<String, Object> parameters, Set<String> tags) {
         if (StringUtils.isBlank(id)) {
             throw new BadRequestException("id must be specified");
         }
 
         // Query all metadata and just filter by ID.
-        List<SharedModuleMetadata> queryAllMetadataList = queryAllMetadata(mostRecent, published, where, tags);
+        List<SharedModuleMetadata> queryAllMetadataList = queryAllMetadata(mostRecent, published, where, parameters, tags);
         return queryAllMetadataList.stream().filter(metadata -> id.equals(metadata.getId())).collect(Collectors
                 .toList());
     }
