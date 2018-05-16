@@ -303,18 +303,25 @@ public class AccountWorkflowService {
     }
     
     /**
-     * Send an email message or SMS to the user notifying them that the account already exists, 
-     * and provide a link to reset the password if desired. If the workflow for the study includes 
-     * phone or email-based sign ins, also provide the URL or token to sign in instead.
+     * Send an email message or SMS to the user notifying them that the account already exists. Message can provide a link 
+     * to reset a password, or a link to sign in via email or phone (if either is enabled). Account exists notifications 
+     * won't be sent out if auto-verification is disabled (or if the user doesn't have a verified communication channel). 
+     * This is because account exist notifications are only sent out when users are trying to sign up.
      */
     public void notifyAccountExists(Study study, AccountId accountId) {
         checkNotNull(study);
         checkNotNull(accountId);
-        
+
         Account account = accountDao.getAccount(accountId);
-        if (account.getEmail() != null && account.getEmailVerified()) {
-            sendPasswordResetRelatedEmail(study, account.getEmail(), true, study.getAccountExistsTemplate());    
-        } else if (account.getPhone() != null && account.getPhoneVerified()) {
+        
+        boolean verifiedEmail = account.getEmail() != null && account.getEmailVerified();
+        boolean verifiedPhone = account.getPhone() != null && account.getPhoneVerified();
+        boolean sendEmail = study.isEmailVerificationEnabled() && !study.isAutoVerificationEmailSuppressed();
+        boolean sendPhone = !study.isAutoVerificationPhoneSuppressed();
+        
+        if (verifiedEmail && sendEmail) {
+            sendPasswordResetRelatedEmail(study, account.getEmail(), true, study.getAccountExistsTemplate());
+        } else if (verifiedPhone && sendPhone) {
             sendPasswordResetRelatedSMS(study, account.getPhone(), true, study.getAccountExistsSmsTemplate());
         }
     }
