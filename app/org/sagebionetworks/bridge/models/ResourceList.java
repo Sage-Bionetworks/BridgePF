@@ -20,12 +20,15 @@ import com.google.common.collect.ImmutableMap;
  */
 public class ResourceList<T> {
     
+    public static final String ALL_OF_GROUPS = "allOfGroups";
     public static final String ASSIGNMENT_FILTER = "assignmentFilter";
     public static final String EMAIL_FILTER = "emailFilter";
     public static final String END_DATE = "endDate";
     public static final String END_TIME = "endTime";
     public static final String ID_FILTER = "idFilter";
+    public static final String LANGUAGE = "language";
     public static final String NEXT_PAGE_OFFSET_KEY = "nextPageOffsetKey";
+    public static final String NONE_OF_GROUPS = "noneOfGroups";
     public static final String OFFSET_BY = "offsetBy";
     public static final String OFFSET_KEY = "offsetKey";
     public static final String PAGE_SIZE = "pageSize";

@@ -360,7 +360,7 @@ public class AuthenticationService {
         AccountId accountId = accountWorkflowService.channelSignIn(channelType, context, signIn, validator);
         
         Account account = accountDao.getAccountAfterAuthentication(accountId);
-        // This should be unlikley, but if someone deleted the account while the token was outstanding
+        // This should be unlikely, but if someone deleted the account while the token was outstanding
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }

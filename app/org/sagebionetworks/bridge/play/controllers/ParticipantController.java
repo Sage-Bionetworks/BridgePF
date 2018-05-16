@@ -172,21 +172,24 @@ public class ParticipantController extends BaseController {
     }
     
     public Result getParticipants(String offsetByString, String pageSizeString, String emailFilter, String phoneFilter,
-            String startDateString, String endDateString, String startTimeString, String endTimeString) {
+            String allOfGroups, String noneOfGroups, String language, String startDateString,
+            String endDateString, String startTimeString, String endTimeString) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        return getParticipantsInternal(study, offsetByString, pageSizeString, emailFilter, phoneFilter, startDateString,
-                endDateString, startTimeString, endTimeString);
+        return getParticipantsInternal(study, offsetByString, pageSizeString, emailFilter, phoneFilter, allOfGroups,
+                noneOfGroups, language, startDateString, endDateString, startTimeString, endTimeString);
     }
 
-    public Result getParticipantsForWorker(String studyId, String offsetByString, String pageSizeString, String emailFilter,
-            String phoneFilter, String startDateString, String endDateString, String startTimeString, String endTimeString) {
+    public Result getParticipantsForWorker(String studyId, String offsetByString, String pageSizeString,
+            String emailFilter, String phoneFilter, String allOfGroups, String noneOfGroups,
+            String language, String startDateString, String endDateString, String startTimeString,
+            String endTimeString) {
         getAuthenticatedSession(WORKER);
         
         Study study = studyService.getStudy(studyId);
-        return getParticipantsInternal(study, offsetByString, pageSizeString, emailFilter, phoneFilter, startDateString,
-                endDateString, startTimeString, endTimeString);
+        return getParticipantsInternal(study, offsetByString, pageSizeString, emailFilter, phoneFilter, allOfGroups,
+                noneOfGroups, language, startDateString, endDateString, startTimeString, endTimeString);
     }
     
     public Result createParticipant() throws Exception {
@@ -413,11 +416,14 @@ public class ParticipantController extends BaseController {
     }
 
     private Result getParticipantsInternal(Study study, String offsetByString, String pageSizeString,
-            String emailFilter, String phoneFilter, String startDateString, String endDateString,
-            String startTimeString, String endTimeString) {
+            String emailFilter, String phoneFilter, String allOfGroupsString, String noneOfGroupsString,
+            String language, String startDateString, String endDateString, String startTimeString,
+            String endTimeString) {
         
         int offsetBy = getIntOrDefault(offsetByString, 0);
         int pageSize = getIntOrDefault(pageSizeString, API_DEFAULT_PAGE_SIZE);
+        Set<String> allOfGroups = BridgeUtils.commaListToOrderedSet(allOfGroupsString);
+        Set<String> noneOfGroups = BridgeUtils.commaListToOrderedSet(noneOfGroupsString);
         
         // For naming consistency, we are changing from the user of startDate/endDate to startTime/endTime
         // for DateTime parameters. Both are accepted by these participant API endpoints (the only places 
@@ -431,7 +437,7 @@ public class ParticipantController extends BaseController {
             endTime = getDateTimeOrDefault(endDateString, null);
         }
         PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, offsetBy, pageSize,
-                emailFilter, phoneFilter, startTime, endTime);
+                emailFilter, phoneFilter, allOfGroups, noneOfGroups, language, startTime, endTime);
         
         // Similarly, we will return startTime/endTime in the top-level request parameter properties as 
         // startDate/endDate while transitioning, to maintain backwards compatibility.

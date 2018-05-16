@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dao;
 
 import java.util.Iterator;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import org.joda.time.DateTime;
@@ -123,6 +124,13 @@ public interface AccountDao {
      * @param phoneFilter
      *      a substring that will be matched (ignoring case) against the phone number of the account. String will be 
      *      converted to E164 format for comparison against the stored phone number.
+     * @param allOfGroups
+     *      a set of all the groups that must be assigned to the account to match it. All of the groups must be assigned.
+     * @param noneOfGroups
+     *      a set of all the groups that cannot be assigned to an account to match it. None of the groups can be assigned.
+     * @param language
+     *      a language the user must have declared in order to match the account. Only one of the users languages 
+     *      needs to be matched (you cannot match or exclude on other declared languages).
      * @param startDate
      *      a date and time on or after which the account should have been created in order to match the query.
      * @param endDate
@@ -132,7 +140,8 @@ public interface AccountDao {
      *      about the request and the total number of records.
      */
     PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize,
-            String emailFilter, String phoneFilter, DateTime startDate, DateTime endDate);
+            String emailFilter, String phoneFilter, Set<String> allOfGroups, Set<String> noneOfGroups, String language,
+            DateTime startDate, DateTime endDate);
     
     /**
      * For MailChimp, and other external systems, we need a way to get a healthCode for a given email.

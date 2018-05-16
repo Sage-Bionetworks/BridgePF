@@ -11,9 +11,11 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -58,6 +60,7 @@ import org.sagebionetworks.bridge.services.HealthCodeService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.newrelic.agent.deps.com.google.common.base.Joiner;
 
 /** Hibernate implementation of Account Dao. */
 @Component
@@ -479,13 +482,14 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize,
-            String emailFilter, String phoneFilter, DateTime startTime, DateTime endTime) {
+            String emailFilter, String phoneFilter, Set<String> allOfGroups, Set<String> noneOfGroups, String language,
+            DateTime startTime, DateTime endTime) {
         // Note: emailFilter can be any substring, not just prefix/suffix. Same with phone.
         // Note: start- and endTime are inclusive.
         StringBuilder queryBuilder = new StringBuilder();
         Map<String,Object> parameters = new HashMap<>();
 
-        queryBuilder.append("from HibernateAccount where studyId=:studyId");
+        queryBuilder.append("from HibernateAccount as acct where studyId=:studyId");
         parameters.put("studyId", study.getIdentifier());
 
         if (StringUtils.isNotBlank(emailFilter)) {
@@ -505,6 +509,13 @@ public class HibernateAccountDao implements AccountDao {
             queryBuilder.append(" and createdOn <= :endTime");
             parameters.put("endTime", endTime.getMillis());
         }
+        if (language != null) {
+            queryBuilder.append(" and :language in elements(acct.languages)");
+            parameters.put("language", language);
+        }
+        dataGroupQuerySegment(queryBuilder, allOfGroups, "in", parameters);
+        dataGroupQuerySegment(queryBuilder, noneOfGroups, "not in", parameters);
+        
         String query = queryBuilder.toString();
         
         // Don't retrieve unused columns, clientData can be large
@@ -526,9 +537,26 @@ public class HibernateAccountDao implements AccountDao {
                 .withRequestParam(ResourceList.EMAIL_FILTER, emailFilter)
                 .withRequestParam(ResourceList.PHONE_FILTER, phoneFilter)
                 .withRequestParam(ResourceList.START_TIME, startTime)
-                .withRequestParam(ResourceList.END_TIME, endTime);
+                .withRequestParam(ResourceList.END_TIME, endTime)
+                .withRequestParam(ResourceList.LANGUAGE, language)
+                .withRequestParam(ResourceList.ALL_OF_GROUPS, allOfGroups)
+                .withRequestParam(ResourceList.NONE_OF_GROUPS, noneOfGroups);
     }
 
+    private void dataGroupQuerySegment(StringBuilder queryBuilder, Set<String> dataGroups, String operator,
+            Map<String, Object> parameters) {
+        if (dataGroups != null && !dataGroups.isEmpty()) {
+            int i = 0;
+            Set<String> clauses = new HashSet<>();
+            for (String oneDataGroup : dataGroups) {
+                String varName = operator.replace(" ", "") + (++i);
+                clauses.add(":"+varName+" "+operator+" elements(acct.dataGroups)");
+                parameters.put(varName, oneDataGroup);
+            }
+            queryBuilder.append(" and (").append(Joiner.on(" or ").join(clauses)).append(")");
+        }
+    }
+    
     // Helper method which marshalls a GenericAccount into a HibernateAccount.
     // Package-scoped to facilitate unit tests.
     static HibernateAccount marshallAccount(Account account) {
