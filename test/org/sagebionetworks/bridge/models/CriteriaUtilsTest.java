@@ -244,7 +244,7 @@ public class CriteriaUtilsTest {
         Errors errors = Validate.getErrorsFor(criteria);
         CriteriaUtils.validate(criteria, Sets.newHashSet("group1","group2","group3","group4"), errors);
         // It's a set so validate without describing the order of the groups in the error message
-        assertTrue(errors.getFieldErrors("allOfGroups").get(0).getCode().contains("includes these prohibited data groups: "));
+        assertTrue(errors.getFieldErrors("allOfGroups").get(0).getCode().contains("includes these excluded data groups: "));
         assertTrue(errors.getFieldErrors("allOfGroups").get(0).getCode().contains("group2"));
         assertTrue(errors.getFieldErrors("allOfGroups").get(0).getCode().contains("group3"));
     }

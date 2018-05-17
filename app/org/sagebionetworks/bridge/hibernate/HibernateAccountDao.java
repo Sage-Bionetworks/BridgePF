@@ -553,7 +553,7 @@ public class HibernateAccountDao implements AccountDao {
                 clauses.add(":"+varName+" "+operator+" elements(acct.dataGroups)");
                 parameters.put(varName, oneDataGroup);
             }
-            queryBuilder.append(" and (").append(Joiner.on(" or ").join(clauses)).append(")");
+            queryBuilder.append(" and (").append(Joiner.on(" and ").join(clauses)).append(")");
         }
     }
     

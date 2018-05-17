@@ -4,12 +4,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.validation.Errors;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 /**
@@ -110,24 +112,41 @@ public class CriteriaUtils {
      * @param errors
      */
     private static void validateDataGroupNotRequiredAndProhibited(Criteria criteria, Errors errors) {
-        if (criteria.getAllOfGroups() != null && criteria.getNoneOfGroups() != null) {
-            Set<String> intersection = Sets.intersection(criteria.getAllOfGroups(), criteria.getNoneOfGroups());
-            if (!intersection.isEmpty()) {
-                errors.rejectValue("allOfGroups", "includes these prohibited data groups: " + COMMA_SPACE_JOINER.join(intersection));
-            }
+        String errorMessage = validateDataGroupNotRequiredAndProhibited(criteria.getAllOfGroups(), criteria.getNoneOfGroups());
+        if (errorMessage != null) {
+            errors.rejectValue("allOfGroups", errorMessage);
         }
     }
     
+    public static String validateDataGroupNotRequiredAndProhibited(Set<String> allOfGroups, Set<String> noneOfGroups) {
+        if (allOfGroups != null && noneOfGroups != null) {
+            Set<String> intersection = Sets.intersection(allOfGroups, noneOfGroups);
+            if (!intersection.isEmpty()) {
+                return "includes these excluded data groups: " + COMMA_SPACE_JOINER.join(intersection);
+            }
+        }
+        return null;
+    }
+    
     private static void validateDataGroups(Errors errors, Set<String> dataGroups, Set<String> criteriaGroups, String propName) {
+        List<String> errorMessages = validateDataGroups(dataGroups, criteriaGroups);
+        for (String oneMessage : errorMessages) {
+            errors.rejectValue(propName, oneMessage);
+        }
+    }
+    
+    public static List<String> validateDataGroups(Set<String> dataGroups, Set<String> criteriaGroups) {
+        List<String> list = Lists.newArrayList();
         if (criteriaGroups == null) {
-            errors.rejectValue(propName, "cannot be null");
+            list.add("cannot be null");
         } else {
             for (String dataGroup : criteriaGroups) {
                 if (!dataGroups.contains(dataGroup)) {
-                    errors.rejectValue(propName, getDataGroupMessage(dataGroup, dataGroups));
+                    list.add(getDataGroupMessage(dataGroup, dataGroups));
                 }
             }
         }
+        return list;
     }
     
     private static String getDataGroupMessage(String identifier, Set<String> dataGroups) {

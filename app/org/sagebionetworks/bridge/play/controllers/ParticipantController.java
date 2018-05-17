@@ -172,24 +172,41 @@ public class ParticipantController extends BaseController {
     }
     
     public Result getParticipants(String offsetByString, String pageSizeString, String emailFilter, String phoneFilter,
-            String allOfGroups, String noneOfGroups, String language, String startDateString,
-            String endDateString, String startTimeString, String endTimeString) {
+            String language, String startDateString, String endDateString, String startTimeString,
+            String endTimeString) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        // We document a comma-separated list of data groups for the set parameters, but standard HTTP
+        // does allow you to do allofGroups=A&allOfGroups=B etc. So support both here.
+        String allOfGroups = multiQueryParam("allOfGroups");
+        String noneOfGroups = multiQueryParam("noneOfGroups");
         
         return getParticipantsInternal(study, offsetByString, pageSizeString, emailFilter, phoneFilter, allOfGroups,
                 noneOfGroups, language, startDateString, endDateString, startTimeString, endTimeString);
     }
 
     public Result getParticipantsForWorker(String studyId, String offsetByString, String pageSizeString,
-            String emailFilter, String phoneFilter, String allOfGroups, String noneOfGroups,
-            String language, String startDateString, String endDateString, String startTimeString,
-            String endTimeString) {
+            String emailFilter, String phoneFilter, String language, String startDateString, String endDateString,
+            String startTimeString, String endTimeString) {
         getAuthenticatedSession(WORKER);
+        
+        // We document a comma-separated list of data groups for the set parameters, but standard HTTP
+        // does allow you to do allofGroups=A&allOfGroups=B etc. So support both here.
+        String allOfGroups = multiQueryParam("allOfGroups");
+        String noneOfGroups = multiQueryParam("noneOfGroups");
         
         Study study = studyService.getStudy(studyId);
         return getParticipantsInternal(study, offsetByString, pageSizeString, emailFilter, phoneFilter, allOfGroups,
                 noneOfGroups, language, startDateString, endDateString, startTimeString, endTimeString);
+    }
+    
+    private String multiQueryParam(String paramName) {
+        Map<String,String[]> query = request().queryString();
+        if (query.get(paramName) != null) {
+            return BridgeUtils.COMMA_JOINER.join(query.get(paramName));
+        }
+        return null;
     }
     
     public Result createParticipant() throws Exception {

@@ -22,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
@@ -34,6 +33,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.LimitExceededException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
@@ -227,6 +227,26 @@ public class ParticipantService {
         if (startTime != null && endTime != null && startTime.getMillis() >= endTime.getMillis()) {
             throw new BadRequestException(DATE_RANGE_ERROR);
         }
+        if (allOfGroups != null) {
+            List<String> errorMessages = CriteriaUtils.validateDataGroups(study.getDataGroups(), allOfGroups);
+            if (!errorMessages.isEmpty()) {
+                throw new BadRequestException("allOfGroups: " + BridgeUtils.SEMICOLON_SPACE_JOINER.join(errorMessages));
+            }
+        }
+        if (noneOfGroups != null) {
+            List<String> errorMessages = CriteriaUtils.validateDataGroups(study.getDataGroups(), noneOfGroups);
+            if (!errorMessages.isEmpty()) {
+                throw new BadRequestException("noneOfGroups: " + 
+                        BridgeUtils.SEMICOLON_SPACE_JOINER.join(errorMessages));
+            }
+        }
+        if (allOfGroups != null && noneOfGroups != null) {
+            String errorMessage = CriteriaUtils.validateDataGroupNotRequiredAndProhibited(allOfGroups, noneOfGroups);
+            if (errorMessage != null) {
+                throw new BadRequestException("allOfGroups " + errorMessage);
+            }
+        }
+
         return accountDao.getPagedAccountSummaries(study, offsetBy, pageSize, emailFilter, phoneFilter, allOfGroups,
                 noneOfGroups, language, startTime, endTime);
     }

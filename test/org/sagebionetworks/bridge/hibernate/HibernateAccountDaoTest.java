@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -33,7 +34,10 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -64,6 +68,7 @@ import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 
+@RunWith(MockitoJUnitRunner.class)
 public class HibernateAccountDaoTest {
     private static final String ACCOUNT_ID = "account-id";
     private static final DateTime CREATED_ON = DateTime.parse("2017-05-19T11:03:50.224-0700");
@@ -114,6 +119,9 @@ public class HibernateAccountDaoTest {
         STUDY = Study.create();
         STUDY.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
     }
+    
+    @Captor
+    ArgumentCaptor<Map<String,Object>> paramCaptor;
     
     private HealthCodeService mockHealthCodeService;
     private HibernateAccountDao dao;
@@ -1365,7 +1373,7 @@ public class HibernateAccountDaoTest {
 
         // execute and validate
         PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(STUDY, 10, 5,
-                null, null, null, null);
+                null, null, null, null, null, null, null);
         assertEquals(10, accountSummaryResourceList.getRequestParams().get("offsetBy"));
         assertEquals(5, accountSummaryResourceList.getRequestParams().get("pageSize"));
         assertEquals((Integer)12, accountSummaryResourceList.getTotal());
@@ -1387,7 +1395,7 @@ public class HibernateAccountDaoTest {
         assertEquals("email2@example.com", accountSummaryList.get(1).getEmail());
 
         // verify hibernate calls
-        String expectedQueryString = "from HibernateAccount where studyId=:studyId";
+        String expectedQueryString = "from HibernateAccount as acct where studyId=:studyId";
         String expectedGetQueryString = HibernateAccountDao.ACCOUNT_SUMMARY_QUERY_PREFIX + expectedQueryString;
         
         verify(mockHibernateHelper).queryGet(expectedGetQueryString, STUDY_QUERY_PARAMS, 10, 5, HibernateAccount.class);
@@ -1406,17 +1414,21 @@ public class HibernateAccountDaoTest {
         when(mockHibernateHelper.queryCount(any(), any())).thenReturn(11);
 
         // execute and validate - Just validate filters and query, since everything else is tested in getPaged().
-        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(STUDY, 10, 5,
-                EMAIL, PHONE.getNationalFormat(), startDate, endDate);
+        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(STUDY, 10, 5, EMAIL,
+                PHONE.getNationalFormat(), Sets.newHashSet("a", "b"), Sets.newHashSet("c", "d"), "de", startDate,
+                endDate);
 
         Map<String, Object> paramsMap = accountSummaryResourceList.getRequestParams();
-        assertEquals(7, paramsMap.size());
+        assertEquals(10, paramsMap.size());
         assertEquals(5, paramsMap.get("pageSize"));
         assertEquals(10, paramsMap.get("offsetBy"));
         assertEquals(EMAIL, paramsMap.get("emailFilter"));
         assertEquals(PHONE.getNationalFormat(), paramsMap.get("phoneFilter"));
         assertEquals(startDate.toString(), paramsMap.get("startTime"));
         assertEquals(endDate.toString(), paramsMap.get("endTime"));
+        assertEquals(Sets.newHashSet("a","b"), paramsMap.get("allOfGroups"));
+        assertEquals(Sets.newHashSet("c","d"), paramsMap.get("noneOfGroups"));
+        assertEquals("de", paramsMap.get("language"));
         assertEquals(ResourceList.REQUEST_PARAMS, paramsMap.get(ResourceList.TYPE));
 
         String phoneString = PHONE.getNationalFormat().replaceAll("\\D*","");
@@ -1428,13 +1440,109 @@ public class HibernateAccountDaoTest {
         params.put("number", "%"+phoneString+"%");
         params.put("startTime", startDate.getMillis());
         params.put("endTime", endDate.getMillis());
+        params.put("in1", "a");
+        params.put("in2", "b");
+        params.put("notin1", "c");
+        params.put("notin2", "d");
+        params.put("language", "de");
         
-        String expectedQueryString = "from HibernateAccount where studyId=:studyId and email like :email and phone.number like :number and createdOn >= :startTime and createdOn <= :endTime";
+        String expectedQueryString = "from HibernateAccount as acct where studyId=:studyId and " + 
+                "email like :email and phone.number like :number and createdOn >= :startTime and createdOn <= :endTime and " + 
+                ":language in elements(acct.languages) and (:in2 in elements(acct.dataGroups) and :in1 in elements(acct.dataGroups)) " +
+                "and (:notin1 not in elements(acct.dataGroups) and :notin2 not in elements(acct.dataGroups))";
         String expectedGetQueryString = HibernateAccountDao.ACCOUNT_SUMMARY_QUERY_PREFIX + expectedQueryString;
-        verify(mockHibernateHelper).queryGet(expectedGetQueryString, params, 10, 5, HibernateAccount.class);
-        verify(mockHibernateHelper).queryCount(expectedQueryString, params);
+        verify(mockHibernateHelper).queryGet(eq(expectedGetQueryString), paramCaptor.capture(), eq(10), eq(5), eq(HibernateAccount.class));
+        verify(mockHibernateHelper).queryCount(eq(expectedQueryString), paramCaptor.capture());
+        
+        Map<String,Object> capturedParams = paramCaptor.getAllValues().get(0);
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, capturedParams.get("studyId"));
+        assertEquals("%"+EMAIL+"%", capturedParams.get("email"));
+        assertEquals("%"+phoneString+"%", capturedParams.get("number"));
+        assertEquals(startDate.getMillis(), capturedParams.get("startTime"));
+        assertEquals(endDate.getMillis(), capturedParams.get("endTime"));
+        assertEquals("a", capturedParams.get("in1"));
+        assertEquals("b", capturedParams.get("in2"));
+        assertEquals("d", capturedParams.get("notin1"));
+        assertEquals("c", capturedParams.get("notin2"));
+        assertEquals("de", capturedParams.get("language"));
+        
+        capturedParams = paramCaptor.getAllValues().get(1);
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, capturedParams.get("studyId"));
+        assertEquals("%"+EMAIL+"%", capturedParams.get("email"));
+        assertEquals("%"+phoneString+"%", capturedParams.get("number"));
+        assertEquals(startDate.getMillis(), capturedParams.get("startTime"));
+        assertEquals(endDate.getMillis(), capturedParams.get("endTime"));
+        assertEquals("a", capturedParams.get("in1"));
+        assertEquals("b", capturedParams.get("in2"));
+        assertEquals("d", capturedParams.get("notin1"));
+        assertEquals("c", capturedParams.get("notin2"));
+        assertEquals("de", capturedParams.get("language"));
     }
+    
+    @Test
+    public void getPagedWithOptionalEmptySetParams() throws Exception {
+        // Setup start and end dates.
+        DateTime startDate = DateTime.parse("2017-05-19T11:40:06.247-0700");
+        DateTime endDate = DateTime.parse("2017-05-19T18:32:03.434-0700");
 
+        // mock hibernate
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any())).thenReturn(ImmutableList.of(
+                makeValidHibernateAccount(false, false)));
+        when(mockHibernateHelper.queryCount(any(), any())).thenReturn(11);
+
+        // execute and validate - Just validate filters and query, since everything else is tested in getPaged().
+        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(STUDY, 10, 5, EMAIL,
+                PHONE.getNationalFormat(), Sets.newHashSet(), Sets.newHashSet(), "de", startDate,
+                endDate);
+
+        Map<String, Object> paramsMap = accountSummaryResourceList.getRequestParams();
+        assertEquals(10, paramsMap.size());
+        assertEquals(5, paramsMap.get("pageSize"));
+        assertEquals(10, paramsMap.get("offsetBy"));
+        assertEquals(EMAIL, paramsMap.get("emailFilter"));
+        assertEquals(PHONE.getNationalFormat(), paramsMap.get("phoneFilter"));
+        assertEquals(startDate.toString(), paramsMap.get("startTime"));
+        assertEquals(endDate.toString(), paramsMap.get("endTime"));
+        assertEquals(Sets.newHashSet(), paramsMap.get("allOfGroups"));
+        assertEquals(Sets.newHashSet(), paramsMap.get("noneOfGroups"));
+        assertEquals("de", paramsMap.get("language"));
+        assertEquals(ResourceList.REQUEST_PARAMS, paramsMap.get(ResourceList.TYPE));
+
+        String phoneString = PHONE.getNationalFormat().replaceAll("\\D*","");
+
+        // verify hibernate calls
+        Map<String,Object> params = new HashMap<>();
+        params.put("studyId", TestConstants.TEST_STUDY_IDENTIFIER);
+        params.put("email", "%"+EMAIL+"%");
+        params.put("number", "%"+phoneString+"%");
+        params.put("startTime", startDate.getMillis());
+        params.put("endTime", endDate.getMillis());
+        params.put("language", "de");
+        
+        String expectedQueryString = "from HibernateAccount as acct where studyId=:studyId and " + 
+                "email like :email and phone.number like :number and createdOn >= :startTime and createdOn <= :endTime and " + 
+                ":language in elements(acct.languages)";
+        String expectedGetQueryString = HibernateAccountDao.ACCOUNT_SUMMARY_QUERY_PREFIX + expectedQueryString;
+        verify(mockHibernateHelper).queryGet(eq(expectedGetQueryString), paramCaptor.capture(), eq(10), eq(5), eq(HibernateAccount.class));
+        verify(mockHibernateHelper).queryCount(eq(expectedQueryString), paramCaptor.capture());
+        
+        Map<String,Object> capturedParams = paramCaptor.getAllValues().get(0);
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, capturedParams.get("studyId"));
+        assertEquals("%"+EMAIL+"%", capturedParams.get("email"));
+        assertEquals("%"+phoneString+"%", capturedParams.get("number"));
+        assertEquals(startDate.getMillis(), capturedParams.get("startTime"));
+        assertEquals(endDate.getMillis(), capturedParams.get("endTime"));
+        assertEquals("de", capturedParams.get("language"));
+        
+        capturedParams = paramCaptor.getAllValues().get(1);
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, capturedParams.get("studyId"));
+        assertEquals("%"+EMAIL+"%", capturedParams.get("email"));
+        assertEquals("%"+phoneString+"%", capturedParams.get("number"));
+        assertEquals(startDate.getMillis(), capturedParams.get("startTime"));
+        assertEquals(endDate.getMillis(), capturedParams.get("endTime"));
+        assertEquals("de", capturedParams.get("language"));
+    }
+    
     @Test
     public void getHealthCode() throws Exception {
         // mock hibernate
