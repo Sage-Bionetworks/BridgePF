@@ -460,6 +460,7 @@ public class AccountWorkflowServiceTest {
     
     @Test
     public void notifyAccountExistsForEmail() throws Exception {
+        study.setEmailVerificationEnabled(true);
         // In this path email sign in is also enabled, so we will generate a link to sign in that can 
         // be used in lieu of directing the user to a password reset.
         study.setEmailSignInEnabled(true);
@@ -514,6 +515,7 @@ public class AccountWorkflowServiceTest {
         // In this path email sign in is also enabled, so we will generate a link to sign in that can 
         // be used in lieu of directing the user to a password reset.
         study.setEmailSignInEnabled(false);
+        study.setEmailVerificationEnabled(true);
         AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
         when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         when(service.getNextToken()).thenReturn(SPTOKEN);
@@ -559,6 +561,7 @@ public class AccountWorkflowServiceTest {
     @Test
     public void notifyAccountForEmailSignInDoesntThrottle() throws Exception {
         study.setEmailSignInEnabled(true);
+        study.setEmailVerificationEnabled(true);
         AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
         when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         when(service.getNextToken()).thenReturn(SPTOKEN, TOKEN, SPTOKEN, TOKEN, SPTOKEN, TOKEN);
@@ -596,6 +599,7 @@ public class AccountWorkflowServiceTest {
 
     @Test
     public void notifyAccountExistsForEmailWithoutEmailSignIn() throws Exception {
+        study.setEmailVerificationEnabled(true);
         // A successful notification of an existing account where email sign in is not enabled. The 
         // emailSignIn template variable will not be replaced.
         AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
@@ -670,6 +674,68 @@ public class AccountWorkflowServiceTest {
         assertTrue(message.contains(" or ${token}"));
         assertEquals("Transactional", smsMessageProviderCaptor.getValue().getSmsType());
         verify(service, never()).getNextPhoneToken();
+    }
+    
+    @Test
+    public void notifyAccountExistsWithPhoneAutoVerifySuppressed() throws Exception {
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        study.setPhoneSignInEnabled(true);
+        study.setAutoVerificationPhoneSuppressed(true);
+        
+        AccountId accountId = AccountId.forPhone(TEST_STUDY_IDENTIFIER, TestConstants.PHONE);
+        when(service.getNextToken()).thenReturn(SPTOKEN);
+        when(service.getNextPhoneToken()).thenReturn(PHONE_TOKEN);
+        when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
+        when(mockAccount.getPhoneVerified()).thenReturn(Boolean.TRUE);
+        when(mockAccountDao.getAccount(accountId)).thenReturn(mockAccount);
+        
+        service.notifyAccountExists(study, accountId);
+        
+        verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
+        verify(mockNotificationsService, never()).sendSmsMessage(any());
+    }
+    
+    @Test
+    public void notifyAccountExistsWithEmailAutoVerifySuppressed() throws Exception {
+        // In this path email sign in is also enabled, so we will generate a link to sign in that can 
+        // be used in lieu of directing the user to a password reset.
+        study.setEmailSignInEnabled(true);
+        study.setAutoVerificationEmailSuppressed(true);
+        
+        AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        when(service.getNextToken()).thenReturn(SPTOKEN, TOKEN);
+        when(mockAccount.getEmail()).thenReturn(EMAIL);
+        when(mockAccount.getEmailVerified()).thenReturn(Boolean.TRUE);
+        when(mockAccountDao.getAccount(accountId)).thenReturn(mockAccount);
+        when(mockAccountDao.getAccount(AccountId.forEmail(TEST_STUDY_IDENTIFIER, EMAIL))).thenReturn(mockAccount);
+        
+        service.notifyAccountExists(study, accountId);
+        
+        verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
+        verify(mockSendMailService, never()).sendEmail(any());
+    }
+    
+    @Test
+    public void notifyAccountExistsWithEmailVerifyOff() throws Exception {
+        // In this path email sign in is also enabled, so we will generate a link to sign in that can 
+        // be used in lieu of directing the user to a password reset.
+        study.setEmailSignInEnabled(true);
+        study.setAutoVerificationEmailSuppressed(false);
+        study.setEmailVerificationEnabled(false);
+        
+        AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        when(service.getNextToken()).thenReturn(SPTOKEN, TOKEN);
+        when(mockAccount.getEmail()).thenReturn(EMAIL);
+        when(mockAccount.getEmailVerified()).thenReturn(Boolean.TRUE);
+        when(mockAccountDao.getAccount(accountId)).thenReturn(mockAccount);
+        when(mockAccountDao.getAccount(AccountId.forEmail(TEST_STUDY_IDENTIFIER, EMAIL))).thenReturn(mockAccount);
+        
+        service.notifyAccountExists(study, accountId);
+        
+        verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
+        verify(mockSendMailService, never()).sendEmail(any());
     }
     
     @Test
