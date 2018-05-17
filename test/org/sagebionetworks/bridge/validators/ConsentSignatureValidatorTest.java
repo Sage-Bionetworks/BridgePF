@@ -6,6 +6,8 @@ import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -211,7 +213,7 @@ public class ConsentSignatureValidatorTest {
     
     @Test
     public void minAgeLimitButBirthdateTooRecent() {
-        String birthdate = DateTime.now().minusYears(18).plusDays(1).toLocalDate().toString();
+        String birthdate = LocalDate.now(DateTimeZone.UTC).minusYears(18).plusDays(1).toString();
         validator = new ConsentSignatureValidator(18);
         ConsentSignature sig = new ConsentSignature.Builder().withName("test name").withBirthdate(birthdate).build();
         assertValidatorMessage(validator, sig, "birthdate", "too recent (the study requires participants to be 18 years of age or older).");
@@ -219,7 +221,7 @@ public class ConsentSignatureValidatorTest {
     
     @Test
     public void minAgeLimitBirthdateOK() {
-        String birthdate = DateTime.now().minusYears(18).toLocalDate().toString();
+        String birthdate = DateTime.now(DateTimeZone.UTC).minusYears(18).toString();
         validator = new ConsentSignatureValidator(18);
         ConsentSignature sig = new ConsentSignature.Builder().withName("test name").withBirthdate(birthdate).build();
         Validate.entityThrowingException(validator, sig);
