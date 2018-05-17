@@ -5,6 +5,8 @@ import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestConstants;
@@ -19,9 +21,15 @@ public class ConsentSignatureValidatorTest {
     
     @Before
     public void before() {
+        DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2022-02-28T00:00:00.000Z").getMillis());
         validator = new ConsentSignatureValidator(0);
     }
 
+    @After
+    public void after() {
+        DateTimeUtils.setCurrentMillisSystem();
+    }
+    
     @Test
     public void nullName() {
         ConsentSignature sig = new ConsentSignature.Builder().withBirthdate("1970-01-01")

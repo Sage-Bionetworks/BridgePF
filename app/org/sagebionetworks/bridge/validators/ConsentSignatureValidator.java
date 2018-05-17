@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.validators;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.LocalDate;
 import org.joda.time.Period;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
@@ -34,16 +35,15 @@ public class ConsentSignatureValidator implements Validator {
         if (Strings.isNullOrEmpty(sig.getName())) {
             errors.rejectValue("name", CANNOT_BE_BLANK);
         }
-        LocalDate birthdate = parseBirthday(sig.getBirthdate());
-        // There was a value, but it didn't parse
-        if (birthdate == null && !Strings.isNullOrEmpty(sig.getBirthdate())) {
-            errors.rejectValue("birthdate", "is invalid (required format: YYYY-MM-DD)");
-        }
-        if (minAgeOfConsent > 0) {
-            if (Strings.isNullOrEmpty(sig.getBirthdate())) {
-                // A value wasn't provided, though it was required
+        if (Strings.isNullOrEmpty(sig.getBirthdate())) {
+            if (minAgeOfConsent > 0) {
                 errors.rejectValue("birthdate", CANNOT_BE_BLANK);
-            } else if (birthdate != null) {
+            }
+        } else {
+            LocalDate birthdate = parseBirthday(sig.getBirthdate());
+            if (birthdate == null) {
+                errors.rejectValue("birthdate", "is invalid (required format: YYYY-MM-DD)");
+            } else if (minAgeOfConsent > 0) {
                 // A valid birthdate was provided, ensure the user is old enough
                 LocalDate now = LocalDate.now();
                 Period period = new Period(birthdate, now);
