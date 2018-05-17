@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.junit.Before;
 import org.junit.Test;
@@ -241,13 +242,14 @@ public class UploadSchemaServiceTest {
 
     @Test(expected = BadRequestException.class)
     public void deleteByIdNotEmptySharedModules() {
-        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), anySetOf(String.class)))
-                .thenReturn(ImmutableList.of(makeValidMetadata()));
+        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
+                anySetOf(String.class))).thenReturn(ImmutableList.of(makeValidMetadata()));
         List<UploadSchema> schemaListToDelete = ImmutableList.of(makeSimpleSchema());
         when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID)).thenReturn(schemaListToDelete);
         svc.deleteUploadSchemaById(TestConstants.TEST_STUDY, SCHEMA_ID);
     }
 
+    @SuppressWarnings("rawtypes")
     @Test
     public void deleteByIdSuccess() {
         // mock dao
@@ -260,10 +262,14 @@ public class UploadSchemaServiceTest {
 
         // verify query args
         ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
-        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(), eq(null));
+        ArgumentCaptor<Map> paramCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(),
+                paramCaptor.capture(), eq(null));
 
         String queryStr = queryCaptor.getValue();
-        assertEquals("schemaId=\'" + SCHEMA_ID + "\'" + " AND schemaRevision IN (0)", queryStr);
+        assertEquals("schemaId=:schemaId AND schemaRevision IN :schemaRevisions", queryStr);
+        assertEquals(SCHEMA_ID, (String)paramCaptor.getValue().get("schemaId"));
+        assertEquals(Lists.newArrayList(0), paramCaptor.getValue().get("schemaRevisions"));
     }
 
     @Test(expected = BadRequestException.class)
@@ -306,14 +312,15 @@ public class UploadSchemaServiceTest {
 
     @Test(expected = BadRequestException.class)
     public void deleteByIdAndRevNotEmptySharedModules() {
-        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), anySetOf(String.class)))
-                .thenReturn(ImmutableList.of(makeValidMetadata()));
+        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
+                anySetOf(String.class))).thenReturn(ImmutableList.of(makeValidMetadata()));
         UploadSchema schemaToDelete = makeSimpleSchema();
         when(dao.getUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(
                 schemaToDelete);
         svc.deleteUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV);
     }
 
+    @SuppressWarnings("rawtypes")
     @Test
     public void deleteByIdAndRevSuccess() {
         // mock dao
@@ -327,10 +334,14 @@ public class UploadSchemaServiceTest {
 
         // verify query args
         ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
-        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(), eq(null));
+        ArgumentCaptor<Map> paramCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(),
+                paramCaptor.capture(), eq(null));
 
         String queryStr = queryCaptor.getValue();
-        assertEquals("schemaId=\'" + SCHEMA_ID + "\'" + " AND schemaRevision=" + SCHEMA_REV, queryStr);
+        assertEquals("schemaId=:schemaId AND schemaRevision=:schemaRevision", queryStr);
+        assertEquals(SCHEMA_ID, paramCaptor.getValue().get("schemaId"));
+        assertEquals(SCHEMA_REV, paramCaptor.getValue().get("schemaRevision"));
     }
 
     @Test

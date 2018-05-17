@@ -40,8 +40,8 @@ import com.amazonaws.services.sns.model.DeleteEndpointRequest;
 import com.amazonaws.services.sns.model.GetEndpointAttributesResult;
 import com.amazonaws.services.sns.model.NotFoundException;
 import com.amazonaws.services.sns.model.SetEndpointAttributesRequest;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.newrelic.agent.deps.com.google.common.collect.Lists;
 
 /**
  * This interacts with SNS and to test against SNS itself, we'd need to create client application 

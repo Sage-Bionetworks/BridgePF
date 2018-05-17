@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import javax.persistence.PersistenceException;
@@ -11,6 +12,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.hql.internal.ast.QuerySyntaxException;
+import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -77,7 +79,7 @@ public class HibernateSharedModuleMetadataDao implements SharedModuleMetadataDao
 
     /** {@inheritDoc} */
     @Override
-    public List<SharedModuleMetadata> queryMetadata(String whereClause) {
+    public List<SharedModuleMetadata> queryMetadata(String whereClause, Map<String, Object> parameters) {
         // build query
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("from HibernateSharedModuleMetadata");
@@ -87,8 +89,19 @@ public class HibernateSharedModuleMetadataDao implements SharedModuleMetadataDao
 
         // execute query
         try {
-            return sessionHelper(session -> session.createQuery(queryBuilder.toString(), SharedModuleMetadata.class)
-                    .list());
+            return sessionHelper(session -> {
+                Query<SharedModuleMetadata> query = session.createQuery(queryBuilder.toString(), SharedModuleMetadata.class);
+                if (parameters != null) {
+                    for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+                        if (entry.getValue() instanceof List) {
+                            query.setParameterList(entry.getKey(), (List<?>)entry.getValue());
+                        } else {
+                            query.setParameter(entry.getKey(), entry.getValue());
+                        }
+                    }
+                }
+                return query.list();
+            });
         } catch (IllegalArgumentException ex) {
             // Similarly, an invalid query will result in an IllegalArgumentException which wraps a
             // QuerySyntaxException.

@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anySetOf;
 import static org.mockito.Matchers.anyString;
@@ -69,8 +70,8 @@ public class SurveyServiceTest {
     @Before
     public void before() {
         mockSharedModuleMetadataService = mock(SharedModuleMetadataService.class);
-        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), anySetOf(String.class))).thenReturn(
-                ImmutableList.of());
+        when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
+                anySetOf(String.class))).thenReturn(ImmutableList.of());
         testSurvey = new TestSurvey(SurveyServiceTest.class, true);
         surveysToDelete = new HashSet<>();
         surveyService.setSharedModuleMetadataService(mockSharedModuleMetadataService);
