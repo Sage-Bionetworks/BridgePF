@@ -37,6 +37,7 @@ public class StudyValidator implements Validator {
     
     private static final int MAX_SYNAPSE_LENGTH = 250;
     private static final Pattern FINGERPRINT_PATTERN = Pattern.compile("^[0-9a-fA-F:]{95,95}$");
+    protected static final String EMAIL_ERROR = "is not a comma-separated list of email addresses";
     
     /**
      * Inspect StudyParticipant for its field names; these cannot be used as user profile attributes because UserProfile
@@ -152,9 +153,6 @@ public class StudyValidator implements Validator {
                 errors.rejectValue("userProfileAttributes", msg);
             }
         }
-        validateEmails(errors, study.getSupportEmail(), "supportEmail");
-        validateEmails(errors, study.getTechnicalEmail(), "technicalEmail");
-        validateEmails(errors, study.getConsentNotificationEmail(), "consentNotificationEmail");
         validateDataGroupNamesAndFitForSynapseExport(errors, study.getDataGroups());
 
         // emailVerificationEnabled=true (public study):
@@ -251,13 +249,13 @@ public class StudyValidator implements Validator {
     private void validateEmail(Errors errors, String emailString, String fieldName) {
         if (emailString != null) {
             Set<String> emails = BridgeUtils.commaListToOrderedSet(emailString);
-            // The "if" clause catches cases like "" which are weeded out of a the ordered set
+            // The "if" clause catches cases like "" which are weeded out of the ordered set
             if (emails.isEmpty()) {
-                errors.rejectValue(fieldName, "does not appear to contain one or more valid email addresses");
+                errors.rejectValue(fieldName, EMAIL_ERROR);
             } else {
                 for (String email : emails) {
                     if (!EmailValidator.getInstance().isValid(email)) {
-                        errors.rejectValue(fieldName, "does not appear to contain one or more valid email addresses");
+                        errors.rejectValue(fieldName, EMAIL_ERROR);
                     }
                 }
             }
@@ -287,7 +285,7 @@ public class StudyValidator implements Validator {
     private boolean isInRange(int value, int min) {
         return (value >= min && value <= PasswordPolicy.FIXED_MAX_LENGTH);
     }
-    
+    /*
     private void validateEmails(Errors errors, String value, String fieldName) {
         Set<String> emails = BridgeUtils.commaListToOrderedSet(value);
         for (String email : emails) {
@@ -295,7 +293,7 @@ public class StudyValidator implements Validator {
                 errors.rejectValue(fieldName, fieldName + " '%s' is not a valid email address", new Object[]{email}, null);
             }
         }
-    }
+    }*/
     
     private void validateEmailTemplate(Errors errors, EmailTemplate template, String fieldName, String... templateVariables) {
         if (template == null) {

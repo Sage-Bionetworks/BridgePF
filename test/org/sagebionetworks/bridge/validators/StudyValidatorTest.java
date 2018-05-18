@@ -142,7 +142,7 @@ public class StudyValidatorTest {
     @Test
     public void rejectsInvalidSupportEmailAddresses() {
         study.setSupportEmail("test@test.com,asdf,test2@test.com");
-        assertValidatorMessage(INSTANCE, study, "supportEmail", "'asdf' is not a valid email address");
+        assertValidatorMessage(INSTANCE, study, "supportEmail", StudyValidator.EMAIL_ERROR);
     }
     
     @Test
@@ -160,14 +160,13 @@ public class StudyValidatorTest {
     @Test
     public void rejectsInvalidTechnicalEmailAddresses() {
         study.setTechnicalEmail("test@test.com,asdf,test2@test.com");
-        assertValidatorMessage(INSTANCE, study, "technicalEmail", "'asdf' is not a valid email address");
+        assertValidatorMessage(INSTANCE, study, "technicalEmail", StudyValidator.EMAIL_ERROR);
     }
     
     @Test
     public void supportEmailMustsBeValid() {
         study.setSupportEmail("email@email.com,email2@email.com,b");
-        assertValidatorMessage(INSTANCE, study, "supportEmail",
-                "does not appear to contain one or more valid email addresses");
+        assertValidatorMessage(INSTANCE, study, "supportEmail", StudyValidator.EMAIL_ERROR);
         
         study.setSupportEmail("email@email.com,email2@email.com");
         Validate.entityThrowingException(INSTANCE, study);
@@ -183,12 +182,10 @@ public class StudyValidatorTest {
     @Test
     public void technicalEmailsMustBeValid() {
         study.setTechnicalEmail("");
-        assertValidatorMessage(INSTANCE, study, "technicalEmail",
-                "does not appear to contain one or more valid email addresses");
+        assertValidatorMessage(INSTANCE, study, "technicalEmail", StudyValidator.EMAIL_ERROR);
 
         study.setTechnicalEmail("email@email.com,email2@email.com,b");
-        assertValidatorMessage(INSTANCE, study, "technicalEmail",
-                "does not appear to contain one or more valid email addresses");
+        assertValidatorMessage(INSTANCE, study, "technicalEmail", StudyValidator.EMAIL_ERROR);
         
         study.setTechnicalEmail("email@email.com,email2@email.com");
         Validate.entityThrowingException(INSTANCE, study);
@@ -201,12 +198,10 @@ public class StudyValidatorTest {
     @Test
     public void consentEmailsMustBeValid() {
         study.setConsentNotificationEmail("");
-        assertValidatorMessage(INSTANCE, study, "consentNotificationEmail",
-                "does not appear to contain one or more valid email addresses");
+        assertValidatorMessage(INSTANCE, study, "consentNotificationEmail", StudyValidator.EMAIL_ERROR);
 
         study.setConsentNotificationEmail("email@email.com,email2@email.com,b");
-        assertValidatorMessage(INSTANCE, study, "consentNotificationEmail",
-                "does not appear to contain one or more valid email addresses");
+        assertValidatorMessage(INSTANCE, study, "consentNotificationEmail", StudyValidator.EMAIL_ERROR);
         
         study.setConsentNotificationEmail("email@email.com,email2@email.com");
         Validate.entityThrowingException(INSTANCE, study);
@@ -235,7 +230,7 @@ public class StudyValidatorTest {
     @Test
     public void rejectsInvalidConsentEmailAddresses() {
         study.setConsentNotificationEmail("test@test.com,asdf,test2@test.com");
-        assertValidatorMessage(INSTANCE, study, "consentNotificationEmail", "'asdf' is not a valid email address");
+        assertValidatorMessage(INSTANCE, study, "consentNotificationEmail", StudyValidator.EMAIL_ERROR);
     }
     
     @Test
