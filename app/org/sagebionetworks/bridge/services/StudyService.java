@@ -610,7 +610,7 @@ public class StudyService {
         if (!originalStudy.getSupportEmail().equals(study.getSupportEmail())) {
             emailVerificationService.verifyEmailAddress(study.getSupportEmail());
         }
-        if (consentHasChanged && study.getConsentNotificationEmail() != null) {
+        if (consentHasChanged && StringUtils.isNotBlank(study.getConsentNotificationEmail())) {
             sendVerifyEmail(study, StudyEmailType.CONSENT_NOTIFICATION);    
         }
         return updatedStudy;
