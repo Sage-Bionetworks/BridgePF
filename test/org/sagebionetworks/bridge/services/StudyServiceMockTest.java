@@ -444,7 +444,7 @@ public class StudyServiceMockTest {
         // Execute. Will throw.
         service.verifyEmail(TEST_STUDY_IDENTIFIER, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
     }
-    
+
     @Test(expected = BadRequestException.class)
     public void verifyEmailMismatchedEmail() {
         // Mock Cache Provider.
@@ -1550,7 +1550,6 @@ public class StudyServiceMockTest {
         setupConsentEmailChangeTest(null, newEmail, true, true);
         setupConsentEmailChangeTest(originalEmail, null, true, false);
         setupConsentEmailChangeTest(originalEmail, newEmail, true, true);
-        setupConsentEmailChangeTest(originalEmail, "", true, false);
     }
     
     private void setupConsentEmailChangeTest(String originalEmail, String newEmail, boolean shouldBeChanged,

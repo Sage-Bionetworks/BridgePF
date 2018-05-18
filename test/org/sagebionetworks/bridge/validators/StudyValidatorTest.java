@@ -164,11 +164,58 @@ public class StudyValidatorTest {
     }
     
     @Test
-    public void requiresMissingTechnicalEmail() {
+    public void supportEmailMustsBeValid() {
+        study.setSupportEmail("email@email.com,email2@email.com,b");
+        assertValidatorMessage(INSTANCE, study, "supportEmail",
+                "does not appear to contain one or more valid email addresses");
+        
+        study.setSupportEmail("email@email.com,email2@email.com");
+        Validate.entityThrowingException(INSTANCE, study);
+        
+        // it is also required
+        study.setSupportEmail("");
+        assertValidatorMessage(INSTANCE, study, "supportEmail", "is required");
+        
+        study.setSupportEmail(null);
+        assertValidatorMessage(INSTANCE, study, "supportEmail", "is required");
+    }
+    
+    @Test
+    public void technicalEmailsMustBeValid() {
+        study.setTechnicalEmail("");
+        assertValidatorMessage(INSTANCE, study, "technicalEmail",
+                "does not appear to contain one or more valid email addresses");
+
+        study.setTechnicalEmail("email@email.com,email2@email.com,b");
+        assertValidatorMessage(INSTANCE, study, "technicalEmail",
+                "does not appear to contain one or more valid email addresses");
+        
+        study.setTechnicalEmail("email@email.com,email2@email.com");
+        Validate.entityThrowingException(INSTANCE, study);
+        
+        // however they are not required
         study.setTechnicalEmail(null);
-        assertValidatorMessage(INSTANCE, study, "technicalEmail", "is required");
+        Validate.entityThrowingException(INSTANCE, study);
     }
 
+    @Test
+    public void consentEmailsMustBeValid() {
+        study.setConsentNotificationEmail("");
+        assertValidatorMessage(INSTANCE, study, "consentNotificationEmail",
+                "does not appear to contain one or more valid email addresses");
+
+        study.setConsentNotificationEmail("email@email.com,email2@email.com,b");
+        assertValidatorMessage(INSTANCE, study, "consentNotificationEmail",
+                "does not appear to contain one or more valid email addresses");
+        
+        study.setConsentNotificationEmail("email@email.com,email2@email.com");
+        Validate.entityThrowingException(INSTANCE, study);
+        
+        // however they are not required
+        study.setConsentNotificationEmail(null);
+        Validate.entityThrowingException(INSTANCE, study);
+    }
+    
     @Test
     public void validFieldDefList() {
         study.setUploadMetadataFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder()

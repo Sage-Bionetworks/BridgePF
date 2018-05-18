@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 
 import java.lang.reflect.Field;
@@ -10,7 +11,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -61,7 +61,7 @@ public class StudyValidator implements Validator {
     @Override
     public void validate(Object obj, Errors errors) {
         Study study = (Study)obj;
-        if (StringUtils.isBlank(study.getIdentifier())) {
+        if (isBlank(study.getIdentifier())) {
             errors.rejectValue("identifier", "is required");
         } else {
             if (!study.getIdentifier().matches(BridgeConstants.BRIDGE_IDENTIFIER_PATTERN)) {
@@ -76,21 +76,22 @@ public class StudyValidator implements Validator {
             errors.rejectValue("activityEventKeys", "must contain only lower-case letters and/or numbers with " +
                     "optional dashes");
         }
-        if (StringUtils.isBlank(study.getName())) {
+        if (isBlank(study.getName())) {
             errors.rejectValue("name", "is required");
         }
         if (study.getShortName() != null && study.getShortName().length() > 10) {
             errors.rejectValue("shortName", "must be 10 characters or less");
         }
-        if (StringUtils.isBlank(study.getSponsorName())) {
+        if (isBlank(study.getSponsorName())) {
             errors.rejectValue("sponsorName", "is required");
         }
-        if (StringUtils.isBlank(study.getSupportEmail())) {
+        if (isBlank(study.getSupportEmail())) {
             errors.rejectValue("supportEmail", "is required");
+        } else {
+            validateEmail(errors, study.getSupportEmail(), "supportEmail");
         }
-        if (StringUtils.isBlank(study.getTechnicalEmail())) {
-            errors.rejectValue("technicalEmail", "is required");
-        }
+        validateEmail(errors, study.getTechnicalEmail(), "technicalEmail");
+        validateEmail(errors, study.getConsentNotificationEmail(), "consentNotificationEmail");
 
         // uploadMetadatafieldDefinitions
         List<UploadFieldDefinition> uploadMetadataFieldDefList = study.getUploadMetadataFieldDefinitions();
@@ -172,7 +173,7 @@ public class StudyValidator implements Validator {
         // Links in installedLinks are length-constrained by SMS.
         if (!study.getInstallLinks().isEmpty()) {
             for (Map.Entry<String,String> entry : study.getInstallLinks().entrySet()) {
-                if (StringUtils.isBlank(entry.getValue())) {
+                if (isBlank(entry.getValue())) {
                     errors.rejectValue("installLinks", "cannot be blank");
                 } else if (entry.getValue().length() > BridgeConstants.SMS_CHARACTER_LIMIT) {
                     errors.rejectValue("installLinks", "cannot be longer than "+BridgeConstants.SMS_CHARACTER_LIMIT+" characters");
@@ -187,16 +188,16 @@ public class StudyValidator implements Validator {
                 errors.rejectValue(fieldName, "is required");
             } else {
                 errors.pushNestedPath(fieldName);
-                if (StringUtils.isBlank(provider.getClientId())) {
+                if (isBlank(provider.getClientId())) {
                     errors.rejectValue("clientId", "is required");
                 }
-                if (StringUtils.isBlank(provider.getSecret())) {
+                if (isBlank(provider.getSecret())) {
                     errors.rejectValue("secret", "is required");
                 }
-                if (StringUtils.isBlank(provider.getEndpoint())) {
+                if (isBlank(provider.getEndpoint())) {
                     errors.rejectValue("endpoint", "is required");
                 }
-                if (StringUtils.isBlank(provider.getCallbackUrl())) {
+                if (isBlank(provider.getCallbackUrl())) {
                     errors.rejectValue("callbackUrl", "is required");
                 }
                 errors.popNestedPath();
@@ -206,7 +207,7 @@ public class StudyValidator implements Validator {
         // app link configuration is not required, but if it is provided, we validate it
         if (study.getAppleAppLinks() != null && !study.getAppleAppLinks().isEmpty()) {
             validateAppLinks(errors, "appleAppLinks", study.getAppleAppLinks(), (AppleAppLink link) -> {
-                if (StringUtils.isBlank(link.getAppId())) {
+                if (isBlank(link.getAppId())) {
                     errors.rejectValue("appID", "cannot be blank or null");
                 }
                 if (link.getPaths() == null || link.getPaths().isEmpty()) {
@@ -214,7 +215,7 @@ public class StudyValidator implements Validator {
                 } else {
                     for (int j=0; j < link.getPaths().size(); j++) {
                         String path =  link.getPaths().get(j);
-                        if (StringUtils.isBlank(path)) {
+                        if (isBlank(path)) {
                             errors.rejectValue("paths["+j+"]", "cannot be blank or empty");
                         }
                     }                        
@@ -224,10 +225,10 @@ public class StudyValidator implements Validator {
         }
         if (study.getAndroidAppLinks() != null && !study.getAndroidAppLinks().isEmpty()) {
             validateAppLinks(errors, "androidAppLinks", study.getAndroidAppLinks(), (AndroidAppLink link) -> {
-                if (StringUtils.isBlank(link.getNamespace())) {
+                if (isBlank(link.getNamespace())) {
                     errors.rejectValue("namespace", "cannot be blank or null");
                 }
-                if (StringUtils.isBlank(link.getPackageName())) {
+                if (isBlank(link.getPackageName())) {
                     errors.rejectValue("package_name", "cannot be blank or null");
                 }
                 if (link.getFingerprints() == null || link.getFingerprints().isEmpty()) {
@@ -235,7 +236,7 @@ public class StudyValidator implements Validator {
                 } else {
                     for (int i=0; i < link.getFingerprints().size(); i++) {
                         String fingerprint = link.getFingerprints().get(i);
-                        if (StringUtils.isBlank(fingerprint)) {
+                        if (isBlank(fingerprint)) {
                             errors.rejectValue("sha256_cert_fingerprints["+i+"]", "cannot be null or empty");
                         } else if (!FINGERPRINT_PATTERN.matcher(fingerprint).matches()){
                             errors.rejectValue("sha256_cert_fingerprints["+i+"]", "is not a SHA 256 fingerprint");
@@ -244,6 +245,22 @@ public class StudyValidator implements Validator {
                 }
                 return link.getNamespace() + "." + link.getPackageName();
             });
+        }
+    }
+    
+    private void validateEmail(Errors errors, String emailString, String fieldName) {
+        if (emailString != null) {
+            Set<String> emails = BridgeUtils.commaListToOrderedSet(emailString);
+            // The "if" clause catches cases like "" which are weeded out of a the ordered set
+            if (emails.isEmpty()) {
+                errors.rejectValue(fieldName, "does not appear to contain one or more valid email addresses");
+            } else {
+                for (String email : emails) {
+                    if (!EmailValidator.getInstance().isValid(email)) {
+                        errors.rejectValue(fieldName, "does not appear to contain one or more valid email addresses");
+                    }
+                }
+            }
         }
     }
     
@@ -285,10 +302,10 @@ public class StudyValidator implements Validator {
             errors.rejectValue(fieldName, "is required");
         } else {
             errors.pushNestedPath(fieldName);
-            if (StringUtils.isBlank(template.getSubject())) {
+            if (isBlank(template.getSubject())) {
                 errors.rejectValue("subject", "cannot be blank");
             }
-            if (StringUtils.isBlank(template.getBody())) {
+            if (isBlank(template.getBody())) {
                 errors.rejectValue("body", "cannot be blank");
             } else if (templateVariables.length > 0) {
                 boolean missingTemplateVariable = true;
@@ -312,7 +329,7 @@ public class StudyValidator implements Validator {
             errors.pushNestedPath(fieldName);
             // This is not necessarily going to prevent the message from be split because the template variables haven't
             // been substituted. We do calculate this more accurately in the study manager right now.
-            if (StringUtils.isBlank(template.getMessage())) {
+            if (isBlank(template.getMessage())) {
                 errors.rejectValue("message", "cannot be blank");
             } else if (template.getMessage().length() > 160) {
                 errors.rejectValue("message", "cannot be more than 160 characters");
