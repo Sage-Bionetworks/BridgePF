@@ -285,15 +285,6 @@ public class StudyValidator implements Validator {
     private boolean isInRange(int value, int min) {
         return (value >= min && value <= PasswordPolicy.FIXED_MAX_LENGTH);
     }
-    /*
-    private void validateEmails(Errors errors, String value, String fieldName) {
-        Set<String> emails = BridgeUtils.commaListToOrderedSet(value);
-        for (String email : emails) {
-            if (!EmailValidator.getInstance().isValid(email)) {
-                errors.rejectValue(fieldName, fieldName + " '%s' is not a valid email address", new Object[]{email}, null);
-            }
-        }
-    }*/
     
     private void validateEmailTemplate(Errors errors, EmailTemplate template, String fieldName, String... templateVariables) {
         if (template == null) {
