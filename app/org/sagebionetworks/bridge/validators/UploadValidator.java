@@ -11,7 +11,7 @@ import org.springframework.validation.Validator;
 @Component
 public class UploadValidator implements Validator {
 
-    private static final long MAX_UPLOAD_SIZE = 20L * 1000L * 1000L; // 20 MB
+    private static final long MAX_UPLOAD_SIZE = 50L * 1000L * 1000L; // 50 MB
 
     @Override
     public boolean supports(Class<?> clazz) {
