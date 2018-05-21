@@ -6,8 +6,6 @@ import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
-import org.joda.time.DateTimeZone;
-import org.joda.time.LocalDate;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,12 +16,13 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.time.DateUtils;
 
 public class ConsentSignatureValidatorTest {
+    private static final DateTime NOW = DateTime.parse("2022-02-21T00:00:00.000Z");
     private static final long SIGNED_ON_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch();
     private ConsentSignatureValidator validator;
     
     @Before
     public void before() {
-        DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2022-02-28T00:00:00.000Z").getMillis());
+        DateTimeUtils.setCurrentMillisFixed(NOW.getMillis());
         validator = new ConsentSignatureValidator(0);
     }
 
@@ -213,7 +212,7 @@ public class ConsentSignatureValidatorTest {
     
     @Test
     public void minAgeLimitButBirthdateTooRecent() {
-        String birthdate = LocalDate.now(DateTimeZone.UTC).minusYears(18).plusDays(1).toString();
+        String birthdate = NOW.minusYears(18).plusDays(1).toLocalDate().toString();
         validator = new ConsentSignatureValidator(18);
         ConsentSignature sig = new ConsentSignature.Builder().withName("test name").withBirthdate(birthdate).build();
         assertValidatorMessage(validator, sig, "birthdate", "too recent (the study requires participants to be 18 years of age or older).");
@@ -221,7 +220,7 @@ public class ConsentSignatureValidatorTest {
     
     @Test
     public void minAgeLimitBirthdateOK() {
-        String birthdate = DateTime.now(DateTimeZone.UTC).minusYears(18).toString();
+        String birthdate = NOW.minusYears(18).toLocalDate().toString();
         validator = new ConsentSignatureValidator(18);
         ConsentSignature sig = new ConsentSignature.Builder().withName("test name").withBirthdate(birthdate).build();
         Validate.entityThrowingException(validator, sig);

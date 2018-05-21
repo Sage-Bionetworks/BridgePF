@@ -3,7 +3,8 @@ package org.sagebionetworks.bridge.validators;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
-import org.apache.commons.lang3.StringUtils;
+
+import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.joda.time.Period;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
@@ -45,7 +46,7 @@ public class ConsentSignatureValidator implements Validator {
                 errors.rejectValue("birthdate", "is invalid (required format: YYYY-MM-DD)");
             } else if (minAgeOfConsent > 0) {
                 // A valid birthdate was provided, ensure the user is old enough
-                LocalDate now = LocalDate.now();
+                LocalDate now = LocalDate.now(DateTimeZone.UTC);
                 Period period = new Period(birthdate, now);
 
                 if (period.getYears() < minAgeOfConsent) {
