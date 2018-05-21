@@ -48,6 +48,7 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -1372,8 +1373,9 @@ public class HibernateAccountDaoTest {
         when(mockHibernateHelper.queryCount(any(), any())).thenReturn(12);
 
         // execute and validate
-        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(STUDY, 10, 5,
-                null, null, null, null, null, null, null);
+        AccountSummarySearch search = new AccountSummarySearch.Builder().withOffsetBy(10).withPageSize(5).build();
+        
+        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(STUDY, search);
         assertEquals(10, accountSummaryResourceList.getRequestParams().get("offsetBy"));
         assertEquals(5, accountSummaryResourceList.getRequestParams().get("pageSize"));
         assertEquals((Integer)12, accountSummaryResourceList.getTotal());
@@ -1414,9 +1416,18 @@ public class HibernateAccountDaoTest {
         when(mockHibernateHelper.queryCount(any(), any())).thenReturn(11);
 
         // execute and validate - Just validate filters and query, since everything else is tested in getPaged().
-        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(STUDY, 10, 5, EMAIL,
-                PHONE.getNationalFormat(), Sets.newHashSet("a", "b"), Sets.newHashSet("c", "d"), "de", startDate,
-                endDate);
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withOffsetBy(10)
+                .withPageSize(5)
+                .withEmailFilter(EMAIL)
+                .withPhoneFilter(PHONE.getNationalFormat())
+                .withAllOfGroups(Sets.newHashSet("a", "b"))
+                .withNoneOfGroups(Sets.newHashSet("c", "d"))
+                .withLanguage("de")
+                .withStartTime(startDate)
+                .withEndTime(endDate).build();
+        
+        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(STUDY, search);
 
         Map<String, Object> paramsMap = accountSummaryResourceList.getRequestParams();
         assertEquals(10, paramsMap.size());
@@ -1491,9 +1502,15 @@ public class HibernateAccountDaoTest {
         when(mockHibernateHelper.queryCount(any(), any())).thenReturn(11);
 
         // execute and validate - Just validate filters and query, since everything else is tested in getPaged().
-        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(STUDY, 10, 5, EMAIL,
-                PHONE.getNationalFormat(), Sets.newHashSet(), Sets.newHashSet(), "de", startDate,
-                endDate);
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withOffsetBy(10)
+                .withPageSize(5)
+                .withEmailFilter(EMAIL)
+                .withPhoneFilter(PHONE.getNationalFormat())
+                .withLanguage("de")
+                .withStartTime(startDate)
+                .withEndTime(endDate).build();
+        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(STUDY, search);
 
         Map<String, Object> paramsMap = accountSummaryResourceList.getRequestParams();
         assertEquals(10, paramsMap.size());
@@ -1958,7 +1975,74 @@ public class HibernateAccountDaoTest {
         
         verify(mockHibernateHelper, never()).update(any());
     }
+    
+    @Test
+    public void noLanguageQueryCorrect() throws Exception {
+        AccountSummarySearch search = new AccountSummarySearch.Builder().build();
+        
+        String query = dao.assembleSearchQuery("api", search, new HashMap<>());
+        assertEquals("from HibernateAccount as acct where studyId=:studyId", query);
+    }
 
+    @Test
+    public void languageQueryCorrect() throws Exception {
+        AccountSummarySearch search = new AccountSummarySearch.Builder().withLanguage("en").build();
+        
+        String query = dao.assembleSearchQuery("api", search, new HashMap<>());
+        assertEquals("from HibernateAccount as acct where studyId=:studyId and :language in elements(acct.languages)", query);
+    }
+
+    @Test
+    public void groupClausesGroupedCorrectly() throws Exception {
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withNoneOfGroups(Sets.newHashSet("sdk-int-1"))
+                .withAllOfGroups(Sets.newHashSet("group1")).build();
+        
+        String query = dao.assembleSearchQuery("api", search, new HashMap<>());
+        assertEquals("from HibernateAccount as acct where studyId=:studyId and (:in1 in elements(acct.dataGroups)) "+
+                "and (:notin1 not in elements(acct.dataGroups))", query);
+    }
+    
+    @Test
+    public void oneAllOfGroupsQueryCorrect() throws Exception {
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withAllOfGroups(Sets.newHashSet("group1")).build();
+        
+        String query = dao.assembleSearchQuery("api", search, new HashMap<>());
+        assertEquals("from HibernateAccount as acct where studyId=:studyId and (:in1 in elements(acct.dataGroups))", query);
+    }
+    
+    @Test
+    public void twoAllOfGroupsQueryCorrect() throws Exception {
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withAllOfGroups(Sets.newHashSet("sdk-int-1", "group1")).build();
+        
+        String query = dao.assembleSearchQuery("api", search, new HashMap<>());
+        assertEquals("from HibernateAccount as acct where studyId=:studyId and (:in2 in "+
+                "elements(acct.dataGroups) and :in1 in elements(acct.dataGroups))", query);
+    }
+
+    @Test
+    public void oneNoneOfGroupsQueryCorrect() throws Exception {
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withNoneOfGroups(Sets.newHashSet("group1")).build();
+        
+        String query = dao.assembleSearchQuery("api", search, new HashMap<>());
+        assertEquals("from HibernateAccount as acct where studyId=:studyId and (:notin1 not in "+
+                "elements(acct.dataGroups))", query);
+    }
+    
+    @Test
+    public void twoNoneOfGroupsQueryCorrect() throws Exception {
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withNoneOfGroups(Sets.newHashSet("sdk-int-1", "group1")).build();
+        
+        String query = dao.assembleSearchQuery("api", search, new HashMap<>());
+        assertTrue(query.contains("from HibernateAccount as acct where studyId=:studyId and "));
+        assertTrue(query.contains(":notin1 not in elements(acct.dataGroups)"));
+        assertTrue(query.contains(":notin2 not in elements(acct.dataGroups)"));
+    }
+    
     private void verifyCreatedHealthCode() {
         // Verify we create the new health code mapping
         verify(mockHealthCodeService).createMapping(TestConstants.TEST_STUDY);

@@ -32,6 +32,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -171,42 +172,46 @@ public class ParticipantController extends BaseController {
         return okResult(UserSessionInfo.toJSON(session));
     }
     
+    @Deprecated
     public Result getParticipants(String offsetByString, String pageSizeString, String emailFilter, String phoneFilter,
-            String language, String startDateString, String endDateString, String startTimeString,
+            String startDateString, String endDateString, String startTimeString,
             String endTimeString) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        // We document a comma-separated list of data groups for the set parameters, but standard HTTP
-        // does allow you to do allofGroups=A&allOfGroups=B etc. So support both here.
-        String allOfGroups = multiQueryParam("allOfGroups");
-        String noneOfGroups = multiQueryParam("noneOfGroups");
-        
-        return getParticipantsInternal(study, offsetByString, pageSizeString, emailFilter, phoneFilter, allOfGroups,
-                noneOfGroups, language, startDateString, endDateString, startTimeString, endTimeString);
+        return getParticipantsInternal(study, offsetByString, pageSizeString, emailFilter, phoneFilter, startDateString,
+                endDateString, startTimeString, endTimeString);
     }
 
+    public Result searchForAccountSummaries() throws Exception {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        AccountSummarySearch search = parseJson(request(), AccountSummarySearch.class);
+        PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, search);
+        
+        return okResult(page);
+    }
+    
+    @Deprecated
     public Result getParticipantsForWorker(String studyId, String offsetByString, String pageSizeString,
-            String emailFilter, String phoneFilter, String language, String startDateString, String endDateString,
+            String emailFilter, String phoneFilter, String startDateString, String endDateString,
             String startTimeString, String endTimeString) {
         getAuthenticatedSession(WORKER);
         
-        // We document a comma-separated list of data groups for the set parameters, but standard HTTP
-        // does allow you to do allofGroups=A&allOfGroups=B etc. So support both here.
-        String allOfGroups = multiQueryParam("allOfGroups");
-        String noneOfGroups = multiQueryParam("noneOfGroups");
-        
         Study study = studyService.getStudy(studyId);
-        return getParticipantsInternal(study, offsetByString, pageSizeString, emailFilter, phoneFilter, allOfGroups,
-                noneOfGroups, language, startDateString, endDateString, startTimeString, endTimeString);
+        return getParticipantsInternal(study, offsetByString, pageSizeString, emailFilter, phoneFilter, startDateString,
+                endDateString, startTimeString, endTimeString);
     }
     
-    private String multiQueryParam(String paramName) {
-        Map<String,String[]> query = request().queryString();
-        if (query.get(paramName) != null) {
-            return BridgeUtils.COMMA_JOINER.join(query.get(paramName));
-        }
-        return null;
+    public Result searchForAccountSummariesForWorker(String studyId) throws Exception {
+        getAuthenticatedSession(WORKER);
+        Study study = studyService.getStudy(studyId);
+        
+        AccountSummarySearch search = parseJson(request(), AccountSummarySearch.class);
+        PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, search);
+        
+        return okResult(page);
     }
     
     public Result createParticipant() throws Exception {
@@ -433,14 +438,11 @@ public class ParticipantController extends BaseController {
     }
 
     private Result getParticipantsInternal(Study study, String offsetByString, String pageSizeString,
-            String emailFilter, String phoneFilter, String allOfGroupsString, String noneOfGroupsString,
-            String language, String startDateString, String endDateString, String startTimeString,
-            String endTimeString) {
+            String emailFilter, String phoneFilter, String startDateString, String endDateString,
+            String startTimeString, String endTimeString) {
         
         int offsetBy = getIntOrDefault(offsetByString, 0);
         int pageSize = getIntOrDefault(pageSizeString, API_DEFAULT_PAGE_SIZE);
-        Set<String> allOfGroups = BridgeUtils.commaListToOrderedSet(allOfGroupsString);
-        Set<String> noneOfGroups = BridgeUtils.commaListToOrderedSet(noneOfGroupsString);
         
         // For naming consistency, we are changing from the user of startDate/endDate to startTime/endTime
         // for DateTime parameters. Both are accepted by these participant API endpoints (the only places 
@@ -453,8 +455,15 @@ public class ParticipantController extends BaseController {
         if (endTime == null) {
             endTime = getDateTimeOrDefault(endDateString, null);
         }
-        PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, offsetBy, pageSize,
-                emailFilter, phoneFilter, allOfGroups, noneOfGroups, language, startTime, endTime);
+        
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withOffsetBy(offsetBy)
+                .withPageSize(pageSize)
+                .withEmailFilter(emailFilter)
+                .withPhoneFilter(phoneFilter)
+                .withStartTime(startTime)
+                .withEndTime(endTime).build();
+        PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, search);
         
         // Similarly, we will return startTime/endTime in the top-level request parameter properties as 
         // startDate/endDate while transitioning, to maintain backwards compatibility.

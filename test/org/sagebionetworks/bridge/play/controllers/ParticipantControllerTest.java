@@ -7,7 +7,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -41,8 +40,6 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import play.mvc.Http.Request;
-import play.mvc.Http;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -59,6 +56,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -185,6 +183,9 @@ public class ParticipantControllerTest {
     private ArgumentCaptor<IdentifierUpdate> identifierUpdateCaptor;
     
     @Captor
+    private ArgumentCaptor<AccountSummarySearch> searchCaptor;
+    
+    @Captor
     private ArgumentCaptor<SmsTemplate> templateCaptor;
     
     private UserSession session;
@@ -225,8 +226,7 @@ public class ParticipantControllerTest {
         
         when(authService.getSession(eq(study), any())).thenReturn(session);
         
-        when(mockParticipantService.getPagedAccountSummaries(eq(study), anyInt(), anyInt(), any(), any(), any(), any(),
-                any(), any(), any())).thenReturn(page);
+        when(mockParticipantService.getPagedAccountSummaries(eq(study), any())).thenReturn(page);
         
         controller.setParticipantService(mockParticipantService);
         controller.setStudyService(mockStudyService);
@@ -243,44 +243,55 @@ public class ParticipantControllerTest {
         mockPlayContext();
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void getParticipants() throws Exception {
-        Result result = controller.getParticipants("10", "20", "emailSubstring", "phoneSubstring", null,
+        Result result = controller.getParticipants("10", "20", "emailSubstring", "phoneSubstring",
                 START_TIME.toString(), END_TIME.toString(), null, null);
         
         verifyPagedResourceListParameters(result);
         
         // DateTime instances don't seem to be equal unless you use the library's equality methods, which
         // verification does not do. So capture and compare that way.
-        verify(mockParticipantService).getPagedAccountSummaries(eq(study), eq(10), eq(20), eq("emailSubstring"),
-                eq("phoneSubstring"), eq(EMPTY_SET), eq(EMPTY_SET), eq(null), startTimeCaptor.capture(),
-                endTimeCaptor.capture());
-        assertEquals(START_TIME.toString(), startTimeCaptor.getValue().toString());
-        assertEquals(END_TIME.toString(), endTimeCaptor.getValue().toString());
+        verify(mockParticipantService).getPagedAccountSummaries(eq(study), searchCaptor.capture());
+
+        AccountSummarySearch search = searchCaptor.getValue();
+        assertEquals(10, search.getOffsetBy());
+        assertEquals(20, search.getPageSize());
+        assertEquals("emailSubstring", search.getEmailFilter());
+        assertEquals("phoneSubstring", search.getPhoneFilter());
+        assertEquals(EMPTY_SET, search.getAllOfGroups());
+        assertEquals(EMPTY_SET, search.getNoneOfGroups());
+        assertEquals(START_TIME.toString(), search.getStartTime().toString());
+        assertEquals(END_TIME.toString(), search.getEndTime().toString());
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void getParticipantsWithStartTimeEndTime() throws Exception {
-        Result result = controller.getParticipants("10", "20", "emailSubstring", "phoneSubstring", null, null, null,
+        Result result = controller.getParticipants("10", "20", "emailSubstring", "phoneSubstring", null, null,
                 START_TIME.toString(), END_TIME.toString());
         
         verifyPagedResourceListParameters(result);
         
         // DateTime instances don't seem to be equal unless you use the library's equality methods, which
         // verification does not do. So capture and compare that way.
-        verify(mockParticipantService).getPagedAccountSummaries(eq(study), eq(10), eq(20), eq("emailSubstring"),
-                eq("phoneSubstring"), eq(EMPTY_SET), eq(EMPTY_SET), eq(null), startTimeCaptor.capture(),
-                endTimeCaptor.capture());
-        assertEquals(START_TIME.toString(), startTimeCaptor.getValue().toString());
-        assertEquals(END_TIME.toString(), endTimeCaptor.getValue().toString());
+        verify(mockParticipantService).getPagedAccountSummaries(eq(study), searchCaptor.capture());
+        AccountSummarySearch search = searchCaptor.getValue();
+        assertEquals(10, search.getOffsetBy());
+        assertEquals(20, search.getPageSize());
+        assertEquals("emailSubstring", search.getEmailFilter());
+        assertEquals("phoneSubstring", search.getPhoneFilter());
+        assertEquals(EMPTY_SET, search.getAllOfGroups());
+        assertEquals(EMPTY_SET, search.getNoneOfGroups());
+        assertEquals(START_TIME.toString(), search.getStartTime().toString());
+        assertEquals(END_TIME.toString(), search.getEndTime().toString());
     }
     
+    @SuppressWarnings("deprecation")
     @Test(expected = BadRequestException.class)
     public void oddParametersUseDefaults() throws Exception {
-        controller.getParticipants("asdf", "qwer", null, null, null, null, null, null, null);
-        
-        // paging with defaults
-        verify(mockParticipantService).getPagedAccountSummaries(study, 0, API_DEFAULT_PAGE_SIZE, null, null, null, null, null, null, null);
+        controller.getParticipants("asdf", "qwer", null, null, null, null, null, null);
     }
 
     @Test
@@ -361,39 +372,23 @@ public class ParticipantControllerTest {
         assertEquals(Sets.newHashSet("en","fr"), participant.getLanguages());
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void nullParametersUseDefaults() throws Exception {
-        controller.getParticipants(null, null, null, null, null, null, null, null, null);
+        controller.getParticipants(null, null, null, null, null, null, null, null);
 
         // paging with defaults
-        verify(mockParticipantService).getPagedAccountSummaries(study, 0, API_DEFAULT_PAGE_SIZE, null, null, EMPTY_SET,
-                EMPTY_SET, null, null, null);
-    }
-    
-    @Test
-    public void getParticipantsWithDataGroups() throws Exception {
-        Set<String> allOfGroups = Sets.newHashSet("a", "b");
-        Set<String> noneOfGroups = Sets.newHashSet("c", "d");
+        verify(mockParticipantService).getPagedAccountSummaries(eq(study), searchCaptor.capture());
         
-        TestUtils.mockPlayContext();
-        Request request = Http.Context.current.get().request();
-        Map<String,String[]> query = Maps.newHashMap();
-        query.put("allOfGroups", new String[] {"a,b"});
-        query.put("noneOfGroups", new String[] {"c,d"});
-        when(request.queryString()).thenReturn(query);
-        
-        controller.getParticipants(null, null, null, null, null, null, null, null, null);
-        
-        verify(mockParticipantService).getPagedAccountSummaries(study, 0, API_DEFAULT_PAGE_SIZE, null, null, allOfGroups,
-                noneOfGroups, null, null, null);
-    }
-    
-    @Test
-    public void getParticipantsWithLanguage() throws Exception {
-        controller.getParticipants(null, null, null, null, "fr", null, null, null, null);
-        
-        verify(mockParticipantService).getPagedAccountSummaries(study, 0, API_DEFAULT_PAGE_SIZE, null, null, EMPTY_SET,
-                EMPTY_SET, "fr", null, null);
+        AccountSummarySearch search = searchCaptor.getValue();
+        assertEquals(0, search.getOffsetBy());
+        assertEquals(API_DEFAULT_PAGE_SIZE, search.getPageSize());
+        assertNull(search.getEmailFilter());
+        assertNull(search.getPhoneFilter());
+        assertEquals(EMPTY_SET, search.getAllOfGroups());
+        assertEquals(EMPTY_SET, search.getNoneOfGroups());
+        assertNull(search.getStartTime());
+        assertNull(search.getEndTime());
     }
     
     @Test
@@ -846,13 +841,14 @@ public class ParticipantControllerTest {
         assertEquals("a message", captured.getMessage());
     }
 
+    @SuppressWarnings("deprecation")
     @Test(expected = UnauthorizedException.class)
     public void getParticipantsForWorkerOnly() throws Exception {
         DateTime start = DateTime.now();
         DateTime end = DateTime.now();
         
         controller.getParticipantsForWorker(study.getIdentifier(), "10", "20", "emailSubstring", "phoneSubstring",
-                null, start.toString(), end.toString(), null, null);
+                start.toString(), end.toString(), null, null);
     }
     
     @Test(expected = UnauthorizedException.class)
@@ -860,6 +856,7 @@ public class ParticipantControllerTest {
         controller.getParticipantForWorker(study.getIdentifier(), ID, true);
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void getParticipantsForWorker() throws Exception {
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
@@ -868,19 +865,26 @@ public class ParticipantControllerTest {
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
         
         Result result = controller.getParticipantsForWorker(study.getIdentifier(), "10", "20", "emailSubstring",
-                "phoneSubstring", null, START_TIME.toString(), END_TIME.toString(), null, null);
+                "phoneSubstring", START_TIME.toString(), END_TIME.toString(), null, null);
 
         verifyPagedResourceListParameters(result);
         
         // DateTime instances don't seem to be equal unless you use the library's equality methods, which
         // verification does not do. So capture and compare that way.
-        verify(mockParticipantService).getPagedAccountSummaries(eq(study), eq(10), eq(20), eq("emailSubstring"),
-                eq("phoneSubstring"), eq(EMPTY_SET), eq(EMPTY_SET), eq(null), startTimeCaptor.capture(),
-                endTimeCaptor.capture());
-        assertEquals(START_TIME.toString(), startTimeCaptor.getValue().toString());
-        assertEquals(END_TIME.toString(), endTimeCaptor.getValue().toString());
+        verify(mockParticipantService).getPagedAccountSummaries(eq(study), searchCaptor.capture());
+        
+        AccountSummarySearch search = searchCaptor.getValue();
+        assertEquals(10, search.getOffsetBy());
+        assertEquals(20, search.getPageSize());
+        assertEquals("emailSubstring", search.getEmailFilter());
+        assertEquals("phoneSubstring", search.getPhoneFilter());
+        assertEquals(EMPTY_SET, search.getAllOfGroups());
+        assertEquals(EMPTY_SET, search.getNoneOfGroups());
+        assertEquals(START_TIME.toString(), search.getStartTime().toString());
+        assertEquals(END_TIME.toString(), search.getEndTime().toString());
     }
     
+    @SuppressWarnings("deprecation")
     @Test
     public void getParticipantsForWorkerUsingStartTimeEndTime() throws Exception {
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
@@ -889,17 +893,23 @@ public class ParticipantControllerTest {
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
         
         Result result = controller.getParticipantsForWorker(study.getIdentifier(), "10", "20", "emailSubstring",
-                "phoneSubstring", null, null, null, START_TIME.toString(), END_TIME.toString());
+                "phoneSubstring", null, null, START_TIME.toString(), END_TIME.toString());
         
         verifyPagedResourceListParameters(result);
         
         // DateTime instances don't seem to be equal unless you use the library's equality methods, which
         // verification does not do. So capture and compare that way.
-        verify(mockParticipantService).getPagedAccountSummaries(eq(study), eq(10), eq(20), eq("emailSubstring"),
-                eq("phoneSubstring"), eq(EMPTY_SET), eq(EMPTY_SET), eq(null), startTimeCaptor.capture(),
-                endTimeCaptor.capture());
-        assertEquals(START_TIME.toString(), startTimeCaptor.getValue().toString());
-        assertEquals(END_TIME.toString(), endTimeCaptor.getValue().toString());
+        verify(mockParticipantService).getPagedAccountSummaries(eq(study), searchCaptor.capture());
+        
+        AccountSummarySearch search = searchCaptor.getValue();
+        assertEquals(10, search.getOffsetBy());
+        assertEquals(20, search.getPageSize());
+        assertEquals("emailSubstring", search.getEmailFilter());
+        assertEquals("phoneSubstring", search.getPhoneFilter());
+        assertEquals(EMPTY_SET, search.getAllOfGroups());
+        assertEquals(EMPTY_SET, search.getNoneOfGroups());
+        assertEquals(START_TIME.toString(), search.getStartTime().toString());
+        assertEquals(END_TIME.toString(), search.getEndTime().toString());
     }
     
     @Test
@@ -1254,48 +1264,6 @@ public class ParticipantControllerTest {
         controller.deleteTestParticipant(ID);
     }
     
-    @Test
-    public void multiParameterHttpQuerySupportedForGetParticipants() throws Exception {
-        TestUtils.mockPlayContext();
-        Request request = Http.Context.current.get().request();
-        Map<String,String[]> map = Maps.newHashMap();
-        map.put("allOfGroups", new String[] {"a,b","c"});
-        map.put("noneOfGroups", new String[] {"d,e","f"});
-        when(request.queryString()).thenReturn(map);
-        
-        controller.getParticipants(null, null, null, null, null, null, null, null, null);
-        
-        verify(mockParticipantService).getPagedAccountSummaries(eq(study), eq(0), eq(50), eq(null), eq(null),
-                eq(Sets.newHashSet("a", "b", "c")), eq(Sets.newHashSet("d", "e", "f")), eq(null), eq(null), eq(null));
-    }
-    
-    @Test
-    public void multiParameterHttpQuerySupportedForGetParticipantsForWorker() throws Exception {
-        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withRoles(Sets.newHashSet(Roles.WORKER)).build());
-        
-        TestUtils.mockPlayContext();
-        Request request = Http.Context.current.get().request();
-        
-        Map<String,String[]> map = Maps.newHashMap();
-        map.put("allOfGroups", new String[] {"a,b","c"});
-        map.put("noneOfGroups", new String[] {"d,e","f"});
-        when(request.queryString()).thenReturn(map);
-        
-        PagedResourceList<AccountSummary> page = new PagedResourceList<AccountSummary>(Lists.newArrayList(), 0)
-                .withRequestParam("pageSize", 50);
-        
-        when(mockParticipantService.getPagedAccountSummaries(eq(study), eq(0), eq(50), eq(null), eq(null),
-                eq(Sets.newHashSet("a", "b", "c")), eq(Sets.newHashSet("d", "e", "f")), eq(null), eq(null), eq(null)))
-                        .thenReturn(page);
-        
-        controller.getParticipantsForWorker(TestConstants.TEST_STUDY_IDENTIFIER, null, null, null, null, null, null,
-                null, null, null);        
-        
-        verify(mockParticipantService).getPagedAccountSummaries(eq(study), eq(0), eq(50), eq(null), eq(null),
-                eq(Sets.newHashSet("a", "b", "c")), eq(Sets.newHashSet("d", "e", "f")), eq(null), eq(null), eq(null));
-    }
-    
     @SuppressWarnings("deprecation")
     private <T> void verifyPagedResourceListParameters(Result result) throws Exception {
         assertResult(result, 200);
@@ -1321,6 +1289,58 @@ public class ParticipantControllerTest {
         assertEquals((Integer)10, page.getRequestParams().get("offsetBy"));
         assertEquals(20, page.getRequestParams().get("pageSize"));
         assertEquals("foo", page.getRequestParams().get("emailFilter"));
+    }
+    
+    @Test
+    public void searchForAccountSummaries() throws Exception {
+        AccountSummarySearch payload = setAccountSummarySearch();
+        
+        Result result = controller.searchForAccountSummaries();
+        assertEquals(200, result.status());
+        
+        PagedResourceList<AccountSummary> page = resultToPage(result);
+        assertEquals(3, page.getItems().size());
+        
+        verify(mockParticipantService).getPagedAccountSummaries(eq(study), searchCaptor.capture());
+        
+        AccountSummarySearch search = searchCaptor.getValue();
+        assertEquals(payload, search);
+    }
+    
+    @Test
+    public void searchForAccountSummariesForWorker() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
+                .withRoles(Sets.newHashSet(Roles.WORKER)).build());
+        
+        AccountSummarySearch payload = setAccountSummarySearch();
+        
+        Result result = controller.searchForAccountSummariesForWorker(study.getIdentifier());
+        assertEquals(200, result.status());
+        
+        PagedResourceList<AccountSummary> page = resultToPage(result);
+        assertEquals(3, page.getItems().size());
+        
+        verify(mockParticipantService).getPagedAccountSummaries(eq(study), searchCaptor.capture());
+        
+        AccountSummarySearch search = searchCaptor.getValue();
+        assertEquals(payload, search);
+    }
+    
+    private AccountSummarySearch setAccountSummarySearch() throws Exception {
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withOffsetBy(10)
+                .withPageSize(100)
+                .withEmailFilter("email")
+                .withPhoneFilter("phone")
+                .withAllOfGroups(Sets.newHashSet("group1"))
+                .withNoneOfGroups(Sets.newHashSet("group2"))
+                .withLanguage("en")
+                // Forcing these to UTC just to verify they are passed correctly, and they are
+                // always deserialized as UTC
+                .withStartTime(START_TIME.withZone(DateTimeZone.UTC))
+                .withEndTime(END_TIME.withZone(DateTimeZone.UTC)).build();
+        TestUtils.mockPlayContextWithJson(search);
+        return search;
     }
     
     private ForwardCursorPagedResourceList<ScheduledActivity> createActivityResultsV2(String offsetKey, int pageSize) {

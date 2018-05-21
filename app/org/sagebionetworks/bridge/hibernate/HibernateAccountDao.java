@@ -37,6 +37,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
+import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -481,49 +482,18 @@ public class HibernateAccountDao implements AccountDao {
 
     /** {@inheritDoc} */
     @Override
-    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize,
-            String emailFilter, String phoneFilter, Set<String> allOfGroups, Set<String> noneOfGroups, String language,
-            DateTime startTime, DateTime endTime) {
+    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, AccountSummarySearch search) {
         // Note: emailFilter can be any substring, not just prefix/suffix. Same with phone.
         // Note: start- and endTime are inclusive.
-        StringBuilder queryBuilder = new StringBuilder();
         Map<String,Object> parameters = new HashMap<>();
-
-        queryBuilder.append("from HibernateAccount as acct where studyId=:studyId");
-        parameters.put("studyId", study.getIdentifier());
-
-        if (StringUtils.isNotBlank(emailFilter)) {
-            queryBuilder.append(" and email like :email");
-            parameters.put("email", "%"+emailFilter+"%");
-        }
-        if (StringUtils.isNotBlank(phoneFilter)) {
-            String phoneString = phoneFilter.replaceAll("\\D*", "");
-            queryBuilder.append(" and phone.number like :number");
-            parameters.put("number", "%"+phoneString+"%");
-        }
-        if (startTime != null) {
-            queryBuilder.append(" and createdOn >= :startTime");
-            parameters.put("startTime", startTime.getMillis());
-        }
-        if (endTime != null) {
-            queryBuilder.append(" and createdOn <= :endTime");
-            parameters.put("endTime", endTime.getMillis());
-        }
-        if (language != null) {
-            queryBuilder.append(" and :language in elements(acct.languages)");
-            parameters.put("language", language);
-        }
-        dataGroupQuerySegment(queryBuilder, allOfGroups, "in", parameters);
-        dataGroupQuerySegment(queryBuilder, noneOfGroups, "not in", parameters);
-        
-        String query = queryBuilder.toString();
+        String query = assembleSearchQuery(study.getIdentifier(), search, parameters);
         
         // Don't retrieve unused columns, clientData can be large
         String getQuery = ACCOUNT_SUMMARY_QUERY_PREFIX + query;
 
         // Get page of accounts.
-        List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet(getQuery, parameters, offsetBy, pageSize,
-                HibernateAccount.class);
+        List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet(getQuery, parameters,
+                search.getOffsetBy(), search.getPageSize(), HibernateAccount.class);
         List<AccountSummary> accountSummaryList = hibernateAccountList.stream()
                 .map(HibernateAccountDao::unmarshallAccountSummary).collect(Collectors.toList());
 
@@ -532,15 +502,48 @@ public class HibernateAccountDao implements AccountDao {
 
         // Package results and return.
         return new PagedResourceList<>(accountSummaryList, count)
-                .withRequestParam(ResourceList.OFFSET_BY, offsetBy)
-                .withRequestParam(ResourceList.PAGE_SIZE, pageSize)
-                .withRequestParam(ResourceList.EMAIL_FILTER, emailFilter)
-                .withRequestParam(ResourceList.PHONE_FILTER, phoneFilter)
-                .withRequestParam(ResourceList.START_TIME, startTime)
-                .withRequestParam(ResourceList.END_TIME, endTime)
-                .withRequestParam(ResourceList.LANGUAGE, language)
-                .withRequestParam(ResourceList.ALL_OF_GROUPS, allOfGroups)
-                .withRequestParam(ResourceList.NONE_OF_GROUPS, noneOfGroups);
+                .withRequestParam(ResourceList.OFFSET_BY, search.getOffsetBy())
+                .withRequestParam(ResourceList.PAGE_SIZE, search.getPageSize())
+                .withRequestParam(ResourceList.EMAIL_FILTER, search.getEmailFilter())
+                .withRequestParam(ResourceList.PHONE_FILTER, search.getPhoneFilter())
+                .withRequestParam(ResourceList.START_TIME, search.getStartTime())
+                .withRequestParam(ResourceList.END_TIME, search.getEndTime())
+                .withRequestParam(ResourceList.LANGUAGE, search.getLanguage())
+                .withRequestParam(ResourceList.ALL_OF_GROUPS, search.getAllOfGroups())
+                .withRequestParam(ResourceList.NONE_OF_GROUPS, search.getNoneOfGroups());
+    }
+    
+    protected String assembleSearchQuery(String studyId, AccountSummarySearch search, Map<String,Object> parameters) {
+        StringBuilder queryBuilder = new StringBuilder();
+
+        queryBuilder.append("from HibernateAccount as acct where studyId=:studyId");
+        parameters.put("studyId", studyId);
+
+        if (StringUtils.isNotBlank(search.getEmailFilter())) {
+            queryBuilder.append(" and email like :email");
+            parameters.put("email", "%"+search.getEmailFilter()+"%");
+        }
+        if (StringUtils.isNotBlank(search.getPhoneFilter())) {
+            String phoneString = search.getPhoneFilter().replaceAll("\\D*", "");
+            queryBuilder.append(" and phone.number like :number");
+            parameters.put("number", "%"+phoneString+"%");
+        }
+        if (search.getStartTime() != null) {
+            queryBuilder.append(" and createdOn >= :startTime");
+            parameters.put("startTime", search.getStartTime().getMillis());
+        }
+        if (search.getEndTime() != null) {
+            queryBuilder.append(" and createdOn <= :endTime");
+            parameters.put("endTime", search.getEndTime().getMillis());
+        }
+        if (search.getLanguage() != null) {
+            queryBuilder.append(" and :language in elements(acct.languages)");
+            parameters.put("language", search.getLanguage());
+        }
+        dataGroupQuerySegment(queryBuilder, search.getAllOfGroups(), "in", parameters);
+        dataGroupQuerySegment(queryBuilder, search.getNoneOfGroups(), "not in", parameters);
+        
+        return queryBuilder.toString();        
     }
 
     private void dataGroupQuerySegment(StringBuilder queryBuilder, Set<String> dataGroups, String operator,
