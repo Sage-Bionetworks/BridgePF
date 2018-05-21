@@ -52,7 +52,6 @@ import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Verification;
-import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -181,6 +180,7 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void signInWithEmail() throws Exception {
+        account.setId(USER_ID);
         account.setReauthToken(REAUTH_TOKEN);
         doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
@@ -189,6 +189,7 @@ public class AuthenticationServiceMockTest {
         UserSession retrieved = service.signIn(study, CONTEXT, EMAIL_PASSWORD_SIGN_IN);
         
         assertEquals(REAUTH_TOKEN, retrieved.getReauthToken());
+        verify(cacheProvider).removeSessionByUserId(USER_ID);
         verify(cacheProvider).setUserSession(retrieved);
     }
     
@@ -218,6 +219,7 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void signInWithPhone() throws Exception {
+        account.setId(USER_ID);
         account.setReauthToken(REAUTH_TOKEN);
         doReturn(account).when(accountDao).authenticate(study, PHONE_PASSWORD_SIGN_IN);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
@@ -226,6 +228,7 @@ public class AuthenticationServiceMockTest {
         UserSession retrieved = service.signIn(study, CONTEXT, PHONE_PASSWORD_SIGN_IN);
         
         assertEquals(REAUTH_TOKEN, retrieved.getReauthToken());
+        verify(cacheProvider).removeSessionByUserId(USER_ID);
         verify(cacheProvider).setUserSession(retrieved);
     }
     
@@ -277,6 +280,7 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void emailSignIn() {
+        account.setId(USER_ID);
         account.setReauthToken(REAUTH_TOKEN);
         doReturn(SIGN_IN_WITH_EMAIL.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.EMAIL,
                 CONTEXT, SIGN_IN_WITH_EMAIL, SignInValidator.EMAIL_SIGNIN);
@@ -290,6 +294,7 @@ public class AuthenticationServiceMockTest {
         assertEquals(REAUTH_TOKEN, retSession.getReauthToken());
         verify(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_EMAIL.getAccountId());
         verify(accountDao).verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
+        verify(cacheProvider).removeSessionByUserId(USER_ID);
         verify(cacheProvider).setUserSession(retSession);
     }
     
@@ -354,7 +359,7 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void reauthentication() {
-        ((GenericAccount)account).setId(USER_ID);
+        account.setId(USER_ID);
         account.setReauthToken(REAUTH_TOKEN);
 
         StudyParticipant participant = new StudyParticipant.Builder().withEmail(RECIPIENT_EMAIL).build();
@@ -487,6 +492,8 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void phoneSignIn() {
+        account.setId(USER_ID);
+
         // Put some stuff in participant to verify session is initialized
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withEmail(RECIPIENT_EMAIL).withFirstName("Test").withLastName("Tester").build();
@@ -503,6 +510,7 @@ public class AuthenticationServiceMockTest {
         assertEquals("Tester", session.getParticipant().getLastName());
         
         // this doesn't pass if our mock calls above aren't executed, but verify these:
+        verify(cacheProvider).removeSessionByUserId(USER_ID);
         verify(cacheProvider).setUserSession(session);
         verify(accountDao).verifyChannel(ChannelType.PHONE, account);
     }
@@ -703,7 +711,7 @@ public class AuthenticationServiceMockTest {
         when(participantService.getParticipant(study, account, false)).thenReturn(participant);
         
         when(accountDao.getAccount(any())).thenReturn(account);
-        ((GenericAccount)account).setHealthCode(HEALTH_CODE);
+        account.setHealthCode(HEALTH_CODE);
         
         GeneratedPassword password = service.generatePassword(study, EXTERNAL_ID, true);
         assertEquals(EXTERNAL_ID, password.getExternalId());
