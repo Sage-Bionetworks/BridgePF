@@ -51,6 +51,13 @@ public class ConsentSignatureValidatorTest {
         ConsentSignature sig = new ConsentSignature.Builder().withName("test name").withSignedOn(SIGNED_ON_TIMESTAMP).build();
         assertValidatorMessage(validator, sig, "birthdate", "cannot be missing, null, or blank");
     }
+    
+    @Test
+    public void nullBirthdateOKWithoutAgeLimit() {
+        validator = new ConsentSignatureValidator(0);
+        ConsentSignature sig = new ConsentSignature.Builder().withName("test name").withSignedOn(SIGNED_ON_TIMESTAMP).build();
+        Validate.entityThrowingException(validator, sig);
+    }
 
     @Test
     public void emptyBirthdate() {
