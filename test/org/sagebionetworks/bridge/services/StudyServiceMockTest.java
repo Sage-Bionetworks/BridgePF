@@ -289,7 +289,7 @@ public class StudyServiceMockTest {
 
         MimeTypeEmail email = emailProviderCaptor.getValue().getMimeTypeEmail();
         String body = (String) email.getMessageParts().get(0).getContent();
-        System.out.println(body);
+
         assertTrue(body.contains("/vse?study="+ TEST_STUDY_ID + "&token=" +
                 VERIFICATION_TOKEN + "&type=consent_notification"));
         assertTrue(email.getSenderAddress().contains(SUPPORT_EMAIL));
@@ -803,6 +803,16 @@ public class StudyServiceMockTest {
         
         Study retStudy = service.createStudy(study);
         assertNotNull(retStudy.getSignedConsentSmsTemplate());
+    }
+    
+    @Test
+    public void createStudyWithoutConsentNotificationEmailDoesNotSendNotification() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setConsentNotificationEmail(null);
+        
+        service.createStudy(study);
+        
+        verify(sendMailService, never()).sendEmail(any());
     }
     
     @Test

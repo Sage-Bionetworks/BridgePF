@@ -164,6 +164,12 @@ public class StudyValidatorTest {
     }
     
     @Test
+    public void technicalEmailIsOptional() {
+        study.setTechnicalEmail(null);
+        Validate.entityThrowingException(INSTANCE, study);        
+    }
+    
+    @Test
     public void supportEmailMustsBeValid() {
         study.setSupportEmail("email@email.com,email2@email.com,b");
         assertValidatorMessage(INSTANCE, study, "supportEmail", StudyValidator.EMAIL_ERROR);
