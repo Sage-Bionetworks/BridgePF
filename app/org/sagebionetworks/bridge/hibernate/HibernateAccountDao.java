@@ -59,9 +59,9 @@ import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.HealthCodeService;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.newrelic.agent.deps.com.google.common.base.Joiner;
 
 /** Hibernate implementation of Account Dao. */
 @Component
