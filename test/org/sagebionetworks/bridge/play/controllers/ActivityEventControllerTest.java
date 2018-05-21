@@ -68,7 +68,6 @@ public class ActivityEventControllerTest {
                 eventTimeCaptor.capture());
 
         DateTime eventTime = eventTimeCaptor.getValue();
-        System.out.println("eventTime=" + eventTime);
         TestUtils.assertDatesWithTimeZoneEqual(EVENT_TIMESTAMP, eventTime);
     }
 }
