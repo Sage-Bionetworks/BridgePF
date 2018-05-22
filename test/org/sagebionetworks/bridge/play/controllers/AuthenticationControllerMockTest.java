@@ -410,28 +410,10 @@ public class AuthenticationControllerMockTest {
         controller.signUp();
     }
 
-    @SuppressWarnings("deprecation")
-    @Test
-    public void signInExistingSession() throws Exception {
-        response = mockPlayContext();
-        // mock getSessionToken and getMetrics
-        doReturn(TEST_SESSION_TOKEN).when(controller).getSessionToken();
-
-        // mock AuthenticationService
-        ConsentStatus consentStatus = TestConstants.REQUIRED_SIGNED_CURRENT;
-        UserSession session = createSession(consentStatus, null);
-        when(authenticationService.getSession(TEST_SESSION_TOKEN)).thenReturn(session);
-
-        // execute and validate
-        Result result = controller.signInV3();
-        assertSessionInPlayResult(result);
-        verifyCommonLoggingForSignIns();    
-    }
-
     @SuppressWarnings({ "static-access", "deprecation" })
     private void signInNewSession(boolean isConsented, Roles role) throws Exception {
-        // mock getSessionToken and getMetrics
-        doReturn(null).when(controller).getSessionToken();
+        // Even if a session token already exists, we still ignore it and call signIn anyway.
+        doReturn(TEST_SESSION_TOKEN).when(controller).getSessionToken();
 
         doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
 
@@ -447,9 +429,7 @@ public class AuthenticationControllerMockTest {
         // mock AuthenticationService
         ConsentStatus consentStatus = (isConsented) ? TestConstants.REQUIRED_SIGNED_CURRENT : null;
         UserSession session = createSession(consentStatus, role);
-        
-        ArgumentCaptor<SignIn> signInCaptor = ArgumentCaptor.forClass(SignIn.class);
-        when(authenticationService.signIn(same(study), any(), signInCaptor.capture())).thenReturn(session);
+        when(authenticationService.signIn(any(), any(), any())).thenReturn(session);
         
         // execute and validate
         Result result = controller.signInV3();
@@ -467,6 +447,9 @@ public class AuthenticationControllerMockTest {
         verifyCommonLoggingForSignIns();
 
         // validate signIn
+        ArgumentCaptor<SignIn> signInCaptor = ArgumentCaptor.forClass(SignIn.class);
+        verify(authenticationService).signIn(same(study), any(), signInCaptor.capture());
+
         SignIn signIn = signInCaptor.getValue();
         assertEquals(TEST_EMAIL, signIn.getEmail());
         assertEquals(TEST_PASSWORD, signIn.getPassword());

@@ -215,9 +215,6 @@ public class AuthenticationService {
         
         Account account = accountDao.reauthenticate(study, signIn);
 
-        // Force recreation of the session, including the session token
-        cacheProvider.removeSessionByUserId(account.getId());
-        
         UserSession session = getSessionFromAccount(study, context, account);
         
         Tuple<String> reauthTuple = new Tuple<>(session.getSessionToken(), session.getReauthToken());
@@ -397,19 +394,17 @@ public class AuthenticationService {
             accountDao.editAccount(study.getStudyIdentifier(), participant.getHealthCode(),
                     accountToEdit -> accountToEdit.setLanguages(context.getLanguages()));
         }
-        
+
+        // As per https://sagebionetworks.jira.com/browse/BRIDGE-2127, signing in should invalidate any old sessions.
+        // This code is only called by signIn calls (signIn, reauth, channelSignIn, getSession() which is only called
+        // by create user), and is called by _every_ signIn call and is responsible for creating the new session. This
+        // is the best place to delete the old session (if it exists).
+        cacheProvider.removeSessionByUserId(account.getId());
+
+        // Create new session.
         UserSession session = new UserSession(participant);
-        // The check for an existing session just prevents resetting the session tokens, the rest of the 
-        // session is refreshed. This may change when we expire sessions correctly (currently they are held 
-        // for a long time in memory), but this emulates earlier behavior.
-        UserSession existingSession = cacheProvider.getUserSessionByUserId(account.getId());
-        if (existingSession != null) {
-            session.setSessionToken(existingSession.getSessionToken());
-            session.setInternalSessionToken(existingSession.getInternalSessionToken());
-        } else {
-            session.setSessionToken(BridgeUtils.generateGuid());
-            session.setInternalSessionToken(BridgeUtils.generateGuid());
-        }
+        session.setSessionToken(BridgeUtils.generateGuid());
+        session.setInternalSessionToken(BridgeUtils.generateGuid());
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment());
         session.setStudyIdentifier(study.getStudyIdentifier());

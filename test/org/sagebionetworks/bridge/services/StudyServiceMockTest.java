@@ -289,7 +289,7 @@ public class StudyServiceMockTest {
 
         MimeTypeEmail email = emailProviderCaptor.getValue().getMimeTypeEmail();
         String body = (String) email.getMessageParts().get(0).getContent();
-        System.out.println(body);
+
         assertTrue(body.contains("/vse?study="+ TEST_STUDY_ID + "&token=" +
                 VERIFICATION_TOKEN + "&type=consent_notification"));
         assertTrue(email.getSenderAddress().contains(SUPPORT_EMAIL));
@@ -370,6 +370,17 @@ public class StudyServiceMockTest {
         service.sendVerifyEmail(TEST_STUDY_IDENTIFIER, null);
     }
 
+    // This can be manually triggered through the API even though there's no consent
+    // email to confirm... so return a 400 in this case.
+    @Test(expected = BadRequestException.class)
+    public void sendVerifyEmailNoConsentEmail() throws Exception {
+        Study study = getTestStudy();
+        study.setConsentNotificationEmail(null);
+        when(studyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
+        
+        service.sendVerifyEmail(TEST_STUDY_IDENTIFIER, StudyEmailType.CONSENT_NOTIFICATION);
+    }
+    
     @Test
     public void sendVerifyEmailSuccess() throws Exception {
         // Mock getStudy().
@@ -792,6 +803,16 @@ public class StudyServiceMockTest {
         
         Study retStudy = service.createStudy(study);
         assertNotNull(retStudy.getSignedConsentSmsTemplate());
+    }
+    
+    @Test
+    public void createStudyWithoutConsentNotificationEmailDoesNotSendNotification() {
+        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setConsentNotificationEmail(null);
+        
+        service.createStudy(study);
+        
+        verify(sendMailService, never()).sendEmail(any());
     }
     
     @Test

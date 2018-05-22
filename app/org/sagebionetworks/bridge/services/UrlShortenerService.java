@@ -36,7 +36,7 @@ public class UrlShortenerService {
         } while(foundValue != null && !foundValue.equals(url));
         
         if (foundValue == null) {
-            cacheProvider.setObject(cacheKey, url, expireInSeconds);    
+            cacheProvider.setObject(cacheKey, url, expireInSeconds);
         }
         return WEBSERVICES_URL + "/r/" + token;
     }

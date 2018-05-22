@@ -1,9 +1,11 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -198,8 +200,7 @@ public class AuthenticationServiceTest {
         String sessionToken = testUser.getSessionToken();
         UserSession newSession = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
         assertEquals("Email is for test2 user", testUser.getEmail(), newSession.getParticipant().getEmail());
-        assertEquals("Should update the existing session instead of creating a new one.",
-                sessionToken, newSession.getSessionToken());
+        assertNotEquals("Should creating a new session.", sessionToken, newSession.getSessionToken());
     }
 
     @Test
@@ -483,7 +484,7 @@ public class AuthenticationServiceTest {
     }
     
     @Test
-    public void signInRefreshesSessionKeepingTokens() {
+    public void signInRefreshesSessionChangingTokens() {
         testUser = helper.getBuilder(AuthenticationServiceTest.class).withConsent(false).withSignIn(false).build();
         
         // User's ID ties this record to the newly signed in user, which contains only an ID. So the rest of the 
@@ -499,11 +500,12 @@ public class AuthenticationServiceTest {
         UserSession session = null;
         try {
             authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
+            fail("expected exception");
         } catch(ConsentRequiredException e) {
             session = e.getUserSession();
         }
-        assertEquals(cachedSession.getSessionToken(), session.getSessionToken());
-        assertEquals(cachedSession.getInternalSessionToken(), session.getInternalSessionToken());
+        assertNotEquals(cachedSession.getSessionToken(), session.getSessionToken());
+        assertNotEquals(cachedSession.getInternalSessionToken(), session.getInternalSessionToken());
         // but the rest is updated.  
         assertEquals(testUser.getStudyParticipant().getEmail(), session.getParticipant().getEmail());
         assertEquals(testUser.getStudyParticipant().getFirstName(), session.getParticipant().getFirstName());

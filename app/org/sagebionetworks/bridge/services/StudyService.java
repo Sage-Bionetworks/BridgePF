@@ -447,8 +447,9 @@ public class StudyService {
         
         emailVerificationService.verifyEmailAddress(study.getSupportEmail());
 
-        sendVerifyEmail(study, StudyEmailType.CONSENT_NOTIFICATION);
-
+        if (study.getConsentNotificationEmail() != null) {
+            sendVerifyEmail(study, StudyEmailType.CONSENT_NOTIFICATION);    
+        }
         cacheProvider.setStudy(study);
 
         return study;
@@ -836,6 +837,9 @@ public class StudyService {
             default:
                 // Impossible code path, but put it in for future-proofing.
                 throw new BadRequestException("Unrecognized email type \"" + type.toString() + "\"");
+        }
+        if (email == null) {
+            throw new BadRequestException("Email not set for study");
         }
 
         // Generate and save token.

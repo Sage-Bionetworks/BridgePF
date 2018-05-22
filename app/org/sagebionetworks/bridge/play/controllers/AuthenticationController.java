@@ -103,21 +103,20 @@ public class AuthenticationController extends BaseController {
     }
     
     public Result signIn() throws Exception {
-        UserSession session = getSessionIfItExists();
-        if (session == null) {
-            SignIn signIn = parseJson(request(), SignIn.class);
-            Study study = studyService.getStudy(signIn.getStudyId());
-            verifySupportedVersionOrThrowException(study);
+        SignIn signIn = parseJson(request(), SignIn.class);
+        Study study = studyService.getStudy(signIn.getStudyId());
+        verifySupportedVersionOrThrowException(study);
 
-            CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
-            
-            try {
-                session = authenticationService.signIn(study, context, signIn);
-            } catch(ConsentRequiredException e) {
-                setCookieAndRecordMetrics(e.getUserSession());
-                throw e;
-            }
+        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+
+        UserSession session;
+        try {
+            session = authenticationService.signIn(study, context, signIn);
+        } catch (ConsentRequiredException e) {
+            setCookieAndRecordMetrics(e.getUserSession());
+            throw e;
         }
+
         setCookieAndRecordMetrics(session);
         return okResult(UserSessionInfo.toJSON(session));
     }
