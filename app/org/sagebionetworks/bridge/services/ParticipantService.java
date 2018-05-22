@@ -320,7 +320,7 @@ public class ParticipantService {
     }
 
     private void throwExceptionIfLimitMetOrExceeded(Study study) {
-        // It's sufficient to get minimum number of records the total if for all records
+        // It's sufficient to get minimum number of records, we're looking only at the total of all accounts
         PagedResourceList<AccountSummary> summaries = getPagedAccountSummaries(study, AccountSummarySearch.EMPTY_SEARCH);
         if (summaries.getTotal() >= study.getAccountLimit()) {
             throw new LimitExceededException(String.format(BridgeConstants.MAX_USERS_ERROR, study.getAccountLimit()));

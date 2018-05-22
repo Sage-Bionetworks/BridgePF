@@ -1304,6 +1304,7 @@ public class ParticipantControllerTest {
         verify(mockParticipantService).getPagedAccountSummaries(eq(study), searchCaptor.capture());
         
         AccountSummarySearch search = searchCaptor.getValue();
+        
         assertEquals(payload, search);
     }
     
@@ -1335,10 +1336,8 @@ public class ParticipantControllerTest {
                 .withAllOfGroups(Sets.newHashSet("group1"))
                 .withNoneOfGroups(Sets.newHashSet("group2"))
                 .withLanguage("en")
-                // Forcing these to UTC just to verify they are passed correctly, and they are
-                // always deserialized as UTC
-                .withStartTime(START_TIME.withZone(DateTimeZone.UTC))
-                .withEndTime(END_TIME.withZone(DateTimeZone.UTC)).build();
+                .withStartTime(START_TIME)
+                .withEndTime(END_TIME).build();
         TestUtils.mockPlayContextWithJson(search);
         return search;
     }

@@ -7,8 +7,11 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.json.DateTimeDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeSerializer;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @JsonDeserialize(builder = AccountSummarySearch.Builder.class)
 public final class AccountSummarySearch implements BridgeEntity {
@@ -58,35 +61,46 @@ public final class AccountSummarySearch implements BridgeEntity {
     public String getLanguage() {
         return language;
     }
+    @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getStartTime() {
         return startTime;
     }
+    @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getEndTime() {
         return endTime;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(allOfGroups, emailFilter, endTime, language, noneOfGroups, offsetBy, pageSize, phoneFilter,
-                startTime);
+        // When serialized, Joda DateTime objects can change their Chronology and become unequal, even when representing
+        // the same time instant in the same time zone. (For example, ISOChronology[America/Los_Angeles]
+        // versus ISOChronology[-07:00] if that's the offset at the time of serialization). Using the ISO String
+        // representation of the DateTime gives us equality across serialization.
+        return Objects.hash(allOfGroups, emailFilter, nullsafeDateString(endTime), language, noneOfGroups, offsetBy,
+                pageSize, phoneFilter, nullsafeDateString(startTime));
     }
 
     @Override
     public boolean equals(Object obj) {
+        // When serialized, Joda DateTime objects can change their Chronology and become unequal, even when representing
+        // the same time instant in the same time zone. (For example, ISOChronology[America/Los_Angeles]
+        // versus ISOChronology[-07:00] if that's the offset at the time of serialization). Using the ISO String
+        // representation of the DateTime gives us equality across serialization.
         if (this == obj)
             return true;
         if (obj == null || getClass() != obj.getClass())
             return false;
         AccountSummarySearch other = (AccountSummarySearch) obj;
-        return Objects.equals(allOfGroups, other.allOfGroups) &&
-                Objects.equals(emailFilter, other.emailFilter) &&
-                Objects.equals(endTime, other.endTime) &&
-                Objects.equals(language, other.language) &&
-                Objects.equals(noneOfGroups, other.noneOfGroups) &&
-                Objects.equals(offsetBy, other.offsetBy) &&
-                Objects.equals(pageSize, other.pageSize) &&
-                Objects.equals(phoneFilter, other.phoneFilter) &&
-                Objects.equals(startTime, other.startTime);
+        return Objects.equals(allOfGroups, other.allOfGroups) && Objects.equals(emailFilter, other.emailFilter)
+                && Objects.equals(nullsafeDateString(endTime),  nullsafeDateString(other.endTime))
+                && Objects.equals(language, other.language) && Objects.equals(noneOfGroups, other.noneOfGroups)
+                && Objects.equals(offsetBy, other.offsetBy) && Objects.equals(pageSize, other.pageSize)
+                && Objects.equals(phoneFilter, other.phoneFilter)
+                && Objects.equals(nullsafeDateString(startTime), nullsafeDateString(other.startTime));
+    }
+    
+    private String nullsafeDateString(DateTime dateTime) {
+        return (dateTime == null) ? null : dateTime.toString();
     }
     
     @Override
@@ -139,10 +153,12 @@ public final class AccountSummarySearch implements BridgeEntity {
             this.language = language;
             return this;
         }
+        @JsonDeserialize(using = DateTimeDeserializer.class)
         public Builder withStartTime(DateTime startTime) {
             this.startTime = startTime;
             return this;
         }
+        @JsonDeserialize(using = DateTimeDeserializer.class)
         public Builder withEndTime(DateTime endTime) {
             this.endTime = endTime;
             return this;
