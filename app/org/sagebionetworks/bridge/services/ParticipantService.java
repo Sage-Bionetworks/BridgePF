@@ -3,8 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
-import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
 
@@ -22,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
@@ -32,6 +29,7 @@ import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.LimitExceededException;
+import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -59,6 +57,7 @@ import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
+import org.sagebionetworks.bridge.validators.AccountSummarySearchValidator;
 import org.sagebionetworks.bridge.validators.IdentifierUpdateValidator;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -66,8 +65,6 @@ import org.sagebionetworks.bridge.validators.Validate;
 @Component
 public class ParticipantService {
     private static Logger LOG = LoggerFactory.getLogger(ParticipantService.class);
-
-    private static final String DATE_RANGE_ERROR = "startDate should be before endDate";
 
     private AccountDao accountDao;
 
@@ -213,20 +210,12 @@ public class ParticipantService {
         return builder.build();
     }
 
-    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize,
-            String emailFilter, String phoneFilter, DateTime startTime, DateTime endTime) {
+    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, AccountSummarySearch search) {
         checkNotNull(study);
-        if (offsetBy < 0) {
-            throw new BadRequestException("offsetBy cannot be less than 0");
-        }
-        // Just set a sane upper limit on this.
-        if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
-            throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
-        }
-        if (startTime != null && endTime != null && startTime.getMillis() >= endTime.getMillis()) {
-            throw new BadRequestException(DATE_RANGE_ERROR);
-        }
-        return accountDao.getPagedAccountSummaries(study, offsetBy, pageSize, emailFilter, phoneFilter, startTime, endTime);
+        
+        Validate.entityThrowingException(new AccountSummarySearchValidator(study.getDataGroups()), search);
+        
+        return accountDao.getPagedAccountSummaries(study, search);
     }
 
     public void signUserOut(Study study, String email, boolean deleteReauthToken) {
@@ -331,9 +320,8 @@ public class ParticipantService {
     }
 
     private void throwExceptionIfLimitMetOrExceeded(Study study) {
-        // It's sufficient to get minimum number of records the total if for all records
-        PagedResourceList<AccountSummary> summaries = getPagedAccountSummaries(study, 0,
-                BridgeConstants.API_MINIMUM_PAGE_SIZE, null, null, null, null);
+        // It's sufficient to get minimum number of records, we're looking only at the total of all accounts
+        PagedResourceList<AccountSummary> summaries = getPagedAccountSummaries(study, AccountSummarySearch.EMPTY_SEARCH);
         if (summaries.getTotal() >= study.getAccountLimit()) {
             throw new LimitExceededException(String.format(BridgeConstants.MAX_USERS_ERROR, study.getAccountLimit()));
         }

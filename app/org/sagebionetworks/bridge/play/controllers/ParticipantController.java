@@ -32,6 +32,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -171,8 +172,10 @@ public class ParticipantController extends BaseController {
         return okResult(UserSessionInfo.toJSON(session));
     }
     
+    @Deprecated
     public Result getParticipants(String offsetByString, String pageSizeString, String emailFilter, String phoneFilter,
-            String startDateString, String endDateString, String startTimeString, String endTimeString) {
+            String startDateString, String endDateString, String startTimeString,
+            String endTimeString) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
@@ -180,13 +183,35 @@ public class ParticipantController extends BaseController {
                 endDateString, startTimeString, endTimeString);
     }
 
-    public Result getParticipantsForWorker(String studyId, String offsetByString, String pageSizeString, String emailFilter,
-            String phoneFilter, String startDateString, String endDateString, String startTimeString, String endTimeString) {
+    public Result searchForAccountSummaries() throws Exception {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        
+        AccountSummarySearch search = parseJson(request(), AccountSummarySearch.class);
+        PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, search);
+        
+        return okResult(page);
+    }
+    
+    @Deprecated
+    public Result getParticipantsForWorker(String studyId, String offsetByString, String pageSizeString,
+            String emailFilter, String phoneFilter, String startDateString, String endDateString,
+            String startTimeString, String endTimeString) {
         getAuthenticatedSession(WORKER);
         
         Study study = studyService.getStudy(studyId);
         return getParticipantsInternal(study, offsetByString, pageSizeString, emailFilter, phoneFilter, startDateString,
                 endDateString, startTimeString, endTimeString);
+    }
+    
+    public Result searchForAccountSummariesForWorker(String studyId) throws Exception {
+        getAuthenticatedSession(WORKER);
+        Study study = studyService.getStudy(studyId);
+        
+        AccountSummarySearch search = parseJson(request(), AccountSummarySearch.class);
+        PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, search);
+        
+        return okResult(page);
     }
     
     public Result createParticipant() throws Exception {
@@ -430,8 +455,15 @@ public class ParticipantController extends BaseController {
         if (endTime == null) {
             endTime = getDateTimeOrDefault(endDateString, null);
         }
-        PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, offsetBy, pageSize,
-                emailFilter, phoneFilter, startTime, endTime);
+        
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withOffsetBy(offsetBy)
+                .withPageSize(pageSize)
+                .withEmailFilter(emailFilter)
+                .withPhoneFilter(phoneFilter)
+                .withStartTime(startTime)
+                .withEndTime(endTime).build();
+        PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, search);
         
         // Similarly, we will return startTime/endTime in the top-level request parameter properties as 
         // startDate/endDate while transitioning, to maintain backwards compatibility.

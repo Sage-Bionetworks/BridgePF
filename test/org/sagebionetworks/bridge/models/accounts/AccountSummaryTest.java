@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class AccountSummaryTest {
+    
     @Test
     public void hashCodeEquals() {
         EqualsVerifier.forClass(AccountSummary.class).allFieldsShouldBeUsed().verify();

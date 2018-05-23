@@ -36,11 +36,6 @@ public class SurveyPublishValidatorTest {
         validator.supports(survey.getClass());
     }
 
-    @Test
-    public void validate() throws Exception {
-
-    }
-
     @SuppressWarnings("unchecked")
     @Test
     public void multiValueWithNoEnumeration() {

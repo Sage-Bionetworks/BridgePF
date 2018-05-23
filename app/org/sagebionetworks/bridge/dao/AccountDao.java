@@ -3,8 +3,7 @@ package org.sagebionetworks.bridge.dao;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
-import org.joda.time.DateTime;
-
+import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -114,25 +113,11 @@ public interface AccountDao {
      * participants which are required for the rest of the participant APIs). 
      * @param study
      *      retrieve participants in this study
-     * @param offsetBy
-     *      index to start the next page of records
-     * @param pageSize
-     *      number of records to return (or the number of remaining records if less than the pageSize).
-     * @param emailFilter
-     *      a substring that will be matched (ignoring case) against the email addresses of the accounts.
-     * @param phoneFilter
-     *      a substring that will be matched (ignoring case) against the phone number of the account. String will be 
-     *      converted to E164 format for comparison against the stored phone number.
-     * @param startDate
-     *      a date and time on or after which the account should have been created in order to match the query.
-     * @param endDate
-     *      a date and time on or before which the account should have been created in order to match the query.
-     * @return
-     *      a paged resource list that includes the page of account summaries, as well as other information 
-     *      about the request and the total number of records.
+     * @param search
+     *      all the parameters necessary to perform a filtered search of user account summaries, including
+     *      paging parameters.
      */
-    PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, int offsetBy, int pageSize,
-            String emailFilter, String phoneFilter, DateTime startDate, DateTime endDate);
+    PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, AccountSummarySearch search);
     
     /**
      * For MailChimp, and other external systems, we need a way to get a healthCode for a given email.
