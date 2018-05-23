@@ -44,7 +44,7 @@ import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.WithdrawConsentEmailProvider;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.time.DateUtils;
-import org.sagebionetworks.bridge.validators.ConsentAgeValidator;
+import org.sagebionetworks.bridge.validators.ConsentSignatureValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.amazonaws.HttpMethod;
@@ -163,7 +163,7 @@ public class ConsentService {
         checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
         checkNotNull(sharingScope, Validate.CANNOT_BE_NULL, "sharingScope");
 
-        ConsentAgeValidator validator = new ConsentAgeValidator(study);
+        ConsentSignatureValidator validator = new ConsentSignatureValidator(study.getMinAgeOfConsent());
         Validate.entityThrowingException(validator, consentSignature);
 
         Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
