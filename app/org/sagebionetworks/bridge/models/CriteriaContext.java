@@ -17,16 +17,18 @@ public final class CriteriaContext {
     private final String healthCode;
     private final String userId;
     private final ClientInfo clientInfo;
+    private final String ipAddress;
     private final Set<String> userDataGroups;
     // This set has ordered keys (most to least preferential)
     private final LinkedHashSet<String> languages;
     
     private CriteriaContext(StudyIdentifier studyId, String healthCode, String userId, ClientInfo clientInfo,
-            Set<String> userDataGroups, LinkedHashSet<String> languages) {
+            String ipAddress, Set<String> userDataGroups, LinkedHashSet<String> languages) {
         this.studyId = studyId;
         this.healthCode = healthCode;
         this.userId = userId;
         this.clientInfo = clientInfo;
+        this.ipAddress = ipAddress;
         this.userDataGroups = (userDataGroups == null) ? ImmutableSet.of() : ImmutableSet.copyOf(userDataGroups);
         this.languages = (languages == null) ? new LinkedHashSet<>() : languages;
     }
@@ -37,10 +39,14 @@ public final class CriteriaContext {
 
     /**
     * Client information based on the supplied User-Agent header.
-    * @return
     */
     public ClientInfo getClientInfo() {
         return clientInfo;
+    }
+
+    /** The user's IP Address, as reported by Amazon. */
+    public String getIpAddress() {
+        return ipAddress;
     }
 
     public Set<String> getUserDataGroups() {
@@ -72,7 +78,7 @@ public final class CriteriaContext {
 
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, healthCode, userId, clientInfo, userDataGroups, languages);
+        return Objects.hash(studyId, healthCode, userId, clientInfo, ipAddress, userDataGroups, languages);
     }
 
     @Override
@@ -82,8 +88,9 @@ public final class CriteriaContext {
         if (obj == null || getClass() != obj.getClass())
             return false;
         CriteriaContext other = (CriteriaContext)obj;
-        return (Objects.equals(clientInfo, other.clientInfo) && 
-                Objects.equals(userDataGroups, other.userDataGroups) && 
+        return (Objects.equals(clientInfo, other.clientInfo) &&
+                Objects.equals(ipAddress, other.ipAddress) &&
+                Objects.equals(userDataGroups, other.userDataGroups) &&
                 Objects.equals(studyId, other.studyId) && 
                 Objects.equals(healthCode, other.healthCode) && 
                 Objects.equals(userId, other.userId) &&
@@ -93,7 +100,7 @@ public final class CriteriaContext {
     @Override
     public String toString() {
         return "CriteriaContext [studyId=" + studyId + ", userId=" + userId + ", clientInfo=" + clientInfo
-                + ", userDataGroups=" + userDataGroups + ", languages=" + languages + "]";
+                + ", ipAddress=" + ipAddress + ", userDataGroups=" + userDataGroups + ", languages=" + languages + "]";
     }
 
     public static class Builder {
@@ -101,6 +108,7 @@ public final class CriteriaContext {
         private String healthCode;
         private String userId;
         private ClientInfo clientInfo;
+        private String ipAddress;
         private Set<String> userDataGroups;
         private LinkedHashSet<String> languages;
 
@@ -120,6 +128,13 @@ public final class CriteriaContext {
             this.clientInfo = clientInfo;
             return this;
         }
+
+        /** @see #getIpAddress */
+        public Builder withIpAddress(String ipAddress) {
+            this.ipAddress = ipAddress;
+            return this;
+        }
+
         public Builder withUserDataGroups(Set<String> userDataGroups) {
             this.userDataGroups = userDataGroups;
             return this;
@@ -128,11 +143,13 @@ public final class CriteriaContext {
             this.languages = languages;
             return this;
         }
+
         public Builder withContext(CriteriaContext context) {
             this.studyId = context.studyId;
             this.healthCode = context.healthCode;
             this.userId = context.userId;
             this.clientInfo = context.clientInfo;
+            this.ipAddress = context.ipAddress;
             this.userDataGroups = context.userDataGroups;
             this.languages = context.languages;
             return this;
@@ -143,7 +160,7 @@ public final class CriteriaContext {
             if (clientInfo == null) {
                 clientInfo = ClientInfo.UNKNOWN_CLIENT;
             }
-            return new CriteriaContext(studyId, healthCode, userId, clientInfo, userDataGroups, languages);
+            return new CriteriaContext(studyId, healthCode, userId, clientInfo, ipAddress, userDataGroups, languages);
         }
     }
 }
