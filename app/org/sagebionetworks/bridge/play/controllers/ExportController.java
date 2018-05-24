@@ -6,6 +6,8 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+
+import play.mvc.BodyParser;
 import play.mvc.Result;
 
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -24,6 +26,7 @@ public class ExportController extends BaseController {
     }
 
     /** Kicks off an on-demand export for the given study. */
+    @BodyParser.Of(BodyParser.Empty.class)
     public Result startOnDemandExport() throws JsonProcessingException {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         StudyIdentifier studyId = session.getStudyIdentifier();
