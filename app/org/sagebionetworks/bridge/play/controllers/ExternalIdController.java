@@ -9,6 +9,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+
+import play.mvc.BodyParser;
 import play.mvc.Result;
 
 import org.sagebionetworks.bridge.Roles;
@@ -69,6 +71,7 @@ public class ExternalIdController extends BaseController {
         return okResult("External identifiers deleted.");
     }
     
+    @BodyParser.Of(BodyParser.Empty.class)
     public Result generatePassword(String externalId, boolean createAccount) throws Exception {
         UserSession session = getAuthenticatedSession(Roles.RESEARCHER);
         

@@ -157,7 +157,6 @@ public class ParticipantController extends BaseController {
                 offsetKey, pageSize);
     }
     
-    
     public Result updateIdentifiers() throws Exception {
         UserSession session = getAuthenticatedSession();
         
@@ -290,6 +289,7 @@ public class ParticipantController extends BaseController {
         return okResult("User signed out.");
     }
 
+    @BodyParser.Of(BodyParser.Empty.class)
     public Result requestResetPassword(String userId) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
@@ -325,6 +325,7 @@ public class ParticipantController extends BaseController {
         return okResult("Scheduled activities deleted.");
     }
     
+    @BodyParser.Of(BodyParser.Empty.class)
     public Result resendEmailVerification(String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
@@ -334,6 +335,7 @@ public class ParticipantController extends BaseController {
         return okResult("Email verification request has been resent to user.");
     }
     
+    @BodyParser.Of(BodyParser.Empty.class)
     public Result resendPhoneVerification(String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
@@ -343,6 +345,7 @@ public class ParticipantController extends BaseController {
         return okResult("Phone verification request has been resent to user.");
     }
     
+    @BodyParser.Of(BodyParser.Empty.class)
     public Result resendConsentAgreement(String userId, String subpopulationGuid) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());

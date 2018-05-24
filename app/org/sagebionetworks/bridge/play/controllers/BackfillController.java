@@ -11,6 +11,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Controller;
 
+import play.mvc.BodyParser;
 import play.mvc.Result;
 
 @Controller
@@ -29,6 +30,7 @@ public class BackfillController extends BaseController implements ApplicationCon
         return ok(views.html.backfill.render(name));
     }
 
+    @BodyParser.Of(BodyParser.Empty.class)
     public Result start(final String name) throws Exception {
         final String user = checkUser();
         final BackfillService backfillService = appContext.getBean(name, BackfillService.class);

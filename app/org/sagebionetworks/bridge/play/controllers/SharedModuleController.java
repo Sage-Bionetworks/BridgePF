@@ -4,6 +4,8 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+
+import play.mvc.BodyParser;
 import play.mvc.Result;
 
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -23,6 +25,7 @@ public class SharedModuleController extends BaseController {
     }
 
     /** Imports a specific module version into the current study. */
+    @BodyParser.Of(BodyParser.Empty.class)
     public Result importModuleByIdAndVersion(String moduleId, int moduleVersion) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
@@ -32,6 +35,7 @@ public class SharedModuleController extends BaseController {
     }
 
     /** Imports the latest published version of a module into the current study. */
+    @BodyParser.Of(BodyParser.Empty.class)
     public Result importModuleByIdLatestPublishedVersion(String moduleId) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
