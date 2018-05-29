@@ -2043,6 +2043,34 @@ public class HibernateAccountDaoTest {
         assertTrue(query.contains(":notin2 not in elements(acct.dataGroups)"));
     }
     
+    @Test(expected = UnauthorizedException.class)
+    public void authenticateAccountUnverifiedEmailFails() throws Exception {
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(true, true);
+        hibernateAccount.setEmailVerified(false);
+        
+        // mock hibernate
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
+                .thenReturn(ImmutableList.of(hibernateAccount));
+
+        dao.authenticate(STUDY, PASSWORD_SIGNIN);
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void authenticateAccountUnverifiedPhoneFails() throws Exception {
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(true, true);
+        hibernateAccount.setPhoneVerified(null);
+        
+        // mock hibernate
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
+                .thenReturn(ImmutableList.of(hibernateAccount));
+
+        // execute and verify - Verify just ID, study, and email, and health code mapping is enough.
+        SignIn phoneSignIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withPhone(PHONE).withPassword(DUMMY_PASSWORD).build();
+        
+        dao.authenticate(STUDY, phoneSignIn);
+    }
+    
     private void verifyCreatedHealthCode() {
         // Verify we create the new health code mapping
         verify(mockHealthCodeService).createMapping(TestConstants.TEST_STUDY);
@@ -2094,8 +2122,10 @@ public class HibernateAccountDaoTest {
         hibernateAccount.setId(ACCOUNT_ID);
         hibernateAccount.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         hibernateAccount.setPhone(TestConstants.PHONE);
+        hibernateAccount.setPhoneVerified(true);
         hibernateAccount.setExternalId(EXTERNAL_ID);
         hibernateAccount.setEmail(EMAIL);
+        hibernateAccount.setEmailVerified(true);
         hibernateAccount.setStatus(AccountStatus.ENABLED);
         hibernateAccount.setMigrationVersion(AccountDao.MIGRATION_VERSION);
         hibernateAccount.setVersion(1);

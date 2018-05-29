@@ -162,7 +162,7 @@ public class HibernateAccountDao implements AccountDao {
     public Account authenticate(Study study, SignIn signIn) {
         HibernateAccount hibernateAccount = fetchHibernateAccount(signIn);
         return authenticateInternal(study, hibernateAccount, hibernateAccount.getPasswordAlgorithm(),
-                hibernateAccount.getPasswordHash(), signIn.getPassword(), "password");
+                hibernateAccount.getPasswordHash(), signIn.getPassword(), "password", signIn);
     }
 
     /** {@inheritDoc} */
@@ -173,20 +173,25 @@ public class HibernateAccountDao implements AccountDao {
         }
         HibernateAccount hibernateAccount = fetchHibernateAccount(signIn);
         return authenticateInternal(study, hibernateAccount, hibernateAccount.getReauthTokenAlgorithm(),
-                hibernateAccount.getReauthTokenHash(), signIn.getReauthToken(), "reauth token");
+                hibernateAccount.getReauthTokenHash(), signIn.getReauthToken(), "reauth token", signIn);
     }
     
     private Account authenticateInternal(Study study, HibernateAccount hibernateAccount, PasswordAlgorithm algorithm,
-            String hash, String credentialValue, String credentialName) {
+            String hash, String credentialValue, String credentialName, SignIn signIn) {
 
         // First check and throw an entity not found exception if the password is wrong.
         verifyCredential(hibernateAccount.getId(), credentialName, algorithm, hash, credentialValue);
         
         // Password successful, you can now leak further information about the account through other exceptions.
+        // For email/phone sign ins, the specific credential must have been verified.
         if (hibernateAccount.getStatus() == AccountStatus.UNVERIFIED) {
             throw new UnauthorizedException("Email or phone number have not been verified");
         } else if (hibernateAccount.getStatus() == AccountStatus.DISABLED) {
             throw new AccountDisabledException();
+        } else if (signIn.getPhone() != null && !Boolean.TRUE.equals(hibernateAccount.getPhoneVerified())) {
+            throw new UnauthorizedException("Phone number has not been verified");
+        } else if (signIn.getEmail() != null && !Boolean.TRUE.equals(hibernateAccount.getEmailVerified())) {
+            throw new UnauthorizedException("Email has not been verified");
         }
         
         // Unmarshall account
