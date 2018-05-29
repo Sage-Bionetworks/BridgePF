@@ -1,8 +1,10 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -10,6 +12,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Locale.LanguageRange;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -164,16 +167,27 @@ public abstract class BaseController extends Controller {
         if (session == null || !session.isAuthenticated()) {
             throw new NotAuthenticatedException();
         }
+
+        // Sessions are locked to an IP address if (a) it is enabled in the study for unprivileged participant accounts
+        // or (b) always for privileged accounts.
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Set<Roles> userRoles = session.getParticipant().getRoles();
+        boolean userHasRoles = !userRoles.isEmpty();
+        if (study.isParticipantIpLockingEnabled() || userHasRoles) {
+            String sessionIpAddress = parseIpAddress(session.getIpAddress());
+            String requestIpAddress = parseIpAddress(getRemoteAddress());
+            if (!Objects.equals(sessionIpAddress, requestIpAddress)) {
+                throw new NotAuthenticatedException();
+            }
+        }
+
         // Any method that can throw a 412 can also throw a 410 (min app version not met).
         if (consentRequired) {
-            Study study = studyService.getStudy(session.getStudyIdentifier());
             verifySupportedVersionOrThrowException(study);
         }
         
-        Set<Roles> userRoles = session.getParticipant().getRoles();
         // if there are roles, they are required
         boolean rolesRequired = (roles != null && roles.length > 0); 
-        boolean userHasRoles = !userRoles.isEmpty();
         boolean isInRole = (rolesRequired) ? !Collections.disjoint(Sets.newHashSet(roles), userRoles) : false;
         
         if ((consentRequired && session.doesConsent()) || (rolesRequired && isInRole)) {
@@ -290,6 +304,7 @@ public abstract class BaseController extends Controller {
             .withStudyIdentifier(studyId)
             .withLanguages(getLanguagesFromAcceptLanguageHeader())
             .withClientInfo(getClientInfoFromUserAgentHeader())
+            .withIpAddress(getRemoteAddress())
             .build();
     }
     
@@ -300,6 +315,7 @@ public abstract class BaseController extends Controller {
             .withLanguages(session.getParticipant().getLanguages())
             .withClientInfo(getClientInfoFromUserAgentHeader())
             .withHealthCode(session.getHealthCode())
+            .withIpAddress(session.getIpAddress())
             .withUserId(session.getId())
             .withUserDataGroups(session.getParticipant().getDataGroups())
             .withStudyIdentifier(session.getStudyIdentifier())
@@ -402,6 +418,29 @@ public abstract class BaseController extends Controller {
     /** Helper method which abstracts away getting the request ID from the request. */
     protected String getRequestId() {
         return RequestUtils.getRequestId(request());
+    }
+
+    /** The user's IP Address, as reported by Amazon. Package-scoped for unit tests. */
+    String getRemoteAddress() {
+        return RequestUtils.header(request(), X_FORWARDED_FOR_HEADER, request().remoteAddress());
+    }
+
+    // Helper method to parse an IP address from a raw string, as specified by getRemoteAddress().
+    private static String parseIpAddress(String fullIpAddressString) {
+        if (isBlank(fullIpAddressString)) {
+            // Canonicalize unspecified IP address to null.
+            return null;
+        }
+
+        // Remote address comes from the X-Forwarded-For header. Since we're behind Amazon, this is almost always
+        // 2 IP addresses, separated by a comma and a space. The second is an Amazon router. The first one is probably
+        // the real IP address.
+        //
+        // Note that this isn't fool-proof. X-Forwarded-For can be spoofed. Also, double-proxies might exist, or the
+        // first IP address might simply resolve to 192.168.X.1. In local, this is probably just 127.0.0.1. But at
+        // least this is an added layer of defense vs not IP-locking at all.
+        String[] ipAddressArray = fullIpAddressString.split(",");
+        return ipAddressArray[0];
     }
 
     /** Writes the user's account ID, internal session ID, and study ID to the metrics. */
