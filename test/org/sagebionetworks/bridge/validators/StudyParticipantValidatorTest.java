@@ -339,6 +339,20 @@ public class StudyParticipantValidatorTest {
         validator = new StudyParticipantValidator(externalIdService, study, false);
         Validate.entityThrowingException(validator, participant);
     }
+    @Test
+    public void emptyExternalIdInvalidOnCreate() {
+        StudyParticipant participant = withExternalId(" ");
+        
+        validator = new StudyParticipantValidator(externalIdService, study, true);
+        assertValidatorMessage(validator, participant, "externalId", "cannot be blank");
+    }
+    @Test
+    public void emptyExternalIdInvalidOnUpdate() {
+        StudyParticipant participant = withExternalId(" ");
+        
+        validator = new StudyParticipantValidator(externalIdService, study, false);
+        assertValidatorMessage(validator, participant, "externalId", "cannot be blank");
+    }
     
     private StudyParticipant withPhone(String phone, String phoneRegion) {
         return new StudyParticipant.Builder().withPhone(new Phone(phone, phoneRegion)).build();
