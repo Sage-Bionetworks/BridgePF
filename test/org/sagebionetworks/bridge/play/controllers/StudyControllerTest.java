@@ -149,6 +149,7 @@ public class StudyControllerTest {
                 .withHealthCode("healthCode")
                 .withRoles(Sets.newHashSet()).build();
         UserSession session = new UserSession(participant);
+        session.setStudyIdentifier(studyId);
         session.setAuthenticated(true);
         
         doReturn(session).when(controller).getSessionIfItExists();
@@ -162,6 +163,7 @@ public class StudyControllerTest {
                 .withHealthCode("healthCode")
                 .withRoles(Sets.newHashSet()).build();
         UserSession session = new UserSession(participant);
+        session.setStudyIdentifier(studyId);
         session.setAuthenticated(true);
 
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
