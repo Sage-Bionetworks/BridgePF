@@ -31,11 +31,12 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.FPHSService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
+import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
@@ -50,21 +51,32 @@ public class FPHSControllerTest {
     private AuthenticationService authenticationService;
     private FPHSService fphsService;
     private ConsentService consentService;
-    private SessionUpdateService sessionUpdateService;
-    
+
     @Before
     public void before() {
+        // Mock dependent services
         fphsService = mock(FPHSService.class);
+
         authenticationService = mock(AuthenticationService.class);
+
         consentService = mock(ConsentService.class);
-        sessionUpdateService = new SessionUpdateService();
+
+        SessionUpdateService sessionUpdateService = new SessionUpdateService();
         sessionUpdateService.setCacheProvider(mock(CacheProvider.class));
         sessionUpdateService.setConsentService(consentService);
-        
+
+        Study study = Study.create();
+        study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+
+        StudyService mockStudyService = mock(StudyService.class);
+        when(mockStudyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(study);
+
+        // Spy controller
         controller = spy(new FPHSController());
         controller.setFPHSService(fphsService);
         controller.setAuthenticationService(authenticationService);
         controller.setSessionUpdateService(sessionUpdateService);
+        controller.setStudyService(mockStudyService);
     }
     
     private JsonNode resultToJson(Result result) throws Exception {
@@ -97,7 +109,7 @@ public class FPHSControllerTest {
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode("BBB").build();
         
         UserSession session = new UserSession(participant);
-        session.setStudyIdentifier(new StudyIdentifierImpl("test-study"));
+        session.setStudyIdentifier(TestConstants.TEST_STUDY);
         session.setAuthenticated(true);
         
         doReturn(session).when(controller).getSessionIfItExists();

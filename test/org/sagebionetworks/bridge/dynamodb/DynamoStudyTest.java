@@ -110,6 +110,7 @@ public class DynamoStudyTest {
 
         assertTrue(node.get("autoVerificationEmailSuppressed").booleanValue());
         assertEqualsAndNotNull(study.getConsentNotificationEmail(), node.get("consentNotificationEmail").asText());
+        assertFalse(node.get("participantIpLockingEnabled").booleanValue());
         assertTrue(node.get("studyIdExcludedInExport").booleanValue());
         assertEqualsAndNotNull(study.getSupportEmail(), node.get("supportEmail").asText());
         assertEqualsAndNotNull(study.getSynapseDataAccessTeamId(), node.get("synapseDataAccessTeamId").longValue());

@@ -48,6 +48,7 @@ public class UserSessionTest {
         session.setInternalSessionToken("BBB");
         session.setAuthenticated(true);
         session.setEnvironment(Environment.PROD);
+        session.setIpAddress("ip address");
         session.setStudyIdentifier(new StudyIdentifierImpl("study-key"));
         session.setReauthToken("reauthToken");
         session.setConsentStatuses(statuses);
@@ -60,6 +61,7 @@ public class UserSessionTest {
         assertEquals(session.getSessionToken(), newSession.getSessionToken());
         assertEquals(session.getInternalSessionToken(), newSession.getInternalSessionToken());
         assertEquals(session.getEnvironment(), newSession.getEnvironment());
+        assertEquals(session.getIpAddress(), newSession.getIpAddress());
         assertEquals(session.getStudyIdentifier(), newSession.getStudyIdentifier());
         assertEquals(session.getParticipant(), newSession.getParticipant());
     }

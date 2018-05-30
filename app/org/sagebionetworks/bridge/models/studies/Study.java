@@ -93,6 +93,15 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     void setAutoVerificationEmailSuppressed(boolean autoVerificationEmailSuppressed);
 
     /**
+     * True if sessions for unprivileged participant accounts should be locked to an IP address. (Privileged account
+     * sessions are _always_ locked to an IP address.)
+     */
+    boolean isParticipantIpLockingEnabled();
+
+    /** @see #isParticipantIpLockingEnabled */
+    void setParticipantIpLockingEnabled(boolean participantIpLockingEnabled);
+
+    /**
      * True if we create and return a reauthentication token in the session that can be used to reauthenticate 
      * without a password. False otherwise.
      */

@@ -380,8 +380,12 @@ public class AuthenticationService {
         }
         return session;
     }
-    
-    private UserSession getSessionFromAccount(Study study, CriteriaContext context, Account account) {
+
+    /**
+     * Constructs a session based on the user's account, participant, and request context. This is called by sign-in
+     * APIs, which creates the session. Package-scoped for unit tests.
+     */
+    UserSession getSessionFromAccount(Study study, CriteriaContext context, Account account) {
         StudyParticipant participant = participantService.getParticipant(study, account, false);
 
         // If the user does not have a language persisted yet, now that we have a session, we can retrieve it 
@@ -407,6 +411,7 @@ public class AuthenticationService {
         session.setInternalSessionToken(BridgeUtils.generateGuid());
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment());
+        session.setIpAddress(context.getIpAddress());
         session.setStudyIdentifier(study.getStudyIdentifier());
         session.setReauthToken(account.getReauthToken());
         

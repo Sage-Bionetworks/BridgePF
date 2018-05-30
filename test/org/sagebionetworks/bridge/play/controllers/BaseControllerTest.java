@@ -29,6 +29,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import play.mvc.Http;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -41,6 +42,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -60,10 +62,13 @@ import com.google.common.collect.Sets;
 @SuppressWarnings("unchecked")
 public class BaseControllerTest {
     private static final String DOMAIN = "ws-test.sagebridge.org";
+    private static final String HEALTH_CODE = "health-code";
+    private static final String IP_ADDRESS = "dummy IP address";
     private static final DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
     private static final Set<String> GROUPS = Sets.newHashSet("group1");
     private static final ClientInfo CLIENTINFO = ClientInfo.fromUserAgentCache("app/10");
     private static final DateTime UPLOADED_ON = DateTime.now().minusHours(1);
+    private static final String USER_ID = "user-id";
     private static final DateTime ACTIVITIES_ACCESSED_ON = DateTime.now().minusHours(2);
     private static final DateTime SIGNED_IN_ON = DateTime.now().minusHours(3);
     private static final String DUMMY_JSON = createJson("{'dummy-key':'dummy-value'}");
@@ -296,15 +301,23 @@ public class BaseControllerTest {
     @Test
     public void roleEnforcedWhenRetrievingSession() throws Exception {
         mockPlayContext();
-        
+
         SchedulePlanController controller = spy(new SchedulePlanController());
-        
+
+        // Mock participant and session.
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
         
-        UserSession session = new UserSession(participant);
+        UserSession session = makeValidSession();
         session.setAuthenticated(true);
+        session.setParticipant(participant);
         doReturn(session).when(controller).getSessionIfItExists();
+
+        // Mock study.
+        Study study = TestUtils.getValidStudy(BaseControllerTest.class);
+        StudyService mockStudyService = mock(StudyService.class);
+        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        controller.setStudyService(mockStudyService);
 
         // Single arg success.
         assertNotNull(controller.getAuthenticatedSession(Roles.RESEARCHER));
@@ -531,36 +544,110 @@ public class BaseControllerTest {
 
     @Test(expected = NotAuthenticatedException.class)
     public void getSessionAuthenticatedFail() {
-        UserSession session = new UserSession(new StudyParticipant.Builder().build());
-        BaseController controller = setupForSessionTest(session);
-        
+        BaseController controller = setupForSessionTest(makeValidSession(),
+                TestUtils.getValidStudy(BaseControllerTest.class));
         controller.getAuthenticatedSession(false);
     }
     
     @Test
     public void getSessionAuthenticatedSucceed() {
-        UserSession session = new UserSession(new StudyParticipant.Builder().build());
+        UserSession session = makeValidSession();
         session.setAuthenticated(true);
-        BaseController controller = setupForSessionTest(session);
+        BaseController controller = setupForSessionTest(session, TestUtils.getValidStudy(BaseControllerTest.class));
         
         UserSession returned = controller.getAuthenticatedSession(false);
         assertEquals(session, returned);
     }
-    
+
+    @Test(expected = NotAuthenticatedException.class)
+    public void ipLockingForPrivilegedAccounts() {
+        // Setup test
+        StudyParticipant participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.DEVELOPER))
+                .build();
+
+        UserSession session = makeValidSession();
+        session.setAuthenticated(true);
+        session.setIpAddress("original address");
+        session.setParticipant(participant);
+
+        Study study = TestUtils.getValidStudy(BaseControllerTest.class);
+        study.setParticipantIpLockingEnabled(false);
+
+        BaseController controller = setupForSessionTest(session, study);
+        doReturn("different address").when(controller).getRemoteAddress();
+
+        // Execute, should throw
+        controller.getAuthenticatedSession(false);
+    }
+
+    @Test(expected = NotAuthenticatedException.class)
+    public void ipLockingForParticipantsEnabled() {
+        // Setup test
+        UserSession session = makeValidSession();
+        session.setAuthenticated(true);
+        session.setIpAddress("original address");
+
+        Study study = TestUtils.getValidStudy(BaseControllerTest.class);
+        study.setParticipantIpLockingEnabled(true);
+
+        BaseController controller = setupForSessionTest(session, study);
+        doReturn("different address").when(controller).getRemoteAddress();
+
+        // Execute, should throw
+        controller.getAuthenticatedSession(false);
+    }
+
+    @Test
+    public void ipLockingForParticipantsDisabled() {
+        // Setup test
+        UserSession session = makeValidSession();
+        session.setAuthenticated(true);
+        session.setIpAddress("original address");
+
+        Study study = TestUtils.getValidStudy(BaseControllerTest.class);
+        study.setParticipantIpLockingEnabled(false);
+
+        BaseController controller = setupForSessionTest(session, study);
+        doReturn("different address").when(controller).getRemoteAddress();
+
+        // Execute, should succeed
+        controller.getAuthenticatedSession(false);
+    }
+
+    @Test
+    public void ipLockingSameIpAddress() {
+        // Setup test - Append different load balancers to make sure we handle this properly.
+        StudyParticipant participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.DEVELOPER))
+                .build();
+
+        UserSession session = makeValidSession();
+        session.setAuthenticated(true);
+        session.setIpAddress("same address, load balancer A");
+        session.setParticipant(participant);
+
+        Study study = TestUtils.getValidStudy(BaseControllerTest.class);
+        study.setParticipantIpLockingEnabled(false);
+
+        BaseController controller = setupForSessionTest(session, study);
+        doReturn("same address, load balancer B").when(controller).getRemoteAddress();
+
+        // Execute, should succeed
+        controller.getAuthenticatedSession(false);
+    }
+
     @Test(expected = NotAuthenticatedException.class)
     public void getSessionAuthenticatedAndConsentedFail() {
-        UserSession session = new UserSession(new StudyParticipant.Builder().build());
-        BaseController controller = setupForSessionTest(session);
-        
+        BaseController controller = setupForSessionTest(makeValidSession(),
+                TestUtils.getValidStudy(BaseControllerTest.class));
         controller.getAuthenticatedSession(true);
     }
     
     @Test
     public void getSessionAuthenticatedAndConsentedSucceed() {
-        UserSession session = new UserSession(new StudyParticipant.Builder().build());
+        UserSession session = makeValidSession();
         session.setConsentStatuses(getConsentStatusMap(true));
         session.setAuthenticated(true);
-        BaseController controller = setupForSessionTest(session);
+        BaseController controller = setupForSessionTest(session, TestUtils.getValidStudy(BaseControllerTest.class));
         
         UserSession returned = controller.getAuthenticatedSession(true);
         assertEquals(session, returned);
@@ -568,29 +655,33 @@ public class BaseControllerTest {
     
     @Test(expected = UnauthorizedException.class)
     public void getSessionWithRoleFail() {
-        UserSession session = new UserSession(new StudyParticipant.Builder().build());
+        UserSession session = makeValidSession();
         session.setAuthenticated(true);
-        BaseController controller = setupForSessionTest(session);
+        BaseController controller = setupForSessionTest(session, TestUtils.getValidStudy(BaseControllerTest.class));
         
         controller.getAuthenticatedSession(false, Roles.DEVELOPER);
     }
     
     @Test(expected = UnauthorizedException.class)
     public void getSessionWithWrongRoleFail() {
-        UserSession session = new UserSession(
-                new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.RESEARCHER)).build());
+        StudyParticipant participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.RESEARCHER))
+                .build();
+        UserSession session = makeValidSession();
         session.setAuthenticated(true);
-        BaseController controller = setupForSessionTest(session);
+        session.setParticipant(participant);
+        BaseController controller = setupForSessionTest(session, TestUtils.getValidStudy(BaseControllerTest.class));
         
         controller.getAuthenticatedSession(false, Roles.DEVELOPER);
     }
     
     @Test
     public void getSessionWithRoleSucceed() {
-        UserSession session = new UserSession(
-                new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.DEVELOPER)).build());
+        StudyParticipant participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.DEVELOPER))
+                .build();
+        UserSession session = makeValidSession();
         session.setAuthenticated(true);
-        BaseController controller = setupForSessionTest(session);
+        session.setParticipant(participant);
+        BaseController controller = setupForSessionTest(session, TestUtils.getValidStudy(BaseControllerTest.class));
         
         UserSession returned = controller.getAuthenticatedSession(false, Roles.DEVELOPER);
         assertEquals(session, returned);
@@ -599,10 +690,10 @@ public class BaseControllerTest {
     // In this scenario, a user without roles receives the consent required exception
     @Test(expected = ConsentRequiredException.class)
     public void getSessionWithNoRolesConsentedOrRoleFails() {
-        UserSession session = new UserSession(new StudyParticipant.Builder().build());
+        UserSession session = makeValidSession();
         session.setAuthenticated(true);
         
-        BaseController controller = setupForSessionTest(session);
+        BaseController controller = setupForSessionTest(session, TestUtils.getValidStudy(BaseControllerTest.class));
         
         controller.getAuthenticatedSession(true, Roles.DEVELOPER);
     }
@@ -610,36 +701,39 @@ public class BaseControllerTest {
     // In this scenario, a user with roles receives the UnauthorizedException
     @Test(expected = UnauthorizedException.class)
     public void getSessionWithNoConsentConsentedOrRoleFails() {
-        UserSession session = new UserSession(
-                new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.RESEARCHER)).build());
+        StudyParticipant participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.RESEARCHER))
+                .build();
+        UserSession session = makeValidSession();
         session.setAuthenticated(true);
-        
-        BaseController controller = setupForSessionTest(session);
+        session.setParticipant(participant);
+        BaseController controller = setupForSessionTest(session, TestUtils.getValidStudy(BaseControllerTest.class));
         
         controller.getAuthenticatedSession(true, Roles.DEVELOPER);
     }
     
     @Test
     public void getSessionWithConsentedUserNotInRoleSuccess() {
-        UserSession session = new UserSession(
-                new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.RESEARCHER)).build());
-        session.setConsentStatuses(getConsentStatusMap(true));
+        StudyParticipant participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.RESEARCHER))
+                .build();
+        UserSession session = makeValidSession();
         session.setAuthenticated(true);
-        
-        BaseController controller = setupForSessionTest(session);
-        
+        session.setConsentStatuses(getConsentStatusMap(true));
+        session.setParticipant(participant);
+        BaseController controller = setupForSessionTest(session, TestUtils.getValidStudy(BaseControllerTest.class));
+
         UserSession returned = controller.getAuthenticatedSession(true, Roles.DEVELOPER);
         assertEquals(session, returned);
     }
     
     @Test
     public void getSessionWithConsentedUserInRoleSuccess() {
-        UserSession session = new UserSession(
-                new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.DEVELOPER)).build());
-        session.setConsentStatuses(getConsentStatusMap(true));
+        StudyParticipant participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.DEVELOPER))
+                .build();
+        UserSession session = makeValidSession();
         session.setAuthenticated(true);
-        
-        BaseController controller = setupForSessionTest(session);
+        session.setConsentStatuses(getConsentStatusMap(true));
+        session.setParticipant(participant);
+        BaseController controller = setupForSessionTest(session, TestUtils.getValidStudy(BaseControllerTest.class));
         
         UserSession returned = controller.getAuthenticatedSession(true, Roles.DEVELOPER);
         assertEquals(session, returned);
@@ -761,23 +855,90 @@ public class BaseControllerTest {
     }
 
     @Test
+    public void getCriteriaContextForStudy() {
+        // Set up BaseController, spy out methods that are tested elsewhere.
+        BaseController controller = spy(new SchedulePlanController());
+        doReturn(LANGUAGE_SET).when(controller).getLanguagesFromAcceptLanguageHeader();
+        doReturn(CLIENTINFO).when(controller).getClientInfoFromUserAgentHeader();
+        doReturn(IP_ADDRESS).when(controller).getRemoteAddress();
+
+        // Execute and validate
+        CriteriaContext context = controller.getCriteriaContext(TEST_STUDY);
+        assertEquals(TEST_STUDY, context.getStudyIdentifier());
+        assertEquals(LANGUAGE_SET, context.getLanguages());
+        assertEquals(CLIENTINFO, context.getClientInfo());
+        assertEquals(IP_ADDRESS, context.getIpAddress());
+    }
+
+    @Test
+    public void getCriteriaContextForSession() {
+        // Set up BaseController, spy out methods that are tested elsewhere.
+        BaseController controller = spy(new SchedulePlanController());
+        doReturn(CLIENTINFO).when(controller).getClientInfoFromUserAgentHeader();
+
+        // Set up participant and session.
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID)
+                .withDataGroups(TestConstants.USER_DATA_GROUPS).withHealthCode(HEALTH_CODE).withLanguages(LANGUAGE_SET)
+                .build();
+
+        UserSession session = new UserSession(participant);
+        session.setIpAddress(IP_ADDRESS);
+        session.setStudyIdentifier(TEST_STUDY);
+
+        // Execute and validate
+        CriteriaContext context = controller.getCriteriaContext(session);
+        assertEquals(LANGUAGE_SET, context.getLanguages());
+        assertEquals(CLIENTINFO, context.getClientInfo());
+        assertEquals(HEALTH_CODE, context.getHealthCode());
+        assertEquals(IP_ADDRESS, context.getIpAddress());
+        assertEquals(USER_ID, context.getUserId());
+        assertEquals(TestConstants.USER_DATA_GROUPS, context.getUserDataGroups());
+        assertEquals(TEST_STUDY, context.getStudyIdentifier());
+    }
+
+    @Test
     public void testGetRequestId() throws Exception {
         mockHeader(BridgeConstants.X_REQUEST_ID_HEADER, "dummy-request-id");
         BaseController controller = new SchedulePlanController();
         assertEquals("dummy-request-id", controller.getRequestId());
     }
 
-    private BaseController setupForSessionTest(UserSession session) {
+    @Test
+    public void getRemoteAddressFromHeader() throws Exception {
+        mockHeader(BridgeConstants.X_FORWARDED_FOR_HEADER, IP_ADDRESS);
+        BaseController controller = new SchedulePlanController();
+        assertEquals(IP_ADDRESS, controller.getRemoteAddress());
+    }
+
+    @Test
+    public void getRemoteAddressFromFallback() throws Exception {
+        Http.Request mockRequest = mock(Http.Request.class);
+        when(mockRequest.remoteAddress()).thenReturn(IP_ADDRESS);
+        mockPlayContext(mockRequest);
+
+        BaseController controller = new SchedulePlanController();
+        assertEquals(IP_ADDRESS, controller.getRemoteAddress());
+    }
+
+    private BaseController setupForSessionTest(UserSession session, Study study) {
         BaseController controller = spy(new SchedulePlanController());
         doReturn(session).when(controller).getSessionIfItExists();
+        doReturn(null).when(controller).getRemoteAddress();
 
         StudyService studyService = mock(StudyService.class);
+        when(studyService.getStudy(TEST_STUDY)).thenReturn(study);
         controller.setStudyService(studyService);
         
         doNothing().when(controller).verifySupportedVersionOrThrowException(any());
         return controller;
     }
-    
+
+    private static UserSession makeValidSession() {
+        UserSession session = new UserSession();
+        session.setStudyIdentifier(TEST_STUDY);
+        return session;
+    }
+
     private Map<SubpopulationGuid,ConsentStatus> getConsentStatusMap(boolean consented) {
         return TestUtils.toMap(new ConsentStatus.Builder().withName("Name").withGuid(SubpopulationGuid.create("guid"))
                 .withConsented(consented).withSignedMostRecentConsent(consented).build());

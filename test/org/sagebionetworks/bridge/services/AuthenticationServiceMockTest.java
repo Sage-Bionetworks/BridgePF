@@ -3,7 +3,10 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.doReturn;
@@ -34,6 +37,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
@@ -76,7 +80,7 @@ import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AuthenticationServiceMockTest {
-    
+    private static final String IP_ADDRESS = "ip-address";
     private static final String SUPPORT_EMAIL = "support@support.com";
     private static final String STUDY_ID = TestConstants.TEST_STUDY_IDENTIFIER;
     private static final String RECIPIENT_EMAIL = "email@email.com";
@@ -848,5 +852,38 @@ public class AuthenticationServiceMockTest {
         service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
         
         verify(intentService, never()).registerIntentToParticipate(study, account);
+    }
+
+    // Most of the other behaviors are tested in other methods. This test specifically tests the session created has
+    // the correct attributes.
+    @Test
+    public void getSessionFromAccount() {
+        // Create inputs.
+        Study study = Study.create();
+        study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+
+        CriteriaContext context = new CriteriaContext.Builder().withIpAddress(IP_ADDRESS)
+                .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+
+        Account account = Account.create();
+        account.setId(USER_ID);
+        account.setReauthToken(REAUTH_TOKEN);
+
+        // Mock pre-reqs.
+        when(participantService.getParticipant(any(), any(Account.class), anyBoolean())).thenReturn(PARTICIPANT);
+        when(config.getEnvironment()).thenReturn(Environment.LOCAL);
+        when(consentService.getConsentStatuses(any(), any())).thenReturn(CONSENTED_STATUS_MAP);
+
+        // Execute and validate.
+        UserSession session = service.getSessionFromAccount(study, context, account);
+        assertSame(PARTICIPANT, session.getParticipant());
+        assertNotNull(session.getSessionToken());
+        assertNotNull(session.getInternalSessionToken());
+        assertTrue(session.isAuthenticated());
+        assertEquals(Environment.LOCAL, session.getEnvironment());
+        assertEquals(IP_ADDRESS, session.getIpAddress());
+        assertEquals(TestConstants.TEST_STUDY, session.getStudyIdentifier());
+        assertEquals(REAUTH_TOKEN, session.getReauthToken());
+        assertEquals(CONSENTED_STATUS_MAP, session.getConsentStatuses());
     }
 }
