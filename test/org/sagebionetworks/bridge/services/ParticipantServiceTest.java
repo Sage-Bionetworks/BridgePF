@@ -1420,6 +1420,22 @@ public class ParticipantServiceTest {
     }
     
     @Test
+    public void updatingBlankExternalIdFails() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .copyOf(PARTICIPANT)
+                .withExternalId("").build();
+        try {
+            participantService.updateParticipant(STUDY, CALLER_ROLES, participant);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            
+        }
+        verify(externalIdService, never()).assignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
+    }
+    
+    @Test
     public void changingManagedExternalIdIgnored() {
         mockHealthCodeAndAccountRetrieval();
         STUDY.setExternalIdValidationEnabled(true);

@@ -4,6 +4,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -71,12 +72,16 @@ public class StudyParticipantValidator implements Validator {
         // External ID can be updated during creation or on update. We validate it if IDs are 
         // managed. If it's already assigned to another user, the database constraints will 
         // prevent this record's persistence.
-        if (study.isExternalIdValidationEnabled() && participant.getExternalId() != null) {
+        if (study.isExternalIdValidationEnabled() && StringUtils.isNotBlank(participant.getExternalId())) {
             ExternalIdentifier externalId = externalIdService.getExternalId(study.getStudyIdentifier(),
                     participant.getExternalId());
             if (externalId == null) {
                 errors.rejectValue("externalId", "is not a valid external ID");
             }
+        }
+        // Never okay to have a blank external ID. It can produce errors later when querying for ext IDs
+        if (participant.getExternalId() != null && StringUtils.isBlank(participant.getExternalId())) {
+            errors.rejectValue("externalId", "cannot be blank");
         }
                 
         for (String dataGroup : participant.getDataGroups()) {
