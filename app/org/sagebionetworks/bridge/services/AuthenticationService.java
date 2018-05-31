@@ -339,7 +339,7 @@ public class AuthenticationService {
                     study, ImmutableSet.of(), participant, false).getIdentifier();
         } else {
             // Account exists, so rotate the password
-            accountDao.changePassword(account, password);
+            accountDao.changePassword(account, null, password);
             userId = account.getId();
         }
         // Return the password and the user ID in case the account was just created.

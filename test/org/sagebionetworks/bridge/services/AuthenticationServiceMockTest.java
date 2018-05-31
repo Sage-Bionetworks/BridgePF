@@ -721,7 +721,7 @@ public class AuthenticationServiceMockTest {
         assertEquals(EXTERNAL_ID, password.getExternalId());
         assertEquals(PASSWORD, password.getPassword());
         
-        verify(accountDao).changePassword(account, PASSWORD);
+        verify(accountDao).changePassword(account, null, PASSWORD);
     }
     
     @Test
