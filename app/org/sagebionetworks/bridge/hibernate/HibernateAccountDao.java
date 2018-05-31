@@ -57,6 +57,7 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.HealthCodeService;
+import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Joiner;
@@ -136,7 +137,7 @@ public class HibernateAccountDao implements AccountDao {
 
     /** {@inheritDoc} */
     @Override
-    public void changePassword(Account account, String newPassword) {
+    public void changePassword(Account account, ChannelType channelType, String newPassword) {
         String accountId = account.getId();
         PasswordAlgorithm passwordAlgorithm = PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
         
@@ -154,6 +155,13 @@ public class HibernateAccountDao implements AccountDao {
         hibernateAccount.setPasswordAlgorithm(passwordAlgorithm);
         hibernateAccount.setPasswordHash(passwordHash);
         hibernateAccount.setPasswordModifiedOn(modifiedOn);
+        // One of these (the channel used to reset the password) is also verified by resetting the password.
+        if (channelType == ChannelType.EMAIL) {
+            hibernateAccount.setEmailVerified(true);    
+        }
+        if (channelType == ChannelType.PHONE) {
+            hibernateAccount.setPhoneVerified(true);    
+        }
         hibernateHelper.update(hibernateAccount);
     }
 

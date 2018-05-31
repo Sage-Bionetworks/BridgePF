@@ -873,22 +873,21 @@ public class AccountWorkflowServiceTest {
         
         verify(mockCacheProvider).getObject(PASSWORD_RESET_FOR_EMAIL, String.class);
         verify(mockCacheProvider).removeObject(PASSWORD_RESET_FOR_EMAIL);
-        verify(mockAccountDao).changePassword(mockAccount, "newPassword");
+        verify(mockAccountDao).changePassword(mockAccount, ChannelType.EMAIL, "newPassword");
     }
     
     @Test
     public void resetPasswordWithPhone() throws Exception {
-        String phoneJson = BridgeObjectMapper.get().writeValueAsString(TestConstants.PHONE);
-        when(mockCacheProvider.getObject(PASSWORD_RESET_FOR_PHONE, String.class)).thenReturn(phoneJson);
+        when(mockCacheProvider.getObject(PASSWORD_RESET_FOR_PHONE, Phone.class)).thenReturn(TestConstants.PHONE);
         when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
 
         PasswordReset passwordReset = new PasswordReset("newPassword", SPTOKEN, TEST_STUDY_IDENTIFIER);
         service.resetPassword(passwordReset);
         
-        verify(mockCacheProvider).getObject(PASSWORD_RESET_FOR_PHONE, String.class);
+        verify(mockCacheProvider).getObject(PASSWORD_RESET_FOR_PHONE, Phone.class);
         verify(mockCacheProvider).removeObject(PASSWORD_RESET_FOR_PHONE);
-        verify(mockAccountDao).changePassword(mockAccount, "newPassword");
+        verify(mockAccountDao).changePassword(mockAccount, ChannelType.PHONE, "newPassword");
     }
     
     @Test
@@ -904,7 +903,7 @@ public class AccountWorkflowServiceTest {
         }
         verify(mockCacheProvider).getObject(PASSWORD_RESET_FOR_EMAIL, String.class);
         verify(mockCacheProvider, never()).removeObject(any());
-        verify(mockAccountDao, never()).changePassword(any(), any());
+        verify(mockAccountDao, never()).changePassword(any(), any(ChannelType.class), any());
     }
     
     @Test
@@ -924,7 +923,7 @@ public class AccountWorkflowServiceTest {
         }
         verify(mockCacheProvider).getObject(PASSWORD_RESET_FOR_EMAIL, String.class);
         verify(mockCacheProvider).removeObject(PASSWORD_RESET_FOR_EMAIL);
-        verify(mockAccountDao, never()).changePassword(any(), any());
+        verify(mockAccountDao, never()).changePassword(any(), any(ChannelType.class), any());
     }
     
     @Test

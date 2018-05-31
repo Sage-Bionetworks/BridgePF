@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.AuthenticationService;
+import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 /**
  * DAO to retrieve personally identifiable account information, including authentication 
@@ -30,9 +31,11 @@ public interface AccountDao {
     void verifyChannel(AuthenticationService.ChannelType channelType, Account account);
     
     /**
-     * Call to change a password without a password reset workflow.
+     * Call to change a password, possibly verifying the channel used to reset the password. The channel 
+     * type (which is optional, and can be null) is the channel that has been verified through the act 
+     * of successfully resetting the password (sometimes there is no channel that is verified). 
      */
-    void changePassword(Account account, String newPassword);
+    void changePassword(Account account, ChannelType channelType, String newPassword);
     
     /**
      * Authenticate a user with the supplied credentials, returning that user's account record

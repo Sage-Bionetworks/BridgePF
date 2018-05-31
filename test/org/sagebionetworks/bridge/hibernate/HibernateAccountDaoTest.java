@@ -354,7 +354,7 @@ public class HibernateAccountDaoTest {
         account.setId(ACCOUNT_ID);
 
         // execute and verify
-        dao.changePassword(account, DUMMY_PASSWORD);
+        dao.changePassword(account, ChannelType.EMAIL, DUMMY_PASSWORD);
         ArgumentCaptor<HibernateAccount> updatedAccountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
         verify(mockHibernateHelper).update(updatedAccountCaptor.capture());
 
@@ -363,12 +363,36 @@ public class HibernateAccountDaoTest {
         assertEquals(MOCK_NOW_MILLIS, updatedAccount.getModifiedOn().longValue());
         assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, updatedAccount.getPasswordAlgorithm());
         assertEquals(MOCK_NOW_MILLIS, updatedAccount.getPasswordModifiedOn().longValue());
+        assertTrue(updatedAccount.getEmailVerified());
+        assertNull(updatedAccount.getPhoneVerified());
 
         // validate password hash
         assertTrue(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM.checkHash(updatedAccount.getPasswordHash(),
                 DUMMY_PASSWORD));
     }
 
+    @Test
+    public void changePasswordForPhone() throws Exception {
+        // mock hibernate
+        HibernateAccount hibernateAccount = new HibernateAccount();
+        hibernateAccount.setId(ACCOUNT_ID);
+        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
+
+        // Set up test account
+        GenericAccount account = new GenericAccount();
+        account.setId(ACCOUNT_ID);
+
+        // execute and verify
+        dao.changePassword(account, ChannelType.PHONE, DUMMY_PASSWORD);
+        ArgumentCaptor<HibernateAccount> updatedAccountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
+        verify(mockHibernateHelper).update(updatedAccountCaptor.capture());
+
+        // Simpler than changePasswordSuccess() test as we're only verifying phone is verified
+        HibernateAccount updatedAccount = updatedAccountCaptor.getValue();
+        assertNull(updatedAccount.getEmailVerified());
+        assertTrue(updatedAccount.getPhoneVerified());
+    }
+    
     @Test(expected = EntityNotFoundException.class)
     public void changePasswordAccountNotFound() {
         // mock hibernate
@@ -379,7 +403,7 @@ public class HibernateAccountDaoTest {
         account.setId(ACCOUNT_ID);
 
         // execute
-        dao.changePassword(account, DUMMY_PASSWORD);
+        dao.changePassword(account, ChannelType.EMAIL, DUMMY_PASSWORD);
     }
 
     @Test

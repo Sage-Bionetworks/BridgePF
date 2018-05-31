@@ -428,19 +428,22 @@ public class AccountWorkflowService {
         CacheKey phoneCacheKey = CacheKey.passwordResetForPhone(passwordReset.getSptoken(), passwordReset.getStudyIdentifier());
         
         String email = cacheProvider.getObject(emailCacheKey, String.class);
-        String phoneJson = cacheProvider.getObject(phoneCacheKey, String.class);
-        if (email == null && phoneJson == null) {
+        Phone phone = cacheProvider.getObject(phoneCacheKey, Phone.class);
+        if (email == null && phone == null) {
             throw new BadRequestException(PASSWORD_RESET_TOKEN_EXPIRED);
         }
         cacheProvider.removeObject(emailCacheKey);
         cacheProvider.removeObject(phoneCacheKey);
         
         Study study = studyService.getStudy(passwordReset.getStudyIdentifier());
+        ChannelType channelType = null;
         AccountId accountId = null;
         if (email != null) {
             accountId = AccountId.forEmail(study.getIdentifier(), email);
-        } else if (phoneJson != null) {
-            accountId = AccountId.forPhone(study.getIdentifier(), getPhone(phoneJson));
+            channelType = ChannelType.EMAIL;
+        } else if (phone != null) {
+            accountId = AccountId.forPhone(study.getIdentifier(), phone);
+            channelType = ChannelType.PHONE;
         } else {
             throw new BridgeServiceException("Could not reset password");
         }
@@ -448,7 +451,7 @@ public class AccountWorkflowService {
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        accountDao.changePassword(account, passwordReset.getPassword());
+        accountDao.changePassword(account, channelType, passwordReset.getPassword());
     }
     
     /**
@@ -624,14 +627,6 @@ public class AccountWorkflowService {
         try {
             return BridgeObjectMapper.get().writeValueAsString(phone);
         } catch (JsonProcessingException e) {
-            throw new BridgeServiceException(e);
-        }
-    }
-    
-    private Phone getPhone(String json) {
-        try {
-            return BridgeObjectMapper.get().readValue(json, Phone.class);
-        } catch (IOException e) {
             throw new BridgeServiceException(e);
         }
     }
