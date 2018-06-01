@@ -33,6 +33,7 @@ import org.joda.time.DateTimeZone;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -2065,6 +2066,7 @@ public class HibernateAccountDaoTest {
     }
     
     @Test(expected = UnauthorizedException.class)
+    @Ignore // BRIDGE-2213
     public void authenticateAccountUnverifiedEmailFails() throws Exception {
         HibernateAccount hibernateAccount = makeValidHibernateAccount(true, true);
         hibernateAccount.setEmailVerified(false);
@@ -2077,6 +2079,7 @@ public class HibernateAccountDaoTest {
     }
     
     @Test(expected = UnauthorizedException.class)
+    @Ignore // BRIDGE-2213
     public void authenticateAccountUnverifiedPhoneFails() throws Exception {
         HibernateAccount hibernateAccount = makeValidHibernateAccount(true, true);
         hibernateAccount.setPhoneVerified(null);
