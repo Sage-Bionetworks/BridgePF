@@ -66,6 +66,7 @@ public class DefaultStudyBootstrapper {
             study.setUserProfileAttributes(Sets.newHashSet("can_be_recontacted"));
             study.setPasswordPolicy(new PasswordPolicy(2, false, false, false, false));
             study.setEmailVerificationEnabled(true);
+            study.setVerifyChannelOnSignInEnabled(true);
             studyService.createStudy(study);
         }
 
@@ -83,6 +84,7 @@ public class DefaultStudyBootstrapper {
             study.setConsentNotificationEmail("bridgeit@sagebridge.org");
             study.setPasswordPolicy(new PasswordPolicy(2, false, false, false, false));
             study.setEmailVerificationEnabled(true);
+            study.setVerifyChannelOnSignInEnabled(true);
             studyService.createStudy(study);
         }
     }

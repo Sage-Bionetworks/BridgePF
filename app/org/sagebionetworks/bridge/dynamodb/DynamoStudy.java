@@ -101,6 +101,7 @@ public final class DynamoStudy implements Study {
     private boolean externalIdRequiredOnSignup;
     private boolean reauthenticationEnabled;
     private boolean autoVerificationPhoneSuppressed;
+    private boolean verifyChannelOnSignInEnabled;
     private Map<String, Integer> minSupportedAppVersions;
     private Map<String, String> pushNotificationARNs;
     private Map<String, String> installLinks;
@@ -222,6 +223,18 @@ public final class DynamoStudy implements Study {
     @Override
     public void setParticipantIpLockingEnabled(boolean participantIpLockingEnabled) {
         this.participantIpLockingEnabled = participantIpLockingEnabled;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public boolean isVerifyChannelOnSignInEnabled() {
+        return verifyChannelOnSignInEnabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setVerifyChannelOnSignInEnabled(boolean verifyChannelOnSignInEnabled) {
+        this.verifyChannelOnSignInEnabled = verifyChannelOnSignInEnabled;
     }
 
     /** {@inheritDoc} */
@@ -757,7 +770,7 @@ public final class DynamoStudy implements Study {
                 minSupportedAppVersions, pushNotificationARNs, installLinks, disableExport, oauthProviders,
                 appleAppLinks, androidAppLinks, reauthenticationEnabled, resetPasswordSmsTemplate,
                 phoneSignInSmsTemplate, appInstallLinkSmsTemplate, verifyPhoneSmsTemplate, accountExistsSmsTemplate,
-                autoVerificationPhoneSuppressed, signedConsentTemplate, signedConsentSmsTemplate);
+                autoVerificationPhoneSuppressed, signedConsentTemplate, signedConsentSmsTemplate, verifyChannelOnSignInEnabled);
     }
 
     @Override
@@ -820,7 +833,8 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(accountExistsSmsTemplate, other.accountExistsSmsTemplate)
                 && Objects.equals(autoVerificationPhoneSuppressed, other.autoVerificationPhoneSuppressed)
                 && Objects.equals(signedConsentTemplate, other.signedConsentTemplate)
-                && Objects.equals(signedConsentSmsTemplate, other.signedConsentSmsTemplate);
+                && Objects.equals(signedConsentSmsTemplate, other.signedConsentSmsTemplate)
+                && Objects.equals(verifyChannelOnSignInEnabled,  other.verifyChannelOnSignInEnabled);
     }
 
     @Override
@@ -839,7 +853,7 @@ public final class DynamoStudy implements Study {
                         + "oauthProviders=%s, appleAppLinks=%s, androidAppLinks=%s, reauthenticationEnabled=%s, "
                         + "resetPasswordSmsTemplate=%s, phoneSignInSmsTemplate=%s, appInstallLinkSmsTemplate=%s, "
                         + "verifyPhoneSmsTemplate=%s, accountExistsSmsTemplate=%s, autoVerificationPhoneSuppressed=%s, "
-                        + "signedConsentTemplate=%s, signedConsentSmsTemplate=%s",
+                        + "signedConsentTemplate=%s, signedConsentSmsTemplate=%s, verifyChannelOnSignInEnabled=%s",
                 name, shortName, active, sponsorName, identifier, automaticCustomEvents,
                 autoVerificationEmailSuppressed, minAgeOfConsent, participantIpLockingEnabled, studyIdExcludedInExport, supportEmail,
                 synapseDataAccessTeamId, synapseProjectId, technicalEmail, uploadValidationStrictness,
@@ -851,6 +865,6 @@ public final class DynamoStudy implements Study {
                 emailSignInEnabled, phoneSignInEnabled, accountLimit, oauthProviders, appleAppLinks, androidAppLinks,
                 reauthenticationEnabled, resetPasswordSmsTemplate, phoneSignInSmsTemplate, appInstallLinkSmsTemplate,
                 verifyPhoneSmsTemplate, accountExistsSmsTemplate, autoVerificationPhoneSuppressed,
-                signedConsentTemplate, signedConsentSmsTemplate);
+                signedConsentTemplate, signedConsentSmsTemplate, verifyChannelOnSignInEnabled);
     }
 }

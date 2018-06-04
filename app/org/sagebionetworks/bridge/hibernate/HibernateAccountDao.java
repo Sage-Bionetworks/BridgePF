@@ -197,13 +197,13 @@ public class HibernateAccountDao implements AccountDao {
             throw new UnauthorizedException("Email or phone number have not been verified");
         } else if (hibernateAccount.getStatus() == AccountStatus.DISABLED) {
             throw new AccountDisabledException();
-        /* BRIDGE-2213: Temporarily disabled until we can put this behind a study flag
-        } else if (signIn.getPhone() != null && !Boolean.TRUE.equals(hibernateAccount.getPhoneVerified())) {
-            throw new UnauthorizedException("Phone number has not been verified");
-        } else if (study.isEmailVerificationEnabled() && 
-                signIn.getEmail() != null && !Boolean.TRUE.equals(hibernateAccount.getEmailVerified())) {
-            throw new UnauthorizedException("Email has not been verified");
-        */
+        } else if (study.isVerifyChannelOnSignInEnabled()) {
+            if (signIn.getPhone() != null && !Boolean.TRUE.equals(hibernateAccount.getPhoneVerified())) {
+                throw new UnauthorizedException("Phone number has not been verified");
+            } else if (study.isEmailVerificationEnabled() && 
+                    signIn.getEmail() != null && !Boolean.TRUE.equals(hibernateAccount.getEmailVerified())) {
+                throw new UnauthorizedException("Email has not been verified");
+            }
         }
         
         // Unmarshall account

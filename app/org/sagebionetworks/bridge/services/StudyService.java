@@ -421,6 +421,8 @@ public class StudyService {
         study.setActive(true);
         study.setConsentNotificationEmailVerified(false);
         study.setStudyIdExcludedInExport(true);
+        study.setVerifyChannelOnSignInEnabled(true);
+        study.setEmailVerificationEnabled(true);
         study.getDataGroups().add(BridgeConstants.TEST_USER_GROUP);
         setDefaultsIfAbsent(study);
         sanitizeHTML(study);
@@ -569,6 +571,7 @@ public class StudyService {
             study.setReauthenticationEnabled(originalStudy.isReauthenticationEnabled());
             study.setAccountLimit(originalStudy.getAccountLimit());
             study.setStudyIdExcludedInExport(originalStudy.isStudyIdExcludedInExport());
+            study.setVerifyChannelOnSignInEnabled(originalStudy.isVerifyChannelOnSignInEnabled());
         }
 
         // prevent anyone changing active to false -- it should be done by deactivateStudy() method
