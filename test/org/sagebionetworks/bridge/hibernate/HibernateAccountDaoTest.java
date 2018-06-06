@@ -33,7 +33,6 @@ import org.joda.time.DateTimeZone;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -2065,9 +2064,7 @@ public class HibernateAccountDaoTest {
         assertTrue(query.contains(":notin2 not in elements(acct.dataGroups)"));
     }
     
-    @Test(expected = UnauthorizedException.class)
-    @Ignore // BRIDGE-2213
-    public void authenticateAccountUnverifiedEmailFails() throws Exception {
+    public void authenticateAccountUnverifiedEmailSucceedsForLegacy() throws Exception {
         HibernateAccount hibernateAccount = makeValidHibernateAccount(true, true);
         hibernateAccount.setEmailVerified(false);
         
@@ -2079,8 +2076,38 @@ public class HibernateAccountDaoTest {
     }
     
     @Test(expected = UnauthorizedException.class)
-    @Ignore // BRIDGE-2213
+    public void authenticateAccountUnverifiedEmailFails() throws Exception {
+        study.setVerifyChannelOnSignInEnabled(true);
+        
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(true, true);
+        hibernateAccount.setEmailVerified(false);
+        
+        // mock hibernate
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
+                .thenReturn(ImmutableList.of(hibernateAccount));
+
+        dao.authenticate(study, PASSWORD_SIGNIN);
+    }
+    
+    public void authenticateAccountUnverifiedPhoneSucceedsForLegacy() throws Exception {
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(true, true);
+        hibernateAccount.setPhoneVerified(null);
+        
+        // mock hibernate
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
+                .thenReturn(ImmutableList.of(hibernateAccount));
+
+        // execute and verify - Verify just ID, study, and email, and health code mapping is enough.
+        SignIn phoneSignIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withPhone(PHONE).withPassword(DUMMY_PASSWORD).build();
+        
+        dao.authenticate(study, phoneSignIn);
+    }
+    
+    @Test(expected = UnauthorizedException.class)
     public void authenticateAccountUnverifiedPhoneFails() throws Exception {
+        study.setVerifyChannelOnSignInEnabled(true);
+        
         HibernateAccount hibernateAccount = makeValidHibernateAccount(true, true);
         hibernateAccount.setPhoneVerified(null);
         

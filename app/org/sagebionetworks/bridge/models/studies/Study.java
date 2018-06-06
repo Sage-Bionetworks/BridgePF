@@ -102,6 +102,15 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     void setParticipantIpLockingEnabled(boolean participantIpLockingEnabled);
 
     /**
+     * If true, the channel (email or phone number) used to sign in will be checked and must be verified
+     * for sign in to succeed. This is false for legacy studies but set to true for newer studies. 
+     */
+    boolean isVerifyChannelOnSignInEnabled();
+    
+    /** @see #isVerifyChannelOnSignInEnabled */
+    void setVerifyChannelOnSignInEnabled(boolean verifyChannelOnSignInEnabled);
+    
+    /**
      * True if we create and return a reauthentication token in the session that can be used to reauthenticate 
      * without a password. False otherwise.
      */

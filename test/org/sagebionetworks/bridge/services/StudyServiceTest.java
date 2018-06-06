@@ -340,6 +340,7 @@ public class StudyServiceTest {
         study.setPhoneSignInEnabled(false);
         study.setReauthenticationEnabled(false);
         study.setAccountLimit(0);
+        study.setVerifyChannelOnSignInEnabled(false);
         
         study = studyService.createStudy(study);
         study = studyService.getStudy(study.getIdentifier());
@@ -356,6 +357,7 @@ public class StudyServiceTest {
         // These values have all successfully been changed from the defaults
         assertFalse(study.isStudyIdExcludedInExport());
         assertFalse(study.isEmailVerificationEnabled());
+        assertFalse(study.isVerifyChannelOnSignInEnabled());
         assertTrue(study.isAutoVerificationPhoneSuppressed());
         assertTrue(study.isExternalIdValidationEnabled());
         assertTrue(study.isExternalIdRequiredOnSignup());
@@ -368,6 +370,7 @@ public class StudyServiceTest {
     private void assertStudyDefaults(Study study) {
         assertTrue(study.isStudyIdExcludedInExport());
         assertTrue(study.isEmailVerificationEnabled());
+        assertTrue(study.isVerifyChannelOnSignInEnabled());
         assertFalse(study.isExternalIdValidationEnabled());
         assertFalse(study.isExternalIdRequiredOnSignup());
         assertFalse(study.isEmailSignInEnabled());
@@ -379,6 +382,7 @@ public class StudyServiceTest {
     private void changeStudyDefaults(Study study) {
         study.setStudyIdExcludedInExport(false);
         study.setEmailVerificationEnabled(false);
+        study.setVerifyChannelOnSignInEnabled(false);
         study.setExternalIdValidationEnabled(true);
         study.setExternalIdRequiredOnSignup(true);
         study.setEmailSignInEnabled(true);

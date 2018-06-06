@@ -161,6 +161,7 @@ public class DynamoStudyTest {
         assertTrue(node.get("emailSignInEnabled").asBoolean());
         assertTrue(node.get("reauthenticationEnabled").booleanValue());
         assertTrue(node.get("autoVerificationPhoneSuppressed").booleanValue());
+        assertTrue(node.get("verifyChannelOnSignInEnabled").booleanValue());
         assertEquals(0, node.get("accountLimit").asInt());
         assertFalse(node.get("disableExport").asBoolean());
         assertEqualsAndNotNull("Study", node.get("type").asText());
