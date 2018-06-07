@@ -170,4 +170,13 @@ public class IdentifierUpdateValidatorTest {
         IdentifierUpdate update = new IdentifierUpdate(signIn, null, null, UPDATED_EXTERNAL_ID);
         assertValidatorMessage(validator, update, "externalIdUpdate", "is not a valid external ID");
     }
+    
+    @Test
+    public void externalIdCannotBeBlank() {
+        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withEmail(TestConstants.EMAIL).withReauthToken("asdf").build();
+        
+        IdentifierUpdate update = new IdentifierUpdate(signIn, null, null, "");
+        assertValidatorMessage(validator, update, "externalIdUpdate", "cannot be blank");
+    }
 }
