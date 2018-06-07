@@ -284,14 +284,14 @@ public class AuthenticationService {
         }
     }
     
-    public void requestResetPassword(Study study, SignIn signIn) throws BridgeServiceException {
+    public void requestResetPassword(Study study, boolean isStudyAdmin, SignIn signIn) throws BridgeServiceException {
         checkNotNull(study);
         checkNotNull(signIn);
         
         // validate the data in signIn, then convert it to an account ID which we know will be valid.
         Validate.entityThrowingException(SignInValidator.REQUEST_RESET_PASSWORD, signIn);
         try {
-            accountWorkflowService.requestResetPassword(study, signIn.getAccountId());    
+            accountWorkflowService.requestResetPassword(study, isStudyAdmin, signIn.getAccountId());    
         } catch(EntityNotFoundException e) {
             // Suppress this. Otherwise it reveals if the account does not exist
             LOG.info("Request reset password request for unregistered email in study '"+signIn.getStudyId()+"'");
