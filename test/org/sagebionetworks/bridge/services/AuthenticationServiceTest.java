@@ -230,13 +230,13 @@ public class AuthenticationServiceTest {
 
     @Test(expected = NullPointerException.class)
     public void requestPasswordResetFailsOnNull() throws Exception {
-        authService.requestResetPassword(study, false, null);
+        authService.requestResetPassword(study, null);
     }
 
     @Test(expected = InvalidEntityException.class)
     public void requestPasswordResetFailsOnEmptyString() throws Exception {
         SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).build();
-        authService.requestResetPassword(study, false, signIn);
+        authService.requestResetPassword(study, signIn);
     }
     
     @Test(expected = BadRequestException.class)
@@ -386,7 +386,7 @@ public class AuthenticationServiceTest {
     public void requestResetPasswordLooksSuccessfulWhenNoAccount() throws Exception {
         SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).withEmail("notarealaccount@sagebase.org")
                 .build();
-        authService.requestResetPassword(study, false, signIn);
+        authService.requestResetPassword(study, signIn);
     }
     
     // Consent statuses passed on to sessionInfo

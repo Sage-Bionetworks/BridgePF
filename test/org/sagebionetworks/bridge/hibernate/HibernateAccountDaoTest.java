@@ -347,7 +347,6 @@ public class HibernateAccountDaoTest {
         // mock hibernate
         HibernateAccount hibernateAccount = new HibernateAccount();
         hibernateAccount.setId(ACCOUNT_ID);
-        hibernateAccount.setStatus(AccountStatus.UNVERIFIED);
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
 
         // Set up test account
@@ -366,7 +365,6 @@ public class HibernateAccountDaoTest {
         assertEquals(MOCK_NOW_MILLIS, updatedAccount.getPasswordModifiedOn().longValue());
         assertTrue(updatedAccount.getEmailVerified());
         assertNull(updatedAccount.getPhoneVerified());
-        assertEquals(AccountStatus.ENABLED, updatedAccount.getStatus());
 
         // validate password hash
         assertTrue(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM.checkHash(updatedAccount.getPasswordHash(),
@@ -378,7 +376,6 @@ public class HibernateAccountDaoTest {
         // mock hibernate
         HibernateAccount hibernateAccount = new HibernateAccount();
         hibernateAccount.setId(ACCOUNT_ID);
-        hibernateAccount.setStatus(AccountStatus.UNVERIFIED);
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
 
         // Set up test account
@@ -394,7 +391,6 @@ public class HibernateAccountDaoTest {
         HibernateAccount updatedAccount = updatedAccountCaptor.getValue();
         assertNull(updatedAccount.getEmailVerified());
         assertTrue(updatedAccount.getPhoneVerified());
-        assertEquals(AccountStatus.ENABLED, updatedAccount.getStatus());
     }
     
     @Test(expected = EntityNotFoundException.class)

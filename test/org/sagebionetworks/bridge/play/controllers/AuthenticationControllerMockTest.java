@@ -745,7 +745,7 @@ public class AuthenticationControllerMockTest {
         
         controller.requestResetPassword();
         
-        verify(authenticationService).requestResetPassword(eq(study), eq(false), signInCaptor.capture());
+        verify(authenticationService).requestResetPassword(eq(study), signInCaptor.capture());
         SignIn deser = signInCaptor.getValue();
         assertEquals(TEST_STUDY_ID_STRING, deser.getStudyId());
         assertEquals(TEST_EMAIL, deser.getEmail());
@@ -758,7 +758,7 @@ public class AuthenticationControllerMockTest {
         
         controller.requestResetPassword();
         
-        verify(authenticationService).requestResetPassword(eq(study), eq(false), signInCaptor.capture());
+        verify(authenticationService).requestResetPassword(eq(study), signInCaptor.capture());
         SignIn deser = signInCaptor.getValue();
         assertEquals(TEST_STUDY_ID_STRING, deser.getStudyId());
         assertEquals(TestConstants.PHONE.getNumber(), deser.getPhone().getNumber());

@@ -46,7 +46,6 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -748,7 +747,7 @@ public class AccountWorkflowServiceTest {
         when(mockAccount.getEmailVerified()).thenReturn(Boolean.TRUE);        
         when(mockAccount.getStudyIdentifier()).thenReturn(TEST_STUDY);
         
-        service.requestResetPassword(study, false, ACCOUNT_ID_WITH_EMAIL);
+        service.requestResetPassword(study, ACCOUNT_ID_WITH_EMAIL);
         
         verify(mockCacheProvider).setObject(PASSWORD_RESET_FOR_EMAIL, EMAIL, 60*60*2);
         verify(mockSendMailService).sendEmail(emailProviderCaptor.capture());
@@ -778,7 +777,7 @@ public class AccountWorkflowServiceTest {
         when(mockAccount.getPhoneVerified()).thenReturn(Boolean.TRUE);        
         when(mockAccount.getStudyIdentifier()).thenReturn(TEST_STUDY);
         
-        service.requestResetPassword(study, false, ACCOUNT_ID_WITH_PHONE);
+        service.requestResetPassword(study, ACCOUNT_ID_WITH_PHONE);
         
         verify(mockCacheProvider).setObject(eq(PASSWORD_RESET_FOR_PHONE), stringCaptor.capture(), eq(60*60*2));
         verify(mockNotificationsService).sendSmsMessage(smsMessageProviderCaptor.capture());
@@ -803,7 +802,7 @@ public class AccountWorkflowServiceTest {
         when(mockAccount.getEmailVerified()).thenReturn(Boolean.FALSE);
         when(mockAccount.getStudyIdentifier()).thenReturn(TEST_STUDY);
 
-        service.requestResetPassword(study, false, ACCOUNT_ID_WITH_PHONE);
+        service.requestResetPassword(study, ACCOUNT_ID_WITH_PHONE);
         
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
         verify(mockNotificationsService, never()).sendSmsMessage(any());
@@ -818,7 +817,7 @@ public class AccountWorkflowServiceTest {
         when(mockAccount.getEmailVerified()).thenReturn(Boolean.FALSE);
         when(mockAccount.getStudyIdentifier()).thenReturn(TEST_STUDY);
         
-        service.requestResetPassword(study, false, ACCOUNT_ID_WITH_PHONE);
+        service.requestResetPassword(study, ACCOUNT_ID_WITH_PHONE);
         
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
         verify(mockNotificationsService, never()).sendSmsMessage(any());
@@ -830,7 +829,7 @@ public class AccountWorkflowServiceTest {
         when(service.getNextToken()).thenReturn(TOKEN);
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(null);
         
-        service.requestResetPassword(study, false, ACCOUNT_ID_WITH_EMAIL);
+        service.requestResetPassword(study, ACCOUNT_ID_WITH_EMAIL);
         
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
         verify(mockSendMailService, never()).sendEmail(any());
@@ -843,7 +842,7 @@ public class AccountWorkflowServiceTest {
         when(mockAccount.getEmail()).thenReturn(EMAIL);
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(mockAccount);
         
-        service.requestResetPassword(study, false, ACCOUNT_ID_WITH_EMAIL);
+        service.requestResetPassword(study, ACCOUNT_ID_WITH_EMAIL);
         
         verifyNoMoreInteractions(mockSendMailService);
         verifyNoMoreInteractions(mockNotificationsService);
@@ -856,52 +855,10 @@ public class AccountWorkflowServiceTest {
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
         
-        service.requestResetPassword(study, false, ACCOUNT_ID_WITH_PHONE);
+        service.requestResetPassword(study, ACCOUNT_ID_WITH_PHONE);
         
         verifyNoMoreInteractions(mockSendMailService);
         verifyNoMoreInteractions(mockNotificationsService);
-        verifyNoMoreInteractions(mockCacheProvider);
-    }
-    
-    @Test
-    public void requestResetPasswordByAdminDoesNotRequireEmailVerification() throws Exception {
-        when(service.getNextToken()).thenReturn(SPTOKEN);
-        when(mockAccount.getEmail()).thenReturn(EMAIL);
-        when(mockAccount.getEmailVerified()).thenReturn(false);
-        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
-        
-        service.requestResetPassword(study, true, ACCOUNT_ID_WITH_PHONE);
-        
-        verify(mockCacheProvider).setObject(PASSWORD_RESET_FOR_EMAIL, EMAIL, 60*60*2);
-        verify(mockSendMailService).sendEmail(any());
-    }
-    
-    @Test
-    public void requestResetPasswordByAdminDoesNotRequirePhoneVerification() throws Exception {
-        when(service.getNextToken()).thenReturn(SPTOKEN);
-        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
-        when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
-        when(mockAccount.getPhoneVerified()).thenReturn(false);        
-        
-        service.requestResetPassword(study, true, ACCOUNT_ID_WITH_PHONE);
-        
-        verify(mockCacheProvider).setObject(eq(PASSWORD_RESET_FOR_PHONE), stringCaptor.capture(), eq(60*60*2));
-        verify(mockNotificationsService).sendSmsMessage(any());
-    }
-    
-    @Test
-    public void requestResetPasswordQuietlyFailsForDisabledAccount() throws Exception {
-        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
-        when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
-        when(mockAccount.getPhoneVerified()).thenReturn(Boolean.TRUE);
-        when(mockAccount.getEmailVerified()).thenReturn(Boolean.TRUE);
-        when(mockAccount.getStudyIdentifier()).thenReturn(TEST_STUDY);
-        when(mockAccount.getStatus()).thenReturn(AccountStatus.DISABLED);
-        
-        service.requestResetPassword(study, false, ACCOUNT_ID_WITH_PHONE);
-        
-        verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
-        verify(mockNotificationsService, never()).sendSmsMessage(any());
         verifyNoMoreInteractions(mockCacheProvider);
     }
     
