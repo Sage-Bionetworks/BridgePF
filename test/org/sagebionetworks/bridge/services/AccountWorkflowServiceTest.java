@@ -46,6 +46,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -886,6 +887,22 @@ public class AccountWorkflowServiceTest {
         
         verify(mockCacheProvider).setObject(eq(PASSWORD_RESET_FOR_PHONE), stringCaptor.capture(), eq(60*60*2));
         verify(mockNotificationsService).sendSmsMessage(any());
+    }
+    
+    @Test
+    public void requestResetPasswordQuietlyFailsForDisabledAccount() throws Exception {
+        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
+        when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
+        when(mockAccount.getPhoneVerified()).thenReturn(Boolean.TRUE);
+        when(mockAccount.getEmailVerified()).thenReturn(Boolean.TRUE);
+        when(mockAccount.getStudyIdentifier()).thenReturn(TEST_STUDY);
+        when(mockAccount.getStatus()).thenReturn(AccountStatus.DISABLED);
+        
+        service.requestResetPassword(study, false, ACCOUNT_ID_WITH_PHONE);
+        
+        verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
+        verify(mockNotificationsService, never()).sendSmsMessage(any());
+        verifyNoMoreInteractions(mockCacheProvider);
     }
     
     @Test

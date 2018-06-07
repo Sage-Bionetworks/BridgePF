@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+import org.apache.shiro.authc.DisabledAccountException;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -31,6 +32,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -340,12 +342,16 @@ public class AccountWorkflowService {
         
         Account account = accountDao.getAccount(accountId);
         if (account != null) {
-            boolean emailVerified = isStudyAdmin || Boolean.TRUE.equals(account.getEmailVerified());
-            boolean phoneVerified = isStudyAdmin || Boolean.TRUE.equals(account.getPhoneVerified());
-            if (account.getEmail() != null && emailVerified) {
-                sendPasswordResetRelatedEmail(study, account.getEmail(), false, study.getResetPasswordTemplate());
-            } else if (account.getPhone() != null && phoneVerified) {
-                sendPasswordResetRelatedSMS(study, account.getPhone(), false, study.getResetPasswordSmsTemplate());
+            // We are going to change the status of the account if this succeeds, so we must also
+            // ignore disabled accounts.
+            if (account.getStatus() != AccountStatus.DISABLED) {
+                boolean emailVerified = isStudyAdmin || Boolean.TRUE.equals(account.getEmailVerified());
+                boolean phoneVerified = isStudyAdmin || Boolean.TRUE.equals(account.getPhoneVerified());
+                if (account.getEmail() != null && emailVerified) {
+                    sendPasswordResetRelatedEmail(study, account.getEmail(), false, study.getResetPasswordTemplate());
+                } else if (account.getPhone() != null && phoneVerified) {
+                    sendPasswordResetRelatedSMS(study, account.getPhone(), false, study.getResetPasswordSmsTemplate());
+                }
             }
         }
     }

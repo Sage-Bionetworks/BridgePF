@@ -157,9 +157,11 @@ public class HibernateAccountDao implements AccountDao {
         hibernateAccount.setPasswordModifiedOn(modifiedOn);
         // One of these (the channel used to reset the password) is also verified by resetting the password.
         if (channelType == ChannelType.EMAIL) {
+            hibernateAccount.setStatus(AccountStatus.ENABLED);
             hibernateAccount.setEmailVerified(true);    
         }
         if (channelType == ChannelType.PHONE) {
+            hibernateAccount.setStatus(AccountStatus.ENABLED);
             hibernateAccount.setPhoneVerified(true);    
         }
         hibernateHelper.update(hibernateAccount);
