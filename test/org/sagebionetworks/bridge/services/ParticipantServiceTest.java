@@ -1199,6 +1199,12 @@ public class ParticipantServiceTest {
     }
     
     @Test(expected = InvalidEntityException.class)
+    public void updateIdentifiersValidates() {
+        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, null);
+        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
     public void updateIdentifiersValidatesWithBlanks() {
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, "", null, "");
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
