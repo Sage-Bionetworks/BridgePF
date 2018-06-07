@@ -327,20 +327,24 @@ public class AccountWorkflowService {
     }
     
     /**
-     * Request that a token be sent to the user's email address that can be used to 
-     * submit a password change to the server. This method will fail silently if 
-     * the email does not map to an account, in order to prevent account enumeration 
-     * attacks.
+     * Request that a token be sent to the user's email address or phone number that can be 
+     * used to submit a password change to the server. Users who administer participants in 
+     * the study can trigger this request whether the channel used is verified or not, 
+     * but normal users must have already verified the channel to prevent abuse. In addition, 
+     * this method fails silently if the email or phone number cannot be found in the system, 
+     * to prevent account enumeration attacks. 
      */
-    public void requestResetPassword(Study study, AccountId accountId) {
+    public void requestResetPassword(Study study, boolean isStudyAdmin, AccountId accountId) {
         checkNotNull(accountId);
         checkArgument(study.getIdentifier().equals(accountId.getStudyId()));
         
         Account account = accountDao.getAccount(accountId);
         if (account != null) {
-            if (account.getEmail() != null && account.getEmailVerified()) {
-                sendPasswordResetRelatedEmail(study, account.getEmail(), false, study.getResetPasswordTemplate());    
-            } else if (account.getPhone() != null && account.getPhoneVerified()) {
+            boolean emailVerified = isStudyAdmin || Boolean.TRUE.equals(account.getEmailVerified());
+            boolean phoneVerified = isStudyAdmin || Boolean.TRUE.equals(account.getPhoneVerified());
+            if (account.getEmail() != null && emailVerified) {
+                sendPasswordResetRelatedEmail(study, account.getEmail(), false, study.getResetPasswordTemplate());
+            } else if (account.getPhone() != null && phoneVerified) {
                 sendPasswordResetRelatedSMS(study, account.getPhone(), false, study.getResetPasswordSmsTemplate());
             }
         }

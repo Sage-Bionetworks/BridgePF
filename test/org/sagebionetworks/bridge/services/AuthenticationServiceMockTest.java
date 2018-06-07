@@ -434,16 +434,16 @@ public class AuthenticationServiceMockTest {
     public void requestResetInvalid() throws Exception {
         SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID).withPhone(TestConstants.PHONE)
                 .withEmail(RECIPIENT_EMAIL).build();
-        service.requestResetPassword(study, signIn);
+        service.requestResetPassword(study, false, signIn);
     }
     
     @Test
     public void requestResetPassword() throws Exception {
         SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID).withEmail(RECIPIENT_EMAIL).build();
         
-        service.requestResetPassword(study, signIn);
+        service.requestResetPassword(study, false, signIn);
         
-        verify(accountWorkflowService).requestResetPassword(study, signIn.getAccountId());
+        verify(accountWorkflowService).requestResetPassword(study, false, signIn.getAccountId());
     }
     
     @Test
