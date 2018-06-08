@@ -355,7 +355,7 @@ public class ParticipantService {
         // Don't throw an exception here, you'd be exposing that an email/phone number is in the system.
         AccountId accountId = AccountId.forId(study.getIdentifier(), userId);
 
-        accountWorkflowService.requestResetPassword(study, accountId);
+        accountWorkflowService.requestResetPassword(study, true, accountId);
     }
 
     public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(Study study, String userId,

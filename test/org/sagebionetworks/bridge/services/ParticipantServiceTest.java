@@ -940,7 +940,7 @@ public class ParticipantServiceTest {
         
         participantService.requestResetPassword(STUDY, ID);
         
-        verify(accountWorkflowService).requestResetPassword(STUDY, ACCOUNT_ID);
+        verify(accountWorkflowService).requestResetPassword(STUDY, true, ACCOUNT_ID);
     }
     
     @Test
