@@ -77,6 +77,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
+import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -84,7 +85,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 @Component("studyService")
 @PropertySource("classpath:study-defaults/sms-messages.properties")
 public class StudyService {
-    private static Logger LOG = LoggerFactory.getLogger(StudyService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StudyService.class);
 
     private static final String BASE_URL = BridgeConfigFactory.getConfig().get("webservices.url");
     static final String CONFIG_KEY_SUPPORT_EMAIL_PLAIN = "support.email.plain";
@@ -861,6 +862,7 @@ public class StudyService {
                 .withOverrideSenderEmail(bridgeSupportEmailPlain).withRecipientEmail(email)
                 .withToken(STUDY_EMAIL_VERIFICATION_URL, shortUrl)
                 .withExpirationPeriod(STUDY_EMAIL_VERIFICATION_EXPIRATION_PERIOD, VERIFY_STUDY_EMAIL_EXPIRE_IN_SECONDS)
+                .withType(EmailType.VERIFY_CONSENT_EMAIL)
                 .build();
         sendMailService.sendEmail(provider);
     }

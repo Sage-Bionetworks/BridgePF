@@ -22,7 +22,6 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import com.google.common.collect.Lists;
 
 public class WithdrawConsentEmailProvider extends MimeTypeEmailProvider {
-    
     private static final DateTimeFormatter FORMATTER = DateTimeFormat.forPattern("MMMM d, yyyy");
     private static final String CONSENT_EMAIL_SUBJECT = "Notification of consent withdrawal for %s";
     private static final String SUB_TYPE_HTML = "html";
@@ -78,6 +77,9 @@ public class WithdrawConsentEmailProvider extends MimeTypeEmailProvider {
         final MimeBodyPart bodyPart = new MimeBodyPart();
         bodyPart.setText(content, StandardCharsets.UTF_8.name(), SUB_TYPE_HTML);
         builder.withMessageParts(bodyPart);
+
+        // Set type
+        builder.withType(EmailType.WITHDRAW_CONSENT);
 
         return builder.build();
     }

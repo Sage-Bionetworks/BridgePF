@@ -42,6 +42,7 @@ import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.JedisTransaction;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
+import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -227,6 +228,7 @@ public class AccountWorkflowService {
                 .withToken(OLD_SHORT_URL_KEY, newUrl) // new URL is short
                 .withToken(EMAIL_VERIFICATION_URL_KEY, newUrl)
                 .withExpirationPeriod(EMAIL_VERIFICATION_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS)
+                .withType(EmailType.VERIFY_EMAIL)
                 .build();
         sendMailService.sendEmail(provider);
     }
@@ -366,7 +368,8 @@ public class AccountWorkflowService {
             .withToken(OLD_EXP_WINDOW_TOKEN, Integer.toString(VERIFY_OR_RESET_EXPIRE_IN_SECONDS/60/60))
             .withExpirationPeriod(OLD_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS)
             .withToken(RESET_PASSWORD_URL_KEY, shortUrl)
-            .withExpirationPeriod(RESET_PASSWORD_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
+            .withExpirationPeriod(RESET_PASSWORD_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS)
+            .withType(EmailType.RESET_PASSWORD);
             
         if (includeEmailSignIn && study.isEmailSignInEnabled()) {
             SignIn signIn = new SignIn.Builder().withEmail(email).withStudy(study.getIdentifier()).build();
@@ -502,6 +505,7 @@ public class AccountWorkflowService {
                 .withToken(OLD_SHORT_URL_KEY, shortUrl)
                 .withToken(EMAIL_SIGNIN_URL_KEY, shortUrl)
                 .withExpirationPeriod(EMAIL_SIGNIN_EXPIRATION_PERIOD, SIGNIN_EXPIRE_IN_SECONDS)
+                .withType(EmailType.EMAIL_SIGN_IN)
                 .build();
             sendMailService.sendEmail(provider);
         });

@@ -45,6 +45,7 @@ public class WithdrawConsentEmailProviderTest {
 
         provider = new WithdrawConsentEmailProvider(study, null, account, new Withdrawal(null), UNIX_TIMESTAMP);
         MimeTypeEmail email = provider.getMimeTypeEmail();
+        assertEquals(EmailType.WITHDRAW_CONSENT, email.getType());
         
         List<String> recipients = email.getRecipientAddresses();
         assertEquals(1, recipients.size());
@@ -70,7 +71,8 @@ public class WithdrawConsentEmailProviderTest {
 
         provider = new WithdrawConsentEmailProvider(study, EXTERNAL_ID, account, WITHDRAWAL, UNIX_TIMESTAMP);
         MimeTypeEmail email = provider.getMimeTypeEmail();
-        
+        assertEquals(EmailType.WITHDRAW_CONSENT, email.getType());
+
         List<String> recipients = email.getRecipientAddresses();
         assertEquals(2, recipients.size());
         assertEquals("a@a.com", recipients.get(0));

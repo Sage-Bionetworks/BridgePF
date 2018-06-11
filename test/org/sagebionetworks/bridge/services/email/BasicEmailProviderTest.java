@@ -41,10 +41,13 @@ public class BasicEmailProviderTest {
             .withRecipientEmail("recipient2@recipient.com")
             .withEmailTemplate(template)
             .withExpirationPeriod("expirationPeriod", 60*60)
-            .withToken("url", "some-url").build();
+            .withToken("url", "some-url")
+            .withType(EmailType.EMAIL_SIGN_IN)
+            .build();
 
         // Check provider attributes
         assertEquals("Name <support@email.com>", provider.getFormattedSenderEmail());
+        assertEquals(EmailType.EMAIL_SIGN_IN, provider.getType());
 
         // Check email
         MimeTypeEmail email = provider.getMimeTypeEmail();
@@ -52,8 +55,9 @@ public class BasicEmailProviderTest {
         assertEquals("\"Name\" <support@email.com>", email.getSenderAddress());
         assertEquals(Sets.newHashSet("recipient@recipient.com", "recipient2@recipient.com"),
                 Sets.newHashSet(email.getRecipientAddresses()));
+        assertEquals(EmailType.EMAIL_SIGN_IN, email.getType());
+
         MimeBodyPart body = email.getMessageParts().get(0);
-        
         String bodyString = (String)body.getContent();
         assertEquals("Name ShortName id SponsorName support@email.com tech@email.com consent@email.com some-url 1 hour", 
                 bodyString);

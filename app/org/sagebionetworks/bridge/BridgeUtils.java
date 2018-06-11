@@ -60,13 +60,28 @@ public class BridgeUtils {
     private static final int ONE_MINUTE = 60;
     
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
-    
+
+    // ThreadLocals are weird. They are basically a container that allows us to hold "global variables" for each
+    // thread. This can be used, for example, to provide the request ID to any class without having to plumb a
+    // "request context" object into every method of every class.
+    private static final ThreadLocal<String> REQUEST_ID_THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
+
     public static boolean isExternalIdAccount(StudyParticipant participant) {
         return (StringUtils.isNotBlank(participant.getExternalId()) && 
                 StringUtils.isBlank(participant.getEmail()) && 
                 participant.getPhone() == null);
     }
-    
+
+    /** Gets the request ID for the current thread. See also RequestIdInterceptor. */
+    public static String getRequestId() {
+        return REQUEST_ID_THREAD_LOCAL.get();
+    }
+
+    /** @see #getRequestId */
+    public static void setRequestId(String requestId) {
+        REQUEST_ID_THREAD_LOCAL.set(requestId);
+    }
+
     /**
      * Convert expiration measures in seconds to an English language explanation of
      * the expiration time. This is not intended to cover odd cases--our expirations 

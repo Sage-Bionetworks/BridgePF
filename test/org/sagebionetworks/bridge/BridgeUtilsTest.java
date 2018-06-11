@@ -48,7 +48,31 @@ public class BridgeUtilsTest {
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withExternalId("id").build();
         assertFalse(BridgeUtils.isExternalIdAccount(participant));
     }
-    
+
+    @Test
+    public void getRequestId() throws Exception {
+        // Can set request ID in this thread.
+        BridgeUtils.setRequestId("main request ID");
+        assertEquals("main request ID", BridgeUtils.getRequestId());
+
+        // Request ID is thread local, so a separate thread should see a different request ID.
+        Runnable runnable = () -> {
+            assertNull(BridgeUtils.getRequestId());
+            BridgeUtils.setRequestId("other request ID");
+            assertEquals("other request ID", BridgeUtils.getRequestId());
+        };
+        Thread otherThread = new Thread(runnable);
+        otherThread.start();
+        otherThread.join();
+
+        // Other thread doesn't affect this thread.
+        assertEquals("main request ID", BridgeUtils.getRequestId());
+
+        // Setting request ID to null is fine.
+        BridgeUtils.setRequestId(null);
+        assertNull(BridgeUtils.getRequestId());
+    }
+
     @Test
     public void secondsToPeriodString() {
         assertEquals("30 seconds", BridgeUtils.secondsToPeriodString(30));

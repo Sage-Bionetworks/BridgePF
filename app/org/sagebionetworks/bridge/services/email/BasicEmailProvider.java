@@ -31,15 +31,17 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
     private final Map<String,String> tokenMap;
     private final EmailTemplate template;
     private final List<MimeBodyPart> attachments;
+    private final EmailType type;
     
     private BasicEmailProvider(Study study, String overrideSenderEmail, Map<String,String> tokenMap,
-            Set<String> recipientEmails, EmailTemplate template, List<MimeBodyPart> attachments) {
+            Set<String> recipientEmails, EmailTemplate template, List<MimeBodyPart> attachments, EmailType type) {
         super(study);
         this.overrideSenderEmail = overrideSenderEmail;
         this.recipientEmails = recipientEmails;
         this.tokenMap = tokenMap;
         this.template = template;
         this.attachments = attachments;
+        this.type = type;
     }
 
     /**
@@ -64,7 +66,12 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
     public EmailTemplate getTemplate() {
         return template;
     }
-    
+
+    /** Email type. Examples include email verification, sign-in, consent, etc. */
+    public EmailType getType() {
+        return type;
+    }
+
     @Override
     public MimeTypeEmail getMimeTypeEmail() throws MessagingException {
         final MimeTypeEmailBuilder emailBuilder = new MimeTypeEmailBuilder();
@@ -87,7 +94,10 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
         for (MimeBodyPart attachment : attachments) {
             emailBuilder.withMessageParts(attachment);
         }
-        
+
+        // Set type.
+        emailBuilder.withType(type);
+
         return emailBuilder.build();
     }
 
@@ -98,6 +108,7 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
         private Set<String> recipientEmails = Sets.newHashSet();
         private List<MimeBodyPart> attachments = Lists.newArrayList();
         private EmailTemplate template;
+        private EmailType type;
 
         public Builder withStudy(Study study) {
             this.study = study;
@@ -105,7 +116,7 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
         }
 
         public Builder withBinaryAttachment(String partName, MimeType mimeType, byte[] data) {
-            checkNotNull(isNotBlank(partName));
+            checkArgument(isNotBlank(partName));
             checkNotNull(mimeType);
             checkArgument(data != null && data.length > 0);
             try {
@@ -147,6 +158,13 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
             withToken(name, BridgeUtils.secondsToPeriodString(expireInSeconds));
             return this;
         }
+
+        /** @see BasicEmailProvider#getType */
+        public Builder withType(EmailType type) {
+            this.type = type;
+            return this;
+        }
+
         public BasicEmailProvider build() {
             checkNotNull(study);
             checkNotNull(template);
@@ -156,7 +174,7 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
             tokenMap.values().removeIf(Objects::isNull);
             
             return new BasicEmailProvider(study, overrideSenderEmail, ImmutableMap.copyOf(tokenMap), recipientEmails,
-                    template, attachments);
+                    template, attachments, type);
         }
     }
 }

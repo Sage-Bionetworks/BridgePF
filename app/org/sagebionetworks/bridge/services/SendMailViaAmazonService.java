@@ -14,6 +14,7 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
@@ -64,7 +65,7 @@ public class SendMailViaAmazonService implements SendMailService {
             String fullSenderEmail = provider.getMimeTypeEmail().getSenderAddress();
             MimeTypeEmail email = provider.getMimeTypeEmail();
             for (String recipient: email.getRecipientAddresses()) {
-                sendEmail(fullSenderEmail, recipient, email, provider.getStudy().getIdentifier(), provider.getClass());
+                sendEmail(fullSenderEmail, recipient, email, provider.getStudy().getIdentifier());
             }
         } catch (MessageRejectedException ex) {
             // This happens if the sender email is not verified in SES. In general, it's not useful to app users to
@@ -77,8 +78,7 @@ public class SendMailViaAmazonService implements SendMailService {
         }
     }
 
-    private void sendEmail(String senderEmail, String recipient, MimeTypeEmail email, String studyId,
-            Class<? extends MimeTypeEmailProvider> providerClass)
+    private void sendEmail(String senderEmail, String recipient, MimeTypeEmail email, String studyId)
             throws AmazonClientException, MessagingException, IOException {
         
         Session mailSession = Session.getInstance(new Properties(), null);
@@ -107,7 +107,7 @@ public class SendMailViaAmazonService implements SendMailService {
         SendRawEmailResult result = emailClient.sendRawEmail(req);
 
         logger.info("Sent email to SES with messageID " + result.getMessageId() + " with type " +
-                        providerClass.getSimpleName() + " for study " + studyId);
+                        email.getType() + " for study " + studyId + " and request " + BridgeUtils.getRequestId());
     }
     
 }
