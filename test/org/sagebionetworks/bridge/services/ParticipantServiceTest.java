@@ -940,7 +940,7 @@ public class ParticipantServiceTest {
         
         participantService.requestResetPassword(STUDY, ID);
         
-        verify(accountWorkflowService).requestResetPassword(eq(STUDY), eq(ACCOUNT_ID));
+        verify(accountWorkflowService).requestResetPassword(STUDY, true, ACCOUNT_ID);
     }
     
     @Test
@@ -1205,8 +1205,20 @@ public class ParticipantServiceTest {
     }
     
     @Test(expected = InvalidEntityException.class)
-    public void updateIdentifiersValidatesWithBlanks() {
-        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, "", null, "");
+    public void updateIdentifiersValidatesWithBlankEmail() {
+        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, "", null, null);
+        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void updateIdentifiersValidatesWithBlankExternalId() {
+        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, " ");
+        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+    }
+
+    @Test(expected = InvalidEntityException.class)
+    public void updateIdentifiersValidatesWithInvalidPhone() {
+        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, new Phone("US", "1231231234"), null);
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
     }
     

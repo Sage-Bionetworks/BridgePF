@@ -225,7 +225,7 @@ public class AuthenticationController extends BaseController {
         Study study = studyService.getStudy(signIn.getStudyId());
         verifySupportedVersionOrThrowException(study);
         
-        authenticationService.requestResetPassword(study, signIn);
+        authenticationService.requestResetPassword(study, false, signIn);
 
         return okResult("If registered with the study, we'll send you instructions on how to change your password.");
     }
