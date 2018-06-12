@@ -55,6 +55,7 @@ import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
+import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 import org.sagebionetworks.bridge.services.email.WithdrawConsentEmailProvider;
@@ -209,7 +210,10 @@ public class ConsentServiceMockTest {
         verify(sendMailService).sendEmail(emailCaptor.capture());
         
         // We notify the study administrator and send a copy to the user.
-        Set<String> recipients = emailCaptor.getValue().getRecipientEmails();
+        BasicEmailProvider email = emailCaptor.getValue();
+        assertEquals(EmailType.SIGN_CONSENT, email.getType());
+
+        Set<String> recipients = email.getRecipientEmails();
         assertEquals(2, recipients.size());
         assertTrue(recipients.contains(study.getConsentNotificationEmail()));
         assertTrue(recipients.contains(PARTICIPANT.getEmail()));
@@ -222,8 +226,10 @@ public class ConsentServiceMockTest {
         consentService.resendConsentAgreement(study, SUBPOP_GUID, PARTICIPANT);
         
         verify(sendMailService).sendEmail(emailCaptor.capture());
-        assertEquals(1, emailCaptor.getValue().getRecipientEmails().size());
-        assertTrue(emailCaptor.getValue().getRecipientEmails().contains(PARTICIPANT.getEmail()));
+        BasicEmailProvider email = emailCaptor.getValue();
+        assertEquals(1, email.getRecipientEmails().size());
+        assertTrue(email.getRecipientEmails().contains(PARTICIPANT.getEmail()));
+        assertEquals(EmailType.RESEND_CONSENT, email.getType());
     }
     
     @Test

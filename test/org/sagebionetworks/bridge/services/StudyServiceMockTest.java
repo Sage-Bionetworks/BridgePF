@@ -80,6 +80,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
+import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 
@@ -288,6 +289,7 @@ public class StudyServiceMockTest {
         verify(sendMailService).sendEmail(emailProviderCaptor.capture());
 
         MimeTypeEmail email = emailProviderCaptor.getValue().getMimeTypeEmail();
+        assertEquals(EmailType.VERIFY_CONSENT_EMAIL, email.getType());
         String body = (String) email.getMessageParts().get(0).getContent();
 
         assertTrue(body.contains("/vse?study="+ TEST_STUDY_ID + "&token=" +

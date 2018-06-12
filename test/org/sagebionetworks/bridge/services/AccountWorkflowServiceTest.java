@@ -58,6 +58,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.redis.InMemoryJedisOps;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
+import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.validators.SignInValidator;
@@ -130,10 +131,7 @@ public class AccountWorkflowServiceTest {
     
     @Captor
     private ArgumentCaptor<String> stringCaptor;
-    
-    @Captor
-    private ArgumentCaptor<String> secondStringCaptor;
-    
+
     @Captor
     private ArgumentCaptor<SmsMessageProvider> smsMessageProviderCaptor;
     
@@ -213,6 +211,7 @@ public class AccountWorkflowServiceTest {
         String bodyString = (String)body.getContent();
         assertTrue(bodyString.contains("/mobile/verifyEmail.html?study=api&sptoken="+SPTOKEN));
         assertTrue(bodyString.contains("/ve?study=api&sptoken="+SPTOKEN));
+        assertEquals(EmailType.VERIFY_EMAIL, email.getType());
         verifyNoMoreInteractions(mockCacheProvider);
     }
     
@@ -491,6 +490,7 @@ public class AccountWorkflowServiceTest {
         assertEquals(1, email.getRecipientAddresses().size());
         assertEquals(EMAIL, email.getRecipientAddresses().get(0));
         assertEquals("AE This study name", email.getSubject());
+        assertEquals(EmailType.RESET_PASSWORD, email.getType());
         
         MimeBodyPart body = email.getMessageParts().get(0);
         String bodyString = (String)body.getContent();
@@ -766,6 +766,7 @@ public class AccountWorkflowServiceTest {
         MimeBodyPart body = email.getMessageParts().get(0);
         String bodyString = (String)body.getContent();
         assertTrue(bodyString.contains("/rp?study=api&sptoken="+SPTOKEN));
+        assertEquals(EmailType.RESET_PASSWORD, email.getType());
         verifyNoMoreInteractions(mockCacheProvider);
     }
     
@@ -1004,6 +1005,7 @@ public class AccountWorkflowServiceTest {
         assertEquals(EMAIL, Iterables.getFirst(provider.getRecipientEmails(), null));
         assertEquals("Body " + provider.getTokenMap().get("token"),
                 provider.getMimeTypeEmail().getMessageParts().get(0).getContent());
+        assertEquals(EmailType.EMAIL_SIGN_IN, provider.getType());
         verifyNoMoreInteractions(mockCacheProvider);
     }
     

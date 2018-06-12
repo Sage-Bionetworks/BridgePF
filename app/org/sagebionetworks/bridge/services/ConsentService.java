@@ -26,6 +26,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -41,6 +42,7 @@ import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
+import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.services.email.WithdrawConsentEmailProvider;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -112,10 +114,6 @@ public class ConsentService {
     
     /**
      * Get the user's active consent signature (a signature that has not been withdrawn).
-     * @param study
-     * @param subpopGuid
-     * @param userId
-     * @return
      * @throws EntityNotFoundException if no consent exists
      */
     public ConsentSignature getConsentSignature(Study study, SubpopulationGuid subpopGuid, String userId) {
@@ -140,14 +138,8 @@ public class ConsentService {
      * validate member of this subpopulation (that is checked in the controller). Will optionally send 
      * a signed copy of the consent to the user via email or phone (whichever is verified).
      * 
-     * @param study
-     * @param subpopGuid
-     * @param participant
-     * @param consentSignature
-     * @param sharingScope
      * @param sendSignedConsent
      *      if true, send the consent document to the user's email address
-     * @return
      * @throws EntityNotFoundException
      *      if the subpopulation is not part of the study
      * @throws InvalidEntityException
@@ -214,7 +206,8 @@ public class ConsentService {
                 BasicEmailProvider.Builder consentEmailBuilder = new BasicEmailProvider.Builder()
                         .withStudy(study)
                         .withEmailTemplate(study.getSignedConsentTemplate())
-                        .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes());
+                        .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
+                        .withType(EmailType.SIGN_CONSENT);
                 for (String recipientEmail : recipientEmails) {
                     consentEmailBuilder.withRecipientEmail(recipientEmail);
                 }
@@ -365,7 +358,8 @@ public class ConsentService {
                     .withStudy(study)
                     .withEmailTemplate(study.getSignedConsentTemplate())
                     .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
-                    .withRecipientEmail(participant.getEmail()).build();
+                    .withRecipientEmail(participant.getEmail())
+                    .withType(EmailType.RESEND_CONSENT).build();
             sendMailService.sendEmail(provider);
         } else if (verifiedPhone) {
             sendConsentViaSMS(study, subpop, participant, consentPdf);
@@ -376,7 +370,7 @@ public class ConsentService {
     
     private void sendConsentViaSMS(Study study, Subpopulation subpop, StudyParticipant participant,
             ConsentPdf consentPdf) {
-        String shortUrl = null;
+        String shortUrl;
         try {
             String fileName = getSignedConsentUrl();
             DateTime expiresOn = getDownloadExpiration();
@@ -409,9 +403,7 @@ public class ConsentService {
         Boolean consentNotificationEmailVerified = study.isConsentNotificationEmailVerified();
         if (consentNotificationEmailVerified == null || consentNotificationEmailVerified) {
             Set<String> studyRecipients = commaListToOrderedSet(study.getConsentNotificationEmail());
-            for (String oneRecipient : studyRecipients) {
-                recipientEmails.add(oneRecipient);
-            }
+            recipientEmails.addAll(studyRecipients);
         }
     }
 
