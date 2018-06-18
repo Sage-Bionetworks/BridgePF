@@ -13,6 +13,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
@@ -287,6 +288,17 @@ public class StudyParticipantValidatorTest {
         
         validator = new StudyParticipantValidator(externalIdService, study, true);
         assertValidatorMessage(validator, participant, "externalId", "is required");
+    }
+    @Test
+    public void createWithoutExternalIdManagedButHasRolesOK() {
+        study.setExternalIdValidationEnabled(true);
+        study.setExternalIdRequiredOnSignup(true);
+        
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
+                .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
+        
+        validator = new StudyParticipantValidator(externalIdService, study, true);
+        Validate.entityThrowingException(validator, participant);
     }
     @Test
     public void createWithoutExternalIdUnmanagedOk() {

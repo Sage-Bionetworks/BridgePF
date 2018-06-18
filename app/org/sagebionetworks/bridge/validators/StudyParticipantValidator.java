@@ -54,7 +54,10 @@ public class StudyParticipantValidator implements Validator {
             if (email != null && !EMAIL_VALIDATOR.isValid(email)) {
                 errors.rejectValue("email", "does not appear to be an email address");
             }
-            if (study.isExternalIdRequiredOnSignup() && isBlank(participant.getExternalId())) {
+            // External ID is required for non-administrative accounts when it is required on sign-up. Whether you're 
+            // a researcher or not, however, if you add an external ID and we're managing them, we're going to validate
+            // that yours is correct.
+            if (participant.getRoles().isEmpty() && study.isExternalIdRequiredOnSignup() && isBlank(participant.getExternalId())) {
                 errors.rejectValue("externalId", "is required");
             }
             // Password is optional, but validation is applied if supplied, any time it is 
