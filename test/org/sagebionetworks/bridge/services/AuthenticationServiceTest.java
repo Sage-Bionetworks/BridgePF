@@ -343,7 +343,8 @@ public class AuthenticationServiceTest {
                 .withDataGroups(DefaultStudyBootstrapper.TEST_DATA_GROUPS).build();
 
         UserSession session = authService.signIn(testUser.getStudy(), TEST_CONTEXT, testUser.getSignIn());
-        // Verify we created a list and the anticipated group was not null
+        // Verify we created a list and the anticipated group was not null; the test user will 
+        // have one extra data group, because "test_user" is added to each user.
         assertEquals(numOfGroups, session.getParticipant().getDataGroups().size()); 
         assertEquals(DefaultStudyBootstrapper.TEST_DATA_GROUPS, session.getParticipant().getDataGroups());
     }

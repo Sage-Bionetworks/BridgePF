@@ -10,7 +10,6 @@ public enum Roles {
     DEVELOPER,
     RESEARCHER,
     ADMIN,
-    TEST_USERS,
     WORKER;
     
     /**
@@ -29,6 +28,5 @@ public enum Roles {
         .put(WORKER, EnumSet.of(ADMIN))
         .put(RESEARCHER, EnumSet.of(ADMIN, RESEARCHER))
         .put(DEVELOPER, EnumSet.of(ADMIN, RESEARCHER, DEVELOPER))
-        .put(TEST_USERS, EnumSet.of(ADMIN, RESEARCHER, DEVELOPER))
         .build();
 }
