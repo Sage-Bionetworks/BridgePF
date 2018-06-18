@@ -23,6 +23,8 @@ import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -49,6 +51,9 @@ public class NotificationTopicControllerTest {
 
     @Mock
     private NotificationTopicService mockTopicService;
+    
+    @Mock
+    private BridgeConfig mockBridgeConfig;
 
     @Mock
     private UserSession mockUserSession;
@@ -65,6 +70,9 @@ public class NotificationTopicControllerTest {
     @Before
     public void before() throws Exception {
         this.controller.setNotificationTopicService(mockTopicService);
+        controller.setBridgeConfig(mockBridgeConfig);
+        
+        doReturn(Environment.UAT).when(mockBridgeConfig).getEnvironment();
 
         doReturn(TEST_STUDY).when(mockUserSession).getStudyIdentifier();
 

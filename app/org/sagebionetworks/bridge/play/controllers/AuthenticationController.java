@@ -239,16 +239,15 @@ public class AuthenticationController extends BaseController {
 
     private void setCookieAndRecordMetrics(UserSession session) {
         writeSessionInfoToMetrics(session);  
-        // We have removed the cookie in the past, only to find out that clients were unknowingly
-        // depending on the cookie to preserve the session token. So it remains.
-        boolean useSsl = bridgeConfig.getEnvironment() != Environment.LOCAL;
-        response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/",
-                bridgeConfig.get("domain"), useSsl, useSsl);
-        
         RequestInfo requestInfo = getRequestInfoBuilder(session)
                 .withSignedInOn(DateUtils.getCurrentDateTime()).build();
         cacheProvider.updateRequestInfo(requestInfo);
+        // only set cookie in local environment
+        if (bridgeConfig.getEnvironment() == Environment.LOCAL) {
+            response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
+                    BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/",
+                    bridgeConfig.get("domain"), false, false);
+        }
     }
 
     private Study getStudyOrThrowException(String studyId) {

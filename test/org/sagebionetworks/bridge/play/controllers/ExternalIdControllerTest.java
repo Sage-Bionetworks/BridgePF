@@ -24,6 +24,8 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -73,6 +75,9 @@ public class ExternalIdControllerTest {
     @Mock
     UserSession session;
     
+    @Mock
+    BridgeConfig bridgeConfig;
+    
     @Captor
     ArgumentCaptor<List<String>> externalIdCaptor;
     
@@ -86,6 +91,9 @@ public class ExternalIdControllerTest {
         controller.setExternalIdService(externalIdService);
         controller.setStudyService(studyService);
         controller.setAuthenticationService(authenticationService);
+        controller.setBridgeConfig(bridgeConfig);
+        
+        when(bridgeConfig.getEnvironment()).thenReturn(Environment.UAT);
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("BBB").build();

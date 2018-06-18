@@ -21,6 +21,8 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -71,12 +73,16 @@ public class FPHSControllerTest {
         StudyService mockStudyService = mock(StudyService.class);
         when(mockStudyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(study);
 
+        BridgeConfig mockBridgeConfig = mock(BridgeConfig.class);
+        when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.UAT);
+        
         // Spy controller
         controller = spy(new FPHSController());
         controller.setFPHSService(fphsService);
         controller.setAuthenticationService(authenticationService);
         controller.setSessionUpdateService(sessionUpdateService);
         controller.setStudyService(mockStudyService);
+        controller.setBridgeConfig(mockBridgeConfig);
     }
     
     private JsonNode resultToJson(Result result) throws Exception {

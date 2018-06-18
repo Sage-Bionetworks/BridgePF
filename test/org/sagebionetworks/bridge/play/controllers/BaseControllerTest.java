@@ -782,7 +782,7 @@ public class BaseControllerTest {
     }
     
     @Test
-    public void requireSslOnCookies() {
+    public void setsCookeForLocal() {
         Http.Cookie mockCookie = mock(Http.Cookie.class);
         doReturn("ABC").when(mockCookie).value();
         
@@ -801,14 +801,14 @@ public class BaseControllerTest {
 
         BridgeConfig mockConfig = mock(BridgeConfig.class);
         when(mockConfig.get("domain")).thenReturn(DOMAIN);
-        when(mockConfig.getEnvironment()).thenReturn(Environment.PROD);
+        when(mockConfig.getEnvironment()).thenReturn(Environment.LOCAL);
         controller.setBridgeConfig(mockConfig);
         
         String token = controller.getSessionToken();
         assertEquals("ABC", token);
         
         verify(mockResponse).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, "ABC",
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", DOMAIN, true, true);
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", DOMAIN, false, false);
     }
     
     @Test
