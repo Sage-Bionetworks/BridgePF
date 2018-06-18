@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.json;
 import static org.junit.Assert.*;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
-import static org.sagebionetworks.bridge.Roles.TEST_USERS;
 
 import java.util.Set;
 
@@ -230,9 +229,9 @@ public class JsonUtilsTest {
 
     @Test
     public void asRolesSet() throws Exception {
-        Set<Roles> set = Sets.newHashSet(ADMIN, RESEARCHER, TEST_USERS);
+        Set<Roles> set = Sets.newHashSet(ADMIN, RESEARCHER);
         
-        JsonNode node = mapper.readTree(esc("{'key':['admin','researcher','test_users']}"));
+        JsonNode node = mapper.readTree(esc("{'key':['admin','researcher']}"));
 
         assertEquals(Sets.newHashSet(), JsonUtils.asRolesSet(node, null));
         assertEquals(Sets.newHashSet(), JsonUtils.asRolesSet(node, "badProp"));

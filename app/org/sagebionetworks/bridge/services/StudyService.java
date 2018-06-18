@@ -375,7 +375,7 @@ public class StudyService {
 
         // validate roles for each user
         for (StudyParticipant user: users) {
-            if (!Collections.disjoint(user.getRoles(), ImmutableSet.of(Roles.ADMIN, Roles.TEST_USERS, Roles.WORKER))) {
+            if (!Collections.disjoint(user.getRoles(), ImmutableSet.of(Roles.ADMIN, Roles.WORKER))) {
                 throw new BadRequestException("User can only have roles developer and/or researcher.");
             }
             if (user.getRoles().isEmpty()) {
