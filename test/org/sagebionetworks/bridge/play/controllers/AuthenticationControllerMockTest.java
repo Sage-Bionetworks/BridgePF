@@ -480,7 +480,6 @@ public class AuthenticationControllerMockTest {
         Http.Response mockResponse = controller.response();
 
         verify(authenticationService).signOut(session);
-        verify(mockResponse).discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
         verifyMetrics();
     }
     
@@ -503,7 +502,6 @@ public class AuthenticationControllerMockTest {
         Http.Response mockResponse = controller.response();
 
         verify(authenticationService).signOut(session);
-        verify(mockResponse).discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
         verify(mockResponse).setHeader(BridgeConstants.CLEAR_SITE_DATA_HEADER, BridgeConstants.CLEAR_SITE_DATA_VALUE);
         verifyMetrics();
     }
@@ -525,7 +523,6 @@ public class AuthenticationControllerMockTest {
         
         @SuppressWarnings("static-access")
         Http.Response mockResponse = controller.response();
-        verify(mockResponse).discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
         verify(mockResponse).setHeader(BridgeConstants.CLEAR_SITE_DATA_HEADER, BridgeConstants.CLEAR_SITE_DATA_VALUE);
         // We do not send metrics if you don't have a session, for better or worse.
     }
@@ -593,23 +590,6 @@ public class AuthenticationControllerMockTest {
         study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
         
         controller.signInV3();
-    }
-    
-    @Test
-    public void signInOnLocalDoesNotSetCookieWithSSL() throws Exception {
-        String json = TestUtils.createJson(
-                "{'study':'" + TEST_STUDY_ID_STRING + 
-                "','email':'email@email.com','password':'bar'}");
-        response = mockPlayContextWithJson(json);
-        when(controller.bridgeConfig.getEnvironment()).thenReturn(Environment.LOCAL);
-        
-        UserSession session = createSession(null, null);
-        when(authenticationService.signIn(any(), any(), any())).thenReturn(session);
-        
-        controller.signIn();
-        
-        verify(response).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, TEST_SESSION_TOKEN,
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", DOMAIN, false, false);
     }
     
     @Test(expected = UnsupportedVersionException.class)
@@ -1005,11 +985,6 @@ public class AuthenticationControllerMockTest {
     
     private void verifyCommonLoggingForSignIns() throws Exception {
         verifyMetrics();
-        
-        // For ssl to be true here, we mock the bridge configuration and set the environment
-        // to something besides local. There is a separate test for when the environment is local.
-        verify(response).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, TEST_SESSION_TOKEN,
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", DOMAIN, true, true);
         
         verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
         RequestInfo info = requestInfoCaptor.getValue();

@@ -22,7 +22,6 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -54,7 +53,6 @@ import play.cache.Cache;
 import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Http;
-import play.mvc.Http.Cookie;
 import play.mvc.Http.Request;
 import play.mvc.Result;
 
@@ -215,15 +213,6 @@ public abstract class BaseController extends Controller {
         String[] session = request().headers().get(SESSION_TOKEN_HEADER);
         if (session != null && session.length > 0 && !session[0].isEmpty()) {
             return session[0];
-        }
-        Cookie sessionCookie = request().cookie(SESSION_TOKEN_HEADER);
-        if (sessionCookie != null && sessionCookie.value() != null && !"".equals(sessionCookie.value())) {
-            String sessionToken = sessionCookie.value();
-            boolean useSsl = bridgeConfig.getEnvironment() != Environment.LOCAL;
-            response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken,
-                    BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/",
-                    bridgeConfig.get("domain"), useSsl, useSsl);
-            return sessionToken;
         }
         return null;
     }

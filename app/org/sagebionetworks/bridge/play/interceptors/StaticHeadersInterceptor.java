@@ -16,7 +16,7 @@ public class StaticHeadersInterceptor implements MethodInterceptor {
     public static Map<String,String> HEADERS = new ImmutableMap.Builder<String,String>()
             // Limits what a web browser will include or execute in a page; only applies to our html pages
             .put("Content-Security-Policy", "default-src 'self' 'unsafe-inline' assets.sagebridge.org")
-            // Do not send a cookie across a connection that is not HTTPS
+            // Do not send a cookie across a connection that is not HTTPS. Leave this even though we've removed cookies
             .put("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
             // Do not allow Mime-Type content "sniffing," when we say something is JSON, it's JSON
             .put("X-Content-Type-Options", "nosniff")

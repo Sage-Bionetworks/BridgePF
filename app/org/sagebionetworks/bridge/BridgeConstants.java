@@ -42,7 +42,7 @@ public class BridgeConstants {
 
     public static final String CLEAR_SITE_DATA_HEADER = "Clear-Site-Data";
     
-    public static final String CLEAR_SITE_DATA_VALUE = "\"cache\", \"cookies\", \"storage\", \"executionContexts\"";
+    public static final String CLEAR_SITE_DATA_VALUE = "\"cache\", \"storage\", \"executionContexts\"";
 
     /** Used by Heroku to pass in the request ID */
     public static final String X_REQUEST_ID_HEADER = "X-Request-Id";

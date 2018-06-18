@@ -752,66 +752,6 @@ public class BaseControllerTest {
     }
     
     @Test
-    public void ifClientSendsCookieRetrieveAndResetIt() {
-        Http.Cookie mockCookie = mock(Http.Cookie.class);
-        doReturn("ABC").when(mockCookie).value();
-        
-        Http.Request mockRequest = mock(Http.Request.class);
-        doReturn(mockCookie).when(mockRequest).cookie(BridgeConstants.SESSION_TOKEN_HEADER);
-        
-        Http.Context context = mock(Http.Context.class);
-        when(context.request()).thenReturn(mockRequest);
-
-        Http.Response mockResponse = mock(Http.Response.class);
-        when(context.response()).thenReturn(mockResponse);
-        
-        Http.Context.current.set(context);
-        
-        BridgeConfig mockConfig = mock(BridgeConfig.class);
-        when(mockConfig.get("domain")).thenReturn(DOMAIN);
-        when(mockConfig.getEnvironment()).thenReturn(Environment.LOCAL);
-        
-        BaseController controller = new SchedulePlanController();
-        controller.setBridgeConfig(mockConfig);
-        
-        String token = controller.getSessionToken();
-        assertEquals("ABC", token);
-        
-        verify(mockResponse).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, "ABC",
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", DOMAIN, false, false);
-    }
-    
-    @Test
-    public void requireSslOnCookies() {
-        Http.Cookie mockCookie = mock(Http.Cookie.class);
-        doReturn("ABC").when(mockCookie).value();
-        
-        Http.Request mockRequest = mock(Http.Request.class);
-        doReturn(mockCookie).when(mockRequest).cookie(BridgeConstants.SESSION_TOKEN_HEADER);
-        
-        Http.Context context = mock(Http.Context.class);
-        when(context.request()).thenReturn(mockRequest);
-
-        Http.Response mockResponse = mock(Http.Response.class);
-        when(context.response()).thenReturn(mockResponse);
-        
-        Http.Context.current.set(context);
-        
-        BaseController controller = new SchedulePlanController();
-
-        BridgeConfig mockConfig = mock(BridgeConfig.class);
-        when(mockConfig.get("domain")).thenReturn(DOMAIN);
-        when(mockConfig.getEnvironment()).thenReturn(Environment.PROD);
-        controller.setBridgeConfig(mockConfig);
-        
-        String token = controller.getSessionToken();
-        assertEquals("ABC", token);
-        
-        verify(mockResponse).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, "ABC",
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", DOMAIN, true, true);
-    }
-    
-    @Test
     public void getRequestInfoBuilder() throws Exception {
         // Set the dates and verify they are retrieved from cache and added to response
         RequestInfo persistedInfo = new RequestInfo.Builder()

@@ -63,10 +63,10 @@ public class AuthenticationController extends BaseController {
         try {
             session = authenticationService.emailSignIn(context, signInRequest);
         } catch(ConsentRequiredException e) {
-            setCookieAndRecordMetrics(e.getUserSession());
+            recordMetrics(e.getUserSession());
             throw e;
         }
-        setCookieAndRecordMetrics(session);
+        recordMetrics(session);
 
         return okResult(UserSessionInfo.toJSON(session));
     }
@@ -94,10 +94,10 @@ public class AuthenticationController extends BaseController {
         try {
             session = authenticationService.phoneSignIn(context, signInRequest);
         } catch(ConsentRequiredException e) {
-            setCookieAndRecordMetrics(e.getUserSession());
+            recordMetrics(e.getUserSession());
             throw e;
         }
-        setCookieAndRecordMetrics(session);
+        recordMetrics(session);
 
         return okResult(UserSessionInfo.toJSON(session));
     }
@@ -113,11 +113,11 @@ public class AuthenticationController extends BaseController {
         try {
             session = authenticationService.signIn(study, context, signIn);
         } catch (ConsentRequiredException e) {
-            setCookieAndRecordMetrics(e.getUserSession());
+            recordMetrics(e.getUserSession());
             throw e;
         }
 
-        setCookieAndRecordMetrics(session);
+        recordMetrics(session);
         return okResult(UserSessionInfo.toJSON(session));
     }
 
@@ -133,7 +133,7 @@ public class AuthenticationController extends BaseController {
         CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
         UserSession session = authenticationService.reauthenticate(study, context, signInRequest);
         
-        setCookieAndRecordMetrics(session);
+        recordMetrics(session);
         
         return okResult(UserSessionInfo.toJSON(session));
     }
@@ -157,7 +157,6 @@ public class AuthenticationController extends BaseController {
         if (session != null) {
             authenticationService.signOut(session);
         }
-        response().discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
         return okResult("Signed out.");
     }
 
@@ -165,7 +164,6 @@ public class AuthenticationController extends BaseController {
     public Result signOutV4() throws Exception {
         final UserSession session = getSessionIfItExists();
         // Always set, even if we eventually decide to return an error code when there's no session
-        response().discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
         response().setHeader(BridgeConstants.CLEAR_SITE_DATA_HEADER, BridgeConstants.CLEAR_SITE_DATA_VALUE);
         if (session != null) {
             authenticationService.signOut(session);
@@ -237,14 +235,8 @@ public class AuthenticationController extends BaseController {
         return okResult("Password has been changed.");
     }
 
-    private void setCookieAndRecordMetrics(UserSession session) {
+    private void recordMetrics(UserSession session) {
         writeSessionInfoToMetrics(session);  
-        // We have removed the cookie in the past, only to find out that clients were unknowingly
-        // depending on the cookie to preserve the session token. So it remains.
-        boolean useSsl = bridgeConfig.getEnvironment() != Environment.LOCAL;
-        response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/",
-                bridgeConfig.get("domain"), useSsl, useSsl);
         
         RequestInfo requestInfo = getRequestInfoBuilder(session)
                 .withSignedInOn(DateUtils.getCurrentDateTime()).build();
