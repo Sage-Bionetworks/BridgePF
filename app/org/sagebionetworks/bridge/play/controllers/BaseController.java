@@ -216,14 +216,15 @@ public abstract class BaseController extends Controller {
         if (session != null && session.length > 0 && !session[0].isEmpty()) {
             return session[0];
         }
-        Cookie sessionCookie = request().cookie(SESSION_TOKEN_HEADER);
-        if (sessionCookie != null && sessionCookie.value() != null && !"".equals(sessionCookie.value())) {
-            String sessionToken = sessionCookie.value();
-            boolean useSsl = bridgeConfig.getEnvironment() != Environment.LOCAL;
-            response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken,
-                    BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/",
-                    bridgeConfig.get("domain"), useSsl, useSsl);
-            return sessionToken;
+        if (bridgeConfig.getEnvironment() == Environment.LOCAL) {
+            Cookie sessionCookie = request().cookie(SESSION_TOKEN_HEADER);
+            if (sessionCookie != null && sessionCookie.value() != null && !"".equals(sessionCookie.value())) {
+                String sessionToken = sessionCookie.value();
+                response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken,
+                        BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/",
+                        bridgeConfig.get("domain"), false, false);
+                return sessionToken;
+            }
         }
         return null;
     }

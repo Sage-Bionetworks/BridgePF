@@ -36,6 +36,8 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -114,6 +116,9 @@ public class ScheduledActivityControllerTest {
     @Mock
     Account account;
     
+    @Mock
+    BridgeConfig bridgeConfig;
+    
     @Captor
     ArgumentCaptor<ScheduleContext> contextCaptor;
     
@@ -171,6 +176,9 @@ public class ScheduledActivityControllerTest {
         controller.setStudyService(studyService);
         controller.setCacheProvider(cacheProvider);
         controller.setAccountDao(accountDao);
+        controller.setBridgeConfig(bridgeConfig);
+        
+        when(bridgeConfig.getEnvironment()).thenReturn(Environment.UAT);
         
         sessionUpdateService = spy(new SessionUpdateService());
         sessionUpdateService.setCacheProvider(cacheProvider);
@@ -343,6 +351,7 @@ public class ScheduledActivityControllerTest {
     @Test(expected = NotAuthenticatedException.class)
     public void mustBeAuthenticated() throws Exception {
         controller = new ScheduledActivityController();
+        controller.setBridgeConfig(bridgeConfig);
         controller.getScheduledActivities(DateTime.now().toString(), null, null, null);
     }
     

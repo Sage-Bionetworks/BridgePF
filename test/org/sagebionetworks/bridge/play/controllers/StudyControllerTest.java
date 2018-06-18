@@ -45,6 +45,8 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -106,6 +108,8 @@ public class StudyControllerTest {
     private CacheProvider mockCacheProvider;
     @Mock
     private UploadService mockUploadService;
+    @Mock
+    private BridgeConfig mockBridgeConfig;
     
     private Study study;
     
@@ -139,6 +143,9 @@ public class StudyControllerTest {
         controller.setEmailVerificationService(mockVerificationService);
         controller.setUploadCertificateService(mockUploadCertService);
         controller.setUploadService(mockUploadService);
+        controller.setBridgeConfig(mockBridgeConfig);
+        
+        when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.UAT);
         
         mockPlayContext();
     }

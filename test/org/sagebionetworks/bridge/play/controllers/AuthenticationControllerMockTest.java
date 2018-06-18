@@ -8,10 +8,12 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
@@ -142,12 +144,14 @@ public class AuthenticationControllerMockTest {
     @Mock
     Metrics metrics;
     
+    @Mock
+    BridgeConfig mockConfig;
+    
     @Before
     public void before() {
         DateTimeUtils.setCurrentMillisFixed(NOW.getMillis());
         
         // Mock the configuration so we can freeze the environment to one that requires SSL.
-        BridgeConfig mockConfig = mock(BridgeConfig.class);
         when(mockConfig.get("domain")).thenReturn(DOMAIN);
         when(mockConfig.getEnvironment()).thenReturn(Environment.UAT);
         
@@ -596,6 +600,31 @@ public class AuthenticationControllerMockTest {
     }
     
     @Test
+    public void localSignInSetsSessionCookie() throws Exception {
+        when(mockConfig.getEnvironment()).thenReturn(Environment.LOCAL);
+        
+        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
+
+        // mock request
+        String requestJsonString = "{" +
+                "\"email\":\"" + TEST_EMAIL + "\"," +
+                "\"password\":\"" + TEST_PASSWORD + "\"," +
+                "\"study\":\"" + TEST_STUDY_ID_STRING + "\"}";
+
+        response = TestUtils.mockPlayContextWithJson(requestJsonString);
+
+        // mock AuthenticationService
+        UserSession session = createSession(TestConstants.REQUIRED_SIGNED_CURRENT, null);
+        when(authenticationService.signIn(any(), any(), any())).thenReturn(session);
+        
+        // execute and validate
+        controller.signIn();
+
+        verify(response).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, TEST_SESSION_TOKEN,
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", DOMAIN, false, false);
+    }
+    
+    @Test
     public void signInOnLocalDoesNotSetCookieWithSSL() throws Exception {
         String json = TestUtils.createJson(
                 "{'study':'" + TEST_STUDY_ID_STRING + 
@@ -1005,13 +1034,8 @@ public class AuthenticationControllerMockTest {
     
     private void verifyCommonLoggingForSignIns() throws Exception {
         verifyMetrics();
-        
-        // For ssl to be true here, we mock the bridge configuration and set the environment
-        // to something besides local. There is a separate test for when the environment is local.
-        verify(response).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, TEST_SESSION_TOKEN,
-                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/", DOMAIN, true, true);
-        
         verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
+        verify(response, never()).setCookie(any(), any(), anyInt(), any(), any(), anyBoolean(), anyBoolean());        
         RequestInfo info = requestInfoCaptor.getValue();
         assertEquals(NOW.getMillis(), info.getSignedInOn().getMillis());
     }
