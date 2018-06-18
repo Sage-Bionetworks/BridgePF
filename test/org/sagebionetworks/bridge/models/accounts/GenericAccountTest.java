@@ -128,17 +128,17 @@ public class GenericAccountTest {
         // Initially empty.
         GenericAccount account = new GenericAccount();
         assertTrue(account.getRoles().isEmpty());
-        TestUtils.assertSetIsImmutable(account.getRoles(), Roles.DEVELOPER);
+        TestUtils.assertSetIsImmutable(account.getRoles(), Roles.TEST_USERS);
 
         // Set works.
         account.setRoles(EnumSet.of(Roles.ADMIN, Roles.DEVELOPER));
         assertEquals(EnumSet.of(Roles.ADMIN, Roles.DEVELOPER), account.getRoles());
-        TestUtils.assertSetIsImmutable(account.getRoles(), Roles.DEVELOPER);
+        TestUtils.assertSetIsImmutable(account.getRoles(), Roles.TEST_USERS);
 
         // Setting to null makes it an empty set.
         account.setRoles(null);
         assertTrue(account.getRoles().isEmpty());
-        TestUtils.assertSetIsImmutable(account.getRoles(), Roles.DEVELOPER);
+        TestUtils.assertSetIsImmutable(account.getRoles(), Roles.TEST_USERS);
 
         // Set to non-empty, then set to empty and verify that it works.
         account.setRoles(EnumSet.of(Roles.RESEARCHER));
@@ -146,7 +146,7 @@ public class GenericAccountTest {
 
         account.setRoles(EnumSet.noneOf(Roles.class));
         assertTrue(account.getRoles().isEmpty());
-        TestUtils.assertSetIsImmutable(account.getRoles(), Roles.DEVELOPER);
+        TestUtils.assertSetIsImmutable(account.getRoles(), Roles.TEST_USERS);
     }
     
     @Test

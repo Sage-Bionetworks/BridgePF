@@ -1352,16 +1352,6 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval();
         STUDY.setExternalIdRequiredOnSignup(true);
         
-        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT).withRoles(Sets.newHashSet())
-                .withExternalId(null).build();
-        
-        participantService.createParticipant(STUDY, CALLER_ROLES, participant, false);
-    }
-
-    public void createRequiredExternalIdWithRolesOK() {
-        mockHealthCodeAndAccountRetrieval();
-        STUDY.setExternalIdRequiredOnSignup(true);
-        
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT).withExternalId(null).build();
         
         participantService.createParticipant(STUDY, CALLER_ROLES, participant, false);

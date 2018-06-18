@@ -1633,7 +1633,7 @@ public class HibernateAccountDaoTest {
         genericAccount.setReauthTokenAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
         genericAccount.setReauthTokenHash(DUMMY_REAUTH_TOKEN_HASH);
         genericAccount.setReauthTokenModifiedOn(CREATED_ON.getMillis());
-        genericAccount.setRoles(EnumSet.of(Roles.DEVELOPER, Roles.RESEARCHER));
+        genericAccount.setRoles(EnumSet.of(Roles.DEVELOPER, Roles.TEST_USERS));
         genericAccount.setStatus(AccountStatus.ENABLED);
         genericAccount.setClientData(TestUtils.getClientData());
         genericAccount.setVersion(VERSION);
@@ -1690,7 +1690,7 @@ public class HibernateAccountDaoTest {
         assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, hibernateAccount.getReauthTokenAlgorithm());
         assertEquals(DUMMY_REAUTH_TOKEN_HASH, hibernateAccount.getReauthTokenHash());
         assertEquals(new Long(CREATED_ON.getMillis()), hibernateAccount.getReauthTokenModifiedOn());
-        assertEquals(EnumSet.of(Roles.DEVELOPER, Roles.RESEARCHER), hibernateAccount.getRoles());
+        assertEquals(EnumSet.of(Roles.DEVELOPER, Roles.TEST_USERS), hibernateAccount.getRoles());
         assertEquals(AccountStatus.ENABLED, hibernateAccount.getStatus());
         assertEquals(TestUtils.getClientData().toString(), hibernateAccount.getClientData());
         assertEquals(VERSION, hibernateAccount.getVersion());
@@ -1758,7 +1758,7 @@ public class HibernateAccountDaoTest {
         hibernateAccount.setReauthTokenAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
         hibernateAccount.setReauthTokenHash(DUMMY_REAUTH_TOKEN_HASH);
         hibernateAccount.setReauthTokenModifiedOn(CREATED_ON.getMillis());
-        hibernateAccount.setRoles(EnumSet.of(Roles.DEVELOPER, Roles.RESEARCHER));
+        hibernateAccount.setRoles(EnumSet.of(Roles.DEVELOPER, Roles.TEST_USERS));
         hibernateAccount.setStatus(AccountStatus.ENABLED);
         hibernateAccount.setClientData(TestUtils.getClientData().toString());
         hibernateAccount.setVersion(VERSION);
@@ -1832,7 +1832,7 @@ public class HibernateAccountDaoTest {
         assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, genericAccount.getReauthTokenAlgorithm());
         assertEquals(DUMMY_REAUTH_TOKEN_HASH, genericAccount.getReauthTokenHash());
         assertEquals(new Long(CREATED_ON.getMillis()), genericAccount.getReauthTokenModifiedOn());
-        assertEquals(EnumSet.of(Roles.DEVELOPER, Roles.RESEARCHER), genericAccount.getRoles());
+        assertEquals(EnumSet.of(Roles.DEVELOPER, Roles.TEST_USERS), genericAccount.getRoles());
         assertEquals(AccountStatus.ENABLED, genericAccount.getStatus());
         assertEquals(TestUtils.getClientData(), genericAccount.getClientData());
         assertEquals(VERSION, genericAccount.getVersion());
