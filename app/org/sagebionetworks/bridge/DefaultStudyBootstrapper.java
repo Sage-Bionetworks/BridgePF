@@ -21,7 +21,7 @@ public class DefaultStudyBootstrapper {
     /**
      * The data group set in the test (api) study. This includes groups that are required for the SDK integration tests.
      */
-    public static final Set<String> TEST_DATA_GROUPS = Sets.newHashSet("sdk-int-1", "sdk-int-2", "group1", BridgeConstants.TEST_USER_GROUP);
+    public static final Set<String> TEST_DATA_GROUPS = Sets.newHashSet("sdk-int-1", "sdk-int-2", "group1");
 
     /**
      * The task identifiers set in the test (api) study. This includes task identifiers that are required for the SDK

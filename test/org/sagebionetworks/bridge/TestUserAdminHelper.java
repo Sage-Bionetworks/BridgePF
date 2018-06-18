@@ -1,9 +1,9 @@
 package org.sagebionetworks.bridge;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.Roles.TEST_USERS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -165,6 +165,7 @@ public class TestUserAdminHelper {
         }
         public Builder withRoles(Roles... roles) {
             this.roles = Sets.newHashSet(roles);
+            this.roles.add(TEST_USERS);
             return this;
         }
         public Builder withDataGroups(Set<String> dataGroups) {
@@ -190,13 +191,6 @@ public class TestUserAdminHelper {
             Study finalStudy = (study == null) ? studyService.getStudy(TEST_STUDY_IDENTIFIER) : study;
             String finalEmail = (email == null) ? TestUtils.makeRandomTestEmail(cls) : email;
             String finalPassword = (password == null) ? PASSWORD : password;
-            
-            // Add the "test_user" data group to all test users.
-            if (dataGroups == null) {
-                dataGroups = new HashSet<String>();
-            }
-            dataGroups.add(BridgeConstants.TEST_USER_GROUP);
-            
             StudyParticipant finalParticipant = new StudyParticipant.Builder().withEmail(finalEmail)
                     .withPassword(finalPassword).withRoles(roles).withLanguages(languages).withDataGroups(dataGroups)
                     .build();
