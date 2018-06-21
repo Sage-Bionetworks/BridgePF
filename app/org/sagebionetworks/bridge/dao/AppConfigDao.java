@@ -10,7 +10,7 @@ public interface AppConfigDao {
     /**
      * Get all the app configuration objects for the study.
      */
-    List<AppConfig> getAppConfigs(StudyIdentifier studyId);
+    List<AppConfig> getAppConfigs(StudyIdentifier studyId, boolean includeDeleted);
     
     /**
      * Get a specific app configuration object for this study.
@@ -29,13 +29,15 @@ public interface AppConfigDao {
     AppConfig updateAppConfig(AppConfig appConfig);
     
     /**
-     * Delete an individual app config. This is a physical delete.
+     * Delete an individual app config by marking it as deleted. The record 
+     * will not be returned from the APIs but is still in the database.
      */
     void deleteAppConfig(StudyIdentifier studyId, String guid);
     
     /**
-     * Delete all the app configs for a study (used in tests). 
+     * Permanently delete an individual app config. The record is deleted 
+     * from the database. 
      */
-    void deleteAllAppConfigs(StudyIdentifier studyId);
-
+    void deleteAppConfigPermanently(StudyIdentifier studyId, String guid);
+    
 }

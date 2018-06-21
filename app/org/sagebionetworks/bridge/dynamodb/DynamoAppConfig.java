@@ -38,6 +38,7 @@ public class DynamoAppConfig implements AppConfig {
     private List<SurveyReference> surveyReferences;
     private List<SchemaReference> schemaReferences;
     private Long version;
+    private boolean deleted;
     
     @JsonIgnore
     @DynamoDBHashKey
@@ -158,11 +159,19 @@ public class DynamoAppConfig implements AppConfig {
     public void setVersion(Long version) {
         this.version = version;
     }
+    
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
 
     @Override
     public int hashCode() {
         return Objects.hash(clientData, createdOn, criteria, guid, label, modifiedOn, schemaReferences, studyId,
-                surveyReferences, version);
+                surveyReferences, version, deleted);
     }
 
     @Override
@@ -177,7 +186,8 @@ public class DynamoAppConfig implements AppConfig {
                 && Objects.equals(label, other.label) && Objects.equals(modifiedOn, other.modifiedOn)
                 && Objects.equals(getSchemaReferences(), other.getSchemaReferences())
                 && Objects.equals(getSurveyReferences(), other.getSurveyReferences()) 
-                && Objects.equals(studyId, other.studyId) && Objects.equals(version, other.version);
+                && Objects.equals(studyId, other.studyId) && Objects.equals(version, other.version)
+                && Objects.equals(deleted, other.deleted);
     }
 
     @Override
@@ -185,6 +195,6 @@ public class DynamoAppConfig implements AppConfig {
         return "DynamoAppConfig [studyId=" + studyId + ", label=" + label + ", guid=" + guid + ", criteria=" + criteria
                 + ", createdOn=" + createdOn + ", modifiedOn=" + modifiedOn + ", clientData=" + clientData
                 + ", surveyReferences=" + getSurveyReferences() + ", schemaReferences=" + getSchemaReferences()
-                + ", version=" + version + "]";
+                + ", version=" + version + ", deleted=" + deleted + "]";
     }
 }

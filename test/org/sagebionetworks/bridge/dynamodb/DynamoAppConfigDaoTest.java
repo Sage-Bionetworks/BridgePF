@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
@@ -52,7 +53,10 @@ public class DynamoAppConfigDaoTest {
     
     @After
     public void after() {
-        dao.deleteAllAppConfigs(STUDY_ID);
+        List<AppConfig> appConfigs = dao.getAppConfigs(STUDY_ID);
+        for (AppConfig oneConfig : appConfigs) {
+            dao.deleteAppConfigPermanently(STUDY_ID, oneConfig.getGuid());
+        }
         assertTrue(dao.getAppConfigs(STUDY_ID).isEmpty());
     }    
 
@@ -119,7 +123,52 @@ public class DynamoAppConfigDaoTest {
         } catch(EntityNotFoundException e) {
             
         }
-        // deleteAll is used in test cleanup, and then verified
+        // Should now only be one config in the list call
+        lists = dao.getAppConfigs(STUDY_ID);
+        assertEquals(1, lists.size());
+        
+        // deleteAppConfigPermanently is used in test cleanup, and then verified
     }
     
+    @Test
+    public void logicalDeleteLeavesConfigInDatabase() {
+        AppConfig config = createAppConfig();
+        AppConfig saved = dao.createAppConfig(config);
+        dao.deleteAppConfig(STUDY_ID, saved.getGuid());
+        
+        AppConfig loaded = dao.loadAppConfig(STUDY_ID, saved.getGuid());
+        assertTrue(loaded.isDeleted());
+    }
+    
+    @Test
+    public void cannotCreateConfigInDeletedState() {
+        AppConfig config = createAppConfig();
+        config.setDeleted(true);
+        AppConfig saved = dao.createAppConfig(config);
+        
+        assertFalse(saved.isDeleted());
+    }
+    
+    @Test
+    public void updatingPermanentlyDeletedConfigThrowsError() {
+        AppConfig config = createAppConfig();
+        AppConfig saved = dao.createAppConfig(config);
+        dao.deleteAppConfigPermanently(STUDY_ID, saved.getGuid());
+        try {
+            dao.updateAppConfig(saved);
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+            
+        }
+    }
+    
+    @Test
+    public void deletingMissingConfigFailsQuietly() {
+        AppConfig config = createAppConfig();
+        AppConfig saved = dao.createAppConfig(config);
+        
+        dao.deleteAppConfigPermanently(STUDY_ID, saved.getGuid());
+        dao.deleteAppConfig(STUDY_ID, saved.getGuid());
+        dao.deleteAppConfigPermanently(STUDY_ID, config.getGuid());
+    }
 }

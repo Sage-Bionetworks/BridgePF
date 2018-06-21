@@ -11,6 +11,7 @@ import javax.annotation.Resource;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.ViewCache;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
@@ -59,10 +60,10 @@ public class AppConfigController extends BaseController {
         return ok(json).as(JSON_MIME_TYPE);
     }
     
-    public Result getAppConfigs() {
+    public Result getAppConfigs(boolean includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
-        List<AppConfig> results = appConfigService.getAppConfigs(session.getStudyIdentifier());
+        List<AppConfig> results = appConfigService.getAppConfigs(session.getStudyIdentifier(), includeDeleted);
         
         return okResult(results);
     }
@@ -98,12 +99,17 @@ public class AppConfigController extends BaseController {
         return okResult(new GuidVersionHolder(updated.getGuid(), updated.getVersion()));
     }
     
-    public Result deleteAppConfig(String guid) {
-        UserSession session = getAuthenticatedSession(ADMIN);
+    public Result deleteAppConfig(String guid, String physical) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         
-        appConfigService.deleteAppConfig(session.getStudyIdentifier(), guid);
+        // physical is set to true for backwards compatiblity, but only admins can delete permanently.
+        
+        if ("true".equals(physical) && session.isInRole(ADMIN)) {
+            appConfigService.deleteAppConfigPermanently(session.getStudyIdentifier(), guid);
+        } else {
+            appConfigService.deleteAppConfig(session.getStudyIdentifier(), guid);
+        }
         cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getStudyIdentifier()));
-
         return okResult("App config deleted.");
     }
 
