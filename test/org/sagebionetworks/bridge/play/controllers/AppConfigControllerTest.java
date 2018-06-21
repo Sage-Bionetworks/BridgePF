@@ -138,15 +138,15 @@ public class AppConfigControllerTest {
     public void getAppConfigs() throws Exception {
         mockPlayContext();
         List<AppConfig> list = Lists.newArrayList(AppConfig.create(), AppConfig.create());
-        when(mockService.getAppConfigs(TEST_STUDY)).thenReturn(list);
+        when(mockService.getAppConfigs(TEST_STUDY, false)).thenReturn(list);
         
-        Result result = controller.getAppConfigs();
+        Result result = controller.getAppConfigs("false");
         
         TestUtils.assertResult(result, 200);
         ResourceList<AppConfig> results = getResponsePayload(result, ResourceList.class);
         assertEquals(2, results.getItems().size());
         
-        verify(mockService).getAppConfigs(TEST_STUDY);
+        verify(mockService).getAppConfigs(TEST_STUDY, false);
     }
     
     @Test

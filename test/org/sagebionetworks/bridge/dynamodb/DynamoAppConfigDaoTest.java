@@ -53,11 +53,11 @@ public class DynamoAppConfigDaoTest {
     
     @After
     public void after() {
-        List<AppConfig> appConfigs = dao.getAppConfigs(STUDY_ID);
+        List<AppConfig> appConfigs = dao.getAppConfigs(STUDY_ID, false);
         for (AppConfig oneConfig : appConfigs) {
             dao.deleteAppConfigPermanently(STUDY_ID, oneConfig.getGuid());
         }
-        assertTrue(dao.getAppConfigs(STUDY_ID).isEmpty());
+        assertTrue(dao.getAppConfigs(STUDY_ID, false).isEmpty());
     }    
 
     private AppConfig createAppConfig() { 
@@ -106,7 +106,7 @@ public class DynamoAppConfigDaoTest {
         AppConfig copy = dao.createAppConfig(saved);
         
         // retrieve list of 2 records
-        List<AppConfig> lists = dao.getAppConfigs(STUDY_ID);
+        List<AppConfig> lists = dao.getAppConfigs(STUDY_ID, false);
         assertEquals(2, lists.size());
         
         AppConfig first = dao.getAppConfig(STUDY_ID, saved.getGuid());
@@ -117,15 +117,17 @@ public class DynamoAppConfigDaoTest {
         
         // delete one record
         dao.deleteAppConfig(STUDY_ID, updated.getGuid());
-        try {
-            dao.getAppConfig(STUDY_ID, updated.getGuid());
-            fail("Should have thrown exception");
-        } catch(EntityNotFoundException e) {
-            
-        }
+        AppConfig deletedConfig = dao.getAppConfig(STUDY_ID, updated.getGuid());
+        assertTrue(deletedConfig.isDeleted());
+        
         // Should now only be one config in the list call
-        lists = dao.getAppConfigs(STUDY_ID);
+        lists = dao.getAppConfigs(STUDY_ID, false);
         assertEquals(1, lists.size());
+        assertFalse(lists.get(0).isDeleted());
+        
+        // Or two if we toggle the flat
+        lists = dao.getAppConfigs(STUDY_ID, true);
+        assertEquals(2, lists.size());
         
         // deleteAppConfigPermanently is used in test cleanup, and then verified
     }

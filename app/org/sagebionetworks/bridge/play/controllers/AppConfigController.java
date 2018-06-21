@@ -11,7 +11,6 @@ import javax.annotation.Resource;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.ViewCache;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
@@ -60,10 +59,11 @@ public class AppConfigController extends BaseController {
         return ok(json).as(JSON_MIME_TYPE);
     }
     
-    public Result getAppConfigs(boolean includeDeleted) {
+    public Result getAppConfigs(String includeDeletedString) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
-        List<AppConfig> results = appConfigService.getAppConfigs(session.getStudyIdentifier(), includeDeleted);
+        List<AppConfig> results = appConfigService.getAppConfigs(session.getStudyIdentifier(), 
+                Boolean.valueOf(includeDeletedString));
         
         return okResult(results);
     }

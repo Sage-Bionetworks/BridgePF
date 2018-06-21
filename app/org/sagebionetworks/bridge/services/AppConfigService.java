@@ -70,7 +70,7 @@ public class AppConfigService {
     public AppConfig getAppConfigForUser(CriteriaContext context, boolean throwException) {
         checkNotNull(context);
 
-        List<AppConfig> appConfigs = getAppConfigs(context.getStudyIdentifier());
+        List<AppConfig> appConfigs = getAppConfigs(context.getStudyIdentifier(), false);
 
         List<AppConfig> matches = appConfigs.stream().filter(oneAppConfig -> {
             return CriteriaUtils.matchCriteria(context, oneAppConfig.getCriteria());
