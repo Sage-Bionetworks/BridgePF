@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,8 +30,11 @@ import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
+import org.sagebionetworks.bridge.models.schedules.SchemaReference;
+import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.studies.Study;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -41,6 +45,9 @@ public class AppConfigServiceTest {
     private static final DateTime TIMESTAMP = DateTime.now();
     private static final long EARLIER_TIMESTAMP = DateTime.now().minusDays(1).getMillis();
     private static final long LATER_TIMESTAMP = DateTime.now().getMillis();
+    private static final List<SurveyReference> SURVEY_REF_LIST = ImmutableList
+            .of(new SurveyReference(null, "guid", DateTime.now()));
+    private static final List<SchemaReference> SCHEMA_REF_LIST = ImmutableList.of(new SchemaReference("id", 3));
     
     @Mock
     private AppConfigDao mockDao;
@@ -48,8 +55,26 @@ public class AppConfigServiceTest {
     @Mock
     private StudyService mockStudyService;
     
+    @Mock
+    private CompoundActivityDefinitionService compoundActivityDefinitionService;
+    
+    @Mock
+    private UploadSchemaService schemaService;
+    
+    @Mock
+    private SurveyService surveyService;
+    
+    @Mock
+    private ReferenceResolver referenceResolver;
+    
     @Captor
     private ArgumentCaptor<AppConfig> appConfigCaptor;
+    
+    @Captor
+    private ArgumentCaptor<SurveyReference> surveyRefCaptor;
+    
+    @Captor
+    private ArgumentCaptor<SchemaReference> schemaRefCaptor;
     
     @Spy
     private AppConfigService service;
@@ -60,9 +85,13 @@ public class AppConfigServiceTest {
     public void before() {
         service.setAppConfigDao(mockDao);
         service.setStudyService(mockStudyService);
+        service.setCompoundActivityDefinitionService(compoundActivityDefinitionService);
+        service.setUploadSchemaService(schemaService);
+        service.setSurveyService(surveyService);    
         
         when(service.getCurrentTimestamp()).thenReturn(TIMESTAMP.getMillis());
         when(service.getGUID()).thenReturn(GUID);
+        //doReturn(referenceResolver).when(service).getReferenceResolver(any(), any());
         
         AppConfig savedAppConfig = AppConfig.create();
         savedAppConfig.setLabel("AppConfig");
@@ -102,6 +131,9 @@ public class AppConfigServiceTest {
         appConfig2.setLabel("AppConfig2");
         appConfig2.setCriteria(criteria2);
         appConfig2.setCreatedOn(EARLIER_TIMESTAMP);
+        // Add some references to verify we call the resolver
+        appConfig2.setSurveyReferences(SURVEY_REF_LIST);
+        appConfig2.setSchemaReferences(SCHEMA_REF_LIST);
         RESULTS.add(appConfig2);
         
         when(mockDao.getAppConfigs(TEST_STUDY)).thenReturn(RESULTS);
@@ -135,6 +167,11 @@ public class AppConfigServiceTest {
     
     @Test
     public void getAppConfigForUser() {
+        SurveyReference filledSurveyRef = new SurveyReference("theIdentifier", SURVEY_REF_LIST.get(0).getGuid(),
+                SURVEY_REF_LIST.get(0).getCreatedOn());
+        doReturn(referenceResolver).when(service).getReferenceResolver(any(), any());
+        when(referenceResolver.resolveSurvey(SURVEY_REF_LIST.get(0))).thenReturn(filledSurveyRef);
+        
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
                 .withStudyIdentifier(TEST_STUDY).build();
@@ -143,6 +180,14 @@ public class AppConfigServiceTest {
         
         AppConfig match = service.getAppConfigForUser(context, true);
         assertEquals(appConfig2, match);
+        
+        // Verify that we called the resolver on this as well
+        verify(referenceResolver).resolveSchema(schemaRefCaptor.capture());
+        verify(referenceResolver).resolveSurvey(surveyRefCaptor.capture());
+        
+        assertEquals(SCHEMA_REF_LIST.get(0), schemaRefCaptor.getValue());
+        assertEquals(SURVEY_REF_LIST.get(0), surveyRefCaptor.getValue());
+        assertEquals("theIdentifier", match.getSurveyReferences().get(0).getIdentifier());
     }
 
     @Test(expected = EntityNotFoundException.class)
@@ -168,6 +213,11 @@ public class AppConfigServiceTest {
 
     @Test
     public void getAppConfigForUserReturnsOldestVersion() {
+        SurveyReference filledSurveyRef = new SurveyReference("theIdentifier", SURVEY_REF_LIST.get(0).getGuid(),
+                SURVEY_REF_LIST.get(0).getCreatedOn());
+        doReturn(referenceResolver).when(service).getReferenceResolver(any(), any());
+        when(referenceResolver.resolveSurvey(SURVEY_REF_LIST.get(0))).thenReturn(filledSurveyRef);
+        
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("iPhone/6 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
                 .withStudyIdentifier(TEST_STUDY).build();

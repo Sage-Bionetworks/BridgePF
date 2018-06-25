@@ -102,7 +102,7 @@ class ReferenceResolver {
         }
     }
     // Helper method to resolve a compound activity reference from its definition.
-    private CompoundActivity resolveCompoundActivity(CompoundActivity compoundActivity) {
+    CompoundActivity resolveCompoundActivity(CompoundActivity compoundActivity) {
         String taskId = compoundActivity.getTaskIdentifier();
         
         CompoundActivity resolvedCompoundActivity = compoundActivityCache.get(taskId);
@@ -133,7 +133,7 @@ class ReferenceResolver {
     }
 
     // Helper method to resolve schema refs and survey refs inside of a compound activity.
-    private CompoundActivity resolveListsInCompoundActivity(CompoundActivity compoundActivity) {
+    CompoundActivity resolveListsInCompoundActivity(CompoundActivity compoundActivity) {
         // Resolve schemas.
         // Lists in CompoundActivity are always non-null, so we don't need to null-check.
         List<SchemaReference> schemaList = new ArrayList<>();
@@ -162,7 +162,7 @@ class ReferenceResolver {
     }
 
     // Helper method to resolve a schema ref to the latest revision for the client.
-    private SchemaReference resolveSchema(SchemaReference schemaRef) {
+    SchemaReference resolveSchema(SchemaReference schemaRef) {
         if (schemaRef.getRevision() != null) {
             // Already has a revision. No need to resolve. Return as is.
             return schemaRef;
@@ -188,8 +188,8 @@ class ReferenceResolver {
     }
 
     // Helper method to resolve a published survey to a specific survey version.
-    private SurveyReference resolveSurvey(SurveyReference surveyRef) {
-        if (surveyRef.getCreatedOn() != null) {
+    SurveyReference resolveSurvey(SurveyReference surveyRef) {
+        if (surveyRef.getCreatedOn() != null && surveyRef.getIdentifier() != null) {
             return surveyRef;
         }
 

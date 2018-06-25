@@ -6,6 +6,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AppConfigDao;
@@ -26,6 +27,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
+import com.google.common.collect.Maps;
+
 @Component
 public class AppConfigService {
     private static final Logger LOG = LoggerFactory.getLogger(AppConfigService.class);
@@ -33,6 +36,12 @@ public class AppConfigService {
     private AppConfigDao appConfigDao;
     
     private StudyService studyService;
+    
+    private CompoundActivityDefinitionService compoundActivityDefinitionService;
+    
+    private UploadSchemaService schemaService;
+    
+    private SurveyService surveyService;
     
     @Autowired
     final void setAppConfigDao(AppConfigDao appConfigDao) {
@@ -43,6 +52,21 @@ public class AppConfigService {
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
+    
+    @Autowired
+    final void setCompoundActivityDefinitionService(CompoundActivityDefinitionService compoundActivityDefinitionService) {
+        this.compoundActivityDefinitionService = compoundActivityDefinitionService;
+    }
+    
+    @Autowired
+    final void setUploadSchemaService(UploadSchemaService schemaService) {
+        this.schemaService = schemaService;
+    }
+    
+    @Autowired
+    final void setSurveyService(SurveyService surveyService) {
+        this.surveyService = surveyService;
+    }   
     
     // In order to mock this value;
     protected long getCurrentTimestamp() {
@@ -87,9 +111,23 @@ public class AppConfigService {
         } else if (matches.size() != 1) {
             // If there is more than one match, return the one created first, but log an error
             LOG.error("CriteriaContext matches more than one app config: criteriaContext=" + context + ", appConfigs="+matches);
-            return matches.get(0);
         }
-        return matches.get(0);
+        AppConfig matched = matches.get(0);
+        
+        // Resolve references.
+        ReferenceResolver resolver = getReferenceResolver(context, matched);
+        matched.setSchemaReferences(matched.getSchemaReferences().stream()
+            .map(schemaReference -> resolver.resolveSchema(schemaReference)).collect(Collectors.toList()));
+        matched.setSurveyReferences(matched.getSurveyReferences().stream()
+            .map(surveyReference -> resolver.resolveSurvey(surveyReference)).collect(Collectors.toList()));
+        return matched;
+    }
+
+    // Separated out so we can mock it for tests.
+    protected ReferenceResolver getReferenceResolver(CriteriaContext context, AppConfig matched) {
+        // We're only resolving one app config, so there are a couple of collection caches that start empty
+        return new ReferenceResolver(compoundActivityDefinitionService, schemaService, surveyService, Maps.newHashMap(),
+                Maps.newHashMap(), context.getClientInfo(), context.getStudyIdentifier());
     }
     
     public AppConfig createAppConfig(StudyIdentifier studyId, AppConfig appConfig) {
