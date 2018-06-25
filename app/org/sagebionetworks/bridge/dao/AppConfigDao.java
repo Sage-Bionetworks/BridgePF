@@ -30,7 +30,7 @@ public interface AppConfigDao {
     
     /**
      * Delete an individual app config by marking it as deleted. The record 
-     * will not be returned from the APIs but is still in the database.
+     * will not be returned from the APIs but it is still in the database.
      */
     void deleteAppConfig(StudyIdentifier studyId, String guid);
     

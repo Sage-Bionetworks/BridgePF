@@ -62,7 +62,7 @@ public class DynamoAppConfigDao implements AppConfigDao {
         key.setStudyId(studyId.getIdentifier());
 
         DynamoDBQueryExpression<DynamoAppConfig> query = new DynamoDBQueryExpression<DynamoAppConfig>()
-            .withHashKeyValues(key);
+                .withHashKeyValues(key);
         if (!includeDeleted) {
             query.withQueryFilterEntry("deleted", new Condition()
                 .withComparisonOperator(ComparisonOperator.EQ)
