@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AppConfigDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoAppConfig;
@@ -15,9 +16,13 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
+import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.validators.AppConfigValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -27,8 +32,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
-import com.google.common.collect.Maps;
-
 @Component
 public class AppConfigService {
     private static final Logger LOG = LoggerFactory.getLogger(AppConfigService.class);
@@ -36,10 +39,6 @@ public class AppConfigService {
     private AppConfigDao appConfigDao;
     
     private StudyService studyService;
-    
-    private CompoundActivityDefinitionService compoundActivityDefinitionService;
-    
-    private UploadSchemaService schemaService;
     
     private SurveyService surveyService;
     
@@ -51,16 +50,6 @@ public class AppConfigService {
     @Autowired
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
-    }
-    
-    @Autowired
-    final void setCompoundActivityDefinitionService(CompoundActivityDefinitionService compoundActivityDefinitionService) {
-        this.compoundActivityDefinitionService = compoundActivityDefinitionService;
-    }
-    
-    @Autowired
-    final void setUploadSchemaService(UploadSchemaService schemaService) {
-        this.schemaService = schemaService;
     }
     
     @Autowired
@@ -113,21 +102,21 @@ public class AppConfigService {
             LOG.error("CriteriaContext matches more than one app config: criteriaContext=" + context + ", appConfigs="+matches);
         }
         AppConfig matched = matches.get(0);
-        
-        // Resolve references.
-        ReferenceResolver resolver = getReferenceResolver(context, matched);
-        matched.setSchemaReferences(matched.getSchemaReferences().stream()
-            .map(schemaReference -> resolver.resolveSchema(schemaReference)).collect(Collectors.toList()));
+        // Resolve survey references to pick up survey identifiers
         matched.setSurveyReferences(matched.getSurveyReferences().stream()
-            .map(surveyReference -> resolver.resolveSurvey(surveyReference)).collect(Collectors.toList()));
+            .map(surveyReference -> resolveSurvey(surveyReference)).collect(Collectors.toList()));
         return matched;
     }
 
-    // Separated out so we can mock it for tests.
-    protected ReferenceResolver getReferenceResolver(CriteriaContext context, AppConfig matched) {
-        // We're only resolving one app config, so there are a couple of collection caches that start empty
-        return new ReferenceResolver(compoundActivityDefinitionService, schemaService, surveyService, Maps.newHashMap(),
-                Maps.newHashMap(), context.getClientInfo(), context.getStudyIdentifier());
+    SurveyReference resolveSurvey(SurveyReference surveyRef) {
+        GuidCreatedOnVersionHolder surveyKeys = new GuidCreatedOnVersionHolderImpl(surveyRef);
+        // Survey references can be bogus, and should be return unmodified if they don't reference an existing survey
+        try {
+            Survey survey = surveyService.getSurvey(surveyKeys);
+            return new SurveyReference(survey.getIdentifier(), survey.getGuid(), new DateTime(survey.getCreatedOn()));
+        } catch(EntityNotFoundException e) {
+            return surveyRef;
+        }
     }
     
     public AppConfig createAppConfig(StudyIdentifier studyId, AppConfig appConfig) {

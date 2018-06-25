@@ -83,7 +83,7 @@ public class SurveyService {
     public Survey getSurvey(GuidCreatedOnVersionHolder keys) {
         checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
         checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
-
+        
         return surveyDao.getSurvey(keys);
     }
 
