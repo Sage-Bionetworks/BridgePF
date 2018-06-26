@@ -237,4 +237,10 @@ public class AppConfigServiceTest {
         verify(mockDao).deleteAppConfig(TEST_STUDY, GUID);
     }
     
+    @Test
+    public void deleteAppConfigPermanently() {
+        service.deleteAppConfigPermanently(TEST_STUDY, GUID);
+        
+        verify(mockDao).deleteAppConfigPermanently(TEST_STUDY, GUID);
+    }
 }
