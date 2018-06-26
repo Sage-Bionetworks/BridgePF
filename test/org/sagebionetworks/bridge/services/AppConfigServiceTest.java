@@ -104,7 +104,7 @@ public class AppConfigServiceTest {
         appConfig2.setCreatedOn(EARLIER_TIMESTAMP);
         RESULTS.add(appConfig2);
         
-        when(mockDao.getAppConfigs(TEST_STUDY)).thenReturn(RESULTS);
+        when(mockDao.getAppConfigs(TEST_STUDY, false)).thenReturn(RESULTS);
         return appConfig2;
     }
     
@@ -117,12 +117,12 @@ public class AppConfigServiceTest {
     
     @Test
     public void getAppConfigs() {
-        when(mockDao.getAppConfigs(TEST_STUDY)).thenReturn(RESULTS);
+        when(mockDao.getAppConfigs(TEST_STUDY, false)).thenReturn(RESULTS);
         
-        List<AppConfig> results = service.getAppConfigs(TEST_STUDY);
+        List<AppConfig> results = service.getAppConfigs(TEST_STUDY, false);
         assertEquals(RESULTS, results);
         
-        verify(mockDao).getAppConfigs(TEST_STUDY);
+        verify(mockDao).getAppConfigs(TEST_STUDY, false);
     }
     
     @Test
@@ -238,10 +238,9 @@ public class AppConfigServiceTest {
     }
     
     @Test
-    public void deleteAllAppConfigs() {
-        service.deleteAllAppConfigs(TEST_STUDY);
+    public void deleteAppConfigPermanently() {
+        service.deleteAppConfigPermanently(TEST_STUDY, GUID);
         
-        verify(mockDao).deleteAllAppConfigs(TEST_STUDY);
+        verify(mockDao).deleteAppConfigPermanently(TEST_STUDY, GUID);
     }
-
 }

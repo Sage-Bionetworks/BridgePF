@@ -48,4 +48,6 @@ public interface AppConfig extends BridgeEntity {
     Long getVersion();
     void setVersion(Long versions);
 
+    boolean isDeleted();
+    void setDeleted(boolean deleted);
 }
