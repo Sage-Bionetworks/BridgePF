@@ -112,6 +112,9 @@ public class AppConfigService {
     // version or createdOn timestamp of a version and this has been validated when creating/
     // updating the reference. We're only concerned with adding survey identifier here.
     SurveyReference resolveSurvey(SurveyReference surveyRef) {
+        if (surveyRef.getIdentifier() != null) {
+            return surveyRef;
+        }
         try {
             GuidCreatedOnVersionHolder surveyKeys = new GuidCreatedOnVersionHolderImpl(surveyRef);
             Survey survey = surveyService.getSurvey(surveyKeys, false);

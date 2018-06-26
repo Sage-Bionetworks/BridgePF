@@ -5,6 +5,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -194,6 +196,21 @@ public class AppConfigServiceTest {
         assertEquals(appConfig2, match);
         
         assertEquals(SURVEY_REF_LIST.get(0), match.getSurveyReferences().get(0));        
+    }
+    
+    @Test
+    public void getAppConfigForUserSurveyIdentifierAlreadySet() throws Exception {
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
+                .withStudyIdentifier(TEST_STUDY).build();
+        
+        AppConfig appConfig2 = setupConfigsForUser();
+        appConfig2.setSurveyReferences(Lists.newArrayList(new SurveyReference("anIdentifier", "guid", DateTime.now())));
+        
+        AppConfig match = service.getAppConfigForUser(context, true);
+        
+        assertEquals("anIdentifier", match.getSurveyReferences().get(0).getIdentifier());
+        verify(surveyService, never()).getSurvey(any(), anyBoolean());
     }
     
     @Test(expected = EntityNotFoundException.class)
