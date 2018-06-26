@@ -86,13 +86,29 @@ public class SurveyServiceMockTest {
     }
     
     @Test
+    public void getSurveyWithoutElements() {
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl("test-guid", 1337);
+        
+        service.getSurvey(keys, false);
+        
+        verify(mockSurveyDao).getSurvey(keys, false);
+    }
+    
+    @Test
+    public void getSurveyMostRecentlyPublishedWithoutElements() {
+        service.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, SURVEY_GUID, false);
+        
+        verify(mockSurveyDao).getSurveyMostRecentlyPublishedVersion(TEST_STUDY, SURVEY_GUID, false);
+    }
+    
+    @Test
     public void publishSurvey() {
         // test inputs and outputs
-        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl("test-guid", 1337);
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, 1337);
         Survey survey = new DynamoSurvey();
 
         // mock DAO
-        when(mockSurveyDao.getSurvey(keys)).thenReturn(survey);
+        when(mockSurveyDao.getSurvey(keys, true)).thenReturn(survey);
         when(mockSurveyDao.publishSurvey(TEST_STUDY, survey, keys, true)).thenReturn(survey);
 
         // mock publish validator
@@ -114,7 +130,7 @@ public class SurveyServiceMockTest {
         
         doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
         Survey survey = createSurvey();
-        doReturn(survey).when(mockSurveyDao).getSurvey(any());
+        doReturn(survey).when(mockSurveyDao).getSurvey(any(), anyBoolean());
         
         service.deleteSurvey(survey);
 
@@ -169,7 +185,7 @@ public class SurveyServiceMockTest {
                 anySetOf(String.class))).thenReturn(ImmutableList.of(makeValidMetadata()));
 
         Survey survey = createSurvey();
-        doReturn(survey).when(mockSurveyDao).getSurvey(any());
+        doReturn(survey).when(mockSurveyDao).getSurvey(any(), anyBoolean());
         service.deleteSurvey(survey);
     }
 
@@ -188,7 +204,7 @@ public class SurveyServiceMockTest {
     public void deleteSurveySucceedsOnPublishedSurvey() {
         Survey survey = createSurvey();
         survey.setPublished(true);
-        doReturn(survey).when(mockSurveyDao).getSurvey(any());
+        doReturn(survey).when(mockSurveyDao).getSurvey(any(), anyBoolean());
         
         service.deleteSurvey(survey);
         verify(mockSurveyDao).deleteSurvey(survey);
@@ -199,7 +215,7 @@ public class SurveyServiceMockTest {
         Survey survey = createSurvey();
         survey.setPublished(false);
         survey.setDeleted(true);
-        doReturn(survey).when(mockSurveyDao).getSurvey(any());
+        doReturn(survey).when(mockSurveyDao).getSurvey(any(), anyBoolean());
         
         try {
             service.deleteSurvey(survey);

@@ -160,12 +160,12 @@ public class SchedulePlanService {
             SurveyReference ref = activity.getSurvey();
             
             if (ref.getCreatedOn() == null) { // pointer to most recently published survey
-                Survey survey = surveyService.getSurveyMostRecentlyPublishedVersion(studyId, ref.getGuid());
+                Survey survey = surveyService.getSurveyMostRecentlyPublishedVersion(studyId, ref.getGuid(), false);
                 return new Activity.Builder().withActivity(activity)
                         .withPublishedSurvey(survey.getIdentifier(), survey.getGuid()).build();
             } else {
                 GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(ref.getGuid(), ref.getCreatedOn().getMillis());
-                Survey survey = surveyService.getSurvey(keys);
+                Survey survey = surveyService.getSurvey(keys, false);
                 return new Activity.Builder().withActivity(activity)
                         .withSurvey(survey.getIdentifier(), ref.getGuid(), ref.getCreatedOn()).build();
             }

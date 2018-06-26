@@ -86,7 +86,6 @@ public class AppConfigServiceTest {
         
         when(service.getCurrentTimestamp()).thenReturn(TIMESTAMP.getMillis());
         when(service.getGUID()).thenReturn(GUID);
-        //doReturn(referenceResolver).when(service).getReferenceResolver(any(), any());
         
         AppConfig savedAppConfig = AppConfig.create();
         savedAppConfig.setLabel("AppConfig");
@@ -166,7 +165,7 @@ public class AppConfigServiceTest {
         survey.setIdentifier("theIdentifier");
         survey.setGuid(SURVEY_REF_LIST.get(0).getGuid());
         survey.setCreatedOn(SURVEY_REF_LIST.get(0).getCreatedOn().getMillis());
-        when(surveyService.getSurvey(SURVEY_KEY)).thenReturn(survey);
+        when(surveyService.getSurvey(SURVEY_KEY, false)).thenReturn(survey);
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
@@ -181,6 +180,22 @@ public class AppConfigServiceTest {
         assertEquals("theIdentifier", match.getSurveyReferences().get(0).getIdentifier());
     }
 
+    @Test
+    public void getAppConfigForUserSurveyDoesNotExist() throws Exception {
+        when(surveyService.getSurvey(SURVEY_KEY, false)).thenThrow(new EntityNotFoundException(Survey.class));
+        
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
+                .withStudyIdentifier(TEST_STUDY).build();
+        
+        AppConfig appConfig2 = setupConfigsForUser();
+        
+        AppConfig match = service.getAppConfigForUser(context, true);
+        assertEquals(appConfig2, match);
+        
+        assertEquals(SURVEY_REF_LIST.get(0), match.getSurveyReferences().get(0));        
+    }
+    
     @Test(expected = EntityNotFoundException.class)
     public void getAppConfigForUserThrowsException() {
         CriteriaContext context = new CriteriaContext.Builder()
@@ -208,7 +223,7 @@ public class AppConfigServiceTest {
         survey.setIdentifier("theIdentifier");
         survey.setGuid(SURVEY_REF_LIST.get(0).getGuid());
         survey.setCreatedOn(SURVEY_REF_LIST.get(0).getCreatedOn().getMillis());
-        when(surveyService.getSurvey(SURVEY_KEY)).thenReturn(survey);
+        when(surveyService.getSurvey(SURVEY_KEY, false)).thenReturn(survey);
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("iPhone/6 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))

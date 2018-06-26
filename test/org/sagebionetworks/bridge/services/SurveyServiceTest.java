@@ -145,13 +145,13 @@ public class SurveyServiceTest {
 
         survey.setIdentifier("newIdentifier");
         surveyService.updateSurvey(survey);
-        survey = surveyService.getSurvey(survey);
+        survey = surveyService.getSurvey(survey, true);
         assertEquals("Identifier has been changed", "newIdentifier", survey.getIdentifier());
         assertEquals("Be honest: do you have high blood pressue?", question.getPromptDetail());
         surveyService.deleteSurvey(survey);
 
         try {
-            surveyService.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid());
+            surveyService.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid(), false);
             fail("Should have thrown an exception");
         } catch (EntityNotFoundException enfe) {
             // expected exception
@@ -207,13 +207,13 @@ public class SurveyServiceTest {
         survey.setName("C");
 
         surveyService.updateSurvey(survey);
-        survey = surveyService.getSurvey(survey);
+        survey = surveyService.getSurvey(survey, true);
 
         assertEquals("Identifier can be updated", "B", survey.getIdentifier());
         assertEquals("Name can be updated", "C", survey.getName());
 
         // Now verify the nextVersion has not been changed
-        Survey finalVersion = surveyService.getSurvey(nextVersion);
+        Survey finalVersion = surveyService.getSurvey(nextVersion, true);
         assertEquals("Next version has same identifier", nextVersion.getIdentifier(), finalVersion.getIdentifier());
         assertEquals("Next name has not changed", nextVersion.getName(), finalVersion.getName());
     }
@@ -230,7 +230,7 @@ public class SurveyServiceTest {
         survey.getElements().get(6).setIdentifier("new gender");
         surveyService.updateSurvey(survey);
 
-        survey = surveyService.getSurvey(survey);
+        survey = surveyService.getSurvey(survey, true);
 
         assertEquals("Survey has one less question", count-1, survey.getElements().size());
         
@@ -306,7 +306,7 @@ public class SurveyServiceTest {
 
         assertTrue("Survey is marked published", survey.isPublished());
 
-        Survey pubSurvey = surveyService.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid());
+        Survey pubSurvey = surveyService.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid(), true);
 
         assertEquals("Same testSurvey GUID", survey.getGuid(), pubSurvey.getGuid());
         assertEquals("Same testSurvey createdOn", survey.getCreatedOn(), pubSurvey.getCreatedOn());
@@ -314,7 +314,7 @@ public class SurveyServiceTest {
 
         // Publishing again is harmless
         survey = surveyService.publishSurvey(TEST_STUDY, survey, false);
-        pubSurvey = surveyService.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid());
+        pubSurvey = surveyService.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid(), true);
         assertEquals("Same testSurvey GUID", survey.getGuid(), pubSurvey.getGuid());
         assertEquals("Same testSurvey createdOn", survey.getCreatedOn(), pubSurvey.getCreatedOn());
         assertTrue("Published testSurvey is marked published", pubSurvey.isPublished());
@@ -333,7 +333,7 @@ public class SurveyServiceTest {
 
         laterSurvey = surveyService.publishSurvey(TEST_STUDY, laterSurvey, false);
 
-        Survey pubSurvey = surveyService.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid());
+        Survey pubSurvey = surveyService.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid(), true);
         assertEquals("Later testSurvey is the published testSurvey", laterSurvey.getCreatedOn(), pubSurvey.getCreatedOn());
     }
 

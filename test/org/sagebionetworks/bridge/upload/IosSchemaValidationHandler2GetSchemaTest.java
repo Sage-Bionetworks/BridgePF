@@ -38,7 +38,7 @@ public class IosSchemaValidationHandler2GetSchemaTest {
 
         SurveyService mockSurveyService = mock(SurveyService.class);
         when(mockSurveyService.getSurvey(
-                eq(new GuidCreatedOnVersionHolderImpl("test-guid", TEST_SURVEY_CREATED_ON_MILLIS))))
+                eq(new GuidCreatedOnVersionHolderImpl("test-guid", TEST_SURVEY_CREATED_ON_MILLIS)), eq(false)))
                 .thenReturn(survey);
 
         // mock upload schema service
@@ -72,7 +72,7 @@ public class IosSchemaValidationHandler2GetSchemaTest {
 
         SurveyService mockSurveyService = mock(SurveyService.class);
         when(mockSurveyService.getSurvey(
-                eq(new GuidCreatedOnVersionHolderImpl("test-guid", TEST_SURVEY_CREATED_ON_MILLIS))))
+                eq(new GuidCreatedOnVersionHolderImpl("test-guid", TEST_SURVEY_CREATED_ON_MILLIS)), eq(false)))
                 .thenReturn(survey);
 
         // set up test handler
@@ -98,7 +98,7 @@ public class IosSchemaValidationHandler2GetSchemaTest {
 
         SurveyService mockSurveyService = mock(SurveyService.class);
         when(mockSurveyService.getSurvey(
-                eq(new GuidCreatedOnVersionHolderImpl("test-guid", TEST_SURVEY_CREATED_ON_MILLIS))))
+                eq(new GuidCreatedOnVersionHolderImpl("test-guid", TEST_SURVEY_CREATED_ON_MILLIS)), eq(false)))
                 .thenReturn(survey);
 
         // set up test handler

@@ -119,7 +119,7 @@ public class SurveyController extends BaseController {
     private Result getSurveyForWorker(String surveyGuid, String createdOnString) {
         long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
-        Survey survey = surveyService.getSurvey(keys);
+        Survey survey = surveyService.getSurvey(keys, true);
         return okResult(survey);
     }
 
@@ -245,7 +245,7 @@ public class SurveyController extends BaseController {
         long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
         
-        Survey survey = surveyService.getSurvey(keys);
+        Survey survey = surveyService.getSurvey(keys, true);
         verifySurveyIsInStudy(session, survey);
         return survey;
     }
@@ -258,7 +258,7 @@ public class SurveyController extends BaseController {
                 session.getStudyIdentifier().getIdentifier());
         
         String json = getView(cacheKey, session, () -> {
-            return surveyService.getSurvey(keys);
+            return surveyService.getSurvey(keys, true);
         });
 
         return ok(json).as(JSON_MIME_TYPE);
@@ -269,7 +269,7 @@ public class SurveyController extends BaseController {
                 session.getStudyIdentifier().getIdentifier());
         
         String json = getView(cacheKey, session, () -> {
-            return surveyService.getSurveyMostRecentlyPublishedVersion(session.getStudyIdentifier(), surveyGuid);
+            return surveyService.getSurveyMostRecentlyPublishedVersion(session.getStudyIdentifier(), surveyGuid, true);
         });
         
         return ok(json).as(JSON_MIME_TYPE);

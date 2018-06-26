@@ -250,7 +250,7 @@ public class HealthDataServiceSubmitHealthDataTest {
         survey.setSchemaRevision(SCHEMA_REV);
 
         SurveyService mockSurveyService = mock(SurveyService.class);
-        when(mockSurveyService.getSurvey(new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS)))
+        when(mockSurveyService.getSurvey(new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS), false))
                 .thenReturn(survey);
 
         // mock handlers
@@ -302,7 +302,7 @@ public class HealthDataServiceSubmitHealthDataTest {
         assertEquals("C", recordData.get("answer-me").textValue());
 
         // validate we did in fact call SurveyService
-        verify(mockSurveyService).getSurvey(new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS));
+        verify(mockSurveyService).getSurvey(new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS), false);
     }
 
     @Test(expected = EntityNotFoundException.class)
@@ -313,7 +313,7 @@ public class HealthDataServiceSubmitHealthDataTest {
         survey.setCreatedOn(SURVEY_CREATED_ON_MILLIS);
 
         SurveyService mockSurveyService = mock(SurveyService.class);
-        when(mockSurveyService.getSurvey(new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS)))
+        when(mockSurveyService.getSurvey(new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS), false))
                 .thenReturn(survey);
 
         // set up service

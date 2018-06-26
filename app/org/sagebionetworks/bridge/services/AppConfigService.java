@@ -108,13 +108,16 @@ public class AppConfigService {
         return matched;
     }
 
+    // Survey and schema references in an app config are "hard" references... they must reference a 
+    // version or createdOn timestamp of a version and this has been validated when creating/
+    // updating the reference. We're only concerned with adding survey identifier here.
     SurveyReference resolveSurvey(SurveyReference surveyRef) {
-        GuidCreatedOnVersionHolder surveyKeys = new GuidCreatedOnVersionHolderImpl(surveyRef);
-        // Survey references can be bogus, and should be return unmodified if they don't reference an existing survey
         try {
-            Survey survey = surveyService.getSurvey(surveyKeys);
+            GuidCreatedOnVersionHolder surveyKeys = new GuidCreatedOnVersionHolderImpl(surveyRef);
+            Survey survey = surveyService.getSurvey(surveyKeys, false);
             return new SurveyReference(survey.getIdentifier(), survey.getGuid(), new DateTime(survey.getCreatedOn()));
         } catch(EntityNotFoundException e) {
+            // Survey references can be bogus, and should be return unmodified if they don't reference an existing survey
             return surveyRef;
         }
     }
@@ -128,7 +131,7 @@ public class AppConfigService {
         Study study = studyService.getStudy(studyId);
         Validator validator = new AppConfigValidator(study.getDataGroups(), true);
         Validate.entityThrowingException(validator, appConfig);
-        
+
         long timestamp = getCurrentTimestamp();
 
         DynamoAppConfig newAppConfig = new DynamoAppConfig();

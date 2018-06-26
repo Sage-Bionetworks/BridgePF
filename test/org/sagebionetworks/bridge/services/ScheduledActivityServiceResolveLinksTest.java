@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -99,7 +101,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         survey.setCreatedOn(SURVEY_CREATED_ON_MILLIS);
 
         mockSurveyService = mock(SurveyService.class);
-        when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(TestConstants.TEST_STUDY, SURVEY_GUID))
+        when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(TestConstants.TEST_STUDY, SURVEY_GUID, false))
                 .thenReturn(survey);
         
         appConfigService = mock(AppConfigService.class);
@@ -173,7 +175,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         // Validate backends. We only called compound activity, schema, and survey services once.
         verify(mockCompoundActivityDefinitionService, times(1)).getCompoundActivityDefinition(any(), any());
         verify(mockSchemaService, times(1)).getLatestUploadSchemaRevisionForAppVersion(any(), any(), any());
-        verify(mockSurveyService, times(1)).getSurveyMostRecentlyPublishedVersion(any(), any());
+        verify(mockSurveyService, times(1)).getSurveyMostRecentlyPublishedVersion(any(), any(), eq(false));
     }
 
     @Test
@@ -221,7 +223,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         // Validate backends. We only called schema and survey services once. We never call compound activity service.
         verify(mockCompoundActivityDefinitionService, never()).getCompoundActivityDefinition(any(), any());
         verify(mockSchemaService, times(1)).getLatestUploadSchemaRevisionForAppVersion(any(), any(), any());
-        verify(mockSurveyService, times(1)).getSurveyMostRecentlyPublishedVersion(any(), any());
+        verify(mockSurveyService, times(1)).getSurveyMostRecentlyPublishedVersion(any(), any(), eq(false));
     }
 
     @Test
@@ -244,7 +246,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         // Validate we never call any backends.
         verify(mockCompoundActivityDefinitionService, never()).getCompoundActivityDefinition(any(), any());
         verify(mockSchemaService, never()).getLatestUploadSchemaRevisionForAppVersion(any(), any(), any());
-        verify(mockSurveyService, never()).getSurveyMostRecentlyPublishedVersion(any(), any());
+        verify(mockSurveyService, never()).getSurveyMostRecentlyPublishedVersion(any(), any(), eq(false));
     }
 
     @Test
@@ -274,7 +276,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         // Validate backends.
         verify(mockCompoundActivityDefinitionService, times(2)).getCompoundActivityDefinition(any(), any());
         verify(mockSchemaService, never()).getLatestUploadSchemaRevisionForAppVersion(any(), any(), any());
-        verify(mockSurveyService, never()).getSurveyMostRecentlyPublishedVersion(any(), any());
+        verify(mockSurveyService, never()).getSurveyMostRecentlyPublishedVersion(any(), any(), eq(false));
     }
 
     @Test
@@ -292,7 +294,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         // Mock schema and survey services to throw.
         when(mockSchemaService.getLatestUploadSchemaRevisionForAppVersion(TestConstants.TEST_STUDY, SCHEMA_ID,
                 ClientInfo.UNKNOWN_CLIENT)).thenThrow(EntityNotFoundException.class);
-        when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(TestConstants.TEST_STUDY, SURVEY_GUID))
+        when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(TestConstants.TEST_STUDY, SURVEY_GUID, false))
                 .thenThrow(EntityNotFoundException.class);
 
         // Execute and validate. We have 2 activities (because of how the test is set up), and the activities have
@@ -312,7 +314,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         // schemaService and surveyService still only get called once.
         verify(mockCompoundActivityDefinitionService, never()).getCompoundActivityDefinition(any(), any());
         verify(mockSchemaService, times(1)).getLatestUploadSchemaRevisionForAppVersion(any(), any(), any());
-        verify(mockSurveyService, times(1)).getSurveyMostRecentlyPublishedVersion(any(), any());
+        verify(mockSurveyService, times(1)).getSurveyMostRecentlyPublishedVersion(any(), any(), eq(false));
     }
 
     private static void verifyCompoundActivities(List<ScheduledActivity> scheduledActivityList) {
@@ -345,7 +347,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         verifySurveys(scheduledActivityList);
 
         // We call survey service once.
-        verify(mockSurveyService, times(1)).getSurveyMostRecentlyPublishedVersion(any(), any());
+        verify(mockSurveyService, times(1)).getSurveyMostRecentlyPublishedVersion(any(), any(), eq(false));
 
         // Validate that we never call compound activity service or schema service (not like we have any reason to).
         verify(mockCompoundActivityDefinitionService, never()).getCompoundActivityDefinition(any(), any());
@@ -365,7 +367,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         verifySurveys(scheduledActivityList);
 
         // We never call survey service.
-        verify(mockSurveyService, never()).getSurveyMostRecentlyPublishedVersion(any(), any());
+        verify(mockSurveyService, never()).getSurveyMostRecentlyPublishedVersion(any(), any(), eq(false));
 
         // Validate that we never call compound activity service or schema service (not like we have any reason to).
         verify(mockCompoundActivityDefinitionService, never()).getCompoundActivityDefinition(any(), any());
@@ -379,7 +381,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         setupSchedulePlanServiceWithActivity(activity);
 
         // Mock survey service to throw.
-        when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(TestConstants.TEST_STUDY, SURVEY_GUID))
+        when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(TestConstants.TEST_STUDY, SURVEY_GUID, false))
                 .thenThrow(EntityNotFoundException.class);
 
         // Execute and validate. We have 2 activities (because of how the test is set up), but the activities don't
@@ -395,7 +397,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         }
 
         // We call survey service twice (because we don't cache exception).
-        verify(mockSurveyService, times(2)).getSurveyMostRecentlyPublishedVersion(any(), any());
+        verify(mockSurveyService, times(2)).getSurveyMostRecentlyPublishedVersion(any(), any(), eq(false));
 
         // Validate that we never call compound activity service or schema service (not like we have any reason to).
         verify(mockCompoundActivityDefinitionService, never()).getCompoundActivityDefinition(any(), any());
@@ -430,7 +432,7 @@ public class ScheduledActivityServiceResolveLinksTest {
 
         // Validate that we never call compound activity service or survey service (not like we have any reason to).
         verify(mockCompoundActivityDefinitionService, never()).getCompoundActivityDefinition(any(), any());
-        verify(mockSurveyService, never()).getSurveyMostRecentlyPublishedVersion(any(), any());
+        verify(mockSurveyService, never()).getSurveyMostRecentlyPublishedVersion(any(), any(), eq(false));
     }
 
     @Test
@@ -451,7 +453,7 @@ public class ScheduledActivityServiceResolveLinksTest {
 
         // Validate that we never call compound activity service or survey service (not like we have any reason to).
         verify(mockCompoundActivityDefinitionService, never()).getCompoundActivityDefinition(any(), any());
-        verify(mockSurveyService, never()).getSurveyMostRecentlyPublishedVersion(any(), any());
+        verify(mockSurveyService, never()).getSurveyMostRecentlyPublishedVersion(any(), any(), eq(false));
     }
 
     @Test
@@ -482,7 +484,7 @@ public class ScheduledActivityServiceResolveLinksTest {
 
         // Validate that we never call compound activity service or survey service (not like we have any reason to).
         verify(mockCompoundActivityDefinitionService, never()).getCompoundActivityDefinition(any(), any());
-        verify(mockSurveyService, never()).getSurveyMostRecentlyPublishedVersion(any(), any());
+        verify(mockSurveyService, never()).getSurveyMostRecentlyPublishedVersion(any(), any(), eq(false));
     }
 
     private static void verifySchemas(List<ScheduledActivity> scheduledActivityList) {
@@ -516,7 +518,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         // No resolution happens, so we never call any of the backends.
         verify(mockCompoundActivityDefinitionService, never()).getCompoundActivityDefinition(any(), any());
         verify(mockSchemaService, never()).getLatestUploadSchemaRevisionForAppVersion(any(), any(), any());
-        verify(mockSurveyService, never()).getSurveyMostRecentlyPublishedVersion(any(), any());
+        verify(mockSurveyService, never()).getSurveyMostRecentlyPublishedVersion(any(), any(), anyBoolean());
     }
 
     private static void verifyActivityListSizeAndLabels(List<ScheduledActivity> scheduledActivityList) {
