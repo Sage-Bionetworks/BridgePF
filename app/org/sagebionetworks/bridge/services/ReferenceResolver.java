@@ -189,7 +189,7 @@ class ReferenceResolver {
 
     // Helper method to resolve a published survey to a specific survey version.
     private SurveyReference resolveSurvey(SurveyReference surveyRef) {
-        if (surveyRef.getCreatedOn() != null) {
+        if (surveyRef.getCreatedOn() != null && surveyRef.getIdentifier() != null) {
             return surveyRef;
         }
 
