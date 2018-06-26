@@ -3,11 +3,11 @@ package org.sagebionetworks.bridge.json;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -37,7 +37,6 @@ public class BridgeObjectMapperTest {
     // have not found a way to prevent this, that doesn't break the object mapper for many, 
     // many objects. 
     @Test
-    @Ignore
     public void doesNotAddTypeFieldTwice() throws Exception {
         ConsentSignature signature = new ConsentSignature.Builder().withName("Jack Aubrey").withBirthdate("1970-12-02").build();
         String json = BridgeObjectMapper.get().writeValueAsString(signature);
@@ -48,7 +47,12 @@ public class BridgeObjectMapperTest {
         
         // This object does not have a filter, should still write a type property
         json = BridgeObjectMapper.get().writeValueAsString(TestUtils.getActivity1());
+        
         String prop = "\"type\":\"Activity\"";
+        assertTrue(json.indexOf(prop) == json.lastIndexOf(prop) && json.indexOf(prop) > -1);
+        
+        json = BridgeObjectMapper.get().writeValueAsString(new TestSurvey(BridgeObjectMapperTest.class, true));
+        prop = "\"type\":\"Survey\"";
         assertTrue(json.indexOf(prop) == json.lastIndexOf(prop) && json.indexOf(prop) > -1);
     }
     
