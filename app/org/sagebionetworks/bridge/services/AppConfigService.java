@@ -67,10 +67,10 @@ public class AppConfigService {
         return BridgeUtils.generateGuid();
     }
     
-    public List<AppConfig> getAppConfigs(StudyIdentifier studyId) {
+    public List<AppConfig> getAppConfigs(StudyIdentifier studyId, boolean includeDeleted) {
         checkNotNull(studyId);
         
-        return appConfigDao.getAppConfigs(studyId);
+        return appConfigDao.getAppConfigs(studyId, includeDeleted);
     }
     
     public AppConfig getAppConfig(StudyIdentifier studyId, String guid) {
@@ -83,7 +83,7 @@ public class AppConfigService {
     public AppConfig getAppConfigForUser(CriteriaContext context, boolean throwException) {
         checkNotNull(context);
 
-        List<AppConfig> appConfigs = getAppConfigs(context.getStudyIdentifier());
+        List<AppConfig> appConfigs = getAppConfigs(context.getStudyIdentifier(), false);
 
         List<AppConfig> matches = appConfigs.stream().filter(oneAppConfig -> {
             return CriteriaUtils.matchCriteria(context, oneAppConfig.getCriteria());
@@ -178,10 +178,10 @@ public class AppConfigService {
         appConfigDao.deleteAppConfig(studyId, guid);
     }
     
-    public void deleteAllAppConfigs(StudyIdentifier studyId) {
+    public void deleteAppConfigPermanently(StudyIdentifier studyId, String guid) {
         checkNotNull(studyId);
+        checkArgument(isNotBlank(guid));
         
-        appConfigDao.deleteAllAppConfigs(studyId);
+        appConfigDao.deleteAppConfigPermanently(studyId, guid);
     }
-    
 }

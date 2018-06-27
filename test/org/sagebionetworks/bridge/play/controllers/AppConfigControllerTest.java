@@ -79,6 +79,8 @@ public class AppConfigControllerTest {
     
     private AppConfig appConfig;
     
+    private UserSession session;
+    
     @Before
     public void before() {
         controller.setAppConfigService(mockService);
@@ -99,7 +101,7 @@ public class AppConfigControllerTest {
         study = Study.create();
         study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         
-        UserSession session = new UserSession();
+        session = new UserSession();
         session.setStudyIdentifier(TEST_STUDY);
         session.setParticipant(new StudyParticipant.Builder()
                 .withDataGroups(Sets.newHashSet("B","A"))
@@ -107,8 +109,8 @@ public class AppConfigControllerTest {
                 .withRoles(Sets.newHashSet(DEVELOPER))
                 .withHealthCode("healthCode")
                 .build());
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
     }
     
@@ -136,15 +138,15 @@ public class AppConfigControllerTest {
     public void getAppConfigs() throws Exception {
         mockPlayContext();
         List<AppConfig> list = Lists.newArrayList(AppConfig.create(), AppConfig.create());
-        when(mockService.getAppConfigs(TEST_STUDY)).thenReturn(list);
+        when(mockService.getAppConfigs(TEST_STUDY, false)).thenReturn(list);
         
-        Result result = controller.getAppConfigs();
+        Result result = controller.getAppConfigs("false");
         
         TestUtils.assertResult(result, 200);
         ResourceList<AppConfig> results = getResponsePayload(result, ResourceList.class);
         assertEquals(2, results.getItems().size());
         
-        verify(mockService).getAppConfigs(TEST_STUDY);
+        verify(mockService).getAppConfigs(TEST_STUDY, false);
     }
     
     @Test
@@ -190,11 +192,40 @@ public class AppConfigControllerTest {
     }
     
     @Test
-    public void deleteAppConfig() throws Exception {
-        Result result = controller.deleteAppConfig(GUID);
+    public void deleteAppConfigDefault() throws Exception {
+        Result result = controller.deleteAppConfig(GUID, null);
         assertResult(result, 200, "App config deleted.");
         
         verify(mockService).deleteAppConfig(TEST_STUDY, GUID);
+    }
+    
+    @Test
+    public void deleteAppConfig() throws Exception {
+        Result result = controller.deleteAppConfig(GUID, "false");
+        assertResult(result, 200, "App config deleted.");
+        
+        verify(mockService).deleteAppConfig(TEST_STUDY, GUID);
+    }
+    
+    @Test
+    public void developerCannotPermanentlyDelete() throws Exception {
+        Result result = controller.deleteAppConfig(GUID, "true");
+        assertResult(result, 200, "App config deleted.");
+        
+        verify(mockService).deleteAppConfig(TEST_STUDY, GUID);
+    }
+    
+    @Test
+    public void adminCanPermanentlyDelete() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder()
+                .copyOf(session.getParticipant())
+                .withRoles(Sets.newHashSet(DEVELOPER, ADMIN))
+                .build());
+        
+        Result result = controller.deleteAppConfig(GUID, "true");
+        assertResult(result, 200, "App config deleted.");
+        
+        verify(mockService).deleteAppConfigPermanently(TEST_STUDY, GUID);
     }
     
     @Test
@@ -229,7 +260,7 @@ public class AppConfigControllerTest {
     
     @Test
     public void deleteAppConfigDeletesCache() {
-        controller.deleteAppConfig("guid");
+        controller.deleteAppConfig("guid", null);
         
         verify(mockCacheProvider).removeSetOfCacheKeys(CACHE_KEY);
     }

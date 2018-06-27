@@ -49,6 +49,7 @@ public class ReferenceResolverTest {
     private static final SchemaReference RESOLVED_SCHEMA_REF = new SchemaReference(SCHEMA_ID, SCHEMA_REVISION);
     private static final TaskReference RESOLVED_TASK_REF = new TaskReference(TASK_ID, RESOLVED_SCHEMA_REF);
     private static final SurveyReference UNRESOLVED_SURVEY_REF = new SurveyReference(SURVEY_ID, SURVEY_GUID, null);
+    private static final SurveyReference UNRESOLVED_SURVEY_ID_REF = new SurveyReference(null, SURVEY_GUID, SURVEY_CREATED_ON);
     private static final SchemaReference UNRESOLVED_SCHEMA_REF = new SchemaReference(SCHEMA_ID, null);
     private static final TaskReference UNRESOLVED_TASK_REF = new TaskReference(TASK_ID, UNRESOLVED_SCHEMA_REF);
     private static final CompoundActivity COMPOUND_ACTIVITY_SKINNY_REF = new CompoundActivity.Builder()
@@ -167,6 +168,20 @@ public class ReferenceResolverTest {
     @Test
     public void surveyResolvedFromServiceAndCached() {
         scheduledActivity.setActivity(activityBuilder.withSurvey(UNRESOLVED_SURVEY_REF).build());
+        when(surveyService.getSurveyMostRecentlyPublishedVersion(STUDY_ID, SURVEY_GUID, false)).thenReturn(SURVEY);
+        
+        resolver.resolve(scheduledActivity);
+        
+        assertEquals(RESOLVED_SURVEY_REF, scheduledActivity.getActivity().getSurvey());
+        
+        resolver.resolve(scheduledActivity);
+        
+        verify(surveyService, times(1)).getSurveyMostRecentlyPublishedVersion(STUDY_ID, SURVEY_GUID, false);
+    }
+    
+    @Test
+    public void surveyWithoutIdentifierResolvedFromServiceAndCached() {
+        scheduledActivity.setActivity(activityBuilder.withSurvey(UNRESOLVED_SURVEY_ID_REF).build());
         when(surveyService.getSurveyMostRecentlyPublishedVersion(STUDY_ID, SURVEY_GUID, false)).thenReturn(SURVEY);
         
         resolver.resolve(scheduledActivity);
