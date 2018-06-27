@@ -60,9 +60,9 @@ public interface SurveyDao {
     void deleteSurveyPermanently(GuidCreatedOnVersionHolder keys);
 
     /**
-     * Get a specific version of a survey.
+     * Get a specific version of a survey with or without its elements.
      */
-    Survey getSurvey(GuidCreatedOnVersionHolder keys);
+    Survey getSurvey(GuidCreatedOnVersionHolder keys, boolean includeElements);
     
     /**
      * Get all versions of a specific survey, ordered by most recent version 
@@ -77,10 +77,10 @@ public interface SurveyDao {
     Survey getSurveyMostRecentVersion(StudyIdentifier studyIdentifier, String guid);
     
     /**
-     * Get the most recent version of a survey that is published. More recent, unpublished 
-     * versions of the survey will be ignored. 
+     * Get the most recent version of a survey that is published, with or without its elements. 
+     * More recent, unpublished versions of the survey will be ignored. 
      */
-    Survey getSurveyMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, String guid);
+    Survey getSurveyMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, String guid, boolean includeElements);
     
     /**
      * Get the most recent version of each survey in the study, that has been published. 

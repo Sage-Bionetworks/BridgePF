@@ -201,7 +201,7 @@ class ReferenceResolver {
         if (resolvedSurveyRef == null) {
             Survey survey;
             try {
-                survey = surveyService.getSurveyMostRecentlyPublishedVersion(studyId, surveyGuid);
+                survey = surveyService.getSurveyMostRecentlyPublishedVersion(studyId, surveyGuid, false);
             } catch (EntityNotFoundException ex) {
                 LOG.error("Schedule references non-existent survey " + surveyGuid);
                 return null;

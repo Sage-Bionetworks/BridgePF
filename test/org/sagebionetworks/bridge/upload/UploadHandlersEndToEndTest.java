@@ -217,7 +217,7 @@ public class UploadHandlersEndToEndTest {
         SurveyService mockSurveyService = mock(SurveyService.class);
         if (survey != null) {
             when(mockSurveyService.getSurvey(new GuidCreatedOnVersionHolderImpl(survey.getGuid(),
-                    survey.getCreatedOn()))).thenReturn(survey);
+                    survey.getCreatedOn()), false)).thenReturn(survey);
         }
 
         // set up IosSchemaValidationHandler

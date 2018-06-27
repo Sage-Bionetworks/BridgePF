@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
@@ -196,8 +197,8 @@ public class HealthDataService {
             // Get survey. We use the survey identifier as the schema ID and the schema revision. Both of these must be
             // specified.
             String surveyGuid = healthDataSubmission.getSurveyGuid();
-            Survey survey = surveyService.getSurvey(new GuidCreatedOnVersionHolderImpl(surveyGuid,
-                    surveyCreatedOnMillis));
+            GuidCreatedOnVersionHolder surveyKeys = new GuidCreatedOnVersionHolderImpl(surveyGuid, surveyCreatedOnMillis);
+            Survey survey = surveyService.getSurvey(surveyKeys, false);
             String schemaId = survey.getIdentifier();
             Integer schemaRev = survey.getSchemaRevision();
             if (StringUtils.isBlank(schemaId) || schemaRev == null) {

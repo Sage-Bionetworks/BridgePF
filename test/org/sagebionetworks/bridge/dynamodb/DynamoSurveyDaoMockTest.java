@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
@@ -86,7 +87,7 @@ public class DynamoSurveyDaoMockTest {
         // spy getSurvey() - There's a lot of complex logic in that query builder that's irrelevant to what we're
         // trying to test. Rather than over-specify our test and make our tests overly complicated, we'll just spy out
         // getSurvey().
-        doReturn(survey).when(surveyDao).getSurvey(SURVEY_KEY);
+        doReturn(survey).when(surveyDao).getSurvey(eq(SURVEY_KEY), anyBoolean());
     }
 
     @Test

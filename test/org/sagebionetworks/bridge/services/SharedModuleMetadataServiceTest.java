@@ -5,6 +5,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
@@ -56,7 +57,7 @@ public class SharedModuleMetadataServiceTest {
         mockSurveyService = mock(SurveyService.class);
 
         Survey fakeSurvey = new TestSurvey(SharedModuleMetadataServiceTest.class, true);
-        when(mockSurveyService.getSurvey(any())).thenReturn(fakeSurvey);
+        when(mockSurveyService.getSurvey(any(), anyBoolean())).thenReturn(fakeSurvey);
 
         svc = spy(new SharedModuleMetadataService());
         svc.setMetadataDao(mockDao);
@@ -101,7 +102,7 @@ public class SharedModuleMetadataServiceTest {
         svcInputMetadata.setSurveyCreatedOn(1L);
         svcInputMetadata.setSurveyGuid("test-survey-guid");
         GuidCreatedOnVersionHolder holder = new GuidCreatedOnVersionHolderImpl("test-survey-guid", 1L);
-        when(mockSurveyService.getSurvey(eq(holder))).thenThrow(EntityNotFoundException.class);
+        when(mockSurveyService.getSurvey(eq(holder), eq(false))).thenThrow(EntityNotFoundException.class);
         svc.createMetadata(svcInputMetadata);
     }
 
@@ -540,7 +541,7 @@ public class SharedModuleMetadataServiceTest {
     @Test(expected = BadRequestException.class)
     public void updateNotFoundSurvey() {
         SharedModuleMetadata svcInputMetadata = makeValidMetadata();
-        when(mockSurveyService.getSurvey(any())).thenThrow(EntityNotFoundException.class);
+        when(mockSurveyService.getSurvey(any(), anyBoolean())).thenThrow(EntityNotFoundException.class);
         when(mockDao.getMetadataByIdAndVersion(anyString(), anyInt())).thenReturn(svcInputMetadata);
         svcInputMetadata.setSchemaId(null);
         svcInputMetadata.setSchemaRevision(null);

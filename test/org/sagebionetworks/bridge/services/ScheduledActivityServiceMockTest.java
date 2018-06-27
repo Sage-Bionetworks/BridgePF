@@ -154,7 +154,7 @@ public class ScheduledActivityServiceMockTest {
         doReturn(SURVEY_CREATED_ON.getMillis()).when(survey).getCreatedOn();
         doReturn("identifier").when(survey).getIdentifier();
         when(surveyService.getSurveyMostRecentlyPublishedVersion(
-                eq(TEST_STUDY), any())).thenReturn(survey);
+                eq(TEST_STUDY), any(), eq(false))).thenReturn(survey);
         
         service.setSchedulePlanService(schedulePlanService);
         service.setScheduledActivityDao(activityDao);
@@ -896,7 +896,7 @@ public class ScheduledActivityServiceMockTest {
         DynamoSurvey survey = new DynamoSurvey();
         survey.setIdentifier("surveyId");
         survey.setGuid("guid");
-        doReturn(survey).when(surveyService).getSurveyMostRecentlyPublishedVersion(any(), any());
+        doReturn(survey).when(surveyService).getSurveyMostRecentlyPublishedVersion(any(), any(), eq(false));
         
         ScheduleContext context = new ScheduleContext.Builder()
                 .withInitialTimeZone(DateTimeZone.UTC)
@@ -931,7 +931,7 @@ public class ScheduledActivityServiceMockTest {
             assertEquals("guid", act.getActivity().getSurvey().getGuid());
         }
         
-        verify(surveyService, times(1)).getSurveyMostRecentlyPublishedVersion(any(), any());
+        verify(surveyService, times(1)).getSurveyMostRecentlyPublishedVersion(any(), any(), eq(false));
     }
     
     // These cases suggested by Dwayne, there all good to verify further we don't have a date change
