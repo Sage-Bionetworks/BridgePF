@@ -108,9 +108,11 @@ public class AppConfigService {
         return matched;
     }
 
-    // Survey and schema references in an app config are "hard" references... they must reference a 
-    // version or createdOn timestamp of a version and this has been validated when creating/
-    // updating the reference. We're only concerned with adding survey identifier here.
+    /**
+     * Survey and schema references in an AppConfig are "hard" references... they must reference a
+     * specific version or createdOn timestamp of a version, and we validate this when creating/
+     * updating the app config. We're only concerned with adding the survey identifier here.
+     */
     SurveyReference resolveSurvey(SurveyReference surveyRef) {
         if (surveyRef.getIdentifier() != null) {
             return surveyRef;
@@ -120,7 +122,8 @@ public class AppConfigService {
             Survey survey = surveyService.getSurvey(surveyKeys, false);
             return new SurveyReference(survey.getIdentifier(), survey.getGuid(), new DateTime(survey.getCreatedOn()));
         } catch(EntityNotFoundException e) {
-            // Survey references can be bogus, and should be return unmodified if they don't reference an existing survey
+            // Survey references can be bogus or orphaned, and should be return unmodified if they don't reference
+            // an existing survey
             return surveyRef;
         }
     }

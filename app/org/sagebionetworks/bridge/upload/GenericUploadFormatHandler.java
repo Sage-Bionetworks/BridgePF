@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.file.FileHelper;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -123,8 +124,8 @@ public class GenericUploadFormatHandler implements UploadValidationHandler {
 
             // Get survey. We use the survey identifier as the schema ID and the schema revision. Both of these must be
             // specified.
-            Survey survey = surveyService.getSurvey(new GuidCreatedOnVersionHolderImpl(surveyGuid,
-                    surveyCreatedOnMillis), false);
+            GuidCreatedOnVersionHolder surveyKeys = new GuidCreatedOnVersionHolderImpl(surveyGuid, surveyCreatedOnMillis);
+            Survey survey = surveyService.getSurvey(surveyKeys, false);
             String surveySchemaId = survey.getIdentifier();
             Integer surveySchemaRev = survey.getSchemaRevision();
             if (StringUtils.isBlank(surveySchemaId) || surveySchemaRev == null) {
