@@ -53,7 +53,7 @@ public class DynamoAppConfigDaoTest {
     
     @After
     public void after() {
-        List<AppConfig> appConfigs = dao.getAppConfigs(STUDY_ID, false);
+        List<AppConfig> appConfigs = dao.getAppConfigs(STUDY_ID, true);
         for (AppConfig oneConfig : appConfigs) {
             dao.deleteAppConfigPermanently(STUDY_ID, oneConfig.getGuid());
         }

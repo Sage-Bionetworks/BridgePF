@@ -65,8 +65,8 @@ public class DynamoAppConfigDao implements AppConfigDao {
                 .withHashKeyValues(key);
         if (!includeDeleted) {
             query.withQueryFilterEntry("deleted", new Condition()
-                .withComparisonOperator(ComparisonOperator.EQ)
-                .withAttributeValueList(new AttributeValue().withN("0")));
+                .withComparisonOperator(ComparisonOperator.NE)
+                .withAttributeValueList(new AttributeValue().withN("1")));
         }
         PaginatedQueryList<DynamoAppConfig> results = mapper.query(DynamoAppConfig.class, query);
         
