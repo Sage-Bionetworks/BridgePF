@@ -61,6 +61,7 @@ public class BridgeObjectMapper extends ObjectMapper {
         // This is a default, but I wanted to note explicitly
         this.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
         this.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        
         // This changes the Joda Module to include the time zone, but in an odd format:
         // 2015-01-01T17:10:10.000Z[-07:00]. Doesn't appear you can have the module just 
         // use the declared timezone of the datetime as sent by the client.
@@ -107,7 +108,7 @@ public class BridgeObjectMapper extends ObjectMapper {
         public TypeBeanSerializer(BeanSerializerBase src) {
             super(src);
         }
-
+        
         @Override
         protected void serializeFields(Object bean, JsonGenerator jgen, SerializerProvider provider)
                 throws IOException, JsonGenerationException {
@@ -121,12 +122,22 @@ public class BridgeObjectMapper extends ObjectMapper {
             super.serializeFieldsFiltered(bean, jgen, provider);
             addTypeProperty(bean, jgen);
         }
-
+        
         private void addTypeProperty(Object bean, JsonGenerator jgen) throws IOException {
             if (noTypeProperty(bean)) {
                 String typeName = BridgeUtils.getTypeName(bean.getClass());
                 if (typeName != null) {
-                    jgen.writeStringField("type", typeName);
+                    // The only way I have found to prevent duplicate properties is to enable strict checking
+                    // for duplicates, but this is a "try and throw exception" feature... you can't test ahead
+                    // of time. Not ideal but only filtered objects have this duplication problem.
+                    try {
+                        jgen.configure(JsonGenerator.Feature.STRICT_DUPLICATE_DETECTION, true);
+                        jgen.writeStringField("type", typeName);
+                    } catch(JsonGenerationException e) {
+                        if (!e.getMessage().equals("Duplicate field 'type'")) {
+                            throw e;
+                        }
+                    }
                 }
             }
         }
