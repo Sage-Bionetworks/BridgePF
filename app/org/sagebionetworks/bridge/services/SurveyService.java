@@ -80,11 +80,11 @@ public class SurveyService {
      * @param studyIdentifier
      * @return
      */
-    public Survey getSurvey(GuidCreatedOnVersionHolder keys) {
+    public Survey getSurvey(GuidCreatedOnVersionHolder keys, boolean includeElements) {
         checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
         checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
-
-        return surveyDao.getSurvey(keys);
+        
+        return surveyDao.getSurvey(keys, includeElements);
     }
 
     /**
@@ -146,7 +146,7 @@ public class SurveyService {
         checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
         checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
 
-        Survey survey = surveyDao.getSurvey(keys);
+        Survey survey = surveyDao.getSurvey(keys, true);
         Validate.entityThrowingException(publishValidator, survey);
 
         return surveyDao.publishSurvey(study, survey, keys, newSchemaRev);
@@ -176,7 +176,7 @@ public class SurveyService {
         checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
         checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
 
-        Survey existing = surveyDao.getSurvey(keys);
+        Survey existing = surveyDao.getSurvey(keys, true);
         if (existing.isDeleted()) {
             throw new EntityNotFoundException(Survey.class);
         }
@@ -256,13 +256,15 @@ public class SurveyService {
      * 
      * @param studyIdentifier
      * @param guid
+     * @param includeElements
+     *      if true, include the child elements, otherwise the collection is empty
      * @return
      */
-    public Survey getSurveyMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, String guid) {
+    public Survey getSurveyMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, String guid, boolean includeElements) {
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
         checkArgument(isNotBlank(guid), Validate.CANNOT_BE_BLANK, "survey guid");
 
-        return surveyDao.getSurveyMostRecentlyPublishedVersion(studyIdentifier, guid);
+        return surveyDao.getSurveyMostRecentlyPublishedVersion(studyIdentifier, guid, includeElements);
     }
 
     /**

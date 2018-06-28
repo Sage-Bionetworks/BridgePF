@@ -94,7 +94,7 @@ public class SharedModuleMetadataService {
             long createdOn = metadata.getSurveyCreatedOn();
 
             try {
-                surveyService.getSurvey(new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn));
+                surveyService.getSurvey(new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn), false);
             } catch (EntityNotFoundException e) {
                 throw new BadRequestException("Survey " + surveyGuid + " referred does not exist.");
             }

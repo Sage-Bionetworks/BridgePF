@@ -119,7 +119,7 @@ public class SharedModuleServiceTest {
 
         // mock survey service
         Survey sharedSurvey = Survey.create();
-        when(mockSurveyService.getSurvey(SHARED_SURVEY_KEY)).thenReturn(sharedSurvey);
+        when(mockSurveyService.getSurvey(SHARED_SURVEY_KEY, true)).thenReturn(sharedSurvey);
 
         Survey localSurvey = Survey.create();
         localSurvey.setGuid(LOCAL_SURVEY_GUID);

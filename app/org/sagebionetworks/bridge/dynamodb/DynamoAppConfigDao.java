@@ -6,20 +6,22 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AppConfigDao;
 import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.google.common.collect.Lists;
 
 @Component
@@ -38,7 +40,22 @@ public class DynamoAppConfigDao implements AppConfigDao {
         this.criteriaDao = criteriaDao;
     }
     
-    public List<AppConfig> getAppConfigs(StudyIdentifier studyId) {
+    DynamoAppConfig loadAppConfig(StudyIdentifier studyId, String guid) {
+        checkNotNull(studyId);
+        checkNotNull(guid);
+        
+        DynamoAppConfig key = new DynamoAppConfig();
+        key.setStudyId(studyId.getIdentifier());
+        key.setGuid(guid);
+        
+        DynamoAppConfig config = mapper.load(key);
+        if (config != null) {
+            loadCriteria(config);
+        }
+        return config;
+    }
+    
+    public List<AppConfig> getAppConfigs(StudyIdentifier studyId, boolean includeDeleted) {
         checkNotNull(studyId);
         
         DynamoAppConfig key = new DynamoAppConfig();
@@ -46,7 +63,11 @@ public class DynamoAppConfigDao implements AppConfigDao {
 
         DynamoDBQueryExpression<DynamoAppConfig> query = new DynamoDBQueryExpression<DynamoAppConfig>()
                 .withHashKeyValues(key);
-        
+        if (!includeDeleted) {
+            query.withQueryFilterEntry("deleted", new Condition()
+                .withComparisonOperator(ComparisonOperator.NE)
+                .withAttributeValueList(new AttributeValue().withN("1")));
+        }
         PaginatedQueryList<DynamoAppConfig> results = mapper.query(DynamoAppConfig.class, query);
         
         List<AppConfig> list = Lists.newArrayListWithCapacity(results.size());
@@ -58,25 +79,17 @@ public class DynamoAppConfigDao implements AppConfigDao {
     }
     
     public AppConfig getAppConfig(StudyIdentifier studyId, String guid) {
-        checkNotNull(studyId);
-        checkNotNull(guid);
-        
-        DynamoAppConfig key = new DynamoAppConfig();
-        key.setStudyId(studyId.getIdentifier());
-        key.setGuid(guid);
-        
-        DynamoAppConfig appConfig = mapper.load(key);
+        DynamoAppConfig appConfig = loadAppConfig(studyId, guid);
         if (appConfig == null) {
             throw new EntityNotFoundException(AppConfig.class);
         }
-        loadCriteria(appConfig);
-        
         return appConfig;
     }
     
     public AppConfig createAppConfig(AppConfig appConfig) {
         checkNotNull(appConfig);
         
+        appConfig.setDeleted(false);
         Criteria criteria = persistCriteria(appConfig);
         appConfig.setCriteria(criteria);
         
@@ -88,6 +101,10 @@ public class DynamoAppConfigDao implements AppConfigDao {
     public AppConfig updateAppConfig(AppConfig appConfig) {
         checkNotNull(appConfig);
         
+        DynamoAppConfig saved = loadAppConfig(new StudyIdentifierImpl(appConfig.getStudyId()), appConfig.getGuid());
+        if (saved == null) {
+            throw new EntityNotFoundException(AppConfig.class);
+        }
         Criteria criteria = persistCriteria(appConfig);
         appConfig.setCriteria(criteria);
         
@@ -99,22 +116,23 @@ public class DynamoAppConfigDao implements AppConfigDao {
         checkNotNull(studyId);
         checkNotNull(guid);
         
-        AppConfig appConfig = getAppConfig(studyId, guid);
-        mapper.delete(appConfig);
-        criteriaDao.deleteCriteria(appConfig.getCriteria().getKey());
+        // If app config doesn't exist, fail silently. It's more user-friendly
+        AppConfig appConfig = loadAppConfig(studyId, guid);
+        if (appConfig != null) {
+            appConfig.setDeleted(true);
+            mapper.save(appConfig);
+        }
     }
     
-    public void deleteAllAppConfigs(StudyIdentifier studyId) {
+    public void deleteAppConfigPermanently(StudyIdentifier studyId, String guid) {
         checkNotNull(studyId);
+        checkNotNull(guid);
         
-        List<AppConfig> appConfigs = getAppConfigs(studyId);
-        if (!appConfigs.isEmpty()) {
-            for (AppConfig oneAppConfig: appConfigs) {
-                mapper.delete(oneAppConfig);
-                criteriaDao.deleteCriteria(oneAppConfig.getCriteria().getKey());
-            }
-            List<FailedBatch> failures = mapper.batchDelete(appConfigs);
-            BridgeUtils.ifFailuresThrowException(failures);
+        // If app config doesn't exist, fail silently. It's more user-friendly
+        DynamoAppConfig appConfig = loadAppConfig(studyId, guid);
+        if (appConfig != null) {
+            mapper.delete(appConfig);
+            criteriaDao.deleteCriteria(appConfig.getCriteria().getKey());
         }
     }
     

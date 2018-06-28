@@ -50,12 +50,17 @@ public class DynamoSurveyDao implements SurveyDao {
         private static final String CREATED_ON_PROPERTY = "versionedOn";
         private static final String STUDY_KEY_PROPERTY = "studyKey";
         
+        boolean skipElements;
         String surveyGuid;
         String studyIdentifier;
         long createdOn;
         boolean published;
         boolean notDeleted;
         
+        QueryBuilder setSkipElements(boolean skipElements) {
+            this.skipElements = skipElements;
+            return this;
+        }
         QueryBuilder setSurvey(String surveyGuid) {
             this.surveyGuid = surveyGuid;
             return this;
@@ -114,7 +119,9 @@ public class DynamoSurveyDao implements SurveyDao {
         Survey getOne(boolean exceptionIfEmpty) {
             List<Survey> surveys = getAll(exceptionIfEmpty);
             if (!surveys.isEmpty()) {
-                attachSurveyElements(surveys.get(0));
+                if (!skipElements) {
+                    attachSurveyElements(surveys.get(0));    
+                }
                 return surveys.get(0);
             }
             return null;
@@ -278,7 +285,7 @@ public class DynamoSurveyDao implements SurveyDao {
     
     @Override
     public Survey updateSurvey(Survey survey) {
-        Survey existing = getSurvey(survey);
+        Survey existing = getSurvey(survey, false);
         if (existing.isDeleted()) {
             throw new EntityNotFoundException(Survey.class);
         }
@@ -304,7 +311,7 @@ public class DynamoSurveyDao implements SurveyDao {
     
     @Override
     public Survey versionSurvey(GuidCreatedOnVersionHolder keys) {
-        DynamoSurvey existing = (DynamoSurvey)getSurvey(keys);
+        DynamoSurvey existing = (DynamoSurvey)getSurvey(keys, true);
         if (existing.isDeleted()) {
             throw new EntityNotFoundException(Survey.class);
         }
@@ -332,7 +339,7 @@ public class DynamoSurveyDao implements SurveyDao {
 
     @Override
     public void deleteSurveyPermanently(GuidCreatedOnVersionHolder keys) {
-        Survey existing = getSurvey(keys);
+        Survey existing = getSurvey(keys, false);
         deleteAllElements(existing.getGuid(), existing.getCreatedOn());
         surveyMapper.delete(existing);
         
@@ -356,8 +363,9 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public Survey getSurveyMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, String guid) {
-        return new QueryBuilder().setStudy(studyIdentifier).isPublished().setSurvey(guid).isNotDeleted().getOne(true);
+    public Survey getSurveyMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, String guid, boolean includeElements) {
+        return new QueryBuilder().setStudy(studyIdentifier).isPublished().setSurvey(guid).isNotDeleted()
+                .setSkipElements(!includeElements).getOne(true);
     }
     
     // secondary index query (not survey GUID) 
@@ -380,8 +388,9 @@ public class DynamoSurveyDao implements SurveyDao {
      * version (not a specific timestamped version), this method should be rarely called.
      */
     @Override
-    public Survey getSurvey(GuidCreatedOnVersionHolder keys) {
-        return new QueryBuilder().setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn()).getOne(true);
+    public Survey getSurvey(GuidCreatedOnVersionHolder keys, boolean includeElements) {
+        return new QueryBuilder().setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn())
+                .setSkipElements(!includeElements).getOne(true);
     }
     
     /**

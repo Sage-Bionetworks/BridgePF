@@ -68,9 +68,10 @@ public class DynamoAppConfigTest {
         appConfig.setSchemaReferences(SCHEMA_REFS);
         appConfig.setClientData(clientData);
         appConfig.setVersion(3L);
+        appConfig.setDeleted(true);
         
         Set<String> fields = Sets.newHashSet("criteria", "label", "createdOn", "modifiedOn", "clientData",
-                "surveyReferences", "schemaReferences", "version", "type");
+                "surveyReferences", "schemaReferences", "version", "type", "deleted");
                 
         JsonNode node = BridgeObjectMapper.get().valueToTree(appConfig);
         assertEquals(fields, Sets.newHashSet(node.fieldNames()));
@@ -90,6 +91,7 @@ public class DynamoAppConfigTest {
         assertEquals(appConfig.getModifiedOn(), deser.getModifiedOn());
         assertEquals(appConfig.getGuid(), deser.getGuid());
         assertEquals(appConfig.getVersion(), deser.getVersion());
+        assertEquals(appConfig.isDeleted(), deser.isDeleted());
     }
     
 }

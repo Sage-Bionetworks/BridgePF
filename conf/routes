@@ -239,11 +239,11 @@ DELETE /v3/topics/:guid                  @org.sagebionetworks.bridge.play.contro
 POST   /v3/topics/:guid/sendNotification @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.sendNotification(guid: String)
 
 # AppConfigs
-GET    /v3/appconfigs        @org.sagebionetworks.bridge.play.controllers.AppConfigController.getAppConfigs
+GET    /v3/appconfigs        @org.sagebionetworks.bridge.play.controllers.AppConfigController.getAppConfigs(includeDeleted: String ?= "false")
 GET    /v3/appconfigs/:guid  @org.sagebionetworks.bridge.play.controllers.AppConfigController.getAppConfig(guid: String)
 POST   /v3/appconfigs        @org.sagebionetworks.bridge.play.controllers.AppConfigController.createAppConfig
 POST   /v3/appconfigs/:guid  @org.sagebionetworks.bridge.play.controllers.AppConfigController.updateAppConfig(guid: String)
-DELETE /v3/appconfigs/:guid  @org.sagebionetworks.bridge.play.controllers.AppConfigController.deleteAppConfig(guid: String)
+DELETE /v3/appconfigs/:guid  @org.sagebionetworks.bridge.play.controllers.AppConfigController.deleteAppConfig(guid: String, physical: String ?= "true")
 
 # Intent to Participant (ITP)
 POST   /v3/itp @org.sagebionetworks.bridge.play.controllers.IntentController.submitIntentToParticipate
