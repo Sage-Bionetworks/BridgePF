@@ -4,19 +4,31 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.util.Set;
 
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
+import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.services.SurveyService;
+import org.sagebionetworks.bridge.services.UploadSchemaService;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 public class AppConfigValidator implements Validator {
 
+    private SurveyService surveyService;
+    private UploadSchemaService schemaService;
     private boolean isNew;
     private Set<String> dataGroups;
     
-    public AppConfigValidator(Set<String> dataGroups, boolean isNew) {
+    public AppConfigValidator(SurveyService surveyService, UploadSchemaService schemaService, Set<String> dataGroups,
+            boolean isNew) {
+        this.surveyService = surveyService;
+        this.schemaService = schemaService;
         this.dataGroups = dataGroups;
         this.isNew = isNew;
     }
@@ -47,21 +59,37 @@ public class AppConfigValidator implements Validator {
         if (appConfig.getSchemaReferences() != null) {
             for (int i=0; i < appConfig.getSchemaReferences().size(); i++) {
                 SchemaReference ref = appConfig.getSchemaReferences().get(i);
+                errors.pushNestedPath("schemaReferences["+i+"]");
                 if (ref.getRevision() == null) {
-                    errors.pushNestedPath("schemaReferences["+i+"]");
                     errors.rejectValue("revision", "is required");
-                    errors.popNestedPath();
+                } else {
+                    try {
+                        schemaService.getUploadSchema(new StudyIdentifierImpl(appConfig.getStudyId()), ref.getId());    
+                    } catch(EntityNotFoundException e) {
+                        errors.rejectValue("", "does not refer to an upload schema");
+                    }
                 }
+                errors.popNestedPath();
             }
         }
         if (appConfig.getSurveyReferences() != null) {
             for (int i=0; i < appConfig.getSurveyReferences().size(); i++) {
                 SurveyReference ref = appConfig.getSurveyReferences().get(i);
+                errors.pushNestedPath("surveyReferences["+i+"]");
                 if (ref.getCreatedOn() == null) {
-                    errors.pushNestedPath("surveyReferences["+i+"]");
                     errors.rejectValue("createdOn", "is required");
-                    errors.popNestedPath();
+                } else {
+                    try {
+                        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(ref);
+                        Survey survey = surveyService.getSurvey(keys, false);
+                        if (!survey.isPublished()) {
+                            errors.rejectValue("", "has not been published");
+                        }
+                    } catch(EntityNotFoundException e) {
+                        errors.rejectValue("", "does not refer to a survey");
+                    }
                 }
+                errors.popNestedPath();
             }
         }
     }
