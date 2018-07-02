@@ -13,6 +13,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
@@ -89,6 +90,7 @@ public class AppConfigValidatorTest {
     @Test
     public void schemaReferencesHaveRevision() { 
         AppConfig appConfig = AppConfig.create();
+        appConfig.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         SchemaReference schemaRef = new SchemaReference("guid",null);
         appConfig.getSchemaReferences().add(schemaRef);
         

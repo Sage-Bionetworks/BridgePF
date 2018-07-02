@@ -11,6 +11,7 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.services.SurveyService;
@@ -48,31 +49,36 @@ public class AppConfigValidator implements Validator {
         if (isBlank(appConfig.getLabel())) {
             errors.rejectValue("label", "is required");
         }
-        if (isBlank(appConfig.getStudyId())) {
-            errors.rejectValue("studyId", "is required");
-        }
         if (appConfig.getCriteria() == null) {
             errors.rejectValue("criteria", "are required");
         } else {
             CriteriaUtils.validate(appConfig.getCriteria(), dataGroups, errors);    
         }
-        if (appConfig.getSchemaReferences() != null) {
-            for (int i=0; i < appConfig.getSchemaReferences().size(); i++) {
-                SchemaReference ref = appConfig.getSchemaReferences().get(i);
-                errors.pushNestedPath("schemaReferences["+i+"]");
-                if (ref.getRevision() == null) {
-                    errors.rejectValue("revision", "is required");
-                } else {
-                    try {
-                        schemaService.getUploadSchema(new StudyIdentifierImpl(appConfig.getStudyId()), ref.getId());    
-                    } catch(EntityNotFoundException e) {
-                        errors.rejectValue("", "does not refer to an upload schema");
+        if (isBlank(appConfig.getStudyId())) {
+            errors.rejectValue("studyId", "is required");
+        } else {
+            // We can't validate schema references if there is no studyId
+            if (appConfig.getSchemaReferences() != null) {
+                StudyIdentifier studyId = new StudyIdentifierImpl(appConfig.getStudyId());
+                
+                for (int i=0; i < appConfig.getSchemaReferences().size(); i++) {
+                    SchemaReference ref = appConfig.getSchemaReferences().get(i);
+                    errors.pushNestedPath("schemaReferences["+i+"]");
+                    if (ref.getRevision() == null) {
+                        errors.rejectValue("revision", "is required");
+                    } else {
+                        try {
+                            schemaService.getUploadSchema(studyId, ref.getId());    
+                        } catch(EntityNotFoundException e) {
+                            errors.rejectValue("", "does not refer to an upload schema");
+                        }
                     }
+                    errors.popNestedPath();
                 }
-                errors.popNestedPath();
             }
         }
         if (appConfig.getSurveyReferences() != null) {
+            
             for (int i=0; i < appConfig.getSurveyReferences().size(); i++) {
                 SurveyReference ref = appConfig.getSurveyReferences().get(i);
                 errors.pushNestedPath("surveyReferences["+i+"]");
@@ -93,4 +99,5 @@ public class AppConfigValidator implements Validator {
             }
         }
     }
+
 }
