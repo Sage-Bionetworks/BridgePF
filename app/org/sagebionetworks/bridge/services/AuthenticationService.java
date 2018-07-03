@@ -2,11 +2,9 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
+import static org.sagebionetworks.bridge.BridgeConstants.REAUTH_TOKEN_CACHE_LOOKUP_IN_SECONDS;
 
 import org.apache.commons.lang3.StringUtils;
-
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_REAUTH_GRACE_PERIOD;
-
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.PasswordGenerator;
 import org.sagebionetworks.bridge.Roles;
@@ -216,10 +214,11 @@ public class AuthenticationService {
         Account account = accountDao.reauthenticate(study, signIn);
 
         UserSession session = getSessionFromAccount(study, context, account);
-        
+
         Tuple<String> reauthTuple = new Tuple<>(session.getSessionToken(), session.getReauthToken());
         cacheProvider.setUserSession(session);
-        cacheProvider.setObject(reauthCacheKey, reauthTuple, BRIDGE_REAUTH_GRACE_PERIOD);
+        // Longer than the caching of the reauthentication token, which provides a grace period for sign ins.
+        cacheProvider.setObject(reauthCacheKey, reauthTuple,  REAUTH_TOKEN_CACHE_LOOKUP_IN_SECONDS*2);
         
         if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
             throw new ConsentRequiredException(session);

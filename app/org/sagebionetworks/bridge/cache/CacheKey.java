@@ -29,11 +29,13 @@ public final class CacheKey {
         }
         return false;
     }
-    
+
+    public static final CacheKey reauthTokenLookupKey(String userId, StudyIdentifier studyId) {
+        return new CacheKey(userId, studyId.getIdentifier(), "ReauthToken");
+    }
     public static final CacheKey shortenUrl(String token) {
         return new CacheKey(token, "ShortenedUrl");
     }
-    
     public static final CacheKey appConfigList(StudyIdentifier studyId) {
         return new CacheKey(studyId.getIdentifier(), "AppConfigList");
     }

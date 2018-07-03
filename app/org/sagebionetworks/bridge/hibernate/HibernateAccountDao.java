@@ -25,9 +25,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
+import org.sagebionetworks.bridge.cache.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -79,6 +81,7 @@ public class HibernateAccountDao implements AccountDao {
     
     private HealthCodeService healthCodeService;
     private HibernateHelper hibernateHelper;
+    private CacheProvider cacheProvider;
 
     /** Health code service, because this DAO is expected to generate health codes for new accounts. */
     @Autowired
@@ -90,6 +93,11 @@ public class HibernateAccountDao implements AccountDao {
     @Autowired
     public final void setHibernateHelper(HibernateHelper hibernateHelper) {
         this.hibernateHelper = hibernateHelper;
+    }
+    
+    @Autowired
+    public final void setCacheProvider(CacheProvider cacheProvider) {
+        this.cacheProvider = cacheProvider;
     }
 
     /**
@@ -209,13 +217,12 @@ public class HibernateAccountDao implements AccountDao {
         }
         
         // Unmarshall account
-        validateHealthCode(hibernateAccount, false);
+        boolean accountUpdated = validateHealthCode(hibernateAccount);
         Account account = unmarshallAccount(hibernateAccount);
-        if (study.isReauthenticationEnabled()) {
-            updateReauthToken(hibernateAccount, account);
-        } else {
-            // clear token in case it was created prior to introduction of the flag
-            account.setReauthToken(null);
+        accountUpdated = updateReauthToken(study, hibernateAccount, account) || accountUpdated;
+        if (accountUpdated) {
+            HibernateAccount updated = hibernateHelper.update(hibernateAccount);
+            account.setVersion(updated.getVersion());
         }
         return account;
     }
@@ -225,9 +232,13 @@ public class HibernateAccountDao implements AccountDao {
         HibernateAccount hibernateAccount = getHibernateAccount(accountId);
 
         if (hibernateAccount != null) {
-            validateHealthCode(hibernateAccount, false);
+            boolean accountUpdated = validateHealthCode(hibernateAccount);
             Account account = unmarshallAccount(hibernateAccount);
-            updateReauthToken(hibernateAccount, account);
+            accountUpdated = updateReauthToken(null, hibernateAccount, account) || accountUpdated;
+            if (accountUpdated) {
+                HibernateAccount updated = hibernateHelper.update(hibernateAccount);
+                account.setVersion(updated.getVersion());
+            }
             return account;
         } else {
             // In keeping with the email implementation, just return null
@@ -246,26 +257,34 @@ public class HibernateAccountDao implements AccountDao {
         }
     }
     
-    private void updateReauthToken(HibernateAccount hibernateAccount, Account account) {
-        // Re-create and persist the authentication token.
-        String reauthToken = SecureTokenGenerator.INSTANCE.nextToken();
-        account.setReauthToken(reauthToken);
+    private boolean updateReauthToken(Study study, HibernateAccount hibernateAccount, Account account) {
+        if (study != null && !study.isReauthenticationEnabled()) {
+            account.setReauthToken(null);
+            return false;
+        }
+        CacheKey reauthTokenKey = CacheKey.reauthTokenLookupKey(account.getId(), account.getStudyIdentifier());
         
+        // We cache the reauthentication token for 15 seconds so that concurrent sign in 
+        // requests don't throw 409 concurrent modification exceptions as an optimistic lock
+        // prevents (correctly) updating the reauth token that is issued over and over.
+        String cachedReauthToken = cacheProvider.getObject(reauthTokenKey, String.class);
+        if (cachedReauthToken != null) {
+            account.setReauthToken(cachedReauthToken);
+            return false;
+        }
+        String reauthToken = SecureTokenGenerator.INSTANCE.nextToken();
+        cacheProvider.setObject(reauthTokenKey, reauthToken, BridgeConstants.REAUTH_TOKEN_CACHE_LOOKUP_IN_SECONDS);
+
+        // Re-create and persist the authentication token.
         PasswordAlgorithm passwordAlgorithm = PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
         String reauthTokenHash = hashCredential(passwordAlgorithm, "reauth token", reauthToken);
         hibernateAccount.setReauthTokenHash(reauthTokenHash);
         hibernateAccount.setReauthTokenAlgorithm(passwordAlgorithm);
         hibernateAccount.setReauthTokenModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        
         // We must get the current version to return from the DAO, or subsequent updates to the 
         // account, even in the same call, will fail (e.g. to update languages captured from a request).
-        // This is safe because the only attributes we're changing are the re-authentication 
-        // token columns, and these cannot be changed anywhere else. Also note that this works in 
-        // the case of adding healthCode/healthId because we're returning the hibernateAccount with
-        // the version incremented by the HibernateHelper class in that case, whereas here we have 
-        // already transferred over to the use of the account object in the calling code.
-        HibernateAccount updated = hibernateHelper.update(hibernateAccount);
-        ((GenericAccount)account).setVersion(updated.getVersion());
+        account.setReauthToken(reauthToken);
+        return true;
     }
     
     /** {@inheritDoc} */
@@ -380,9 +399,11 @@ public class HibernateAccountDao implements AccountDao {
     public Account getAccount(AccountId accountId) {
         HibernateAccount hibernateAccount = getHibernateAccount(accountId);
         if (hibernateAccount != null) {
-            validateHealthCode(hibernateAccount, true);
-            Account account = unmarshallAccount(hibernateAccount);
-            return account;
+            boolean updated = validateHealthCode(hibernateAccount);
+            if (updated) {
+                hibernateHelper.update(hibernateAccount); 
+            }
+            return unmarshallAccount(hibernateAccount);
         } else {
             // In keeping with the email implementation, just return null
             return null;
@@ -673,7 +694,7 @@ public class HibernateAccountDao implements AccountDao {
     // through the DAO will automatically have health code and ID populated, but accounts created in the DB directly
     // are left in a bad state. This method validates the health code mapping on a HibernateAccount and updates it as
     // is necessary.
-    private void validateHealthCode(HibernateAccount hibernateAccount, boolean doSave) {
+    private boolean validateHealthCode(HibernateAccount hibernateAccount) {
         if (StringUtils.isBlank(hibernateAccount.getHealthCode()) ||
                 StringUtils.isBlank(hibernateAccount.getHealthId())) {
             // Generate health code mapping.
@@ -685,14 +706,9 @@ public class HibernateAccountDao implements AccountDao {
             // We modified it. Update modifiedOn.
             long modifiedOn = DateUtils.getCurrentMillisFromEpoch();
             hibernateAccount.setModifiedOn(modifiedOn);
-            
-            // If called from a get method, we do need to update the account. If called as part of an
-            // authentication pathway, we don't save here because we will save the account after we rotate 
-            // the reauthentication token.
-            if (doSave) {
-                hibernateHelper.update(hibernateAccount);    
-            }
+            return true;
         }
+        return false;
     }
 
     // Helper method which unmarshall a HibernateAccount into a GenericAccount.

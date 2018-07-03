@@ -26,6 +26,11 @@ public class CacheKeyTest {
     }
     
     @Test
+    public void reauthTokenLookupKey() {
+        assertEquals("ABC:api:ReauthToken", CacheKey.reauthTokenLookupKey("ABC", TestConstants.TEST_STUDY).toString());
+    }
+    
+    @Test
     public void shortenUrl() {
         assertEquals("ABC:ShortenedUrl", CacheKey.shortenUrl("ABC").toString());
     }
