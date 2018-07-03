@@ -399,11 +399,13 @@ public class HibernateAccountDao implements AccountDao {
     public Account getAccount(AccountId accountId) {
         HibernateAccount hibernateAccount = getHibernateAccount(accountId);
         if (hibernateAccount != null) {
-            boolean updated = validateHealthCode(hibernateAccount);
-            if (updated) {
-                hibernateHelper.update(hibernateAccount); 
+            boolean accountUpdated = validateHealthCode(hibernateAccount);
+            Account account = unmarshallAccount(hibernateAccount);
+            if (accountUpdated) {
+                HibernateAccount updated = hibernateHelper.update(hibernateAccount);
+                account.setVersion(updated.getVersion());
             }
-            return unmarshallAccount(hibernateAccount);
+            return account;
         } else {
             // In keeping with the email implementation, just return null
             return null;
