@@ -109,7 +109,7 @@ public class SurveyServiceMockTest {
 
         // mock DAO
         when(mockSurveyDao.getSurvey(keys, true)).thenReturn(survey);
-        when(mockSurveyDao.publishSurvey(TEST_STUDY, survey, keys, true)).thenReturn(survey);
+        when(mockSurveyDao.publishSurvey(TEST_STUDY, survey, true)).thenReturn(survey);
 
         // mock publish validator
         when(mockSurveyPublishValidator.supports(any())).thenReturn(true);
@@ -254,7 +254,7 @@ public class SurveyServiceMockTest {
         survey.setPublished(true);
         Survey unpubSurvey = createSurvey();
         unpubSurvey.setPublished(false);
-        doReturn(Lists.newArrayList(unpubSurvey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID);
+        doReturn(Lists.newArrayList(unpubSurvey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, false);
         
         try {
             service.deleteSurveyPermanently(TEST_STUDY, survey);
@@ -276,7 +276,7 @@ public class SurveyServiceMockTest {
         
         // Two published surveys in the list, no exception thrown
         Survey survey = createSurvey();
-        doReturn(Lists.newArrayList(survey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID);
+        doReturn(Lists.newArrayList(survey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, false);
         
         service.deleteSurveyPermanently(TEST_STUDY, survey);
     }
@@ -310,7 +310,7 @@ public class SurveyServiceMockTest {
         survey.setPublished(true);
         Survey unpubSurvey = createSurvey();
         unpubSurvey.setPublished(false);
-        doReturn(Lists.newArrayList(unpubSurvey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID);
+        doReturn(Lists.newArrayList(unpubSurvey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, false);
         
         try {
             service.deleteSurveyPermanently(TEST_STUDY, survey);
@@ -332,7 +332,7 @@ public class SurveyServiceMockTest {
         
         // Two published surveys in the list, no exception thrown
         Survey survey = createSurvey();
-        doReturn(Lists.newArrayList(survey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID);
+        doReturn(Lists.newArrayList(survey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, false);
         
         service.deleteSurveyPermanently(TEST_STUDY, survey);
     }    

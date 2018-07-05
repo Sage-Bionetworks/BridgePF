@@ -149,7 +149,7 @@ public class SurveyService {
         Survey survey = surveyDao.getSurvey(keys, true);
         Validate.entityThrowingException(publishValidator, survey);
 
-        return surveyDao.publishSurvey(study, survey, keys, newSchemaRev);
+        return surveyDao.publishSurvey(study, survey, newSchemaRev);
     }
 
     /**
@@ -229,11 +229,11 @@ public class SurveyService {
      * @param guid
      * @return
      */
-    public List<Survey> getSurveyAllVersions(StudyIdentifier studyIdentifier, String guid) {
+    public List<Survey> getSurveyAllVersions(StudyIdentifier studyIdentifier, String guid, boolean includeDeleted) {
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
         checkArgument(isNotBlank(guid), Validate.CANNOT_BE_BLANK, "survey guid");
 
-        return surveyDao.getSurveyAllVersions(studyIdentifier, guid);
+        return surveyDao.getSurveyAllVersions(studyIdentifier, guid, includeDeleted);
     }
 
     /**
@@ -274,10 +274,10 @@ public class SurveyService {
      * @param studyIdentifier
      * @return
      */
-    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier) {
+    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, boolean includeDeleted) {
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
 
-        return surveyDao.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier);
+        return surveyDao.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier, includeDeleted);
     }
 
     /**
@@ -286,10 +286,10 @@ public class SurveyService {
      * @param studyIdentifier
      * @return
      */
-    public List<Survey> getAllSurveysMostRecentVersion(StudyIdentifier studyIdentifier) {
+    public List<Survey> getAllSurveysMostRecentVersion(StudyIdentifier studyIdentifier, boolean includeDeleted) {
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
 
-        return surveyDao.getAllSurveysMostRecentVersion(studyIdentifier);
+        return surveyDao.getAllSurveysMostRecentVersion(studyIdentifier, includeDeleted);
     }
     
     private void checkConstraintsBeforePhysicalDelete(final StudyIdentifier studyId, final GuidCreatedOnVersionHolder keys) {
@@ -308,7 +308,8 @@ public class SurveyService {
             return surveyReference.getGuid().equals(theseKeys.getGuid());
         });
         if (match != null) {
-            long publishedSurveys = getSurveyAllVersions(studyId, keys.getGuid()).stream()
+            // If you delete a version, things that depend on it are eligible for physical deletion.
+            long publishedSurveys = getSurveyAllVersions(studyId, keys.getGuid(), false).stream()
                     .filter(Survey::isPublished).collect(Collectors.counting());
 
             if (publishedSurveys == 1L) {

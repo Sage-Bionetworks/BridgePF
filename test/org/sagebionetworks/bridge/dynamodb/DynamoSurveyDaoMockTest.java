@@ -9,21 +9,27 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
+
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
@@ -34,6 +40,7 @@ import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
+@RunWith(MockitoJUnitRunner.class)
 public class DynamoSurveyDaoMockTest {
     private static final DateTime MOCK_NOW = DateTime.parse("2016-08-24T15:23:57.123-0700");
     private static final long MOCK_NOW_MILLIS = MOCK_NOW.getMillis();
@@ -46,11 +53,20 @@ public class DynamoSurveyDaoMockTest {
     private static final GuidCreatedOnVersionHolder SURVEY_KEY = new GuidCreatedOnVersionHolderImpl(SURVEY_GUID,
             SURVEY_CREATED_ON);
 
-    private UploadSchemaService mockSchemaService;
-    private DynamoDBMapper mockSurveyMapper;
     private Survey survey;
+    
+    @Spy
     private DynamoSurveyDao surveyDao;
 
+    @Mock
+    private DynamoDBMapper mockSurveyMapper;
+
+    @Mock
+    private UploadSchemaService mockSchemaService;
+    
+    @Mock
+    private QueryResultPage<Survey> mockQueryResultPage;
+    
     @BeforeClass
     public static void mockNow() {
         DateTimeUtils.setCurrentMillisFixed(MOCK_NOW_MILLIS);
@@ -68,19 +84,14 @@ public class DynamoSurveyDaoMockTest {
         survey.setIdentifier(SURVEY_ID);
         survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
 
-        // mock mapper
-        mockSurveyMapper = mock(DynamoDBMapper.class);
-
         // mock schema dao
         UploadSchema schema = UploadSchema.create();
         schema.setRevision(SCHEMA_REV);
 
-        mockSchemaService = mock(UploadSchemaService.class);
         when(mockSchemaService.createUploadSchemaFromSurvey(TestConstants.TEST_STUDY, survey, true)).thenReturn(
                 schema);
 
         // set up survey dao for test
-        surveyDao = spy(new DynamoSurveyDao());
         surveyDao.setSurveyMapper(mockSurveyMapper);
         surveyDao.setUploadSchemaService(mockSchemaService);
 
@@ -100,7 +111,7 @@ public class DynamoSurveyDaoMockTest {
         survey.setElements(ImmutableList.of(surveyQuestion));
 
         // execute and validate
-        Survey retval = surveyDao.publishSurvey(TestConstants.TEST_STUDY, survey, SURVEY_KEY, true);
+        Survey retval = surveyDao.publishSurvey(TestConstants.TEST_STUDY, survey, true);
         assertTrue(retval.isPublished());
         assertEquals(MOCK_NOW_MILLIS, retval.getModifiedOn());
         assertEquals(SCHEMA_REV, retval.getSchemaRevision().intValue());
@@ -119,7 +130,7 @@ public class DynamoSurveyDaoMockTest {
         survey.setElements(ImmutableList.of(infoScreen));
 
         // same test as above, except we *don't* call through to the upload schema DAO
-        Survey retval = surveyDao.publishSurvey(TestConstants.TEST_STUDY, survey, SURVEY_KEY, true);
+        Survey retval = surveyDao.publishSurvey(TestConstants.TEST_STUDY, survey, true);
         assertTrue(retval.isPublished());
         assertEquals(MOCK_NOW_MILLIS, retval.getModifiedOn());
         assertNull(retval.getSchemaRevision());
@@ -132,7 +143,11 @@ public class DynamoSurveyDaoMockTest {
     public void deleteSurveyAlsoDeletesSchema() {
         // We also need to spy deleteAllElements(), because there's also a lot of complex logic there.
         doNothing().when(surveyDao).deleteAllElements(SURVEY_GUID, SURVEY_CREATED_ON);
-
+        
+        List<Survey> results = Lists.newArrayList(survey);
+        doReturn(results).when(mockQueryResultPage).getResults();
+        doReturn(mockQueryResultPage).when(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), any());
+        
         // Execute
         surveyDao.deleteSurveyPermanently(SURVEY_KEY);
 

@@ -59,7 +59,7 @@ public class SchemaSurveyGuidBackfill extends AsyncBackfillTemplate {
             StudyIdentifier studyId = oneStudy.getStudyIdentifier();
 
             try {
-                List<Survey> surveyList = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyId);
+                List<Survey> surveyList = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyId, false);
                 for (Survey oneSurvey : surveyList) {
                     // Sleep for 1 sec so we don't brown out DDB.
                     sleep();
