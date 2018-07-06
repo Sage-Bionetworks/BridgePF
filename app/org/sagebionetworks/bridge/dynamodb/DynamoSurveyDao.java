@@ -286,8 +286,17 @@ public class DynamoSurveyDao implements SurveyDao {
     @Override
     public Survey updateSurvey(Survey survey) {
         Survey existing = getSurvey(survey, false);
+        
+        // This is a special case. If this call restores a published survey, that's all we do.
+        // Otherwise, throw an exception because you can't update published surveys.
         if (existing.isPublished()) {
-            throw new PublishedSurveyException(survey);
+            if (existing.isDeleted() && !survey.isDeleted()) {
+                existing = getSurvey(survey, true);
+                existing.setDeleted(false);
+                return saveSurvey(existing);
+            } else {
+                throw new PublishedSurveyException(survey);
+            }
         }
 
         // copy over mutable fields
@@ -295,6 +304,7 @@ public class DynamoSurveyDao implements SurveyDao {
         existing.setName(survey.getName());
         existing.setElements(survey.getElements());
         existing.setCopyrightNotice(survey.getCopyrightNotice());
+        existing.setDeleted(survey.isDeleted());
 
         // copy over DDB version so we can handle concurrent modification exceptions
         existing.setVersion(survey.getVersion());

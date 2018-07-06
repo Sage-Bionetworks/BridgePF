@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -27,6 +28,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -35,6 +38,7 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -62,10 +66,19 @@ public class DynamoSurveyDaoMockTest {
     private DynamoDBMapper mockSurveyMapper;
 
     @Mock
+    private DynamoDBMapper mockSurveyElementMapper;
+    
+    @Mock
     private UploadSchemaService mockSchemaService;
     
     @Mock
     private QueryResultPage<Survey> mockQueryResultPage;
+    
+    @Mock
+    private QueryResultPage<SurveyElement> mockElementQueryResultPage;
+    
+    @Captor
+    private ArgumentCaptor<Survey> surveyCaptor;
     
     @BeforeClass
     public static void mockNow() {
@@ -94,6 +107,7 @@ public class DynamoSurveyDaoMockTest {
         // set up survey dao for test
         surveyDao.setSurveyMapper(mockSurveyMapper);
         surveyDao.setUploadSchemaService(mockSchemaService);
+        surveyDao.setSurveyElementMapper(mockSurveyElementMapper);
 
         // spy getSurvey() - There's a lot of complex logic in that query builder that's irrelevant to what we're
         // trying to test. Rather than over-specify our test and make our tests overly complicated, we'll just spy out
@@ -155,5 +169,28 @@ public class DynamoSurveyDaoMockTest {
         verify(surveyDao).deleteAllElements(SURVEY_GUID, SURVEY_CREATED_ON);
         verify(mockSurveyMapper).delete(survey);
         verify(mockSchemaService).deleteUploadSchemaById(TestConstants.TEST_STUDY, SURVEY_ID);
+    }
+    
+    @Test
+    public void updatePublishedSurveyWillUndelete() {
+        DynamoSurvey existing = new DynamoSurvey(SURVEY_GUID, SURVEY_CREATED_ON);
+        existing.setIdentifier(SURVEY_ID);
+        existing.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        existing.setDeleted(true);
+        existing.setPublished(true);
+        
+        List<Survey> results = Lists.newArrayList(existing);
+        doReturn(results).when(mockQueryResultPage).getResults();
+        doReturn(mockQueryResultPage).when(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), any());
+        
+        List<SurveyElement> elementResults = Lists.newArrayList();
+        doReturn(elementResults).when(mockElementQueryResultPage).getResults();
+        doReturn(mockElementQueryResultPage).when(mockSurveyElementMapper).queryPage(eq(DynamoSurveyElement.class), any());
+        
+        survey.setDeleted(false);
+        surveyDao.updateSurvey(survey);
+
+        verify(mockSurveyMapper).save(surveyCaptor.capture());
+        assertFalse(surveyCaptor.getValue().isDeleted());
     }
 }

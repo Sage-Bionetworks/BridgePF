@@ -254,6 +254,20 @@ public class DynamoSurveyDaoTest {
         survey.setName("This is a new name");
         surveyDao.updateSurvey(survey);
     }
+    
+    @Test
+    public void canUndeletePublishedSurveys() {
+        testSurvey.setDeleted(true);
+        Survey survey = createSurvey(testSurvey);
+        publishSurvey(TEST_STUDY, survey);
+        
+        surveyDao.deleteSurvey(survey);
+        assertTrue(survey.isDeleted());
+        
+        survey.setDeleted(false);
+        survey = surveyDao.updateSurvey(survey);
+        assertFalse(survey.isDeleted());
+    }
 
     // VERSION SURVEY
 
