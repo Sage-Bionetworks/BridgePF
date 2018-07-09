@@ -228,11 +228,13 @@ public class ScheduledActivityService {
             ScheduledActivity activity = scheduledActivities.get(i);
             ScheduledActivity dbActivity = dbMap.remove(activity.getGuid());
             
-            if (dbActivity != null && !UPDATABLE_STATUSES.contains(dbActivity.getStatus())) {
-                // Once the activity is in the database and is in a non-updatable state, we should use the one from the
-                // database. Otherwise, either (a) it doesn't exist yet and needs to be persisted or (b) the user
-                // hasn't interacted with it yet, so we can safely replace it with the newly generated one, which may
-                // have updated schemas or surveys.
+            boolean updatableStatus = dbActivity != null && UPDATABLE_STATUSES.contains(dbActivity.getStatus());
+            
+            if (dbActivity != null && (!updatableStatus || dbActivity.getClientData() != null)) {
+                // Once the activity is in the database and is in a non-updatable state (and that includes attaching
+                // client data to the activity), we should use the one from the database. Otherwise, either (a) it
+                // doesn't exist yet and needs to be persisted or (b) the user hasn't interacted with it yet, so we 
+                // can safely replace it with the newly generated one, which may have updated schemas or surveys.
                 //
                 // Note that this only works because the scheduled activity guid is actually the schedule plan's
                 // activity guid concatenated with scheduled time. So when the scheduler regenerates the scheduled
