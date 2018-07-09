@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -24,6 +23,7 @@ import org.sagebionetworks.bridge.dao.CompoundActivityDefinitionDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivity;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivityDefinition;
@@ -129,11 +129,13 @@ public class CompoundActivityDefinitionServiceTest {
         Activity newActivity = new Activity.Builder()
                 .withCompoundActivity(compoundActivity).build();
         plan.getStrategy().getAllPossibleSchedules().get(0).getActivities().set(0, newActivity);
-        when(schedulePlanService.getSchedulePlans(any(), any())).thenReturn(Lists.newArrayList(plan));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false))
+                .thenReturn(Lists.newArrayList(plan));
         
         // Now, a schedule plan exists that references this task ID. It cannot be deleted.
         try {
-            service.deleteCompoundActivityDefinition(TestConstants.TEST_STUDY, TASK_ID);    
+            service.deleteCompoundActivityDefinition(TestConstants.TEST_STUDY, TASK_ID);
+            fail("Shoud have thrown exception");
         } catch(ConstraintViolationException e) {
             assertEquals("GGG", e.getReferrerKeys().get("guid"));
             assertEquals("SchedulePlan", e.getReferrerKeys().get("type"));

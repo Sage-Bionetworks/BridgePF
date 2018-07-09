@@ -74,6 +74,12 @@ public class SurveyServiceMockTest {
     @Captor
     ArgumentCaptor<Survey> surveyCaptor;
     
+    @Captor
+    ArgumentCaptor<String> queryCaptor;
+    
+    @Captor
+    ArgumentCaptor<Map<String,Object>> paramsCaptor;
+    
     SurveyService service;
     
     @Before
@@ -128,15 +134,13 @@ public class SurveyServiceMockTest {
                 .withSurvey("Survey", "otherGuid", SURVEY_CREATED_ON).build();
         getActivityList(plans).set(0, activity);
         
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
+        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
         Survey survey = createSurvey();
         doReturn(survey).when(mockSurveyDao).getSurvey(any(), anyBoolean());
         
         service.deleteSurvey(survey);
 
         // verify query args
-        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<Map> paramsCaptor = ArgumentCaptor.forClass(Map.class);
         verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(),
                 paramsCaptor.capture(), eq(null));
 
@@ -159,14 +163,12 @@ public class SurveyServiceMockTest {
                 .withSurvey("Survey", "otherGuid", SURVEY_CREATED_ON).build();
         getActivityList(plans).set(0, activity);
         
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
+        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
         Survey survey = createSurvey();
         
         service.deleteSurveyPermanently(TEST_STUDY, survey);
 
         // verify query args
-        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<Map> paramsCaptor = ArgumentCaptor.forClass(Map.class);
         verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(),
                 paramsCaptor.capture(), eq(null));
 
@@ -194,7 +196,7 @@ public class SurveyServiceMockTest {
         when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
                 anySetOf(String.class))).thenReturn(ImmutableList.of(makeValidMetadata()));
 
-        doReturn(ImmutableList.of()).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
+        doReturn(ImmutableList.of()).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
         Survey survey = createSurvey();
 
         service.deleteSurveyPermanently(TEST_STUDY, survey);
@@ -228,7 +230,7 @@ public class SurveyServiceMockTest {
     @Test
     public void deleteSurveyPermanentlyConstrainedBySchedule() {
         List<SchedulePlan> plans = createSchedulePlanListWithSurveyReference(false);
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
+        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
         Survey survey = createSurvey();
         
         try {
@@ -247,7 +249,7 @@ public class SurveyServiceMockTest {
     @Test
     public void deleteSurveyPermanentlyConstrainedByScheduleWithPublishedSurvey() {
         List<SchedulePlan> plans = createSchedulePlanListWithSurveyReference(true);
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
+        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
         
         // One published survey, should throw exception
         Survey survey = createSurvey();
@@ -272,7 +274,7 @@ public class SurveyServiceMockTest {
     @Test
     public void deleteSurveyPermanentlyNotConstrainedByScheduleWithMultiplePublishedSurveys() {
         List<SchedulePlan> plans = createSchedulePlanListWithSurveyReference(true);
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
+        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
         
         // Two published surveys in the list, no exception thrown
         Survey survey = createSurvey();
@@ -284,7 +286,7 @@ public class SurveyServiceMockTest {
     @Test
     public void deleteSurveyPermanentlyConstrainedByCompoundSchedule() {
         List<SchedulePlan> plans = createSchedulePlanListWithCompoundActivity(false);
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
+        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
         Survey survey = createSurvey();
         
         try {
@@ -303,7 +305,7 @@ public class SurveyServiceMockTest {
     @Test
     public void deleteSurveyPermanentlyConstrainedByCompoundScheduleWithPublishedSurvey() {
         List<SchedulePlan> plans = createSchedulePlanListWithCompoundActivity(true);
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
+        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
         
         // One published survey, should throw exception
         Survey survey = createSurvey();
@@ -328,7 +330,7 @@ public class SurveyServiceMockTest {
     @Test
     public void deleteSurveyPermanentlyNotConstrainedByCompoundScheduleWithMultiplePublishedSurveys() {
         List<SchedulePlan> plans = createSchedulePlanListWithCompoundActivity(true);
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
+        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
         
         // Two published surveys in the list, no exception thrown
         Survey survey = createSurvey();

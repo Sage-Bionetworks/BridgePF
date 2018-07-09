@@ -293,7 +293,8 @@ public class SurveyService {
     }
     
     private void checkConstraintsBeforePhysicalDelete(final StudyIdentifier studyId, final GuidCreatedOnVersionHolder keys) {
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId);
+        // Once deleted, constraints are no longer enforced
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId, false);
 
         // If a schedule points to this specific survey, don't allow the physical delete.
         SchedulePlan match = findFirstMatchingPlan(plans, keys, (surveyReference, theseKeys) -> {

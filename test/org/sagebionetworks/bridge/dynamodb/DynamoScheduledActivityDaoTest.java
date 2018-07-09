@@ -80,7 +80,7 @@ public class DynamoScheduledActivityDaoTest {
     @After
     public void after() {
         for (String schedulePlanGuid : schedulePlanGuids) {
-            schedulePlanService.deleteSchedulePlan(TEST_STUDY, schedulePlanGuid);    
+            schedulePlanService.deleteSchedulePlanPermanently(TEST_STUDY, schedulePlanGuid);    
         }
         activityDao.deleteActivitiesForUser(healthCode);
     }

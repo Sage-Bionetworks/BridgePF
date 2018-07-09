@@ -155,7 +155,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         plan.setStrategy(strategy);
 
         // And the schedule plan service returns the schedule plan.
-        when(mockSchedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY))
+        when(mockSchedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false))
                 .thenReturn(ImmutableList.of(plan));
     }
 

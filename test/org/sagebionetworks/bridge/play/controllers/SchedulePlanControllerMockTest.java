@@ -75,6 +75,7 @@ public class SchedulePlanControllerMockTest {
         
         when(mockUserSession.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         doReturn(mockUserSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER);
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
     }
     
     @Test
@@ -82,10 +83,10 @@ public class SchedulePlanControllerMockTest {
         TestUtils.mockPlayContext();
         doReturn(mockUserSession).when(controller).getAuthenticatedSession(Roles.WORKER);
         SchedulePlan plan = createSchedulePlan();
-        when(mockSchedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY))
+        when(mockSchedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false))
                 .thenReturn(Lists.newArrayList(plan));
         
-        Result result = controller.getSchedulePlansForWorker(TestConstants.TEST_STUDY_IDENTIFIER);
+        Result result = controller.getSchedulePlansForWorker(TestConstants.TEST_STUDY_IDENTIFIER, "false");
         
         assertEquals(200, result.status());
         ResourceList<SchedulePlan> plans = TestUtils.getResponsePayload(result, new TypeReference<ResourceList<SchedulePlan>>() {});
@@ -132,12 +133,12 @@ public class SchedulePlanControllerMockTest {
         
         List<SchedulePlan> plans = Lists.newArrayList(TestUtils.getSimpleSchedulePlan(TestConstants.TEST_STUDY));
         
-        when(mockSchedulePlanService.getSchedulePlans(any(), eq(study.getStudyIdentifier()))).thenReturn(plans);
+        when(mockSchedulePlanService.getSchedulePlans(any(), eq(study.getStudyIdentifier()), eq(false))).thenReturn(plans);
         
-        Result result = controller.getSchedulePlans();
+        Result result = controller.getSchedulePlans("false");
         TestUtils.assertResult(result, 200);
         
-        verify(mockSchedulePlanService).getSchedulePlans(any(), eq(study.getStudyIdentifier()));
+        verify(mockSchedulePlanService).getSchedulePlans(any(), eq(study.getStudyIdentifier()), eq(false));
         
         ResourceList<SchedulePlan> retrieved = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result), new TypeReference<ResourceList<SchedulePlan>>() {});
         assertEquals(1, retrieved.getItems().size());
@@ -162,7 +163,7 @@ public class SchedulePlanControllerMockTest {
     
     @Test
     public void deleteSchedulePlan() throws Exception {
-        Result result = controller.deleteSchedulePlan("GGG");
+        Result result = controller.deleteSchedulePlan("GGG", "false");
         TestUtils.assertResult(result, 200, "Schedule plan deleted.");
         
         verify(mockSchedulePlanService).deleteSchedulePlan(study.getStudyIdentifier(), "GGG");

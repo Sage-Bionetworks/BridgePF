@@ -37,10 +37,12 @@ public final class DynamoSchedulePlan implements SchedulePlan {
     private static final String MODIFIED_ON_PROPERTY = "modifiedOn";
     private static final String STRATEGY_PROPERTY = "strategy";
     private static final String VERSION_PROPERTY = "version";
+    private static final String DELETED_PROPERTY = "deleted";
 
     private String guid;
     private String label;
     private String studyKey;
+    private boolean deleted;
     private Long version;
     private long modifiedOn;
     private ScheduleStrategy strategy;
@@ -52,6 +54,7 @@ public final class DynamoSchedulePlan implements SchedulePlan {
         plan.setModifiedOn(JsonUtils.asMillisSinceEpoch(node, MODIFIED_ON_PROPERTY));
         plan.setData(JsonUtils.asObjectNode(node, STRATEGY_PROPERTY));
         plan.setVersion(JsonUtils.asLong(node, VERSION_PROPERTY));
+        plan.setDeleted(JsonUtils.asBoolean(node, DELETED_PROPERTY));
         return plan;
     }
 
@@ -101,6 +104,17 @@ public final class DynamoSchedulePlan implements SchedulePlan {
     public void setVersion(Long version) {
         this.version = version;
     }
+    
+    @Override
+    public boolean isDeleted() {
+        return deleted;
+    }
+    
+    @Override
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
+
 
     @Override
     @DynamoDBIgnore
@@ -148,15 +162,7 @@ public final class DynamoSchedulePlan implements SchedulePlan {
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + Objects.hashCode(guid);
-        result = prime * result + Objects.hashCode(label);
-        result = prime * result + Objects.hashCode(modifiedOn);
-        result = prime * result + Objects.hashCode(strategy);
-        result = prime * result + Objects.hashCode(studyKey);
-        result = prime * result + Objects.hashCode(version);
-        return result;
+        return Objects.hash(guid, label, modifiedOn, strategy, studyKey, version, deleted);
     }
 
     @Override
@@ -171,13 +177,13 @@ public final class DynamoSchedulePlan implements SchedulePlan {
         return (Objects.equals(guid, other.guid) && Objects.equals(label, other.label)
                 && Objects.equals(modifiedOn, other.modifiedOn) && Objects.equals(strategy, other.strategy)
                 && Objects.equals(label, other.label) && Objects.equals(studyKey, other.studyKey)
-                && Objects.equals(version,  other.version));
+                && Objects.equals(version, other.version) && Objects.equals(deleted, other.deleted));
     }
 
     @Override
     public String toString() {
-        return String.format("DynamoSchedulePlan [guid=%s, label=%s, studyKey=%s, modifiedOn=%s, strategy=%s]",
-            guid, label, studyKey, modifiedOn, strategy);
+        return String.format("DynamoSchedulePlan [guid=%s, label=%s, studyKey=%s, modifiedOn=%s, strategy=%s, deleted=%s]",
+            guid, label, studyKey, modifiedOn, strategy, deleted);
     }
 
 }

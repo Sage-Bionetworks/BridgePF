@@ -111,7 +111,8 @@ public class CompoundActivityDefinitionService {
     
     private void checkConstraintViolations(StudyIdentifier studyId, String taskId) {
         // Cannot delete a definition if it is referenced in any schedule plan.
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId);
+        // If you delete a schedule plan, than you can delete a compound activity definition pointing to it.
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId, false);
         SchedulePlan match = findFirstMatchingPlan(plans, taskId);
         if (match != null) {
             throw new ConstraintViolationException.Builder().withEntityKey("taskId", taskId)

@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -37,15 +38,17 @@ public class DynamoSchedulePlanTest {
         plan.setModifiedOn(datetime.getMillis());
         plan.setStudyKey("test-study");
         plan.setVersion(2L);
+        plan.setDeleted(true);
         plan.setStrategy(strategy);
         
         String json = BridgeObjectMapper.get().writeValueAsString(plan);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
-        assertEquals("SchedulePlan", node.get("type").asText());
-        assertEquals(2, node.get("version").asInt());
-        assertEquals("guid", node.get("guid").asText());
-        assertEquals("Label", node.get("label").asText());
+        assertEquals("SchedulePlan", node.get("type").textValue());
+        assertEquals(2, node.get("version").intValue());
+        assertEquals("guid", node.get("guid").textValue());
+        assertEquals("Label", node.get("label").textValue());
+        assertTrue(node.get("deleted").booleanValue());
         assertNull(node.get("studyKey"));
         assertNotNull(node.get("strategy"));
         assertEquals(datetime, DateTime.parse(node.get("modifiedOn").asText()));
@@ -55,6 +58,7 @@ public class DynamoSchedulePlanTest {
         assertEquals(plan.getGuid(), plan2.getGuid());
         assertEquals(plan.getLabel(), plan2.getLabel());
         assertEquals(plan.getModifiedOn(), plan2.getModifiedOn());
+        assertEquals(plan.isDeleted(), plan2.isDeleted());
         
         ScheduleStrategy retrievedStrategy = plan.getStrategy();
         assertEquals(retrievedStrategy, strategy);
