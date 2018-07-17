@@ -617,7 +617,7 @@ public class ScheduledActivityServiceMockTest {
     @Test
     public void taskNotStartedWithClientDataNotUpdated() {
         // Activity in DDB has survey reference pointing to createdOn 1234. Newly created activity has survey reference
-        // pointing to createdOn 5678. Activity in DDB hasn't been started. We should update the activity in DDB.
+        // pointing to createdOn 5678. Activity in DDB has client data. DB activity should be in returned activities.
 
         // Create task references and activities.
         // Schedule plan has been updated with a new activity that will be used in scheduled activity
@@ -649,7 +649,7 @@ public class ScheduledActivityServiceMockTest {
     @Test
     public void taskNotStartedWithClientDataNotUpdatedV4() {
         // Activity in DDB has survey reference pointing to createdOn 1234. Newly created activity has survey reference
-        // pointing to createdOn 5678. Activity in DDB hasn't been started. We should update the activity in DDB.
+        // pointing to createdOn 5678. Activity in DDB has client data. DB activity should be in returned activities.
 
         // Create task references and activities.
         // Schedule plan has been updated with a new activity that will be used in scheduled activity

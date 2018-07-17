@@ -228,9 +228,7 @@ public class ScheduledActivityService {
             ScheduledActivity activity = scheduledActivities.get(i);
             ScheduledActivity dbActivity = dbMap.remove(activity.getGuid());
             
-            boolean updatableStatus = dbActivity != null && UPDATABLE_STATUSES.contains(dbActivity.getStatus());
-            
-            if (dbActivity != null && (!updatableStatus || dbActivity.getClientData() != null)) {
+            if (dbActivity != null && (!UPDATABLE_STATUSES.contains(dbActivity.getStatus()) || dbActivity.getClientData() != null)) {
                 // Once the activity is in the database and is in a non-updatable state (and that includes attaching
                 // client data to the activity), we should use the one from the database. Otherwise, either (a) it
                 // doesn't exist yet and needs to be persisted or (b) the user hasn't interacted with it yet, so we 
