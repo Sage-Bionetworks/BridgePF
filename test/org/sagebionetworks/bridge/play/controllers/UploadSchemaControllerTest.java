@@ -129,16 +129,28 @@ public class UploadSchemaControllerTest {
     }
     
     @Test
-    public void deleteSchemaRevisions() throws Exception {
+    public void deleteSchemaRevision() throws Exception {
+        UploadSchemaService mockSvc = mock(UploadSchemaService.class);
+
+        // setup, execute, and validate
+        UploadSchemaController controller = setupControllerWithService(mockSvc, Roles.DEVELOPER, Roles.ADMIN);
         
+        Result result = controller.deleteSchemaRevision("delete-schema", 4, "false");
+        TestUtils.assertResult(result, 200, "Schema revision has been deleted.");
+        verify(mockSvc).deleteUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, "delete-schema", 4);
     }
     
     @Test
-    public void deleteSchemaRevisionsPermanently() throws Exception {
+    public void deleteSchemaRevisionPermanently() throws Exception {
+        UploadSchemaService mockSvc = mock(UploadSchemaService.class);
+
+        // setup, execute, and validate
+        UploadSchemaController controller = setupControllerWithService(mockSvc, Roles.DEVELOPER, Roles.ADMIN);
         
+        Result result = controller.deleteSchemaRevision("delete-schema", 4, "true");
+        TestUtils.assertResult(result, 200, "Schema revision has been deleted.");
+        verify(mockSvc).deleteUploadSchemaByIdAndRevisionPermanently(TestConstants.TEST_STUDY, "delete-schema", 4);
     }
-    
-    // public Result deleteSchemaRevisions(String schemaId, int revision, String physical)
     
     @Test
     public void getSchemaById() throws Exception {

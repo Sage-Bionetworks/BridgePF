@@ -377,12 +377,8 @@ public class UploadSchemaServiceTest {
         // mock dao to return null
         when(dao.getUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(null);
 
-        try {
-            svc.deleteUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV);
-            fail("expected exception");
-        } catch (EntityNotFoundException ex) {
-            assertEquals("Can't find schema " + SCHEMA_ID + "-v" + SCHEMA_REV, ex.getMessage());
-        }
+        svc.deleteUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV);
+        verify(dao, never()).deleteUploadSchemas(any());
     }
 
     @Test
@@ -390,12 +386,8 @@ public class UploadSchemaServiceTest {
         // mock dao to return null
         when(dao.getUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(null);
 
-        try {
-            svc.deleteUploadSchemaByIdAndRevisionPermanently(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV);
-            fail("expected exception");
-        } catch (EntityNotFoundException ex) {
-            assertEquals("Can't find schema " + SCHEMA_ID + "-v" + SCHEMA_REV, ex.getMessage());
-        }
+        svc.deleteUploadSchemaByIdAndRevisionPermanently(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV);
+        verify(dao, never()).deleteUploadSchemasPermanently(any());
     }
     
     @Test(expected = BadRequestException.class)
