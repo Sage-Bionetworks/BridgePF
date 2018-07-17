@@ -49,6 +49,7 @@ public class DynamoUploadSchemaDaoMockTest {
     public void create() {
         // Create a schema with a version, to make sure we clear it.
         daoInputSchema.setVersion(3L);
+        daoInputSchema.setDeleted(true);
 
         // execute
         UploadSchema daoOutputSchema = dao.createSchemaRevision(daoInputSchema);
@@ -59,6 +60,7 @@ public class DynamoUploadSchemaDaoMockTest {
 
         DynamoUploadSchema mapperInputSchema = mapperInputSchemaCaptor.getValue();
         assertNull(mapperInputSchema.getVersion());
+        assertFalse(mapperInputSchema.isDeleted());
 
         // schema returned by dao is the same one that was sent to the mapper
         assertSame(mapperInputSchema, daoOutputSchema);
@@ -196,6 +198,9 @@ public class DynamoUploadSchemaDaoMockTest {
 
     @Test
     public void update() {
+        // We can mark something deleted (or not) on an update
+        daoInputSchema.setDeleted(true);
+        
         // execute (no additional setup required)
         UploadSchema daoOutputSchema = dao.updateSchemaRevision(daoInputSchema);
 
@@ -206,5 +211,6 @@ public class DynamoUploadSchemaDaoMockTest {
         // schema returned by dao is the same one that was sent to the mapper
         DynamoUploadSchema mapperInputSchema = mapperInputSchemaCaptor.getValue();
         assertSame(mapperInputSchema, daoOutputSchema);
+        assertTrue(mapperInputSchema.isDeleted());
     }
 }

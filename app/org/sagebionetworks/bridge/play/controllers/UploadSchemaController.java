@@ -72,11 +72,11 @@ public class UploadSchemaController extends BaseController {
      *         schema to delete
      * @return Play result with the OK message
      */
-    public Result deleteAllRevisionsOfUploadSchemaForWorker(String studyId, String schemaId, String physical) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
+    public Result deleteAllRevisionsOfUploadSchemaForAdmin(String studyId, String schemaId, String physical) {
+        getAuthenticatedSession(ADMIN);
         
         StudyIdentifier studyIdentifier = new StudyIdentifierImpl(studyId);
-        if ("true".equals(physical) && session.isInRole(ADMIN)) {
+        if ("true".equals(physical)) {
             uploadSchemaService.deleteUploadSchemaByIdPermanently(studyIdentifier, schemaId);
         } else {
             uploadSchemaService.deleteUploadSchemaById(studyIdentifier, schemaId);    
@@ -95,7 +95,7 @@ public class UploadSchemaController extends BaseController {
         return okResult("Schemas have been deleted.");
     }
     
-    public Result deleteSchemaRevisions(String schemaId, int revision, String physical) {
+    public Result deleteSchemaRevision(String schemaId, int revision, String physical) {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         
         if ("true".equals(physical) && session.isInRole(ADMIN)) {

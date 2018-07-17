@@ -13,7 +13,7 @@ public interface UploadSchemaDao {
      */
     UploadSchema createSchemaRevision(UploadSchema schema);
 
-    /** Deletes the given schemas by marking them deleted */
+    /** Deletes the given schemas by marking them deleted. */
     void deleteUploadSchemas(List<UploadSchema> schemaList);
     
     /** Deletes the given schemas by removing them from the database. */

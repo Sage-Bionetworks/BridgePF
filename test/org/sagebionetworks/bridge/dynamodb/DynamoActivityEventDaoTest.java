@@ -10,6 +10,7 @@ import javax.annotation.Resource;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,6 +35,12 @@ public class DynamoActivityEventDaoTest {
     @Before
     public void before() {
         healthCode = TestUtils.randomName(DynamoActivityEventDaoTest.class);
+    }
+    
+    @After
+    public void after() {
+        activityEventDao.deleteActivityEvents(healthCode);
+        assertEquals(0, activityEventDao.getActivityEventMap(healthCode).size());
     }
     
     @Test
@@ -85,11 +92,6 @@ public class DynamoActivityEventDaoTest {
         // an "either or" scheduling conflict. The user can only answer one way or another on a 
         // given question, even if the answer is updated.
         assertNull(map.get("question:DDD-EEE-FFF:answered=someAnswer"));
-        
-        activityEventDao.deleteActivityEvents(healthCode);
-        
-        map = activityEventDao.getActivityEventMap(healthCode);
-        assertEquals(0, map.size());
     }
     
     @Test

@@ -85,7 +85,7 @@ public class UploadSchemaControllerTest {
 
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc);
-        Result result = controller.deleteAllRevisionsOfUploadSchemaForWorker(TestConstants.TEST_STUDY_IDENTIFIER,
+        Result result = controller.deleteAllRevisionsOfUploadSchemaForAdmin(TestConstants.TEST_STUDY_IDENTIFIER,
                 "delete-schema", "false");
         TestUtils.assertResult(result, 200, "Schemas have been deleted.");
         verify(mockSvc).deleteUploadSchemaById(TestConstants.TEST_STUDY, "delete-schema");
@@ -98,7 +98,7 @@ public class UploadSchemaControllerTest {
 
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc, Roles.DEVELOPER, Roles.ADMIN);
-        Result result = controller.deleteAllRevisionsOfUploadSchemaForWorker(TestConstants.TEST_STUDY_IDENTIFIER,
+        Result result = controller.deleteAllRevisionsOfUploadSchemaForAdmin(TestConstants.TEST_STUDY_IDENTIFIER,
                 "delete-schema", "true");
         TestUtils.assertResult(result, 200, "Schemas have been deleted.");
         verify(mockSvc).deleteUploadSchemaByIdPermanently(TestConstants.TEST_STUDY, "delete-schema");
