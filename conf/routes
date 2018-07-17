@@ -209,6 +209,8 @@ POST   /v4/uploadschemas/:schemaId/revisions/:revision @org.sagebionetworks.brid
 GET    /v3/uploadschemas/:schemaId                     @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemaAllRevisions(schemaId: String)
 GET    /v3/uploadschemas/:schemaId/recent              @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchema(schemaId: String)
 GET    /v3/uploadschemas/:schemaId/revisions/:rev      @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemaByIdAndRev(schemaId: String, rev: Int)
+DELETE /v3/uploadschemas/:schemaId                     @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.deleteAllRevisionsOfUploadSchema(schemaId: String, physical: String ?= "false")
+DELETE /v3/uploadschemas/:schemaId/revisions/:rev      @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.deleteSchemaRevisions(schemaId: String, rev: Int, physical: String ?= "false")
 
 # Schedule Plans
 GET    /v3/scheduleplans        @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.getSchedulePlans
@@ -243,7 +245,7 @@ GET    /v3/appconfigs        @org.sagebionetworks.bridge.play.controllers.AppCon
 GET    /v3/appconfigs/:guid  @org.sagebionetworks.bridge.play.controllers.AppConfigController.getAppConfig(guid: String)
 POST   /v3/appconfigs        @org.sagebionetworks.bridge.play.controllers.AppConfigController.createAppConfig
 POST   /v3/appconfigs/:guid  @org.sagebionetworks.bridge.play.controllers.AppConfigController.updateAppConfig(guid: String)
-DELETE /v3/appconfigs/:guid  @org.sagebionetworks.bridge.play.controllers.AppConfigController.deleteAppConfig(guid: String, physical: String ?= "true")
+DELETE /v3/appconfigs/:guid  @org.sagebionetworks.bridge.play.controllers.AppConfigController.deleteAppConfig(guid: String, physical: String ?= "false")
 
 # Intent to Participant (ITP)
 POST   /v3/itp @org.sagebionetworks.bridge.play.controllers.IntentController.submitIntentToParticipate
@@ -266,7 +268,7 @@ POST   /v3/studies/self                @org.sagebionetworks.bridge.play.controll
 POST   /v3/studies/self/synapseProject @org.sagebionetworks.bridge.play.controllers.StudyController.createSynapse
 GET    /v3/studies/:identifier         @org.sagebionetworks.bridge.play.controllers.StudyController.getStudy(identifier: String)
 POST   /v3/studies/:identifier         @org.sagebionetworks.bridge.play.controllers.StudyController.updateStudy(identifier: String)
-DELETE /v3/studies/:identifier         @org.sagebionetworks.bridge.play.controllers.StudyController.deleteStudy(identifier: String, physical: String ?= "true")
+DELETE /v3/studies/:identifier         @org.sagebionetworks.bridge.play.controllers.StudyController.deleteStudy(identifier: String, physical: String ?= "false")
 POST   /v3/studies/:identifier/emails/verify @org.sagebionetworks.bridge.play.controllers.StudyController.verifyEmail(identifier: String, token: String ?= null, type: String ?= null)
 GET    /v3/studies/:identifier/appconfig     @org.sagebionetworks.bridge.play.controllers.AppConfigController.getStudyAppConfig(identifier: String)
 
@@ -298,7 +300,7 @@ POST   /v3/backfill/:name/start    @org.sagebionetworks.bridge.play.controllers.
  
 # Admin APIs for across studies
 POST   /v3/studies/:studyId/users                                       @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUserWithStudyId(studyId: String)
-DELETE /v3/studies/:studyId/uploadschemas/:schemaId                     @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.deleteAllRevisionsOfUploadSchema(studyId: String, schemaId: String)
+DELETE /v3/studies/:studyId/uploadschemas/:schemaId                     @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.deleteAllRevisionsOfUploadSchemaForWorker(studyId: String, schemaId: String, physical: String ?= "false")
 
 # Cache Management
 GET    /v3/cache           @org.sagebionetworks.bridge.play.controllers.CacheAdminController.listItems

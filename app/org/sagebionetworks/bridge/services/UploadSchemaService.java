@@ -531,6 +531,19 @@ public class UploadSchemaService {
     public void deleteUploadSchemaById(StudyIdentifier studyId, String schemaId) {
         // Schema ID is validated by getUploadSchemaAllRevisions()
 
+        List<UploadSchema> schemaList = getSchemaRevisionsForId(studyId, schemaId);
+        uploadSchemaDao.deleteUploadSchemas(schemaList);
+    }
+
+
+    public void deleteUploadSchemaByIdPermanently(StudyIdentifier studyId, String schemaId) {
+        // Schema ID is validated by getUploadSchemaAllRevisions()
+
+        List<UploadSchema> schemaList = getSchemaRevisionsForId(studyId, schemaId);
+        uploadSchemaDao.deleteUploadSchemasPermanently(schemaList);
+    }
+
+    protected List<UploadSchema> getSchemaRevisionsForId(StudyIdentifier studyId, String schemaId) {
         List<UploadSchema> schemaList = getUploadSchemaAllRevisions(studyId, schemaId);
 
         List<Integer> revisions = new ArrayList<>();
@@ -547,10 +560,9 @@ public class UploadSchemaService {
         if (sharedModuleMetadataList.size() != 0) {
             throw new BadRequestException("Cannot delete specified Upload Schema because a shared module still refers to it.");
         }
-
-        uploadSchemaDao.deleteUploadSchemas(schemaList);
+        return schemaList;
     }
-
+    
     /**
      * Service handler for deleting an upload schema with the specified study, schema ID, and revision. If the schema
      * doesn't exist, this API throws an EntityNotFoundException.
@@ -558,6 +570,18 @@ public class UploadSchemaService {
     public void deleteUploadSchemaByIdAndRevision(StudyIdentifier studyId, String schemaId, int rev) {
         // Schema ID and rev are validated by getUploadSchemaByIdAndRev()
 
+        UploadSchema schema = getRevision(studyId, schemaId, rev);
+        uploadSchemaDao.deleteUploadSchemas(ImmutableList.of(schema));
+    }
+    
+    public void deleteUploadSchemaByIdAndRevisionPermanently(StudyIdentifier studyId, String schemaId, int rev) {
+        // Schema ID and rev are validated by getUploadSchemaByIdAndRev()
+
+        UploadSchema schema = getRevision(studyId, schemaId, rev);
+        uploadSchemaDao.deleteUploadSchemasPermanently(ImmutableList.of(schema));
+    }
+
+    protected UploadSchema getRevision(StudyIdentifier studyId, String schemaId, int rev) {
         UploadSchema schema = getUploadSchemaByIdAndRev(studyId, schemaId, rev);
         
         Map<String,Object> parameters = new HashMap<>();
@@ -570,10 +594,9 @@ public class UploadSchemaService {
         if (sharedModuleMetadataList.size() != 0) {
             throw new BadRequestException("Cannot delete specified Upload Schema because a shared module still refers to it.");
         }
-
-        uploadSchemaDao.deleteUploadSchemas(ImmutableList.of(schema));
+        return schema;
     }
-
+    
     /** Returns all revisions of all schemas. */
     public List<UploadSchema> getAllUploadSchemasAllRevisions(StudyIdentifier studyId) {
         return uploadSchemaDao.getAllUploadSchemasAllRevisions(studyId);

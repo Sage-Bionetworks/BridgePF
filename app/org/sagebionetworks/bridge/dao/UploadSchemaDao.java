@@ -13,8 +13,11 @@ public interface UploadSchemaDao {
      */
     UploadSchema createSchemaRevision(UploadSchema schema);
 
-    /** Deletes the given schemas. */
+    /** Deletes the given schemas by marking them deleted */
     void deleteUploadSchemas(List<UploadSchema> schemaList);
+    
+    /** Deletes the given schemas by removing them from the database. */
+    void deleteUploadSchemasPermanently(List<UploadSchema> schemaList);
 
     /** Returns all revisions of all schemas in the specified study. */
     List<UploadSchema> getAllUploadSchemasAllRevisions(StudyIdentifier studyId);

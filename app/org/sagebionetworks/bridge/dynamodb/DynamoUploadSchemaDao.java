@@ -57,6 +57,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         // schema rev from a previously existing one. It also means if they get a schema rev and then try to create
         // that schema rev again, we'll correctly throw a ConcurrentModificationException.
         ddbSchema.setVersion(null);
+        ddbSchema.setDeleted(false);
 
         // Call DDB to create.
         try {
@@ -70,6 +71,16 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
     /** {@inheritDoc} */
     @Override
     public void deleteUploadSchemas(List<UploadSchema> schemaList) {
+        for (UploadSchema schema : schemaList) {
+            schema.setDeleted(true);
+        }
+        List<DynamoDBMapper.FailedBatch> failureList = mapper.batchSave(schemaList);
+        BridgeUtils.ifFailuresThrowException(failureList);
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public void deleteUploadSchemasPermanently(List<UploadSchema> schemaList) {
         List<DynamoDBMapper.FailedBatch> failureList = mapper.batchDelete(schemaList);
         BridgeUtils.ifFailuresThrowException(failureList);
     }

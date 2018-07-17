@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -73,9 +74,23 @@ public class DynamoUploadSchemaDaoMockTest {
         dao.deleteUploadSchemas(schemaListToDelete);
 
         // verify schema was passed to mapper
-        verify(mapper).batchDelete(schemaListToDelete);
+        verify(mapper).batchSave(schemaListToDelete);
+        assertTrue(schemaListToDelete.stream().allMatch(schema -> schema.isDeleted()));
     }
 
+    @Test
+    public void deletePermanently() {
+        // mock mapper to return an empty list of failures (all success)
+        List<UploadSchema> schemaListToDelete = ImmutableList.of(new DynamoUploadSchema());
+        when(mapper.batchDelete(schemaListToDelete)).thenReturn(ImmutableList.of());
+
+        // execute
+        dao.deleteUploadSchemasPermanently(schemaListToDelete);
+
+        // verify schema was passed to mapper
+        verify(mapper).batchDelete(schemaListToDelete);
+    }
+    
     @Test
     public void allSchemasAllRevisions() {
         // spy index helper

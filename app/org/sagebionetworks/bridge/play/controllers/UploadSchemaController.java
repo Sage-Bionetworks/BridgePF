@@ -72,10 +72,38 @@ public class UploadSchemaController extends BaseController {
      *         schema to delete
      * @return Play result with the OK message
      */
-    public Result deleteAllRevisionsOfUploadSchema(String studyId, String schemaId) {
-        getAuthenticatedSession(ADMIN);
-        uploadSchemaService.deleteUploadSchemaById(new StudyIdentifierImpl(studyId), schemaId);
+    public Result deleteAllRevisionsOfUploadSchemaForWorker(String studyId, String schemaId, String physical) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
+        
+        StudyIdentifier studyIdentifier = new StudyIdentifierImpl(studyId);
+        if ("true".equals(physical) && session.isInRole(ADMIN)) {
+            uploadSchemaService.deleteUploadSchemaByIdPermanently(studyIdentifier, schemaId);
+        } else {
+            uploadSchemaService.deleteUploadSchemaById(studyIdentifier, schemaId);    
+        }
         return okResult("Schemas have been deleted.");
+    }
+    
+    public Result deleteAllRevisionsOfUploadSchema(String schemaId, String physical) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
+        
+        if ("true".equals(physical) && session.isInRole(ADMIN)) {
+            uploadSchemaService.deleteUploadSchemaByIdPermanently(session.getStudyIdentifier(), schemaId);
+        } else {
+            uploadSchemaService.deleteUploadSchemaById(session.getStudyIdentifier(), schemaId);    
+        }
+        return okResult("Schemas have been deleted.");
+    }
+    
+    public Result deleteSchemaRevisions(String schemaId, int revision, String physical) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
+        
+        if ("true".equals(physical) && session.isInRole(ADMIN)) {
+            uploadSchemaService.deleteUploadSchemaByIdAndRevisionPermanently(session.getStudyIdentifier(), schemaId, revision);
+        } else {
+            uploadSchemaService.deleteUploadSchemaByIdAndRevision(session.getStudyIdentifier(), schemaId, revision);
+        }
+        return okResult("Schema revision has been deleted.");
     }
 
     /**
