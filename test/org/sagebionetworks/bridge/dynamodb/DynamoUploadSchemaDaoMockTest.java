@@ -13,19 +13,23 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
 @SuppressWarnings({ "ConstantConditions", "rawtypes", "RedundantCast", "unchecked" })
@@ -94,15 +98,15 @@ public class DynamoUploadSchemaDaoMockTest {
     }
     
     @Test
-    public void allSchemasAllRevisions() {
+    public void allSchemasAllRevisionsExcludeDeleted() {
         // spy index helper
         List<DynamoUploadSchema> mapperOutputSchemaList = ImmutableList.of(new DynamoUploadSchema());
         ArgumentCaptor<DynamoUploadSchema> indexHashKeyCaptor = ArgumentCaptor.forClass(DynamoUploadSchema.class);
         doReturn(mapperOutputSchemaList).when(dao).indexHelper(eq(DynamoUploadSchemaDao.STUDY_ID_INDEX_NAME),
-                indexHashKeyCaptor.capture());
+                indexHashKeyCaptor.capture(), eq(false));
 
         // execute
-        List<UploadSchema> daoOutputSchemaList = dao.getAllUploadSchemasAllRevisions(TestConstants.TEST_STUDY);
+        List<UploadSchema> daoOutputSchemaList = dao.getAllUploadSchemasAllRevisions(TestConstants.TEST_STUDY, false);
 
         // validate index hash key
         DynamoUploadSchema indexHashKey = indexHashKeyCaptor.getValue();
@@ -112,6 +116,48 @@ public class DynamoUploadSchemaDaoMockTest {
         assertSame(mapperOutputSchemaList, daoOutputSchemaList);
     }
 
+    @Test
+    public void allSchemasAllRevisionsIncludeDeleted() {
+        // spy index helper
+        List<DynamoUploadSchema> mapperOutputSchemaList = ImmutableList.of(new DynamoUploadSchema());
+        ArgumentCaptor<DynamoUploadSchema> indexHashKeyCaptor = ArgumentCaptor.forClass(DynamoUploadSchema.class);
+        doReturn(mapperOutputSchemaList).when(dao).indexHelper(eq(DynamoUploadSchemaDao.STUDY_ID_INDEX_NAME),
+                indexHashKeyCaptor.capture(), eq(true));
+
+        // execute
+        List<UploadSchema> daoOutputSchemaList = dao.getAllUploadSchemasAllRevisions(TestConstants.TEST_STUDY, true);
+
+        // validate index hash key
+        DynamoUploadSchema indexHashKey = indexHashKeyCaptor.getValue();
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, indexHashKey.getStudyId());
+
+        // Verify DAO output
+        assertSame(mapperOutputSchemaList, daoOutputSchemaList);
+    }
+
+    @Test
+    public void deleteFlagFiltersIndexHelper() {
+        DynamoUploadSchema undeletedSchema = new DynamoUploadSchema();
+        
+        DynamoUploadSchema deletedSchema = new DynamoUploadSchema();
+        deletedSchema.setDeleted(true);
+        
+        Map<String,List<Object>> map = Maps.newHashMap();
+        map.put("A", ImmutableList.of(undeletedSchema));
+        map.put("B", ImmutableList.of(deletedSchema));
+        
+        when(mapper.batchLoad(any(List.class))).thenReturn(map);
+        
+        List<UploadSchema> results1 = dao.indexHelper("indexName", new DynamoUploadSchema(), false);
+        assertEquals(1, results1.size());
+        assertEquals(undeletedSchema, results1.get(0));
+        
+        List<UploadSchema> results2 = dao.indexHelper("indexName", new DynamoUploadSchema(), true);
+        assertEquals(2, results2.size());
+        assertEquals(undeletedSchema, results2.get(0));
+        assertEquals(deletedSchema, results2.get(1));
+    }
+    
     @Test
     public void getSchemaAllRevisions() {
         // spy query

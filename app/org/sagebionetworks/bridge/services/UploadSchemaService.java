@@ -586,14 +586,14 @@ public class UploadSchemaService {
     }
 
     /** Returns all revisions of all schemas. */
-    public List<UploadSchema> getAllUploadSchemasAllRevisions(StudyIdentifier studyId) {
-        return uploadSchemaDao.getAllUploadSchemasAllRevisions(studyId);
+    public List<UploadSchema> getAllUploadSchemasAllRevisions(StudyIdentifier studyId, boolean includeDeleted) {
+        return uploadSchemaDao.getAllUploadSchemasAllRevisions(studyId, includeDeleted);
     }
 
     /** Service handler for fetching the most recent revision of all upload schemas in a study. */
-    public List<UploadSchema> getUploadSchemasForStudy(StudyIdentifier studyId) {
+    public List<UploadSchema> getUploadSchemasForStudy(StudyIdentifier studyId, boolean includeDeleted) {
         // Get all schemas. No simple query for just latest schemas.
-        List<UploadSchema> allSchemasAllRevisions = getAllUploadSchemasAllRevisions(studyId);
+        List<UploadSchema> allSchemasAllRevisions = getAllUploadSchemasAllRevisions(studyId, includeDeleted);
 
         // Iterate schemas and pick out latest for each schema ID.
         // Find the most recent version of each schema with a unique schemaId

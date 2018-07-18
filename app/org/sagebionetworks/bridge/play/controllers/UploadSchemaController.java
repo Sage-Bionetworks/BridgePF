@@ -181,11 +181,11 @@ public class UploadSchemaController extends BaseController {
      * 
      * @return Play result with list of schemas for this study
      */
-    public Result getUploadSchemasForStudy() throws Exception {
+    public Result getUploadSchemasForStudy(String includeDeleted) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
-        List<UploadSchema> schemaList = uploadSchemaService.getUploadSchemasForStudy(studyId);
+        List<UploadSchema> schemaList = uploadSchemaService.getUploadSchemasForStudy(studyId, Boolean.valueOf(includeDeleted));
         ResourceList<UploadSchema> schemaResourceList = new ResourceList<>(schemaList);
         return okResult(UploadSchema.PUBLIC_SCHEMA_WRITER, schemaResourceList);
     }

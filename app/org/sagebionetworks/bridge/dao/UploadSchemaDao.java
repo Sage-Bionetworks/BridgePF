@@ -20,7 +20,7 @@ public interface UploadSchemaDao {
     void deleteUploadSchemasPermanently(List<UploadSchema> schemaList);
 
     /** Returns all revisions of all schemas in the specified study. */
-    List<UploadSchema> getAllUploadSchemasAllRevisions(StudyIdentifier studyId);
+    List<UploadSchema> getAllUploadSchemasAllRevisions(StudyIdentifier studyId, boolean includeDeleted);
 
     /** Fetch all revisions of a single upload schema. */
     List<UploadSchema> getUploadSchemaAllRevisionsById(StudyIdentifier studyId, String schemaId);

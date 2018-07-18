@@ -87,10 +87,10 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
 
     /** {@inheritDoc} */
     @Override
-    public List<UploadSchema> getAllUploadSchemasAllRevisions(StudyIdentifier studyId) {
+    public List<UploadSchema> getAllUploadSchemasAllRevisions(StudyIdentifier studyId, boolean includeDeleted) {
         DynamoUploadSchema hashKey = new DynamoUploadSchema();
         hashKey.setStudyId(studyId.getIdentifier());
-        return indexHelper(STUDY_ID_INDEX_NAME, hashKey);
+        return indexHelper(STUDY_ID_INDEX_NAME, hashKey, includeDeleted);
     }
 
     /** {@inheritDoc} */
@@ -157,7 +157,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
     // attributes. This can get pretty hairy. Long-term, we need to refactor this code into DynamoIndexHelper.
     // See https://sagebionetworks.jira.com/browse/BRIDGE-1467
     // Package-scoped to be available for spying in unit tests.
-    List<UploadSchema> indexHelper(String indexName, DynamoUploadSchema hashKey) {
+    List<UploadSchema> indexHelper(String indexName, DynamoUploadSchema hashKey, boolean includeDeleted) {
         // Note that consistent reads are not allowed for global secondary indices.
         DynamoDBQueryExpression<DynamoUploadSchema> query = new DynamoDBQueryExpression<DynamoUploadSchema>()
                 .withIndexName(indexName).withHashKeyValues(hashKey).withConsistentRead(false);
@@ -173,8 +173,10 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
                     throw new BridgeServiceException("DynamoDB returned objects of type " +
                             oneResult.getClass().getName() + " instead of DynamoUploadSchema");
                 }
-
-                schemaList.add((UploadSchema) oneResult);
+                UploadSchema oneSchema = (UploadSchema) oneResult;
+                if (!oneSchema.isDeleted() || includeDeleted) {
+                    schemaList.add(oneSchema);    
+                }
             }
         }
 

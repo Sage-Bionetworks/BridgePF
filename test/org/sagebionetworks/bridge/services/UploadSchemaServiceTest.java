@@ -462,10 +462,10 @@ public class UploadSchemaServiceTest {
     public void allSchemasAllRevisions() {
         // mock dao
         List<UploadSchema> daoOutputSchemaList = ImmutableList.of(makeSimpleSchema());
-        when(dao.getAllUploadSchemasAllRevisions(TestConstants.TEST_STUDY)).thenReturn(daoOutputSchemaList);
+        when(dao.getAllUploadSchemasAllRevisions(TestConstants.TEST_STUDY, false)).thenReturn(daoOutputSchemaList);
 
         // execute and validate
-        List<UploadSchema> svcOutputSchemaList = svc.getAllUploadSchemasAllRevisions(TestConstants.TEST_STUDY);
+        List<UploadSchema> svcOutputSchemaList = svc.getAllUploadSchemasAllRevisions(TestConstants.TEST_STUDY, false);
         assertSame(daoOutputSchemaList, svcOutputSchemaList);
     }
 
@@ -489,10 +489,10 @@ public class UploadSchemaServiceTest {
         schemaBRev4.setRevision(4);
 
         List<UploadSchema> daoOutputSchemaList = ImmutableList.of(schemaARev1, schemaARev2, schemaBRev3, schemaBRev4);
-        when(dao.getAllUploadSchemasAllRevisions(TestConstants.TEST_STUDY)).thenReturn(daoOutputSchemaList);
+        when(dao.getAllUploadSchemasAllRevisions(TestConstants.TEST_STUDY, false)).thenReturn(daoOutputSchemaList);
 
         // execute and validate
-        List<UploadSchema> svcOutputSchemaList = svc.getUploadSchemasForStudy(TestConstants.TEST_STUDY);
+        List<UploadSchema> svcOutputSchemaList = svc.getUploadSchemasForStudy(TestConstants.TEST_STUDY, false);
         assertEquals(2, svcOutputSchemaList.size());
 
         // List might be in any order, so convert it to a map.
