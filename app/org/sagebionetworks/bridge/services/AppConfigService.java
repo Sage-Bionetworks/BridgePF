@@ -42,6 +42,8 @@ public class AppConfigService {
     
     private SurveyService surveyService;
     
+    private UploadSchemaService schemaService;
+    
     @Autowired
     final void setAppConfigDao(AppConfigDao appConfigDao) {
         this.appConfigDao = appConfigDao;
@@ -56,6 +58,11 @@ public class AppConfigService {
     final void setSurveyService(SurveyService surveyService) {
         this.surveyService = surveyService;
     }   
+    
+    @Autowired
+    final void setUploadSchemaService(UploadSchemaService schemaService) {
+        this.schemaService = schemaService;
+    }
     
     // In order to mock this value;
     protected long getCurrentTimestamp() {
@@ -135,7 +142,7 @@ public class AppConfigService {
         appConfig.setStudyId(studyId.getIdentifier());
         
         Study study = studyService.getStudy(studyId);
-        Validator validator = new AppConfigValidator(study.getDataGroups(), true);
+        Validator validator = new AppConfigValidator(surveyService, schemaService, study.getDataGroups(), true);
         Validate.entityThrowingException(validator, appConfig);
 
         long timestamp = getCurrentTimestamp();
@@ -163,7 +170,7 @@ public class AppConfigService {
         appConfig.setStudyId(studyId.getIdentifier());
         
         Study study = studyService.getStudy(studyId);
-        Validator validator = new AppConfigValidator(study.getDataGroups(), false);
+        Validator validator = new AppConfigValidator(surveyService, schemaService, study.getDataGroups(), false);
         Validate.entityThrowingException(validator, appConfig);
         
         // Throw a 404 if the GUID is not valid.
