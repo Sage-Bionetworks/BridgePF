@@ -68,7 +68,7 @@ public class AppConfigValidator implements Validator {
                         errors.rejectValue("revision", "is required");
                     } else {
                         try {
-                            schemaService.getUploadSchema(studyId, ref.getId());    
+                            schemaService.getUploadSchemaByIdAndRev(studyId, ref.getId(), ref.getRevision());    
                         } catch(EntityNotFoundException e) {
                             errors.rejectValue("", "does not refer to an upload schema");
                         }
