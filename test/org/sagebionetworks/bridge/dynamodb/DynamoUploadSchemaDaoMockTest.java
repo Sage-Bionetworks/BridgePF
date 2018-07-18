@@ -13,7 +13,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -29,7 +28,6 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
 @SuppressWarnings({ "ConstantConditions", "rawtypes", "RedundantCast", "unchecked" })
