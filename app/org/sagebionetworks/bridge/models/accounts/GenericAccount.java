@@ -361,11 +361,13 @@ public class GenericAccount implements Account {
     }
 
     /** Version number, used by Hibernate to handle optimistic locking. */
+    @Override
     public int getVersion() {
         return version;
     }
 
     /** @see #getVersion */
+    @Override
     public void setVersion(int version) {
         this.version = version;
     }
