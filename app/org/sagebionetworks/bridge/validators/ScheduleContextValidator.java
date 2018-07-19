@@ -6,14 +6,11 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 public class ScheduleContextValidator implements Validator {
-    
     /**
-     * We allow up to four days and that's what we document. Unfortunately, we also adjust endsOn
-     * in the controller to the end of the day, so if you pass in 4 days, it is not valid. Add 
-     * one day for now... the exact amount is not that critical, we're just trying to prevent
-     * something like daysAhead=10000.
+     * Limit the number of days you can request for activities. The date range must be less than (not equal to) this
+     * amount. We set this to 32 so that you can get activities for a whole month at a time.
      */
-    public static final int MAX_DATE_RANGE_IN_DAYS = 15;
+    public static final int MAX_DATE_RANGE_IN_DAYS = 32;
     
     /**
      * The maximum number of tasks you can force when scheduling. For our use case it's hard to argue 
@@ -50,7 +47,7 @@ public class ScheduleContextValidator implements Validator {
         } else if (context.getEndsOn().isBefore(startsOn)) {
             errors.rejectValue("endsOn", "must be after startsOn");
         } else if (context.getEndsOn().minusDays(MAX_DATE_RANGE_IN_DAYS).isAfter(startsOn)) {
-            errors.rejectValue("endsOn", "must be "+MAX_DATE_RANGE_IN_DAYS+" days or less");
+            errors.rejectValue("endsOn", "must be less than " + MAX_DATE_RANGE_IN_DAYS + " days");
         }
         if (context.getMinimumPerSchedule() < 0) {
             errors.rejectValue("minimumPerSchedule", "cannot be negative");
