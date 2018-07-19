@@ -256,7 +256,7 @@ public class UploadSchemaControllerTest {
     }
     
     @Test
-    public void getAllRevisionsOfASchema() throws Exception {
+    public void getAllRevisionsOfASchemaExcludeDeleted() throws Exception {
         String schemaId = "controller-test-schema";
 
         // Create a couple of revisions
@@ -266,12 +266,12 @@ public class UploadSchemaControllerTest {
 
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
-        when(mockSvc.getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, schemaId)).thenReturn(ImmutableList.of(
+        when(mockSvc.getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, schemaId, false)).thenReturn(ImmutableList.of(
                 schema3, schema2, schema1));
 
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc);
-        Result result = controller.getUploadSchemaAllRevisions(schemaId);
+        Result result = controller.getUploadSchemaAllRevisions(schemaId, "false");
         TestUtils.assertResult(result, 200);
 
         String resultJson = Helpers.contentAsString(result);
@@ -299,6 +299,38 @@ public class UploadSchemaControllerTest {
         assertNull(returnedSchema1.getStudyId());
     }
 
+    @Test
+    public void getAllRevisionsOfASchemaExcludeDeletedByDefault() throws Exception {
+        String schemaId = "controller-test-schema";
+
+        // mock UploadSchemaService
+        UploadSchemaService mockSvc = mock(UploadSchemaService.class);
+        when(mockSvc.getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, schemaId, false)).thenReturn(ImmutableList.of());
+
+        // setup, execute, and validate
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
+        Result result = controller.getUploadSchemaAllRevisions(schemaId, null);
+        TestUtils.assertResult(result, 200);
+
+        verify(mockSvc).getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, schemaId, false);
+    }
+
+    @Test
+    public void getAllRevisionsOfASchemaIncludeDeleted() throws Exception {
+        String schemaId = "controller-test-schema";
+
+        // mock UploadSchemaService
+        UploadSchemaService mockSvc = mock(UploadSchemaService.class);
+        when(mockSvc.getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, schemaId, false)).thenReturn(ImmutableList.of());
+
+        // setup, execute, and validate
+        UploadSchemaController controller = setupControllerWithService(mockSvc);
+        Result result = controller.getUploadSchemaAllRevisions(schemaId, "true");
+        TestUtils.assertResult(result, 200);
+
+        verify(mockSvc).getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, schemaId, true);
+    }
+    
     @Test
     public void updateV4() throws Exception {
         // mock service

@@ -531,20 +531,19 @@ public class UploadSchemaService {
     public void deleteUploadSchemaById(StudyIdentifier studyId, String schemaId) {
         // Schema ID is validated by getUploadSchemaAllRevisions()
 
-        List<UploadSchema> schemaList = getSchemaRevisionsForId(studyId, schemaId);
+        List<UploadSchema> schemaList = getSchemaRevisionsForDelete(studyId, schemaId);
         uploadSchemaDao.deleteUploadSchemas(schemaList);
     }
-
 
     public void deleteUploadSchemaByIdPermanently(StudyIdentifier studyId, String schemaId) {
         // Schema ID is validated by getUploadSchemaAllRevisions()
 
-        List<UploadSchema> schemaList = getSchemaRevisionsForId(studyId, schemaId);
+        List<UploadSchema> schemaList = getSchemaRevisionsForDelete(studyId, schemaId);
         uploadSchemaDao.deleteUploadSchemasPermanently(schemaList);
     }
 
-    protected List<UploadSchema> getSchemaRevisionsForId(StudyIdentifier studyId, String schemaId) {
-        List<UploadSchema> schemaList = getUploadSchemaAllRevisions(studyId, schemaId);
+    protected List<UploadSchema> getSchemaRevisionsForDelete(StudyIdentifier studyId, String schemaId) {
+        List<UploadSchema> schemaList = getUploadSchemaAllRevisions(studyId, schemaId, true);
 
         List<Integer> revisions = new ArrayList<>();
         for (int i = 0; i < schemaList.size(); i++) {
@@ -663,12 +662,12 @@ public class UploadSchemaService {
      * Service handler for fetching upload schemas. This method fetches all revisions of an an upload schema for
      * the specified study and schema ID. If the schema doesn't exist, this handler throws an EntityNotFoundException.
      */
-    public List<UploadSchema> getUploadSchemaAllRevisions(StudyIdentifier studyId, String schemaId) {
+    public List<UploadSchema> getUploadSchemaAllRevisions(StudyIdentifier studyId, String schemaId, boolean includeDeleted) {
         if (StringUtils.isBlank(schemaId)) {
             throw new BadRequestException("Schema ID must be specified");
         }
 
-        List<UploadSchema> schemaList = uploadSchemaDao.getUploadSchemaAllRevisionsById(studyId, schemaId);
+        List<UploadSchema> schemaList = uploadSchemaDao.getUploadSchemaAllRevisionsById(studyId, schemaId, includeDeleted);
         if (schemaList.isEmpty()) {
             throw new EntityNotFoundException(UploadSchema.class);
         }
@@ -704,7 +703,7 @@ public class UploadSchemaService {
         checkNotNull(studyId, "Study ID must be specified");
         checkNotNull(clientInfo, "Client Info must be specified");
 
-        List<UploadSchema> schemaList = getUploadSchemaAllRevisions(studyId, schemaId);
+        List<UploadSchema> schemaList = getUploadSchemaAllRevisions(studyId, schemaId, false);
         return schemaList.stream().filter(schema -> isSchemaAvailableForClientInfo(schema, clientInfo))
                 .max((schema1, schema2) -> Integer.compare(schema1.getRevision(), schema2.getRevision())).orElse(null);
     }

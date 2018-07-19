@@ -250,7 +250,7 @@ public class UploadSchemaServiceTest {
     @Test(expected = EntityNotFoundException.class)
     public void deleteByIdNotFound() {
         // mock dao to return empty list instead of null
-        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID)).thenReturn(ImmutableList.of());
+        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID, false)).thenReturn(ImmutableList.of());
 
         svc.deleteUploadSchemaById(TestConstants.TEST_STUDY, SCHEMA_ID);
     }
@@ -258,7 +258,7 @@ public class UploadSchemaServiceTest {
     @Test(expected = EntityNotFoundException.class)
     public void deleteByIdPermanentlyNotFound() {
         // mock dao to return empty list instead of null
-        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID)).thenReturn(ImmutableList.of());
+        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID, false)).thenReturn(ImmutableList.of());
 
         svc.deleteUploadSchemaByIdPermanently(TestConstants.TEST_STUDY, SCHEMA_ID);
     }
@@ -268,7 +268,7 @@ public class UploadSchemaServiceTest {
         when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
                 anySetOf(String.class))).thenReturn(ImmutableList.of(makeValidMetadata()));
         List<UploadSchema> schemaListToDelete = ImmutableList.of(makeSimpleSchema());
-        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID)).thenReturn(schemaListToDelete);
+        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID, true)).thenReturn(schemaListToDelete);
         svc.deleteUploadSchemaById(TestConstants.TEST_STUDY, SCHEMA_ID);
     }
 
@@ -277,7 +277,7 @@ public class UploadSchemaServiceTest {
         when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
                 anySetOf(String.class))).thenReturn(ImmutableList.of(makeValidMetadata()));
         List<UploadSchema> schemaListToDelete = ImmutableList.of(makeSimpleSchema());
-        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID)).thenReturn(schemaListToDelete);
+        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID, true)).thenReturn(schemaListToDelete);
         svc.deleteUploadSchemaByIdPermanently(TestConstants.TEST_STUDY, SCHEMA_ID);
     }
     
@@ -286,7 +286,7 @@ public class UploadSchemaServiceTest {
     public void deleteByIdSuccess() {
         // mock dao
         List<UploadSchema> schemaListToDelete = ImmutableList.of(makeSimpleSchema());
-        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID)).thenReturn(schemaListToDelete);
+        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID, true)).thenReturn(schemaListToDelete);
 
         // execute and verify delete call
         svc.deleteUploadSchemaById(TestConstants.TEST_STUDY, SCHEMA_ID);
@@ -309,7 +309,8 @@ public class UploadSchemaServiceTest {
     public void deleteByIdPermanentlySuccess() {
         // mock dao
         List<UploadSchema> schemaListToDelete = ImmutableList.of(makeSimpleSchema());
-        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID)).thenReturn(schemaListToDelete);
+        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID, true))
+                .thenReturn(schemaListToDelete);
 
         // execute and verify delete call
         svc.deleteUploadSchemaByIdPermanently(TestConstants.TEST_STUDY, SCHEMA_ID);
@@ -539,38 +540,49 @@ public class UploadSchemaServiceTest {
 
     @Test(expected = BadRequestException.class)
     public void getSchemaAllRevisionsNullId() {
-        svc.getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, null);
+        svc.getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, null, false);
     }
 
     @Test(expected = BadRequestException.class)
     public void getSchemaAllRevisionsEmptyId() {
-        svc.getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, "");
+        svc.getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, "", false);
     }
 
     @Test(expected = BadRequestException.class)
     public void getSchemaAllRevisionsBlankId() {
-        svc.getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, "   ");
+        svc.getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, "   ", false);
     }
 
     @Test(expected = EntityNotFoundException.class)
     public void getSchemaAllRevisionsNotFound() {
         // mock dao to return empty list
-        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID)).thenReturn(ImmutableList.of());
+        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID, false)).thenReturn(ImmutableList.of());
 
-        svc.getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, SCHEMA_ID);
+        svc.getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, SCHEMA_ID, false);
     }
 
     @Test
-    public void getSchemaAllRevisionsSuccess() {
+    public void getSchemaAllRevisionsSuccessExcludeDeleted() {
         // mock dao
         List<UploadSchema> daoOutputSchemaList = ImmutableList.of(makeSimpleSchema());
-        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID)).thenReturn(daoOutputSchemaList);
+        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID, false)).thenReturn(daoOutputSchemaList);
 
         // execute and validate
-        List<UploadSchema> svcOutputSchemaList = svc.getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, SCHEMA_ID);
+        List<UploadSchema> svcOutputSchemaList = svc.getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, SCHEMA_ID, false);
         assertSame(daoOutputSchemaList, svcOutputSchemaList);
     }
 
+    @Test
+    public void getSchemaAllRevisionsSuccessIncludeDeleted() {
+        // mock dao
+        List<UploadSchema> daoOutputSchemaList = ImmutableList.of(makeSimpleSchema());
+        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID, true)).thenReturn(daoOutputSchemaList);
+
+        // execute and validate
+        List<UploadSchema> svcOutputSchemaList = svc.getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, SCHEMA_ID, true);
+        assertSame(daoOutputSchemaList, svcOutputSchemaList);
+    }
+    
     @Test(expected = BadRequestException.class)
     public void getByIdAndRevNullId() {
         svc.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, null, SCHEMA_REV);
@@ -681,8 +693,8 @@ public class UploadSchemaServiceTest {
         schemaRev2.setMinAppVersion(OS_NAME, 20);
 
         // mock dao
-        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID)).thenReturn(ImmutableList.of(
-                schemaRev1, schemaRev2));
+        when(dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY, SCHEMA_ID, false))
+                .thenReturn(ImmutableList.of(schemaRev1, schemaRev2));
     }
 
     @Test

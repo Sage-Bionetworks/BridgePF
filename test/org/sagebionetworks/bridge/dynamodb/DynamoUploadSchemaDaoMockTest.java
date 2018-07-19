@@ -155,9 +155,9 @@ public class DynamoUploadSchemaDaoMockTest {
         assertEquals(undeletedSchema, results2.get(0));
         assertEquals(deletedSchema, results2.get(1));
     }
-    
+
     @Test
-    public void getSchemaAllRevisions() {
+    public void getSchemaAllRevisionsIncludeDeleted() {
         // spy query
         List<DynamoUploadSchema> mapperOutputSchemaList = ImmutableList.of(new DynamoUploadSchema());
         ArgumentCaptor<DynamoDBQueryExpression> mapperQueryCaptor = ArgumentCaptor.forClass(
@@ -166,13 +166,39 @@ public class DynamoUploadSchemaDaoMockTest {
 
         // execute
         List<UploadSchema> daoOutputSchemaList = dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY,
-                SCHEMA_ID);
+                SCHEMA_ID, true);
 
         // validate query
         DynamoDBQueryExpression<DynamoUploadSchema> mapperQuery = mapperQueryCaptor.getValue();
         assertFalse(mapperQuery.isScanIndexForward());
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, mapperQuery.getHashKeyValues().getStudyId());
         assertEquals(SCHEMA_ID, mapperQuery.getHashKeyValues().getSchemaId());
+        assertNull(mapperQuery.getQueryFilter());
+
+        // Verify DAO output is same as mapper output. We use equals because they are different instances, but contain
+        // the same objects.
+        assertEquals(mapperOutputSchemaList, daoOutputSchemaList);
+    }
+    
+    @Test
+    public void getSchemaAllRevisionsExcludeDeleted() {
+        // spy query
+        List<DynamoUploadSchema> mapperOutputSchemaList = ImmutableList.of(new DynamoUploadSchema());
+        ArgumentCaptor<DynamoDBQueryExpression> mapperQueryCaptor = ArgumentCaptor.forClass(
+                DynamoDBQueryExpression.class);
+        doReturn(mapperOutputSchemaList).when(dao).queryHelper(mapperQueryCaptor.capture());
+
+        // execute
+        List<UploadSchema> daoOutputSchemaList = dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY,
+                SCHEMA_ID, false);
+
+        // validate query
+        DynamoDBQueryExpression<DynamoUploadSchema> mapperQuery = mapperQueryCaptor.getValue();
+        assertFalse(mapperQuery.isScanIndexForward());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, mapperQuery.getHashKeyValues().getStudyId());
+        assertEquals(SCHEMA_ID, mapperQuery.getHashKeyValues().getSchemaId());
+        assertEquals("{deleted={AttributeValueList: [{N: 1,}],ComparisonOperator: NE}}",
+                mapperQuery.getQueryFilter().toString());
 
         // Verify DAO output is same as mapper output. We use equals because they are different instances, but contain
         // the same objects.

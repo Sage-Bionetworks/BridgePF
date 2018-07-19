@@ -23,7 +23,7 @@ public interface UploadSchemaDao {
     List<UploadSchema> getAllUploadSchemasAllRevisions(StudyIdentifier studyId, boolean includeDeleted);
 
     /** Fetch all revisions of a single upload schema. */
-    List<UploadSchema> getUploadSchemaAllRevisionsById(StudyIdentifier studyId, String schemaId);
+    List<UploadSchema> getUploadSchemaAllRevisionsById(StudyIdentifier studyId, String schemaId, boolean includeDeleted);
 
     /** Fetches the upload schema for the specified study, schema ID, and revision. */
     UploadSchema getUploadSchemaByIdAndRevision(StudyIdentifier studyId, String schemaId, int revision);

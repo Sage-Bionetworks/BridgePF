@@ -139,6 +139,6 @@ public class DynamoSurveyDaoMockTest {
         // Validate backends
         verify(surveyDao).deleteAllElements(SURVEY_GUID, SURVEY_CREATED_ON);
         verify(mockSurveyMapper).delete(survey);
-        verify(mockSchemaService).deleteUploadSchemaById(TestConstants.TEST_STUDY, SURVEY_ID);
+        verify(mockSchemaService).deleteUploadSchemaByIdPermanently(TestConstants.TEST_STUDY, SURVEY_ID);
     }
 }

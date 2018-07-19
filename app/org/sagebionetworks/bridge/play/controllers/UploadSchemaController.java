@@ -128,13 +128,17 @@ public class UploadSchemaController extends BaseController {
      * schema doesn't exist, this API throws a 404 exception.
      * @param schemaId
      *         schema ID to fetch
+     * @param includeDeleted
+     *         "true" if logically deleted items should be included in results, they are excluded otherwise
      * @return Play result with an array of all revisions of the fetched schema in JSON format
      */
-    public Result getUploadSchemaAllRevisions(String schemaId) throws JsonProcessingException, IOException {
+    public Result getUploadSchemaAllRevisions(String schemaId, String includeDeleted)
+            throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
-        List<UploadSchema> uploadSchemas = uploadSchemaService.getUploadSchemaAllRevisions(studyId, schemaId);
+        List<UploadSchema> uploadSchemas = uploadSchemaService.getUploadSchemaAllRevisions(studyId, schemaId,
+                Boolean.valueOf(includeDeleted));
         ResourceList<UploadSchema> uploadSchemaResourceList = new ResourceList<>(uploadSchemas);
         return okResult(UploadSchema.PUBLIC_SCHEMA_WRITER, uploadSchemaResourceList);
     }

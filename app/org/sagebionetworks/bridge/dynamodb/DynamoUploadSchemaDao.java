@@ -10,6 +10,9 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
 import com.google.common.collect.ImmutableList;
@@ -95,7 +98,8 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
 
     /** {@inheritDoc} */
     @Override
-    public List<UploadSchema> getUploadSchemaAllRevisionsById(StudyIdentifier studyId, String schemaId) {
+    public List<UploadSchema> getUploadSchemaAllRevisionsById(StudyIdentifier studyId, String schemaId,
+            boolean includeDeleted) {
         // Make hash key.
         DynamoUploadSchema key = new DynamoUploadSchema();
         key.setStudyId(studyId.getIdentifier());
@@ -104,6 +108,11 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         // Get all revisions, in reverse sort order (highest first)
         DynamoDBQueryExpression<DynamoUploadSchema> ddbQuery = new DynamoDBQueryExpression<DynamoUploadSchema>()
                 .withHashKeyValues(key).withScanIndexForward(false);
+        if (!includeDeleted) {
+            ddbQuery.withQueryFilterEntry("deleted", new Condition()
+                .withComparisonOperator(ComparisonOperator.NE)
+                .withAttributeValueList(new AttributeValue().withN("1")));
+        }
         List<DynamoUploadSchema> schemaList = queryHelper(ddbQuery);
 
         // Convert generic types.
