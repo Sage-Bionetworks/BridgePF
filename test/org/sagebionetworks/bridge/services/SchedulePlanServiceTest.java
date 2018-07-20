@@ -57,7 +57,7 @@ public class SchedulePlanServiceTest {
             assertNotNull(savedPlan.getGuid());
             assertNotNull(savedPlan.getVersion());
         } finally {
-            schedulePlanService.deleteSchedulePlan(new StudyIdentifierImpl(savedPlan.getStudyKey()), savedPlan.getGuid());
+            schedulePlanService.deleteSchedulePlanPermanently(new StudyIdentifierImpl(savedPlan.getStudyKey()), savedPlan.getGuid());
         }
     }
     
@@ -83,7 +83,7 @@ public class SchedulePlanServiceTest {
     @Test
     public void updateOfSchedulePlanSetsGuids() {
         SchedulePlan plan = TestUtils.getSimpleSchedulePlan(TEST_STUDY);
-        plan.setLabel("Label");
+        plan.setLabel(plan.getLabel() + " more");
         
         List<Activity> activities = Lists.newArrayList(taskActivity("AAA"), taskActivity("BBB"));
         getSchedule(plan).setActivities(activities);
@@ -105,6 +105,8 @@ public class SchedulePlanServiceTest {
         
         assertNotEquals("BAD_GUID", getSchedule(asUpdated).getActivities().get(1).getGuid());
         assertNotNull(getSchedule(asUpdated).getActivities().get(2).getGuid());
+        
+        schedulePlanService.deleteSchedulePlanPermanently(study, asUpdated.getGuid());
     }
     
     private Activity taskActivity(String identifier) {

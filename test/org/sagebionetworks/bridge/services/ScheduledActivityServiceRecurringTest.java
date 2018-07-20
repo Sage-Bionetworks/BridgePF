@@ -93,7 +93,7 @@ public class ScheduledActivityServiceRecurringTest {
 
     @After
     public void after() {
-        schedulePlanService.deleteSchedulePlan(study.getStudyIdentifier(), schedulePlan.getGuid());
+        schedulePlanService.deleteSchedulePlanPermanently(study.getStudyIdentifier(), schedulePlan.getGuid());
         if (testUser != null) {
             helper.deleteUser(study, testUser.getId());
         }

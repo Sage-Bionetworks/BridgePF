@@ -106,5 +106,7 @@ public class DynamoCriteriaDaoTest {
         Criteria criteria = criteriaDao.getCriteria("key1");
         assertEquals(new Integer(1), criteria.getMinAppVersion(IOS));
         assertEquals(new Integer(4), criteria.getMaxAppVersion(IOS));
+        
+        criteriaDao.deleteCriteria(dynoCriteria.getKey());
     }        
 }

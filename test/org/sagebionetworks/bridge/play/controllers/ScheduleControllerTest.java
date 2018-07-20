@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.mock;
@@ -72,7 +73,7 @@ public class ScheduleControllerTest {
         plans.add(plan);
         
         SchedulePlanService schedulePlanService = mock(SchedulePlanService.class);
-        when(schedulePlanService.getSchedulePlans(clientInfo, studyId)).thenReturn(plans);
+        when(schedulePlanService.getSchedulePlans(clientInfo, studyId, false)).thenReturn(plans);
         
         controller = spy(new ScheduleController());
         controller.setSchedulePlanService(schedulePlanService);
@@ -132,7 +133,7 @@ public class ScheduleControllerTest {
         plans.add(plan);
         
         SchedulePlanService schedulePlanService = mock(SchedulePlanService.class);
-        when(schedulePlanService.getSchedulePlans(any(), any())).thenReturn(plans);
+        when(schedulePlanService.getSchedulePlans(any(), any(), anyBoolean())).thenReturn(plans);
         controller.setSchedulePlanService(schedulePlanService);
         
         Result result = controller.getSchedulesV3();

@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
 
@@ -73,7 +74,7 @@ public class DynamoSchedulePlanDaoTest {
     @After
     public void after() {
         for (Keys keys : plansToDelete) {
-            schedulePlanDao.deleteSchedulePlan(new StudyIdentifierImpl(keys.studyIdentifier), keys.guid);
+            schedulePlanDao.deleteSchedulePlanPermanently(new StudyIdentifierImpl(keys.studyIdentifier), keys.guid);
         }
     }
     
@@ -121,9 +122,15 @@ public class DynamoSchedulePlanDaoTest {
         assertEquals("Schedule plan contains correct strategy class type", SimpleScheduleStrategy.class, newPlan.getStrategy().getClass());
         assertEquals("The strategy has been updated", simplePlan.getStrategy(), newPlan.getStrategy());
         
-        // delete, throws exception
+        // delete logically, plan can still be retrieved
         schedulePlanDao.deleteSchedulePlan(studyIdentifier, newPlan.getGuid());
+        SchedulePlan retrieved = schedulePlanDao.getSchedulePlan(studyIdentifier, newPlan.getGuid());
+        assertTrue(retrieved.isDeleted());
+        
+        // delete permanently
+        schedulePlanDao.deleteSchedulePlanPermanently(studyIdentifier, newPlan.getGuid());
         try {
+            // This throws an exception
             schedulePlanDao.getSchedulePlan(studyIdentifier, newPlan.getGuid());
             fail("Should have thrown an entity not found exception");
         } catch(EntityNotFoundException e) {
@@ -140,7 +147,7 @@ public class DynamoSchedulePlanDaoTest {
         SchedulePlan plan2 = schedulePlanDao.createSchedulePlan(studyIdentifier, simplePlan);
         plansToDelete.add(new Keys(plan2.getStudyKey(), plan2.getGuid()));
         
-        List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyIdentifier);
+        List<SchedulePlan> plans = schedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyIdentifier, true);
         assertEquals(getSchedulePlanGuids(plan1, plan2), getSchedulePlanGuids(plans));
     }
     
