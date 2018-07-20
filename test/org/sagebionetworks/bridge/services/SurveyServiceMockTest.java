@@ -230,14 +230,14 @@ public class SurveyServiceMockTest {
     @Test
     public void deleteSurveyPermanentlyConstrainedBySchedule() {
         List<SchedulePlan> plans = createSchedulePlanListWithSurveyReference(false);
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
+        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, true);
         Survey survey = createSurvey();
         
         try {
             service.deleteSurveyPermanently(TEST_STUDY, survey);
             fail("Should have thrown exception");
         } catch(ConstraintViolationException e) {
-            assertTrue(e.getMessage().contains("Operation not permitted because entity"));
+            assertTrue(e.getMessage().contains("Cannot delete survey: it is referenced by a schedule plan that is still accessible through the API"));
             assertEquals(SCHEDULE_PLAN_GUID, e.getReferrerKeys().get("guid"));
             assertEquals("SchedulePlan", e.getReferrerKeys().get("type"));
             assertEquals(SURVEY_GUID, e.getEntityKeys().get("guid"));
@@ -249,7 +249,7 @@ public class SurveyServiceMockTest {
     @Test
     public void deleteSurveyPermanentlyConstrainedByScheduleWithPublishedSurvey() {
         List<SchedulePlan> plans = createSchedulePlanListWithSurveyReference(true);
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
+        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, true);
         
         // One published survey, should throw exception
         Survey survey = createSurvey();
@@ -262,7 +262,7 @@ public class SurveyServiceMockTest {
             service.deleteSurveyPermanently(TEST_STUDY, survey);
             fail("Should have thrown exception");
         } catch(ConstraintViolationException e) {
-            assertTrue(e.getMessage().contains("Operation not permitted because entity"));
+            assertTrue(e.getMessage().contains("Cannot delete survey: it is referenced by a schedule plan that is still accessible through the API"));
             assertEquals(SCHEDULE_PLAN_GUID, e.getReferrerKeys().get("guid"));
             assertEquals("SchedulePlan", e.getReferrerKeys().get("type"));
             assertEquals(SURVEY_GUID, e.getEntityKeys().get("guid"));
@@ -286,14 +286,14 @@ public class SurveyServiceMockTest {
     @Test
     public void deleteSurveyPermanentlyConstrainedByCompoundSchedule() {
         List<SchedulePlan> plans = createSchedulePlanListWithCompoundActivity(false);
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
+        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, true);
         Survey survey = createSurvey();
         
         try {
             service.deleteSurveyPermanently(TEST_STUDY, survey);
             fail("Should have thrown exception");
         } catch(ConstraintViolationException e) {
-            assertTrue(e.getMessage().contains("Operation not permitted because entity"));
+            assertTrue(e.getMessage().contains("Cannot delete survey: it is referenced by a schedule plan that is still accessible through the API"));
             assertEquals(SCHEDULE_PLAN_GUID, e.getReferrerKeys().get("guid"));
             assertEquals("SchedulePlan", e.getReferrerKeys().get("type"));
             assertEquals(SURVEY_GUID, e.getEntityKeys().get("guid"));
@@ -305,7 +305,7 @@ public class SurveyServiceMockTest {
     @Test
     public void deleteSurveyPermanentlyConstrainedByCompoundScheduleWithPublishedSurvey() {
         List<SchedulePlan> plans = createSchedulePlanListWithCompoundActivity(true);
-        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
+        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, true);
         
         // One published survey, should throw exception
         Survey survey = createSurvey();
@@ -318,7 +318,7 @@ public class SurveyServiceMockTest {
             service.deleteSurveyPermanently(TEST_STUDY, survey);
             fail("Should have thrown exception");
         } catch(ConstraintViolationException e) {
-            assertTrue(e.getMessage().contains("Operation not permitted because entity"));
+            assertTrue(e.getMessage().contains("Cannot delete survey: it is referenced by a schedule plan that is still accessible through the API"));
             assertEquals(SCHEDULE_PLAN_GUID, e.getReferrerKeys().get("guid"));
             assertEquals("SchedulePlan", e.getReferrerKeys().get("type"));
             assertEquals(SURVEY_GUID, e.getEntityKeys().get("guid"));

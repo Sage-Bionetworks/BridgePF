@@ -110,14 +110,15 @@ public class CompoundActivityDefinitionService {
     }
     
     private void checkConstraintViolations(StudyIdentifier studyId, String taskId) {
-        // Cannot delete a definition if it is referenced in any schedule plan.
-        // If you delete a schedule plan, than you can delete a compound activity definition pointing to it.
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId, false);
+        // You cannot physically delete a compound activity if it is referenced by a logically deleted schedule plan. 
+        // It's possible the schedule plan could be restored. All you can do is logically delete the compound activity.
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId, true);
         SchedulePlan match = findFirstMatchingPlan(plans, taskId);
         if (match != null) {
-            throw new ConstraintViolationException.Builder().withEntityKey("taskId", taskId)
-                    .withEntityKey("type", "CompoundActivityDefinition").withReferrerKey("guid", match.getGuid())
-                    .withReferrerKey("type", "SchedulePlan").build();
+            throw new ConstraintViolationException.Builder().withMessage(
+                    "Cannot delete compound activity definition: it is referenced by a schedule plan that is still accessible through the API")
+                    .withEntityKey("taskId", taskId).withEntityKey("type", "CompoundActivityDefinition")
+                    .withReferrerKey("guid", match.getGuid()).withReferrerKey("type", "SchedulePlan").build();
         }
     }
 

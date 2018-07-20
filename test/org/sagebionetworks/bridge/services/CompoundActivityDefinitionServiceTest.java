@@ -129,7 +129,7 @@ public class CompoundActivityDefinitionServiceTest {
         Activity newActivity = new Activity.Builder()
                 .withCompoundActivity(compoundActivity).build();
         plan.getStrategy().getAllPossibleSchedules().get(0).getActivities().set(0, newActivity);
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false))
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, true))
                 .thenReturn(Lists.newArrayList(plan));
         
         // Now, a schedule plan exists that references this task ID. It cannot be deleted.
