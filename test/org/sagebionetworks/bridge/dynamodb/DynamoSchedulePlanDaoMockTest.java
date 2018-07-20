@@ -220,7 +220,7 @@ public class DynamoSchedulePlanDaoMockTest {
     }
     
     @Test
-    public void getSchedulePlansIncludeDeleted() {
+    public void getSchedulePlansExcludeDeleted() {
         dao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false);
         
         verify(mapper).queryPage(eq(DynamoSchedulePlan.class), queryCaptor.capture());
@@ -232,7 +232,7 @@ public class DynamoSchedulePlanDaoMockTest {
     }
     
     @Test
-    public void getSchedulePlansExcludeDeleted() {
+    public void getSchedulePlansIncludeDeleted() {
         dao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, true);
         
         verify(mapper).queryPage(eq(DynamoSchedulePlan.class), queryCaptor.capture());

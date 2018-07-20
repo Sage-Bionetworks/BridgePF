@@ -169,6 +169,32 @@ public class SchedulePlanControllerMockTest {
         verify(mockSchedulePlanService).deleteSchedulePlan(study.getStudyIdentifier(), "GGG");
     }
     
+    @Test
+    public void deleteSchedulePlanDefault() throws Exception {
+        Result result = controller.deleteSchedulePlan("GGG", null);
+        TestUtils.assertResult(result, 200, "Schedule plan deleted.");
+        
+        verify(mockSchedulePlanService).deleteSchedulePlan(study.getStudyIdentifier(), "GGG");
+    }
+    
+    @Test
+    public void deleteSchedulePlanPermanently() throws Exception {
+        when(mockUserSession.isInRole(Roles.ADMIN)).thenReturn(true);
+        
+        Result result = controller.deleteSchedulePlan("GGG", "true");
+        TestUtils.assertResult(result, 200, "Schedule plan deleted.");
+        
+        verify(mockSchedulePlanService).deleteSchedulePlanPermanently(study.getStudyIdentifier(), "GGG");
+    }
+    
+    @Test
+    public void deleteSchedulePlanPermanentlyOnlyLogicalForDeveloper() throws Exception {
+        Result result = controller.deleteSchedulePlan("GGG", "true");
+        TestUtils.assertResult(result, 200, "Schedule plan deleted.");
+        
+        verify(mockSchedulePlanService).deleteSchedulePlan(study.getStudyIdentifier(), "GGG");
+    }
+    
     private SchedulePlan createSchedulePlan() {
         ABTestScheduleStrategy strategy = new ABTestScheduleStrategy();
         Schedule schedule = new Schedule();

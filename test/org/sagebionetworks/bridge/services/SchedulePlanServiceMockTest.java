@@ -20,12 +20,13 @@ import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy;
@@ -39,6 +40,7 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 
 import com.google.common.collect.Sets;
+import com.newrelic.agent.deps.com.google.common.collect.Lists;
 
 public class SchedulePlanServiceMockTest {
 
@@ -218,6 +220,28 @@ public class SchedulePlanServiceMockTest {
             assertEquals("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier 'DDD' is not in enumeration: taskGuid, CCC, tapTest", e.getErrors().get("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier").get(0));
             assertEquals("strategy.scheduleCriteria[0].criteria.allOfGroups 'FFF' is not in enumeration: AAA", e.getErrors().get("strategy.scheduleCriteria[0].criteria.allOfGroups").get(0));
         }
+    }
+    
+    @Test
+    public void getSchedulePlansExcludeDeleted() throws Exception {
+        List<SchedulePlan> plans = Lists.newArrayList(SchedulePlan.create());
+        when(mockSchedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false)).thenReturn(plans);
+        
+        List<SchedulePlan> returned = service.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false);
+        assertEquals(plans, returned);
+        
+        verify(mockSchedulePlanDao).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false);
+    }
+    
+    @Test
+    public void getSchedulePlansIncludeDeleted() throws Exception {
+        List<SchedulePlan> plans = Lists.newArrayList(SchedulePlan.create());
+        when(mockSchedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, true)).thenReturn(plans);
+        
+        List<SchedulePlan> returned = service.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, true);
+        assertEquals(plans, returned);
+        
+        verify(mockSchedulePlanDao).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, true);
     }
     
     @Test
