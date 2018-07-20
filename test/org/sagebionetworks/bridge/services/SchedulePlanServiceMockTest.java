@@ -220,6 +220,20 @@ public class SchedulePlanServiceMockTest {
         }
     }
     
+    @Test
+    public void deleteSchedulePlan() {
+        service.deleteSchedulePlan(TEST_STUDY, "planGuid");
+        
+        verify(mockSchedulePlanDao).deleteSchedulePlan(TEST_STUDY, "planGuid");
+    }
+    
+    @Test
+    public void deleteSchedulePlanPermanently() {
+        service.deleteSchedulePlanPermanently(TEST_STUDY, "planGuid");
+        
+        verify(mockSchedulePlanDao).deleteSchedulePlanPermanently(TEST_STUDY, "planGuid");
+    }
+    
     private SchedulePlan createInvalidSchedulePlan() {
         Schedule schedule = new Schedule();
         schedule.addActivity(new Activity.Builder().withTask("DDD").build());

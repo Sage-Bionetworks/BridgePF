@@ -626,7 +626,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan ccc = schedulePlan(newActivity);
         
         // This is the schedule plan returned from the DB with the new Activity
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(ccc));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(ccc));
         
         // This is the persisted activity with the oldActivity
         Activity oldActivity = new Activity.Builder().withGuid("CCC")
@@ -658,7 +658,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan ccc = schedulePlan(newActivity);
         
         // This is the schedule plan returned from the DB with the new Activity
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(ccc));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(ccc));
         
         // This is the persisted activity with the oldActivity
         Activity oldActivity = new Activity.Builder().withGuid("CCC")
