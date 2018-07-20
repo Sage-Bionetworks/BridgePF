@@ -6,6 +6,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -579,6 +580,8 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> returnedActivities = service.getScheduledActivities(createScheduleContext(NOW).build());
         assertEquals(1, returnedActivities.size());
         assertEquals(5678, returnedActivities.get(0).getActivity().getSurvey().getCreatedOn().getMillis());
+        
+        verify(activityDao).getActivities(eq(TIME_ZONE), any());
     }
 
     @Test
@@ -600,11 +603,81 @@ public class ScheduledActivityServiceMockTest {
                 .withSurvey("my-survey", "my-survey-guid", new DateTime(1234)).build();
         List<ScheduledActivity> db = createNewActivities("CCC"+TIME_PORTION);
         db.get(0).setActivity(oldActivity);
-        when(activityDao.getActivities(eq(TIME_ZONE), any())).thenReturn(db);
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> page = new ForwardCursorPagedResourceList<>(db, null);
+        when(activityDao.getActivityHistoryV2(any(), any(), any(), any(), any(), anyInt())).thenReturn(page);
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivitiesV4(createScheduleContext(NOW).build());
         assertEquals(1, returnedActivities.size());
         assertEquals(5678, returnedActivities.get(0).getActivity().getSurvey().getCreatedOn().getMillis());
+        
+        verify(activityDao).getActivityHistoryV2(any(), any(), any(), any(), any(), anyInt());
+    }
+    
+    @Test
+    public void taskNotStartedWithClientDataNotUpdated() {
+        // Activity in DDB has survey reference pointing to createdOn 1234. Newly created activity has survey reference
+        // pointing to createdOn 5678. Activity in DDB has client data. DB activity should be in returned activities.
+
+        // Create task references and activities.
+        // Schedule plan has been updated with a new activity that will be used in scheduled activity
+        Activity newActivity = new Activity.Builder().withGuid("CCC")
+                .withSurvey("my-survey", "my-survey-guid", new DateTime(5678)).build();
+        SchedulePlan ccc = schedulePlan(newActivity);
+        
+        // This is the schedule plan returned from the DB with the new Activity
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(ccc));
+        
+        // This is the persisted activity with the oldActivity
+        Activity oldActivity = new Activity.Builder().withGuid("CCC")
+                .withSurvey("my-survey", "my-survey-guid", new DateTime(1234)).build();
+        List<ScheduledActivity> db = createNewActivities("CCC"+TIME_PORTION);
+        for (ScheduledActivity activity : db) {
+            activity.setClientData(TestUtils.getClientData());
+        }
+        db.get(0).setActivity(oldActivity);
+        when(activityDao.getActivities(eq(TIME_ZONE), any())).thenReturn(db);
+        
+        List<ScheduledActivity> returnedActivities = service.getScheduledActivities(createScheduleContext(NOW).build());
+        assertEquals(1, returnedActivities.size());
+        assertEquals(1234, returnedActivities.get(0).getActivity().getSurvey().getCreatedOn().getMillis());
+        assertNotNull(returnedActivities.get(0).getClientData());
+        
+        verify(activityDao).getActivities(eq(TIME_ZONE), any());
+    }
+
+    @Test
+    public void taskNotStartedWithClientDataNotUpdatedV4() {
+        // Activity in DDB has survey reference pointing to createdOn 1234. Newly created activity has survey reference
+        // pointing to createdOn 5678. Activity in DDB has client data. DB activity should be in returned activities.
+
+        // Create task references and activities.
+        // Schedule plan has been updated with a new activity that will be used in scheduled activity
+        Activity newActivity = new Activity.Builder().withGuid("CCC")
+                .withSurvey("my-survey", "my-survey-guid", new DateTime(5678)).build();
+        SchedulePlan ccc = schedulePlan(newActivity);
+        
+        // This is the schedule plan returned from the DB with the new Activity
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(ccc));
+        
+        // This is the persisted activity with the oldActivity
+        Activity oldActivity = new Activity.Builder().withGuid("CCC")
+                .withSurvey("my-survey", "my-survey-guid", new DateTime(1234)).build();
+        List<ScheduledActivity> db = createNewActivities("CCC"+TIME_PORTION);
+        for (ScheduledActivity activity : db) {
+            activity.setClientData(TestUtils.getClientData());
+        }
+        db.get(0).setActivity(oldActivity);
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> page = new ForwardCursorPagedResourceList<>(db, null);
+        when(activityDao.getActivityHistoryV2(any(), any(), any(), any(), any(), anyInt())).thenReturn(page);
+        
+        List<ScheduledActivity> returnedActivities = service.getScheduledActivitiesV4(createScheduleContext(NOW).build());
+        assertEquals(1, returnedActivities.size());
+        assertEquals(1234, returnedActivities.get(0).getActivity().getSurvey().getCreatedOn().getMillis());
+        assertNotNull(returnedActivities.get(0).getClientData());
+        
+        verify(activityDao).getActivityHistoryV2(any(), any(), any(), any(), any(), anyInt());
     }
     
     @Test
