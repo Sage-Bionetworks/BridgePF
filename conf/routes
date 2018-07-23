@@ -211,11 +211,11 @@ GET    /v3/uploadschemas/:schemaId/recent              @org.sagebionetworks.brid
 GET    /v3/uploadschemas/:schemaId/revisions/:rev      @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemaByIdAndRev(schemaId: String, rev: Int)
 
 # Schedule Plans
-GET    /v3/scheduleplans        @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.getSchedulePlans
+GET    /v3/scheduleplans        @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.getSchedulePlans(includeDeleted: String ?= "false")
 POST   /v3/scheduleplans        @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.createSchedulePlan
 GET    /v3/scheduleplans/:guid  @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.getSchedulePlan(guid: String)
 POST   /v3/scheduleplans/:guid  @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.updateSchedulePlan(guid: String)
-DELETE /v3/scheduleplans/:guid  @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.deleteSchedulePlan(guid: String)
+DELETE /v3/scheduleplans/:guid  @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.deleteSchedulePlan(guid: String, physical: String ?= "false")
 
 # Activity Events
 GET    /v1/activityevents @org.sagebionetworks.bridge.play.controllers.ActivityEventController.getSelfActivityEvents
@@ -287,7 +287,7 @@ GET  /v3/studies/:studyId/participants/:userId                                  
 POST /v3/studies/:studyId/participants/:userId/sendSmsMessage                         @org.sagebionetworks.bridge.play.controllers.ParticipantController.sendSmsMessageForWorker(studyId: String, userId: String)
 GET  /v3/studies/:studyId/oauth/:vendorId                                             @org.sagebionetworks.bridge.play.controllers.OAuthController.getHealthCodesGrantingAccess(studyId: String, vendorId: String, offsetKey: String ?= null, pageSize: String ?= null)
 GET  /v3/studies/:studyId/oauth/:vendorId/:healthCode                                 @org.sagebionetworks.bridge.play.controllers.OAuthController.getAccessToken(studyId: String, vendorId: String, healthCode: String)
-GET  /v3/studies/:studyId/scheduleplans                                               @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.getSchedulePlansForWorker(studyId: String)
+GET  /v3/studies/:studyId/scheduleplans                                               @org.sagebionetworks.bridge.play.controllers.SchedulePlanController.getSchedulePlansForWorker(studyId: String, includeDeleted: String ?= "false")
 GET  /v3/studies/:studyId/participants/:userId/activities/:activityType/:referentGuid @org.sagebionetworks.bridge.play.controllers.ParticipantController.getActivityHistoryForWorkerV3(studyId: String, userId: String, activityType: String, referentGuid: String, scheduledOnStart: String ?= null, scheduledOnEnd: String ?= null, offsetKey: String ?= null, pageSize: String ?= null)
 GET  /v3/studies/:studyId/participants/:userId/activities/:activityGuid               @org.sagebionetworks.bridge.play.controllers.ParticipantController.getActivityHistoryForWorkerV2(studyId: String, userId: String, activityGuid: String, scheduledOnStart: String ?= null, scheduledOnEnd: String ?= null, offsetBy: String ?= null, offsetKey: String ?= null, pageSize: String ?= null)
 GET  /v3/studies/:studyId/participants/:userId/activityEvents                         @org.sagebionetworks.bridge.play.controllers.ParticipantController.getActivityEventsForWorker(studyId: String, userId: String)

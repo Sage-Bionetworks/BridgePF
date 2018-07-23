@@ -6,6 +6,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -130,7 +131,7 @@ public class ScheduledActivityServiceMockTest {
         
         service = new ScheduledActivityService();
         
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY))
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false))
                 .thenReturn(TestUtils.getSchedulePlans(TEST_STUDY));
 
         Map<String,DateTime> map = ImmutableMap.of();
@@ -394,7 +395,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan aaa = schedulePlan("AAA");
         SchedulePlan bbb = schedulePlan("BBB");
         
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(aaa,bbb));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(aaa,bbb));
         when(activityDao.getActivities(eq(TIME_ZONE), any())).thenReturn(createStartedActivities("BBB"+TIME_PORTION));
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivities(createScheduleContext(NOW).build());
@@ -410,7 +411,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan aaa = schedulePlan("AAA");
         SchedulePlan bbb = schedulePlan("BBB");
         
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(aaa,bbb));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(aaa,bbb));
         
         ForwardCursorPagedResourceList<ScheduledActivity> list = new ForwardCursorPagedResourceList<>(createStartedActivities("BBB"+TIME_PORTION), null);
         when(activityDao.getActivityHistoryV2(HEALTH_CODE, "BBB", NOW, NOW, null, API_MAXIMUM_PAGE_SIZE))
@@ -428,7 +429,7 @@ public class ScheduledActivityServiceMockTest {
     public void persistedAndScheduledIncludedInResultsV3() {
         SchedulePlan ccc = schedulePlan("CCC");
         
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(ccc));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(ccc));
         when(activityDao.getActivities(eq(TIME_ZONE), any())).thenReturn(createStartedActivities("CCC"+TIME_PORTION));
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivities(createScheduleContext(NOW).build());
@@ -445,7 +446,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan aaa = schedulePlan("AAA");
         SchedulePlan bbb = schedulePlan("BBB");
         
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(aaa,bbb));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(aaa,bbb));
         when(activityDao.getActivities(eq(TIME_ZONE), any())).thenReturn(createExpiredActivities("AAA"+TIME_PORTION,"CCC"+TIME_PORTION));
         
         // Ask for activities in the past so they will be expired.
@@ -468,7 +469,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan bbb = schedulePlan("BBB");
         SchedulePlan ccc = schedulePlan("CCC");
         
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(aaa,bbb,ccc));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(aaa,bbb,ccc));
         when(activityDao.getActivities(eq(TIME_ZONE), any())).thenReturn(Lists.newArrayList(createFinishedActivities("AAA"+TIME_PORTION).get(0),
                 createStartedActivities("BBB"+TIME_PORTION).get(0)));
         
@@ -486,7 +487,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan bbb = schedulePlan("BBB");
         SchedulePlan ccc = schedulePlan("CCC");
         
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(aaa,bbb,ccc));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(aaa,bbb,ccc));
         
         List<ScheduledActivity> db = Lists.newArrayList(createExpiredActivities("AAA"+TIME_PORTION).get(0),
                 createFinishedActivities("BBB"+TIME_PORTION).get(0));
@@ -507,7 +508,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan bbb = schedulePlan("BBB");
         SchedulePlan ccc = schedulePlan("CCC");
         
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(aaa,bbb,ccc));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(aaa,bbb,ccc));
         List<ScheduledActivity> db = Lists.newArrayList(createFinishedActivities("AAA"+TIME_PORTION).get(0),
                 createStartedActivities("BBB"+TIME_PORTION).get(0));
         when(activityDao.getActivities(eq(TIME_ZONE), any())).thenReturn(db);
@@ -530,7 +531,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan bbb = schedulePlan("BBB");
         SchedulePlan ccc = schedulePlan("CCC");
         
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(aaa,bbb,ccc));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(aaa,bbb,ccc));
         
         List<ScheduledActivity> db = createStartedActivities("AAA"+TIME_PORTION,"CCC"+TIME_PORTION);
         when(activityDao.getActivityHistoryV2(HEALTH_CODE, "BBB", NOW, NOW, null, API_MAXIMUM_PAGE_SIZE))
@@ -567,7 +568,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan ccc = schedulePlan(newActivity);
         
         // This is the schedule plan returned from the DB with the new Activity
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(ccc));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(ccc));
         
         // This is the persisted activity with the oldActivity
         Activity oldActivity = new Activity.Builder().withGuid("CCC")
@@ -579,6 +580,8 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> returnedActivities = service.getScheduledActivities(createScheduleContext(NOW).build());
         assertEquals(1, returnedActivities.size());
         assertEquals(5678, returnedActivities.get(0).getActivity().getSurvey().getCreatedOn().getMillis());
+        
+        verify(activityDao).getActivities(eq(TIME_ZONE), any());
     }
 
     @Test
@@ -593,18 +596,88 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan ccc = schedulePlan(newActivity);
         
         // This is the schedule plan returned from the DB with the new Activity
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(ccc));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(ccc));
         
         // This is the persisted activity with the oldActivity
         Activity oldActivity = new Activity.Builder().withGuid("CCC")
                 .withSurvey("my-survey", "my-survey-guid", new DateTime(1234)).build();
         List<ScheduledActivity> db = createNewActivities("CCC"+TIME_PORTION);
         db.get(0).setActivity(oldActivity);
-        when(activityDao.getActivities(eq(TIME_ZONE), any())).thenReturn(db);
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> page = new ForwardCursorPagedResourceList<>(db, null);
+        when(activityDao.getActivityHistoryV2(any(), any(), any(), any(), any(), anyInt())).thenReturn(page);
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivitiesV4(createScheduleContext(NOW).build());
         assertEquals(1, returnedActivities.size());
         assertEquals(5678, returnedActivities.get(0).getActivity().getSurvey().getCreatedOn().getMillis());
+        
+        verify(activityDao).getActivityHistoryV2(any(), any(), any(), any(), any(), anyInt());
+    }
+    
+    @Test
+    public void taskNotStartedWithClientDataNotUpdated() {
+        // Activity in DDB has survey reference pointing to createdOn 1234. Newly created activity has survey reference
+        // pointing to createdOn 5678. Activity in DDB has client data. DB activity should be in returned activities.
+
+        // Create task references and activities.
+        // Schedule plan has been updated with a new activity that will be used in scheduled activity
+        Activity newActivity = new Activity.Builder().withGuid("CCC")
+                .withSurvey("my-survey", "my-survey-guid", new DateTime(5678)).build();
+        SchedulePlan ccc = schedulePlan(newActivity);
+        
+        // This is the schedule plan returned from the DB with the new Activity
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(ccc));
+        
+        // This is the persisted activity with the oldActivity
+        Activity oldActivity = new Activity.Builder().withGuid("CCC")
+                .withSurvey("my-survey", "my-survey-guid", new DateTime(1234)).build();
+        List<ScheduledActivity> db = createNewActivities("CCC"+TIME_PORTION);
+        for (ScheduledActivity activity : db) {
+            activity.setClientData(TestUtils.getClientData());
+        }
+        db.get(0).setActivity(oldActivity);
+        when(activityDao.getActivities(eq(TIME_ZONE), any())).thenReturn(db);
+        
+        List<ScheduledActivity> returnedActivities = service.getScheduledActivities(createScheduleContext(NOW).build());
+        assertEquals(1, returnedActivities.size());
+        assertEquals(1234, returnedActivities.get(0).getActivity().getSurvey().getCreatedOn().getMillis());
+        assertNotNull(returnedActivities.get(0).getClientData());
+        
+        verify(activityDao).getActivities(eq(TIME_ZONE), any());
+    }
+
+    @Test
+    public void taskNotStartedWithClientDataNotUpdatedV4() {
+        // Activity in DDB has survey reference pointing to createdOn 1234. Newly created activity has survey reference
+        // pointing to createdOn 5678. Activity in DDB has client data. DB activity should be in returned activities.
+
+        // Create task references and activities.
+        // Schedule plan has been updated with a new activity that will be used in scheduled activity
+        Activity newActivity = new Activity.Builder().withGuid("CCC")
+                .withSurvey("my-survey", "my-survey-guid", new DateTime(5678)).build();
+        SchedulePlan ccc = schedulePlan(newActivity);
+        
+        // This is the schedule plan returned from the DB with the new Activity
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(ccc));
+        
+        // This is the persisted activity with the oldActivity
+        Activity oldActivity = new Activity.Builder().withGuid("CCC")
+                .withSurvey("my-survey", "my-survey-guid", new DateTime(1234)).build();
+        List<ScheduledActivity> db = createNewActivities("CCC"+TIME_PORTION);
+        for (ScheduledActivity activity : db) {
+            activity.setClientData(TestUtils.getClientData());
+        }
+        db.get(0).setActivity(oldActivity);
+        
+        ForwardCursorPagedResourceList<ScheduledActivity> page = new ForwardCursorPagedResourceList<>(db, null);
+        when(activityDao.getActivityHistoryV2(any(), any(), any(), any(), any(), anyInt())).thenReturn(page);
+        
+        List<ScheduledActivity> returnedActivities = service.getScheduledActivitiesV4(createScheduleContext(NOW).build());
+        assertEquals(1, returnedActivities.size());
+        assertEquals(1234, returnedActivities.get(0).getActivity().getSurvey().getCreatedOn().getMillis());
+        assertNotNull(returnedActivities.get(0).getClientData());
+        
+        verify(activityDao).getActivityHistoryV2(any(), any(), any(), any(), any(), anyInt());
     }
     
     @Test
@@ -687,7 +760,7 @@ public class ScheduledActivityServiceMockTest {
         ((SimpleScheduleStrategy)plan.getStrategy()).setSchedule(schedule);
         
         reset(schedulePlanService);
-        when(schedulePlanService.getSchedulePlans(any(), any())).thenReturn(Lists.newArrayList(plan));
+        when(schedulePlanService.getSchedulePlans(any(), any(), eq(false))).thenReturn(Lists.newArrayList(plan));
         
         // The time stamp is derived from the account creation timestamp because there are no events in the event
         // map. It's in the time zone that the scheduler is working in.
@@ -862,7 +935,7 @@ public class ScheduledActivityServiceMockTest {
         
         SchedulePlan voiceActivityPlan = BridgeObjectMapper.get().readValue(json, SchedulePlan.class);
         List<SchedulePlan> schedulePlans = Lists.newArrayList(voiceActivityPlan);
-        when(schedulePlanService.getSchedulePlans(info, new StudyIdentifierImpl("test-study"))).thenReturn(schedulePlans);
+        when(schedulePlanService.getSchedulePlans(info, new StudyIdentifierImpl("test-study"), false)).thenReturn(schedulePlans);
         
         ScheduleContext context = new ScheduleContext.Builder()
             .withClientInfo(info)
@@ -922,7 +995,7 @@ public class ScheduledActivityServiceMockTest {
         DynamoSchedulePlan plan2 = new DynamoSchedulePlan();
         plan2.setStrategy(strategy);
         
-        doReturn(Lists.newArrayList(plan1, plan2)).when(schedulePlanService).getSchedulePlans(any(), any());
+        doReturn(Lists.newArrayList(plan1, plan2)).when(schedulePlanService).getSchedulePlans(any(), any(), eq(false));
         
         List<ScheduledActivity> schActivities = service.getScheduledActivities(context);
         
@@ -1079,7 +1152,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan plan2 = BridgeObjectMapper.get().readValue(json2, SchedulePlan.class);
         schedulePlans.add(plan2);
         reset(schedulePlanService);
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY))
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false))
             .thenReturn(schedulePlans);        
         
         ScheduleContext context = createScheduleContext(ENDS_ON).build();
@@ -1225,7 +1298,7 @@ public class ScheduledActivityServiceMockTest {
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
         plan.setStrategy(strategy);
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY)).thenReturn(Lists.newArrayList(plan));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(plan));
         
         ScheduleContext context = new ScheduleContext.Builder()
                 .withStudyIdentifier(TEST_STUDY)
@@ -1239,7 +1312,7 @@ public class ScheduledActivityServiceMockTest {
         List<ScheduledActivity> activities = service.getScheduledActivities(context);
         
         verify(activityEventService).getActivityEventMap("healthCode");
-        verify(schedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY);
+        verify(schedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
         
         return activities.get(0).getScheduledOn().toString();
     }

@@ -137,4 +137,7 @@ public interface Account extends BridgeEntity {
     /** A flag used to track changes in the contents of the table across migrations. */
     int getMigrationVersion();
     void setMigrationVersion(int migrationVersion);
+    
+    int getVersion();
+    void setVersion(int version);
 }

@@ -43,8 +43,9 @@ public class SchedulePlanService {
         this.surveyService = surveyService;
     }
 
-    public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, StudyIdentifier studyIdentifier) {
-        return schedulePlanDao.getSchedulePlans(clientInfo, studyIdentifier);
+    public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, StudyIdentifier studyIdentifier,
+            boolean includeDeleted) {
+        return schedulePlanDao.getSchedulePlans(clientInfo, studyIdentifier, includeDeleted);
     }
 
     public SchedulePlan getSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
@@ -118,6 +119,13 @@ public class SchedulePlanService {
         checkNotNull(isNotBlank(guid));
         
         schedulePlanDao.deleteSchedulePlan(studyIdentifier, guid);
+    }
+    
+    public void deleteSchedulePlanPermanently(StudyIdentifier studyIdentifier, String guid) {
+        checkNotNull(studyIdentifier);
+        checkNotNull(isNotBlank(guid));
+        
+        schedulePlanDao.deleteSchedulePlanPermanently(studyIdentifier, guid);
     }
     
     /**

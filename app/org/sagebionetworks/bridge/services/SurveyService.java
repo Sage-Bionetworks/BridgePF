@@ -293,7 +293,9 @@ public class SurveyService {
     }
     
     private void checkConstraintsBeforePhysicalDelete(final StudyIdentifier studyId, final GuidCreatedOnVersionHolder keys) {
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId);
+        // You cannot physically delete a survey if it is referenced by a logically deleted schedule plan. It's possible
+        // the schedule plan could be restored. All you can do is logically delete the survey.
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId, true);
 
         // If a schedule points to this specific survey, don't allow the physical delete.
         SchedulePlan match = findFirstMatchingPlan(plans, keys, (surveyReference, theseKeys) -> {
@@ -323,7 +325,9 @@ public class SurveyService {
     private void throwConstraintViolation(SchedulePlan match, final GuidCreatedOnVersionHolder keys) {
         // It's a little absurd to provide type=Survey, but in a UI that's orchestrating
         // several calls, it might not be obvious.
-        throw new ConstraintViolationException.Builder().withEntityKey("guid", keys.getGuid())
+        throw new ConstraintViolationException.Builder().withMessage(
+                "Cannot delete survey: it is referenced by a schedule plan that is still accessible through the API")
+                .withEntityKey("guid", keys.getGuid())
                 .withEntityKey("createdOn", DateUtils.convertToISODateTime(keys.getCreatedOn()))
                 .withEntityKey("type", "Survey").withReferrerKey("guid", match.getGuid())
                 .withReferrerKey("type", "SchedulePlan").build();

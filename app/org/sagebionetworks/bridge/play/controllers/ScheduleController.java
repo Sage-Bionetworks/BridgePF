@@ -76,7 +76,7 @@ public class ScheduleController extends BaseController {
                 .withUserId(session.getId())
                 .withClientInfo(clientInfo).build();
         
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(clientInfo, studyId);
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(clientInfo, studyId, false);
 
         List<Schedule> schedules = Lists.newArrayListWithCapacity(plans.size());
         for (SchedulePlan plan : plans) {
