@@ -287,11 +287,14 @@ public class DynamoSurveyDao implements SurveyDao {
     public Survey updateSurvey(Survey survey) {
         Survey existing = getSurvey(survey, false);
         
-        // This is a special case. If this call restores a published survey, that's all we do.
-        // Otherwise, throw an exception because you can't update published surveys.
+        boolean undeletion = existing.isDeleted() && !survey.isDeleted();
+        if (!undeletion && existing.isDeleted()) {
+            throw new EntityNotFoundException(Survey.class);
+        }
         if (existing.isPublished()) {
-            if (existing.isDeleted() && !survey.isDeleted()) {
-                existing = getSurvey(survey, true);
+            // If the existing survey is published, the only thing you can do is undelete it.
+            if (undeletion) {
+                existing = getSurvey(survey, true); // get all the children for the update
                 existing.setDeleted(false);
                 return saveSurvey(existing);
             } else {
@@ -319,6 +322,9 @@ public class DynamoSurveyDao implements SurveyDao {
     @Override
     public Survey versionSurvey(GuidCreatedOnVersionHolder keys) {
         DynamoSurvey existing = (DynamoSurvey)getSurvey(keys, true);
+        if (existing.isDeleted()) {
+            throw new EntityNotFoundException(Survey.class);
+        }        
         DynamoSurvey copy = new DynamoSurvey(existing);
         copy.setPublished(false);
         copy.setDeleted(false);

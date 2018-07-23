@@ -34,6 +34,8 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
@@ -171,8 +173,64 @@ public class DynamoSurveyDaoMockTest {
         verify(mockSchemaService).deleteUploadSchemaById(TestConstants.TEST_STUDY, SURVEY_ID);
     }
     
+    @Test(expected = EntityNotFoundException.class)
+    public void updateSurveyExistingDeletedNotFound() {
+        DynamoSurvey existing = new DynamoSurvey(SURVEY_GUID, SURVEY_CREATED_ON);
+        existing.setIdentifier(SURVEY_ID);
+        existing.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        existing.setDeleted(true);
+        existing.setPublished(false);
+        
+        List<Survey> results = Lists.newArrayList(existing);
+        doReturn(results).when(mockQueryResultPage).getResults();
+        doReturn(mockQueryResultPage).when(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), any());
+        
+        // This is not an undelete, it fails with a not found exception
+        survey.setDeleted(true);
+        surveyDao.updateSurvey(survey);
+    }
+    
     @Test
-    public void updatePublishedSurveyWillUndelete() {
+    public void updateSurveyUndeleteExistingDeletedOK() {
+        DynamoSurvey existing = new DynamoSurvey(SURVEY_GUID, SURVEY_CREATED_ON);
+        existing.setIdentifier(SURVEY_ID);
+        existing.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        existing.setDeleted(true);
+        existing.setPublished(false);
+        
+        List<Survey> results = Lists.newArrayList(existing);
+        doReturn(results).when(mockQueryResultPage).getResults();
+        doReturn(mockQueryResultPage).when(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), any());
+        
+        survey.setDeleted(false);
+        survey.getElements().add(SurveyInfoScreen.create());
+        surveyDao.updateSurvey(survey);
+
+        verify(mockSurveyMapper).save(surveyCaptor.capture());
+        assertFalse(surveyCaptor.getValue().isDeleted());
+        assertEquals(1, surveyCaptor.getValue().getElements().size());
+    }
+    
+    @Test(expected = PublishedSurveyException.class)
+    public void updateSurveyAlreadyPublishedThrowsException() {
+        DynamoSurvey existing = new DynamoSurvey(SURVEY_GUID, SURVEY_CREATED_ON);
+        existing.setIdentifier(SURVEY_ID);
+        existing.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        existing.setDeleted(false);
+        existing.setPublished(true);
+        
+        List<Survey> results = Lists.newArrayList(existing);
+        doReturn(results).when(mockQueryResultPage).getResults();
+        doReturn(mockQueryResultPage).when(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), any());
+        
+        // Not undeleting... should throw exception
+        survey.setDeleted(false);
+        survey.getElements().add(SurveyInfoScreen.create());
+        surveyDao.updateSurvey(survey);
+    }
+    
+    @Test
+    public void updateSurveyUndeletePublishedOK() {
         DynamoSurvey existing = new DynamoSurvey(SURVEY_GUID, SURVEY_CREATED_ON);
         existing.setIdentifier(SURVEY_ID);
         existing.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
@@ -183,7 +241,8 @@ public class DynamoSurveyDaoMockTest {
         doReturn(results).when(mockQueryResultPage).getResults();
         doReturn(mockQueryResultPage).when(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), any());
         
-        List<SurveyElement> elementResults = Lists.newArrayList();
+        // Verify that we load the elements for the update
+        List<SurveyElement> elementResults = Lists.newArrayList(SurveyInfoScreen.create());
         doReturn(elementResults).when(mockElementQueryResultPage).getResults();
         doReturn(mockElementQueryResultPage).when(mockSurveyElementMapper).queryPage(eq(DynamoSurveyElement.class), any());
         
@@ -192,5 +251,6 @@ public class DynamoSurveyDaoMockTest {
 
         verify(mockSurveyMapper).save(surveyCaptor.capture());
         assertFalse(surveyCaptor.getValue().isDeleted());
+        assertEquals(1, surveyCaptor.getValue().getElements().size());
     }
 }

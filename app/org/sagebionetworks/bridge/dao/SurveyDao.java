@@ -34,8 +34,6 @@ public interface SurveyDao {
      *         study that the survey lives in
      * @param survey
      *         the survey
-     * @param keys
-     *         survey ID and created-on timestamp, which identifies the survey you want to publish
      * @param newSchemaRev
      *         true if you want to cut a new survey schema, false if you should (attempt to) modify the existing one
      * @return published survey

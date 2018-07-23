@@ -193,7 +193,7 @@ public class SurveyControllerTest {
     @Test
     public void getAllSurveysMostRecentVersionDoNotIncludeDeletedAsDefault() throws Exception {
         setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
-        when(service.getAllSurveysMostRecentVersion(any(StudyIdentifier.class), eq(false))).thenReturn(getSurveys(3, false));
+        when(service.getAllSurveysMostRecentVersion(API_STUDY_ID, false)).thenReturn(getSurveys(3, false));
         
         controller.getAllSurveysMostRecentVersion(null);
         
@@ -204,7 +204,7 @@ public class SurveyControllerTest {
     @Test
     public void getAllSurveysMostRecentVersionDoNotIncludeDeleted() throws Exception {
         setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, "false");
-        when(service.getAllSurveysMostRecentVersion(any(StudyIdentifier.class), eq(false))).thenReturn(getSurveys(3, false));
+        when(service.getAllSurveysMostRecentVersion(API_STUDY_ID, false)).thenReturn(getSurveys(3, false));
         
         controller.getAllSurveysMostRecentVersion("false");
         
@@ -215,7 +215,7 @@ public class SurveyControllerTest {
     @Test
     public void getAllSurveysMostRecentVersionIncludeDeleted() throws Exception {
         setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
-        when(service.getAllSurveysMostRecentVersion(any(StudyIdentifier.class), eq(true))).thenReturn(getSurveys(3, false));
+        when(service.getAllSurveysMostRecentVersion(API_STUDY_ID, true)).thenReturn(getSurveys(3, false));
         
         controller.getAllSurveysMostRecentVersion("true");
         
@@ -226,7 +226,7 @@ public class SurveyControllerTest {
     @Test
     public void cannotGetAllSurveysMostRecentVersionInOtherStudy() throws Exception {
         setupContext(SECONDSTUDY_STUDY_ID, DEVELOPER, UNCONSENTED, null);
-        when(service.getAllSurveysMostRecentVersion(any(StudyIdentifier.class), eq(false))).thenReturn(getSurveys(3, false));
+        when(service.getAllSurveysMostRecentVersion(SECONDSTUDY_STUDY_ID, false)).thenReturn(getSurveys(3, false));
 
         try {
             controller.getAllSurveysMostRecentVersion("false");
@@ -278,7 +278,7 @@ public class SurveyControllerTest {
         List<Survey> surveyList = getSurveys(2, false);
         surveyList.get(0).setGuid("survey-0");
         surveyList.get(1).setGuid("survey-1");
-        when(service.getAllSurveysMostRecentlyPublishedVersion(TestConstants.TEST_STUDY, false)).thenReturn(surveyList);
+        when(service.getAllSurveysMostRecentlyPublishedVersion(API_STUDY_ID, false)).thenReturn(surveyList);
 
         // execute and validate
         Result result = controller.getAllSurveysMostRecentlyPublishedVersionForStudy(API_STUDY_ID.getIdentifier(), "false");
@@ -455,6 +455,58 @@ public class SurveyControllerTest {
             verify(service).getSurveyMostRecentlyPublishedVersion(SECONDSTUDY_STUDY_ID, SURVEY_GUID, true);
             verifyNoMoreInteractions(service);
         }
+    }
+    
+    @Test
+    public void deleteSurveyDefaultsToLogicalDelete() throws Exception {
+        setupContext(API_STUDY_ID, ADMIN, UNCONSENTED, null);
+        
+        Survey survey = getSurvey(false);
+        when(service.getSurvey(KEYS, true)).thenReturn(survey);
+        
+        Result result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "nonsense");
+        TestUtils.assertResult(result, 200, "Survey deleted.");
+        
+        verify(service).getSurvey(KEYS, true);
+        verify(service).deleteSurvey(survey);
+        verifyNoMoreInteractions(service);
+    }
+    
+    @Test
+    public void developerCanLogicallyDelete() throws Exception {
+        setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
+        
+        Survey survey = getSurvey(false);
+        when(service.getSurvey(KEYS, true)).thenReturn(survey);
+        
+        Result result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
+        TestUtils.assertResult(result, 200, "Survey deleted.");
+        
+        verify(service).getSurvey(KEYS, true);
+        verify(service).deleteSurvey(survey);
+        verifyNoMoreInteractions(service);
+    }
+    
+    @Test
+    public void adminCanLogicallyDelete() throws Exception {
+        setupContext(API_STUDY_ID, ADMIN, UNCONSENTED, null);
+        
+        Survey survey = getSurvey(false);
+        when(service.getSurvey(KEYS, true)).thenReturn(survey);
+        
+        Result result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
+        TestUtils.assertResult(result, 200, "Survey deleted.");
+        
+        verify(service).getSurvey(KEYS, true);
+        verify(service).deleteSurvey(survey);
+        verifyNoMoreInteractions(service);
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void workerCannotDelete() throws Exception {
+        setupContext(API_STUDY_ID, WORKER, UNCONSENTED, null);
+        
+        controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
     }
     
     @Test
@@ -674,7 +726,7 @@ public class SurveyControllerTest {
         
         Survey survey = getSurvey(false);
         when(service.getSurvey(KEYS, true)).thenReturn(survey);
-        when(service.publishSurvey(eq(TEST_STUDY), any(Survey.class), anyBoolean())).thenReturn(survey);
+        when(service.publishSurvey(API_STUDY_ID, survey, false)).thenReturn(survey);
 
         Result result = controller.publishSurvey(SURVEY_GUID, CREATED_ON.toString(), null);
         TestUtils.assertResult(result, 200);
@@ -690,7 +742,7 @@ public class SurveyControllerTest {
 
         Survey survey = getSurvey(false);
         when(service.getSurvey(KEYS, true)).thenReturn(survey);
-        when(service.publishSurvey(eq(TEST_STUDY), any(Survey.class), anyBoolean())).thenReturn(survey);
+        when(service.publishSurvey(API_STUDY_ID, survey, true)).thenReturn(survey);
 
         Result result = controller.publishSurvey(SURVEY_GUID, CREATED_ON.toString(), "true");
         TestUtils.assertResult(result, 200);
@@ -706,7 +758,7 @@ public class SurveyControllerTest {
 
         Survey survey = getSurvey(false);
         when(service.getSurvey(KEYS, true)).thenReturn(survey);
-        when(service.publishSurvey(eq(TEST_STUDY), any(Survey.class), anyBoolean())).thenReturn(survey);
+        when(service.publishSurvey(API_STUDY_ID, survey, false)).thenReturn(survey);
         
         try {
             controller.publishSurvey(SURVEY_GUID, CREATED_ON.toString(), null);
