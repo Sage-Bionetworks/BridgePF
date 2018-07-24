@@ -378,16 +378,16 @@ public class DynamoSurveyDaoTest {
         Survey versionedSurvey = createSurvey(new SimpleSurvey("Second Survey"));
         versionSurvey(versionedSurvey);
         versionSurvey(versionedSurvey);
-        
         Survey finalVersion = versionSurvey(versionedSurvey);
+        surveyDao.deleteSurvey(versionedSurvey);
         
         long lastCreatedOnTime = finalVersion.getCreatedOn();
         
         List<Survey> surveyVersions = surveyDao.getSurveyAllVersions(TEST_STUDY, versionedSurvey.getGuid(), false);
 
-        for (Survey survey : surveyVersions) {
-            assertEquals("All surveys versions of one survey", versionedSurvey.getGuid(), survey.getGuid());
-        }
+        assertTrue("No versions are deleted", surveyVersions.stream().noneMatch((survey) -> survey.isDeleted()));
+        assertTrue("All surveys versions of one survey",
+                surveyVersions.stream().allMatch((survey) -> survey.getGuid().equals(versionedSurvey.getGuid())));
         assertEquals("First survey is the most recently versioned", lastCreatedOnTime, surveyVersions.get(0).getCreatedOn());
         assertNotEquals("createdOn updated", lastCreatedOnTime, versionedSurvey.getCreatedOn());
     }
@@ -400,16 +400,16 @@ public class DynamoSurveyDaoTest {
         Survey versionedSurvey = createSurvey(new SimpleSurvey("Second Survey"));
         versionSurvey(versionedSurvey);
         versionSurvey(versionedSurvey);
-        
         Survey finalVersion = versionSurvey(versionedSurvey);
+        surveyDao.deleteSurvey(versionedSurvey);
         
         long lastCreatedOnTime = finalVersion.getCreatedOn();
         
         List<Survey> surveyVersions = surveyDao.getSurveyAllVersions(TEST_STUDY, versionedSurvey.getGuid(), true);
-
-        for (Survey survey : surveyVersions) {
-            assertEquals("All surveys versions of one survey", versionedSurvey.getGuid(), survey.getGuid());
-        }
+        
+        assertTrue("One survey version is deleted", surveyVersions.stream().anyMatch((survey) -> survey.isDeleted()));
+        assertTrue("All surveys versions of one survey",
+                surveyVersions.stream().allMatch((survey) -> survey.getGuid().equals(versionedSurvey.getGuid())));
         assertEquals("First survey is the most recently versioned", lastCreatedOnTime, surveyVersions.get(0).getCreatedOn());
         assertNotEquals("createdOn updated", lastCreatedOnTime, versionedSurvey.getCreatedOn());
     }
@@ -555,7 +555,6 @@ public class DynamoSurveyDaoTest {
         // Get all surveys of a version
         surveys = surveyDao.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), false);
         assertEquals("All survey versions are returned", 2, surveys.size());
-        int totalCount = surveys.size();
 
         Survey version1 = surveys.get(0);
         Survey version2 = surveys.get(1);
@@ -565,7 +564,7 @@ public class DynamoSurveyDaoTest {
         
         // lets delete an older version and verify that works
         surveyDao.deleteSurveyPermanently(version1);
-        assertEquals(totalCount-1, surveyDao.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), true).size());
+        surveyDao.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), true).stream().noneMatch((oneSurvey) -> version1.equals(oneSurvey));
     }
 
     // GET PUBLISHED SURVEY
@@ -679,28 +678,21 @@ public class DynamoSurveyDaoTest {
     
     @Test
     public void includeDeletedFlagWorks() throws Exception {
-        int initialCountWithoutDeleted = surveyDao.getAllSurveysMostRecentVersion(TEST_STUDY, false).size();
-        int initialCountWithDeleted = surveyDao.getAllSurveysMostRecentVersion(TEST_STUDY, true).size();
-        
         Survey survey1 = createSurvey(new TestSurvey(DynamoSurveyDaoTest.class, true));
         createSurvey(new TestSurvey(DynamoSurveyDaoTest.class, true));
 
         surveyDao.deleteSurvey(survey1);
-        assertEquals(1 + initialCountWithoutDeleted,
-                surveyDao.getAllSurveysMostRecentVersion(TEST_STUDY, false).size());
-        assertEquals(2 + initialCountWithDeleted, surveyDao.getAllSurveysMostRecentVersion(TEST_STUDY, true).size());
+        
+        surveyDao.getAllSurveysMostRecentVersion(TEST_STUDY, false).stream().noneMatch(Survey::isDeleted);
+        surveyDao.getAllSurveysMostRecentVersion(TEST_STUDY, true).stream().anyMatch(Survey::isDeleted);
         
         surveyDao.deleteSurveyPermanently(survey1);
-        assertEquals(1 + initialCountWithoutDeleted,
-                surveyDao.getAllSurveysMostRecentVersion(TEST_STUDY, false).size());
-        assertEquals(1 + initialCountWithDeleted, surveyDao.getAllSurveysMostRecentVersion(TEST_STUDY, true).size());
+        surveyDao.getAllSurveysMostRecentVersion(TEST_STUDY, false).stream().noneMatch(Survey::isDeleted);
+        surveyDao.getAllSurveysMostRecentVersion(TEST_STUDY, true).stream().noneMatch(Survey::isDeleted);
     }
     
     @Test
     public void includeDeletedFlagWorksForPublished() throws Exception {
-        int initialCountWithoutDeleted = surveyDao.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, false).size();
-        int initialCountWithDeleted = surveyDao.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, true).size();
-
         Survey survey1 = createSurvey(new TestSurvey(DynamoSurveyDaoTest.class, true));
         Survey survey2 = createSurvey(new TestSurvey(DynamoSurveyDaoTest.class, true));
         surveyDao.publishSurvey(TEST_STUDY, survey1, false);
@@ -708,18 +700,12 @@ public class DynamoSurveyDaoTest {
 
         surveyDao.deleteSurvey(survey1);
         
-        //Thread.sleep(1000);
-
-        assertEquals(1 + initialCountWithoutDeleted,
-                surveyDao.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, false).size());
-        assertEquals(2 + initialCountWithDeleted,
-                surveyDao.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, true).size());
+        surveyDao.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, false).stream().noneMatch(Survey::isDeleted);
+        surveyDao.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, false).stream().anyMatch(Survey::isDeleted);
 
         surveyDao.deleteSurveyPermanently(survey1);
-        assertEquals(1 + initialCountWithoutDeleted,
-                surveyDao.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, false).size());
-        assertEquals(1 + initialCountWithDeleted,
-                surveyDao.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, true).size());
+        surveyDao.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, false).stream().noneMatch(Survey::isDeleted);
+        surveyDao.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, false).stream().noneMatch(Survey::isDeleted);
     }
     
     @Test

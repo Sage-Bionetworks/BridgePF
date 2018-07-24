@@ -173,6 +173,18 @@ public class DynamoSurveyDaoMockTest {
         verify(mockSchemaService).deleteUploadSchemaById(TestConstants.TEST_STUDY, SURVEY_ID);
     }
     
+    @Test
+    public void deleteSurveyPermanentlyNoSurveyFailsSilently() {
+        List<Survey> results = Lists.newArrayList();
+        doReturn(results).when(mockQueryResultPage).getResults();
+        doReturn(mockQueryResultPage).when(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), any());
+        
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl("keys", DateTime.now().getMillis());
+        surveyDao.deleteSurveyPermanently(keys);
+        
+        verify(mockSurveyMapper, never()).delete(any());
+    }
+    
     @Test(expected = EntityNotFoundException.class)
     public void updateSurveyExistingDeletedNotFound() {
         DynamoSurvey existing = new DynamoSurvey(SURVEY_GUID, SURVEY_CREATED_ON);

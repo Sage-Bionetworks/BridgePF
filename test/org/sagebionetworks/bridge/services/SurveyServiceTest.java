@@ -382,12 +382,12 @@ public class SurveyServiceTest {
         Survey toDelete = surveys.get(0);
         surveyService.deleteSurvey(toDelete);
         
-        assertEquals(totalCount, surveyService.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), true).size());
-        assertEquals(totalCount-1, surveyService.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), false).size());
+        surveyService.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), true).stream().anyMatch(Survey::isDeleted);
+        surveyService.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), false).stream().noneMatch(Survey::isDeleted);
         
         surveyService.deleteSurveyPermanently(TEST_STUDY, new GuidCreatedOnVersionHolderImpl(toDelete));
-        assertEquals(totalCount-1, surveyService.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), true).size());
-        assertEquals(totalCount-1, surveyService.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), false).size());
+        surveyService.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), true).stream().noneMatch(Survey::isDeleted);
+        surveyService.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), false).stream().noneMatch(Survey::isDeleted);
     }
 
     // GET PUBLISHED SURVEY
@@ -439,6 +439,51 @@ public class SurveyServiceTest {
             }
         }
         assertTrue(foundSurvey2);
+    }
+    
+    @Test
+    public void getAllSurveysMostRecentlyPublishedVersionIncludeDeletedFlag() {
+        // Version A1 
+        Survey surveyA1 = surveyService.createSurvey(new TestSurvey(SurveyServiceTest.class, true));
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyA1));
+        
+        // Version B1 
+        Survey surveyB1 = surveyService.createSurvey(new TestSurvey(SurveyServiceTest.class, true));
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyB1));
+        
+        // publish the versions
+        surveyService.publishSurvey(TEST_STUDY, new GuidCreatedOnVersionHolderImpl(surveyA1), false);
+        surveyService.publishSurvey(TEST_STUDY, new GuidCreatedOnVersionHolderImpl(surveyB1), false);
+        
+        // delete one of the published versions right now
+        surveyService.deleteSurvey(new GuidCreatedOnVersionHolderImpl(surveyA1));
+        
+        surveyService.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, false).stream().noneMatch(Survey::isDeleted);
+        surveyService.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, true).stream().anyMatch(Survey::isDeleted);
+    }
+    
+    @Test
+    public void getAllSurveysMostRecentVersionIncludeDeletedFlag() {
+        // Version A1 
+        Survey surveyA1 = surveyService.createSurvey(new TestSurvey(SurveyServiceTest.class, true));
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyA1));
+        
+        // Version A2
+        Survey surveyA2 = surveyService.createSurvey(surveyA1);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyA2));
+        
+        // Version B1 
+        Survey surveyB1 = surveyService.createSurvey(new TestSurvey(SurveyServiceTest.class, true));
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyB1));
+        
+        // Version B2
+        Survey surveyB2 = surveyService.createSurvey(surveyB1);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyB2));
+        
+        // We return the most recent version whether deleted or not when the flag is true, so we should see this
+        surveyService.deleteSurvey(new GuidCreatedOnVersionHolderImpl(surveyA1));
+        surveyService.getAllSurveysMostRecentVersion(TEST_STUDY, false).stream().noneMatch(Survey::isDeleted);
+        surveyService.getAllSurveysMostRecentVersion(TEST_STUDY, true).stream().anyMatch(Survey::isDeleted);
     }
 
     @Test

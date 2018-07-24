@@ -305,12 +305,13 @@ public class SurveyService {
             throwConstraintViolation(match, keys);
         }
 
-        // If there's a pointer to the published version of this study, make sure this is not the last one.
+        // If there's a pointer to the published version of this survey, make sure this is not the last published survey
         match = findFirstMatchingPlan(plans, keys, (surveyReference, theseKeys) -> {
             return surveyReference.getGuid().equals(theseKeys.getGuid());
         });
         if (match != null) {
-            // If you delete a version, things that depend on it are eligible for physical deletion.
+            // A plan points to this survey's published version, so there must be at least one published version
+            // that's not logically deleted
             long publishedSurveys = getSurveyAllVersions(studyId, keys.getGuid(), false).stream()
                     .filter(Survey::isPublished).collect(Collectors.counting());
 
