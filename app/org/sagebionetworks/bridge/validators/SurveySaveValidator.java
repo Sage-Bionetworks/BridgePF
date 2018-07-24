@@ -192,9 +192,9 @@ public class SurveySaveValidator implements Validator {
         if (rules != null) {
             for (int j=0; j < rules.size(); j++) {
                 SurveyRule rule = rules.get(j);
-                if (rule.getOperator() != SurveyRule.Operator.ALWAYS) {
+                if (!SurveyRule.INFO_SCREEN_OPERATORS.contains(rule.getOperator())) {
                     errors.pushNestedPath(propertyPath);
-                    errors.rejectValue(fieldName+"["+j+"].operator", "only 'always' operator is valid for info screen rules");
+                    errors.rejectValue(fieldName+"["+j+"].operator", "only 'any', 'all', and 'always' operators are valid for info screen rules");
                     errors.popNestedPath();
                 }
             }
