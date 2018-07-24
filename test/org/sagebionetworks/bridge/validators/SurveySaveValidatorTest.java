@@ -885,10 +885,10 @@ public class SurveySaveValidatorTest {
         info.setPromptDetail("prompt detail");
         info.setIdentifier("identifier");
         info.setGuid("guid");
-        info.setBeforeRules(Lists.newArrayList(
-                new SurveyRule.Builder().withOperator(Operator.ANY).withDataGroups(Sets.newHashSet("foo")).withEndSurvey(true).build()));
-        info.setAfterRules(Lists.newArrayList(
-                new SurveyRule.Builder().withOperator(Operator.ANY).withDataGroups(Sets.newHashSet("foo")).withEndSurvey(true).build()));
+        SurveyRule rule = new SurveyRule.Builder().withOperator(Operator.ANY).withDataGroups(Sets.newHashSet("foo"))
+                .withEndSurvey(true).build();
+        info.setBeforeRules(Lists.newArrayList(rule));
+        info.setAfterRules(Lists.newArrayList(rule));
         survey.setElements(Lists.newArrayList(info));
         
         Validate.entityThrowingException(validator, survey);
@@ -904,10 +904,10 @@ public class SurveySaveValidatorTest {
         info.setPromptDetail("prompt detail");
         info.setIdentifier("identifier");
         info.setGuid("guid");
-        info.setBeforeRules(Lists.newArrayList(
-                new SurveyRule.Builder().withOperator(Operator.ALL).withDataGroups(Sets.newHashSet("foo")).withEndSurvey(true).build()));
-        info.setAfterRules(Lists.newArrayList(
-                new SurveyRule.Builder().withOperator(Operator.ALL).withDataGroups(Sets.newHashSet("foo")).withEndSurvey(true).build()));
+        SurveyRule rule = new SurveyRule.Builder().withOperator(Operator.ALL).withDataGroups(Sets.newHashSet("foo"))
+                .withEndSurvey(true).build();
+        info.setBeforeRules(Lists.newArrayList(rule));
+        info.setAfterRules(Lists.newArrayList(rule));
         survey.setElements(Lists.newArrayList(info));
         
         Validate.entityThrowingException(validator, survey);
@@ -923,10 +923,9 @@ public class SurveySaveValidatorTest {
         info.setPromptDetail("prompt detail");
         info.setIdentifier("identifier");
         info.setGuid("guid");
-        info.setBeforeRules(Lists.newArrayList(
-                new SurveyRule.Builder().withOperator(Operator.ALWAYS).withEndSurvey(true).build()));
-        info.setAfterRules(Lists.newArrayList(
-                new SurveyRule.Builder().withOperator(Operator.ALWAYS).withEndSurvey(true).build()));
+        SurveyRule rule = new SurveyRule.Builder().withOperator(Operator.ALWAYS).withEndSurvey(true).build();
+        info.setBeforeRules(Lists.newArrayList(rule));
+        info.setAfterRules(Lists.newArrayList(rule));
         survey.setElements(Lists.newArrayList(info));
         
         Validate.entityThrowingException(validator, survey);
