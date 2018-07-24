@@ -385,7 +385,7 @@ public class DynamoSurveyDaoTest {
         
         List<Survey> surveyVersions = surveyDao.getSurveyAllVersions(TEST_STUDY, versionedSurvey.getGuid(), false);
 
-        assertTrue("No versions are deleted", surveyVersions.stream().noneMatch((survey) -> survey.isDeleted()));
+        assertTrue("No versions are deleted", surveyVersions.stream().noneMatch(Survey::isDeleted));
         assertTrue("All surveys versions of one survey",
                 surveyVersions.stream().allMatch((survey) -> survey.getGuid().equals(versionedSurvey.getGuid())));
         assertEquals("First survey is the most recently versioned", lastCreatedOnTime, surveyVersions.get(0).getCreatedOn());
@@ -407,7 +407,7 @@ public class DynamoSurveyDaoTest {
         
         List<Survey> surveyVersions = surveyDao.getSurveyAllVersions(TEST_STUDY, versionedSurvey.getGuid(), true);
         
-        assertTrue("One survey version is deleted", surveyVersions.stream().anyMatch((survey) -> survey.isDeleted()));
+        assertTrue("One survey version is deleted", surveyVersions.stream().anyMatch(Survey::isDeleted));
         assertTrue("All surveys versions of one survey",
                 surveyVersions.stream().allMatch((survey) -> survey.getGuid().equals(versionedSurvey.getGuid())));
         assertEquals("First survey is the most recently versioned", lastCreatedOnTime, surveyVersions.get(0).getCreatedOn());
@@ -564,7 +564,8 @@ public class DynamoSurveyDaoTest {
         
         // lets delete an older version and verify that works
         surveyDao.deleteSurveyPermanently(version1);
-        surveyDao.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), true).stream().noneMatch((oneSurvey) -> version1.equals(oneSurvey));
+        assertTrue(surveyDao.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), true).stream()
+                .noneMatch((oneSurvey) -> version1.equals(oneSurvey)));
     }
 
     // GET PUBLISHED SURVEY
@@ -682,13 +683,13 @@ public class DynamoSurveyDaoTest {
         createSurvey(new TestSurvey(DynamoSurveyDaoTest.class, true));
 
         surveyDao.deleteSurvey(survey1);
-        
-        surveyDao.getAllSurveysMostRecentVersion(TEST_STUDY, false).stream().noneMatch(Survey::isDeleted);
-        surveyDao.getAllSurveysMostRecentVersion(TEST_STUDY, true).stream().anyMatch(Survey::isDeleted);
+        noneDeleted(surveyDao.getAllSurveysMostRecentVersion(TEST_STUDY, false), survey1.getGuid());
+        anyDeleted(surveyDao.getAllSurveysMostRecentVersion(TEST_STUDY, true), survey1.getGuid());
         
         surveyDao.deleteSurveyPermanently(survey1);
-        surveyDao.getAllSurveysMostRecentVersion(TEST_STUDY, false).stream().noneMatch(Survey::isDeleted);
-        surveyDao.getAllSurveysMostRecentVersion(TEST_STUDY, true).stream().noneMatch(Survey::isDeleted);
+        String guid = survey1.getGuid();
+        noneDeleted(surveyDao.getAllSurveysMostRecentVersion(TEST_STUDY, false), guid);
+        noneDeleted(surveyDao.getAllSurveysMostRecentVersion(TEST_STUDY, true), guid);
     }
     
     @Test
@@ -699,13 +700,12 @@ public class DynamoSurveyDaoTest {
         surveyDao.publishSurvey(TEST_STUDY, survey2, false);
 
         surveyDao.deleteSurvey(survey1);
-        
-        surveyDao.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, false).stream().noneMatch(Survey::isDeleted);
-        surveyDao.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, false).stream().anyMatch(Survey::isDeleted);
+        noneDeleted(surveyDao.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, false), survey1.getGuid());
+        anyDeleted(surveyDao.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, true), survey1.getGuid());
 
         surveyDao.deleteSurveyPermanently(survey1);
-        surveyDao.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, false).stream().noneMatch(Survey::isDeleted);
-        surveyDao.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, false).stream().noneMatch(Survey::isDeleted);
+        noneDeleted(surveyDao.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, false), survey1.getGuid());
+        noneDeleted(surveyDao.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, true), survey1.getGuid());
     }
     
     @Test
@@ -823,5 +823,15 @@ public class DynamoSurveyDaoTest {
             }
             assertTrue("Found survey " + oneExpected, found);
         }
+    }
+    
+    private void noneDeleted(List<Survey> surveys, String guid) {
+        assertTrue("No versions are deleted",
+                surveys.stream().filter(survey -> survey.getGuid().equals(guid)).noneMatch(Survey::isDeleted));
+    }
+    
+    private void anyDeleted(List<Survey> surveys, String guid) {
+        assertTrue("Some versions are deleted",
+                surveys.stream().filter(survey -> survey.getGuid().equals(guid)).anyMatch(Survey::isDeleted));
     }
 }
