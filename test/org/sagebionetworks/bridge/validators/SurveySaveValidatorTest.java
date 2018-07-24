@@ -876,6 +876,63 @@ public class SurveySaveValidatorTest {
     }
     
     @Test
+    public void anyOperatorsAllowedInInfoScreenRules() {
+        Survey survey = new TestSurvey(SurveySaveValidatorTest.class, true);
+        survey.setGuid("guid");
+        SurveyInfoScreen info = SurveyInfoScreen.create();
+        info.setTitle("title");
+        info.setPrompt("prompt");
+        info.setPromptDetail("prompt detail");
+        info.setIdentifier("identifier");
+        info.setGuid("guid");
+        info.setBeforeRules(Lists.newArrayList(
+                new SurveyRule.Builder().withOperator(Operator.ANY).withDataGroups(Sets.newHashSet("foo")).withEndSurvey(true).build()));
+        info.setAfterRules(Lists.newArrayList(
+                new SurveyRule.Builder().withOperator(Operator.ANY).withDataGroups(Sets.newHashSet("foo")).withEndSurvey(true).build()));
+        survey.setElements(Lists.newArrayList(info));
+        
+        Validate.entityThrowingException(validator, survey);
+    }
+    
+    @Test
+    public void allOperatorsAllowedInInfoScreenRules() {
+        Survey survey = new TestSurvey(SurveySaveValidatorTest.class, true);
+        survey.setGuid("guid");
+        SurveyInfoScreen info = SurveyInfoScreen.create();
+        info.setTitle("title");
+        info.setPrompt("prompt");
+        info.setPromptDetail("prompt detail");
+        info.setIdentifier("identifier");
+        info.setGuid("guid");
+        info.setBeforeRules(Lists.newArrayList(
+                new SurveyRule.Builder().withOperator(Operator.ALL).withDataGroups(Sets.newHashSet("foo")).withEndSurvey(true).build()));
+        info.setAfterRules(Lists.newArrayList(
+                new SurveyRule.Builder().withOperator(Operator.ALL).withDataGroups(Sets.newHashSet("foo")).withEndSurvey(true).build()));
+        survey.setElements(Lists.newArrayList(info));
+        
+        Validate.entityThrowingException(validator, survey);
+    }
+    
+    @Test
+    public void alwaysOperatorsAllowedInInfoScreenRules() {
+        Survey survey = new TestSurvey(SurveySaveValidatorTest.class, true);
+        survey.setGuid("guid");
+        SurveyInfoScreen info = SurveyInfoScreen.create();
+        info.setTitle("title");
+        info.setPrompt("prompt");
+        info.setPromptDetail("prompt detail");
+        info.setIdentifier("identifier");
+        info.setGuid("guid");
+        info.setBeforeRules(Lists.newArrayList(
+                new SurveyRule.Builder().withOperator(Operator.ALWAYS).withEndSurvey(true).build()));
+        info.setAfterRules(Lists.newArrayList(
+                new SurveyRule.Builder().withOperator(Operator.ALWAYS).withEndSurvey(true).build()));
+        survey.setElements(Lists.newArrayList(info));
+        
+        Validate.entityThrowingException(validator, survey);
+    }
+    
+    @Test
     public void validatesAssignDataGroupMustAppearAlone() {
         String targetId = ((TestSurvey) survey).getStringQuestion().getIdentifier();
 
