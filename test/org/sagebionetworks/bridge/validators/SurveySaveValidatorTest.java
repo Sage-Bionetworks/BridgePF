@@ -870,9 +870,9 @@ public class SurveySaveValidatorTest {
         survey.setElements(Lists.newArrayList(info));
         
         assertValidatorMessage(validator, survey, "elements[0].beforeRules[0].operator",
-                "only 'always' operator is valid for info screen rules");
+                "only 'any', 'all', and 'always' operators are valid for info screen rules");
         assertValidatorMessage(validator, survey, "elements[0].afterRules[0].operator",
-                "only 'always' operator is valid for info screen rules");
+                "only 'any', 'all', and 'always' operators are valid for info screen rules");
     }
     
     @Test
