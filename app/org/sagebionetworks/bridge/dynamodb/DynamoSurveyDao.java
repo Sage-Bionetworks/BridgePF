@@ -351,18 +351,16 @@ public class DynamoSurveyDao implements SurveyDao {
     public void deleteSurveyPermanently(GuidCreatedOnVersionHolder keys) {
         
         Survey existing = new QueryBuilder().setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn())
-                .setSkipElements(true).getOne(false);
-        if (existing != null) {
-            deleteAllElements(existing.getGuid(), existing.getCreatedOn());
-            surveyMapper.delete(existing);
-            
-            // Delete the schemas as well, or they accumulate.
-            try {
-                StudyIdentifier studyId = new StudyIdentifierImpl(existing.getStudyIdentifier());
-                uploadSchemaService.deleteUploadSchemaById(studyId, existing.getIdentifier());
-            } catch(EntityNotFoundException e) {
-                // This is OK. Just means this survey wasn't published.
-            }
+                .setSkipElements(true).getOne(true);
+        deleteAllElements(existing.getGuid(), existing.getCreatedOn());
+        surveyMapper.delete(existing);
+        
+        // Delete the schemas as well, or they accumulate.
+        try {
+            StudyIdentifier studyId = new StudyIdentifierImpl(existing.getStudyIdentifier());
+            uploadSchemaService.deleteUploadSchemaById(studyId, existing.getIdentifier());
+        } catch(EntityNotFoundException e) {
+            // This is OK. Just means this survey wasn't published.
         }
     }
 

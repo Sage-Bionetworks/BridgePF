@@ -43,7 +43,9 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
+import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
+import org.sagebionetworks.bridge.services.SurveyServiceMockTest;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -116,7 +118,36 @@ public class DynamoSurveyDaoMockTest {
         // getSurvey().
         doReturn(survey).when(surveyDao).getSurvey(eq(SURVEY_KEY), anyBoolean());
     }
-
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void updateSurveyFailsOnDeletedSurvey() {
+        DynamoSurvey existing = new DynamoSurvey(SURVEY_GUID, SURVEY_CREATED_ON);
+        existing.setDeleted(true);
+        
+        List<Survey> results = Lists.newArrayList(existing);
+        doReturn(results).when(mockQueryResultPage).getResults();
+        doReturn(mockQueryResultPage).when(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), any());
+        
+        survey.setDeleted(true);
+        surveyDao.updateSurvey(survey);
+    }
+    
+    @Test
+    public void updateSurveySucceedsOnUndeletedSurvey() {
+        DynamoSurvey existing = new DynamoSurvey(SURVEY_GUID, SURVEY_CREATED_ON);
+        existing.setDeleted(true);
+        
+        List<Survey> results = Lists.newArrayList(existing);
+        doReturn(results).when(mockQueryResultPage).getResults();
+        doReturn(mockQueryResultPage).when(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), any());
+        
+        survey.setDeleted(false);
+        survey.setName("New title");
+        Survey updatedSurvey = surveyDao.updateSurvey(survey);
+        
+        assertEquals("New title", updatedSurvey.getName());
+    }
+    
     @Test
     public void publishSurvey() {
         // populate the survey with at least one question
@@ -173,16 +204,14 @@ public class DynamoSurveyDaoMockTest {
         verify(mockSchemaService).deleteUploadSchemaById(TestConstants.TEST_STUDY, SURVEY_ID);
     }
     
-    @Test
-    public void deleteSurveyPermanentlyNoSurveyFailsSilently() {
+    @Test(expected = EntityNotFoundException.class)
+    public void deleteSurveyPermanentlyNoSurvey() {
         List<Survey> results = Lists.newArrayList();
         doReturn(results).when(mockQueryResultPage).getResults();
         doReturn(mockQueryResultPage).when(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), any());
         
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl("keys", DateTime.now().getMillis());
         surveyDao.deleteSurveyPermanently(keys);
-        
-        verify(mockSurveyMapper, never()).delete(any());
     }
     
     @Test(expected = EntityNotFoundException.class)
