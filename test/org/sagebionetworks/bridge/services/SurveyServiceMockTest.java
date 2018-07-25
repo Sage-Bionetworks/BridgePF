@@ -97,7 +97,16 @@ public class SurveyServiceMockTest {
         
         service.getSurvey(keys, false);
         
-        verify(mockSurveyDao).getSurvey(keys, false);
+        verify(mockSurveyDao).getSurvey(keys, false, true);
+    }
+    
+    @Test
+    public void getSurveyWithoutException() {
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl("test-guid", 1337);
+        
+        service.getSurvey(keys, true, false);
+        
+        verify(mockSurveyDao).getSurvey(keys, true, false);
     }
     
     @Test
@@ -256,7 +265,7 @@ public class SurveyServiceMockTest {
         survey.setPublished(true);
         Survey unpubSurvey = createSurvey();
         unpubSurvey.setPublished(false);
-        doReturn(Lists.newArrayList(unpubSurvey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, false);
+        doReturn(Lists.newArrayList(unpubSurvey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, true);
         
         try {
             service.deleteSurveyPermanently(TEST_STUDY, survey);
@@ -280,7 +289,7 @@ public class SurveyServiceMockTest {
         Survey survey = createSurvey();
         survey.setPublished(true);
         // There is no older published version so this should also throw
-        doReturn(Lists.newArrayList(survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, false);
+        doReturn(Lists.newArrayList(survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, true);
         
         try {
             service.deleteSurveyPermanently(TEST_STUDY, survey);
@@ -353,7 +362,7 @@ public class SurveyServiceMockTest {
         survey.setPublished(true);
         Survey unpubSurvey = createSurvey();
         unpubSurvey.setPublished(false);
-        doReturn(Lists.newArrayList(unpubSurvey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, false);
+        doReturn(Lists.newArrayList(unpubSurvey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, true);
         
         try {
             service.deleteSurveyPermanently(TEST_STUDY, survey);

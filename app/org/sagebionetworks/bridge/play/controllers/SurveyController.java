@@ -12,6 +12,7 @@ import javax.annotation.Resource;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.cache.CacheKey;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -163,14 +164,16 @@ public class SurveyController extends BaseController {
     public Result deleteSurvey(String surveyGuid, String createdOnString, String physical) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         StudyIdentifier studyId = session.getStudyIdentifier();
-        Survey survey = getSurveyWithoutCacheInternal(surveyGuid, createdOnString, session);
         
-        if ("true".equals(physical) && session.isInRole(ADMIN)) {
-            surveyService.deleteSurveyPermanently(studyId, survey);
-        } else {
-            surveyService.deleteSurvey(survey);    
+        Survey survey = getSurveyWithoutCacheInternal(surveyGuid, createdOnString, session);
+        if (survey != null) {
+            if ("true".equals(physical) && session.isInRole(ADMIN)) {
+                surveyService.deleteSurveyPermanently(studyId, survey);
+            } else {
+                surveyService.deleteSurvey(survey);    
+            }
+            expireCache(surveyGuid, createdOnString, studyId);
         }
-        expireCache(surveyGuid, createdOnString, studyId);
         return okResult("Survey deleted.");
     }
     
@@ -201,7 +204,9 @@ public class SurveyController extends BaseController {
         StudyIdentifier studyId = session.getStudyIdentifier();
         
         Survey survey = getSurveyWithoutCacheInternal(surveyGuid, createdOnString, session);
-
+        if (survey == null) {
+            throw new EntityNotFoundException(Survey.class);
+        }
         survey = surveyService.versionSurvey(survey);
         expireCache(surveyGuid, createdOnString, studyId);
         
@@ -213,7 +218,10 @@ public class SurveyController extends BaseController {
         StudyIdentifier studyId = session.getStudyIdentifier();
         
         // Just checking permission to access
-        getSurveyWithoutCacheInternal(surveyGuid, createdOnString, session);
+        Survey existing = getSurveyWithoutCacheInternal(surveyGuid, createdOnString, session);
+        if (existing == null) {
+            throw new EntityNotFoundException(Survey.class);
+        }
         
         // The parameters in the URL take precedence over anything declared in 
         // the object itself.
@@ -234,7 +242,9 @@ public class SurveyController extends BaseController {
         StudyIdentifier studyId = session.getStudyIdentifier();
          
         Survey survey = getSurveyWithoutCacheInternal(surveyGuid, createdOnString, session);
-
+        if (survey == null) {
+            throw new EntityNotFoundException(Survey.class);
+        }
         survey = surveyService.publishSurvey(studyId, survey, Boolean.parseBoolean(newSchemaRev));
         expireCache(surveyGuid, createdOnString, studyId);
         
@@ -245,8 +255,10 @@ public class SurveyController extends BaseController {
         long createdOn = DateUtils.convertToMillisFromEpoch(createdOnString);
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
         
-        Survey survey = surveyService.getSurvey(keys, true);
-        verifySurveyIsInStudy(session, survey);
+        Survey survey = surveyService.getSurvey(keys, true, false);
+        if (survey != null) {
+            verifySurveyIsInStudy(session, survey);    
+        }
         return survey;
     }
     

@@ -29,7 +29,6 @@ public interface SurveyDao {
      * a survey version can no longer be changed (it can still be the source of a new version).
      * There can be more than one published version of a survey.
      *
-     *
      * @param study
      *         study that the survey lives in
      * @param survey
@@ -58,7 +57,14 @@ public interface SurveyDao {
     void deleteSurveyPermanently(GuidCreatedOnVersionHolder keys);
 
     /**
-     * Get a specific version of a survey with or without its elements.
+     * Get a specific version of a survey with or without its elements, optionally throwing an EntityNotFoundException 
+     * if the survey does not exist (whether marked as deleted or not).
+     */
+    Survey getSurvey(GuidCreatedOnVersionHolder keys, boolean includeElements, boolean throwException);
+    
+    /**
+     * Get a specific version of a survey with or without its elements. Throws an EntityNotFoundException 
+     * if the survey does not exist (whether marked as deleted or not).
      */
     Survey getSurvey(GuidCreatedOnVersionHolder keys, boolean includeElements);
     

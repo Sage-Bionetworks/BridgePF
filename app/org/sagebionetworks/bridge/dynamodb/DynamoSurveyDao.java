@@ -402,9 +402,14 @@ public class DynamoSurveyDao implements SurveyDao {
      * version (not a specific timestamped version), this method should be rarely called.
      */
     @Override
-    public Survey getSurvey(GuidCreatedOnVersionHolder keys, boolean includeElements) {
+    public Survey getSurvey(GuidCreatedOnVersionHolder keys, boolean includeElements, boolean throwException) {
         return new QueryBuilder().setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn())
-                .setSkipElements(!includeElements).getOne(true);
+                .setSkipElements(!includeElements).getOne(throwException);
+    }
+    
+    @Override
+    public Survey getSurvey(GuidCreatedOnVersionHolder keys, boolean includeElements) {
+        return getSurvey(keys, includeElements, true);
     }
     
     /**
