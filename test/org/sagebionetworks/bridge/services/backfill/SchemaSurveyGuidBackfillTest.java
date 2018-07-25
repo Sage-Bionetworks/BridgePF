@@ -100,7 +100,7 @@ public class SchemaSurveyGuidBackfillTest {
         survey1b.setIdentifier("survey-1b");
         survey1b.setSchemaRevision(12);
 
-        when(surveyService.getAllSurveysMostRecentlyPublishedVersion(study1Id)).thenReturn(ImmutableList.of(survey1a,
+        when(surveyService.getAllSurveysMostRecentlyPublishedVersion(study1Id, false)).thenReturn(ImmutableList.of(survey1a,
                 survey1b));
 
         Survey survey2a = new DynamoSurvey("guid-2a", 0x2a);
@@ -111,7 +111,7 @@ public class SchemaSurveyGuidBackfillTest {
         survey2b.setIdentifier("survey-2b");
         survey2b.setSchemaRevision(22);
 
-        when(surveyService.getAllSurveysMostRecentlyPublishedVersion(study2Id)).thenReturn(ImmutableList.of(survey2a,
+        when(surveyService.getAllSurveysMostRecentlyPublishedVersion(study2Id, false)).thenReturn(ImmutableList.of(survey2a,
                 survey2b));
 
         // Mock schema service. Since everything is mocked, we don't need to worry about parameters other than survey
@@ -165,7 +165,7 @@ public class SchemaSurveyGuidBackfillTest {
         surveyNoSchema.setIdentifier("survey-no-schema");
         surveyNoSchema.setSchemaRevision(null);
 
-        when(surveyService.getAllSurveysMostRecentlyPublishedVersion(TestConstants.TEST_STUDY)).thenReturn(
+        when(surveyService.getAllSurveysMostRecentlyPublishedVersion(TestConstants.TEST_STUDY, false)).thenReturn(
                 ImmutableList.of(surveyNoSchema, TEST_SURVEY));
 
         // mock schema service
@@ -193,7 +193,7 @@ public class SchemaSurveyGuidBackfillTest {
         surveyWithFields.setIdentifier("survey-with-fields");
         surveyWithFields.setSchemaRevision(33);
 
-        when(surveyService.getAllSurveysMostRecentlyPublishedVersion(TestConstants.TEST_STUDY)).thenReturn(
+        when(surveyService.getAllSurveysMostRecentlyPublishedVersion(TestConstants.TEST_STUDY, false)).thenReturn(
                 ImmutableList.of(surveyWithFields, TEST_SURVEY));
 
         // mock schema service - This is different this time. First schema has survey fields already set. Second schema
@@ -227,9 +227,9 @@ public class SchemaSurveyGuidBackfillTest {
         when(studyService.getStudies()).thenReturn(ImmutableList.of(errorStudy, TEST_STUDY));
 
         // mock survey service
-        when(surveyService.getAllSurveysMostRecentlyPublishedVersion(errorStudyId)).thenThrow(
+        when(surveyService.getAllSurveysMostRecentlyPublishedVersion(errorStudyId, false)).thenThrow(
                 BridgeServiceException.class);
-        when(surveyService.getAllSurveysMostRecentlyPublishedVersion(TestConstants.TEST_STUDY)).thenReturn(
+        when(surveyService.getAllSurveysMostRecentlyPublishedVersion(TestConstants.TEST_STUDY, false)).thenReturn(
                 ImmutableList.of(TEST_SURVEY));
 
         // mock schema service
@@ -256,8 +256,8 @@ public class SchemaSurveyGuidBackfillTest {
         badSurvey.setIdentifier("error-survey");
         badSurvey.setSchemaRevision(44);
 
-        when(surveyService.getAllSurveysMostRecentlyPublishedVersion(TestConstants.TEST_STUDY)).thenReturn(
-                ImmutableList.of(badSurvey, TEST_SURVEY));
+        when(surveyService.getAllSurveysMostRecentlyPublishedVersion(TestConstants.TEST_STUDY, false))
+                .thenReturn(ImmutableList.of(badSurvey, TEST_SURVEY));
 
         // mock schema service - Bad survey throws. Good survey returns schema without survey attributes.
         when(uploadSchemaService.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, "error-survey", 44)).thenThrow(
@@ -286,8 +286,8 @@ public class SchemaSurveyGuidBackfillTest {
         badSurvey.setIdentifier("error-survey");
         badSurvey.setSchemaRevision(44);
 
-        when(surveyService.getAllSurveysMostRecentlyPublishedVersion(TestConstants.TEST_STUDY)).thenReturn(
-                ImmutableList.of(badSurvey, TEST_SURVEY));
+        when(surveyService.getAllSurveysMostRecentlyPublishedVersion(TestConstants.TEST_STUDY, false))
+                .thenReturn(ImmutableList.of(badSurvey, TEST_SURVEY));
 
         // mock schema service
         when(uploadSchemaService.getUploadSchemaByIdAndRev(any(), any(), anyInt())).thenAnswer(

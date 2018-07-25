@@ -34,13 +34,11 @@ public interface SurveyDao {
      *         study that the survey lives in
      * @param survey
      *         the survey
-     * @param keys
-     *         survey ID and created-on timestamp, which identifies the survey you want to publish
      * @param newSchemaRev
      *         true if you want to cut a new survey schema, false if you should (attempt to) modify the existing one
      * @return published survey
      */
-    Survey publishSurvey(StudyIdentifier study, Survey survey, GuidCreatedOnVersionHolder keys, boolean newSchemaRev);
+    Survey publishSurvey(StudyIdentifier study, Survey survey, boolean newSchemaRev);
 
     /**
      * Delete this survey. Survey still exists in system and can be retrieved by direct reference
@@ -68,7 +66,7 @@ public interface SurveyDao {
      * Get all versions of a specific survey, ordered by most recent version 
      * first in the list.
      */
-    List<Survey> getSurveyAllVersions(StudyIdentifier studyIdentifier, String guid);
+    List<Survey> getSurveyAllVersions(StudyIdentifier studyIdentifier, String guid, boolean includeDeleted);
     
     /**
      * Get the most recent version of a survey, regardless of whether it is published
@@ -85,11 +83,11 @@ public interface SurveyDao {
     /**
      * Get the most recent version of each survey in the study, that has been published. 
      */
-    List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier);
+    List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, boolean includeDeleted);
     
     /**
      * Get the most recent version of each survey in the study, whether published or not.
      */
-    List<Survey> getAllSurveysMostRecentVersion(StudyIdentifier studyIdentifier);
+    List<Survey> getAllSurveysMostRecentVersion(StudyIdentifier studyIdentifier, boolean includeDeleted);
     
 }

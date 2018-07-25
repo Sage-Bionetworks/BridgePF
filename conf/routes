@@ -166,11 +166,11 @@ POST   /v4/reports/:identifier        @org.sagebionetworks.bridge.play.controlle
 DELETE /v4/reports/:identifier        @org.sagebionetworks.bridge.play.controllers.StudyReportController.deleteStudyReport(identifier: String)
 
 # Surveys
-GET    /v3/surveys                                           @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentVersion
+GET    /v3/surveys                                           @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentVersion(includeDeleted: String ?= "false")
 POST   /v3/surveys                                           @org.sagebionetworks.bridge.play.controllers.SurveyController.createSurvey
-GET    /v3/surveys/recent                                    @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentVersion
-GET    /v3/surveys/published                                 @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentlyPublishedVersion
-GET    /v3/surveys/:surveyGuid/revisions                     @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyAllVersions(surveyGuid: String)
+GET    /v3/surveys/recent                                    @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentVersion(includeDeleted: String ?= "false")
+GET    /v3/surveys/published                                 @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentlyPublishedVersion(includeDeleted: String ?= "false")
+GET    /v3/surveys/:surveyGuid/revisions                     @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyAllVersions(surveyGuid: String, includeDeleted: String ?= "false")
 GET    /v3/surveys/:surveyGuid/revisions/recent              @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyMostRecentVersion(surveyGuid: String)
 GET    /v3/surveys/:surveyGuid/revisions/published           @org.sagebionetworks.bridge.play.controllers.SurveyController.getSurveyMostRecentlyPublishedVersion(surveyGuid: String)
 POST   /v3/surveys/:surveyGuid/revisions/:createdOn/version  @org.sagebionetworks.bridge.play.controllers.SurveyController.versionSurvey(surveyGuid: String, createdOn: String)
@@ -276,7 +276,7 @@ DELETE /v3/externalIds                      @org.sagebionetworks.bridge.play.con
 POST   /v3/externalIds/:externalId/password @org.sagebionetworks.bridge.play.controllers.ExternalIdController.generatePassword(externalId: String, createAccount: Boolean ?= true)
 
 # Worker APIs for getting entities across studies
-GET  /v3/studies/:studyId/surveys/published                                           @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentlyPublishedVersionForStudy(studyId: String)
+GET  /v3/studies/:studyId/surveys/published                                           @org.sagebionetworks.bridge.play.controllers.SurveyController.getAllSurveysMostRecentlyPublishedVersionForStudy(studyId: String, includeDeleted: String ?= "false")
 GET  /v3/studies/:studyId/uploadschemas/:schemaId/revisions/:revision                 @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.getUploadSchemaByStudyAndSchemaAndRev(studyId: String, schemaId: String, revision: Int)
 GET  /v3/studies/:studyId/reports/:identifier                                         @org.sagebionetworks.bridge.play.controllers.StudyReportController.getPublicStudyReport(studyId: String, identifier: String, startDate: String ?= null, endDate: String ?= null)
 POST /v3/studies/:studyId/reports/:identifier                                         @org.sagebionetworks.bridge.play.controllers.StudyReportController.saveStudyReportForWorker(studyId: String, identifier: String)

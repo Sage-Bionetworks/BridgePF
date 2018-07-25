@@ -115,7 +115,7 @@ public class SurveyServiceMockTest {
 
         // mock DAO
         when(mockSurveyDao.getSurvey(keys, true)).thenReturn(survey);
-        when(mockSurveyDao.publishSurvey(TEST_STUDY, survey, keys, true)).thenReturn(survey);
+        when(mockSurveyDao.publishSurvey(TEST_STUDY, survey, true)).thenReturn(survey);
 
         // mock publish validator
         when(mockSurveyPublishValidator.supports(any())).thenReturn(true);
@@ -256,7 +256,7 @@ public class SurveyServiceMockTest {
         survey.setPublished(true);
         Survey unpubSurvey = createSurvey();
         unpubSurvey.setPublished(false);
-        doReturn(Lists.newArrayList(unpubSurvey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID);
+        doReturn(Lists.newArrayList(unpubSurvey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, false);
         
         try {
             service.deleteSurveyPermanently(TEST_STUDY, survey);
@@ -272,13 +272,54 @@ public class SurveyServiceMockTest {
     }
 
     @Test
+    public void deleteSurveyPermanentlyWithNoOlderPublishedVersionsConstrainedByScheduleWithPublishedSurvey() {
+        List<SchedulePlan> plans = createSchedulePlanListWithSurveyReference(true);
+        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, true);
+        
+        // One published survey, should throw exception
+        Survey survey = createSurvey();
+        survey.setPublished(true);
+        // There is no older published version so this should also throw
+        doReturn(Lists.newArrayList(survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, false);
+        
+        try {
+            service.deleteSurveyPermanently(TEST_STUDY, survey);
+            fail("Should have thrown exception");
+        } catch(ConstraintViolationException e) {
+            assertTrue(e.getMessage().contains("Cannot delete survey: it is referenced by a schedule plan that is still accessible through the API"));
+            assertEquals(SCHEDULE_PLAN_GUID, e.getReferrerKeys().get("guid"));
+            assertEquals("SchedulePlan", e.getReferrerKeys().get("type"));
+            assertEquals(SURVEY_GUID, e.getEntityKeys().get("guid"));
+            assertEquals(SURVEY_CREATED_ON.toString(), e.getEntityKeys().get("createdOn"));
+            assertEquals("Survey", e.getEntityKeys().get("type"));
+        }
+    }
+    
+    @Test
+    public void deleteSurveyPermanentlyWithOlderPublishedVersionOK() {
+        List<SchedulePlan> plans = createSchedulePlanListWithSurveyReference(true);
+        doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, true);
+        
+        // One published survey, should throw exception
+        Survey survey = createSurvey();
+        survey.setPublished(true);
+        
+        Survey olderPublished = createSurvey();
+        olderPublished.setPublished(true);
+        doReturn(Lists.newArrayList(survey, olderPublished)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, false);
+        
+        //Does not throw an exception
+        service.deleteSurveyPermanently(TEST_STUDY, survey);
+    }
+    
+    @Test
     public void deleteSurveyPermanentlyNotConstrainedByScheduleWithMultiplePublishedSurveys() {
         List<SchedulePlan> plans = createSchedulePlanListWithSurveyReference(true);
         doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
         
         // Two published surveys in the list, no exception thrown
         Survey survey = createSurvey();
-        doReturn(Lists.newArrayList(survey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID);
+        doReturn(Lists.newArrayList(survey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, false);
         
         service.deleteSurveyPermanently(TEST_STUDY, survey);
     }
@@ -312,7 +353,7 @@ public class SurveyServiceMockTest {
         survey.setPublished(true);
         Survey unpubSurvey = createSurvey();
         unpubSurvey.setPublished(false);
-        doReturn(Lists.newArrayList(unpubSurvey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID);
+        doReturn(Lists.newArrayList(unpubSurvey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, false);
         
         try {
             service.deleteSurveyPermanently(TEST_STUDY, survey);
@@ -334,7 +375,7 @@ public class SurveyServiceMockTest {
         
         // Two published surveys in the list, no exception thrown
         Survey survey = createSurvey();
-        doReturn(Lists.newArrayList(survey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID);
+        doReturn(Lists.newArrayList(survey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, false);
         
         service.deleteSurveyPermanently(TEST_STUDY, survey);
     }    

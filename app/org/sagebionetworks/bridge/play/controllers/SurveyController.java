@@ -49,20 +49,22 @@ public class SurveyController extends BaseController {
         this.viewCache = viewCache;
     }
     
-    public Result getAllSurveysMostRecentVersion() throws Exception {
+    public Result getAllSurveysMostRecentVersion(String includeDeletedString) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
-        List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(studyId);
+        List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(studyId,
+                Boolean.valueOf(includeDeletedString));
         verifySurveyIsInStudy(session, surveys);
         return okResult(surveys);
     }
     
-    public Result getAllSurveysMostRecentlyPublishedVersion() throws Exception {
+    public Result getAllSurveysMostRecentlyPublishedVersion(String includeDeletedString) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
-        List<Survey> surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyId);
+        List<Survey> surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyId,
+                Boolean.valueOf(includeDeletedString));
         verifySurveyIsInStudy(session, surveys);
         return okResult(surveys);
     }
@@ -77,10 +79,10 @@ public class SurveyController extends BaseController {
      *         study to get surveys for
      * @return list of the most recently published version of every survey in the study
      */
-    public Result getAllSurveysMostRecentlyPublishedVersionForStudy(String studyId) {
+    public Result getAllSurveysMostRecentlyPublishedVersionForStudy(String studyId, String includeDeletedString) {
         getAuthenticatedSession(Roles.WORKER);
-        List<Survey> surveyList = surveyService.getAllSurveysMostRecentlyPublishedVersion(new StudyIdentifierImpl(
-                studyId));
+        List<Survey> surveyList = surveyService.getAllSurveysMostRecentlyPublishedVersion(
+                new StudyIdentifierImpl(studyId), Boolean.valueOf(includeDeletedString));
         return okResult(surveyList);
     }
 
@@ -165,21 +167,19 @@ public class SurveyController extends BaseController {
         
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
             surveyService.deleteSurveyPermanently(studyId, survey);
-        } else if (session.isInRole(DEVELOPER)) {
-            surveyService.deleteSurvey(survey);    
         } else {
-            // An admin calling for a logical delete. That wasn't allowed before so we don't allow it now.
-            throw new UnauthorizedException();
+            surveyService.deleteSurvey(survey);    
         }
         expireCache(surveyGuid, createdOnString, studyId);
         return okResult("Survey deleted.");
     }
     
-    public Result getSurveyAllVersions(String surveyGuid) throws Exception {
+    public Result getSurveyAllVersions(String surveyGuid, String includeDeletedString) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
-        List<Survey> surveys = surveyService.getSurveyAllVersions(studyId, surveyGuid);
+        List<Survey> surveys = surveyService.getSurveyAllVersions(studyId, surveyGuid,
+                Boolean.valueOf(includeDeletedString));
         verifySurveyIsInStudy(session, surveys);
         return okResult(surveys);
     }

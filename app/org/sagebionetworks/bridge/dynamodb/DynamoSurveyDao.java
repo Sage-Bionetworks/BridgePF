@@ -77,8 +77,8 @@ public class DynamoSurveyDao implements SurveyDao {
             this.published = true;
             return this;
         }
-        QueryBuilder isNotDeleted() {
-            this.notDeleted = true;
+        QueryBuilder setDeleted(boolean includeDeleted) {
+            this.notDeleted = !includeDeleted;
             return this;
         }
         
@@ -259,7 +259,7 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public Survey publishSurvey(StudyIdentifier study, Survey survey, GuidCreatedOnVersionHolder keys, boolean newSchemaRev) {
+    public Survey publishSurvey(StudyIdentifier study, Survey survey, boolean newSchemaRev) {
         if (survey.isDeleted()) {
             throw new EntityNotFoundException(Survey.class);
         }
@@ -286,11 +286,20 @@ public class DynamoSurveyDao implements SurveyDao {
     @Override
     public Survey updateSurvey(Survey survey) {
         Survey existing = getSurvey(survey, false);
-        if (existing.isDeleted()) {
+        
+        boolean undeletion = existing.isDeleted() && !survey.isDeleted();
+        if (!undeletion && existing.isDeleted()) {
             throw new EntityNotFoundException(Survey.class);
         }
         if (existing.isPublished()) {
-            throw new PublishedSurveyException(survey);
+            // If the existing survey is published, the only thing you can do is undelete it.
+            if (undeletion) {
+                existing = getSurvey(survey, true); // get all the children for the update
+                existing.setDeleted(false);
+                return saveSurvey(existing);
+            } else {
+                throw new PublishedSurveyException(survey);
+            }
         }
 
         // copy over mutable fields
@@ -298,6 +307,7 @@ public class DynamoSurveyDao implements SurveyDao {
         existing.setName(survey.getName());
         existing.setElements(survey.getElements());
         existing.setCopyrightNotice(survey.getCopyrightNotice());
+        existing.setDeleted(survey.isDeleted());
 
         // copy over DDB version so we can handle concurrent modification exceptions
         existing.setVersion(survey.getVersion());
@@ -314,7 +324,7 @@ public class DynamoSurveyDao implements SurveyDao {
         DynamoSurvey existing = (DynamoSurvey)getSurvey(keys, true);
         if (existing.isDeleted()) {
             throw new EntityNotFoundException(Survey.class);
-        }
+        }        
         DynamoSurvey copy = new DynamoSurvey(existing);
         copy.setPublished(false);
         copy.setDeleted(false);
@@ -339,7 +349,9 @@ public class DynamoSurveyDao implements SurveyDao {
 
     @Override
     public void deleteSurveyPermanently(GuidCreatedOnVersionHolder keys) {
-        Survey existing = getSurvey(keys, false);
+        
+        Survey existing = new QueryBuilder().setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn())
+                .setSkipElements(true).getOne(true);
         deleteAllElements(existing.getGuid(), existing.getCreatedOn());
         surveyMapper.delete(existing);
         
@@ -353,32 +365,32 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public List<Survey> getSurveyAllVersions(StudyIdentifier studyIdentifier, String guid) {
-        return new QueryBuilder().setStudy(studyIdentifier).setSurvey(guid).isNotDeleted().getAll(true);
+    public List<Survey> getSurveyAllVersions(StudyIdentifier studyIdentifier, String guid, boolean includeDeleted) {
+        return new QueryBuilder().setStudy(studyIdentifier).setSurvey(guid).setDeleted(includeDeleted).getAll(true);
     }
     
     @Override
     public Survey getSurveyMostRecentVersion(StudyIdentifier studyIdentifier, String guid) {
-        return new QueryBuilder().setStudy(studyIdentifier).setSurvey(guid).isNotDeleted().getOne(true);
+        return new QueryBuilder().setStudy(studyIdentifier).setSurvey(guid).setDeleted(false).getOne(true);
     }
 
     @Override
     public Survey getSurveyMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, String guid, boolean includeElements) {
-        return new QueryBuilder().setStudy(studyIdentifier).isPublished().setSurvey(guid).isNotDeleted()
+        return new QueryBuilder().setStudy(studyIdentifier).isPublished().setSurvey(guid).setDeleted(false)
                 .setSkipElements(!includeElements).getOne(true);
     }
     
     // secondary index query (not survey GUID) 
     @Override
-    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier) {
-        List<Survey> surveys = new QueryBuilder().setStudy(studyIdentifier).isPublished().isNotDeleted().getAll(false);
+    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, boolean includeDeleted) {
+        List<Survey> surveys = new QueryBuilder().setStudy(studyIdentifier).isPublished().setDeleted(includeDeleted).getAll(false);
         return findMostRecentVersions(surveys);
     }
     
     // secondary index query (not survey GUID)
     @Override
-    public List<Survey> getAllSurveysMostRecentVersion(StudyIdentifier studyIdentifier) {
-        List<Survey> surveys = new QueryBuilder().setStudy(studyIdentifier).isNotDeleted().getAll(false);
+    public List<Survey> getAllSurveysMostRecentVersion(StudyIdentifier studyIdentifier, boolean includeDeleted) {
+        List<Survey> surveys = new QueryBuilder().setStudy(studyIdentifier).setDeleted(includeDeleted).getAll(false);
         return findMostRecentVersions(surveys);
     }
     
