@@ -461,12 +461,12 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, ADMIN, UNCONSENTED, null);
         
         Survey survey = getSurvey(false);
-        when(service.getSurvey(KEYS, true, false)).thenReturn(survey);
+        when(service.getSurvey(KEYS, true)).thenReturn(survey);
         
         Result result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "nonsense");
         TestUtils.assertResult(result, 200, "Survey deleted.");
         
-        verify(service).getSurvey(KEYS, true, false);
+        verify(service).getSurvey(KEYS, true);
         verify(service).deleteSurvey(survey);
         verifyNoMoreInteractions(service);
     }
@@ -476,12 +476,12 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
         
         Survey survey = getSurvey(false);
-        when(service.getSurvey(KEYS, true, false)).thenReturn(survey);
+        when(service.getSurvey(KEYS, true)).thenReturn(survey);
         
         Result result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
         TestUtils.assertResult(result, 200, "Survey deleted.");
         
-        verify(service).getSurvey(KEYS, true, false);
+        verify(service).getSurvey(KEYS, true);
         verify(service).deleteSurvey(survey);
         verifyNoMoreInteractions(service);
     }
@@ -491,12 +491,12 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, ADMIN, UNCONSENTED, null);
         
         Survey survey = getSurvey(false);
-        when(service.getSurvey(KEYS, true, false)).thenReturn(survey);
+        when(service.getSurvey(KEYS, true)).thenReturn(survey);
         
         Result result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
         TestUtils.assertResult(result, 200, "Survey deleted.");
         
-        verify(service).getSurvey(KEYS, true, false);
+        verify(service).getSurvey(KEYS, true);
         verify(service).deleteSurvey(survey);
         verifyNoMoreInteractions(service);
     }
@@ -513,12 +513,12 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
         
         Survey survey = getSurvey(false);
-        when(service.getSurvey(KEYS, true, false)).thenReturn(survey);
+        when(service.getSurvey(KEYS, true)).thenReturn(survey);
         
         Result result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
         TestUtils.assertResult(result, 200, "Survey deleted.");
 
-        verify(service).getSurvey(KEYS, true, false);
+        verify(service).getSurvey(KEYS, true);
         verify(service).deleteSurvey(survey);
         verifyNoMoreInteractions(service);
     }
@@ -528,12 +528,12 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
         
         Survey survey = getSurvey(false);
-        when(service.getSurvey(KEYS, true, false)).thenReturn(survey);
+        when(service.getSurvey(KEYS, true)).thenReturn(survey);
         
         Result result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "true");
         TestUtils.assertResult(result, 200, "Survey deleted.");
         
-        verify(service).getSurvey(KEYS, true, false);
+        verify(service).getSurvey(KEYS, true);
         verify(service).deleteSurvey(survey);
         verifyNoMoreInteractions(service);
     }
@@ -543,12 +543,12 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, ADMIN, UNCONSENTED, null);
         
         Survey survey = getSurvey(false);
-        when(service.getSurvey(KEYS, true, false)).thenReturn(survey);
+        when(service.getSurvey(KEYS, true)).thenReturn(survey);
         
         Result result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "true");
         TestUtils.assertResult(result, 200, "Survey deleted.");
         
-        verify(service).getSurvey(KEYS, true, false);
+        verify(service).getSurvey(KEYS, true);
         verify(service).deleteSurveyPermanently(API_STUDY_ID, survey);
         verifyNoMoreInteractions(service);
     }
@@ -557,7 +557,7 @@ public class SurveyControllerTest {
     public void deleteSurveyThrowsGoodExceptionIfSurveyDoesntExist() throws Exception {
         setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
         
-        when(service.getSurvey(KEYS, true, false)).thenThrow(new EntityNotFoundException(Survey.class));
+        when(service.getSurvey(KEYS, true)).thenThrow(new EntityNotFoundException(Survey.class));
         
         Result result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
         TestUtils.assertResult(result, 200, "Survey deleted.");        
@@ -568,13 +568,13 @@ public class SurveyControllerTest {
         setupContext(SECONDSTUDY_STUDY_ID, DEVELOPER, UNCONSENTED, null);
         
         Survey survey = getSurvey(false);
-        when(service.getSurvey(KEYS, true, false)).thenReturn(survey);
+        when(service.getSurvey(KEYS, true)).thenReturn(survey);
         
         try {
             controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
             fail("Should have thrown exception");
         } catch(UnauthorizedException e) {
-            verify(service).getSurvey(KEYS, true, false);
+            verify(service).getSurvey(KEYS, true);
             verifyNoMoreInteractions(service);
         }
     }
@@ -658,13 +658,13 @@ public class SurveyControllerTest {
         Survey survey = getSurvey(false);
         setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, survey);
         
-        when(service.getSurvey(KEYS, true, false)).thenReturn(survey);
+        when(service.getSurvey(KEYS, true)).thenReturn(survey);
         when(service.versionSurvey(any(Survey.class))).thenReturn(survey);
         
         Result result = controller.versionSurvey(SURVEY_GUID, CREATED_ON.toString());
         TestUtils.assertResult(result, 201);
         
-        verify(service).getSurvey(KEYS, true, false);
+        verify(service).getSurvey(KEYS, true);
         verify(service).versionSurvey(survey);
         verifyNoMoreInteractions(service);
     }
@@ -674,14 +674,14 @@ public class SurveyControllerTest {
         setupContext(SECONDSTUDY_STUDY_ID, DEVELOPER, UNCONSENTED, null);
         
         Survey survey = getSurvey(false);
-        when(service.getSurvey(KEYS, true, false)).thenReturn(survey);
+        when(service.getSurvey(KEYS, true)).thenReturn(survey);
         when(service.versionSurvey(any(Survey.class))).thenReturn(survey);
         
         try {
             controller.versionSurvey(SURVEY_GUID, CREATED_ON.toString());
             fail("Should have thrown exception");
         } catch(UnauthorizedException e) {
-            verify(service).getSurvey(KEYS, true, false);
+            verify(service).getSurvey(KEYS, true);
             verifyNoMoreInteractions(service);
         }
     }
@@ -691,13 +691,13 @@ public class SurveyControllerTest {
         Survey survey = getSurvey(false);
         setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, survey);
         
-        when(service.getSurvey(KEYS, true, false)).thenReturn(survey);
+        when(service.getSurvey(KEYS, true)).thenReturn(survey);
         when(service.updateSurvey(any(Survey.class))).thenReturn(survey);
         
         Result result = controller.updateSurvey(SURVEY_GUID, CREATED_ON.toString());
         TestUtils.assertResult(result, 200);
         
-        verify(service).getSurvey(KEYS, true, false);
+        verify(service).getSurvey(KEYS, true);
         verify(service).updateSurvey(any(Survey.class));
         verifyNoMoreInteractions(service);
     }
@@ -707,14 +707,14 @@ public class SurveyControllerTest {
         Survey survey = getSurvey(false);
         setupContext(SECONDSTUDY_STUDY_ID, DEVELOPER, UNCONSENTED, survey);
         
-        when(service.getSurvey(KEYS, true, false)).thenReturn(survey);
+        when(service.getSurvey(KEYS, true)).thenReturn(survey);
         when(service.updateSurvey(any(Survey.class))).thenReturn(survey);
         
         try {
             controller.updateSurvey(SURVEY_GUID, CREATED_ON.toString());
             fail("Should have thrown exception");
         } catch(UnauthorizedException e) {
-            verify(service).getSurvey(KEYS, true, false);
+            verify(service).getSurvey(KEYS, true);
             verifyNoMoreInteractions(service);
         }
     }
@@ -724,13 +724,13 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
         
         Survey survey = getSurvey(false);
-        when(service.getSurvey(KEYS, true, false)).thenReturn(survey);
+        when(service.getSurvey(KEYS, true)).thenReturn(survey);
         when(service.publishSurvey(API_STUDY_ID, survey, false)).thenReturn(survey);
 
         Result result = controller.publishSurvey(SURVEY_GUID, CREATED_ON.toString(), null);
         TestUtils.assertResult(result, 200);
         
-        verify(service).getSurvey(KEYS, true, false);
+        verify(service).getSurvey(KEYS, true);
         verify(service).publishSurvey(TEST_STUDY, survey, false);
         verifyNoMoreInteractions(service);
     }
@@ -740,13 +740,13 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
 
         Survey survey = getSurvey(false);
-        when(service.getSurvey(KEYS, true, false)).thenReturn(survey);
+        when(service.getSurvey(KEYS, true)).thenReturn(survey);
         when(service.publishSurvey(API_STUDY_ID, survey, true)).thenReturn(survey);
 
         Result result = controller.publishSurvey(SURVEY_GUID, CREATED_ON.toString(), "true");
         TestUtils.assertResult(result, 200);
         
-        verify(service).getSurvey(KEYS, true, false);
+        verify(service).getSurvey(KEYS, true);
         verify(service).publishSurvey(TEST_STUDY, survey, true);
         verifyNoMoreInteractions(service);
     }
@@ -756,14 +756,14 @@ public class SurveyControllerTest {
         setupContext(SECONDSTUDY_STUDY_ID, DEVELOPER, UNCONSENTED, null);
 
         Survey survey = getSurvey(false);
-        when(service.getSurvey(KEYS, true, false)).thenReturn(survey);
+        when(service.getSurvey(KEYS, true)).thenReturn(survey);
         when(service.publishSurvey(API_STUDY_ID, survey, false)).thenReturn(survey);
         
         try {
             controller.publishSurvey(SURVEY_GUID, CREATED_ON.toString(), null);
             fail("Exception not thrown.");
         } catch(UnauthorizedException e) {
-            verify(service).getSurvey(KEYS, true, false);
+            verify(service).getSurvey(KEYS, true);
             verifyNoMoreInteractions(service);
         }
     }
@@ -773,13 +773,13 @@ public class SurveyControllerTest {
         setupContext(SECONDSTUDY_STUDY_ID, DEVELOPER, UNCONSENTED, null);
         
         Survey survey = getSurvey(false);
-        when(service.getSurvey(KEYS, true, false)).thenReturn(survey);
+        when(service.getSurvey(KEYS, true)).thenReturn(survey);
         
         try {
             controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
             fail("Exception should have been thrown.");
         } catch(UnauthorizedException e) {
-            verify(service).getSurvey(KEYS, true, false);
+            verify(service).getSurvey(KEYS, true);
             verifyNoMoreInteractions(service);
         }
     }
@@ -952,19 +952,17 @@ public class SurveyControllerTest {
         // Now mock the service because the *next* call (publish/delete/etc) will require it. The 
         // calls under test do not reference the cache, they clear it.
         when(service.getSurvey(any(), eq(true))).thenReturn(survey);
-        when(service.getSurvey(any(), eq(true), eq(false))).thenReturn(survey);
         when(service.publishSurvey(any(), any(), anyBoolean())).thenReturn(survey);
         when(service.versionSurvey(any())).thenReturn(survey);
         when(service.updateSurvey(any())).thenReturn(survey);
         
         // execute the test method, this should delete the cache
         executeSurvey.execute(SURVEY_GUID, CREATED_ON.toString());
+        verify(service).getSurvey(any(), eq(true));
         
         // This call now hits the service, not the cache, for a total of two calls to the service
         controller.getSurvey(SURVEY_GUID, CREATED_ON.toString());
-        verify(service).getSurvey(any(), eq(true), eq(false));
-        verify(service).getSurvey(any(), eq(true));
-        verify(service).getSurvey(any(), eq(true), eq(false));
+        verify(service, times(2)).getSurvey(any(), eq(true));
     }
     
     private Survey getSurvey(boolean makeNew) {

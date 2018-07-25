@@ -34,7 +34,6 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dynamodb.DynamoSurveyDao.QueryBuilder;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -117,25 +116,7 @@ public class DynamoSurveyDaoMockTest {
         // getSurvey().
         doReturn(survey).when(surveyDao).getSurvey(eq(SURVEY_KEY), anyBoolean());
     }
-    
-    @Test
-    public void getSurvey() {
-        List<Survey> results = Lists.newArrayList();
-        doReturn(results).when(mockQueryResultPage).getResults();
-        doReturn(mockQueryResultPage).when(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), any());
-        
-        surveyDao.getSurvey(SURVEY_KEY, false, false);
-    }
 
-    @Test(expected = EntityNotFoundException.class)
-    public void getSurveyWithException() {
-        List<Survey> results = Lists.newArrayList();
-        doReturn(results).when(mockQueryResultPage).getResults();
-        doReturn(mockQueryResultPage).when(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), any());
-        
-        surveyDao.getSurvey(SURVEY_KEY, false, true);
-    }
-    
     @Test
     public void publishSurvey() {
         // populate the survey with at least one question

@@ -73,36 +73,18 @@ public class SurveyService {
     }
     
     /**
-     * Get a survey.
+     * Get a list of all published surveys in this study, using the most recently published version of each survey.
+     * These surveys will include questions (not other element types, such as info screens). Most properties beyond
+     * identifiers will be removed from these surveys as they are returned in the API.
      *
-     * @param keys
-     *      The GUID and createdOn timestamp identifying this survey version
-     * @param includeElements
-     *      Should the elements of the survey be loaded as well?
-     * @param throwException
-     *      Should this method throw an EntityNotFoundException if the keys do not reference a survey (whether 
-     *      marked as deleted or not)?
-     * @return a Survey
+     * @param studyIdentifier
+     * @return
      */
-    public Survey getSurvey(GuidCreatedOnVersionHolder keys, boolean includeElements, boolean throwException) {
+    public Survey getSurvey(GuidCreatedOnVersionHolder keys, boolean includeElements) {
         checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
         checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
         
-        return surveyDao.getSurvey(keys, includeElements, throwException);
-    }
-    
-    /**
-     * Get a survey. This method throws an EntityNotFoundException if the keys do not reference a survey 
-     * (whether marked as deleted or not).
-     *
-     * @param keys
-     *      The GUID and createdOn timestamp identifying this survey version
-     * @param includeElements
-     *      Should the elements of the survey be loaded as well?
-     * @return a Survey
-     */
-    public Survey getSurvey(GuidCreatedOnVersionHolder keys, boolean includeElements) {
-        return getSurvey(keys, includeElements, true);
+        return surveyDao.getSurvey(keys, includeElements);
     }
 
     /**
@@ -329,9 +311,9 @@ public class SurveyService {
         });
         if (match != null) {
             // A plan points to this survey's published version, so there must be at least one published version
-            // that's not logically deleted. Need to include and then manually delete them to avoid an EntityNotFoundException
-            long publishedSurveys = getSurveyAllVersions(studyId, keys.getGuid(), true).stream()
-                        .filter(Survey::isPublished).filter(survey -> !survey.isDeleted()).collect(Collectors.counting());
+            // that's not logically deleted
+            long publishedSurveys = getSurveyAllVersions(studyId, keys.getGuid(), false).stream()
+                    .filter(Survey::isPublished).collect(Collectors.counting());
 
             if (publishedSurveys == 1L) {
                 throwConstraintViolation(match, keys);
