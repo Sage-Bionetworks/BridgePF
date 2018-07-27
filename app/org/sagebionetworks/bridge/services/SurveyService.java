@@ -12,12 +12,12 @@ import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SurveyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -76,22 +76,17 @@ public class SurveyService {
      * Get a list of all published surveys in this study, using the most recently published version of each survey.
      * These surveys will include questions (not other element types, such as info screens). Most properties beyond
      * identifiers will be removed from these surveys as they are returned in the API.
-     *
-     * @param studyIdentifier
-     * @return
      */
-    public Survey getSurvey(GuidCreatedOnVersionHolder keys, boolean includeElements) {
-        checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
-        checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
-        
-        return surveyDao.getSurvey(keys, includeElements);
+    public Survey getSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys, boolean includeElements, boolean throwException) {
+        Survey survey = surveyDao.getSurvey(keys, includeElements);
+        if (throwException && survey == null || !isInStudy(studyIdentifier, survey)) {
+            throw new EntityNotFoundException(Survey.class);
+        }
+        return survey;
     }
 
     /**
      * Create a survey.
-     * 
-     * @param survey
-     * @return
      */
     public Survey createSurvey(Survey survey) {
         checkNotNull(survey, "Survey cannot be null");
@@ -112,12 +107,25 @@ public class SurveyService {
 
     /**
      * Update an existing survey.
-     * 
-     * @param survey
-     * @return
      */
-    public Survey updateSurvey(Survey survey) {
+    public Survey updateSurvey(StudyIdentifier studyIdentifier, Survey survey) {
         checkNotNull(survey, "Survey cannot be null");
+        
+        Survey existing = surveyDao.getSurvey(survey, false);
+        if (existing == null || (existing.isDeleted() && survey.isDeleted()) || !isInStudy(studyIdentifier, survey)) {
+            throw new EntityNotFoundException(Survey.class);
+        }
+
+        if (existing.isPublished()) {
+            // If the existing survey is published, the only thing you can do is undelete it.
+            if (existing.isDeleted() && !survey.isDeleted()) {
+                existing = surveyDao.getSurvey(survey, true); // get all the children for the update
+                existing.setDeleted(false);
+                return surveyDao.updateSurvey(existing);
+            } else {
+                throw new PublishedSurveyException(survey);
+            }
+        }
         
         Set<String> dataGroups = Collections.emptySet();
         if (survey.getStudyIdentifier() != null) {
@@ -133,35 +141,25 @@ public class SurveyService {
      * Make this version of this survey available for scheduling. One scheduled for publishing, a survey version can no
      * longer be changed (it can still be the source of a new version). There can be more than one published version of
      * a survey.
-     * 
-     * @param study
-     *            study ID of study to publish the survey to
-     * @param keys
-     *            survey keys (guid, created on timestamp)
-     * @param newSchemaRev
-     *            true if you want to cut a new survey schema, false if you should (attempt to) modify the existing one
-     * @return published survey
      */
-    public Survey publishSurvey(StudyIdentifier study, GuidCreatedOnVersionHolder keys, boolean newSchemaRev) {
-        checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
-        checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
+    public Survey publishSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys, boolean newSchemaRev) {
+        Survey existing = surveyDao.getSurvey(keys, true);
+        if (existing == null || existing.isDeleted() || !isInStudy(studyIdentifier, existing)) {
+            throw new EntityNotFoundException(Survey.class);
+        }
+        Validate.entityThrowingException(publishValidator, existing);
 
-        Survey survey = surveyDao.getSurvey(keys, true);
-        Validate.entityThrowingException(publishValidator, survey);
-
-        return surveyDao.publishSurvey(study, survey, newSchemaRev);
+        return surveyDao.publishSurvey(studyIdentifier, existing, newSchemaRev);
     }
 
     /**
      * Copy the survey and return a new version of it.
-     * 
-     * @param keys
-     * @return
      */
-    public Survey versionSurvey(GuidCreatedOnVersionHolder keys) {
-        checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
-        checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
-
+    public Survey versionSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
+        Survey existing = surveyDao.getSurvey(keys, false);
+        if (existing == null || existing.isDeleted() || !isInStudy(studyIdentifier, existing)) {
+            throw new EntityNotFoundException(Survey.class);
+        }
         return surveyDao.versionSurvey(keys);
     }
 
@@ -172,15 +170,11 @@ public class SurveyService {
      * survey version that could have been sent to users will remain in the API so you can look at its 
      * schema, etc. This is how study developers should delete surveys. 
      */
-    public void deleteSurvey(GuidCreatedOnVersionHolder keys) {
-        checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
-        checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
-
+    public void deleteSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
         Survey existing = surveyDao.getSurvey(keys, true);
-        if (existing.isDeleted()) {
+        if (existing == null || existing.isDeleted() || !isInStudy(studyIdentifier, existing)) {
             throw new EntityNotFoundException(Survey.class);
         }
-
         // verify if a shared module refers to it
         verifySharedModuleExistence(keys);
 
@@ -199,11 +193,12 @@ public class SurveyService {
      *      right now.</li>
      * </ol>
      */
-    public void deleteSurveyPermanently(StudyIdentifier studyId, GuidCreatedOnVersionHolder keys) {
-        checkArgument(StringUtils.isNotBlank(keys.getGuid()), "Survey GUID cannot be null/blank");
-        checkArgument(keys.getCreatedOn() != 0L, "Survey createdOn timestamp cannot be 0");
-
-        checkConstraintsBeforePhysicalDelete(studyId, keys);
+    public void deleteSurveyPermanently(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
+        Survey existing = surveyDao.getSurvey(keys, false);
+        if (existing == null || !isInStudy(studyIdentifier, existing)) {
+            throw new EntityNotFoundException(Survey.class);
+        }
+        checkConstraintsBeforePhysicalDelete(studyIdentifier, keys);
 
         surveyDao.deleteSurveyPermanently(keys);
     }
@@ -233,7 +228,11 @@ public class SurveyService {
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
         checkArgument(isNotBlank(guid), Validate.CANNOT_BE_BLANK, "survey guid");
 
-        return surveyDao.getSurveyAllVersions(studyIdentifier, guid, includeDeleted);
+        List<Survey> allVersions = surveyDao.getSurveyAllVersions(studyIdentifier, guid, includeDeleted);
+        if (allVersions.isEmpty()) {
+            throw new EntityNotFoundException(Survey.class);
+        }
+        return allVersions;
     }
 
     /**
@@ -247,7 +246,11 @@ public class SurveyService {
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
         checkArgument(isNotBlank(guid), Validate.CANNOT_BE_BLANK, "survey guid");
 
-        return surveyDao.getSurveyMostRecentVersion(studyIdentifier, guid);
+        Survey survey = surveyDao.getSurveyMostRecentVersion(studyIdentifier, guid);
+        if (survey == null || !isInStudy(studyIdentifier, survey)) {
+            throw new EntityNotFoundException(Survey.class);
+        }
+        return survey;
     }
 
     /**
@@ -264,15 +267,16 @@ public class SurveyService {
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
         checkArgument(isNotBlank(guid), Validate.CANNOT_BE_BLANK, "survey guid");
 
-        return surveyDao.getSurveyMostRecentlyPublishedVersion(studyIdentifier, guid, includeElements);
+        Survey survey = surveyDao.getSurveyMostRecentlyPublishedVersion(studyIdentifier, guid, includeElements);
+        if (survey == null || !isInStudy(studyIdentifier, survey)) {
+            throw new EntityNotFoundException(Survey.class);
+        }
+        return survey;
     }
 
     /**
      * Get the most recent version of each survey in the study that has been published. If a survey has not been
      * published, nothing is returned.
-     * 
-     * @param studyIdentifier
-     * @return
      */
     public List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, boolean includeDeleted) {
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
@@ -290,6 +294,20 @@ public class SurveyService {
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
 
         return surveyDao.getAllSurveysMostRecentVersion(studyIdentifier, includeDeleted);
+    }
+
+    /**
+     * Callers must operate on a survey in their own study. However our code has allowed administrators to delete 
+     * shared studies (which are not in the admin's study). For backwards compatibility, do not enforce the same 
+     * study rule for shared study surveys. Eventually we want admins to be able to switch into the shared study in 
+     * order to delete items there, then this exception to the check can be removed. 
+     */
+    private boolean isInStudy(StudyIdentifier studyId, Survey survey) {
+        if (studyId == null || survey == null || survey.getStudyIdentifier() == null) {
+            return true;
+        }
+        return survey.getStudyIdentifier().equals("shared") || 
+               survey.getStudyIdentifier().equals(studyId.getIdentifier());
     }
     
     private void checkConstraintsBeforePhysicalDelete(final StudyIdentifier studyId, final GuidCreatedOnVersionHolder keys) {

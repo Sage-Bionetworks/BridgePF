@@ -85,14 +85,13 @@ public class AppConfigValidator implements Validator {
                 if (ref.getCreatedOn() == null) {
                     errors.rejectValue("createdOn", "is required");
                 } else {
-                    try {
-                        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(ref);
-                        Survey survey = surveyService.getSurvey(keys, false);
-                        if (!survey.isPublished()) {
-                            errors.rejectValue("", "has not been published");
-                        }
-                    } catch(EntityNotFoundException e) {
-                        errors.rejectValue("", "does not refer to a survey");
+                    StudyIdentifier studyId = new StudyIdentifierImpl(appConfig.getStudyId());
+                    GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(ref);
+                    Survey survey = surveyService.getSurvey(studyId, keys, false, false);
+                    if (survey == null) {
+                        errors.rejectValue("", "does not refer to a survey");    
+                    } else if (!survey.isPublished()) {
+                        errors.rejectValue("", "has not been published");
                     }
                 }
                 errors.popNestedPath();

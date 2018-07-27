@@ -1,14 +1,15 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anySetOf;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -30,13 +31,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.SurveyDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
@@ -46,15 +48,20 @@ import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
 import org.sagebionetworks.bridge.validators.SurveyPublishValidator;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SurveyServiceMockTest {
 
+    private static final StudyIdentifier OTHER_STUDY = new StudyIdentifierImpl("other-study");
     private static final String SCHEDULE_PLAN_GUID = "schedulePlanGuid";
     private static final String SURVEY_GUID = "surveyGuid";
     private static final DateTime SURVEY_CREATED_ON = DateTime.parse("2017-02-08T20:07:57.179Z");
+    private static final GuidCreatedOnVersionHolder SURVEY_KEYS = new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, 1337);
 
     @Mock
     SurveyPublishValidator mockSurveyPublishValidator;
@@ -93,15 +100,22 @@ public class SurveyServiceMockTest {
     
     @Test
     public void getSurveyWithoutElements() {
-        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl("test-guid", 1337);
+        Survey survey = Survey.create();
+        survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(survey);
         
-        service.getSurvey(keys, false);
+        service.getSurvey(TestConstants.TEST_STUDY, SURVEY_KEYS, false, true);
         
-        verify(mockSurveyDao).getSurvey(keys, false);
+        verify(mockSurveyDao).getSurvey(SURVEY_KEYS, false);
     }
     
     @Test
     public void getSurveyMostRecentlyPublishedWithoutElements() {
+        Survey survey = Survey.create();
+        survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        when(mockSurveyDao.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, SURVEY_GUID, false))
+                .thenReturn(survey);
+        
         service.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, SURVEY_GUID, false);
         
         verify(mockSurveyDao).getSurveyMostRecentlyPublishedVersion(TEST_STUDY, SURVEY_GUID, false);
@@ -110,19 +124,36 @@ public class SurveyServiceMockTest {
     @Test
     public void publishSurvey() {
         // test inputs and outputs
-        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, 1337);
         Survey survey = new DynamoSurvey();
-
+        survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        
         // mock DAO
-        when(mockSurveyDao.getSurvey(keys, true)).thenReturn(survey);
+        when(mockSurveyDao.getSurvey(SURVEY_KEYS, true)).thenReturn(survey);
         when(mockSurveyDao.publishSurvey(TEST_STUDY, survey, true)).thenReturn(survey);
 
         // mock publish validator
         when(mockSurveyPublishValidator.supports(any())).thenReturn(true);
 
         // execute and validate
-        Survey retval = service.publishSurvey(TEST_STUDY, keys, true);
+        Survey retval = service.publishSurvey(TEST_STUDY, SURVEY_KEYS, true);
         assertSame(survey, retval);
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void publishSurveyDeleted() {
+        
+        Survey survey = new DynamoSurvey();
+        survey.setDeleted(true);
+        when(mockSurveyDao.getSurvey(SURVEY_KEYS, true)).thenReturn(survey);
+        
+        service.publishSurvey(TEST_STUDY, SURVEY_KEYS, true);
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void publishSurveyDoesNotExist() {
+        when(mockSurveyDao.getSurvey(SURVEY_KEYS, true)).thenReturn(null);
+        
+        service.publishSurvey(TEST_STUDY, SURVEY_KEYS, true);
     }
     
     @Test
@@ -138,7 +169,7 @@ public class SurveyServiceMockTest {
         Survey survey = createSurvey();
         doReturn(survey).when(mockSurveyDao).getSurvey(any(), anyBoolean());
         
-        service.deleteSurvey(survey);
+        service.deleteSurvey(TestConstants.TEST_STUDY, survey);
 
         // verify query args
         verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(),
@@ -165,6 +196,7 @@ public class SurveyServiceMockTest {
         
         doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
         Survey survey = createSurvey();
+        when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(survey);
         
         service.deleteSurveyPermanently(TEST_STUDY, survey);
 
@@ -187,8 +219,9 @@ public class SurveyServiceMockTest {
                 anySetOf(String.class))).thenReturn(ImmutableList.of(makeValidMetadata()));
 
         Survey survey = createSurvey();
+        
         doReturn(survey).when(mockSurveyDao).getSurvey(any(), anyBoolean());
-        service.deleteSurvey(survey);
+        service.deleteSurvey(TestConstants.TEST_STUDY, survey);
     }
 
     @Test(expected = BadRequestException.class)
@@ -198,7 +231,8 @@ public class SurveyServiceMockTest {
 
         doReturn(ImmutableList.of()).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
         Survey survey = createSurvey();
-
+        when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(survey);
+        
         service.deleteSurveyPermanently(TEST_STUDY, survey);
     }
 
@@ -208,7 +242,7 @@ public class SurveyServiceMockTest {
         survey.setPublished(true);
         doReturn(survey).when(mockSurveyDao).getSurvey(any(), anyBoolean());
         
-        service.deleteSurvey(survey);
+        service.deleteSurvey(TestConstants.TEST_STUDY, survey);
         verify(mockSurveyDao).deleteSurvey(survey);
     }
     
@@ -220,7 +254,7 @@ public class SurveyServiceMockTest {
         doReturn(survey).when(mockSurveyDao).getSurvey(any(), anyBoolean());
         
         try {
-            service.deleteSurvey(survey);
+            service.deleteSurvey(TestConstants.TEST_STUDY, survey);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
             verify(mockSurveyDao, never()).deleteSurvey(any());
@@ -232,6 +266,7 @@ public class SurveyServiceMockTest {
         List<SchedulePlan> plans = createSchedulePlanListWithSurveyReference(false);
         doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, true);
         Survey survey = createSurvey();
+        when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(survey);
         
         try {
             service.deleteSurveyPermanently(TEST_STUDY, survey);
@@ -257,6 +292,7 @@ public class SurveyServiceMockTest {
         Survey unpubSurvey = createSurvey();
         unpubSurvey.setPublished(false);
         doReturn(Lists.newArrayList(unpubSurvey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, false);
+        when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(survey);
         
         try {
             service.deleteSurveyPermanently(TEST_STUDY, survey);
@@ -279,7 +315,7 @@ public class SurveyServiceMockTest {
         // One published survey, should throw exception
         Survey survey = createSurvey();
         survey.setPublished(true);
-        // There is no older published version so this should also throw
+        when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(survey);
         doReturn(Lists.newArrayList(survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, false);
         
         try {
@@ -301,15 +337,17 @@ public class SurveyServiceMockTest {
         doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, true);
         
         // One published survey, should throw exception
-        Survey survey = createSurvey();
-        survey.setPublished(true);
-        
-        Survey olderPublished = createSurvey();
-        olderPublished.setPublished(true);
-        doReturn(Lists.newArrayList(survey, olderPublished)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, false);
+        Survey survey1 = createSurvey();
+        survey1.setPublished(true);
+        survey1.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        Survey survey2 = createSurvey();
+        survey2.setPublished(true);
+        survey2.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(survey1);
+        doReturn(Lists.newArrayList(survey1, survey2)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, false);
         
         //Does not throw an exception
-        service.deleteSurveyPermanently(TEST_STUDY, survey);
+        service.deleteSurveyPermanently(TEST_STUDY, survey1);
     }
     
     @Test
@@ -319,7 +357,7 @@ public class SurveyServiceMockTest {
         
         // Two published surveys in the list, no exception thrown
         Survey survey = createSurvey();
-        doReturn(Lists.newArrayList(survey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, false);
+        when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(survey);
         
         service.deleteSurveyPermanently(TEST_STUDY, survey);
     }
@@ -329,6 +367,8 @@ public class SurveyServiceMockTest {
         List<SchedulePlan> plans = createSchedulePlanListWithCompoundActivity(false);
         doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, true);
         Survey survey = createSurvey();
+        
+        when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(survey);
         
         try {
             service.deleteSurveyPermanently(TEST_STUDY, survey);
@@ -354,6 +394,7 @@ public class SurveyServiceMockTest {
         Survey unpubSurvey = createSurvey();
         unpubSurvey.setPublished(false);
         doReturn(Lists.newArrayList(unpubSurvey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, false);
+        when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(survey);
         
         try {
             service.deleteSurveyPermanently(TEST_STUDY, survey);
@@ -375,9 +416,186 @@ public class SurveyServiceMockTest {
         
         // Two published surveys in the list, no exception thrown
         Survey survey = createSurvey();
-        doReturn(Lists.newArrayList(survey, survey)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, false);
+        when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(survey);
         
         service.deleteSurveyPermanently(TEST_STUDY, survey);
+    }   
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void updateSurveyFailsOnDeletedSurvey() throws Exception {
+        Survey existing = Survey.create();
+        existing.setDeleted(true);
+        
+        when(mockSurveyDao.getSurvey(any(), anyBoolean())).thenReturn(existing);
+        
+        Survey update = Survey.create();
+        update.setDeleted(true);
+        
+        service.updateSurvey(TestConstants.TEST_STUDY, update);
+    }
+    
+    @Test(expected=EntityNotFoundException.class)
+    public void updateSurveyFailsOnMissingSurvey() throws Exception {
+        when(mockSurveyDao.getSurvey(any(), anyBoolean())).thenReturn(null);
+        
+        Survey update = Survey.create();
+        update.setDeleted(false);
+        
+        service.updateSurvey(TestConstants.TEST_STUDY, update);
+    }
+    
+    @Test(expected = PublishedSurveyException.class)
+    public void updateSurveyAlreadyPublishedThrowsException() {
+        Survey existing = Survey.create();
+        existing.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        existing.setDeleted(false);
+        existing.setPublished(true);
+        
+        when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(existing);
+        
+        // Not undeleting... should throw exception
+        Survey update = Survey.create();
+        update.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        update.getElements().add(SurveyInfoScreen.create());
+        service.updateSurvey(TestConstants.TEST_STUDY, update);
+    }
+    
+    @Test
+    public void updateSurveyUndeletePublishedOK() {
+        Survey existing = Survey.create();
+        existing.setDeleted(true);
+        existing.setPublished(true);
+        existing.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        
+        when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(existing);
+        when(mockSurveyDao.getSurvey(any(), eq(true))).thenReturn(existing);
+        
+        Survey update = Survey.create();
+        update.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        update.setDeleted(false);
+        
+        service.updateSurvey(TestConstants.TEST_STUDY, update);
+        
+        verify(mockSurveyDao).updateSurvey(surveyCaptor.capture());
+        assertFalse(surveyCaptor.getValue().isDeleted());
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void versionSurveyFailsOnDeletedSurvey() throws Exception {
+        Survey survey = Survey.create();
+        survey.setDeleted(true);
+        
+        when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(survey);
+        
+        service.versionSurvey(TestConstants.TEST_STUDY, SURVEY_KEYS);
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void versionSurveyFailsOnMissingSurvey() throws Exception {
+        when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(null);
+        
+        service.versionSurvey(TestConstants.TEST_STUDY, SURVEY_KEYS);
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void deleteSurveyPermanentlyFailsOnMissingSurvey() {
+        when(mockSurveyDao.getSurvey(any(), eq(false))).thenReturn(null);
+        
+        service.deleteSurveyPermanently(TEST_STUDY, SURVEY_KEYS);
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void getSurveyAllVersionsThrowsException() {
+        service.getSurveyAllVersions(TestConstants.TEST_STUDY, "GUID", true);
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void getSurveyInOtherStudy() {
+        Survey survey = Survey.create();
+        survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        when(mockSurveyDao.getSurvey(SURVEY_KEYS, false)).thenReturn(survey);
+        
+        service.getSurvey(OTHER_STUDY, SURVEY_KEYS, false, false);
+    }
+
+    @Test
+    public void updateSurveyInOtherStudy() {
+        Survey survey = Survey.create();
+        survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        when(mockSurveyDao.updateSurvey(survey)).thenReturn(survey);
+        
+        try {
+            service.updateSurvey(OTHER_STUDY, survey);   
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+        }
+        verify(mockSurveyDao, never()).updateSurvey(any());
+    }
+
+    @Test
+    public void publishSurveyInOtherStudy() {
+        Survey survey = Survey.create();
+        survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        when(mockSurveyDao.publishSurvey(TestConstants.TEST_STUDY, survey, true)).thenReturn(survey);
+        
+        try {
+            service.publishSurvey(OTHER_STUDY, survey, true);   
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+        }
+        verify(mockSurveyDao, never()).publishSurvey(any(), any(), anyBoolean());
+    }
+
+    @Test
+    public void versionSurveyInOtherStudy() {
+        Survey survey = Survey.create();
+        survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        when(mockSurveyDao.versionSurvey(SURVEY_KEYS)).thenReturn(survey);
+        
+        try {
+            service.versionSurvey(OTHER_STUDY, SURVEY_KEYS);   
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+        }
+        verify(mockSurveyDao, never()).versionSurvey(SURVEY_KEYS);
+    }
+
+    @Test
+    public void deleteSurveyInOtherStudy() {
+        try {
+            service.deleteSurvey(OTHER_STUDY, SURVEY_KEYS);
+            fail("Should have thrown an exception");
+        } catch(EntityNotFoundException e) {
+        }
+        verify(mockSurveyDao, never()).deleteSurvey(any());
+    }
+    
+    @Test
+    public void deleteSurveyPermanentlyInOtherStudy() {
+        try {
+            service.deleteSurveyPermanently(OTHER_STUDY, SURVEY_KEYS);
+            fail("Should have thrown an exception");
+        } catch(EntityNotFoundException e) {
+        }
+        verify(mockSurveyDao, never()).deleteSurveyPermanently(any());
+    }
+
+    @Test(expected = EntityNotFoundException.class)
+    public void getSurveyMostRecentlyPublishedVersionInOtherStudy() {
+        Survey survey = Survey.create();
+        survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        when(mockSurveyDao.getSurveyMostRecentlyPublishedVersion(TestConstants.TEST_STUDY, SURVEY_GUID, true)).thenReturn(survey);
+        
+        service.getSurveyMostRecentlyPublishedVersion(OTHER_STUDY, SURVEY_GUID, true);
+    }
+
+    @Test(expected = EntityNotFoundException.class)
+    public void getSurveyMostRecentVersionInOtherStudy() {
+        Survey survey = Survey.create();
+        survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        when(mockSurveyDao.getSurveyMostRecentVersion(TestConstants.TEST_STUDY, SURVEY_GUID)).thenReturn(survey);
+        
+        service.getSurveyMostRecentVersion(OTHER_STUDY, SURVEY_GUID);    
     }    
     
     private List<Activity> getActivityList(List<SchedulePlan> plans) {
@@ -386,6 +604,7 @@ public class SurveyServiceMockTest {
 
     private Survey createSurvey() {
         Survey survey = new DynamoSurvey();
+        survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         survey.setGuid(SURVEY_GUID);
         survey.setCreatedOn(SURVEY_CREATED_ON.getMillis());
         survey.setPublished(false);

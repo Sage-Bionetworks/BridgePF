@@ -120,7 +120,7 @@ public class SharedModuleService {
             long sharedSurveyCreatedOn = metadata.getSurveyCreatedOn();
             GuidCreatedOnVersionHolder sharedSurveyKey = new GuidCreatedOnVersionHolderImpl(sharedSurveyGuid,
                     sharedSurveyCreatedOn);
-            Survey sharedSurvey = surveyService.getSurvey(sharedSurveyKey, true);
+            Survey sharedSurvey = surveyService.getSurvey(studyId, sharedSurveyKey, true, true);
 
             // annotate survey with module ID and version
             sharedSurvey.setModuleId(moduleId);

@@ -201,7 +201,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
         // Get survey. We use the survey identifier as the schema ID and the schema revision. Both of these must be
         // specified.
         GuidCreatedOnVersionHolder surveyKeys = new GuidCreatedOnVersionHolderImpl(surveyGuid, surveyCreatedOnMillis);
-        Survey survey = surveyService.getSurvey(surveyKeys, false);
+        Survey survey = surveyService.getSurvey(study, surveyKeys, false, true);
         String schemaId = survey.getIdentifier();
         Integer schemaRev = survey.getSchemaRevision();
         if (StringUtils.isBlank(schemaId) || schemaRev == null) {

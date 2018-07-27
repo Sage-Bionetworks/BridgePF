@@ -198,7 +198,7 @@ public class HealthDataService {
             // specified.
             String surveyGuid = healthDataSubmission.getSurveyGuid();
             GuidCreatedOnVersionHolder surveyKeys = new GuidCreatedOnVersionHolderImpl(surveyGuid, surveyCreatedOnMillis);
-            Survey survey = surveyService.getSurvey(surveyKeys, false);
+            Survey survey = surveyService.getSurvey(studyId, surveyKeys, false, true);
             String schemaId = survey.getIdentifier();
             Integer schemaRev = survey.getSchemaRevision();
             if (StringUtils.isBlank(schemaId) || schemaRev == null) {

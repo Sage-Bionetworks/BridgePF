@@ -51,8 +51,9 @@ public class GenericUploadFormatHandlerGetSchemaTest {
         Survey survey = Survey.create();
         survey.setIdentifier(SCHEMA_ID);
         survey.setSchemaRevision(SCHEMA_REV);
-        when(mockSurveyService.getSurvey(new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS), false))
-                .thenReturn(survey);
+        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY,
+                new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS), false, true))
+                        .thenReturn(survey);
 
         // make info.json
         ObjectNode infoJsonNode = BridgeObjectMapper.get().createObjectNode();
@@ -71,8 +72,9 @@ public class GenericUploadFormatHandlerGetSchemaTest {
         Survey survey = Survey.create();
         survey.setIdentifier(SCHEMA_ID);
         survey.setSchemaRevision(null);
-        when(mockSurveyService.getSurvey(new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS), false))
-                .thenReturn(survey);
+        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY,
+                new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS), false, true))
+                        .thenReturn(survey);
 
         // make info.json
         ObjectNode infoJsonNode = BridgeObjectMapper.get().createObjectNode();
