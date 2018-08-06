@@ -95,7 +95,8 @@ public class SharedModuleMetadataService {
             long createdOn = metadata.getSurveyCreatedOn();
 
             // Metadata does not have study information
-            Survey survey = surveyService.getSurvey(null, new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn), false, false);
+            Survey survey = surveyService.getSurvey(SHARED_STUDY_ID,
+                    new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn), false, false);
             if (survey == null) {
                 throw new BadRequestException("Survey " + surveyGuid + " referred does not exist.");    
             }

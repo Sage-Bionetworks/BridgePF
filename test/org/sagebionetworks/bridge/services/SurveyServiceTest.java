@@ -20,6 +20,7 @@ import java.util.Set;
 import javax.annotation.Resource;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.junit.After;
 import org.junit.Before;
@@ -29,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyInfoScreen;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -55,6 +56,7 @@ import org.sagebionetworks.bridge.models.surveys.UIHint;
 public class SurveyServiceTest {
 
     private static Logger logger = LoggerFactory.getLogger(SurveyServiceTest.class);
+    private static final Set<Roles> ADMIN_ROLE = ImmutableSet.of(Roles.ADMIN);
     
     @Resource
     UploadSchemaService schemaService;
@@ -83,7 +85,7 @@ public class SurveyServiceTest {
         // clean up surveys
         for (GuidCreatedOnVersionHolder oneSurvey : surveysToDelete) {
             try {
-                surveyService.deleteSurveyPermanently(TEST_STUDY, oneSurvey);
+                surveyService.deleteSurveyPermanently(ADMIN_ROLE, TEST_STUDY, oneSurvey);
             } catch (Exception ex) {
                 logger.error(ex.getMessage(), ex);
             }
@@ -384,7 +386,7 @@ public class SurveyServiceTest {
         assertTrue(surveyService.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), true).stream().anyMatch(Survey::isDeleted));
         assertTrue(surveyService.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), false).stream().noneMatch(Survey::isDeleted));
         
-        surveyService.deleteSurveyPermanently(TEST_STUDY, new GuidCreatedOnVersionHolderImpl(toDelete));
+        surveyService.deleteSurveyPermanently(ADMIN_ROLE, TEST_STUDY, new GuidCreatedOnVersionHolderImpl(toDelete));
         assertTrue(surveyService.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), true).stream().noneMatch(Survey::isDeleted));
         assertTrue(surveyService.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), false).stream().noneMatch(Survey::isDeleted));
     }

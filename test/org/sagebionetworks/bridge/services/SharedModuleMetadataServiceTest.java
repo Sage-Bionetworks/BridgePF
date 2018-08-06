@@ -34,8 +34,8 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
-import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 
 public class SharedModuleMetadataServiceTest {
     private static final String MODULE_ID = "test-module";
@@ -54,9 +54,6 @@ public class SharedModuleMetadataServiceTest {
         mockDao = mock(SharedModuleMetadataDao.class);
         mockUploadSchemaService = mock(UploadSchemaService.class);
         mockSurveyService = mock(SurveyService.class);
-
-        Survey fakeSurvey = new TestSurvey(SharedModuleMetadataServiceTest.class, true);
-        when(mockSurveyService.getSurvey(eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true))).thenReturn(fakeSurvey);
 
         svc = spy(new SharedModuleMetadataService());
         svc.setMetadataDao(mockDao);
@@ -101,7 +98,21 @@ public class SharedModuleMetadataServiceTest {
         svcInputMetadata.setSurveyCreatedOn(1L);
         svcInputMetadata.setSurveyGuid("test-survey-guid");
         GuidCreatedOnVersionHolder holder = new GuidCreatedOnVersionHolderImpl("test-survey-guid", 1L);
-        when(mockSurveyService.getSurvey(eq(TestConstants.TEST_STUDY), eq(holder), eq(false), eq(true))).thenThrow(EntityNotFoundException.class);
+        when(mockSurveyService.getSurvey(eq(ImmutableSet.of()), eq(TestConstants.TEST_STUDY), eq(holder), eq(false), eq(true))).thenThrow(EntityNotFoundException.class);
+        svc.createMetadata(svcInputMetadata);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void createSurveyWithInvalidStudyId() {
+        GuidCreatedOnVersionHolder holder = new GuidCreatedOnVersionHolderImpl("some-id", 1L);
+        when(mockSurveyService.getSurvey(eq(new StudyIdentifierImpl("shared")), eq(holder), eq(false), eq(false))).thenReturn(null);
+        
+        SharedModuleMetadata svcInputMetadata = makeValidMetadata();
+        svcInputMetadata.setSchemaId(null);
+        svcInputMetadata.setSchemaRevision(null);
+        svcInputMetadata.setSurveyCreatedOn(1L);
+        svcInputMetadata.setSurveyGuid("some-id");
+        
         svc.createMetadata(svcInputMetadata);
     }
 
@@ -540,7 +551,7 @@ public class SharedModuleMetadataServiceTest {
     @Test(expected = BadRequestException.class)
     public void updateNotFoundSurvey() {
         SharedModuleMetadata svcInputMetadata = makeValidMetadata();
-        when(mockSurveyService.getSurvey(eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true))).thenReturn(null);
+        when(mockSurveyService.getSurvey(eq(ImmutableSet.of()), eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true))).thenReturn(null);
         when(mockDao.getMetadataByIdAndVersion(anyString(), anyInt())).thenReturn(svcInputMetadata);
         svcInputMetadata.setSchemaId(null);
         svcInputMetadata.setSchemaRevision(null);

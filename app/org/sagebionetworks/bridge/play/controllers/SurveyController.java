@@ -166,14 +166,14 @@ public class SurveyController extends BaseController {
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
         
         // This call will return logically deleted surveys, which allows them to be physically deleted.
-        Survey survey = surveyService.getSurvey(studyId, keys, false, false);
+        Survey survey = surveyService.getSurvey(session.getParticipant().getRoles(), studyId, keys, false, false);
         if (survey == null) {
             throw new EntityNotFoundException(Survey.class);
         }
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
-            surveyService.deleteSurveyPermanently(studyId, survey);
+            surveyService.deleteSurveyPermanently(session.getParticipant().getRoles(), studyId, survey);
         } else {
-            surveyService.deleteSurvey(studyId, survey);    
+            surveyService.deleteSurvey(studyId, survey);
         }
         expireCache(surveyGuid, createdOnString, studyId);
         return okResult("Survey deleted.");

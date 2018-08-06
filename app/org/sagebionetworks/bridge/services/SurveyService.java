@@ -13,6 +13,7 @@ import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dao.SurveyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
@@ -37,6 +38,8 @@ import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
+
+import com.google.common.collect.ImmutableSet;
 
 @Component
 public class SurveyService {
@@ -72,17 +75,24 @@ public class SurveyService {
         this.studyService = studyService;
     }
     
+    public Survey getSurvey(Set<Roles> callerRoles, StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys, boolean includeElements, boolean throwException) {
+        Survey survey = surveyDao.getSurvey(keys, includeElements);
+        if (!isInStudy(callerRoles, studyIdentifier, survey)) {
+            if (throwException) {
+                throw new EntityNotFoundException(Survey.class);    
+            }
+            return null;
+        }
+        return survey;
+    }
+    
     /**
      * Get a list of all published surveys in this study, using the most recently published version of each survey.
      * These surveys will include questions (not other element types, such as info screens). Most properties beyond
      * identifiers will be removed from these surveys as they are returned in the API.
      */
     public Survey getSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys, boolean includeElements, boolean throwException) {
-        Survey survey = surveyDao.getSurvey(keys, includeElements);
-        if (throwException && survey == null || !isInStudy(studyIdentifier, survey)) {
-            throw new EntityNotFoundException(Survey.class);
-        }
-        return survey;
+        return getSurvey(ImmutableSet.of(), studyIdentifier, keys, includeElements, throwException);
     }
 
     /**
@@ -193,13 +203,13 @@ public class SurveyService {
      *      right now.</li>
      * </ol>
      */
-    public void deleteSurveyPermanently(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
+    public void deleteSurveyPermanently(Set<Roles> callerRoles, StudyIdentifier studyIdentifier,
+            GuidCreatedOnVersionHolder keys) {
         Survey existing = surveyDao.getSurvey(keys, false);
-        if (existing == null || !isInStudy(studyIdentifier, existing)) {
+        if (existing == null || !isInStudy(callerRoles, studyIdentifier, existing)) {
             throw new EntityNotFoundException(Survey.class);
         }
         checkConstraintsBeforePhysicalDelete(studyIdentifier, keys);
-
         surveyDao.deleteSurveyPermanently(keys);
     }
 
@@ -300,14 +310,24 @@ public class SurveyService {
      * Callers must operate on a survey in their own study. However our code has allowed administrators to delete 
      * shared studies (which are not in the admin's study). For backwards compatibility, do not enforce the same 
      * study rule for shared study surveys. Eventually we want admins to be able to switch into the shared study in 
-     * order to delete items there, then this exception to the check can be removed. 
+     * order to delete items there, then this exception to the check can be removed.
+     * 
+     * The use of an admin role to skip this check is temporary; eventually admins will be able to act on behalf 
+     * of any study, allowing them to pass all such study checks. Currently we're skipping this check for admins
+     * when they are deleting studies permanently.
      */
-    private boolean isInStudy(StudyIdentifier studyId, Survey survey) {
-        if (studyId == null || survey == null || survey.getStudyIdentifier() == null) {
+    private boolean isInStudy(Set<Roles> roles, StudyIdentifier studyId, Survey survey) {
+        if (studyId == null || (!roles.isEmpty() && roles.contains(Roles.ADMIN))) {
             return true;
         }
-        return survey.getStudyIdentifier().equals("shared") || 
-               survey.getStudyIdentifier().equals(studyId.getIdentifier());
+        if (survey == null || survey.getStudyIdentifier() == null) {
+            return false;
+        }
+        return survey.getStudyIdentifier().equals(studyId.getIdentifier());
+    }
+    
+    private boolean isInStudy(StudyIdentifier studyId, Survey survey) {
+        return isInStudy(ImmutableSet.of(), studyId, survey);
     }
     
     private void checkConstraintsBeforePhysicalDelete(final StudyIdentifier studyId, final GuidCreatedOnVersionHolder keys) {
