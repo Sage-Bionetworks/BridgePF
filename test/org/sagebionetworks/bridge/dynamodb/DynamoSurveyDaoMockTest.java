@@ -43,9 +43,7 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
-import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
-import org.sagebionetworks.bridge.services.SurveyServiceMockTest;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 @RunWith(MockitoJUnitRunner.class)

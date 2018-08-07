@@ -153,4 +153,30 @@ public class SignInTest {
             assertEquals("SignIn not constructed with enough information to retrieve an account", e.getMessage());
         }
     }
+    
+    @Test
+    public void fullCopy() {
+        SignIn origin = new SignIn.Builder()
+                .withUsername(TestConstants.EMAIL)
+                .withPhone(TestConstants.PHONE)
+                .withExternalId("externalId")
+                .withPassword("password")
+                .withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withToken("token")
+                .withReauthToken("reauthToken").build();
+        
+        SignIn copy = new SignIn.Builder().withSignIn(origin).build();
+        assertEquals(TestConstants.EMAIL, copy.getEmail());
+        assertEquals(TestConstants.PHONE, copy.getPhone());
+        assertEquals("externalId", copy.getExternalId());
+        assertEquals("password", copy.getPassword());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, copy.getStudyId());
+        assertEquals("token", copy.getToken());
+        assertEquals("reauthToken", copy.getReauthToken());
+        
+        // Also test the straight email-to-email copy as well as the username copy
+        assertEquals("email", new SignIn.Builder().withSignIn(
+                new SignIn.Builder().withEmail("email").build()
+            ).build().getEmail());
+    }
 }
