@@ -11,6 +11,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -456,8 +457,7 @@ public class SurveyControllerTest {
         
         when(service.getSurvey(ImmutableSet.of(DEVELOPER), TestConstants.TEST_STUDY, KEYS, false, false)).thenReturn(null);
         
-        Result result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
-        TestUtils.assertResult(result, 200, "Survey deleted.");        
+        controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
     }
     
     @Test
@@ -661,6 +661,7 @@ public class SurveyControllerTest {
         
         // This call now hits the service, not the cache, for a total of two calls to the service
         controller.getSurvey(SURVEY_GUID, CREATED_ON.toString());
+        verify(service).getSurvey(any(), any(), anyBoolean(), anyBoolean());
     }
     
     private Survey getSurvey(boolean makeNew) {

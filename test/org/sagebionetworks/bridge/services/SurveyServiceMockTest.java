@@ -268,6 +268,18 @@ public class SurveyServiceMockTest {
     }
     
     @Test
+    public void deleteSurveyFailsOnMissingSurvey() {
+        doReturn(null).when(mockSurveyDao).getSurvey(any(), anyBoolean());
+        try {
+            // Submitted a survey, it doesn't actually match anything in the system.
+            service.deleteSurvey(TestConstants.TEST_STUDY, Survey.create());
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+            verify(mockSurveyDao, never()).deleteSurvey(any());
+        }
+    }
+    
+    @Test
     public void deleteSurveyPermanentlyConstrainedBySchedule() {
         List<SchedulePlan> plans = createSchedulePlanListWithSurveyReference(false);
         doReturn(plans).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, true);
@@ -634,6 +646,24 @@ public class SurveyServiceMockTest {
         
         service.getSurveyMostRecentlyPublishedVersion(OTHER_STUDY, SURVEY_GUID, true);
     }
+    
+    // This is the same call as the preceding test, but it does not fail because we do not provide
+    // a studyId. Checking that the survey is in the same study is skipped.
+    @Test
+    public void callWithoutStudyIdDoesNotCheckMembershipInStudy() {
+        Survey survey = Survey.create();
+        survey.setStudyIdentifier(OTHER_STUDY.getIdentifier());
+        when(mockSurveyDao.getSurvey(SURVEY_KEYS, true)).thenReturn(survey);
+        
+        service.getSurvey(null, SURVEY_KEYS, true, true);
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void getSurveyMostRecentlyPublishedVersionMissingSurvey() {
+        when(mockSurveyDao.getSurveyMostRecentlyPublishedVersion(eq(TestConstants.TEST_STUDY), any(), eq(true))).thenReturn(null);
+        
+        service.getSurveyMostRecentlyPublishedVersion(OTHER_STUDY, SURVEY_GUID, true);
+    }
 
     @Test(expected = EntityNotFoundException.class)
     public void getSurveyMostRecentVersionInOtherStudy() {
@@ -642,7 +672,14 @@ public class SurveyServiceMockTest {
         when(mockSurveyDao.getSurveyMostRecentVersion(TestConstants.TEST_STUDY, SURVEY_GUID)).thenReturn(survey);
         
         service.getSurveyMostRecentVersion(OTHER_STUDY, SURVEY_GUID);    
-    }    
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void getSurveyMostRecentVersionMissingSurvey() {
+        when(mockSurveyDao.getSurveyMostRecentVersion(eq(TestConstants.TEST_STUDY), any())).thenReturn(null);
+        
+        service.getSurveyMostRecentVersion(OTHER_STUDY, SURVEY_GUID);    
+    }
     
     private List<Activity> getActivityList(List<SchedulePlan> plans) {
         return ((SimpleScheduleStrategy) plans.get(0).getStrategy()).getSchedule().getActivities();

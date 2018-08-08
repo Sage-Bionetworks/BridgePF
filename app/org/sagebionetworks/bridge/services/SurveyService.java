@@ -317,7 +317,7 @@ public class SurveyService {
      * when they are deleting studies permanently.
      */
     private boolean isInStudy(Set<Roles> roles, StudyIdentifier studyId, Survey survey) {
-        if (studyId == null || (!roles.isEmpty() && roles.contains(Roles.ADMIN))) {
+        if (studyId == null || roles.contains(Roles.ADMIN)) {
             return true;
         }
         if (survey == null || survey.getStudyIdentifier() == null) {
