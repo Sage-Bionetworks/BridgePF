@@ -40,14 +40,14 @@ public class NotificationRegistrationController extends BaseController {
         return okResult(registrations);
     }
     
-    public Result createRegistration() throws Exception {
+    public Result createRegistration() {
         UserSession session = getAuthenticatedAndConsentedSession();
 
         NotificationRegistration registration = parseJson(request(), NotificationRegistration.class);
         registration.setHealthCode(session.getHealthCode());
         
         NotificationRegistration result = notificationsService.createRegistration(session.getStudyIdentifier(),
-                registration);
+                getCriteriaContext(session), registration);
         
         return createdResult(new GuidHolder(result.getGuid()));
     }

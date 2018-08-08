@@ -26,6 +26,8 @@ import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+
+import org.mockito.ArgumentCaptor;
 import play.mvc.Http;
 
 import org.sagebionetworks.bridge.Roles;
@@ -401,68 +403,89 @@ public class BaseControllerTest {
     
     @Test
     public void canGetLanguagesWhenInSession() {
+        // Set up mocks.
+        AccountDao mockAccountDao = mock(AccountDao.class);
+        SessionUpdateService mockSessionUpdateService = mock(SessionUpdateService.class);
+
         BaseController controller = new SchedulePlanController();
-        
-        StudyParticipant participant = new StudyParticipant.Builder().withLanguages(LANGUAGE_SET).build();        
-        UserSession session = new UserSession(participant);
-        
+        controller.setAccountDao(mockAccountDao);
+        controller.setSessionUpdateService(mockSessionUpdateService);
+
+        StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
+                .withLanguages(LANGUAGE_SET).build();
+        UserSession session = makeValidSession();
+        session.setParticipant(participant);
+
+        // Execute test.
         LinkedHashSet<String> languages = controller.getLanguages(session);
         assertEquals(LANGUAGE_SET, languages);
+
+        // Participant already has languages. Nothing to save.
+        verifyZeroInteractions(mockAccountDao);
+        verifyZeroInteractions(mockSessionUpdateService);
     }
     
     @Test
     public void canGetLanguagesWhenInHeader() throws Exception {
+        // Set up mocks.
         AccountDao accountDao = mock(AccountDao.class);
         Account account = mock(Account.class);
         TestUtils.mockEditAccount(accountDao, account);
-        
+
+        SessionUpdateService mockSessionUpdateService = mock(SessionUpdateService.class);
+
         BaseController controller = new SchedulePlanController();
         controller.setAccountDao(accountDao);
+        controller.setSessionUpdateService(mockSessionUpdateService);
         mockPlayContext();
         mockHeader(ACCEPT_LANGUAGE, "en,fr");
 
-        CacheProvider cacheProvider = mock(CacheProvider.class);
-        controller.setCacheProvider(cacheProvider);
-        
-        SessionUpdateService sessionUpdateService = new SessionUpdateService();
-        sessionUpdateService.setCacheProvider(cacheProvider);
-        controller.setSessionUpdateService(sessionUpdateService);
-        
         StudyParticipant participant = new StudyParticipant.Builder()
-                .withHealthCode("AAA")
+                .withHealthCode(HEALTH_CODE)
                 .withLanguages(Sets.newLinkedHashSet()).build();
-        UserSession session = new UserSession(participant);
-        session.setStudyIdentifier(TEST_STUDY);
+        UserSession session = makeValidSession();
+        session.setParticipant(participant);
         session.setSessionToken("aSessionToken");
         
         // Verify as well that the values retrieved from the header have been saved in session and ParticipantOptions table.
         LinkedHashSet<String> languages = controller.getLanguages(session);
         assertEquals(LANGUAGE_SET, languages);
-        
-        StudyParticipant updatedParticipant = session.getParticipant();
-        assertEquals(LANGUAGE_SET, updatedParticipant.getLanguages());
-        
+
+        // Verify we saved the language to the account.
+        verify(accountDao).editAccount(eq(TEST_STUDY), eq(HEALTH_CODE), any());
         verify(account).setLanguages(LANGUAGE_SET);
-        verify(cacheProvider).setUserSession(session);
+
+        // Verify we call through to the session update service. (This updates both the cache and the participant, as
+        // well as other things outside the scope of this test.)
+        ArgumentCaptor<CriteriaContext> contextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
+        verify(mockSessionUpdateService).updateLanguage(same(session), contextCaptor.capture());
+        assertEquals(LANGUAGE_SET, contextCaptor.getValue().getLanguages());
     }
     
     @Test
     public void canGetLanguagesWhenNotInSessionOrHeader() throws Exception {
+        // Set up mocks.
         AccountDao accountDao = mock(AccountDao.class);
+        SessionUpdateService mockSessionUpdateService = mock(SessionUpdateService.class);
         
         BaseController controller = new SchedulePlanController();
         controller.setAccountDao(accountDao);
+        controller.setSessionUpdateService(mockSessionUpdateService);
         mockPlayContext();
 
-        CacheProvider cacheProvider = mock(CacheProvider.class);
-        controller.setCacheProvider(cacheProvider);
-        
-        UserSession session = new UserSession();
-        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withHealthCode(HEALTH_CODE)
+                .withLanguages(Sets.newLinkedHashSet()).build();
+        UserSession session = makeValidSession();
+        session.setParticipant(participant);
+
+        // Execute test.
         LinkedHashSet<String> languages = controller.getLanguages(session);
         assertTrue(languages.isEmpty());
-        
-        verify(accountDao, never()).editAccount(any(), any(), any());
+
+        // No languages means nothing to save.
+        verifyZeroInteractions(accountDao);
+        verifyZeroInteractions(mockSessionUpdateService);
     }
 
     @Test

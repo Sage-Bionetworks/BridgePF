@@ -21,7 +21,9 @@ import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
+import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,13 +63,14 @@ import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
+import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
-import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 import org.sagebionetworks.bridge.validators.SignInValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -80,7 +83,9 @@ import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AuthenticationServiceMockTest {
+    private static final Set<String> DATA_GROUP_SET = ImmutableSet.of("group1", "group2");
     private static final String IP_ADDRESS = "ip-address";
+    private static final LinkedHashSet<String> LANGUAGES = TestUtils.newLinkedHashSet("es","de");
     private static final String SUPPORT_EMAIL = "support@support.com";
     private static final String STUDY_ID = TestConstants.TEST_STUDY_IDENTIFIER;
     private static final String RECIPIENT_EMAIL = "email@email.com";
@@ -128,6 +133,8 @@ public class AuthenticationServiceMockTest {
     @Mock
     private AccountDao accountDao;
     @Mock
+    private NotificationsService notificationsService;
+    @Mock
     private ParticipantService participantService;
     @Mock
     private StudyService studyService;
@@ -139,10 +146,6 @@ public class AuthenticationServiceMockTest {
     private ExternalIdService externalIdService;
     @Mock
     private IntentService intentService;
-    @Captor
-    private ArgumentCaptor<String> stringCaptor;
-    @Captor
-    private ArgumentCaptor<BasicEmailProvider> providerCaptor;
     @Captor
     private ArgumentCaptor<UserSession> sessionCaptor;
     @Captor
@@ -160,6 +163,7 @@ public class AuthenticationServiceMockTest {
 
     @Before
     public void before() {
+        // Create inputs.
         study = Study.create();
         study.setIdentifier(STUDY_ID);
         study.setSupportEmail(SUPPORT_EMAIL);
@@ -167,11 +171,13 @@ public class AuthenticationServiceMockTest {
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         
         account = Account.create();
-        
+
+        // Wire up service.
         service.setCacheProvider(cacheProvider);
         service.setBridgeConfig(config);
         service.setConsentService(consentService);
         service.setAccountDao(accountDao);
+        service.setNotificationsService(notificationsService);
         service.setPasswordResetValidator(passwordResetValidator);
         service.setParticipantService(participantService);
         service.setStudyService(studyService);
@@ -179,11 +185,14 @@ public class AuthenticationServiceMockTest {
         service.setExternalIdService(externalIdService);
         service.setIntentToParticipateService(intentService);
 
+        // Mock dependent services.
+        when(notificationsService.listRegistrations(any())).thenReturn(ImmutableList.of());
+
         doReturn(study).when(studyService).getStudy(STUDY_ID);
     }
     
     @Test
-    public void signInWithEmail() throws Exception {
+    public void signInWithEmail() {
         account.setId(USER_ID);
         account.setReauthToken(REAUTH_TOKEN);
         doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
@@ -198,7 +207,7 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test(expected = ConsentRequiredException.class)
-    public void unconsentedSignInWithEmail() throws Exception {
+    public void unconsentedSignInWithEmail() {
         doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
@@ -207,7 +216,7 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test
-    public void adminSignInWithEmail() throws Exception {
+    public void adminSignInWithEmail() {
         account.setReauthToken(REAUTH_TOKEN);
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
@@ -222,7 +231,7 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test
-    public void signInWithPhone() throws Exception {
+    public void signInWithPhone() {
         account.setId(USER_ID);
         account.setReauthToken(REAUTH_TOKEN);
         doReturn(account).when(accountDao).authenticate(study, PHONE_PASSWORD_SIGN_IN);
@@ -237,7 +246,7 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test(expected = ConsentRequiredException.class)
-    public void unconsentedSignInWithPhone() throws Exception {
+    public void unconsentedSignInWithPhone() {
         doReturn(account).when(accountDao).authenticate(study, PHONE_PASSWORD_SIGN_IN);
         doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
@@ -246,7 +255,7 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test
-    public void adminSignInWithPhone() throws Exception {
+    public void adminSignInWithPhone() {
         account.setReauthToken(REAUTH_TOKEN);
         StudyParticipant participant = new StudyParticipant.Builder()
                 .copyOf(PARTICIPANT).withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
@@ -392,7 +401,7 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void reauthenticationFromCache() {
-        Tuple<String> tuple = new Tuple<String>(TOKEN, "newReauthToken");
+        Tuple<String> tuple = new Tuple<>(TOKEN, "newReauthToken");
         
         UserSession session = new UserSession();
         doReturn(tuple).when(cacheProvider).getObject(REAUTH_CACHE_TOKEN, AuthenticationService.TUPLE_TYPE);
@@ -431,14 +440,14 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test(expected = InvalidEntityException.class)
-    public void requestResetInvalid() throws Exception {
+    public void requestResetInvalid() {
         SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID).withPhone(TestConstants.PHONE)
                 .withEmail(RECIPIENT_EMAIL).build();
         service.requestResetPassword(study, false, signIn);
     }
     
     @Test
-    public void requestResetPassword() throws Exception {
+    public void requestResetPassword() {
         SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID).withEmail(RECIPIENT_EMAIL).build();
         
         service.requestResetPassword(study, false, signIn);
@@ -447,7 +456,7 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test
-    public void signUpWithEmailOK() throws Exception {
+    public void signUpWithEmailOK() {
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail(RECIPIENT_EMAIL).withPassword(PASSWORD)
                 .build();
@@ -461,7 +470,7 @@ public class AuthenticationServiceMockTest {
     }
 
     @Test
-    public void signUpWithPhoneOK() throws Exception {
+    public void signUpWithPhoneOK() {
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         StudyParticipant participant = new StudyParticipant.Builder().withPhone(TestConstants.PHONE)
                 .withPassword(PASSWORD).build();
@@ -475,7 +484,7 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test
-    public void signUpExistingAccount() throws Exception {
+    public void signUpExistingAccount() {
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail(RECIPIENT_EMAIL).withPassword(PASSWORD)
                 .build();
@@ -499,14 +508,16 @@ public class AuthenticationServiceMockTest {
         account.setId(USER_ID);
 
         // Put some stuff in participant to verify session is initialized
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withEmail(RECIPIENT_EMAIL).withFirstName("Test").withLastName("Tester").build();
+        StudyParticipant participant = new StudyParticipant.Builder().withDataGroups(DATA_GROUP_SET)
+                .withEmail(RECIPIENT_EMAIL).withHealthCode(HEALTH_CODE).withId(USER_ID).withLanguages(LANGUAGES)
+                .withFirstName("Test").withLastName("Tester").withPhone(TestConstants.PHONE).build();
         doReturn(participant).when(participantService).getParticipant(study, account, false);
         doReturn(SIGN_IN_WITH_PHONE.getAccountId()).when(accountWorkflowService).channelSignIn(ChannelType.PHONE,
                 CONTEXT, SIGN_IN_WITH_PHONE, SignInValidator.PHONE_SIGNIN);
         doReturn(account).when(accountDao).getAccountAfterAuthentication(SIGN_IN_WITH_PHONE.getAccountId());
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
-        
+
+        // Execute and validate.
         UserSession session = service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
 
         assertEquals(RECIPIENT_EMAIL, session.getParticipant().getEmail());
@@ -517,6 +528,55 @@ public class AuthenticationServiceMockTest {
         verify(cacheProvider).removeSessionByUserId(USER_ID);
         verify(cacheProvider).setUserSession(session);
         verify(accountDao).verifyChannel(ChannelType.PHONE, account);
+
+        // Verify that we create the SMS notification registration.
+        ArgumentCaptor<CriteriaContext> updatedContextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
+        ArgumentCaptor<NotificationRegistration> registrationCaptor = ArgumentCaptor.forClass(
+                NotificationRegistration.class);
+        verify(notificationsService).createRegistration(eq(TestConstants.TEST_STUDY), updatedContextCaptor.capture(),
+                registrationCaptor.capture());
+
+        NotificationRegistration registration = registrationCaptor.getValue();
+        assertEquals(HEALTH_CODE, registration.getHealthCode());
+        assertEquals(NotificationProtocol.SMS, registration.getProtocol());
+        assertEquals(TestConstants.PHONE.getNumber(), registration.getEndpoint());
+
+        // Verify that we updated the context properly with user info.
+        CriteriaContext updatedContext = updatedContextCaptor.getValue();
+        assertEquals(HEALTH_CODE, updatedContext.getHealthCode());
+        assertEquals(LANGUAGES, updatedContext.getLanguages());
+        assertEquals(DATA_GROUP_SET, updatedContext.getUserDataGroups());
+        assertEquals(USER_ID, updatedContext.getUserId());
+    }
+
+    @Test
+    public void phoneSignIn_AlreadyRegisteredForNotifications() {
+        // Mock Notifications Service to return a registration. Even a non-SMS registration will be enough.
+        NotificationRegistration existingRegistration = NotificationRegistration.create();
+        existingRegistration.setHealthCode(HEALTH_CODE);
+        existingRegistration.setProtocol(NotificationProtocol.APPLICATION);
+        existingRegistration.setEndpoint("dummy-endpoint-arn");
+        when(notificationsService.listRegistrations(HEALTH_CODE)).thenReturn(ImmutableList.of(existingRegistration));
+
+        // Mock other back-ends.
+        account.setId(USER_ID);
+
+        when(accountWorkflowService.channelSignIn(ChannelType.PHONE, CONTEXT, SIGN_IN_WITH_PHONE,
+                SignInValidator.PHONE_SIGNIN)).thenReturn(SIGN_IN_WITH_PHONE.getAccountId());
+
+        when(accountDao.getAccountAfterAuthentication(SIGN_IN_WITH_PHONE.getAccountId())).thenReturn(account);
+
+        StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE).withId(USER_ID)
+                .withPhone(TestConstants.PHONE).build();
+        when(participantService.getParticipant(study, account, false)).thenReturn(participant);
+
+        when(consentService.getConsentStatuses(any(), any())).thenReturn(CONSENTED_STATUS_MAP);
+
+        // Execute
+        service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
+
+        // We didn't create any registrations.
+        verify(notificationsService, never()).createRegistration(any(), any(), any());
     }
 
     @Test(expected = AuthenticationFailedException.class)
@@ -585,8 +645,7 @@ public class AuthenticationServiceMockTest {
         // This specifically has to be a mock to easily mock the editAccount method on the DAO.
         Account mockAccount = mock(Account.class);
 
-        LinkedHashSet<String> languages = TestUtils.newLinkedHashSet("es","de");
-        CriteriaContext context = new CriteriaContext.Builder().withLanguages(languages).withUserId(USER_ID)
+        CriteriaContext context = new CriteriaContext.Builder().withLanguages(LANGUAGES).withUserId(USER_ID)
                 .withStudyIdentifier(TestConstants.TEST_STUDY).build();
         TestUtils.mockEditAccount(accountDao, mockAccount);
         doReturn(mockAccount).when(accountDao).getAccount(any());
@@ -598,7 +657,7 @@ public class AuthenticationServiceMockTest {
         service.getSession(study, context);
         
         verify(accountDao).editAccount(eq(TestConstants.TEST_STUDY), eq("healthCode"), any());
-        verify(mockAccount).setLanguages(languages);
+        verify(mockAccount).setLanguages(LANGUAGES);
     }
 
     @Test
@@ -697,6 +756,7 @@ public class AuthenticationServiceMockTest {
             service.generatePassword(study, EXTERNAL_ID, true);
             fail("Should have thrown an exception");
         } catch(EntityAlreadyExistsException e) {
+            // expected exception
         }
         verify(accountDao).getAccount(AccountId.forExternalId(STUDY_ID, EXTERNAL_ID));
         verify(participantService).createParticipant(eq(study), eq(ImmutableSet.of()), any(), eq(false));
@@ -756,7 +816,7 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test
-    public void signInWithIntentToParticipate() throws Exception {
+    public void signInWithIntentToParticipate() {
         account.setId(USER_ID);
         Account consentedAccount = Account.create();
         StudyParticipant consentedParticipant = new StudyParticipant.Builder().build();
@@ -776,7 +836,7 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test
-    public void emailSignInWithIntentToParticipate() throws Exception {
+    public void emailSignInWithIntentToParticipate() {
         Account consentedAccount = Account.create();
         StudyParticipant consentedParticipant = new StudyParticipant.Builder().build();
         
@@ -797,7 +857,7 @@ public class AuthenticationServiceMockTest {
     }
 
     @Test
-    public void phoneSignInWithIntentToParticipate() throws Exception {
+    public void phoneSignInWithIntentToParticipate() {
         Account consentedAccount = Account.create();
         StudyParticipant consentedParticipant = new StudyParticipant.Builder().build();
         

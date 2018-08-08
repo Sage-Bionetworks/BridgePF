@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import java.util.LinkedHashSet;
 import java.util.Map;
 
 import org.joda.time.DateTimeZone;
@@ -25,8 +24,8 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 public class SessionUpdateService {
     
     private CacheProvider cacheProvider;
-    
     private ConsentService consentService;
+    private NotificationTopicService notificationTopicService;
     
     @Autowired
     public final void setCacheProvider(CacheProvider cacheProvider) {
@@ -36,15 +35,20 @@ public class SessionUpdateService {
     public final void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
     }
-    
+
+    /** Notification topic service, used to manage auto-managed Push and SMS notifications. */
+    @Autowired
+    public final void setNotificationTopicService(NotificationTopicService notificationTopicService) {
+        this.notificationTopicService = notificationTopicService;
+    }
+
     public void updateTimeZone(UserSession session, DateTimeZone timeZone) {
         session.setParticipant(builder(session).withTimeZone(timeZone).build());
         cacheProvider.setUserSession(session);
     }
     
-    public void updateLanguage(UserSession session, LinkedHashSet<String> languages) {
-        session.setParticipant(builder(session).withLanguages(languages).build());
-        cacheProvider.setUserSession(session);
+    public void updateLanguage(UserSession session, CriteriaContext context) {
+        updateCriteria(session, context, builder(session).withLanguages(context.getLanguages()).build());
     }
     
     public void updateExternalId(UserSession session, ExternalIdentifier externalId) {
@@ -53,21 +57,23 @@ public class SessionUpdateService {
     }
     
     public void updateParticipant(UserSession session, CriteriaContext context, StudyParticipant participant) {
-        session.setParticipant(participant);
-        
-        Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
-        session.setConsentStatuses(statuses);
-        
-        cacheProvider.setUserSession(session);
+        updateCriteria(session, context, participant);
     }
     
     public void updateDataGroups(UserSession session, CriteriaContext context) {
-        session.setParticipant(builder(session).withDataGroups(context.getUserDataGroups()).build());
-        
+        updateCriteria(session, context, builder(session).withDataGroups(context.getUserDataGroups()).build());
+    }
+
+    private void updateCriteria(UserSession session, CriteriaContext context, StudyParticipant participant) {
+        // Update session and consent statuses.
+        session.setParticipant(participant);
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         session.setConsentStatuses(statuses);
-                
         cacheProvider.setUserSession(session);
+
+        // Manage notifications, if necessary.
+        notificationTopicService.manageCriteriaBasedSubscriptions(context.getStudyIdentifier(), context,
+                participant.getHealthCode());
     }
     
     public void updateSharingScope(UserSession session, SharingScope sharingScope) {

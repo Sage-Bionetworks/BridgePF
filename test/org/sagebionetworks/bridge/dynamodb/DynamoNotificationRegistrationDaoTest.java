@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -12,11 +13,14 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestUtils.getNotificationRegistration;
 
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,6 +32,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.OperatingSystem;
+import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -40,7 +45,6 @@ import com.amazonaws.services.sns.model.DeleteEndpointRequest;
 import com.amazonaws.services.sns.model.GetEndpointAttributesResult;
 import com.amazonaws.services.sns.model.NotFoundException;
 import com.amazonaws.services.sns.model.SetEndpointAttributesRequest;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /**
@@ -54,7 +58,8 @@ public class DynamoNotificationRegistrationDaoTest {
     private static final String PLATFORM_ARN = "platformARN";
     private static final String GUID = "registrationGuid";
     private static final String HEALTH_CODE = "healthCode";
-    private static final String ENDPOINT_ARN = "endpointARN";
+    private static final String PUSH_NOTIFICATION_ENDPOINT_ARN = "endpointARN";
+    private static final String PHONE_ENDPOINT = "+14255550123";
     private static final String DEVICE_ID = "deviceId";
     private static final String OS_NAME = "osName";
     private static final long CREATED_ON = 1484173675648L;
@@ -101,11 +106,7 @@ public class DynamoNotificationRegistrationDaoTest {
     
     @Test
     public void list() {
-        List<NotificationRegistration> registrations = Lists.newArrayList(
-                TestUtils.getNotificationRegistration(), TestUtils.getNotificationRegistration());
-        
-        doReturn(paginatedQueryList).when(mockMapper).query(eq(DynamoNotificationRegistration.class), queryCaptor.capture());
-        doReturn(registrations.stream()).when(paginatedQueryList).stream();
+        mockQuery(TestUtils.getNotificationRegistration(), TestUtils.getNotificationRegistration());
 
         List<NotificationRegistration> list = dao.listRegistrations(HEALTH_CODE);
         
@@ -117,10 +118,7 @@ public class DynamoNotificationRegistrationDaoTest {
     // Opted here to return an empty list, as it's a list operation and we're not asking for specific registration
     @Test
     public void listWhenNoneExist() {
-        List<NotificationRegistration> registrations = Lists.newArrayList();
-
-        doReturn(paginatedQueryList).when(mockMapper).query(eq(DynamoNotificationRegistration.class), queryCaptor.capture());
-        doReturn(registrations.stream()).when(paginatedQueryList).stream();
+        mockQuery();
 
         List<NotificationRegistration> list = dao.listRegistrations(HEALTH_CODE);
         
@@ -130,13 +128,11 @@ public class DynamoNotificationRegistrationDaoTest {
     }
     
     @Test
-    public void create() {
+    public void createPushNotification() {
         // No existing record
-        List<NotificationRegistration> registrations = Lists.newArrayList();
-        doReturn(paginatedQueryList).when(mockMapper).query(eq(DynamoNotificationRegistration.class), queryCaptor.capture());
-        doReturn(registrations.stream()).when(paginatedQueryList).stream();
-        
-        doReturn(ENDPOINT_ARN).when(mockCreatePlatformEndpointResult).getEndpointArn();
+        mockQuery();
+
+        doReturn(PUSH_NOTIFICATION_ENDPOINT_ARN).when(mockCreatePlatformEndpointResult).getEndpointArn();
         doReturn(mockCreatePlatformEndpointResult).when(mockSnsClient).createPlatformEndpoint(any());
         
         NotificationRegistration registration = NotificationRegistration.create();
@@ -144,7 +140,7 @@ public class DynamoNotificationRegistrationDaoTest {
         registration.setDeviceId(DEVICE_ID);
         registration.setOsName(OperatingSystem.IOS);
         
-        NotificationRegistration result = dao.createRegistration(PLATFORM_ARN, registration);
+        NotificationRegistration result = dao.createPushNotificationRegistration(PLATFORM_ARN, registration);
         
         verify(mockSnsClient).createPlatformEndpoint(createPlatformEndpointRequestCaptor.capture());
         
@@ -161,7 +157,7 @@ public class DynamoNotificationRegistrationDaoTest {
         NotificationRegistration reg = notificationRegistrationCaptor.getValue();
         assertEquals(HEALTH_CODE, reg.getHealthCode());
         assertEquals(result.getGuid(), reg.getGuid());
-        assertEquals(ENDPOINT_ARN, reg.getEndpointARN());
+        assertEquals(PUSH_NOTIFICATION_ENDPOINT_ARN, reg.getEndpoint());
         assertEquals(DEVICE_ID, reg.getDeviceId());
         assertEquals(OperatingSystem.IOS, reg.getOsName());
         assertTrue(reg.getCreatedOn() > 0L);
@@ -171,12 +167,10 @@ public class DynamoNotificationRegistrationDaoTest {
     // In this case, we want to see the GUID returned and no duplicate record created. So 
     // that's the only part that's additional to the createNotifications() test when new.
     @Test
-    public void createWhenItExists() {
-        List<NotificationRegistration> registrations = Lists.newArrayList(getNotificationRegistration());
-        doReturn(paginatedQueryList).when(mockMapper).query(eq(DynamoNotificationRegistration.class), queryCaptor.capture());
-        doReturn(registrations.stream()).when(paginatedQueryList).stream();
+    public void createPushNotificationWhenItExists() {
+        mockQuery(getNotificationRegistration());
 
-        doReturn(ENDPOINT_ARN).when(mockCreatePlatformEndpointResult).getEndpointArn();
+        doReturn(PUSH_NOTIFICATION_ENDPOINT_ARN).when(mockCreatePlatformEndpointResult).getEndpointArn();
         doReturn(mockCreatePlatformEndpointResult).when(mockSnsClient).createPlatformEndpoint(any());
         
         NotificationRegistration registration = NotificationRegistration.create();
@@ -184,7 +178,7 @@ public class DynamoNotificationRegistrationDaoTest {
         registration.setDeviceId(DEVICE_ID);
         registration.setOsName(OperatingSystem.IOS);
         
-        NotificationRegistration result = dao.createRegistration(PLATFORM_ARN, registration);
+        NotificationRegistration result = dao.createPushNotificationRegistration(PLATFORM_ARN, registration);
         
         assertEquals(GUID, result.getGuid());
         
@@ -194,7 +188,53 @@ public class DynamoNotificationRegistrationDaoTest {
         assertEquals(HEALTH_CODE, reg.getHealthCode());
         assertEquals(GUID, reg.getGuid());
     }
-    
+
+    @Test
+    public void createSmsRegistration() {
+        // No existing record.
+        mockQuery();
+
+        // Execute.
+        NotificationRegistration result = dao.createRegistration(getSmsNotificationRegistration());
+
+        // Validate saved registration.
+        verify(mockMapper).save(notificationRegistrationCaptor.capture());
+        NotificationRegistration savedRegistration = notificationRegistrationCaptor.getValue();
+        assertEquals(HEALTH_CODE, savedRegistration.getHealthCode());
+        assertEquals(NotificationProtocol.SMS, savedRegistration.getProtocol());
+        assertEquals(PHONE_ENDPOINT, savedRegistration.getEndpoint());
+        assertNotEquals(GUID, savedRegistration.getGuid());
+        assertTrue(savedRegistration.getCreatedOn() > 0L);
+        assertNotEquals(CREATED_ON, savedRegistration.getCreatedOn());
+        assertTrue(savedRegistration.getModifiedOn() > 0L);
+
+        assertSame(result, savedRegistration);
+    }
+
+    @Test
+    public void createSmsRegistrationAlreadyExists() {
+        // Create existing record.
+        NotificationRegistration existingRegistration = getSmsNotificationRegistration();
+        existingRegistration.setGuid(GUID);
+        existingRegistration.setCreatedOn(CREATED_ON);
+        mockQuery(existingRegistration);
+
+        // Execute.
+        NotificationRegistration result = dao.createRegistration(getSmsNotificationRegistration());
+
+        // Validate saved registration.
+        verify(mockMapper).save(notificationRegistrationCaptor.capture());
+        NotificationRegistration savedRegistration = notificationRegistrationCaptor.getValue();
+        assertEquals(HEALTH_CODE, savedRegistration.getHealthCode());
+        assertEquals(NotificationProtocol.SMS, savedRegistration.getProtocol());
+        assertEquals(PHONE_ENDPOINT, savedRegistration.getEndpoint());
+        assertEquals(GUID, savedRegistration.getGuid());
+        assertEquals(CREATED_ON, savedRegistration.getCreatedOn());
+        assertTrue(savedRegistration.getModifiedOn() > 0L);
+
+        assertSame(result, savedRegistration);
+    }
+
     @Test
     public void get() {
         NotificationRegistration registration = getNotificationRegistration();
@@ -220,7 +260,34 @@ public class DynamoNotificationRegistrationDaoTest {
             assertEquals("NotificationRegistration not found.", e.getMessage());
         }
     }
-    
+
+    @Test(expected = EntityNotFoundException.class)
+    public void updateNotExists() {
+        // Mock mapper.
+        when(mockMapper.load(any())).thenReturn(null);
+
+        // Execute. Will throw.
+        dao.updateRegistration(getNotificationRegistration());
+    }
+
+    @Test
+    public void updateSmsNotificationDoesNothing() {
+        // Mock mapper.
+        NotificationRegistration existingRegistration = getSmsNotificationRegistration();
+        existingRegistration.setGuid(GUID);
+        when(mockMapper.load(any())).thenReturn(existingRegistration);
+
+        // Execute.
+        NotificationRegistration registrationToUpdate = getSmsNotificationRegistration();
+        registrationToUpdate.setGuid(GUID);
+        NotificationRegistration result = dao.updateRegistration(registrationToUpdate);
+        assertSame(existingRegistration, result);
+
+        // No back-ends called.
+        verifyZeroInteractions(mockSnsClient);
+        verify(mockMapper, never()).save(any());
+    }
+
     @Test
     public void updateNoChange() {
         NotificationRegistration registration = getNotificationRegistration();
@@ -233,7 +300,8 @@ public class DynamoNotificationRegistrationDaoTest {
         doReturn(map).when(mockGetEndpointAttributesResult).getAttributes();
         doReturn(mockGetEndpointAttributesResult).when(mockSnsClient).getEndpointAttributes(any());
         
-        dao.updateRegistration(registration);
+        NotificationRegistration result = dao.updateRegistration(registration);
+        assertSame(registration, result);
         
         verify(mockSnsClient, never()).setEndpointAttributes(any());
         verify(mockMapper, never()).save(any());
@@ -255,6 +323,8 @@ public class DynamoNotificationRegistrationDaoTest {
         
         verify(mockSnsClient).setEndpointAttributes(setEndpointAttributesRequestCaptor.capture());
         SetEndpointAttributesRequest request = setEndpointAttributesRequestCaptor.getValue();
+        assertEquals(registration.getEndpoint(), request.getEndpointArn());
+
         Map<String,String> attributes = request.getAttributes();
         assertEquals(DEVICE_ID, attributes.get("Token"));
         assertEquals("true", attributes.get("Enabled"));
@@ -264,7 +334,7 @@ public class DynamoNotificationRegistrationDaoTest {
         NotificationRegistration persisted = notificationRegistrationCaptor.getValue();
         assertEquals(GUID, persisted.getGuid());
         assertEquals(HEALTH_CODE, persisted.getHealthCode());
-        assertEquals(ENDPOINT_ARN, persisted.getEndpointARN());
+        assertEquals(PUSH_NOTIFICATION_ENDPOINT_ARN, persisted.getEndpoint());
         assertEquals(DEVICE_ID, persisted.getDeviceId());
         assertEquals(OS_NAME, persisted.getOsName());
         assertEquals(CREATED_ON, persisted.getCreatedOn());
@@ -280,8 +350,9 @@ public class DynamoNotificationRegistrationDaoTest {
         NotificationRegistration registration = getNotificationRegistration();
         try {
             dao.updateRegistration(registration);
-            fail("Should not have thrown exception");
+            fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
+            // expected exception
         }
         verify(mockMapper, never()).save(any());
         verify(mockSnsClient, never()).setEndpointAttributes(any());
@@ -301,7 +372,7 @@ public class DynamoNotificationRegistrationDaoTest {
         
         verify(mockSnsClient).deleteEndpoint(deleteEndpointRequestCaptor.capture());
         DeleteEndpointRequest request = deleteEndpointRequestCaptor.getValue();
-        assertEquals(ENDPOINT_ARN, request.getEndpointArn());
+        assertEquals(PUSH_NOTIFICATION_ENDPOINT_ARN, request.getEndpointArn());
     }
     
     @Test
@@ -311,10 +382,26 @@ public class DynamoNotificationRegistrationDaoTest {
         
         try {
             dao.deleteRegistration(HEALTH_CODE, GUID);
-            fail("Should not have thrown exception");
+            fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
+            // expected exception
         }
         verify(mockMapper, never()).save(any());
         verify(mockSnsClient, never()).setEndpointAttributes(any());
+    }
+
+    private void mockQuery(NotificationRegistration... registrations) {
+        List<NotificationRegistration> registrationList = ImmutableList.copyOf(registrations);
+        doReturn(paginatedQueryList).when(mockMapper).query(eq(DynamoNotificationRegistration.class),
+                queryCaptor.capture());
+        doReturn(registrationList.stream()).when(paginatedQueryList).stream();
+    }
+
+    private static NotificationRegistration getSmsNotificationRegistration() {
+        NotificationRegistration existingRegistration = NotificationRegistration.create();
+        existingRegistration.setHealthCode(HEALTH_CODE);
+        existingRegistration.setProtocol(NotificationProtocol.SMS);
+        existingRegistration.setEndpoint(PHONE_ENDPOINT);
+        return existingRegistration;
     }
 }

@@ -57,10 +57,10 @@ public class DynamoTopicSubscriptionDao implements TopicSubscriptionDao {
         DynamoTopicSubscription subscription = new DynamoTopicSubscription();
         subscription.setRegistrationGuid(registration.getGuid());
         subscription.setTopicGuid(topic.getGuid());
-        
+
         SubscribeRequest request = new SubscribeRequest()
-                .withEndpoint(registration.getEndpointARN())
-                .withProtocol("application")
+                .withEndpoint(registration.getEndpoint())
+                .withProtocol(registration.getProtocol().getAwsName())
                 .withTopicArn(topic.getTopicARN());
         
         SubscribeResult result = snsClient.subscribe(request);

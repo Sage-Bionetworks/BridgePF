@@ -285,10 +285,10 @@ public class TestUtils {
         return itp;
     }
     
-    public static final NotificationRegistration getNotificationRegistration() {
+    public static NotificationRegistration getNotificationRegistration() {
         NotificationRegistration registration = NotificationRegistration.create();
         registration.setDeviceId("deviceId");
-        registration.setEndpointARN("endpointARN");
+        registration.setEndpoint("endpointARN");
         registration.setGuid("registrationGuid");
         registration.setHealthCode("healthCode");
         registration.setOsName("osName");

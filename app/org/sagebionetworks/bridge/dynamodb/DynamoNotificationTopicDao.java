@@ -8,12 +8,15 @@ import javax.annotation.Resource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.dao.NotificationTopicDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -23,21 +26,22 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.sns.AmazonSNSClient;
-import com.amazonaws.services.sns.model.CreateTopicRequest;
 import com.amazonaws.services.sns.model.CreateTopicResult;
 import com.amazonaws.services.sns.model.DeleteTopicRequest;
 import com.google.common.collect.ImmutableList;
 
 @Component
 public class DynamoNotificationTopicDao implements NotificationTopicDao {
-    private static Logger LOG = LoggerFactory.getLogger(DynamoNotificationTopicDao.class);
-    
+    private static final Logger LOG = LoggerFactory.getLogger(DynamoNotificationTopicDao.class);
+
+    static final String ATTR_DISPLAY_NAME = "DisplayName";
+    static final String CRITERIA_KEY_PREFIX = "notificationtopic:";
+
     private DynamoDBMapper mapper;
-    
     private AmazonSNSClient snsClient;
-    
     private BridgeConfig config;
-    
+    private CriteriaDao criteriaDao;
+
     @Resource(name = "notificationTopicMapper")
     final void setNotificationTopicMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
@@ -49,10 +53,16 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
     }
 
     @Resource(name = "bridgeConfig")
-    public void setBridgeConfig(BridgeConfig bridgeConfig) {
+    public final void setBridgeConfig(BridgeConfig bridgeConfig) {
         this.config = bridgeConfig;
     }
-    
+
+    /** Criteria DAO, because Criteria goes in a separate table. */
+    @Autowired
+    public final void setCriteriaDao(CriteriaDao criteriaDao) {
+        this.criteriaDao = criteriaDao;
+    }
+
     @Override
     public List<NotificationTopic> listTopics(StudyIdentifier studyId) {
         checkNotNull(studyId);
@@ -65,7 +75,12 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
                 .withConsistentRead(true).withHashKeyValues(hashKey);
 
         QueryResultPage<DynamoNotificationTopic> resultPage = mapper.queryPage(DynamoNotificationTopic.class, query);
-        return ImmutableList.copyOf(resultPage.getResults());
+        List<DynamoNotificationTopic> topicList = resultPage.getResults();
+
+        // Load criteria.
+        topicList.forEach(this::loadCriteria);
+
+        return ImmutableList.copyOf(topicList);
     }
 
     @Override
@@ -85,6 +100,9 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
         if (topic == null) {
             throw new EntityNotFoundException(NotificationTopic.class);
         }
+
+        loadCriteria(topic);
+
         return topic;
     }
     
@@ -98,13 +116,24 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
         topic.setGuid(BridgeUtils.generateGuid());
         
         String snsTopicName = createSnsTopicName(topic);
-        CreateTopicRequest request = new CreateTopicRequest().withName(snsTopicName);
-        CreateTopicResult result = snsClient.createTopic(request);
+        CreateTopicResult result = snsClient.createTopic(snsTopicName);
+
+        // Display name is required for SMS notifications. Strangely, there's no way to set display name in the
+        // create API, only the set attribute API.
+        // Display name has max length 10 chars.
+        String displayName = topic.getName();
+        if (displayName.length() > 10) {
+            displayName = displayName.substring(0, 10);
+        }
+        snsClient.setTopicAttributes(result.getTopicArn(), ATTR_DISPLAY_NAME, displayName);
+
         topic.setTopicARN(result.getTopicArn());
         long timestamp = DateUtils.getCurrentMillisFromEpoch();
         topic.setCreatedOn(timestamp);
         topic.setModifiedOn(timestamp);
-        
+
+        persistCriteria(topic);
+
         mapper.save(topic);
         return topic;
     }
@@ -117,10 +146,12 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
         NotificationTopic existing = getTopicInternal(topic.getStudyId(), topic.getGuid());
         existing.setName(topic.getName());
         existing.setDescription(topic.getDescription());
-        existing.setModifiedOn( DateUtils.getCurrentMillisFromEpoch() );
-        
+        existing.setModifiedOn(DateUtils.getCurrentMillisFromEpoch() );
+        existing.setCriteria(topic.getCriteria());
+
+        persistCriteria(topic);
+
         mapper.save(existing);
-        
         return existing;
     }
 
@@ -139,7 +170,13 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
         hashKey.setGuid(guid);
         
         mapper.delete(hashKey);
-        
+
+        // Delete criteria, if it exists.
+        if (existing.getCriteria() != null) {
+            criteriaDao.deleteCriteria(getCriteriaKey(guid));
+        }
+
+        // Delete from SNS.
         try {
             DeleteTopicRequest request = new DeleteTopicRequest().withTopicArn(existing.getTopicARN());
             snsClient.deleteTopic(request);
@@ -165,5 +202,39 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
      */
     private String createSnsTopicName(NotificationTopic topic) {
         return topic.getStudyId() + "-" + config.getEnvironment().name().toLowerCase() + "-" + topic.getGuid();
+    }
+
+    // Generates the criteria key for the given topic guid.
+    private String getCriteriaKey(String topicGuid) {
+        return CRITERIA_KEY_PREFIX + topicGuid;
+    }
+
+    // Helper method to get the criteria key for a topic.
+    private String getCriteriaKey(NotificationTopic topic) {
+        return getCriteriaKey(topic.getGuid());
+    }
+
+    // Helper method to load criteria, which comes from another table.
+    private void loadCriteria(NotificationTopic topic) {
+        Criteria criteria = criteriaDao.getCriteria(getCriteriaKey(topic));
+
+        // There are two kinds notification topics: topics with criteria, and topics without. Topics with criteria
+        // have their subscribers auto-managed by Bridge server. Topics without need to be subscribed to manually.
+        // To ensure we keep this separation clear, only set a criteria into the topic if it exists.
+        if (criteria != null) {
+            topic.setCriteria(criteria);
+        }
+    }
+
+    // Helper method which saves the criteria, if it exists. Called by create and update.
+    private void persistCriteria(NotificationTopic topic) {
+        Criteria criteria = topic.getCriteria();
+
+        // Similarly, only save the criteria if one was provided.
+        if (criteria != null) {
+            topic.setCriteria(criteria);
+            criteria.setKey(getCriteriaKey(topic));
+            criteriaDao.createOrUpdateCriteria(criteria);
+        }
     }
 }

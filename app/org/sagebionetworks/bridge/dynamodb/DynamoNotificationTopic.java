@@ -2,9 +2,11 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
+import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -21,6 +23,7 @@ public class DynamoNotificationTopic implements NotificationTopic {
     private String topicARN;
     private long createdOn;
     private long modifiedOn;
+    private Criteria criteria;
     
     @DynamoDBHashKey
     @Override
@@ -85,5 +88,18 @@ public class DynamoNotificationTopic implements NotificationTopic {
     @Override
     public void setModifiedOn(long modifiedOn) {
         this.modifiedOn = modifiedOn;
+    }
+
+    /** {@inheritDoc} */
+    @DynamoDBIgnore
+    @Override
+    public Criteria getCriteria() {
+        return criteria;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setCriteria(Criteria criteria) {
+        this.criteria = criteria;
     }
 }

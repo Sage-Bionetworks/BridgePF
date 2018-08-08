@@ -1,13 +1,17 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +20,8 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.NotificationRegistrationDao;
 import org.sagebionetworks.bridge.dao.NotificationTopicDao;
 import org.sagebionetworks.bridge.dao.TopicSubscriptionDao;
+import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.notifications.SubscriptionStatus;
@@ -142,35 +148,99 @@ public class NotificationTopicService {
         }
         return statuses;
     }
-    
-    public List<SubscriptionStatus> subscribe(StudyIdentifier studyId, String healthCode, String registrationGuid, Set<String> topicGuids) {
+
+    /**
+     * Manages criteria-based subscriptions for the given participant with the given criteria context. All topics that
+     * match the criteria context will be subscribed. All other topics will be unsubscribed. This only considers
+     * criteria-managed subscriptions. Manually-managed subscriptions will be untouched.
+     */
+    public void manageCriteriaBasedSubscriptions(StudyIdentifier studyId, CriteriaContext context, String healthCode) {
+        checkNotNull(studyId);
+        checkNotNull(context);
+        checkNotNull(healthCode);
+        checkArgument(isNotBlank(healthCode));
+
+        // Check study for topics. Only consider topics with criteria.
+        List<NotificationTopic> allTopicList = topicDao.listTopics(studyId);
+        List<NotificationTopic> criteriaTopicList = allTopicList.stream()
+                .filter(topic -> topic.getCriteria() != null).collect(Collectors.toList());
+        if (criteriaTopicList.isEmpty()) {
+            // Short cut: No topics in the study means nothing to manage.
+            return;
+        }
+
+        // Check participant for notification registrations.
+        List<NotificationRegistration> registrationList = registrationDao.listRegistrations(healthCode);
+        if (registrationList.isEmpty()) {
+            // Short cut: No registrations means nothing to manage.
+            return;
+        }
+
+        // Determine topics to subscribe to based on criteria.
+        Set<String> desiredTopicGuidSet = criteriaTopicList.stream()
+                .filter(topic -> CriteriaUtils.matchCriteria(context, topic.getCriteria()))
+                .map(NotificationTopic::getGuid).collect(Collectors.toSet());
+
+        // Subscribe user to topics.
+        for (NotificationRegistration oneRegistration : registrationList) {
+            setSubscriptionsForRegistration(oneRegistration, criteriaTopicList, desiredTopicGuidSet);
+        }
+    }
+
+    /**
+     * For the given account and registration, set their topic subscription to those specified by the
+     * desiredTopicGuidSet. All topics in the set will be subscribed, and all topics not in the set will be
+     * unsubscribed. Note that this only affects manual subscription topics. Topics managed by criteria are ignored by
+     * this method.
+     */
+    public List<SubscriptionStatus> subscribe(StudyIdentifier studyId, String healthCode, String registrationGuid,
+            Set<String> desiredTopicGuidSet) {
         checkNotNull(studyId);
         checkNotNull(healthCode);
         checkNotNull(registrationGuid);
-        checkNotNull(topicGuids);
-        
+        checkNotNull(desiredTopicGuidSet);
+
+        // This API can only subscribe/unsubscribe from topics that aren't managed by criteria.
+        List<NotificationTopic> allTopicList = topicDao.listTopics(studyId);
+        List<NotificationTopic> manualSubscriptionTopicList = allTopicList.stream()
+                .filter(topic -> topic.getCriteria() == null).collect(Collectors.toList());
+        if (manualSubscriptionTopicList.isEmpty()) {
+            // Short cut: No topics in the study means nothing to manage.
+            return ImmutableList.of();
+        }
+
+        // Set subscriptions.
         NotificationRegistration registration = registrationDao.getRegistration(healthCode, registrationGuid);
-        
-        Set<String> subscribedTopicGuids = cleanupSubscriptions(registration);
-        
-        List<NotificationTopic> topics = topicDao.listTopics(studyId);
-        List<SubscriptionStatus> statuses = Lists.newArrayListWithCapacity(topics.size());
-        
-        for (NotificationTopic topic : topics) {
-            boolean wantsSubscription = topicGuids.contains(topic.getGuid());
-            boolean isCurrentlySubscribed = subscribedTopicGuids.contains(topic.getGuid());
-            
-            Boolean isSubscribed = null; 
+        return setSubscriptionsForRegistration(registration, manualSubscriptionTopicList, desiredTopicGuidSet);
+    }
+
+    // Helper method that, given a registration and a set of desired topic GUIDs, sets the user's subscriptions to
+    // match that set. All topics in the set will be subscribed, and all topics not in that set will be unsubscribed.
+    // The list of eligible topics is passed in. This allows us to have separate "namespaces" for criteria managed
+    // topics and manually managed topics.
+    @SuppressWarnings("ConstantConditions")
+    private List<SubscriptionStatus> setSubscriptionsForRegistration(NotificationRegistration registration,
+            List<NotificationTopic> eligibleTopicList, Set<String> desiredTopicGuidSet) {
+        // Get set of currently subscribed. While we're at it, do some sanity checking on subscriptions.
+        Set<String> subscribedTopicGuidSet = cleanupSubscriptions(registration);
+
+        // Set the subscription status of each topic accordingly.
+        List<SubscriptionStatus> statuses = new ArrayList<>(eligibleTopicList.size());
+        for (NotificationTopic oneTopic : eligibleTopicList) {
+            boolean wantsSubscription = desiredTopicGuidSet.contains(oneTopic.getGuid());
+            boolean isCurrentlySubscribed = subscribedTopicGuidSet.contains(oneTopic.getGuid());
+
+            Boolean isSubscribed = null;
             if (wantsSubscription && isCurrentlySubscribed) {
                 isSubscribed = Boolean.TRUE;
             } else if (!wantsSubscription && !isCurrentlySubscribed) {
                 isSubscribed = Boolean.FALSE;
             } else if (wantsSubscription && !isCurrentlySubscribed) {
-                isSubscribed = doSubscribe(registration, topic);
+                isSubscribed = doSubscribe(registration, oneTopic);
             } else if (!wantsSubscription && isCurrentlySubscribed) {
-                isSubscribed = doUnsubscribe(registration, topic);
+                isSubscribed = doUnsubscribe(registration, oneTopic);
             }
-            SubscriptionStatus status = new SubscriptionStatus(topic.getGuid(), topic.getName(), isSubscribed);
+            SubscriptionStatus status = new SubscriptionStatus(oneTopic.getGuid(), oneTopic.getName(), isSubscribed);
             statuses.add(status);
         }
         return statuses;

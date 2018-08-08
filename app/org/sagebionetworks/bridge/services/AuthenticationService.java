@@ -4,6 +4,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import static org.sagebionetworks.bridge.BridgeConstants.REAUTH_TOKEN_CACHE_LOOKUP_IN_SECONDS;
 
+import java.util.List;
+
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.PasswordGenerator;
@@ -32,6 +34,8 @@ import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
+import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.AccountIdValidator;
 import org.sagebionetworks.bridge.validators.VerificationValidator;
@@ -54,15 +58,16 @@ public class AuthenticationService {
     
     static final TypeReference<Tuple<String>> TUPLE_TYPE = new TypeReference<Tuple<String>>() {};
     
-    public static enum ChannelType {
+    public enum ChannelType {
         EMAIL,
-        PHONE;
+        PHONE,
     }
     
     private CacheProvider cacheProvider;
     private BridgeConfig config;
     private ConsentService consentService;
     private AccountDao accountDao;
+    private NotificationsService notificationsService;
     private ParticipantService participantService;
     private StudyService studyService;
     private PasswordResetValidator passwordResetValidator;
@@ -86,6 +91,13 @@ public class AuthenticationService {
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
+
+    /** Notifications service, used to create a SMS notification registration for phone accounts. */
+    @Autowired
+    public final void setNotificationsService(NotificationsService notificationsService) {
+        this.notificationsService = notificationsService;
+    }
+
     @Autowired
     final void setPasswordResetValidator(PasswordResetValidator validator) {
         this.passwordResetValidator = validator;
@@ -115,7 +127,27 @@ public class AuthenticationService {
      * Sign in using a phone number and a token that was sent to that phone number via SMS. 
      */
     public UserSession phoneSignIn(CriteriaContext context, final SignIn signIn) {
-        return channelSignIn(ChannelType.PHONE, context, signIn, SignInValidator.PHONE_SIGNIN);
+        // Sign in.
+        UserSession session = channelSignIn(ChannelType.PHONE, context, signIn, SignInValidator.PHONE_SIGNIN);
+
+        // Register the phone number of notifications, if no registrations already exist.
+        List<NotificationRegistration> registrationList = notificationsService.listRegistrations(session
+                .getHealthCode());
+        if (registrationList.isEmpty()) {
+            // Create registration.
+            NotificationRegistration registration = NotificationRegistration.create();
+            registration.setHealthCode(session.getHealthCode());
+            registration.setProtocol(NotificationProtocol.SMS);
+            registration.setEndpoint(signIn.getPhone().getNumber());
+
+            // Update the Criteria Context with session info.
+            CriteriaContext updatedContext = updateContextFromSession(context, session);
+
+            // Create registration.
+            notificationsService.createRegistration(context.getStudyIdentifier(), updatedContext, registration);
+        }
+
+        return session;
     }
     
     /**
@@ -130,7 +162,6 @@ public class AuthenticationService {
      * and the user's consent status is not re-calculated based on participation in one more more subpopulations. 
      * This only happens when calling session-constructing service methods (signIn and verifyEmail, both of which 
      * return newly constructed sessions).
-     * @param sessionToken
      * @return session
      *      the persisted user session calculated on sign in or during verify email workflow
      */
@@ -328,7 +359,7 @@ public class AuthenticationService {
         }
 
         String password = generatePassword(study.getPasswordPolicy().getMinLength());
-        String userId = null;
+        String userId;
         if (account == null) {
             // Create an account with password and external ID assigned. If the external ID has been 
             // assigned to another account, this creation will fail (external ID is a unique column).
@@ -343,7 +374,7 @@ public class AuthenticationService {
         }
         // Return the password and the user ID in case the account was just created.
         return new GeneratedPassword(externalId, userId, password);
-    };
+    }
     
     public String generatePassword(int policyLength) {
         return PasswordGenerator.INSTANCE.nextPassword(Math.max(32, policyLength));
@@ -414,16 +445,21 @@ public class AuthenticationService {
         session.setStudyIdentifier(study.getStudyIdentifier());
         session.setReauthToken(account.getReauthToken());
         
-        CriteriaContext newContext = new CriteriaContext.Builder()
-                .withContext(context)
-                .withHealthCode(session.getHealthCode())
-                .withUserId(session.getId())
-                .withLanguages(session.getParticipant().getLanguages())
-                .withUserDataGroups(session.getParticipant().getDataGroups())
-                .build();
-        
+        CriteriaContext newContext = updateContextFromSession(context, session);
         session.setConsentStatuses(consentService.getConsentStatuses(newContext, account));
         
         return session;
+    }
+
+    // Sign-in methods contain a criteria context that includes no user information. After signing in, we need to
+    // create an updated context with user info.
+    private static CriteriaContext updateContextFromSession(CriteriaContext originalContext, UserSession session) {
+        return new CriteriaContext.Builder()
+                .withContext(originalContext)
+                .withHealthCode(session.getHealthCode())
+                .withLanguages(session.getParticipant().getLanguages())
+                .withUserDataGroups(session.getParticipant().getDataGroups())
+                .withUserId(session.getId())
+                .build();
     }
 }
