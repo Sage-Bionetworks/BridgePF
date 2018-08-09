@@ -6,7 +6,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.sagebionetworks.bridge.TestConstants.GSI_WAIT_DURATION;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
@@ -31,8 +30,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -178,12 +175,8 @@ public class DynamoSurveyDaoTest {
         survey.setVersion(updatedSurvey.getVersion());
         surveyDao.deleteSurvey(survey);
 
-        try {
-            surveyDao.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid(), true);
-            fail("Should have thrown an exception");
-        } catch (EntityNotFoundException enfe) {
-            // expected exception
-        }
+        Survey retrieved = surveyDao.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid(), true);
+        assertNull(retrieved);
     }
 
     // UPDATE SURVEY
@@ -244,29 +237,6 @@ public class DynamoSurveyDaoTest {
 
         survey.setVersion(44L);
         surveyDao.updateSurvey(survey);
-    }
-
-    @Test(expected = PublishedSurveyException.class)
-    public void cannotUpdatePublishedSurveys() {
-        Survey survey = createSurvey(testSurvey);
-        publishSurvey(TEST_STUDY, survey);
-
-        survey.setName("This is a new name");
-        surveyDao.updateSurvey(survey);
-    }
-    
-    @Test
-    public void canUndeletePublishedSurveys() {
-        testSurvey.setDeleted(true);
-        Survey survey = createSurvey(testSurvey);
-        publishSurvey(TEST_STUDY, survey);
-        
-        surveyDao.deleteSurvey(survey);
-        assertTrue(survey.isDeleted());
-        
-        survey.setDeleted(false);
-        survey = surveyDao.updateSurvey(survey);
-        assertFalse(survey.isDeleted());
     }
 
     // VERSION SURVEY
@@ -471,10 +441,11 @@ public class DynamoSurveyDaoTest {
         assertEquals(0, result.getElements().size());
     }
     
-    @Test(expected = EntityNotFoundException.class)
-    public void getSurveyMostRecentlyPublishedVersionThrowsException() {
+    @Test
+    public void getSurveyMostRecentlyPublishedVersionReturnsNullWhenNotFound() {
         Survey firstVersion = createSurvey(new SimpleSurvey("First Survey"));
-        surveyDao.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, firstVersion.getGuid(), true);
+        Survey retrieved = surveyDao.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, firstVersion.getGuid(), true);
+        assertNull(retrieved);
     }
     
     @Test
@@ -646,18 +617,12 @@ public class DynamoSurveyDaoTest {
         surveyDao.deleteSurvey(survey);
         
         // This survey can only be retrieved by direct reference
-        try {
-            surveyDao.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid(), true);
-            fail("Should have thrown exception [1].");
-        } catch(EntityNotFoundException e) {
-            assertEquals("Survey not found.", e.getMessage());
-        }
-        try {
-            surveyDao.getSurveyMostRecentVersion(TEST_STUDY, survey.getGuid());
-            fail("Should have thrown exception [3].");
-        } catch(EntityNotFoundException e) {
-            assertEquals("Survey not found.", e.getMessage());
-        }
+        Survey retrieved = surveyDao.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid(), true);
+        assertNull(retrieved);
+
+        retrieved = surveyDao.getSurveyMostRecentVersion(TEST_STUDY, survey.getGuid());
+        assertNull(retrieved);
+        
         survey = surveyDao.getSurvey(survey, true);
         assertNotNull(survey);
     }
@@ -669,12 +634,23 @@ public class DynamoSurveyDaoTest {
         Survey savedSurvey = surveyDao.createSurvey(survey);
         surveyDao.deleteSurveyPermanently(savedSurvey);
         
-        try {
-            surveyDao.getSurvey(survey, true);
-            fail("Should have thrown exception");
-        } catch(EntityNotFoundException e) {
-            // expected exception
-        }
+        Survey retrieved = surveyDao.getSurvey(survey, true);
+        assertNull(retrieved);
+    }
+    
+    @Test
+    public void canDeleteThenPermanentlyDeleteSurvey() {
+        Survey survey = createSurvey(testSurvey);
+
+        Survey savedSurvey = surveyDao.createSurvey(survey);
+        surveyDao.deleteSurvey(savedSurvey);
+        
+        Survey deletedSurvey = surveyDao.getSurvey(savedSurvey, true);
+        assertTrue(deletedSurvey.isDeleted());
+        surveyDao.deleteSurveyPermanently(deletedSurvey);
+        
+        Survey retrievedSurvey = surveyDao.getSurvey(deletedSurvey, true);
+        assertNull(retrievedSurvey);
     }
     
     @Test

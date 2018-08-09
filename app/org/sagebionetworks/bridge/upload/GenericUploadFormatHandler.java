@@ -125,7 +125,7 @@ public class GenericUploadFormatHandler implements UploadValidationHandler {
             // Get survey. We use the survey identifier as the schema ID and the schema revision. Both of these must be
             // specified.
             GuidCreatedOnVersionHolder surveyKeys = new GuidCreatedOnVersionHolderImpl(surveyGuid, surveyCreatedOnMillis);
-            Survey survey = surveyService.getSurvey(surveyKeys, false);
+            Survey survey = surveyService.getSurvey(studyId, surveyKeys, false, true);
             String surveySchemaId = survey.getIdentifier();
             Integer surveySchemaRev = survey.getSchemaRevision();
             if (StringUtils.isBlank(surveySchemaId) || surveySchemaRev == null) {

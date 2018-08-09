@@ -111,7 +111,7 @@ public class AppConfigService {
         AppConfig matched = matches.get(0);
         // Resolve survey references to pick up survey identifiers
         matched.setSurveyReferences(matched.getSurveyReferences().stream()
-            .map(surveyReference -> resolveSurvey(surveyReference)).collect(Collectors.toList()));
+            .map(surveyReference -> resolveSurvey(context.getStudyIdentifier(), surveyReference)).collect(Collectors.toList()));
         return matched;
     }
 
@@ -120,19 +120,16 @@ public class AppConfigService {
      * specific version or createdOn timestamp of a version, and we validate this when creating/
      * updating the app config. We're only concerned with adding the survey identifier here.
      */
-    SurveyReference resolveSurvey(SurveyReference surveyRef) {
+    SurveyReference resolveSurvey(StudyIdentifier studyId, SurveyReference surveyRef) {
         if (surveyRef.getIdentifier() != null) {
             return surveyRef;
         }
-        try {
-            GuidCreatedOnVersionHolder surveyKeys = new GuidCreatedOnVersionHolderImpl(surveyRef);
-            Survey survey = surveyService.getSurvey(surveyKeys, false);
-            return new SurveyReference(survey.getIdentifier(), survey.getGuid(), new DateTime(survey.getCreatedOn()));
-        } catch(EntityNotFoundException e) {
-            // Survey references can be bogus or orphaned, and should be return unmodified if they don't reference
-            // an existing survey
-            return surveyRef;
+        GuidCreatedOnVersionHolder surveyKeys = new GuidCreatedOnVersionHolderImpl(surveyRef);
+        Survey survey = surveyService.getSurvey(studyId, surveyKeys, false, false);
+        if (survey != null) {
+            return new SurveyReference(survey.getIdentifier(), survey.getGuid(), new DateTime(survey.getCreatedOn()));    
         }
+        return surveyRef;
     }
     
     public AppConfig createAppConfig(StudyIdentifier studyId, AppConfig appConfig) {
