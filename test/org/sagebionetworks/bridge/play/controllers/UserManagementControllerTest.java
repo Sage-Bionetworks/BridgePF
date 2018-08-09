@@ -16,6 +16,7 @@ import static org.sagebionetworks.bridge.TestUtils.mockPlayContextWithJson;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.junit.Before;
@@ -27,6 +28,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import play.mvc.Http;
+import play.mvc.Http.Response;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -36,6 +38,8 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.Environment;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -119,9 +123,12 @@ public class UserManagementControllerTest {
 
     @Test
     public void signInForAdmin() throws Exception {
+        // Set environment to local in order to test that cookies are set
+        when(bridgeConfig.getEnvironment()).thenReturn(Environment.LOCAL);
+        
         SignIn signIn = new SignIn.Builder().withStudy("originalStudy")
                 .withEmail(TestConstants.EMAIL).withPassword("password").build();
-        TestUtils.mockPlayContextWithJson(signIn);
+        Response response = TestUtils.mockPlayContextWithJson(signIn);
 
         when(authService.signIn(eq(study), any(CriteriaContext.class), signInCaptor.capture())).thenReturn(session);
         
@@ -131,6 +138,23 @@ public class UserManagementControllerTest {
         // This isn't in the session that is returned to the user, but verify it has been changed
         assertEquals("originalStudy", session.getStudyIdentifier().getIdentifier());
         assertEquals("api", signInCaptor.getValue().getStudyId());
+        
+        verify(response).setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
+                BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/",
+                bridgeConfig.get("domain"), false, false);
+    }
+    
+    @Test(expected = UnauthorizedException.class)
+    public void signInForAdminNotAnAdmin() throws Exception {
+        SignIn signIn = new SignIn.Builder().withStudy("originalStudy")
+                .withEmail(TestConstants.EMAIL).withPassword("password").build();
+        TestUtils.mockPlayContextWithJson(signIn);
+        
+        // But this person is actually a worker, not an admin
+        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.WORKER)).build());
+        when(authService.signIn(eq(study), any(CriteriaContext.class), signInCaptor.capture())).thenReturn(session);
+
+        controller.signInForAdmin();
     }
     
     @Test
@@ -138,7 +162,7 @@ public class UserManagementControllerTest {
         doReturn(session).when(controller).getAuthenticatedSession(Roles.ADMIN);
         
         SignIn signIn = new SignIn.Builder().withStudy("nextStudy").build();
-        TestUtils.mockPlayContextWithJson(signIn);
+        Response response = TestUtils.mockPlayContextWithJson(signIn);
         
         Study nextStudy = Study.create();
         nextStudy.setIdentifier("nextStudy");

@@ -71,7 +71,7 @@ public class UserManagementController extends BaseController {
         // Verify it's correct
         Study study = studyService.getStudy(studyId);
         sessionUpdateService.updateStudy(session, study.getStudyIdentifier());
-
+        
         return okResult(UserSessionInfo.toJSON(session));
     }
     
