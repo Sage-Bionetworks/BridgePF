@@ -108,7 +108,11 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     public SchedulePlan updateSchedulePlan(StudyIdentifier studyIdentifier, SchedulePlan plan) {
         checkNotNull(studyIdentifier);
         checkNotNull(plan);
-        
+
+        SchedulePlan saved = getSchedulePlan(studyIdentifier, plan.getGuid());
+        if (saved == null || (saved.isDeleted() && plan.isDeleted())) {
+            throw new EntityNotFoundException(SchedulePlan.class);
+        }
         plan.setStudyKey(studyIdentifier.getIdentifier());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         
@@ -120,19 +124,21 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     @Override
     public void deleteSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
         SchedulePlan plan = getSchedulePlanInternal(studyIdentifier, guid);
-        if (plan != null) {
-            plan.setDeleted(true);
-            mapper.save(plan);
+        if (plan == null || plan.isDeleted()) {
+            throw new EntityNotFoundException(SchedulePlan.class);
         }
+        plan.setDeleted(true);
+        mapper.save(plan);
     }
     
     @Override
     public void deleteSchedulePlanPermanently(StudyIdentifier studyIdentifier, String guid) {
         SchedulePlan plan = getSchedulePlanInternal(studyIdentifier, guid);
-        if (plan != null) {
-            forEachCriteria(plan, scheduleCriteria -> deleteCriteria(scheduleCriteria));
-            mapper.delete(plan);
+        if (plan == null) {
+            throw new EntityNotFoundException(SchedulePlan.class);
         }
+        forEachCriteria(plan, scheduleCriteria -> deleteCriteria(scheduleCriteria));
+        mapper.delete(plan);
     }
 
     private SchedulePlan getSchedulePlanInternal(StudyIdentifier studyIdentifier, String guid) {
@@ -166,7 +172,6 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
             CriteriaScheduleStrategy strategy = (CriteriaScheduleStrategy)plan.getStrategy();
             for (int i=0; i < strategy.getScheduleCriteria().size(); i++) {
                 ScheduleCriteria scheduleCriteria = strategy.getScheduleCriteria().get(i);
-                
                 // Add the key in order to load
                 scheduleCriteria.getCriteria().setKey(getKey(plan, i));
 

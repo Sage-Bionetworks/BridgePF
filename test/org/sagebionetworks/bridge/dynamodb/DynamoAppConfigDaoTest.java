@@ -70,6 +70,7 @@ public class DynamoAppConfigDaoTest {
         JsonNode clientData = TestUtils.getClientData();
         
         AppConfig config = AppConfig.create();
+        config.setLabel("Label");
         config.setGuid(BridgeUtils.generateGuid());
         config.setCriteria(criteria);
         config.setSurveyReferences(SURVEY_REFS);
@@ -143,7 +144,7 @@ public class DynamoAppConfigDaoTest {
     }
     
     @Test
-    public void cannotCreateConfigInDeletedState() {
+    public void createAppleCannotBeDeleted() {
         AppConfig config = createAppConfig();
         config.setDeleted(true);
         AppConfig saved = dao.createAppConfig(config);
@@ -165,12 +166,141 @@ public class DynamoAppConfigDaoTest {
     }
     
     @Test
-    public void deletingMissingConfigFailsQuietly() {
+    public void deletePermanentlyMissingAppConfigThrows() {
         AppConfig config = createAppConfig();
         AppConfig saved = dao.createAppConfig(config);
         
         dao.deleteAppConfigPermanently(STUDY_ID, saved.getGuid());
+        try {
+            dao.deleteAppConfig(STUDY_ID, saved.getGuid());
+            fail("Should have thrown an exception");
+        } catch(EntityNotFoundException e) {
+        }
+    }
+    
+    @Test
+    public void deletePermanentlyLogicallyDeletedAppConfig() {
+        AppConfig config = createAppConfig();
+        AppConfig saved = dao.createAppConfig(config);
+
         dao.deleteAppConfig(STUDY_ID, saved.getGuid());
-        dao.deleteAppConfigPermanently(STUDY_ID, config.getGuid());
+        dao.deleteAppConfigPermanently(STUDY_ID, saved.getGuid());
+        try {
+            dao.getAppConfig(STUDY_ID, saved.getGuid());
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+        }
+    }
+    
+    @Test
+    public void getAppConfigIncludesLogicallyDeleted() {
+        AppConfig config = createAppConfig();
+        AppConfig saved = dao.createAppConfig(config);
+        dao.deleteAppConfig(STUDY_ID, saved.getGuid());
+
+        AppConfig returned = dao.getAppConfig(STUDY_ID, saved.getGuid());
+        assertTrue(returned.isDeleted());
+    }
+    
+    @Test
+    public void getAppConfigsIncludesLogicallyDeleted() {
+        AppConfig config = createAppConfig();
+        AppConfig saved = dao.createAppConfig(config);
+        dao.deleteAppConfig(STUDY_ID, saved.getGuid());
+
+        List<AppConfig> configs = dao.getAppConfigs(STUDY_ID, true);
+        assertEquals(saved.getGuid(), configs.get(0).getGuid());
+    }
+    
+    @Test
+    public void getAppConfigsExcludesLogicallyDeleted() {
+        AppConfig config = createAppConfig();
+        AppConfig saved = dao.createAppConfig(config);
+        dao.deleteAppConfig(STUDY_ID, saved.getGuid());
+
+        List<AppConfig> configs = dao.getAppConfigs(STUDY_ID, false);
+        assertTrue(configs.isEmpty());
+    }
+    
+    @Test
+    public void updateLogicallyDeletedAppConfigThrows() {
+        AppConfig config = createAppConfig();
+        AppConfig saved = dao.createAppConfig(config);
+        dao.deleteAppConfig(STUDY_ID, saved.getGuid());
+        
+        // must do this to get the current version #
+        AppConfig retrieved = dao.getAppConfig(STUDY_ID, saved.getGuid());
+        retrieved.setLabel("Some trivial change");
+        // But note we are not undeleting it
+        
+        try {
+            dao.updateAppConfig(retrieved);
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+            
+        }
+        retrieved = dao.getAppConfig(STUDY_ID, saved.getGuid());
+        assertEquals("Label", retrieved.getLabel());
+    }
+    
+    @Test
+    public void updateCanUndeleteAppConfig() {
+        AppConfig config = createAppConfig();
+        AppConfig saved = dao.createAppConfig(config);
+
+        saved.setDeleted(true);
+        AppConfig returned = dao.updateAppConfig(saved);
+        
+        returned.setDeleted(false);
+        AppConfig returned2 = dao.updateAppConfig(saved);
+        
+        assertFalse(returned2.isDeleted());
+        assertFalse(dao.getAppConfig(STUDY_ID, saved.getGuid()).isDeleted());
+    }
+    
+    @Test
+    public void updateCanDeleteAppConfig() {
+        AppConfig config = createAppConfig();
+        AppConfig saved = dao.createAppConfig(config);
+
+        saved.setDeleted(true);
+        AppConfig returned = dao.updateAppConfig(saved);
+        
+        assertTrue(returned.isDeleted());
+        assertTrue(dao.getAppConfig(STUDY_ID, saved.getGuid()).isDeleted());
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void deleteLogicallyDeletedAppConfigThrows() {
+        AppConfig config = createAppConfig();
+        AppConfig saved = dao.createAppConfig(config);
+        
+        dao.deleteAppConfig(STUDY_ID, saved.getGuid());
+        dao.deleteAppConfig(STUDY_ID, saved.getGuid());
+    }
+    
+    @Test
+    public void deleteAppConfig() {
+        AppConfig config = createAppConfig();
+        AppConfig saved = dao.createAppConfig(config);
+        
+        dao.deleteAppConfig(STUDY_ID, saved.getGuid());
+        
+        assertTrue(dao.getAppConfig(STUDY_ID, saved.getGuid()).isDeleted());
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void deleteAppConfigMissingAppConfigThrows() {
+        dao.deleteAppConfig(STUDY_ID, "some-junk");
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void deleteAppConfigPermanently() {
+        AppConfig config = createAppConfig();
+        AppConfig saved = dao.createAppConfig(config);
+        
+        dao.deleteAppConfigPermanently(STUDY_ID, saved.getGuid());
+        
+        dao.getAppConfig(STUDY_ID, saved.getGuid());
     }
 }

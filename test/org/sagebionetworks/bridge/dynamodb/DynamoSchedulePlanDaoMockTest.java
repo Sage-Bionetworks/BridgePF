@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
@@ -28,6 +29,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.CriteriaDao;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy;
@@ -77,10 +79,23 @@ public class DynamoSchedulePlanDaoMockTest {
         dao.setSchedulePlanMapper(mapper);
         dao.setCriteriaDao(criteriaDao);
         
-        schedulePlan = new DynamoSchedulePlan();
+        schedulePlan = (DynamoSchedulePlan)createSchedulePlan();
+        Criteria criteria = ((CriteriaScheduleStrategy) schedulePlan.getStrategy()).getScheduleCriteria().get(0)
+                .getCriteria();
+
+        List<DynamoSchedulePlan> list = Lists.newArrayList(schedulePlan);
+        when(queryResultsPage.getResults()).thenReturn(list);
+        when(mapper.queryPage(eq(DynamoSchedulePlan.class), any())).thenReturn(queryResultsPage);
+        
+        when(criteriaDao.getCriteria("scheduleCriteria:"+schedulePlan.getGuid()+":0")).thenReturn(criteria);
+    }
+    
+    private SchedulePlan createSchedulePlan() {
+        SchedulePlan schedulePlan = new DynamoSchedulePlan();
         schedulePlan.setGuid(BridgeUtils.generateGuid());
         schedulePlan.setLabel("Schedule Plan");
         schedulePlan.setStudyKey(TEST_STUDY_IDENTIFIER);
+        schedulePlan.setDeleted(false);
         
         Schedule schedule = TestUtils.getSchedule("My Schedule");
         Criteria criteria = TestUtils.createCriteria(2, 10, ALL_OF_GROUPS, NONE_OF_GROUPS);
@@ -90,12 +105,7 @@ public class DynamoSchedulePlanDaoMockTest {
         strategy.getScheduleCriteria().add(scheduleCriteria);
         
         schedulePlan.setStrategy(strategy);
-
-        List<DynamoSchedulePlan> list = Lists.newArrayList(schedulePlan);
-        when(queryResultsPage.getResults()).thenReturn(list);
-        when(mapper.queryPage(eq(DynamoSchedulePlan.class), any())).thenReturn(queryResultsPage);
-        
-        when(criteriaDao.getCriteria("scheduleCriteria:"+schedulePlan.getGuid()+":0")).thenReturn(criteria);
+        return schedulePlan;
     }
     
     @Test
@@ -180,36 +190,43 @@ public class DynamoSchedulePlanDaoMockTest {
     
     @Test
     public void updateSchedulePlanWritesCriteria() {
-        SchedulePlan plan = dao.updateSchedulePlan(TEST_STUDY, schedulePlan);
-        CriteriaScheduleStrategy strategy = (CriteriaScheduleStrategy)plan.getStrategy();
+        // Create a copy of the schedulePlan or this test does not work
+        SchedulePlan update = SchedulePlan.create();
+        update.setGuid(schedulePlan.getGuid());
+        update.setLabel(schedulePlan.getLabel());
+        update.setStudyKey(schedulePlan.getStudyKey());
         
-        ScheduleCriteria scheduleCriteria = strategy.getScheduleCriteria().get(0);
-        Criteria criteria = scheduleCriteria.getCriteria();
-        assertCriteria(criteria);
+        // But modify the criteria...
+        Schedule schedule = TestUtils.getSchedule("My Schedule");
+        Criteria criteria = TestUtils.createCriteria(100, 200, ALL_OF_GROUPS, NONE_OF_GROUPS);
+        criteria.setKey("scheduleCriteria:"+schedulePlan.getGuid()+":0");
+        CriteriaScheduleStrategy strategy = new CriteriaScheduleStrategy();
+        ScheduleCriteria scheduleCriteria = new ScheduleCriteria(schedule, criteria);
+        strategy.getScheduleCriteria().add(scheduleCriteria);
+        
+        update.setStrategy(strategy);
         
         ArgumentCaptor<Criteria> criteriaCaptor = ArgumentCaptor.forClass(Criteria.class);
         
-        verify(criteriaDao).createOrUpdateCriteria(criteriaCaptor.capture());
-        Criteria crit = criteriaCaptor.getValue();
-        assertCriteria(crit);
+        SchedulePlan updated = dao.updateSchedulePlan(TEST_STUDY, update);
         
-        Criteria newCriteria = Criteria.create();
-        newCriteria.setKey(crit.getKey());
-        newCriteria.setMinAppVersion(IOS, 100);
-        newCriteria.setMaxAppVersion(IOS, 200);
-        strategy.getScheduleCriteria().set(0, new ScheduleCriteria(scheduleCriteria.getSchedule(), newCriteria));
-        
-        plan = dao.updateSchedulePlan(TEST_STUDY, plan);
+        // Verify returned object still has changes
+        strategy = (CriteriaScheduleStrategy)updated.getStrategy();
+        strategy.getScheduleCriteria().get(0).getCriteria();
         scheduleCriteria = strategy.getScheduleCriteria().get(0);
-        criteria = scheduleCriteria.getCriteria();
-        assertEquals(new Integer(100), criteria.getMinAppVersion(IOS));
-        assertEquals(new Integer(200), criteria.getMaxAppVersion(IOS));
+        Criteria returnedCriteria = scheduleCriteria.getCriteria();
+        assertEquals(new Integer(100), returnedCriteria.getMinAppVersion(IOS));
+        assertEquals(new Integer(200), returnedCriteria.getMaxAppVersion(IOS));        
         
-        verify(criteriaDao).createOrUpdateCriteria(newCriteria);
+        // Verify they were persisted
+        verify(criteriaDao).createOrUpdateCriteria(criteriaCaptor.capture());
+        Criteria updatedCriteria = criteriaCaptor.getValue();
+        assertEquals(new Integer(100), updatedCriteria.getMinAppVersion(IOS));
+        assertEquals(new Integer(200), updatedCriteria.getMaxAppVersion(IOS));        
     }
     
     @Test
-    public void createSchedulePlanCannotCreatedDeletedPlan() {
+    public void createSchedulePlanNeverDeleted() {
         SchedulePlan plan = SchedulePlan.create();
         plan.setDeleted(true);
         
@@ -220,7 +237,7 @@ public class DynamoSchedulePlanDaoMockTest {
     }
     
     @Test
-    public void getSchedulePlansExcludeDeleted() {
+    public void getSchedulePlansExcludesLogicallyDeleted() {
         dao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false);
         
         verify(mapper).queryPage(eq(DynamoSchedulePlan.class), queryCaptor.capture());
@@ -232,7 +249,7 @@ public class DynamoSchedulePlanDaoMockTest {
     }
     
     @Test
-    public void getSchedulePlansIncludeDeleted() {
+    public void getSchedulePlansIncludesLogicallyDeleted() {
         dao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, true);
         
         verify(mapper).queryPage(eq(DynamoSchedulePlan.class), queryCaptor.capture());
@@ -268,23 +285,80 @@ public class DynamoSchedulePlanDaoMockTest {
     }
     
     @Test
-    public void deleteSchedulePlanFailsSilentlyWhenPlanMissing() {
+    public void logicallyDeletingMissingSchedulePlanThrows() {
         when(queryResultsPage.getResults()).thenReturn(ImmutableList.of());
         when(mapper.queryPage(eq(DynamoSchedulePlan.class), any())).thenReturn(queryResultsPage);
-
-        dao.deleteSchedulePlan(TEST_STUDY, "does-not-exist");
         
+        try {
+            dao.deleteSchedulePlan(TEST_STUDY, "does-not-exist");
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+        }
         verify(mapper, never()).save(any());
     }
 
     @Test
-    public void deleteSchedulePlanPermanentlyFailsSilentlyWhenPlanMissing() {
+    public void permanentlyDeletingMissingSchedulePlanThrows() {
         when(queryResultsPage.getResults()).thenReturn(ImmutableList.of());
         when(mapper.queryPage(eq(DynamoSchedulePlan.class), any())).thenReturn(queryResultsPage);
-
-        dao.deleteSchedulePlanPermanently(TEST_STUDY, "does-not-exist");
-        
+        try {
+            dao.deleteSchedulePlanPermanently(TEST_STUDY, "does-not-exist");
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+        }
         verify(mapper, never()).delete(any());
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void updateLogicallyDeletedSchedulePlanThrows() {
+        schedulePlan.setDeleted(true);
+        
+        // Both are deleted, so this should throw.
+        dao.updateSchedulePlan(TEST_STUDY, schedulePlan);
+    }
+    
+    @Test
+    public void updateCanUndeleteSchedulePlan() { 
+        schedulePlan.setDeleted(true);
+        
+        SchedulePlan update = createSchedulePlan();
+        update.setDeleted(false);
+        
+        SchedulePlan returned = dao.updateSchedulePlan(TEST_STUDY, update);
+        assertFalse(returned.isDeleted());
+        verify(mapper).save(schedulePlanCaptor.capture());
+        
+        assertFalse(schedulePlanCaptor.getValue().isDeleted());
+    }
+    
+    @Test
+    public void updateCanDeleteSchedulePlan() {
+        schedulePlan.setDeleted(false);
+        
+        SchedulePlan update = createSchedulePlan();
+        update.setDeleted(true);
+        
+        SchedulePlan returned = dao.updateSchedulePlan(TEST_STUDY, update);
+        assertTrue(returned.isDeleted());
+        verify(mapper).save(schedulePlanCaptor.capture());
+        
+        assertTrue(schedulePlanCaptor.getValue().isDeleted());
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void deleteLogicallyDeletedSchedulePlanThrows() {
+        schedulePlan.setDeleted(true);
+        
+        dao.deleteSchedulePlan(TEST_STUDY, schedulePlan.getGuid());
+    }
+    
+    @Test
+    public void deletePermenantlyLogicallyDeletedSchedulePlanWorks() {
+        schedulePlan.setDeleted(true);
+        
+        dao.deleteSchedulePlanPermanently(TEST_STUDY, schedulePlan.getGuid());
+        
+        verify(mapper).delete(any());
     }
     
     private void assertCriteria(Criteria criteria) {
