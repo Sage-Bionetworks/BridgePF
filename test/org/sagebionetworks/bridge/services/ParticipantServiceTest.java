@@ -78,6 +78,7 @@ import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -1097,9 +1098,14 @@ public class ParticipantServiceTest {
     @Test
     public void sendNotification() {
         mockHealthCodeAndAccountRetrieval();
+        
+        Set<String> erroredNotifications = ImmutableSet.of("ABC");
         NotificationMessage message = TestUtils.getNotificationMessage();
         
-        participantService.sendNotification(STUDY, ID, message);
+        when(notificationsService.sendNotificationToUser(any(), any(), any())).thenReturn(erroredNotifications);
+        
+        Set<String> returnedErrors = participantService.sendNotification(STUDY, ID, message);
+        assertEquals(erroredNotifications, returnedErrors);
         
         verify(notificationsService).sendNotificationToUser(STUDY.getStudyIdentifier(), HEALTH_CODE, message);
     }
