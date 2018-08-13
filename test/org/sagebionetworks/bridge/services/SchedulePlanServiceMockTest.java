@@ -40,8 +40,8 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.newrelic.agent.deps.com.google.common.collect.Lists;
 
 public class SchedulePlanServiceMockTest {
 

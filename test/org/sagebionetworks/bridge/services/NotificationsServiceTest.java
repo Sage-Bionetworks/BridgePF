@@ -41,10 +41,9 @@ import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.model.InvalidParameterException;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.amazonaws.services.sns.model.PublishResult;
-
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.newrelic.agent.deps.com.google.common.collect.Iterables;
 
 @RunWith(MockitoJUnitRunner.class)
 public class NotificationsServiceTest {
