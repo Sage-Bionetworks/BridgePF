@@ -51,6 +51,7 @@ public class UserManagementController extends BaseController {
         UserSession session = authenticationService.signIn(study, context, signIn);
 
         if (!session.isInRole(Roles.ADMIN)) {
+            authenticationService.signOut(session);
             throw new UnauthorizedException("Not an admin account");
         }
         
