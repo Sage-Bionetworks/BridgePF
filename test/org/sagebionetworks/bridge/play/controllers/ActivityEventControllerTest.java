@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.doReturn;
@@ -8,7 +9,10 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
+
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -16,10 +20,15 @@ import play.mvc.Result;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ActivityEventService;
 import org.sagebionetworks.bridge.services.StudyService;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableList;
 
 public class ActivityEventControllerTest {
     private static final Study DUMMY_STUDY = Study.create();
@@ -69,5 +78,29 @@ public class ActivityEventControllerTest {
 
         DateTime eventTime = eventTimeCaptor.getValue();
         TestUtils.assertDatesWithTimeZoneEqual(EVENT_TIMESTAMP, eventTime);
+    }
+    
+    @Test
+    public void getUsersActivityEvents() throws Exception {
+        DynamoActivityEvent event = new DynamoActivityEvent();
+        event.setHealthCode(HEALTH_CODE);
+        event.setEventId("someId");
+        event.setTimestamp(EVENT_TIMESTAMP.getMillis());
+        event.setAnswerValue("someValue");
+        List<ActivityEvent> list = ImmutableList.of(event);
+        
+        when(mockActivityEventService.getActivityEventList(HEALTH_CODE)).thenReturn(list);
+        
+        Result result = controller.getSelfActivityEvents();
+        TestUtils.assertResult(result, 200);
+        
+        JsonNode node = TestUtils.getJson(result);
+        
+        JsonNode object = node.get("items").get(0);
+        assertEquals("someValue", object.get("answerValue").textValue());
+        assertEquals(EVENT_TIMESTAMP.withZone(DateTimeZone.UTC).toString(), object.get("timestamp").textValue());
+        assertEquals("someId", object.get("eventId").textValue());
+        assertEquals("ActivityEvent", object.get("type").textValue());
+        assertEquals(4, node.size());
     }
 }

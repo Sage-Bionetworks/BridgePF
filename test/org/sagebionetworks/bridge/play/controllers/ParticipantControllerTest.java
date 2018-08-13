@@ -25,6 +25,7 @@ import java.util.Set;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -73,6 +74,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
+import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
@@ -1179,16 +1181,58 @@ public class ParticipantControllerTest {
     public void getActivityEventsForWorker() throws Exception {
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(Sets.newHashSet(Roles.WORKER)).build());
-        DynamoActivityEvent anEvent = new DynamoActivityEvent();
-        anEvent.setEventId("event-id");
-        List<ActivityEvent> events = Lists.newArrayList(anEvent);
-        when(mockParticipantService.getActivityEvents(study, ID)).thenReturn(events);
+        when(mockParticipantService.getActivityEvents(study, ID)).thenReturn(createEventList());
         
         Result result = controller.getActivityEventsForWorker(TestConstants.TEST_STUDY_IDENTIFIER, ID);
         
         verify(mockParticipantService).getActivityEvents(study, ID);
         ResourceList<ActivityEvent> retrievedEvents = TestUtils.getResponsePayload(result, new TypeReference<ResourceList<ActivityEvent>>() {});
         assertEquals("event-id", retrievedEvents.getItems().get(0).getEventId());
+    }
+    
+    private List<ActivityEvent> createEventList() {
+        DynamoActivityEvent anEvent = new DynamoActivityEvent();
+        anEvent.setEventId("event-id");
+        return ImmutableList.of(anEvent);
+    }
+    
+    @Test
+    public void getActivityEvents() throws Exception {
+        when(mockParticipantService.getActivityEvents(study, ID)).thenReturn(createEventList());
+        
+        Result result = controller.getActivityEvents(ID);
+        
+        verify(mockParticipantService).getActivityEvents(study, ID);
+        ResourceList<ActivityEvent> retrievedEvents = TestUtils.getResponsePayload(result, new TypeReference<ResourceList<ActivityEvent>>() {});
+        assertEquals("event-id", retrievedEvents.getItems().get(0).getEventId());
+    }
+    
+    @Test
+    public void deleteAllActivityEvents() throws Exception {
+        Result result = controller.deleteAllActivityEvents(ID);
+        TestUtils.assertResult(result, 200, "Activity events deleted");
+        
+        verify(mockParticipantService).deleteAllActivityEvents(study, ID);
+    }
+    
+    @Test
+    public void deleteActivityEvent() throws Exception {
+        Result result = controller.deleteActivityEvent(ID, "enrollment");
+        TestUtils.assertResult(result, 200, "Activity event deleted");
+        
+        verify(mockParticipantService).deleteActivityEvent(study, ID, "enrollment");
+    }
+    
+    @Test
+    public void publishActivityEvent() throws Exception {
+        CustomActivityEventRequest request = new CustomActivityEventRequest.Builder().withEventKey("enrollment")
+                .withTimestamp(DateTime.now()).build();
+        TestUtils.mockPlayContextWithJson(request);
+                
+        Result result = controller.publishActivityEvent(ID);
+        TestUtils.assertResult(result, 201, "Event recorded");
+        
+        verify(mockParticipantService).publishActivityEvent(study, ID, request);
     }
     
     @Test

@@ -45,6 +45,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
+import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
@@ -420,6 +421,31 @@ public class ParticipantController extends BaseController {
         Study study = studyService.getStudy(researcherSession.getStudyIdentifier());
 
         return okResult(participantService.getActivityEvents(study, userId));
+    }
+    
+    public Result deleteAllActivityEvents(String userId) {
+        UserSession researcherSession = getAuthenticatedSession(Roles.RESEARCHER);
+        Study study = studyService.getStudy(researcherSession.getStudyIdentifier());
+        
+        participantService.deleteAllActivityEvents(study, userId);
+        return okResult("Activity events deleted");
+    }
+    
+    public Result deleteActivityEvent(String userId, String eventId) {
+        UserSession researcherSession = getAuthenticatedSession(Roles.RESEARCHER);
+        Study study = studyService.getStudy(researcherSession.getStudyIdentifier());
+        
+        participantService.deleteActivityEvent(study, userId, eventId);
+        return okResult("Activity event deleted");
+    }
+    
+    public Result publishActivityEvent(String userId) {
+        UserSession researcherSession = getAuthenticatedSession(Roles.RESEARCHER);
+        Study study = studyService.getStudy(researcherSession.getStudyIdentifier());
+        CustomActivityEventRequest activityEvent = parseJson(request(), CustomActivityEventRequest.class);
+        
+        participantService.publishActivityEvent(study, userId, activityEvent);
+        return createdResult("Event recorded");
     }
     
     public Result sendSmsMessage(String userId) throws Exception {

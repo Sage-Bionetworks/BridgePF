@@ -1,14 +1,19 @@
 package org.sagebionetworks.bridge.models.activities;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent.Builder;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class ActivityEventTest {
 
@@ -77,6 +82,19 @@ public class ActivityEventTest {
                         .withTimestamp(DateTime.now()).build();
         
         assertEquals("enrollment", event.getEventId());
+    }
+    
+    @Test
+    public void canSerialize() throws Exception {
+        DateTime timestamp = DateTime.now(DateTimeZone.UTC);
+        ActivityEvent event = new DynamoActivityEvent.Builder().withHealthCode("BBB").withObjectType(ActivityEventObjectType.ENROLLMENT)
+                .withTimestamp(timestamp).build();
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(event);
+        assertNull(node.get("healthCode"));
+        assertEquals("enrollment", node.get("eventId").textValue());
+        assertEquals("ActivityEvent", node.get("type").textValue());
+        assertEquals(timestamp.toString(), node.get("timestamp").textValue());
     }
    
 }

@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.Lists;
+
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Period;
@@ -53,7 +55,7 @@ public class ActivityEventService {
                 .withObjectType(ActivityEventObjectType.CUSTOM)
                 .withObjectId(eventKey)
                 .withTimestamp(timestamp).build();
-        activityEventDao.publishEvent(event);
+        activityEventDao.publishEvent(event, true);
     }
 
     /**
@@ -70,7 +72,7 @@ public class ActivityEventService {
             .withHealthCode(healthCode)
             .withTimestamp(enrollment)
             .withObjectType(ActivityEventObjectType.ENROLLMENT).build();
-        activityEventDao.publishEvent(event);
+        activityEventDao.publishEvent(event, true);
 
         // Create automatic events, as defined in the study
         for (Map.Entry<String, String> oneAutomaticEvent : study.getAutomaticCustomEvents().entrySet()) {
@@ -92,7 +94,7 @@ public class ActivityEventService {
             .withObjectId(answer.getQuestionGuid())
             .withEventType(ActivityEventType.ANSWERED)
             .withAnswerValue(COMMA_JOINER.join(answer.getAnswers())).build();
-        activityEventDao.publishEvent(event);
+        activityEventDao.publishEvent(event, true);
     }
     
     public void publishActivityFinishedEvent(ScheduledActivity schActivity) {
@@ -111,7 +113,7 @@ public class ActivityEventService {
                 .withTimestamp(schActivity.getFinishedOn())
                 .build();
 
-            activityEventDao.publishEvent(event);
+            activityEventDao.publishEvent(event, true);
         }
     }
     
@@ -121,9 +123,10 @@ public class ActivityEventService {
      * edge cases (like answering a question or finishing a survey through the bulk import 
      * system).
      */
-    public void publishActivityEvent(ActivityEvent event) {
+    public void publishActivityEvent(ActivityEvent event, boolean enforceLater) {
         checkNotNull(event);
-        activityEventDao.publishEvent(event);
+        
+        activityEventDao.publishEvent(event, enforceLater);
     }
 
     /**
@@ -156,5 +159,14 @@ public class ActivityEventService {
         checkNotNull(healthCode);
         activityEventDao.deleteActivityEvents(healthCode);
     }
+    
+    public void deleteActivityEvent(String healthCode, String eventId) {
+        checkNotNull(healthCode);
 
+        if (StringUtils.isBlank(eventId)) {
+            throw new BadRequestException("Invalid event ID");
+        }
+        activityEventDao.deleteActivityEvent(healthCode, eventId);
+    }
+    
 }

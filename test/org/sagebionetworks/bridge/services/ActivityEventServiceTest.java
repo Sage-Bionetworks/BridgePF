@@ -57,7 +57,7 @@ public class ActivityEventServiceTest {
         study.setActivityEventKeys(ImmutableSet.of("eventKey1", "eventKey2"));
 
         ArgumentCaptor<ActivityEvent> activityEventArgumentCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
-        doNothing().when(activityEventDao).publishEvent(activityEventArgumentCaptor.capture());
+        doNothing().when(activityEventDao).publishEvent(activityEventArgumentCaptor.capture(), eq(true));
 
         DateTime timestamp = DateTime.now();
         activityEventService.publishCustomEvent(study, "healthCode", "eventKey1", timestamp);
@@ -75,7 +75,7 @@ public class ActivityEventServiceTest {
         study.setAutomaticCustomEvents(ImmutableMap.of("3-days-after-enrollment", "P3D"));
 
         ArgumentCaptor<ActivityEvent> activityEventArgumentCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
-        doNothing().when(activityEventDao).publishEvent(activityEventArgumentCaptor.capture());
+        doNothing().when(activityEventDao).publishEvent(activityEventArgumentCaptor.capture(), eq(true));
 
         DateTime timestamp = DateTime.now().plusDays(3);
         activityEventService.publishCustomEvent(study, "healthCode", "3-days-after-enrollment",
@@ -105,9 +105,9 @@ public class ActivityEventServiceTest {
         ActivityEvent event = new Builder().withHealthCode("BBB")
             .withObjectType(ActivityEventObjectType.ENROLLMENT).withTimestamp(DateTime.now()).build();
 
-        activityEventService.publishActivityEvent(event);
+        activityEventService.publishActivityEvent(event, true);
         
-        verify(activityEventDao).publishEvent(eq(event));
+        verify(activityEventDao).publishEvent(eq(event), eq(true));
         verifyNoMoreInteractions(activityEventDao);
     }
     
@@ -138,7 +138,7 @@ public class ActivityEventServiceTest {
     @Test
     public void badPublicDoesntCallDao() {
         try {
-            activityEventService.publishActivityEvent((ActivityEvent) null);
+            activityEventService.publishActivityEvent((ActivityEvent) null, true);
             fail("Exception should have been thrown");
         } catch(NullPointerException e) {}
         verifyNoMoreInteractions(activityEventDao);
@@ -175,7 +175,7 @@ public class ActivityEventServiceTest {
         activityEventService.publishEnrollmentEvent(Study.create(),"AAA-BBB-CCC", signature);
         
         ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
-        verify(activityEventDao).publishEvent(argument.capture());
+        verify(activityEventDao).publishEvent(argument.capture(), eq(true));
         
         assertEquals("enrollment", argument.getValue().getEventId());
         assertEquals(new Long(now.getMillis()), argument.getValue().getTimestamp());
@@ -202,7 +202,7 @@ public class ActivityEventServiceTest {
 
         // Verify published events (4)
         ArgumentCaptor<ActivityEvent> publishedEventCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
-        verify(activityEventDao, times(4)).publishEvent(publishedEventCaptor.capture());
+        verify(activityEventDao, times(4)).publishEvent(publishedEventCaptor.capture(), eq(true));
 
         List<ActivityEvent> publishedEventList = publishedEventCaptor.getAllValues();
 
@@ -238,7 +238,7 @@ public class ActivityEventServiceTest {
         activityEventService.publishQuestionAnsweredEvent("healthCode", answer);
         
         ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
-        verify(activityEventDao).publishEvent(argument.capture());
+        verify(activityEventDao).publishEvent(argument.capture(), eq(true));
         
         assertEquals("question:BBB-CCC-DDD:answered", argument.getValue().getEventId());
         assertEquals(new Long(now.getMillis()), argument.getValue().getTimestamp());
@@ -266,14 +266,24 @@ public class ActivityEventServiceTest {
         schActivity.setFinishedOn(finishedOn);
         schActivity.setHealthCode("BBB");
 
-
         activityEventService.publishActivityFinishedEvent(schActivity);
-        ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
-        verify(activityEventDao).publishEvent(argument.capture());
+        ArgumentCaptor<ActivityEvent> eventCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
+        verify(activityEventDao).publishEvent(eventCaptor.capture(), eq(true));
 
-        ActivityEvent event = argument.getValue();
+        ActivityEvent event = eventCaptor.getValue();
         assertEquals("BBB", event.getHealthCode());
         assertEquals("activity:AAA:finished", event.getEventId());
         assertEquals(finishedOn, event.getTimestamp().longValue());
+    }
+    
+    @Test
+    public void deleteActivityEvent() {
+        activityEventService.deleteActivityEvent("BBB", "eventId");
+        verify(activityEventDao).deleteActivityEvent("BBB", "eventId");
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void deleteActivityEventNoEventID() {
+        activityEventService.deleteActivityEvent("BBB", null);
     }
 }

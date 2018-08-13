@@ -9,9 +9,12 @@ public interface ActivityEventDao {
 
     /**
      * Publish an event into this user's event stream. This event becomes available 
-     * for scheduling activities for this user.
+     * for scheduling activities for this user. If the enforceLater flag is true, then 
+     * only non-enrollment updates that occur after any existing event will be persisted. 
+     * If the flag is false, this event will always be persisted (useful only for testing 
+     * purposes).
      */
-    void publishEvent(ActivityEvent event);
+    void publishEvent(ActivityEvent event, boolean enforceLater);
     
     /**
      * Get a map of events, where the string key is an event identifier, and the value 
@@ -28,4 +31,9 @@ public interface ActivityEventDao {
      * delete this way.
      */
     void deleteActivityEvents(String healthCode);
+    
+    /**
+     * Delete a single activity event for this user. 
+     */
+    void deleteActivityEvent(String healthCode, String eventId);
 }

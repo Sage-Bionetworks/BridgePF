@@ -42,7 +42,7 @@ public class DynamoActivityEventDao implements ActivityEventDao {
     }
     
     @Override
-    public void publishEvent(ActivityEvent event) {
+    public void publishEvent(ActivityEvent event, boolean enforceLater) {
         checkNotNull(event);
         
         DynamoActivityEvent hashKey = new DynamoActivityEvent();
@@ -50,7 +50,7 @@ public class DynamoActivityEventDao implements ActivityEventDao {
         hashKey.setEventId(event.getEventId());
         
         ActivityEvent savedEvent = mapper.load(hashKey);
-        if (isLaterNonEnrollmentEvent(savedEvent, event)) {
+        if (!enforceLater || isLaterNonEnrollmentEvent(savedEvent, event)) {
             mapper.save(event);
         }
     }
@@ -67,11 +67,12 @@ public class DynamoActivityEventDao implements ActivityEventDao {
         PaginatedQueryList<DynamoActivityEvent> queryResults = mapper.query(DynamoActivityEvent.class, query);
         
         Builder<String,DateTime> builder = ImmutableMap.<String,DateTime>builder();
+        
         for (DynamoActivityEvent event : queryResults) {
             builder.put(getEventMapKey(event), new DateTime(event.getTimestamp(), DateTimeZone.UTC));
             if (isEnrollment(event)) {
-                builder.put(TWO_WEEKS, new DateTime(event.getTimestamp(), DateTimeZone.UTC).minusWeeks(2));
-                builder.put(TWO_MONTHS, new DateTime(event.getTimestamp(), DateTimeZone.UTC).minusMonths(2));
+                builder.put(TWO_WEEKS, new DateTime(event.getTimestamp(), DateTimeZone.UTC).minusWeeks(2));    
+                builder.put(TWO_MONTHS, new DateTime(event.getTimestamp(), DateTimeZone.UTC).minusMonths(2));    
             }
         }
         return builder.build();
@@ -95,6 +96,17 @@ public class DynamoActivityEventDao implements ActivityEventDao {
             List<FailedBatch> failures = mapper.batchDelete(objectsToDelete);
             BridgeUtils.ifFailuresThrowException(failures);
         }
+    }
+    
+    @Override
+    public void deleteActivityEvent(String healthCode, String eventId) {
+        checkNotNull(healthCode);
+        
+        DynamoActivityEvent hashKey = new DynamoActivityEvent();
+        hashKey.setHealthCode(healthCode);
+        hashKey.setEventId(eventId);
+        
+        mapper.delete(hashKey);
     }
     
     private boolean isEnrollment(ActivityEvent event) {

@@ -1,14 +1,11 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static org.sagebionetworks.bridge.models.activities.ActivityEvent.ACTIVITY_EVENT_WRITER;
-
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import play.mvc.Result;
 
-import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
@@ -40,7 +37,6 @@ public class ActivityEventController extends BaseController {
 
         List<ActivityEvent> activityEvents = activityEventService.getActivityEventList(session.getHealthCode());
         
-        ResourceList<ActivityEvent> list = new ResourceList<>(activityEvents);
-        return ok(ACTIVITY_EVENT_WRITER.writeValueAsString(list));
+        return okResult(activityEvents);
     }
 }

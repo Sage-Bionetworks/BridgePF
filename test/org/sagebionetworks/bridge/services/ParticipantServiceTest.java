@@ -67,6 +67,8 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
+import org.sagebionetworks.bridge.models.activities.ActivityEvent;
+import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
@@ -110,6 +112,7 @@ public class ParticipantServiceTest {
     private static final LinkedHashSet<String> USER_LANGUAGES = (LinkedHashSet<String>)BridgeUtils.commaListToOrderedSet("de,fr");
     private static final String EMAIL = "email@email.com";
     private static final String ID = "ASDF";
+    private static final String EVENT_ID = "enrollment";
     private static final DateTimeZone USER_TIME_ZONE = DateTimeZone.forOffsetHours(-3);
     private static final Map<String,String> ATTRS = new ImmutableMap.Builder<String,String>().put("can_be_recontacted","true").build();
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create(STUDY.getIdentifier());
@@ -134,6 +137,7 @@ public class ParticipantServiceTest {
     
     private static final DateTime START_DATE = DateTime.now();
     private static final DateTime END_DATE = START_DATE.plusDays(1);
+    private static final DateTime EVENT_TIMESTAMP = START_DATE;
     private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
             .withUserId(ID).withStudyIdentifier(TestConstants.TEST_STUDY).build();
     private static final SignIn EMAIL_PASSWORD_SIGN_IN = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER).withEmail(EMAIL)
@@ -182,6 +186,9 @@ public class ParticipantServiceTest {
     @Mock
     private AccountWorkflowService accountWorkflowService;
     
+    @Mock
+    private ActivityEventService activityEventService;
+    
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
     
@@ -207,6 +214,9 @@ public class ParticipantServiceTest {
     ArgumentCaptor<String> stringCaptor;
     
     @Captor
+    ArgumentCaptor<ActivityEvent> eventCaptor;
+    
+    @Captor
     ArgumentCaptor<SmsMessageProvider> providerCaptor;
     
     private Account account;
@@ -228,6 +238,7 @@ public class ParticipantServiceTest {
         participantService.setNotificationsService(notificationsService);
         participantService.setScheduledActivityService(scheduledActivityService);
         participantService.setAccountWorkflowService(accountWorkflowService);
+        participantService.setActivityEventService(activityEventService);
         
         account = Account.create();
     }
@@ -1610,6 +1621,81 @@ public class ParticipantServiceTest {
         SmsTemplate template = new SmsTemplate("    "); 
         
         participantService.sendSmsMessage(STUDY, ID, template);
+    }
+    
+    @Test
+    public void getActivityEvents() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.getActivityEvents(STUDY, ID);
+        
+        verify(activityEventService).getActivityEventList(HEALTH_CODE);
+    }
+    
+    @Test
+    public void deleteAllActivityEvents() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.deleteAllActivityEvents(STUDY, ID);
+        
+        verify(activityEventService).deleteActivityEvents(HEALTH_CODE);
+    }
+    
+    @Test
+    public void deleteActivityEvent() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.deleteActivityEvent(STUDY, ID, EVENT_ID);
+        
+        verify(activityEventService).deleteActivityEvent(HEALTH_CODE, EVENT_ID);
+    }
+
+    @Test
+    public void publishActivityEvent() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        CustomActivityEventRequest request = new CustomActivityEventRequest.Builder()
+                .withEventKey(EVENT_ID)
+                .withTimestamp(EVENT_TIMESTAMP)
+                .withAnswerValue("answer").build();
+
+        participantService.publishActivityEvent(STUDY, ID, request);
+        
+        verify(activityEventService).publishActivityEvent(eventCaptor.capture(), eq(false));
+        
+        ActivityEvent event = eventCaptor.getValue();
+        assertEquals(EVENT_ID, event.getEventId());
+        assertEquals(HEALTH_CODE, event.getHealthCode());
+        assertEquals(new Long(EVENT_TIMESTAMP.getMillis()), event.getTimestamp());
+        assertEquals("answer", event.getAnswerValue());
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void deleteActivityEventNoEventId() { 
+        mockHealthCodeAndAccountRetrieval();
+        participantService.deleteActivityEvent(STUDY, ID, "  ");
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void updateActivityEventNoEvent() {
+        mockHealthCodeAndAccountRetrieval();
+        participantService.publishActivityEvent(STUDY, ID, null);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void updateActivityEventNoEventId() {
+        mockHealthCodeAndAccountRetrieval();
+        CustomActivityEventRequest request = new CustomActivityEventRequest.Builder()
+                .withTimestamp(EVENT_TIMESTAMP).build();
+        participantService.publishActivityEvent(STUDY, ID, request);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void updateActivityEventNoTimestamp() {
+        mockHealthCodeAndAccountRetrieval();
+        CustomActivityEventRequest request = new CustomActivityEventRequest.Builder()
+                .withEventKey(EVENT_ID).build();
+        participantService.publishActivityEvent(STUDY, ID, request);
     }
     
     // There's no actual vs expected here because either we don't set it, or we set it and that's what we're verifying,
