@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 /**
@@ -47,6 +48,11 @@ public class SessionUpdateService {
         cacheProvider.setUserSession(session);
     }
     
+    public void updateStudy(UserSession session, StudyIdentifier studyId) {
+        session.setStudyIdentifier(studyId);
+        cacheProvider.setUserSession(session);
+    }
+
     public void updateLanguage(UserSession session, CriteriaContext context) {
         updateCriteria(session, context, builder(session).withLanguages(context.getLanguages()).build());
     }

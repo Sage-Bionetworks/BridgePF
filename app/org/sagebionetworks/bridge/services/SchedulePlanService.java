@@ -173,7 +173,7 @@ public class SchedulePlanService {
                         .withPublishedSurvey(survey.getIdentifier(), survey.getGuid()).build();
             } else {
                 GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(ref.getGuid(), ref.getCreatedOn().getMillis());
-                Survey survey = surveyService.getSurvey(keys, false);
+                Survey survey = surveyService.getSurvey(studyId, keys, false, true);
                 return new Activity.Builder().withActivity(activity)
                         .withSurvey(survey.getIdentifier(), ref.getGuid(), ref.getCreatedOn()).build();
             }

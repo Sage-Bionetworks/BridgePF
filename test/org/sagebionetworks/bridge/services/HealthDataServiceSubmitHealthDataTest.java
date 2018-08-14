@@ -250,8 +250,9 @@ public class HealthDataServiceSubmitHealthDataTest {
         survey.setSchemaRevision(SCHEMA_REV);
 
         SurveyService mockSurveyService = mock(SurveyService.class);
-        when(mockSurveyService.getSurvey(new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS), false))
-                .thenReturn(survey);
+        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY,
+                new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS), false, true))
+                        .thenReturn(survey);
 
         // mock handlers
         StrictValidationHandler mockStrictValidationHandler = mock(StrictValidationHandler.class);
@@ -302,7 +303,8 @@ public class HealthDataServiceSubmitHealthDataTest {
         assertEquals("C", recordData.get("answer-me").textValue());
 
         // validate we did in fact call SurveyService
-        verify(mockSurveyService).getSurvey(new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS), false);
+        verify(mockSurveyService).getSurvey(TestConstants.TEST_STUDY,
+                new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS), false, true);
     }
 
     @Test(expected = EntityNotFoundException.class)
@@ -313,8 +315,9 @@ public class HealthDataServiceSubmitHealthDataTest {
         survey.setCreatedOn(SURVEY_CREATED_ON_MILLIS);
 
         SurveyService mockSurveyService = mock(SurveyService.class);
-        when(mockSurveyService.getSurvey(new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS), false))
-                .thenReturn(survey);
+        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY,
+                new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS), false, true))
+                        .thenReturn(survey);
 
         // set up service
         HealthDataService svc = new HealthDataService();

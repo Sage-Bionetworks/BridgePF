@@ -7,6 +7,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -71,7 +72,7 @@ public class SchedulePlanServiceMockTest {
         Survey survey2 = new TestSurvey(SchedulePlanServiceMockTest.class, false);
         survey2.setIdentifier("identifier2");
         when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(any(), any(), anyBoolean())).thenReturn(survey1);
-        when(mockSurveyService.getSurvey(any(), anyBoolean())).thenReturn(survey2);
+        when(mockSurveyService.getSurvey(eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true))).thenReturn(survey2);
         surveyGuid1 = survey1.getGuid();
         surveyGuid2 = survey2.getGuid();
     }
@@ -84,7 +85,7 @@ public class SchedulePlanServiceMockTest {
         
         service.createSchedulePlan(study, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any(), anyBoolean());
-        verify(mockSurveyService).getSurvey(any(), anyBoolean());
+        verify(mockSurveyService).getSurvey(eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true));
         verify(mockSchedulePlanDao).createSchedulePlan(any(), spCaptor.capture());
         
         List<Activity> activities = spCaptor.getValue().getStrategy().getAllPossibleSchedules().get(0).getActivities();
@@ -103,7 +104,7 @@ public class SchedulePlanServiceMockTest {
         
         service.updateSchedulePlan(study, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any(), anyBoolean());
-        verify(mockSurveyService).getSurvey(any(), anyBoolean());
+        verify(mockSurveyService).getSurvey(eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true));
         verify(mockSchedulePlanDao).getSchedulePlan(study, plan.getGuid());
         verify(mockSchedulePlanDao).updateSchedulePlan(any(), spCaptor.capture());
         
@@ -134,7 +135,7 @@ public class SchedulePlanServiceMockTest {
         
         service.updateSchedulePlan(study, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any(), anyBoolean());
-        verify(mockSurveyService).getSurvey(any(), anyBoolean());
+        verify(mockSurveyService).getSurvey(eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true));
         verify(mockSchedulePlanDao).getSchedulePlan(study, plan.getGuid());
         verify(mockSchedulePlanDao).updateSchedulePlan(any(), spCaptor.capture());
         

@@ -13,6 +13,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -123,7 +124,8 @@ public class AppConfigValidatorTest {
     
     @Test
     public void surveyDoesNotExistOnCreate() {
-        when(surveyService.getSurvey(RESOLVED_SURVEY_KEYS, false)).thenThrow(new EntityNotFoundException(Survey.class));
+        when(surveyService.getSurvey(TestConstants.TEST_STUDY, RESOLVED_SURVEY_KEYS, false, true))
+                .thenThrow(new EntityNotFoundException(Survey.class));
         
         appConfig.getSurveyReferences().add(RESOLVED_SURVEY_REF);
         
@@ -132,7 +134,8 @@ public class AppConfigValidatorTest {
     
     @Test
     public void surveyDoesNotExistOnUpdate() {
-        when(surveyService.getSurvey(RESOLVED_SURVEY_KEYS, false)).thenThrow(new EntityNotFoundException(Survey.class));
+        when(surveyService.getSurvey(TestConstants.TEST_STUDY, RESOLVED_SURVEY_KEYS, false, true))
+                .thenThrow(new EntityNotFoundException(Survey.class));
         
         appConfig.getSurveyReferences().add(RESOLVED_SURVEY_REF);
         
@@ -143,7 +146,7 @@ public class AppConfigValidatorTest {
     public void surveyIsNotPublishedOnCreate() {
         Survey survey = Survey.create();
         survey.setPublished(false);
-        when(surveyService.getSurvey(RESOLVED_SURVEY_KEYS, false)).thenReturn(survey);
+        when(surveyService.getSurvey(TestConstants.TEST_STUDY, RESOLVED_SURVEY_KEYS, false, false)).thenReturn(survey);
         
         appConfig.getSurveyReferences().add(RESOLVED_SURVEY_REF);
         
@@ -154,7 +157,7 @@ public class AppConfigValidatorTest {
     public void surveyIsNotPublishedOnUpdate() {
         Survey survey = Survey.create();
         survey.setPublished(false);
-        when(surveyService.getSurvey(RESOLVED_SURVEY_KEYS, false)).thenReturn(survey);
+        when(surveyService.getSurvey(TestConstants.TEST_STUDY, RESOLVED_SURVEY_KEYS, false, false)).thenReturn(survey);
         
         appConfig.getSurveyReferences().add(RESOLVED_SURVEY_REF);
         

@@ -44,7 +44,7 @@ import org.sagebionetworks.bridge.play.interceptors.RequestUtils;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
-
+import org.sagebionetworks.bridge.time.DateUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -454,6 +454,22 @@ public abstract class BaseController extends Controller {
             metrics.setSessionId(session.getInternalSessionToken());
             metrics.setUserId(session.getId());
             metrics.setStudy(session.getStudyIdentifier().getIdentifier());
+        }
+    }
+    
+    /** Combines metrics logging with the setting of the session token as a cookie in local
+     * environments (useful for testing).
+     */
+    protected void setCookieAndRecordMetrics(UserSession session) {
+        writeSessionInfoToMetrics(session);  
+        RequestInfo requestInfo = getRequestInfoBuilder(session)
+                .withSignedInOn(DateUtils.getCurrentDateTime()).build();
+        cacheProvider.updateRequestInfo(requestInfo);
+        // only set cookie in local environment
+        if (bridgeConfig.getEnvironment() == Environment.LOCAL) {
+            response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
+                    BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/",
+                    bridgeConfig.get("domain"), false, false);
         }
     }
     
