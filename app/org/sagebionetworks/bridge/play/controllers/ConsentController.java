@@ -16,6 +16,7 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.ConsentService;
+import org.sagebionetworks.bridge.services.NotificationsService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -25,12 +26,18 @@ import play.mvc.Result;
 
 @Controller
 public class ConsentController extends BaseController {
-
     private ConsentService consentService;
+    private NotificationsService notificationsService;
 
     @Autowired
     final void setConsentService(ConsentService consentService) {
         this.consentService = consentService;
+    }
+
+    /** Notifications service, so phone accounts can get notifications after consenting. */
+    @Autowired
+    final void setNotificationsService(NotificationsService notificationsService) {
+        this.notificationsService = notificationsService;
     }
 
     @Deprecated
@@ -150,7 +157,7 @@ public class ConsentController extends BaseController {
         return okResult(UserSessionInfo.toJSON(session));
     }
     
-    private Result giveConsentForVersion(int version, SubpopulationGuid subpopGuid) throws Exception {
+    private Result giveConsentForVersion(int version, SubpopulationGuid subpopGuid) {
         final UserSession session = getAuthenticatedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
@@ -171,7 +178,13 @@ public class ConsentController extends BaseController {
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         
         sessionUpdateService.updateConsentStatus(session, statuses, sharing.getSharingScope(), false);
-        
+
+        // After consent, we should sign the user up for SMS notifications.
+        if (session.doesConsent()) {
+            notificationsService.createSmsRegistrationAfterConsent(session.getParticipant(),
+                    getCriteriaContext(session));
+        }
+
         return createdResult(UserSessionInfo.toJSON(session));
     }
 }

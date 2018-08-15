@@ -158,7 +158,37 @@ public class NotificationsService {
 
         return createdRegistration;
     }
-    
+
+    /**
+     * This API is called after consent (either manual consent or intent to participate) to set up SMS notification
+     * registrations. If the user doesn't have a verified phone number, or they already have a notification
+     * registration, this API does nothing.
+     */
+    public void createSmsRegistrationAfterConsent(StudyParticipant participant, CriteriaContext context) {
+        checkNotNull(participant);
+        checkNotNull(context);
+
+        if (participant.getPhoneVerified() != Boolean.TRUE) {
+            // Shortcut: Phone not verified. Skip.
+            return;
+        }
+
+        // Register the phone number for notifications, if no registrations already exist.
+        List<NotificationRegistration> registrationList = listRegistrations(participant.getHealthCode());
+        if (!registrationList.isEmpty()) {
+            return;
+        }
+
+        // Create registration.
+        NotificationRegistration registration = NotificationRegistration.create();
+        registration.setHealthCode(participant.getHealthCode());
+        registration.setProtocol(NotificationProtocol.SMS);
+        registration.setEndpoint(participant.getPhone().getNumber());
+
+        // Create registration.
+        createRegistration(context.getStudyIdentifier(), context, registration);
+    }
+
     /**
      * Update an existing device registration with a new token that has been assigned by the client operating 
      * system. At least on iOS, the device token can change over the lifetime of the app, and it is considered 
@@ -175,14 +205,30 @@ public class NotificationsService {
         
         return notificationRegistrationDao.updateRegistration(registration);
     }
-    
+
+    /**
+     * Deletes all notification registrations for a user, generally used to clean up registrations when deleting a
+     * user.
+     */
+    public void deleteAllRegistrations(StudyIdentifier studyId, String healthCode) {
+        checkNotNull(studyId);
+        checkNotNull(healthCode);
+
+        List<NotificationRegistration> registrationList = listRegistrations(healthCode);
+        for (NotificationRegistration oneRegistration : registrationList) {
+            deleteRegistration(studyId, healthCode, oneRegistration.getGuid());
+        }
+    }
+
     /**
      * Delete a registration record. User can no longer be sent push notifications by the server.
      */
-    public void deleteRegistration(String healthCode, String guid) {
+    public void deleteRegistration(StudyIdentifier studyId, String healthCode, String guid) {
+        checkNotNull(studyId);
         checkNotNull(healthCode);
         checkNotNull(guid);
-        
+
+        notificationTopicService.unsubscribeAll(studyId, healthCode, guid);
         notificationRegistrationDao.deleteRegistration(healthCode, guid);
     }
     

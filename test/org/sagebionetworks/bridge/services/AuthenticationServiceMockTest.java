@@ -19,6 +19,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -63,8 +64,6 @@ import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
-import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -109,6 +108,7 @@ public class AuthenticationServiceMockTest {
             .withReauthToken(TOKEN).build();
     
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("ABC");
+    private static final SubpopulationGuid SUBPOP_GUID_2 = SubpopulationGuid.create("XYZ");
     private static final ConsentStatus CONSENTED_STATUS = new ConsentStatus.Builder().withName("Name")
             .withGuid(SUBPOP_GUID).withRequired(true).withConsented(true).build();
     private static final ConsentStatus UNCONSENTED_STATUS = new ConsentStatus.Builder().withName("Name")
@@ -123,7 +123,10 @@ public class AuthenticationServiceMockTest {
     private static final AccountId ACCOUNT_ID = AccountId.forId(STUDY_ID, USER_ID);
     private static final String EXTERNAL_ID = "ext-id";
     private static final String HEALTH_CODE = "health-code";
-            
+
+    private static final StudyParticipant PARTICIPANT_WITH_ATTRIBUTES = new StudyParticipant.Builder().withId(USER_ID)
+            .withHealthCode(HEALTH_CODE).withDataGroups(DATA_GROUP_SET).withLanguages(LANGUAGES).build();
+
     @Mock
     private CacheProvider cacheProvider;
     @Mock
@@ -528,55 +531,6 @@ public class AuthenticationServiceMockTest {
         verify(cacheProvider).removeSessionByUserId(USER_ID);
         verify(cacheProvider).setUserSession(session);
         verify(accountDao).verifyChannel(ChannelType.PHONE, account);
-
-        // Verify that we create the SMS notification registration.
-        ArgumentCaptor<CriteriaContext> updatedContextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
-        ArgumentCaptor<NotificationRegistration> registrationCaptor = ArgumentCaptor.forClass(
-                NotificationRegistration.class);
-        verify(notificationsService).createRegistration(eq(TestConstants.TEST_STUDY), updatedContextCaptor.capture(),
-                registrationCaptor.capture());
-
-        NotificationRegistration registration = registrationCaptor.getValue();
-        assertEquals(HEALTH_CODE, registration.getHealthCode());
-        assertEquals(NotificationProtocol.SMS, registration.getProtocol());
-        assertEquals(TestConstants.PHONE.getNumber(), registration.getEndpoint());
-
-        // Verify that we updated the context properly with user info.
-        CriteriaContext updatedContext = updatedContextCaptor.getValue();
-        assertEquals(HEALTH_CODE, updatedContext.getHealthCode());
-        assertEquals(LANGUAGES, updatedContext.getLanguages());
-        assertEquals(DATA_GROUP_SET, updatedContext.getUserDataGroups());
-        assertEquals(USER_ID, updatedContext.getUserId());
-    }
-
-    @Test
-    public void phoneSignIn_AlreadyRegisteredForNotifications() {
-        // Mock Notifications Service to return a registration. Even a non-SMS registration will be enough.
-        NotificationRegistration existingRegistration = NotificationRegistration.create();
-        existingRegistration.setHealthCode(HEALTH_CODE);
-        existingRegistration.setProtocol(NotificationProtocol.APPLICATION);
-        existingRegistration.setEndpoint("dummy-endpoint-arn");
-        when(notificationsService.listRegistrations(HEALTH_CODE)).thenReturn(ImmutableList.of(existingRegistration));
-
-        // Mock other back-ends.
-        account.setId(USER_ID);
-
-        when(accountWorkflowService.channelSignIn(ChannelType.PHONE, CONTEXT, SIGN_IN_WITH_PHONE,
-                SignInValidator.PHONE_SIGNIN)).thenReturn(SIGN_IN_WITH_PHONE.getAccountId());
-
-        when(accountDao.getAccountAfterAuthentication(SIGN_IN_WITH_PHONE.getAccountId())).thenReturn(account);
-
-        StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE).withId(USER_ID)
-                .withPhone(TestConstants.PHONE).build();
-        when(participantService.getParticipant(study, account, false)).thenReturn(participant);
-
-        when(consentService.getConsentStatuses(any(), any())).thenReturn(CONSENTED_STATUS_MAP);
-
-        // Execute
-        service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
-
-        // We didn't create any registrations.
-        verify(notificationsService, never()).createRegistration(any(), any(), any());
     }
 
     @Test(expected = AuthenticationFailedException.class)
@@ -819,62 +773,98 @@ public class AuthenticationServiceMockTest {
     public void signInWithIntentToParticipate() {
         account.setId(USER_ID);
         Account consentedAccount = Account.create();
-        StudyParticipant consentedParticipant = new StudyParticipant.Builder().build();
-        
+
         doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
-        doReturn(PARTICIPANT).when(participantService).getParticipant(study, account, false);
+        doReturn(PARTICIPANT_WITH_ATTRIBUTES).when(participantService).getParticipant(study, account,
+                false);
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), eq(account));
         
         doReturn(consentedAccount).when(accountDao).getAccount(any());
-        doReturn(consentedParticipant).when(participantService).getParticipant(study, consentedAccount, false);
+        doReturn(PARTICIPANT_WITH_ATTRIBUTES).when(participantService).getParticipant(study, consentedAccount,
+                false);
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), eq(consentedAccount));
         
         // This would normally throw except that the intentService reports consents were updated
         when(intentService.registerIntentToParticipate(study, account)).thenReturn(true);
         
         service.signIn(study, CONTEXT, EMAIL_PASSWORD_SIGN_IN);
+
+        // Verify that we call Notifications Service.
+        ArgumentCaptor<CriteriaContext> contextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
+        verify(notificationsService).createSmsRegistrationAfterConsent(eq(PARTICIPANT_WITH_ATTRIBUTES), contextCaptor
+                .capture());
+
+        CriteriaContext context = contextCaptor.getValue();
+        assertEquals(HEALTH_CODE, context.getHealthCode());
+        assertEquals(LANGUAGES, context.getLanguages());
+        assertEquals(DATA_GROUP_SET, context.getUserDataGroups());
+        assertEquals(USER_ID, context.getUserId());
     }
     
     @Test
     public void emailSignInWithIntentToParticipate() {
         Account consentedAccount = Account.create();
-        StudyParticipant consentedParticipant = new StudyParticipant.Builder().build();
-        
+
         when(accountWorkflowService.channelSignIn(ChannelType.EMAIL, CONTEXT, SIGN_IN_WITH_EMAIL,
                 SignInValidator.EMAIL_SIGNIN)).thenReturn(SIGN_IN_WITH_EMAIL.getAccountId());
         when(accountDao.getAccountAfterAuthentication(any())).thenReturn(account);
-        when(participantService.getParticipant(study, account, false)).thenReturn(PARTICIPANT);
+        when(participantService.getParticipant(study, account, false)).thenReturn(
+                PARTICIPANT_WITH_ATTRIBUTES);
         when(consentService.getConsentStatuses(any(), eq(account))).thenReturn(UNCONSENTED_STATUS_MAP);
         
         when(accountDao.getAccount(any())).thenReturn(consentedAccount);
-        when(participantService.getParticipant(study, consentedAccount, false)).thenReturn(consentedParticipant);
+        when(participantService.getParticipant(study, consentedAccount, false)).thenReturn(
+                PARTICIPANT_WITH_ATTRIBUTES);
         when(consentService.getConsentStatuses(any(), eq(consentedAccount))).thenReturn(CONSENTED_STATUS_MAP);
 
         // This would normally throw except that the intentService reports consents were updated
         when(intentService.registerIntentToParticipate(study, account)).thenReturn(true);
         
         service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+
+        // Verify that we call Notifications Service.
+        ArgumentCaptor<CriteriaContext> contextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
+        verify(notificationsService).createSmsRegistrationAfterConsent(eq(PARTICIPANT_WITH_ATTRIBUTES), contextCaptor
+                .capture());
+
+        CriteriaContext context = contextCaptor.getValue();
+        assertEquals(HEALTH_CODE, context.getHealthCode());
+        assertEquals(LANGUAGES, context.getLanguages());
+        assertEquals(DATA_GROUP_SET, context.getUserDataGroups());
+        assertEquals(USER_ID, context.getUserId());
     }
 
     @Test
     public void phoneSignInWithIntentToParticipate() {
         Account consentedAccount = Account.create();
-        StudyParticipant consentedParticipant = new StudyParticipant.Builder().build();
-        
+
         when(accountWorkflowService.channelSignIn(ChannelType.PHONE, CONTEXT, SIGN_IN_WITH_PHONE,
                 SignInValidator.PHONE_SIGNIN)).thenReturn(SIGN_IN_WITH_PHONE.getAccountId());
         when(accountDao.getAccountAfterAuthentication(any())).thenReturn(account);
-        when(participantService.getParticipant(study, account, false)).thenReturn(PARTICIPANT);
+        when(participantService.getParticipant(study, account, false)).thenReturn(
+                PARTICIPANT_WITH_ATTRIBUTES);
         when(consentService.getConsentStatuses(any(), eq(account))).thenReturn(UNCONSENTED_STATUS_MAP);
         
         when(accountDao.getAccount(any())).thenReturn(consentedAccount);
-        when(participantService.getParticipant(study, consentedAccount, false)).thenReturn(consentedParticipant);
+        when(participantService.getParticipant(study, consentedAccount, false)).thenReturn(
+                PARTICIPANT_WITH_ATTRIBUTES);
         when(consentService.getConsentStatuses(any(), eq(consentedAccount))).thenReturn(CONSENTED_STATUS_MAP);
 
         // This would normally throw except that the intentService reports consents were updated
         when(intentService.registerIntentToParticipate(study, account)).thenReturn(true);
         
         service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
+
+        // Verify that we call Notifications Service.
+        ArgumentCaptor<CriteriaContext> contextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
+        verify(notificationsService).createSmsRegistrationAfterConsent(eq(PARTICIPANT_WITH_ATTRIBUTES), contextCaptor
+                .capture());
+
+        CriteriaContext context = contextCaptor.getValue();
+        assertEquals(HEALTH_CODE, context.getHealthCode());
+        assertEquals(LANGUAGES, context.getLanguages());
+        assertEquals(DATA_GROUP_SET, context.getUserDataGroups());
+        assertEquals(USER_ID, context.getUserId());
     }
     
     @Test
@@ -914,6 +904,101 @@ public class AuthenticationServiceMockTest {
         verify(intentService, never()).registerIntentToParticipate(study, account);
     }
 
+    @Test
+    public void signInWithIntentToParticipateWithMultipleConsentsDoesntCreateSmsRegistration() {
+        account.setId(USER_ID);
+        Account consentedAccount = Account.create();
+
+        doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
+        doReturn(PARTICIPANT_WITH_ATTRIBUTES).when(participantService).getParticipant(study, account,
+                false);
+        doReturn(makeConsentStatusMap(false, false)).when(consentService).getConsentStatuses(any(), eq(account));
+
+        doReturn(consentedAccount).when(accountDao).getAccount(any());
+        doReturn(PARTICIPANT_WITH_ATTRIBUTES).when(participantService).getParticipant(study, consentedAccount,
+                false);
+        doReturn(makeConsentStatusMap(true, false)).when(consentService).getConsentStatuses(any(),
+                eq(consentedAccount));
+
+        // This would normally throw except that the intentService reports consents were updated
+        when(intentService.registerIntentToParticipate(study, account)).thenReturn(true);
+
+        try {
+            service.signIn(study, CONTEXT, EMAIL_PASSWORD_SIGN_IN);
+            fail("expected exception");
+        } catch (ConsentRequiredException ex) {
+            // expected exception
+        }
+
+        // Verify that we call intent to register, but not notifications service.
+        verify(intentService).registerIntentToParticipate(study, account);
+        verify(notificationsService, never()).createSmsRegistrationAfterConsent(any(), any());
+    }
+
+    @Test
+    public void emailSignInWithIntentToParticipateWithMultipleConsentsDoesntCreateSmsRegistration() {
+        Account consentedAccount = Account.create();
+
+        when(accountWorkflowService.channelSignIn(ChannelType.EMAIL, CONTEXT, SIGN_IN_WITH_EMAIL,
+                SignInValidator.EMAIL_SIGNIN)).thenReturn(SIGN_IN_WITH_EMAIL.getAccountId());
+        when(accountDao.getAccountAfterAuthentication(any())).thenReturn(account);
+        when(participantService.getParticipant(study, account, false)).thenReturn(
+                PARTICIPANT_WITH_ATTRIBUTES);
+        when(consentService.getConsentStatuses(any(), eq(account))).thenReturn(makeConsentStatusMap(false, false));
+
+        when(accountDao.getAccount(any())).thenReturn(consentedAccount);
+        when(participantService.getParticipant(study, consentedAccount, false)).thenReturn(
+                PARTICIPANT_WITH_ATTRIBUTES);
+        when(consentService.getConsentStatuses(any(), eq(consentedAccount))).thenReturn(makeConsentStatusMap(true,
+                false));
+
+        // This would normally throw except that the intentService reports consents were updated
+        when(intentService.registerIntentToParticipate(study, account)).thenReturn(true);
+
+        try {
+            service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
+            fail("expected exception");
+        } catch (ConsentRequiredException ex) {
+            // expected exception
+        }
+
+        // Verify that we call intent to register, but not notifications service.
+        verify(intentService).registerIntentToParticipate(study, account);
+        verify(notificationsService, never()).createSmsRegistrationAfterConsent(any(), any());
+    }
+
+    @Test
+    public void phoneSignInWithIntentToParticipateWithMultipleConsentsDoesntCreateSmsRegistration() {
+        Account consentedAccount = Account.create();
+
+        when(accountWorkflowService.channelSignIn(ChannelType.PHONE, CONTEXT, SIGN_IN_WITH_PHONE,
+                SignInValidator.PHONE_SIGNIN)).thenReturn(SIGN_IN_WITH_PHONE.getAccountId());
+        when(accountDao.getAccountAfterAuthentication(any())).thenReturn(account);
+        when(participantService.getParticipant(study, account, false)).thenReturn(
+                PARTICIPANT_WITH_ATTRIBUTES);
+        when(consentService.getConsentStatuses(any(), eq(account))).thenReturn(makeConsentStatusMap(false, false));
+
+        when(accountDao.getAccount(any())).thenReturn(consentedAccount);
+        when(participantService.getParticipant(study, consentedAccount, false)).thenReturn(
+                PARTICIPANT_WITH_ATTRIBUTES);
+        when(consentService.getConsentStatuses(any(), eq(consentedAccount))).thenReturn(makeConsentStatusMap(true,
+                false));
+
+        // This would normally throw except that the intentService reports consents were updated
+        when(intentService.registerIntentToParticipate(study, account)).thenReturn(true);
+
+        try {
+            service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
+            fail("expected exception");
+        } catch (ConsentRequiredException ex) {
+            // expected exception
+        }
+
+        // Verify that we call intent to register, but not notifications service.
+        verify(intentService).registerIntentToParticipate(study, account);
+        verify(notificationsService, never()).createSmsRegistrationAfterConsent(any(), any());
+    }
+
     // Most of the other behaviors are tested in other methods. This test specifically tests the session created has
     // the correct attributes.
     @Test
@@ -945,5 +1030,15 @@ public class AuthenticationServiceMockTest {
         assertEquals(TestConstants.TEST_STUDY, session.getStudyIdentifier());
         assertEquals(REAUTH_TOKEN, session.getReauthToken());
         assertEquals(CONSENTED_STATUS_MAP, session.getConsentStatuses());
+    }
+
+    private static Map<SubpopulationGuid, ConsentStatus> makeConsentStatusMap(boolean consentToSubpop1,
+            boolean consentToSubpop2) {
+        Map<SubpopulationGuid,ConsentStatus> map = new HashMap<>();
+        map.put(SUBPOP_GUID, new ConsentStatus.Builder().withConsented(consentToSubpop1).withGuid(SUBPOP_GUID)
+                .withName("Consent 1").withRequired(true).build());
+        map.put(SUBPOP_GUID_2, new ConsentStatus.Builder().withConsented(consentToSubpop2).withGuid(SUBPOP_GUID_2)
+                .withName("Consent 2").withRequired(true).build());
+        return map;
     }
 }

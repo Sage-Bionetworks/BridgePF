@@ -75,9 +75,7 @@ public class NotificationRegistrationController extends BaseController {
     
     public Result deleteRegistration(String guid) {
         UserSession session = getAuthenticatedAndConsentedSession();
-        
-        notificationsService.deleteRegistration(session.getHealthCode(), guid);
-        
+        notificationsService.deleteRegistration(session.getStudyIdentifier(), session.getHealthCode(), guid);
         return okResult("Push notification registration deleted.");
     }
 

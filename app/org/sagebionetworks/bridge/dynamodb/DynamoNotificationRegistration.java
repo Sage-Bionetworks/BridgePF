@@ -69,7 +69,6 @@ public class DynamoNotificationRegistration implements NotificationRegistration 
     /** {@inheritDoc} */
     @DynamoDBAttribute(attributeName = "endpointARN")
     @Override
-    @JsonIgnore
     public String getEndpoint() {
         return endpoint;
     }

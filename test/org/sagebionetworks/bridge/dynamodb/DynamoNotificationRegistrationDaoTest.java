@@ -58,7 +58,7 @@ public class DynamoNotificationRegistrationDaoTest {
     private static final String PLATFORM_ARN = "platformARN";
     private static final String GUID = "registrationGuid";
     private static final String HEALTH_CODE = "healthCode";
-    private static final String PUSH_NOTIFICATION_ENDPOINT_ARN = "endpointARN";
+    private static final String PUSH_NOTIFICATION_ENDPOINT_ARN = "endpoint";
     private static final String PHONE_ENDPOINT = "+14255550123";
     private static final String DEVICE_ID = "deviceId";
     private static final String OS_NAME = "osName";
@@ -388,6 +388,26 @@ public class DynamoNotificationRegistrationDaoTest {
         }
         verify(mockMapper, never()).save(any());
         verify(mockSnsClient, never()).setEndpointAttributes(any());
+    }
+
+    @Test
+    public void deleteSmsNotification() {
+        // Set up mocks.
+        NotificationRegistration registration = getSmsNotificationRegistration();
+        doReturn(registration).when(mockMapper).load(any());
+
+        // Execute.
+        dao.deleteRegistration(HEALTH_CODE, GUID);
+
+        // Verify DDB mapper.
+        verify(mockMapper).delete(notificationRegistrationCaptor.capture());
+        NotificationRegistration deletedRegistration = notificationRegistrationCaptor.getValue();
+        assertEquals(HEALTH_CODE, deletedRegistration.getHealthCode());
+        assertEquals(NotificationProtocol.SMS, deletedRegistration.getProtocol());
+        assertEquals(PHONE_ENDPOINT, deletedRegistration.getEndpoint());
+
+        // Verify we don't call SNS delete endpoint for SMS registrations.
+        verify(mockSnsClient, never()).deleteEndpoint(any());
     }
 
     private void mockQuery(NotificationRegistration... registrations) {

@@ -108,7 +108,7 @@ public class NotificationRegistrationControllerTest {
         assertEquals("deviceId", registration.getDeviceId());
         assertEquals("registrationGuid", registration.getGuid());
         assertEquals("osName", registration.getOsName());
-        assertNull(registration.getEndpoint());
+        assertEquals("endpoint", registration.getEndpoint());
         assertNull(registration.getHealthCode());
     }
         
@@ -180,7 +180,7 @@ public class NotificationRegistrationControllerTest {
         Result result = controller.deleteRegistration(GUID);
         TestUtils.assertResult(result, 200, "Push notification registration deleted.");
         
-        verify(mockNotificationService).deleteRegistration(HEALTH_CODE, GUID);
+        verify(mockNotificationService).deleteRegistration(STUDY_ID, HEALTH_CODE, GUID);
     }
 
     @Test
@@ -231,7 +231,7 @@ public class NotificationRegistrationControllerTest {
 
     private void verifyRegistration(NotificationRegistration reg) {
         assertNull(reg.getHealthCode());
-        assertNull(reg.getEndpoint());
+        assertEquals("endpoint", reg.getEndpoint());
         assertEquals(OS_NAME, reg.getOsName());
         assertEquals(GUID, reg.getGuid());
         assertEquals(DEVICE_ID, reg.getDeviceId());

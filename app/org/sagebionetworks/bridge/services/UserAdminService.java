@@ -39,6 +39,7 @@ public class UserAdminService {
     private static final Set<Roles> ADMIN_ROLE = Sets.newHashSet(Roles.ADMIN);
 
     private AuthenticationService authenticationService;
+    private NotificationsService notificationsService;
     private ParticipantService participantService;
     private AccountDao accountDao;
     private ConsentService consentService;
@@ -53,6 +54,13 @@ public class UserAdminService {
     final void setAuthenticationService(AuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
     }
+
+    /** Notifications service, used to clean up notification registrations when we delete users. */
+    @Autowired
+    final void setNotificationsService(NotificationsService notificationsService) {
+        this.notificationsService = notificationsService;
+    }
+
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
@@ -194,6 +202,7 @@ public class UserAdminService {
             
             String healthCode = account.getHealthCode();
             healthDataService.deleteRecordsForHealthCode(healthCode);
+            notificationsService.deleteAllRegistrations(study.getStudyIdentifier(), healthCode);
             uploadService.deleteUploadsForHealthCode(healthCode);
             scheduledActivityService.deleteActivitiesForUser(healthCode);
             activityEventService.deleteActivityEvents(healthCode);

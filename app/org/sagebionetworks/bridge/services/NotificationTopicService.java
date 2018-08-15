@@ -188,6 +188,36 @@ public class NotificationTopicService {
     }
 
     /**
+     * Unsubscribe the given registration from all topics. This is generally used before deleting a registration, to
+     * clean up any orphaned subscriptions.
+     */
+    public void unsubscribeAll(StudyIdentifier studyId, String healthCode, String registrationGuid) {
+        checkNotNull(studyId);
+        checkNotNull(healthCode);
+        checkNotNull(registrationGuid);
+
+        // Get subscriptions.
+        NotificationRegistration registration = registrationDao.getRegistration(healthCode, registrationGuid);
+        List<? extends TopicSubscription> subscriptionList =  subscriptionDao.listSubscriptions(registration);
+        if (subscriptionList.isEmpty()) {
+            // Shortcut: No subscriptions to unsubscribe from.
+            return;
+        }
+
+        // Unsubscribe from each subscription.
+        for (TopicSubscription oneSubscription : subscriptionList) {
+            String topicGuid = oneSubscription.getTopicGuid();
+            try {
+                NotificationTopic topic = topicDao.getTopic(studyId, topicGuid);
+                subscriptionDao.unsubscribe(registration, topic);
+            } catch (RuntimeException ex) {
+                LOG.error("Error unsubscribing registration " + registrationGuid + " from topic " + topicGuid + ": " +
+                        ex.getMessage(), ex);
+            }
+        }
+    }
+
+    /**
      * For the given account and registration, set their topic subscription to those specified by the
      * desiredTopicGuidSet. All topics in the set will be subscribed, and all topics not in the set will be
      * unsubscribed. Note that this only affects manual subscription topics. Topics managed by criteria are ignored by

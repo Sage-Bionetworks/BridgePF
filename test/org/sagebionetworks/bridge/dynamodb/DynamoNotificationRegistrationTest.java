@@ -50,12 +50,13 @@ public class DynamoNotificationRegistrationTest {
         JsonNode node = BridgeObjectMapper.get().valueToTree(reg);
         assertEquals(GUID, node.get("guid").asText());
         assertEquals("sms", node.get("protocol").textValue());
+        assertEquals(ENDPOINT, node.get("endpoint").textValue());
         assertEquals(DEVICE_ID, node.get("deviceId").asText());
         assertEquals(OperatingSystem.ANDROID, node.get("osName").asText());
         assertEquals(CREATED_ON_STRING, node.get("createdOn").asText());
         assertEquals(MODIFIED_ON_STRING, node.get("modifiedOn").asText());
         assertEquals("NotificationRegistration", node.get("type").asText());
-        assertEquals(7, node.size()); // and no other fields like healthCode;
+        assertEquals(8, node.size()); // and no other fields like healthCode;
         
         // In creating a registration, the deviceId, osName and sometimes the  guid, so these must 
         // deserialize correctly. Other fields will be set on the server.

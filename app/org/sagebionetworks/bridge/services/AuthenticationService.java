@@ -4,8 +4,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import static org.sagebionetworks.bridge.BridgeConstants.REAUTH_TOKEN_CACHE_LOOKUP_IN_SECONDS;
 
-import java.util.List;
-
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.PasswordGenerator;
@@ -34,8 +32,6 @@ import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
-import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.AccountIdValidator;
 import org.sagebionetworks.bridge.validators.VerificationValidator;
@@ -127,27 +123,7 @@ public class AuthenticationService {
      * Sign in using a phone number and a token that was sent to that phone number via SMS. 
      */
     public UserSession phoneSignIn(CriteriaContext context, final SignIn signIn) {
-        // Sign in.
-        UserSession session = channelSignIn(ChannelType.PHONE, context, signIn, SignInValidator.PHONE_SIGNIN);
-
-        // Register the phone number of notifications, if no registrations already exist.
-        List<NotificationRegistration> registrationList = notificationsService.listRegistrations(session
-                .getHealthCode());
-        if (registrationList.isEmpty()) {
-            // Create registration.
-            NotificationRegistration registration = NotificationRegistration.create();
-            registration.setHealthCode(session.getHealthCode());
-            registration.setProtocol(NotificationProtocol.SMS);
-            registration.setEndpoint(signIn.getPhone().getNumber());
-
-            // Update the Criteria Context with session info.
-            CriteriaContext updatedContext = updateContextFromSession(context, session);
-
-            // Create registration.
-            notificationsService.createRegistration(context.getStudyIdentifier(), updatedContext, registration);
-        }
-
-        return session;
+        return channelSignIn(ChannelType.PHONE, context, signIn, SignInValidator.PHONE_SIGNIN);
     }
     
     /**
@@ -206,7 +182,13 @@ public class AuthenticationService {
         if (!session.doesConsent() && intentService.registerIntentToParticipate(study, account)) {
             AccountId accountId = AccountId.forId(study.getIdentifier(), account.getId());
             account = accountDao.getAccount(accountId);
-            session = getSessionFromAccount(study, context, account);        
+            session = getSessionFromAccount(study, context, account);
+
+            if (session.doesConsent()) {
+                // After consent, we should sign the user up for SMS notifications.
+                CriteriaContext updatedContext = updateContextFromSession(context, session);
+                notificationsService.createSmsRegistrationAfterConsent(session.getParticipant(), updatedContext);
+            }
         }
         cacheProvider.setUserSession(session);
         
@@ -402,7 +384,13 @@ public class AuthenticationService {
         
         if (!session.doesConsent() && intentService.registerIntentToParticipate(study, account)) {
             account = accountDao.getAccount(accountId);
-            session = getSessionFromAccount(study, context, account);        
+            session = getSessionFromAccount(study, context, account);
+
+            if (session.doesConsent()) {
+                // After consent, we should sign the user up for SMS notifications.
+                CriteriaContext updatedContext = updateContextFromSession(context, session);
+                notificationsService.createSmsRegistrationAfterConsent(session.getParticipant(), updatedContext);
+            }
         }
         cacheProvider.setUserSession(session);
         if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {

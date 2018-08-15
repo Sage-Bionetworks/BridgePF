@@ -288,7 +288,7 @@ public class TestUtils {
     public static NotificationRegistration getNotificationRegistration() {
         NotificationRegistration registration = NotificationRegistration.create();
         registration.setDeviceId("deviceId");
-        registration.setEndpoint("endpointARN");
+        registration.setEndpoint("endpoint");
         registration.setGuid("registrationGuid");
         registration.setHealthCode("healthCode");
         registration.setOsName("osName");

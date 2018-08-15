@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
@@ -355,6 +356,44 @@ public class NotificationTopicServiceTest {
         verify(mockSubscriptionDao, never()).unsubscribe(any(), eq(MANUAL_TOPIC_2));
         verify(mockSubscriptionDao, never()).subscribe(any(), eq(MANUAL_TOPIC_1));
         verify(mockSubscriptionDao, never()).subscribe(any(), eq(MANUAL_TOPIC_2));
+    }
+
+    @Test
+    public void unsubscribeAll_NoSubscriptions() {
+        // Mock dependencies.
+        when(mockRegistrationDao.getRegistration(HEALTH_CODE, SMS_REGISTRATION.getGuid())).thenReturn(
+                SMS_REGISTRATION);
+        when(mockSubscriptionDao.listSubscriptions(SMS_REGISTRATION)).thenReturn(ImmutableList.of());
+
+        // Execute.
+        service.unsubscribeAll(TEST_STUDY, HEALTH_CODE, SMS_REGISTRATION.getGuid());
+
+        // We don't unsubscribe from anything.
+        verify(mockSubscriptionDao, never()).unsubscribe(any(), any());
+    }
+
+    @Test
+    public void unsubscribeAll() {
+        // Mock dependencies.
+        when(mockRegistrationDao.getRegistration(HEALTH_CODE, SMS_REGISTRATION.getGuid())).thenReturn(
+                SMS_REGISTRATION);
+        when(mockSubscriptionDao.listSubscriptions(SMS_REGISTRATION)).thenReturn((List) ImmutableList.of(
+                getSub(MANUAL_TOPIC_1.getGuid()), getSub(MANUAL_TOPIC_2.getGuid()), getSub(MANUAL_TOPIC_3.getGuid())));
+
+        when(mockTopicDao.getTopic(TEST_STUDY, MANUAL_TOPIC_1.getGuid())).thenReturn(MANUAL_TOPIC_1);
+        when(mockTopicDao.getTopic(TEST_STUDY, MANUAL_TOPIC_2.getGuid())).thenReturn(MANUAL_TOPIC_2);
+        when(mockTopicDao.getTopic(TEST_STUDY, MANUAL_TOPIC_3.getGuid())).thenReturn(MANUAL_TOPIC_3);
+
+        // To test error handling, unsubscribing from topic 2 will throw.
+        doThrow(RuntimeException.class).when(mockSubscriptionDao).unsubscribe(SMS_REGISTRATION, MANUAL_TOPIC_2);
+
+        // Execute.
+        service.unsubscribeAll(TEST_STUDY, HEALTH_CODE, SMS_REGISTRATION.getGuid());
+
+        // Verify we unsubscribe from all 3 topics.
+        verify(mockSubscriptionDao).unsubscribe(SMS_REGISTRATION, MANUAL_TOPIC_1);
+        verify(mockSubscriptionDao).unsubscribe(SMS_REGISTRATION, MANUAL_TOPIC_2);
+        verify(mockSubscriptionDao).unsubscribe(SMS_REGISTRATION, MANUAL_TOPIC_3);
     }
 
     @Test
