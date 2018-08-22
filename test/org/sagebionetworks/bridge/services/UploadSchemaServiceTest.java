@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -373,22 +374,20 @@ public class UploadSchemaServiceTest {
         svc.deleteUploadSchemaByIdAndRevisionPermanently(TestConstants.TEST_STUDY, SCHEMA_ID, 0);
     }
     
-    @Test
+    @Test(expected = EntityNotFoundException.class)
     public void deleteByIdAndRevNotFound() {
         // mock dao to return null
         when(dao.getUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(null);
 
         svc.deleteUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV);
-        verify(dao, never()).deleteUploadSchemas(any());
     }
 
-    @Test
+    @Test(expected = EntityNotFoundException.class)
     public void deleteByIdAndRevPermanentlyNotFound() {
         // mock dao to return null
         when(dao.getUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(null);
 
         svc.deleteUploadSchemaByIdAndRevisionPermanently(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV);
-        verify(dao, never()).deleteUploadSchemasPermanently(any());
     }
     
     @Test(expected = BadRequestException.class)
@@ -767,6 +766,46 @@ public class UploadSchemaServiceTest {
         svc.updateSchemaRevisionV4(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV, svcInputSchema);
     }
 
+    @Test(expected = EntityNotFoundException.class)
+    public void updateV4LogicallyDeleted() {
+        UploadSchema schema = makeSimpleSchema();
+        schema.setDeleted(true);
+        when(dao.getUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(schema);
+
+        svcInputSchema.setDeleted(true);
+        svc.updateSchemaRevisionV4(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV, svcInputSchema);
+    }
+    
+    @Test
+    public void updateV4UndeleteWorks() {
+        ArgumentCaptor<UploadSchema> schemaCaptor = ArgumentCaptor.forClass(UploadSchema.class);
+        
+        UploadSchema schema = makeSimpleSchema();
+        schema.setDeleted(true);
+        when(dao.getUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(schema);
+        
+        svcInputSchema.setDeleted(false);
+        svc.updateSchemaRevisionV4(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV, svcInputSchema);
+        
+        verify(dao).updateSchemaRevision(schemaCaptor.capture());
+        assertFalse(schemaCaptor.getValue().isDeleted());
+    }
+    
+    @Test
+    public void updateV4DeleteWorks() {
+        ArgumentCaptor<UploadSchema> schemaCaptor = ArgumentCaptor.forClass(UploadSchema.class);
+        
+        UploadSchema schema = makeSimpleSchema();
+        schema.setDeleted(false);
+        when(dao.getUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(schema);
+        
+        svcInputSchema.setDeleted(true);
+        svc.updateSchemaRevisionV4(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV, svcInputSchema);
+        
+        verify(dao).updateSchemaRevision(schemaCaptor.capture());
+        assertTrue(schemaCaptor.getValue().isDeleted());
+    }
+    
     @Test
     public void updateV4SchemaFromSharedModule() {
         // schema is annotated with shared module

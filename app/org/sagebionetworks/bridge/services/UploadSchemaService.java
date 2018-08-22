@@ -569,19 +569,21 @@ public class UploadSchemaService {
     public void deleteUploadSchemaByIdAndRevision(StudyIdentifier studyId, String schemaId, int rev) {
         // Schema ID and rev are validated by getUploadSchemaByIdAndRev()
 
-        UploadSchema schema = getRevision(studyId, schemaId, rev);
-        if (schema != null) {
-            uploadSchemaDao.deleteUploadSchemas(ImmutableList.of(schema));    
+        UploadSchema schema = getRevisionForDeletion(studyId, schemaId, rev);
+        if (schema == null || schema.isDeleted()) {
+            throw new EntityNotFoundException(UploadSchema.class);
         }
+        uploadSchemaDao.deleteUploadSchemas(ImmutableList.of(schema));    
     }
     
     public void deleteUploadSchemaByIdAndRevisionPermanently(StudyIdentifier studyId, String schemaId, int rev) {
         // Schema ID and rev are validated by getUploadSchemaByIdAndRev()
 
-        UploadSchema schema = getRevision(studyId, schemaId, rev);
-        if (schema != null) {
-            uploadSchemaDao.deleteUploadSchemasPermanently(ImmutableList.of(schema));    
+        UploadSchema schema = getRevisionForDeletion(studyId, schemaId, rev);
+        if (schema == null) {
+            throw new EntityNotFoundException(UploadSchema.class);
         }
+        uploadSchemaDao.deleteUploadSchemasPermanently(ImmutableList.of(schema));    
     }
 
     /** Returns all revisions of all schemas. */
@@ -633,9 +635,10 @@ public class UploadSchemaService {
     
     /**
      * Private helper method to get the latest version of an upload schema, but doesn't throw if the schema does not
-     * exist. Note that it still validates the user inputs (schemaId and revision) and will throw a BadRequestException.
+     * exist. User inputs are validated (schemaId and revision) and the method will throw a BadRequestException if 
+     * the schema is referenced as part of shared module metadata.
      */
-    private UploadSchema getRevision(StudyIdentifier studyId, String schemaId, int revision) {
+    private UploadSchema getRevisionForDeletion(StudyIdentifier studyId, String schemaId, int revision) {
         if (StringUtils.isBlank(schemaId)) {
             throw new BadRequestException("Schema ID must be specified");
         }
@@ -752,7 +755,9 @@ public class UploadSchemaService {
         // Get existing schema revision. This also validates schema ID and rev and throws if the schema revision
         // doesn't exist.
         UploadSchema oldSchema = getUploadSchemaByIdAndRev(studyId, schemaId, revision);
-
+        if (oldSchema.isDeleted() && schemaToUpdate.isDeleted()) {
+            throw new EntityNotFoundException(UploadSchema.class);
+        }
         // Schemas associated with shared module can't be modified.
         if (StringUtils.isNotBlank(oldSchema.getModuleId())) {
             throw new BadRequestException("Schema " + oldSchema.getSchemaId() + " was imported from a shared module " +

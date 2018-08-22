@@ -302,7 +302,6 @@ POST   /v3/backfill/:name/start    @org.sagebionetworks.bridge.play.controllers.
  
 # Admin APIs for across studies
 POST   /v3/studies/:studyId/users                                       @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUserWithStudyId(studyId: String)
-DELETE /v3/studies/:studyId/uploadschemas/:schemaId                     @org.sagebionetworks.bridge.play.controllers.UploadSchemaController.deleteAllRevisionsOfUploadSchemaForAdmin(studyId: String, schemaId: String, physical: String ?= "false")
 
 # Cache Management
 GET    /v3/cache           @org.sagebionetworks.bridge.play.controllers.CacheAdminController.listItems

@@ -62,28 +62,6 @@ public class UploadSchemaController extends BaseController {
         return okResult(UploadSchema.PUBLIC_SCHEMA_WRITER, createdSchema);
     }
 
-    /**
-     * Admin API to delete all revisions of a schema with the given schema ID in the given study. If the schema doesn't
-     * exist, this API throws a 404 exception.
-     *
-     * @param studyId
-     *         study ID that the schema lives in
-     * @param schemaId
-     *         schema to delete
-     * @return Play result with the OK message
-     */
-    public Result deleteAllRevisionsOfUploadSchemaForAdmin(String studyId, String schemaId, String physical) {
-        getAuthenticatedSession(ADMIN);
-        
-        StudyIdentifier studyIdentifier = new StudyIdentifierImpl(studyId);
-        if ("true".equals(physical)) {
-            uploadSchemaService.deleteUploadSchemaByIdPermanently(studyIdentifier, schemaId);
-        } else {
-            uploadSchemaService.deleteUploadSchemaById(studyIdentifier, schemaId);    
-        }
-        return okResult("Schemas have been deleted.");
-    }
-    
     public Result deleteAllRevisionsOfUploadSchema(String schemaId, String physical) {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         
