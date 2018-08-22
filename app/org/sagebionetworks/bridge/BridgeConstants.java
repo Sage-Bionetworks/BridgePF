@@ -80,6 +80,9 @@ public class BridgeConstants {
     // 15 seconds
     public static final int REAUTH_TOKEN_CACHE_LOOKUP_IN_SECONDS = 15;
 
+    // 5 min
+    public static final int REAUTH_TOKEN_GRACE_PERIOD_SECONDS = 300;
+
     public static final String SCHEDULE_STRATEGY_PACKAGE = "org.sagebionetworks.bridge.models.schedules.";
 
     public static final String ASSETS_HOST = "assets.sagebridge.org";
