@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyObject;
@@ -144,7 +145,7 @@ public class UserManagementControllerTest {
                 bridgeConfig.get("domain"), false, false);
     }
     
-    @Test(expected = UnauthorizedException.class)
+    @Test
     public void signInForAdminNotAnAdmin() throws Exception {
         SignIn signIn = new SignIn.Builder().withStudy("originalStudy")
                 .withEmail(TestConstants.EMAIL).withPassword("password").build();
@@ -154,7 +155,12 @@ public class UserManagementControllerTest {
         session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.WORKER)).build());
         when(authService.signIn(eq(study), any(CriteriaContext.class), signInCaptor.capture())).thenReturn(session);
 
-        controller.signInForAdmin();
+        try {
+            controller.signInForAdmin();
+            fail("Should have thrown exception");
+        } catch(UnauthorizedException e) {
+        }
+        verify(authService).signOut(session);
     }
     
     @Test
@@ -162,7 +168,7 @@ public class UserManagementControllerTest {
         doReturn(session).when(controller).getAuthenticatedSession(Roles.ADMIN);
         
         SignIn signIn = new SignIn.Builder().withStudy("nextStudy").build();
-        Response response = TestUtils.mockPlayContextWithJson(signIn);
+        TestUtils.mockPlayContextWithJson(signIn);
         
         Study nextStudy = Study.create();
         nextStudy.setIdentifier("nextStudy");
