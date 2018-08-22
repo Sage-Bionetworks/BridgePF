@@ -870,9 +870,65 @@ public class SurveySaveValidatorTest {
         survey.setElements(Lists.newArrayList(info));
         
         assertValidatorMessage(validator, survey, "elements[0].beforeRules[0].operator",
-                "only 'always' operator is valid for info screen rules");
+                "only 'any', 'all', and 'always' operators are valid for info screen rules");
         assertValidatorMessage(validator, survey, "elements[0].afterRules[0].operator",
-                "only 'always' operator is valid for info screen rules");
+                "only 'any', 'all', and 'always' operators are valid for info screen rules");
+    }
+    
+    @Test
+    public void anyOperatorsAllowedInInfoScreenRules() {
+        Survey survey = new TestSurvey(SurveySaveValidatorTest.class, true);
+        survey.setGuid("guid");
+        SurveyInfoScreen info = SurveyInfoScreen.create();
+        info.setTitle("title");
+        info.setPrompt("prompt");
+        info.setPromptDetail("prompt detail");
+        info.setIdentifier("identifier");
+        info.setGuid("guid");
+        SurveyRule rule = new SurveyRule.Builder().withOperator(Operator.ANY).withDataGroups(Sets.newHashSet("foo"))
+                .withEndSurvey(true).build();
+        info.setBeforeRules(Lists.newArrayList(rule));
+        info.setAfterRules(Lists.newArrayList(rule));
+        survey.setElements(Lists.newArrayList(info));
+        
+        Validate.entityThrowingException(validator, survey);
+    }
+    
+    @Test
+    public void allOperatorsAllowedInInfoScreenRules() {
+        Survey survey = new TestSurvey(SurveySaveValidatorTest.class, true);
+        survey.setGuid("guid");
+        SurveyInfoScreen info = SurveyInfoScreen.create();
+        info.setTitle("title");
+        info.setPrompt("prompt");
+        info.setPromptDetail("prompt detail");
+        info.setIdentifier("identifier");
+        info.setGuid("guid");
+        SurveyRule rule = new SurveyRule.Builder().withOperator(Operator.ALL).withDataGroups(Sets.newHashSet("foo"))
+                .withEndSurvey(true).build();
+        info.setBeforeRules(Lists.newArrayList(rule));
+        info.setAfterRules(Lists.newArrayList(rule));
+        survey.setElements(Lists.newArrayList(info));
+        
+        Validate.entityThrowingException(validator, survey);
+    }
+    
+    @Test
+    public void alwaysOperatorsAllowedInInfoScreenRules() {
+        Survey survey = new TestSurvey(SurveySaveValidatorTest.class, true);
+        survey.setGuid("guid");
+        SurveyInfoScreen info = SurveyInfoScreen.create();
+        info.setTitle("title");
+        info.setPrompt("prompt");
+        info.setPromptDetail("prompt detail");
+        info.setIdentifier("identifier");
+        info.setGuid("guid");
+        SurveyRule rule = new SurveyRule.Builder().withOperator(Operator.ALWAYS).withEndSurvey(true).build();
+        info.setBeforeRules(Lists.newArrayList(rule));
+        info.setAfterRules(Lists.newArrayList(rule));
+        survey.setElements(Lists.newArrayList(info));
+        
+        Validate.entityThrowingException(validator, survey);
     }
     
     @Test

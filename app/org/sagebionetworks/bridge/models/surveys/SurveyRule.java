@@ -42,6 +42,8 @@ public final class SurveyRule {
     
     public static final EnumSet<SurveyRule.Operator> NULL_VALUE_OPERATORS = EnumSet.of(Operator.DE, Operator.ALWAYS);
     
+    public static final EnumSet<SurveyRule.Operator> INFO_SCREEN_OPERATORS = EnumSet.of(Operator.ANY, Operator.ALL, Operator.ALWAYS);
+    
     private final Operator operator;
     private final Object value;
     private final String skipToTarget;

@@ -113,6 +113,8 @@ public class DynamoActivityEventDaoTest {
         
         Map<String,DateTime> eventMap = activityEventDao.getActivityEventMap(healthCode);
         assertEquals(firstEvent.withZone(DateTimeZone.UTC), eventMap.get("enrollment"));
+        
+        activityEventDao.deleteActivityEvents(healthCode);
     }
     
     private DynamoActivityEvent getEnrollmentEvent(DateTime timestamp) {

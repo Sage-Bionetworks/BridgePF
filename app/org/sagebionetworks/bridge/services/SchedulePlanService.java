@@ -43,8 +43,9 @@ public class SchedulePlanService {
         this.surveyService = surveyService;
     }
 
-    public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, StudyIdentifier studyIdentifier) {
-        return schedulePlanDao.getSchedulePlans(clientInfo, studyIdentifier);
+    public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, StudyIdentifier studyIdentifier,
+            boolean includeDeleted) {
+        return schedulePlanDao.getSchedulePlans(clientInfo, studyIdentifier, includeDeleted);
     }
 
     public SchedulePlan getSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
@@ -120,6 +121,13 @@ public class SchedulePlanService {
         schedulePlanDao.deleteSchedulePlan(studyIdentifier, guid);
     }
     
+    public void deleteSchedulePlanPermanently(StudyIdentifier studyIdentifier, String guid) {
+        checkNotNull(studyIdentifier);
+        checkNotNull(isNotBlank(guid));
+        
+        schedulePlanDao.deleteSchedulePlanPermanently(studyIdentifier, guid);
+    }
+    
     /**
      * Get all the GUIDs for all the activities that already exist. These are the only GUIDs that should be returned
      * from the client on an update.
@@ -165,7 +173,7 @@ public class SchedulePlanService {
                         .withPublishedSurvey(survey.getIdentifier(), survey.getGuid()).build();
             } else {
                 GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(ref.getGuid(), ref.getCreatedOn().getMillis());
-                Survey survey = surveyService.getSurvey(keys, false);
+                Survey survey = surveyService.getSurvey(studyId, keys, false, true);
                 return new Activity.Builder().withActivity(activity)
                         .withSurvey(survey.getIdentifier(), ref.getGuid(), ref.getCreatedOn()).build();
             }

@@ -5,7 +5,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,6 +23,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.AppConfigDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -167,7 +168,7 @@ public class AppConfigServiceTest {
         survey.setIdentifier("theIdentifier");
         survey.setGuid(SURVEY_REF_LIST.get(0).getGuid());
         survey.setCreatedOn(SURVEY_REF_LIST.get(0).getCreatedOn().getMillis());
-        when(surveyService.getSurvey(SURVEY_KEY, false)).thenReturn(survey);
+        when(surveyService.getSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, false, false)).thenReturn(survey);
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
@@ -184,7 +185,7 @@ public class AppConfigServiceTest {
 
     @Test
     public void getAppConfigForUserSurveyDoesNotExist() throws Exception {
-        when(surveyService.getSurvey(SURVEY_KEY, false)).thenThrow(new EntityNotFoundException(Survey.class));
+        when(surveyService.getSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, false, true)).thenThrow(new EntityNotFoundException(Survey.class));
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
@@ -210,7 +211,7 @@ public class AppConfigServiceTest {
         AppConfig match = service.getAppConfigForUser(context, true);
         
         assertEquals("anIdentifier", match.getSurveyReferences().get(0).getIdentifier());
-        verify(surveyService, never()).getSurvey(any(), anyBoolean());
+        verify(surveyService, never()).getSurvey(eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true));
     }
     
     @Test(expected = EntityNotFoundException.class)
@@ -240,7 +241,7 @@ public class AppConfigServiceTest {
         survey.setIdentifier("theIdentifier");
         survey.setGuid(SURVEY_REF_LIST.get(0).getGuid());
         survey.setCreatedOn(SURVEY_REF_LIST.get(0).getCreatedOn().getMillis());
-        when(surveyService.getSurvey(SURVEY_KEY, false)).thenReturn(survey);
+        when(surveyService.getSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, false, true)).thenReturn(survey);
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("iPhone/6 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))

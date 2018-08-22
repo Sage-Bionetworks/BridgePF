@@ -23,6 +23,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleType;
+import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.SharedModuleMetadataValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -93,10 +94,11 @@ public class SharedModuleMetadataService {
             String surveyGuid = metadata.getSurveyGuid();
             long createdOn = metadata.getSurveyCreatedOn();
 
-            try {
-                surveyService.getSurvey(new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn), false);
-            } catch (EntityNotFoundException e) {
-                throw new BadRequestException("Survey " + surveyGuid + " referred does not exist.");
+            // Metadata does not have study information
+            Survey survey = surveyService.getSurvey(SHARED_STUDY_ID,
+                    new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn), false, false);
+            if (survey == null) {
+                throw new BadRequestException("Survey " + surveyGuid + " referred does not exist.");    
             }
         }
     }

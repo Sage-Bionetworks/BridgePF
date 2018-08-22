@@ -370,7 +370,7 @@ public class ScheduledActivityService {
         List<ScheduledActivity> scheduledActivities = new ArrayList<>();
 
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(context.getCriteriaContext().getClientInfo(),
-                context.getCriteriaContext().getStudyIdentifier());
+                context.getCriteriaContext().getStudyIdentifier(), false);
         
         AppConfig appConfig = appConfigService.getAppConfigForUser(context.getCriteriaContext(), false);
         Map<String, SurveyReference> surveyReferences = (appConfig == null) ? ImmutableMap.of()

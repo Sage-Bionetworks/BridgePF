@@ -49,7 +49,8 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
 
     @Override
-    public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, StudyIdentifier studyIdentifier) {
+    public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, StudyIdentifier studyIdentifier,
+            boolean includeDeleted) {
         checkNotNull(clientInfo);
         checkNotNull(studyIdentifier);
         
@@ -59,6 +60,11 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         DynamoDBQueryExpression<DynamoSchedulePlan> query = new DynamoDBQueryExpression<DynamoSchedulePlan>();
         query.withScanIndexForward(false);
         query.withHashKeyValues(plan);
+        if (!includeDeleted) {
+            query.withQueryFilterEntry("deleted", new Condition()
+                .withComparisonOperator(ComparisonOperator.NE)
+                .withAttributeValueList(new AttributeValue().withN("1")));
+        }
         
         List<DynamoSchedulePlan> dynamoPlans = mapper.queryPage(DynamoSchedulePlan.class, query).getResults();
         
@@ -75,28 +81,13 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(guid));
         
-        DynamoSchedulePlan plan = new DynamoSchedulePlan();
-        plan.setStudyKey(studyIdentifier.getIdentifier());
-        
-        Condition condition = new Condition();
-        condition.withComparisonOperator(ComparisonOperator.EQ);
-        condition.withAttributeValueList(new AttributeValue().withS(guid));
-        
-        DynamoDBQueryExpression<DynamoSchedulePlan> query = new DynamoDBQueryExpression<DynamoSchedulePlan>();
-        query.withScanIndexForward(false);
-        query.withHashKeyValues(plan);
-        query.withRangeKeyCondition("guid", condition);
-        
-        List<DynamoSchedulePlan> plans = mapper.queryPage(DynamoSchedulePlan.class, query).getResults();
-        if (plans.isEmpty()) {
+        SchedulePlan plan = getSchedulePlanInternal(studyIdentifier, guid);
+        if (plan == null) {
             throw new EntityNotFoundException(SchedulePlan.class);
         }
-        
-        plan = plans.get(0);
-        forEachCriteria(plan, scheduleCriteria -> loadCriteria(scheduleCriteria));
         return plan;
     }
-
+    
     @Override
     public SchedulePlan createSchedulePlan(StudyIdentifier studyIdentifier, SchedulePlan plan) {
         checkNotNull(studyIdentifier);
@@ -105,6 +96,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         plan.setStudyKey(studyIdentifier.getIdentifier());
         plan.setGuid(BridgeUtils.generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+        plan.setDeleted(false);
         plan.setVersion(null);
         
         forEachCriteria(plan, scheduleCriteria -> persistCriteria(scheduleCriteria));
@@ -127,13 +119,46 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
 
     @Override
     public void deleteSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
+        SchedulePlan plan = getSchedulePlanInternal(studyIdentifier, guid);
+        if (plan != null) {
+            plan.setDeleted(true);
+            mapper.save(plan);
+        }
+    }
+    
+    @Override
+    public void deleteSchedulePlanPermanently(StudyIdentifier studyIdentifier, String guid) {
+        SchedulePlan plan = getSchedulePlanInternal(studyIdentifier, guid);
+        if (plan != null) {
+            forEachCriteria(plan, scheduleCriteria -> deleteCriteria(scheduleCriteria));
+            mapper.delete(plan);
+        }
+    }
+
+    private SchedulePlan getSchedulePlanInternal(StudyIdentifier studyIdentifier, String guid) {
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(guid));
         
-        SchedulePlan plan = getSchedulePlan(studyIdentifier, guid);
+        DynamoSchedulePlan plan = new DynamoSchedulePlan();
+        plan.setStudyKey(studyIdentifier.getIdentifier());
         
-        forEachCriteria(plan, scheduleCriteria -> deleteCriteria(scheduleCriteria));
-        mapper.delete(plan);
+        Condition condition = new Condition();
+        condition.withComparisonOperator(ComparisonOperator.EQ);
+        condition.withAttributeValueList(new AttributeValue().withS(guid));
+        
+        DynamoDBQueryExpression<DynamoSchedulePlan> query = new DynamoDBQueryExpression<DynamoSchedulePlan>();
+        query.withScanIndexForward(false);
+        query.withHashKeyValues(plan);
+        query.withRangeKeyCondition("guid", condition);
+        
+        List<DynamoSchedulePlan> plans = mapper.queryPage(DynamoSchedulePlan.class, query).getResults();
+        if (plans.isEmpty()) {
+            return null;
+        }
+        
+        plan = plans.get(0);
+        forEachCriteria(plan, scheduleCriteria -> loadCriteria(scheduleCriteria));
+        return plan;
     }
     
     private void forEachCriteria(SchedulePlan plan, Function<ScheduleCriteria,Criteria> consumer) {

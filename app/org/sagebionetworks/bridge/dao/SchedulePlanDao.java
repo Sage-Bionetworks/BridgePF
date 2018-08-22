@@ -8,7 +8,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 public interface SchedulePlanDao {
 
-    List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, StudyIdentifier studyIdentifier);
+    List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, StudyIdentifier studyIdentifier, boolean includeDeleted);
     
     SchedulePlan getSchedulePlan(StudyIdentifier studyIdentifier, String guid);
     
@@ -17,5 +17,7 @@ public interface SchedulePlanDao {
     SchedulePlan updateSchedulePlan(StudyIdentifier studyIdentifier, SchedulePlan plan);
     
     void deleteSchedulePlan(StudyIdentifier studyIdentifier, String guid);
+    
+    void deleteSchedulePlanPermanently(StudyIdentifier studyIdentifier, String guid);
     
 }

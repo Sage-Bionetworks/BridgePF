@@ -12,7 +12,6 @@ import org.sagebionetworks.bridge.dao.SurveyDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -77,8 +76,8 @@ public class DynamoSurveyDao implements SurveyDao {
             this.published = true;
             return this;
         }
-        QueryBuilder isNotDeleted() {
-            this.notDeleted = true;
+        QueryBuilder setDeleted(boolean includeDeleted) {
+            this.notDeleted = !includeDeleted;
             return this;
         }
         
@@ -103,21 +102,18 @@ public class DynamoSurveyDao implements SurveyDao {
             return surveyMapper.queryPage(DynamoSurvey.class, query).getCount();
         }
         
-        List<Survey> getAll(boolean exceptionIfEmpty) {
+        List<Survey> getAll() {
             List<DynamoSurvey> dynamoSurveys = null;
             if (surveyGuid == null) {
                 dynamoSurveys = queryBySecondaryIndex();
             } else {
                 dynamoSurveys = query();
             }
-            if (exceptionIfEmpty && dynamoSurveys.size() == 0) {
-                throw new EntityNotFoundException(DynamoSurvey.class);
-            }
             return ImmutableList.copyOf(dynamoSurveys);
         }
         
-        Survey getOne(boolean exceptionIfEmpty) {
-            List<Survey> surveys = getAll(exceptionIfEmpty);
+        Survey getOne() {
+            List<Survey> surveys = getAll();
             if (!surveys.isEmpty()) {
                 if (!skipElements) {
                     attachSurveyElements(surveys.get(0));    
@@ -259,10 +255,7 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public Survey publishSurvey(StudyIdentifier study, Survey survey, GuidCreatedOnVersionHolder keys, boolean newSchemaRev) {
-        if (survey.isDeleted()) {
-            throw new EntityNotFoundException(Survey.class);
-        }
+    public Survey publishSurvey(StudyIdentifier study, Survey survey, boolean newSchemaRev) {
         if (!survey.isPublished()) {
             // update survey
             survey.setPublished(true);
@@ -286,18 +279,13 @@ public class DynamoSurveyDao implements SurveyDao {
     @Override
     public Survey updateSurvey(Survey survey) {
         Survey existing = getSurvey(survey, false);
-        if (existing.isDeleted()) {
-            throw new EntityNotFoundException(Survey.class);
-        }
-        if (existing.isPublished()) {
-            throw new PublishedSurveyException(survey);
-        }
-
+        
         // copy over mutable fields
         existing.setIdentifier(survey.getIdentifier());
         existing.setName(survey.getName());
         existing.setElements(survey.getElements());
         existing.setCopyrightNotice(survey.getCopyrightNotice());
+        existing.setDeleted(survey.isDeleted());
 
         // copy over DDB version so we can handle concurrent modification exceptions
         existing.setVersion(survey.getVersion());
@@ -312,9 +300,6 @@ public class DynamoSurveyDao implements SurveyDao {
     @Override
     public Survey versionSurvey(GuidCreatedOnVersionHolder keys) {
         DynamoSurvey existing = (DynamoSurvey)getSurvey(keys, true);
-        if (existing.isDeleted()) {
-            throw new EntityNotFoundException(Survey.class);
-        }
         DynamoSurvey copy = new DynamoSurvey(existing);
         copy.setPublished(false);
         copy.setDeleted(false);
@@ -340,45 +325,46 @@ public class DynamoSurveyDao implements SurveyDao {
     @Override
     public void deleteSurveyPermanently(GuidCreatedOnVersionHolder keys) {
         Survey existing = getSurvey(keys, false);
-        deleteAllElements(existing.getGuid(), existing.getCreatedOn());
-        surveyMapper.delete(existing);
-        
-        // Delete the schemas as well, or they accumulate.
-        try {
-            StudyIdentifier studyId = new StudyIdentifierImpl(existing.getStudyIdentifier());
-            uploadSchemaService.deleteUploadSchemaByIdPermanently(studyId, existing.getIdentifier());
-        } catch(EntityNotFoundException e) {
-            // This is OK. Just means this survey wasn't published.
+        if (existing != null) {
+            deleteAllElements(existing.getGuid(), existing.getCreatedOn());
+            surveyMapper.delete(existing);
+            // Delete the schemas as well, or they accumulate.
+            try {
+                StudyIdentifier studyId = new StudyIdentifierImpl(existing.getStudyIdentifier());
+                uploadSchemaService.deleteUploadSchemaByIdPermanently(studyId, existing.getIdentifier());
+            } catch(EntityNotFoundException e) {
+                // This is OK. Just means this survey wasn't published.
+            }
         }
     }
 
     @Override
-    public List<Survey> getSurveyAllVersions(StudyIdentifier studyIdentifier, String guid) {
-        return new QueryBuilder().setStudy(studyIdentifier).setSurvey(guid).isNotDeleted().getAll(true);
+    public List<Survey> getSurveyAllVersions(StudyIdentifier studyIdentifier, String guid, boolean includeDeleted) {
+        return new QueryBuilder().setStudy(studyIdentifier).setSurvey(guid).setDeleted(includeDeleted).getAll();
     }
     
     @Override
     public Survey getSurveyMostRecentVersion(StudyIdentifier studyIdentifier, String guid) {
-        return new QueryBuilder().setStudy(studyIdentifier).setSurvey(guid).isNotDeleted().getOne(true);
+        return new QueryBuilder().setStudy(studyIdentifier).setSurvey(guid).setDeleted(false).getOne();
     }
 
     @Override
     public Survey getSurveyMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, String guid, boolean includeElements) {
-        return new QueryBuilder().setStudy(studyIdentifier).isPublished().setSurvey(guid).isNotDeleted()
-                .setSkipElements(!includeElements).getOne(true);
+        return new QueryBuilder().setStudy(studyIdentifier).isPublished().setSurvey(guid).setDeleted(false)
+                .setSkipElements(!includeElements).getOne();
     }
     
     // secondary index query (not survey GUID) 
     @Override
-    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier) {
-        List<Survey> surveys = new QueryBuilder().setStudy(studyIdentifier).isPublished().isNotDeleted().getAll(false);
+    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, boolean includeDeleted) {
+        List<Survey> surveys = new QueryBuilder().setStudy(studyIdentifier).isPublished().setDeleted(includeDeleted).getAll();
         return findMostRecentVersions(surveys);
     }
     
     // secondary index query (not survey GUID)
     @Override
-    public List<Survey> getAllSurveysMostRecentVersion(StudyIdentifier studyIdentifier) {
-        List<Survey> surveys = new QueryBuilder().setStudy(studyIdentifier).isNotDeleted().getAll(false);
+    public List<Survey> getAllSurveysMostRecentVersion(StudyIdentifier studyIdentifier, boolean includeDeleted) {
+        List<Survey> surveys = new QueryBuilder().setStudy(studyIdentifier).setDeleted(includeDeleted).getAll();
         return findMostRecentVersions(surveys);
     }
     
@@ -390,7 +376,7 @@ public class DynamoSurveyDao implements SurveyDao {
     @Override
     public Survey getSurvey(GuidCreatedOnVersionHolder keys, boolean includeElements) {
         return new QueryBuilder().setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn())
-                .setSkipElements(!includeElements).getOne(true);
+                .setSkipElements(!includeElements).getOne();
     }
     
     /**

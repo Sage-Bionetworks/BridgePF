@@ -3,15 +3,12 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
-import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
-import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
@@ -235,19 +232,6 @@ public class AuthenticationController extends BaseController {
         getStudyOrThrowException(passwordReset.getStudyIdentifier());
         authenticationService.resetPassword(passwordReset);
         return okResult("Password has been changed.");
-    }
-
-    private void setCookieAndRecordMetrics(UserSession session) {
-        writeSessionInfoToMetrics(session);  
-        RequestInfo requestInfo = getRequestInfoBuilder(session)
-                .withSignedInOn(DateUtils.getCurrentDateTime()).build();
-        cacheProvider.updateRequestInfo(requestInfo);
-        // only set cookie in local environment
-        if (bridgeConfig.getEnvironment() == Environment.LOCAL) {
-            response().setCookie(BridgeConstants.SESSION_TOKEN_HEADER, session.getSessionToken(),
-                    BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, "/",
-                    bridgeConfig.get("domain"), false, false);
-        }
     }
 
     private Study getStudyOrThrowException(String studyId) {

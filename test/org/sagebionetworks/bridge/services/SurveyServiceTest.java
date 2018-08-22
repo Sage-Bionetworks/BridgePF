@@ -20,6 +20,7 @@ import java.util.Set;
 import javax.annotation.Resource;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.junit.After;
 import org.junit.Before;
@@ -29,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyInfoScreen;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -55,6 +56,7 @@ import org.sagebionetworks.bridge.models.surveys.UIHint;
 public class SurveyServiceTest {
 
     private static Logger logger = LoggerFactory.getLogger(SurveyServiceTest.class);
+    private static final Set<Roles> ADMIN_ROLE = ImmutableSet.of(Roles.ADMIN);
     
     @Resource
     UploadSchemaService schemaService;
@@ -83,7 +85,7 @@ public class SurveyServiceTest {
         // clean up surveys
         for (GuidCreatedOnVersionHolder oneSurvey : surveysToDelete) {
             try {
-                surveyService.deleteSurveyPermanently(TEST_STUDY, oneSurvey);
+                surveyService.deleteSurveyPermanently(ADMIN_ROLE, TEST_STUDY, oneSurvey);
             } catch (Exception ex) {
                 logger.error(ex.getMessage(), ex);
             }
@@ -144,11 +146,11 @@ public class SurveyServiceTest {
         SurveyQuestion question = (SurveyQuestion)survey.getElements().get(0);
 
         survey.setIdentifier("newIdentifier");
-        surveyService.updateSurvey(survey);
-        survey = surveyService.getSurvey(survey, true);
+        surveyService.updateSurvey(TEST_STUDY, survey);
+        survey = surveyService.getSurvey(TEST_STUDY, survey, true, true);
         assertEquals("Identifier has been changed", "newIdentifier", survey.getIdentifier());
         assertEquals("Be honest: do you have high blood pressue?", question.getPromptDetail());
-        surveyService.deleteSurvey(survey);
+        surveyService.deleteSurvey(TEST_STUDY, survey);
 
         try {
             surveyService.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, survey.getGuid(), false);
@@ -196,7 +198,7 @@ public class SurveyServiceTest {
         Survey survey = surveyService.createSurvey(testSurvey);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
 
-        Survey nextVersion = surveyService.versionSurvey(survey);
+        Survey nextVersion = surveyService.versionSurvey(TEST_STUDY, survey);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(nextVersion));
 
         // If you change these, it looks like a different testSurvey, you'll just get a not found exception.
@@ -206,14 +208,14 @@ public class SurveyServiceTest {
         survey.setIdentifier("B");
         survey.setName("C");
 
-        surveyService.updateSurvey(survey);
-        survey = surveyService.getSurvey(survey, true);
+        surveyService.updateSurvey(TEST_STUDY, survey);
+        survey = surveyService.getSurvey(TEST_STUDY, survey, true, true);
 
         assertEquals("Identifier can be updated", "B", survey.getIdentifier());
         assertEquals("Name can be updated", "C", survey.getName());
 
         // Now verify the nextVersion has not been changed
-        Survey finalVersion = surveyService.getSurvey(nextVersion, true);
+        Survey finalVersion = surveyService.getSurvey(TEST_STUDY, nextVersion, true, true);
         assertEquals("Next version has same identifier", nextVersion.getIdentifier(), finalVersion.getIdentifier());
         assertEquals("Next name has not changed", nextVersion.getName(), finalVersion.getName());
     }
@@ -228,9 +230,9 @@ public class SurveyServiceTest {
         // Now, alter these, and verify they are altered
         survey.getElements().remove(0);
         survey.getElements().get(6).setIdentifier("new gender");
-        surveyService.updateSurvey(survey);
+        surveyService.updateSurvey(TEST_STUDY, survey);
 
-        survey = surveyService.getSurvey(survey, true);
+        survey = surveyService.getSurvey(TEST_STUDY, survey, true, true);
 
         assertEquals("Survey has one less question", count-1, survey.getElements().size());
         
@@ -249,7 +251,7 @@ public class SurveyServiceTest {
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
 
         survey.setVersion(44L);
-        surveyService.updateSurvey(survey);
+        surveyService.updateSurvey(TEST_STUDY, survey);
     }
 
     @Test(expected = PublishedSurveyException.class)
@@ -259,7 +261,7 @@ public class SurveyServiceTest {
         surveyService.publishSurvey(TEST_STUDY, survey, false);
 
         survey.setName("This is a new name");
-        surveyService.updateSurvey(survey);
+        surveyService.updateSurvey(TEST_STUDY, survey);
     }
 
     // VERSION SURVEY
@@ -271,7 +273,7 @@ public class SurveyServiceTest {
         surveyService.publishSurvey(TEST_STUDY, survey, false);
 
         Long originalVersion = survey.getCreatedOn();
-        survey = surveyService.versionSurvey(survey);
+        survey = surveyService.versionSurvey(TEST_STUDY, survey);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
 
         assertEquals("Newly versioned testSurvey is not published", false, survey.isPublished());
@@ -287,7 +289,7 @@ public class SurveyServiceTest {
         String v1SurveyCompoundKey = survey.getElements().get(0).getSurveyCompoundKey();
         String v1Guid = survey.getElements().get(0).getGuid();
 
-        survey = surveyService.versionSurvey(survey);
+        survey = surveyService.versionSurvey(TEST_STUDY, survey);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
         String v2SurveyCompoundKey = survey.getElements().get(0).getSurveyCompoundKey();
         String v2Guid = survey.getElements().get(0).getGuid();
@@ -326,7 +328,7 @@ public class SurveyServiceTest {
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
         survey = surveyService.publishSurvey(TEST_STUDY, survey, false);
 
-        Survey laterSurvey = surveyService.versionSurvey(survey);
+        Survey laterSurvey = surveyService.versionSurvey(TEST_STUDY, survey);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(laterSurvey));
         assertNotEquals("Surveys do not have the same createdOn", survey.getCreatedOn(),
                 laterSurvey.getCreatedOn());
@@ -342,7 +344,7 @@ public class SurveyServiceTest {
     @Test
     public void failToGetSurveysByBadStudyKey() {
         StudyIdentifier studyIdentifier = new StudyIdentifierImpl("foo");
-        List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(studyIdentifier);
+        List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(studyIdentifier, false);
         assertEquals("No surveys", 0, surveys.size());
     }
 
@@ -357,18 +359,18 @@ public class SurveyServiceTest {
         Survey survey = surveyService.createSurvey(new TestSurvey(SurveyServiceTest.class, true));
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey));
 
-        Survey nextVersion = surveyService.versionSurvey(survey);
+        Survey nextVersion = surveyService.versionSurvey(TEST_STUDY, survey);
         mostRecentVersionSurveys.add(new GuidCreatedOnVersionHolderImpl(nextVersion));
         surveysToDelete.addAll(mostRecentVersionSurveys);
 
         Thread.sleep(GSI_WAIT_DURATION);
         // Get all surveys
         // Make sure this returns all surveys that we created
-        List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(TEST_STUDY);
+        List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(TEST_STUDY, false);
         assertContainsAllKeys(mostRecentVersionSurveys, surveys);
 
         // Get all surveys of a version
-        surveys = surveyService.getSurveyAllVersions(TEST_STUDY, survey.getGuid());
+        surveys = surveyService.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), false);
         assertEquals("All surveys are returned", 2, surveys.size());
 
         Survey version1 = surveys.get(0);
@@ -377,6 +379,16 @@ public class SurveyServiceTest {
         assertEquals("Surveys have same Study key", version1.getStudyIdentifier(), version2.getStudyIdentifier());
         assertNotEquals("Surveys have different createdOn attribute", version1.getCreatedOn(),
                 version2.getCreatedOn());
+        
+        Survey toDelete = surveys.get(0);
+        surveyService.deleteSurvey(TEST_STUDY, toDelete);
+        
+        assertTrue(surveyService.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), true).stream().anyMatch(Survey::isDeleted));
+        assertTrue(surveyService.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), false).stream().noneMatch(Survey::isDeleted));
+        
+        surveyService.deleteSurveyPermanently(ADMIN_ROLE, TEST_STUDY, new GuidCreatedOnVersionHolderImpl(toDelete));
+        assertTrue(surveyService.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), true).stream().noneMatch(Survey::isDeleted));
+        assertTrue(surveyService.getSurveyAllVersions(TEST_STUDY, survey.getGuid(), false).stream().noneMatch(Survey::isDeleted));
     }
 
     // GET PUBLISHED SURVEY
@@ -388,11 +400,11 @@ public class SurveyServiceTest {
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey1));
 
         // Version 2.
-        Survey survey2 = surveyService.versionSurvey(survey1);
+        Survey survey2 = surveyService.versionSurvey(TEST_STUDY, survey1);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey2));
 
         // Version 3 (tossed)
-        Survey survey3 = surveyService.versionSurvey(survey2);
+        Survey survey3 = surveyService.versionSurvey(TEST_STUDY, survey2);
         surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(survey3));
 
         // Publish one version
@@ -402,7 +414,7 @@ public class SurveyServiceTest {
         // this does not support consistent reads
         Thread.sleep(GSI_WAIT_DURATION);
         // Find the survey that we created and make sure it's the published version (survey1)
-        List<Survey> surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY);
+        List<Survey> surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, false);
         boolean foundSurvey1 = false;
         for (Survey oneSurvey : surveys) {
             if (oneSurvey.keysEqual(survey1)) {
@@ -419,7 +431,7 @@ public class SurveyServiceTest {
         // this does not support consistent reads
         Thread.sleep(GSI_WAIT_DURATION);
         // Now the most recent version of this testSurvey should be survey2.
-        surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY);
+        surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, false);
         boolean foundSurvey2 = false;
         for (Survey oneSurvey : surveys) {
             if (oneSurvey.keysEqual(survey2)) {
@@ -428,6 +440,51 @@ public class SurveyServiceTest {
             }
         }
         assertTrue(foundSurvey2);
+    }
+    
+    @Test
+    public void getAllSurveysMostRecentlyPublishedVersionIncludeDeletedFlag() {
+        // Version A1 
+        Survey surveyA1 = surveyService.createSurvey(new TestSurvey(SurveyServiceTest.class, true));
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyA1));
+        
+        // Version B1 
+        Survey surveyB1 = surveyService.createSurvey(new TestSurvey(SurveyServiceTest.class, true));
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyB1));
+        
+        // publish the versions
+        surveyService.publishSurvey(TEST_STUDY, new GuidCreatedOnVersionHolderImpl(surveyA1), false);
+        surveyService.publishSurvey(TEST_STUDY, new GuidCreatedOnVersionHolderImpl(surveyB1), false);
+        
+        // delete one of the published versions right now
+        surveyService.deleteSurvey(TEST_STUDY, new GuidCreatedOnVersionHolderImpl(surveyA1));
+        
+        assertTrue(surveyService.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, false).stream().noneMatch(Survey::isDeleted));
+        assertTrue(surveyService.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, true).stream().anyMatch(Survey::isDeleted));
+    }
+    
+    @Test
+    public void getAllSurveysMostRecentVersionIncludeDeletedFlag() {
+        // Version A1 
+        Survey surveyA1 = surveyService.createSurvey(new TestSurvey(SurveyServiceTest.class, true));
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyA1));
+        
+        // Version A2
+        Survey surveyA2 = surveyService.createSurvey(surveyA1);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyA2));
+        
+        // Version B1 
+        Survey surveyB1 = surveyService.createSurvey(new TestSurvey(SurveyServiceTest.class, true));
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyB1));
+        
+        // Version B2
+        Survey surveyB2 = surveyService.createSurvey(surveyB1);
+        surveysToDelete.add(new GuidCreatedOnVersionHolderImpl(surveyB2));
+        
+        // We return the most recent version whether deleted or not when the flag is true, so we should see this
+        surveyService.deleteSurvey(TEST_STUDY, new GuidCreatedOnVersionHolderImpl(surveyA1));
+        assertTrue(surveyService.getAllSurveysMostRecentVersion(TEST_STUDY, false).stream().noneMatch(Survey::isDeleted));
+        assertTrue(surveyService.getAllSurveysMostRecentVersion(TEST_STUDY, true).stream().anyMatch(Survey::isDeleted));
     }
 
     @Test
@@ -448,7 +505,7 @@ public class SurveyServiceTest {
         // this does not support consistent reads
         Thread.sleep(GSI_WAIT_DURATION);
         // Make sure this returns all surveys that we created
-        List<Survey> published = surveyService.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY);
+        List<Survey> published = surveyService.getAllSurveysMostRecentlyPublishedVersion(TEST_STUDY, false);
         assertContainsAllKeys(surveysToDelete, published);
     }
 

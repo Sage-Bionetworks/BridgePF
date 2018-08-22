@@ -488,14 +488,14 @@ public class ParticipantService {
         return notificationsService.listRegistrations(account.getHealthCode());
     }
 
-    public void sendNotification(Study study, String userId, NotificationMessage message) {
+    public Set<String> sendNotification(Study study, String userId, NotificationMessage message) {
         checkNotNull(study);
         checkNotNull(userId);
         checkNotNull(message);
 
         Account account = getAccountThrowingException(study, userId);
 
-        notificationsService.sendNotificationToUser(study.getStudyIdentifier(), account.getHealthCode(), message);
+        return notificationsService.sendNotificationToUser(study.getStudyIdentifier(), account.getHealthCode(), message);
     }
 
     /**

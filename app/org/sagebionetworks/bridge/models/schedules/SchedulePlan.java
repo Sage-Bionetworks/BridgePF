@@ -26,6 +26,9 @@ public interface SchedulePlan extends BridgeEntity {
     long getModifiedOn();
     void setModifiedOn(long modifiedOn);
     
+    boolean isDeleted();
+    void setDeleted(boolean deleted);
+    
     Long getVersion();
     void setVersion(Long version);
     

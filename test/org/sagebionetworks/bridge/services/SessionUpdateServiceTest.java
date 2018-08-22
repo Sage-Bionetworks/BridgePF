@@ -18,13 +18,15 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.google.common.collect.Maps;
@@ -123,6 +125,19 @@ public class SessionUpdateServiceTest {
         
         verify(mockCacheProvider).setUserSession(session);
         assertEquals(dataGroups, session.getParticipant().getDataGroups());
+    }
+    
+    @Test
+    public void updateStudy() {
+        UserSession session = new UserSession();
+        session.setStudyIdentifier(TestConstants.TEST_STUDY);
+        
+        StudyIdentifier newStudy = new StudyIdentifierImpl("new-study");
+        
+        service.updateStudy(session, newStudy);
+        
+        verify(mockCacheProvider).setUserSession(session);
+        assertEquals(newStudy, session.getStudyIdentifier());
     }
     
     @Test

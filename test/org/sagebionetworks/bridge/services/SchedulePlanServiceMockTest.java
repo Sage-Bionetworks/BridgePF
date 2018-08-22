@@ -7,6 +7,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -20,12 +21,13 @@ import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy;
@@ -38,6 +40,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class SchedulePlanServiceMockTest {
@@ -69,7 +72,7 @@ public class SchedulePlanServiceMockTest {
         Survey survey2 = new TestSurvey(SchedulePlanServiceMockTest.class, false);
         survey2.setIdentifier("identifier2");
         when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(any(), any(), anyBoolean())).thenReturn(survey1);
-        when(mockSurveyService.getSurvey(any(), anyBoolean())).thenReturn(survey2);
+        when(mockSurveyService.getSurvey(eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true))).thenReturn(survey2);
         surveyGuid1 = survey1.getGuid();
         surveyGuid2 = survey2.getGuid();
     }
@@ -82,7 +85,7 @@ public class SchedulePlanServiceMockTest {
         
         service.createSchedulePlan(study, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any(), anyBoolean());
-        verify(mockSurveyService).getSurvey(any(), anyBoolean());
+        verify(mockSurveyService).getSurvey(eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true));
         verify(mockSchedulePlanDao).createSchedulePlan(any(), spCaptor.capture());
         
         List<Activity> activities = spCaptor.getValue().getStrategy().getAllPossibleSchedules().get(0).getActivities();
@@ -101,7 +104,7 @@ public class SchedulePlanServiceMockTest {
         
         service.updateSchedulePlan(study, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any(), anyBoolean());
-        verify(mockSurveyService).getSurvey(any(), anyBoolean());
+        verify(mockSurveyService).getSurvey(eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true));
         verify(mockSchedulePlanDao).getSchedulePlan(study, plan.getGuid());
         verify(mockSchedulePlanDao).updateSchedulePlan(any(), spCaptor.capture());
         
@@ -132,7 +135,7 @@ public class SchedulePlanServiceMockTest {
         
         service.updateSchedulePlan(study, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any(), anyBoolean());
-        verify(mockSurveyService).getSurvey(any(), anyBoolean());
+        verify(mockSurveyService).getSurvey(eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true));
         verify(mockSchedulePlanDao).getSchedulePlan(study, plan.getGuid());
         verify(mockSchedulePlanDao).updateSchedulePlan(any(), spCaptor.capture());
         
@@ -218,6 +221,42 @@ public class SchedulePlanServiceMockTest {
             assertEquals("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier 'DDD' is not in enumeration: taskGuid, CCC, tapTest", e.getErrors().get("strategy.scheduleCriteria[0].schedule.activities[0].task.identifier").get(0));
             assertEquals("strategy.scheduleCriteria[0].criteria.allOfGroups 'FFF' is not in enumeration: AAA", e.getErrors().get("strategy.scheduleCriteria[0].criteria.allOfGroups").get(0));
         }
+    }
+    
+    @Test
+    public void getSchedulePlansExcludeDeleted() throws Exception {
+        List<SchedulePlan> plans = Lists.newArrayList(SchedulePlan.create());
+        when(mockSchedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false)).thenReturn(plans);
+        
+        List<SchedulePlan> returned = service.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false);
+        assertEquals(plans, returned);
+        
+        verify(mockSchedulePlanDao).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false);
+    }
+    
+    @Test
+    public void getSchedulePlansIncludeDeleted() throws Exception {
+        List<SchedulePlan> plans = Lists.newArrayList(SchedulePlan.create());
+        when(mockSchedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, true)).thenReturn(plans);
+        
+        List<SchedulePlan> returned = service.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, true);
+        assertEquals(plans, returned);
+        
+        verify(mockSchedulePlanDao).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, true);
+    }
+    
+    @Test
+    public void deleteSchedulePlan() {
+        service.deleteSchedulePlan(TEST_STUDY, "planGuid");
+        
+        verify(mockSchedulePlanDao).deleteSchedulePlan(TEST_STUDY, "planGuid");
+    }
+    
+    @Test
+    public void deleteSchedulePlanPermanently() {
+        service.deleteSchedulePlanPermanently(TEST_STUDY, "planGuid");
+        
+        verify(mockSchedulePlanDao).deleteSchedulePlanPermanently(TEST_STUDY, "planGuid");
     }
     
     private SchedulePlan createInvalidSchedulePlan() {

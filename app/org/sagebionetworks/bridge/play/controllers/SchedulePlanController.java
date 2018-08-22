@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
@@ -30,21 +31,22 @@ public class SchedulePlanController extends BaseController {
         this.schedulePlanService = schedulePlanService;
     }
     
-    public Result getSchedulePlansForWorker(String studyId) throws Exception {
+    public Result getSchedulePlansForWorker(String studyId, String includeDeletedString) throws Exception {
         getAuthenticatedSession(WORKER);
         Study study = studyService.getStudy(studyId);
         
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT,
-                study.getStudyIdentifier());
+                study.getStudyIdentifier(), Boolean.valueOf(includeDeletedString));
         return okResult(plans);
     }
     
-    public Result getSchedulePlans() throws Exception {
+    public Result getSchedulePlans(String includeDeletedString) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
         // We don't filter plans when we return a list of all of them for developers.
-        List<SchedulePlan> plans =  schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId);
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId,
+                Boolean.valueOf(includeDeletedString));
         return okResult(plans);
     }
 
@@ -76,11 +78,15 @@ public class SchedulePlanController extends BaseController {
         return okResult(new GuidVersionHolder(plan.getGuid(), plan.getVersion()));
     }
 
-    public Result deleteSchedulePlan(String guid) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+    public Result deleteSchedulePlan(String guid, String physical) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         StudyIdentifier studyId = session.getStudyIdentifier();
-
-        schedulePlanService.deleteSchedulePlan(studyId, guid);
+        
+        if ("true".equals(physical) && session.isInRole(ADMIN)) {
+            schedulePlanService.deleteSchedulePlanPermanently(studyId, guid);
+        } else {
+            schedulePlanService.deleteSchedulePlan(studyId, guid);
+        }
         return okResult("Schedule plan deleted.");
     }
 

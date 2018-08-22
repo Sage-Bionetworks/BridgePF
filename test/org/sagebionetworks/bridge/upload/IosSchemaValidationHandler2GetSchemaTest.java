@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import org.joda.time.DateTime;
 import org.junit.Test;
-
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
@@ -37,9 +36,9 @@ public class IosSchemaValidationHandler2GetSchemaTest {
         survey.setSchemaRevision(4);
 
         SurveyService mockSurveyService = mock(SurveyService.class);
-        when(mockSurveyService.getSurvey(
-                eq(new GuidCreatedOnVersionHolderImpl("test-guid", TEST_SURVEY_CREATED_ON_MILLIS)), eq(false)))
-                .thenReturn(survey);
+        when(mockSurveyService.getSurvey(eq(TEST_STUDY),
+                eq(new GuidCreatedOnVersionHolderImpl("test-guid", TEST_SURVEY_CREATED_ON_MILLIS)), eq(false),
+                eq(true))).thenReturn(survey);
 
         // mock upload schema service
         UploadSchema dummySchema = UploadSchema.create();
@@ -71,9 +70,9 @@ public class IosSchemaValidationHandler2GetSchemaTest {
         survey.setSchemaRevision(4);
 
         SurveyService mockSurveyService = mock(SurveyService.class);
-        when(mockSurveyService.getSurvey(
-                eq(new GuidCreatedOnVersionHolderImpl("test-guid", TEST_SURVEY_CREATED_ON_MILLIS)), eq(false)))
-                .thenReturn(survey);
+        when(mockSurveyService.getSurvey(eq(TEST_STUDY),
+                eq(new GuidCreatedOnVersionHolderImpl("test-guid", TEST_SURVEY_CREATED_ON_MILLIS)), eq(false),
+                eq(true))).thenReturn(survey);
 
         // set up test handler
         IosSchemaValidationHandler2 handler = new IosSchemaValidationHandler2();
@@ -97,9 +96,9 @@ public class IosSchemaValidationHandler2GetSchemaTest {
         survey.setIdentifier("test-survey");
 
         SurveyService mockSurveyService = mock(SurveyService.class);
-        when(mockSurveyService.getSurvey(
-                eq(new GuidCreatedOnVersionHolderImpl("test-guid", TEST_SURVEY_CREATED_ON_MILLIS)), eq(false)))
-                .thenReturn(survey);
+        when(mockSurveyService.getSurvey(eq(TEST_STUDY),
+                eq(new GuidCreatedOnVersionHolderImpl("test-guid", TEST_SURVEY_CREATED_ON_MILLIS)), eq(false),
+                eq(true))).thenReturn(survey);
 
         // set up test handler
         IosSchemaValidationHandler2 handler = new IosSchemaValidationHandler2();
