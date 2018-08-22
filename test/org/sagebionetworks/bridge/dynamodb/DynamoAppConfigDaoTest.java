@@ -144,7 +144,7 @@ public class DynamoAppConfigDaoTest {
     }
     
     @Test
-    public void createAppleCannotBeDeleted() {
+    public void createAppConfigCannotBeDeleted() {
         AppConfig config = createAppConfig();
         config.setDeleted(true);
         AppConfig saved = dao.createAppConfig(config);
@@ -302,5 +302,10 @@ public class DynamoAppConfigDaoTest {
         dao.deleteAppConfigPermanently(STUDY_ID, saved.getGuid());
         
         dao.getAppConfig(STUDY_ID, saved.getGuid());
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void deleteAppConfigPermanentlyMissingAppConfigThrows() {
+        dao.deleteAppConfigPermanently(STUDY_ID, "missingGuid");
     }
 }

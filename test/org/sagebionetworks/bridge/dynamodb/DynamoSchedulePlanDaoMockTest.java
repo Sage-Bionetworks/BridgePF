@@ -82,12 +82,14 @@ public class DynamoSchedulePlanDaoMockTest {
         schedulePlan = (DynamoSchedulePlan)createSchedulePlan();
         Criteria criteria = ((CriteriaScheduleStrategy) schedulePlan.getStrategy()).getScheduleCriteria().get(0)
                 .getCriteria();
-
+        
+        when(criteriaDao.getCriteria("scheduleCriteria:"+schedulePlan.getGuid()+":0")).thenReturn(criteria);
+    }
+    
+    private void mockSchedulePlanQuery() {
         List<DynamoSchedulePlan> list = Lists.newArrayList(schedulePlan);
         when(queryResultsPage.getResults()).thenReturn(list);
         when(mapper.queryPage(eq(DynamoSchedulePlan.class), any())).thenReturn(queryResultsPage);
-        
-        when(criteriaDao.getCriteria("scheduleCriteria:"+schedulePlan.getGuid()+":0")).thenReturn(criteria);
     }
     
     private SchedulePlan createSchedulePlan() {
@@ -110,6 +112,7 @@ public class DynamoSchedulePlanDaoMockTest {
     
     @Test
     public void getSchedulePlans() {
+        mockSchedulePlanQuery();
         List<SchedulePlan> plans = dao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
         assertEquals(1, plans.size());
         
@@ -120,6 +123,7 @@ public class DynamoSchedulePlanDaoMockTest {
     
     @Test
     public void getSchedulePlansRetrievesCriteria() {
+        mockSchedulePlanQuery();
         List<SchedulePlan> plans = dao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
         
         SchedulePlan plan = plans.get(0);
@@ -149,6 +153,7 @@ public class DynamoSchedulePlanDaoMockTest {
     
     @Test
     public void getSchedulePlanRetrievesCriteria() {
+        mockSchedulePlanQuery();
         SchedulePlan plan = dao.getSchedulePlan(TEST_STUDY, schedulePlan.getGuid());
         CriteriaScheduleStrategy strategy = (CriteriaScheduleStrategy)plan.getStrategy();
         
@@ -190,6 +195,7 @@ public class DynamoSchedulePlanDaoMockTest {
     
     @Test
     public void updateSchedulePlanWritesCriteria() {
+        mockSchedulePlanQuery();
         // Create a copy of the schedulePlan or this test does not work
         SchedulePlan update = SchedulePlan.create();
         update.setGuid(schedulePlan.getGuid());
@@ -212,7 +218,6 @@ public class DynamoSchedulePlanDaoMockTest {
         
         // Verify returned object still has changes
         strategy = (CriteriaScheduleStrategy)updated.getStrategy();
-        strategy.getScheduleCriteria().get(0).getCriteria();
         scheduleCriteria = strategy.getScheduleCriteria().get(0);
         Criteria returnedCriteria = scheduleCriteria.getCriteria();
         assertEquals(new Integer(100), returnedCriteria.getMinAppVersion(IOS));
@@ -223,6 +228,27 @@ public class DynamoSchedulePlanDaoMockTest {
         Criteria updatedCriteria = criteriaCaptor.getValue();
         assertEquals(new Integer(100), updatedCriteria.getMinAppVersion(IOS));
         assertEquals(new Integer(200), updatedCriteria.getMaxAppVersion(IOS));        
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void updateMissingSchedulePlan() {
+        when(queryResultsPage.getResults()).thenReturn(ImmutableList.of());
+        when(mapper.queryPage(eq(DynamoSchedulePlan.class), any())).thenReturn(queryResultsPage);
+        
+        SchedulePlan update = SchedulePlan.create();
+        update.setGuid("doesNotExist");
+        dao.updateSchedulePlan(TEST_STUDY, update);
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void updateDeletedSchedulePlan() {
+        schedulePlan.setDeleted(true);
+        mockSchedulePlanQuery();
+        
+        SchedulePlan update = SchedulePlan.create();
+        update.setDeleted(true);
+        update.setGuid(schedulePlan.getGuid());
+        dao.updateSchedulePlan(TEST_STUDY, update);
     }
     
     @Test
@@ -238,6 +264,7 @@ public class DynamoSchedulePlanDaoMockTest {
     
     @Test
     public void getSchedulePlansExcludesLogicallyDeleted() {
+        mockSchedulePlanQuery();
         dao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false);
         
         verify(mapper).queryPage(eq(DynamoSchedulePlan.class), queryCaptor.capture());
@@ -250,6 +277,7 @@ public class DynamoSchedulePlanDaoMockTest {
     
     @Test
     public void getSchedulePlansIncludesLogicallyDeleted() {
+        mockSchedulePlanQuery();
         dao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, true);
         
         verify(mapper).queryPage(eq(DynamoSchedulePlan.class), queryCaptor.capture());
@@ -259,6 +287,7 @@ public class DynamoSchedulePlanDaoMockTest {
 
     @Test
     public void deleteSchedulePlan() {
+        mockSchedulePlanQuery();
         assertFalse(schedulePlan.isDeleted());
         
         dao.deleteSchedulePlan(TEST_STUDY, schedulePlan.getGuid());
@@ -271,6 +300,7 @@ public class DynamoSchedulePlanDaoMockTest {
     
     @Test
     public void deleteSchedulePlanPermanently() {
+        mockSchedulePlanQuery();
         dao.deleteSchedulePlanPermanently(TEST_STUDY, schedulePlan.getGuid());
         
         verify(mapper).delete(schedulePlanCaptor.capture());
@@ -279,6 +309,7 @@ public class DynamoSchedulePlanDaoMockTest {
     
     @Test
     public void deleteSchedulePlanPermanentlyDeletesCriteria() {
+        mockSchedulePlanQuery();
         dao.deleteSchedulePlanPermanently(TEST_STUDY, schedulePlan.getGuid());
         
         verify(criteriaDao).deleteCriteria("scheduleCriteria:"+schedulePlan.getGuid()+":0");
@@ -311,6 +342,7 @@ public class DynamoSchedulePlanDaoMockTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void updateLogicallyDeletedSchedulePlanThrows() {
+        mockSchedulePlanQuery();
         schedulePlan.setDeleted(true);
         
         // Both are deleted, so this should throw.
@@ -319,6 +351,7 @@ public class DynamoSchedulePlanDaoMockTest {
     
     @Test
     public void updateCanUndeleteSchedulePlan() { 
+        mockSchedulePlanQuery();
         schedulePlan.setDeleted(true);
         
         SchedulePlan update = createSchedulePlan();
@@ -333,6 +366,7 @@ public class DynamoSchedulePlanDaoMockTest {
     
     @Test
     public void updateCanDeleteSchedulePlan() {
+        mockSchedulePlanQuery();
         schedulePlan.setDeleted(false);
         
         SchedulePlan update = createSchedulePlan();
@@ -347,6 +381,7 @@ public class DynamoSchedulePlanDaoMockTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void deleteLogicallyDeletedSchedulePlanThrows() {
+        mockSchedulePlanQuery();
         schedulePlan.setDeleted(true);
         
         dao.deleteSchedulePlan(TEST_STUDY, schedulePlan.getGuid());
@@ -354,6 +389,7 @@ public class DynamoSchedulePlanDaoMockTest {
     
     @Test
     public void deletePermenantlyLogicallyDeletedSchedulePlanWorks() {
+        mockSchedulePlanQuery();
         schedulePlan.setDeleted(true);
         
         dao.deleteSchedulePlanPermanently(TEST_STUDY, schedulePlan.getGuid());
