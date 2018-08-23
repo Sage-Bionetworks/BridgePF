@@ -64,7 +64,6 @@ public final class StudyParticipant implements BridgeEntity {
     private final String healthCode;
     private final Map<String,String> attributes;
     private final Map<String,List<UserConsentHistory>> consentHistories;
-    private final Boolean consented;
     private final Set<Roles> roles;
     private final LinkedHashSet<String> languages;
     private final AccountStatus status;
@@ -76,7 +75,7 @@ public final class StudyParticipant implements BridgeEntity {
     private StudyParticipant(String firstName, String lastName, String email, Phone phone, Boolean emailVerified,
             Boolean phoneVerified, String externalId, String password, SharingScope sharingScope, Boolean notifyByEmail,
             Set<String> dataGroups, String healthCode, Map<String, String> attributes,
-            Map<String, List<UserConsentHistory>> consentHistories, Boolean consented, Set<Roles> roles, LinkedHashSet<String> languages,
+            Map<String, List<UserConsentHistory>> consentHistories, Set<Roles> roles, LinkedHashSet<String> languages,
             AccountStatus status, DateTime createdOn, String id, DateTimeZone timeZone, JsonNode clientData) {
         
         ImmutableMap.Builder<String, List<UserConsentHistory>> immutableConsentsBuilder = new ImmutableMap.Builder<>();
@@ -103,7 +102,6 @@ public final class StudyParticipant implements BridgeEntity {
         this.healthCode = healthCode;
         this.attributes = BridgeUtils.nullSafeImmutableMap(attributes);
         this.consentHistories = immutableConsentsBuilder.build();
-        this.consented = consented;
         this.roles = BridgeUtils.nullSafeImmutableSet(roles);
         this.languages = (languages == null) ? new LinkedHashSet<>() : languages;
         this.status = status;
@@ -158,16 +156,6 @@ public final class StudyParticipant implements BridgeEntity {
     public Map<String, List<UserConsentHistory>> getConsentHistories() {
         return consentHistories;
     }
-
-    /**
-     * True if the user has consented to all required consents, based on the user's most recent request info (client
-     * info, languages, data groups). May be null if this object was not constructed with consent histories, or if
-     * consent status is indeterminate.
-     */
-    public Boolean isConsented() {
-        return consented;
-    }
-
     public Set<Roles> getRoles() {
         return roles;
     }
@@ -192,7 +180,7 @@ public final class StudyParticipant implements BridgeEntity {
     
     @Override
     public int hashCode() {
-        return Objects.hash(attributes, consentHistories, consented, createdOn, dataGroups, email, phone, emailVerified,
+        return Objects.hash(attributes, consentHistories, createdOn, dataGroups, email, phone, emailVerified,
                 phoneVerified, externalId, firstName, healthCode, id, languages, lastName, notifyByEmail, password,
                 roles, sharingScope, status, timeZone, clientData);
     }
@@ -205,7 +193,6 @@ public final class StudyParticipant implements BridgeEntity {
             return false;
         StudyParticipant other = (StudyParticipant) obj;
         return Objects.equals(attributes, other.attributes) && Objects.equals(consentHistories, other.consentHistories)
-                && Objects.equals(consented, other.consented)
                 && Objects.equals(createdOn, other.createdOn) && Objects.equals(dataGroups, other.dataGroups)
                 && Objects.equals(email, other.email) && Objects.equals(phone, other.phone)
                 && Objects.equals(emailVerified, other.emailVerified) && Objects.equals(phoneVerified, other.phoneVerified)
@@ -234,7 +221,6 @@ public final class StudyParticipant implements BridgeEntity {
         private String healthCode;
         private Map<String,String> attributes;
         private Map<String,List<UserConsentHistory>> consentHistories;
-        private Boolean consented;
         private Set<Roles> roles;
         private LinkedHashSet<String> languages;
         private AccountStatus status;
@@ -258,7 +244,6 @@ public final class StudyParticipant implements BridgeEntity {
             this.dataGroups = participant.getDataGroups();
             this.attributes = participant.getAttributes();
             this.consentHistories = participant.getConsentHistories();
-            this.consented = participant.isConsented();
             this.roles = participant.getRoles();
             this.languages = participant.getLanguages();
             this.status = participant.getStatus();
@@ -310,9 +295,6 @@ public final class StudyParticipant implements BridgeEntity {
             }
             if (fieldNames.contains("consentHistories")) {
                 withConsentHistories(participant.getConsentHistories());    
-            }
-            if (fieldNames.contains("consented")) {
-                withConsented(participant.isConsented());
             }
             if (fieldNames.contains("roles")) {
                 withRoles(participant.getRoles());    
@@ -403,10 +385,6 @@ public final class StudyParticipant implements BridgeEntity {
             }
             return this;
         }
-        public Builder withConsented(Boolean consented) {
-            this.consented = consented;
-            return this;
-        }
         public Builder withRoles(Set<Roles> roles) {
             if (roles != null) {
                 this.roles = roles;
@@ -450,7 +428,7 @@ public final class StudyParticipant implements BridgeEntity {
                 }
             }
             return new StudyParticipant(firstName, lastName, email, phone, emailVerified, phoneVerified, externalId,
-                    password, sharingScope, notifyByEmail, dataGroups, healthCode, attributes, consentHistories, consented, roles,
+                    password, sharingScope, notifyByEmail, dataGroups, healthCode, attributes, consentHistories, roles,
                     languages, status, createdOn, id, timeZone, clientData);
         }
     }

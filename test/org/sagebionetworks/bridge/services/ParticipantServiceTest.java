@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -51,15 +50,12 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.LimitExceededException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
@@ -87,10 +83,7 @@ import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ParticipantServiceTest {
-    private static final ClientInfo CLIENT_INFO = new ClientInfo.Builder().withAppName("unit test")
-            .withAppVersion(4).build();
-    private static final RequestInfo REQUEST_INFO = new RequestInfo.Builder().withClientInfo(CLIENT_INFO)
-            .withLanguages(TestConstants.LANGUAGES).withUserDataGroups(TestConstants.USER_DATA_GROUPS).build();
+
     private static final Set<String> STUDY_PROFILE_ATTRS = BridgeUtils.commaListToOrderedSet("attr1,attr2");
     private static final Set<String> STUDY_DATA_GROUPS = BridgeUtils.commaListToOrderedSet("group1,group2");
     private static final long CONSENT_PUBLICATION_DATE = DateTime.now().getMillis();
@@ -120,8 +113,6 @@ public class ParticipantServiceTest {
     private static final DateTimeZone USER_TIME_ZONE = DateTimeZone.forOffsetHours(-3);
     private static final Map<String,String> ATTRS = new ImmutableMap.Builder<String,String>().put("can_be_recontacted","true").build();
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create(STUDY.getIdentifier());
-    private static final SubpopulationGuid SUBPOP_GUID_1 = SubpopulationGuid.create("guid1");
-    private static final SubpopulationGuid SUBPOP_GUID_2 = SubpopulationGuid.create("guid2");
     private static final AccountId ACCOUNT_ID = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, ID);
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder()
             .withFirstName(FIRST_NAME)
@@ -196,13 +187,13 @@ public class ParticipantServiceTest {
     
     @Captor
     ArgumentCaptor<Account> accountCaptor;
-
+    
     @Captor
     ArgumentCaptor<Set<Roles>> rolesCaptor;
 
     @Captor
     ArgumentCaptor<UserSession> sessionCaptor;
-
+    
     @Captor
     ArgumentCaptor<Study> studyCaptor;
     
@@ -211,10 +202,10 @@ public class ParticipantServiceTest {
     
     @Captor
     ArgumentCaptor<AccountId> accountIdCaptor;
-
+    
     @Captor
     ArgumentCaptor<String> stringCaptor;
-
+    
     @Captor
     ArgumentCaptor<SmsMessageProvider> providerCaptor;
     
@@ -570,7 +561,7 @@ public class ParticipantServiceTest {
         account.setAttribute("attr2", "anAttribute2");
         List<ConsentSignature> sigs1 = Lists.newArrayList(new ConsentSignature.Builder()
                 .withName("Name 1").withBirthdate("1980-01-01").build());
-        account.setConsentSignatureHistory(SUBPOP_GUID_1, sigs1);
+        account.setConsentSignatureHistory(SubpopulationGuid.create("guid1"), sigs1);
         account.setClientData(TestUtils.getClientData());
         account.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         account.setNotifyByEmail(Boolean.TRUE);
@@ -595,22 +586,12 @@ public class ParticipantServiceTest {
         subpopulations.add(subpop2);
         when(subpopService.getSubpopulations(STUDY.getStudyIdentifier())).thenReturn(subpopulations);
 
-        when(subpopService.getSubpopulation(STUDY.getStudyIdentifier(), SUBPOP_GUID_1)).thenReturn(subpop1);
-        when(subpopService.getSubpopulation(STUDY.getStudyIdentifier(), SUBPOP_GUID_2)).thenReturn(subpop2);
-
-        // Mock CacheProvider to return request info.
-        when(cacheProvider.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
-
-        // Mock ConsentService to return consent statuses for criteria.
-        ConsentStatus consentStatus1 = new ConsentStatus.Builder().withName("consent1").withGuid(SUBPOP_GUID_1)
-                .withRequired(true).withConsented(true).withSignedMostRecentConsent(true).build();
-        when(consentService.getConsentStatuses(any(), any())).thenReturn(
-                ImmutableMap.of(SUBPOP_GUID_1, consentStatus1));
+        when(subpopService.getSubpopulation(STUDY.getStudyIdentifier(), SubpopulationGuid.create("guid1"))).thenReturn(subpop1);
+        when(subpopService.getSubpopulation(STUDY.getStudyIdentifier(), SubpopulationGuid.create("guid2"))).thenReturn(subpop2);
         
         // Get the fully initialized participant object (including histories)
         StudyParticipant participant = participantService.getParticipant(STUDY, ID, true);
-
-        assertTrue(participant.isConsented());
+        
         assertEquals(FIRST_NAME, participant.getFirstName());
         assertEquals(LAST_NAME, participant.getLastName());
         assertTrue(participant.isNotifyByEmail());
@@ -637,18 +618,6 @@ public class ParticipantServiceTest {
         
         List<UserConsentHistory> retrievedHistory2 = participant.getConsentHistories().get(subpop2.getGuidString());
         assertTrue(retrievedHistory2.isEmpty());
-
-        // Verify context passed to consent service.
-        ArgumentCaptor<CriteriaContext> criteriaContextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
-        verify(consentService).getConsentStatuses(criteriaContextCaptor.capture(), same(account));
-
-        CriteriaContext criteriaContext = criteriaContextCaptor.getValue();
-        assertEquals(TestConstants.TEST_STUDY, criteriaContext.getStudyIdentifier());
-        assertEquals(ID, criteriaContext.getUserId());
-        assertEquals(HEALTH_CODE, criteriaContext.getHealthCode());
-        assertEquals(CLIENT_INFO, criteriaContext.getClientInfo());
-        assertEquals(TestConstants.LANGUAGES, criteriaContext.getLanguages());
-        assertEquals(TestConstants.USER_DATA_GROUPS, criteriaContext.getUserDataGroups());
     }
     
     @Test(expected = EntityNotFoundException.class)
@@ -860,9 +829,8 @@ public class ParticipantServiceTest {
         StudyParticipant participant = participantService.getParticipant(STUDY, ID, false);
 
         assertTrue(participant.getConsentHistories().keySet().isEmpty());
-        assertNull(participant.isConsented());
     }
-
+    
     @Test
     public void getParticipantByAccountId() {
         AccountId accountId = AccountId.forEmail(STUDY.getIdentifier(), "email@email.com");
@@ -893,42 +861,7 @@ public class ParticipantServiceTest {
 
         assertEquals(1, participant.getConsentHistories().keySet().size());
     }
-
-    @Test
-    public void getParticipantIsConsentedWithoutRequestInfo() {
-        // Set up mocks.
-        mockHealthCodeAndAccountRetrieval();
-
-        doReturn(STUDY.getIdentifier()).when(subpopulation).getGuidString();
-        doReturn(SUBPOP_GUID).when(subpopulation).getGuid();
-        doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(STUDY.getStudyIdentifier());
-
-        // Execute and validate
-        StudyParticipant participant = participantService.getParticipant(STUDY, ID, true);
-        assertNull(participant.isConsented());
-    }
-
-    @Test
-    public void getParticipantIsConsentedFalse() {
-        // Set up mocks.
-        mockHealthCodeAndAccountRetrieval();
-
-        doReturn(STUDY.getIdentifier()).when(subpopulation).getGuidString();
-        doReturn(SUBPOP_GUID).when(subpopulation).getGuid();
-        doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(STUDY.getStudyIdentifier());
-
-        when(cacheProvider.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
-
-        ConsentStatus consentStatus1 = new ConsentStatus.Builder().withName("consent1").withGuid(SUBPOP_GUID)
-                .withRequired(true).withConsented(false).withSignedMostRecentConsent(false).build();
-        when(consentService.getConsentStatuses(any(), any())).thenReturn(
-                ImmutableMap.of(SUBPOP_GUID_1, consentStatus1));
-
-        // Execute and validate
-        StudyParticipant participant = participantService.getParticipant(STUDY, ID, true);
-        assertFalse(participant.isConsented());
-    }
-
+    
     // Now, verify that roles cannot *remove* roles they don't have permissions to remove
     
     @Test

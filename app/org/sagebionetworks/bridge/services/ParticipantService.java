@@ -39,7 +39,6 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -207,23 +206,6 @@ public class ParticipantService {
                 consentHistories.put(subpop.getGuidString(), history);
             }
             builder.withConsentHistories(consentHistories);
-
-            // To calculate consent status, we need construct a CriteriaContext from RequestInfo.
-            RequestInfo requestInfo = cacheProvider.getRequestInfo(account.getId());
-            if (requestInfo != null) {
-                CriteriaContext criteriaContext = new CriteriaContext.Builder()
-                        .withStudyIdentifier(study.getStudyIdentifier())
-                        .withUserId(account.getId())
-                        .withHealthCode(account.getHealthCode())
-                        .withClientInfo(requestInfo.getClientInfo())
-                        .withLanguages(requestInfo.getLanguages())
-                        .withUserDataGroups(requestInfo.getUserDataGroups())
-                        .build();
-                Map<SubpopulationGuid, ConsentStatus> consentStatusMap = consentService.getConsentStatuses(
-                        criteriaContext, account);
-                boolean isConsented = ConsentStatus.isUserConsented(consentStatusMap);
-                builder.withConsented(isConsented);
-            }
         }
         return builder.build();
     }
@@ -464,6 +446,9 @@ public class ParticipantService {
 
     /**
      * Get a history of all consent records for a given subpopulation, whether user is withdrawn or not.
+     * 
+     * @param account
+     * @param subpopGuid
      */
     public List<UserConsentHistory> getUserConsentHistory(Account account, SubpopulationGuid subpopGuid) {
         return account.getConsentSignatureHistory(subpopGuid).stream().map(signature -> {
@@ -557,7 +542,7 @@ public class ParticipantService {
         Validate.entityThrowingException(new IdentifierUpdateValidator(study, externalIdService), update);
         
         // Sign in
-        Account account;
+        Account account = null;
         // These throw exceptions for not found, disabled, and not yet verified.
         if (update.getSignIn().getReauthToken() != null) {
             account = accountDao.reauthenticate(study, update.getSignIn());
