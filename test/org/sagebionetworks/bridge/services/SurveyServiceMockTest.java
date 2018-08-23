@@ -67,7 +67,6 @@ public class SurveyServiceMockTest {
     private static final DateTime SURVEY_CREATED_ON = DateTime.parse("2017-02-08T20:07:57.179Z");
     private static final GuidCreatedOnVersionHolder SURVEY_KEYS = new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, 1337);
     private static final Set<Roles> ADMIN_ROLE = ImmutableSet.of(Roles.ADMIN);
-    private static final Set<Roles> NOT_ADMIN_ROLE = ImmutableSet.of(Roles.WORKER);
 
     @Mock
     SurveyPublishValidator mockSurveyPublishValidator;
