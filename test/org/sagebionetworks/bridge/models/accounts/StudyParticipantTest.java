@@ -49,7 +49,7 @@ public class StudyParticipantTest {
             .put("C", "D").build();
     
     @Test
-    public void hashEquals() throws Exception {
+    public void hashEquals() {
         EqualsVerifier.forClass(StudyParticipant.class).allFieldsShouldBeUsed()
                 .withPrefabValues(JsonNode.class, TestUtils.getClientData(), TestUtils.getOtherClientData()).verify();
     }
@@ -70,6 +70,7 @@ public class StudyParticipantTest {
         assertTrue(node.get("notifyByEmail").asBoolean());
         assertNull(node.get("healthCode"));
         assertNotNull(node.get("encryptedHealthCode"));
+        assertTrue(node.get("consented").booleanValue());
         assertEquals("enabled", node.get("status").asText());
         assertEquals(CREATED_ON_UTC.toString(), node.get("createdOn").asText());
         assertEquals(ACCOUNT_ID, node.get("id").asText());
@@ -98,7 +99,7 @@ public class StudyParticipantTest {
 
         assertEquals("B", node.get("attributes").get("A").asText());
         assertEquals("D", node.get("attributes").get("C").asText());
-        assertEquals(22, node.size());
+        assertEquals(23, node.size());
         
         StudyParticipant deserParticipant = BridgeObjectMapper.get().readValue(node.toString(), StudyParticipant.class);
         assertEquals("firstName", deserParticipant.getFirstName());
@@ -114,6 +115,7 @@ public class StudyParticipantTest {
         // This is encrypted with different series of characters each time, so just verify it is there.
         assertNotNull(deserParticipant.getEncryptedHealthCode());
         assertEquals(ATTRIBUTES, deserParticipant.getAttributes());
+        assertTrue(deserParticipant.isConsented());
         assertEquals(CREATED_ON_UTC, deserParticipant.getCreatedOn());
         assertEquals(AccountStatus.ENABLED, deserParticipant.getStatus());
         assertEquals(ACCOUNT_ID, deserParticipant.getId());
@@ -168,6 +170,7 @@ public class StudyParticipantTest {
         assertEquals(DATA_GROUPS, copy.getDataGroups());
         assertEquals("healthCode", copy.getHealthCode());
         assertEquals(ATTRIBUTES, copy.getAttributes());
+        assertTrue(copy.isConsented());
         assertEquals(CREATED_ON, copy.getCreatedOn());
         assertEquals(AccountStatus.ENABLED, copy.getStatus());
         assertEquals(ACCOUNT_ID, copy.getId());
@@ -208,6 +211,10 @@ public class StudyParticipantTest {
     @Test
     public void canCopyGetConsentHistories() {
         assertCopyField("consentHistories", (builder)-> verify(builder).withConsentHistories(any()));
+    }
+    @Test
+    public void canCopyIsConsented() {
+        assertCopyField("consented", builder -> verify(builder).withConsented(true));
     }
     @Test
     public void canCopyGetRoles() {
@@ -266,12 +273,13 @@ public class StudyParticipantTest {
     }
     
     @Test
-    public void nullParametersBreakNothing() throws Exception {
+    public void nullParametersBreakNothing() {
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
-                .withPassword("password").build();
+                .withPassword("password").withConsented(null).build();
         
         assertEquals(0, participant.getRoles().size());
         assertEquals(0, participant.getDataGroups().size());
+        assertNull(participant.isConsented());
     }
     
     @Test
@@ -285,7 +293,7 @@ public class StudyParticipantTest {
     }
     
     @Test
-    public void legacyAccountsWithoutEmailVerificationAreFixed() throws Exception {
+    public void legacyAccountsWithoutEmailVerificationAreFixed() {
         StudyParticipant participant = new StudyParticipant.Builder().withStatus(AccountStatus.ENABLED).build();
         assertEquals(Boolean.TRUE, participant.getEmailVerified());
         assertEquals(AccountStatus.ENABLED, participant.getStatus());
@@ -322,7 +330,7 @@ public class StudyParticipantTest {
         verifyNoMoreInteractions(builder);
     }
     
-    private StudyParticipant createParticipantWithHealthCodes() throws Exception {
+    private StudyParticipant createParticipantWithHealthCodes() {
         StudyParticipant.Builder builder = makeParticipant();
         builder.withHealthCode(null).withEncryptedHealthCode(TestConstants.ENCRYPTED_HEALTH_CODE);
         return builder.build();
@@ -345,6 +353,7 @@ public class StudyParticipantTest {
                 .withDataGroups(DATA_GROUPS)
                 .withHealthCode("healthCode")
                 .withAttributes(ATTRIBUTES)
+                .withConsented(true)
                 .withRoles(ROLES)
                 .withLanguages(LANGS)
                 .withCreatedOn(CREATED_ON)
