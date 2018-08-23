@@ -70,7 +70,7 @@ public class StudyParticipantTest {
         assertTrue(node.get("notifyByEmail").asBoolean());
         assertNull(node.get("healthCode"));
         assertNotNull(node.get("encryptedHealthCode"));
-        assertTrue(node.get("doesConsent").booleanValue());
+        assertTrue(node.get("consented").booleanValue());
         assertEquals("enabled", node.get("status").asText());
         assertEquals(CREATED_ON_UTC.toString(), node.get("createdOn").asText());
         assertEquals(ACCOUNT_ID, node.get("id").asText());
@@ -115,7 +115,7 @@ public class StudyParticipantTest {
         // This is encrypted with different series of characters each time, so just verify it is there.
         assertNotNull(deserParticipant.getEncryptedHealthCode());
         assertEquals(ATTRIBUTES, deserParticipant.getAttributes());
-        assertTrue(deserParticipant.getDoesConsent());
+        assertTrue(deserParticipant.isConsented());
         assertEquals(CREATED_ON_UTC, deserParticipant.getCreatedOn());
         assertEquals(AccountStatus.ENABLED, deserParticipant.getStatus());
         assertEquals(ACCOUNT_ID, deserParticipant.getId());
@@ -170,7 +170,7 @@ public class StudyParticipantTest {
         assertEquals(DATA_GROUPS, copy.getDataGroups());
         assertEquals("healthCode", copy.getHealthCode());
         assertEquals(ATTRIBUTES, copy.getAttributes());
-        assertTrue(copy.getDoesConsent());
+        assertTrue(copy.isConsented());
         assertEquals(CREATED_ON, copy.getCreatedOn());
         assertEquals(AccountStatus.ENABLED, copy.getStatus());
         assertEquals(ACCOUNT_ID, copy.getId());
@@ -213,8 +213,8 @@ public class StudyParticipantTest {
         assertCopyField("consentHistories", (builder)-> verify(builder).withConsentHistories(any()));
     }
     @Test
-    public void canCopyDoesConsent() {
-        assertCopyField("doesConsent", builder -> verify(builder).withDoesConsent(true));
+    public void canCopyIsConsented() {
+        assertCopyField("consented", builder -> verify(builder).withConsented(true));
     }
     @Test
     public void canCopyGetRoles() {
@@ -275,11 +275,11 @@ public class StudyParticipantTest {
     @Test
     public void nullParametersBreakNothing() {
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
-                .withPassword("password").withDoesConsent(null).build();
+                .withPassword("password").withConsented(null).build();
         
         assertEquals(0, participant.getRoles().size());
         assertEquals(0, participant.getDataGroups().size());
-        assertNull(participant.getDoesConsent());
+        assertNull(participant.isConsented());
     }
     
     @Test
@@ -353,7 +353,7 @@ public class StudyParticipantTest {
                 .withDataGroups(DATA_GROUPS)
                 .withHealthCode("healthCode")
                 .withAttributes(ATTRIBUTES)
-                .withDoesConsent(true)
+                .withConsented(true)
                 .withRoles(ROLES)
                 .withLanguages(LANGS)
                 .withCreatedOn(CREATED_ON)

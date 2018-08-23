@@ -610,7 +610,7 @@ public class ParticipantServiceTest {
         // Get the fully initialized participant object (including histories)
         StudyParticipant participant = participantService.getParticipant(STUDY, ID, true);
 
-        assertTrue(participant.getDoesConsent());
+        assertTrue(participant.isConsented());
         assertEquals(FIRST_NAME, participant.getFirstName());
         assertEquals(LAST_NAME, participant.getLastName());
         assertTrue(participant.isNotifyByEmail());
@@ -860,7 +860,7 @@ public class ParticipantServiceTest {
         StudyParticipant participant = participantService.getParticipant(STUDY, ID, false);
 
         assertTrue(participant.getConsentHistories().keySet().isEmpty());
-        assertNull(participant.getDoesConsent());
+        assertNull(participant.isConsented());
     }
 
     @Test
@@ -895,7 +895,7 @@ public class ParticipantServiceTest {
     }
 
     @Test
-    public void getParticipantDoesConsentWithoutRequestInfo() {
+    public void getParticipantIsConsentedWithoutRequestInfo() {
         // Set up mocks.
         mockHealthCodeAndAccountRetrieval();
 
@@ -905,11 +905,11 @@ public class ParticipantServiceTest {
 
         // Execute and validate
         StudyParticipant participant = participantService.getParticipant(STUDY, ID, true);
-        assertNull(participant.getDoesConsent());
+        assertNull(participant.isConsented());
     }
 
     @Test
-    public void getParticipantDoesConsentFalse() {
+    public void getParticipantIsConsentedFalse() {
         // Set up mocks.
         mockHealthCodeAndAccountRetrieval();
 
@@ -926,7 +926,7 @@ public class ParticipantServiceTest {
 
         // Execute and validate
         StudyParticipant participant = participantService.getParticipant(STUDY, ID, true);
-        assertFalse(participant.getDoesConsent());
+        assertFalse(participant.isConsented());
     }
 
     // Now, verify that roles cannot *remove* roles they don't have permissions to remove

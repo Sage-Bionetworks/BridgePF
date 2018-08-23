@@ -221,8 +221,8 @@ public class ParticipantService {
                         .build();
                 Map<SubpopulationGuid, ConsentStatus> consentStatusMap = consentService.getConsentStatuses(
                         criteriaContext, account);
-                boolean doesConsent = ConsentStatus.isUserConsented(consentStatusMap);
-                builder.withDoesConsent(doesConsent);
+                boolean isConsented = ConsentStatus.isUserConsented(consentStatusMap);
+                builder.withConsented(isConsented);
             }
         }
         return builder.build();
