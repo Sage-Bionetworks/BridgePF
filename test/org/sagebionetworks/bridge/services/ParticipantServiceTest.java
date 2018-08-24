@@ -428,6 +428,7 @@ public class ParticipantServiceTest {
     public void createParticipantPhoneEnabledVerificationWanted() {
         mockHealthCodeAndAccountRetrieval(null, PHONE);
 
+        STUDY.setEmailVerificationEnabled(true);
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
 
         verify(accountWorkflowService).sendPhoneVerificationToken(any(), any(), any());
@@ -441,6 +442,7 @@ public class ParticipantServiceTest {
         study.setAutoVerificationPhoneSuppressed(true);
         mockHealthCodeAndAccountRetrieval(null, PHONE);
 
+        study.setEmailVerificationEnabled(true);
         participantService.createParticipant(study, CALLER_ROLES, PARTICIPANT, true);
 
         verify(accountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any());
@@ -459,6 +461,31 @@ public class ParticipantServiceTest {
         verify(accountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any());
         assertEquals(AccountStatus.ENABLED, account.getStatus());
         assertNull(account.getPhoneVerified());
+    }
+
+    @Test
+    public void createParticipantExternalIdNoPasswordIsUnverified() {
+        mockHealthCodeAndAccountRetrieval(null, null);
+        
+        StudyParticipant idParticipant = new StudyParticipant.Builder().withExternalId(EXTERNAL_ID).build();
+        participantService.createParticipant(STUDY, CALLER_ROLES, idParticipant, false);
+        
+        assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
+        assertNull(account.getPhoneVerified());
+        assertNull(account.getEmailVerified());
+    }
+    
+    @Test
+    public void createParticipantExternalIdAndPasswordIsEnabled() {
+        mockHealthCodeAndAccountRetrieval(null, null);
+        
+        StudyParticipant idParticipant = new StudyParticipant.Builder().withExternalId(EXTERNAL_ID)
+                .withPassword(PASSWORD).build();
+        participantService.createParticipant(STUDY, CALLER_ROLES, idParticipant, false);
+        
+        assertEquals(AccountStatus.ENABLED, account.getStatus());
+        assertNull(account.getPhoneVerified());
+        assertNull(account.getEmailVerified());
     }
 
     @Test

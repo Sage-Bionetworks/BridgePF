@@ -270,24 +270,25 @@ public class ParticipantService {
                 participant.getExternalId(), participant.getPassword());
 
         updateAccountAndRoles(study, callerRoles, account, participant);
-
-        account.setStatus(AccountStatus.ENABLED);
+        
+        account.setStatus(AccountStatus.UNVERIFIED);
 
         // enabled unless we need any kind of verification
         boolean sendEmailVerification = shouldSendVerification && study.isEmailVerificationEnabled();
-        if (participant.getEmail() != null) {
-            if (sendEmailVerification) {
-                account.setStatus(AccountStatus.UNVERIFIED);
-            } else {
-                account.setEmailVerified(true); // not verifying, so consider it verified if it exists
-            }
+        if (participant.getEmail() != null && !sendEmailVerification) {
+            // not verifying, so consider it verified
+            account.setEmailVerified(true); 
+            account.setStatus(AccountStatus.ENABLED);
         }
-        if (participant.getPhone() != null) {
-            if (shouldSendVerification) {
-                account.setStatus(AccountStatus.UNVERIFIED);
-            } else {
-                account.setPhoneVerified(true); // not verifying, so consider it verified if it exists
-            }
+        if (participant.getPhone() != null && !shouldSendVerification) {
+            // not verifying, so consider it verified
+            account.setPhoneVerified(true); 
+            account.setStatus(AccountStatus.ENABLED);
+        }
+        // If external ID only was provided, then the account will need to be enabled through use of the 
+        // the AuthenticationService.generatePassword() pathway.
+        if (shouldEnableCompleteExternalIdAccount(participant)) {
+            account.setStatus(AccountStatus.ENABLED);
         }
         String accountId = accountDao.createAccount(study, account);
         externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());    
@@ -301,6 +302,11 @@ public class ParticipantService {
             accountWorkflowService.sendPhoneVerificationToken(study, accountId, account.getPhone());
         }
         return new IdentifierHolder(accountId);
+    }
+    
+    private boolean shouldEnableCompleteExternalIdAccount(StudyParticipant participant) {
+        return participant.getEmail() == null && participant.getPhone() == null && 
+            participant.getExternalId() != null && participant.getPassword() != null;
     }
 
     public void updateParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant) {
