@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import com.fasterxml.jackson.annotation.JsonFilter;
 import org.joda.time.DateTime;
 
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
@@ -16,8 +18,10 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+@BridgeTypeName("ActivityEvent")
 // We must preserve the table name until any migration occurs.
 @DynamoDBTable(tableName = "TaskEvent")
+@JsonFilter("filter")
 public class DynamoActivityEvent implements ActivityEvent {
 
     private String healthCode;

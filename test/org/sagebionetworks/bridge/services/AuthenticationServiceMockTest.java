@@ -386,7 +386,7 @@ public class AuthenticationServiceMockTest {
         assertEquals(RECIPIENT_EMAIL, captured.getParticipant().getEmail());
         assertEquals(REAUTH_TOKEN, captured.getReauthToken());
         verify(cacheProvider).setObject(eq(REAUTH_CACHE_TOKEN), tupleCaptor.capture(),
-                eq(BridgeConstants.REAUTH_TOKEN_CACHE_LOOKUP_IN_SECONDS*2));
+                eq(BridgeConstants.REAUTH_TOKEN_GRACE_PERIOD_SECONDS));
         
         Tuple<String> tuple = tupleCaptor.getValue();
         assertEquals(session.getSessionToken(), tuple.getLeft());

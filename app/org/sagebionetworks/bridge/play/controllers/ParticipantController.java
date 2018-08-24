@@ -60,6 +60,8 @@ import org.sagebionetworks.bridge.services.UserAdminService;
 @Controller
 public class ParticipantController extends BaseController {
     
+    private static final String NOTIFY_SUCCESS_MESSAGE = "Message has been sent to external notification service.";
+
     private ParticipantService participantService;
     
     private UserAdminService userAdminService;
@@ -410,9 +412,13 @@ public class ParticipantController extends BaseController {
         
         NotificationMessage message = parseJson(request(), NotificationMessage.class);
         
-        participantService.sendNotification(study, userId, message);
+        Set<String> erroredNotifications = participantService.sendNotification(study, userId, message);
         
-        return acceptedResult("Message has been sent to external notification service.");
+        if (erroredNotifications.isEmpty()) {
+            return acceptedResult(NOTIFY_SUCCESS_MESSAGE);                    
+        }
+        return acceptedResult(NOTIFY_SUCCESS_MESSAGE + " Some registrations returned errors: "
+                + BridgeUtils.COMMA_SPACE_JOINER.join(erroredNotifications) + ".");
     }
 
     public Result getActivityEvents(String userId) {

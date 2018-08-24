@@ -12,9 +12,11 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.Before;
@@ -46,7 +48,7 @@ import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.model.InvalidParameterException;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.amazonaws.services.sns.model.PublishResult;
-
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -350,26 +352,40 @@ public class NotificationsServiceTest {
         }
     }
     
-    // In this test, we create no less than two amazon exceptions, and verify that we throw one exception 
-    // that summarizes the sorry situation for the user, while also hiding all the Amazon gobbledy-gook. 
-    // This is thrown as a 400 error because the most common ways you can trigger it are to submit bad 
-    // data, like an invalid device token. 
+    // Publish to two devices, where one device fails but the other sends to the user. 
+    // Method succeeds but returns the GUID of the failed call for reporting back to the user.
     @Test
+    public void sendNotificationWithPartialErrors() {
+        NotificationRegistration reg1 = getNotificationRegistration();
+        NotificationRegistration reg2 = getNotificationRegistration();
+        reg2.setGuid("registrationGuid2");
+        List<NotificationRegistration> list = Lists.newArrayList(reg1, reg2);
+        doReturn(list).when(mockRegistrationDao).listRegistrations(HEALTH_CODE);
+        
+        when(mockSnsClient.publish(any()))
+            .thenReturn(mockPublishResult)
+            .thenThrow(new InvalidParameterException("bad parameter"));
+        
+        NotificationMessage message = getNotificationMessage();
+        Set<String> erroredNotifications = service.sendNotificationToUser(STUDY_ID, HEALTH_CODE, message);
+        assertEquals(1, erroredNotifications.size());
+        assertEquals("registrationGuid2", Iterables.getFirst(erroredNotifications, null));        
+    }
+    
+    // Publish to two devices, where all the devices fail. This should throw an exception as nothing 
+    // was successfully returned to the user.
+    @Test(expected = BadRequestException.class)
     public void sendNotificationAmazonExceptionConverted() {
         NotificationRegistration reg1 = getNotificationRegistration();
         NotificationRegistration reg2 = getNotificationRegistration();
+        reg2.setGuid("registrationGuid2"); // This has to be different
         List<NotificationRegistration> list = Lists.newArrayList(reg1, reg2);
         doReturn(list).when(mockRegistrationDao).listRegistrations(HEALTH_CODE);
         
         doThrow(new InvalidParameterException("bad parameter")).when(mockSnsClient).publish(any());
         
         NotificationMessage message = getNotificationMessage();
-        try {
-            service.sendNotificationToUser(STUDY_ID, HEALTH_CODE, message);
-            fail("Should have thrown exception.");
-        } catch(BadRequestException e) {
-            assertEquals("Error sending push notification: bad parameter; bad parameter.", e.getMessage());
-        }
+        service.sendNotificationToUser(STUDY_ID, HEALTH_CODE, message);
     }
     
     @Test

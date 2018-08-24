@@ -25,6 +25,7 @@ import java.util.Set;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -839,6 +840,19 @@ public class ParticipantControllerTest {
         
         assertEquals("a subject", captured.getSubject());
         assertEquals("a message", captured.getMessage());
+    }
+    
+    @Test
+    public void sendMessageWithSomeErrors() throws Exception {
+        NotificationMessage message = TestUtils.getNotificationMessage();
+        
+        Set<String> erroredRegistrations = ImmutableSet.of("123", "456");
+        when(mockParticipantService.sendNotification(study, ID, message)).thenReturn(erroredRegistrations);
+        
+        TestUtils.mockPlayContextWithJson(message);
+        Result result = controller.sendNotification(ID);
+        
+        assertResult(result, 202, "Message has been sent to external notification service. Some registrations returned errors: 123, 456.");
     }
 
     @SuppressWarnings("deprecation")

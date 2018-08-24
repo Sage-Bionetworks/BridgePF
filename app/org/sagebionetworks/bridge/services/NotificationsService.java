@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.SEMICOLON_SPACE_JOINER;
 
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Resource;
 
@@ -35,7 +36,7 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.amazonaws.services.sns.model.PublishResult;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 /**
  * Service for managing client registration to receive push notifications, integrated into the 
@@ -238,7 +239,7 @@ public class NotificationsService {
      * to many accounts.</i> Create a topic, ask your users to subscribe to that topic in your application, and message 
      * them via that topic.
      */
-    public void sendNotificationToUser(StudyIdentifier studyId, String healthCode, NotificationMessage message) {
+    public Set<String> sendNotificationToUser(StudyIdentifier studyId, String healthCode, NotificationMessage message) {
         checkNotNull(studyId);
         checkNotNull(healthCode);
         checkNotNull(message);
@@ -250,26 +251,28 @@ public class NotificationsService {
             throw new BadRequestException("Participant has not registered to receive push notifications.");
         }
         
-        List<String> errorMessages = Lists.newArrayListWithCapacity(registrations.size());
+        Set<String> erroredRegistrations = Sets.newHashSet();
         for (NotificationRegistration registration : registrations) {
             String endpointARN = registration.getEndpoint();
             
             PublishRequest request = new PublishRequest().withTargetArn(endpointARN)
                     .withSubject(message.getSubject()).withMessage(message.getMessage());
-            
+
             try {
                 PublishResult result = snsClient.publish(request);
                 LOG.debug("Sent message to participant registration=" + registration.getGuid() + ", study=" +
                         studyId.getIdentifier() + ", message ID=" + result.getMessageId());
             } catch(AmazonServiceException e) {
                 LOG.warn("Error publishing SNS message to participant", e);
-                errorMessages.add(e.getErrorMessage());
+                erroredRegistrations.add(registration.getGuid());
             }
         }
-        if (!errorMessages.isEmpty()) {
-            throw new BadRequestException("Error sending push notification: " + 
-                SEMICOLON_SPACE_JOINER.join(errorMessages) + ".");
+        // If none of the registrations succeeds, then throw an error.
+        if (erroredRegistrations.size() == registrations.size()) {
+            throw new BadRequestException("Error sending push notification to registration(s): "
+                    + SEMICOLON_SPACE_JOINER.join(erroredRegistrations) + ".");
         }
+        return erroredRegistrations;
     }
     
     public void sendSmsMessage(SmsMessageProvider provider) {
