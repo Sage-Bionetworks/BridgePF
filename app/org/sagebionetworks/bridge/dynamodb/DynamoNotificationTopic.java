@@ -19,6 +19,7 @@ public class DynamoNotificationTopic implements NotificationTopic {
     private String guid;
     private String studyId;
     private String name;
+    private String shortName;
     private String description;
     private String topicARN;
     private long createdOn;
@@ -52,6 +53,19 @@ public class DynamoNotificationTopic implements NotificationTopic {
     public void setName(String name) {
         this.name = name;
     }
+
+    /** {@inheritDoc} */
+    @Override
+    public String getShortName() {
+        return shortName;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setShortName(String shortName) {
+        this.shortName = shortName;
+    }
+
     @Override
     public String getDescription() {
         return description;

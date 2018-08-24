@@ -39,7 +39,16 @@ public interface NotificationTopic extends BridgeEntity {
     
     /** @see #getName */
     void setName(String name);
-    
+
+    /**
+     * Short name for the topic, used as the display name for the topic in SNS. This also appears in SMS
+     * notifications. Must be 10 characters or less.
+     */
+    String getShortName();
+
+    /** @see #getShortName */
+    void setShortName(String shortName);
+
     /**
      * Description text for this topic, if needed.
      */

@@ -258,10 +258,11 @@ public class TestUtils {
         return new SubscriptionRequest(Sets.newHashSet("topicA", "topicB"));
     }
     
-    public static final NotificationTopic getNotificationTopic() {
+    public static NotificationTopic getNotificationTopic() {
         NotificationTopic topic = NotificationTopic.create();
         topic.setGuid("topicGuid");
         topic.setName("Test Topic Name");
+        topic.setShortName("Short Name");
         topic.setDescription("Test Description");
         topic.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         topic.setTopicARN("atopicArn");

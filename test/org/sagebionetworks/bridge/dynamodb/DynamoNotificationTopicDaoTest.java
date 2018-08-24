@@ -33,7 +33,6 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.CriteriaDao;
@@ -58,7 +57,6 @@ public class DynamoNotificationTopicDaoTest {
     private static final String GUID_WITH_CRITERIA = "topic-guid-with-criteria";
     private static final String GUID_WITHOUT_CRITERIA = "topic-guid-without-criteria";
     private static final String TOPIC_ARN = "topic-arn";
-    private static final String TRUNCATED_DISPLAY_NAME = "Test Topic";
 
     @Mock
     private CriteriaDao mockCriteriaDao;
@@ -185,7 +183,7 @@ public class DynamoNotificationTopicDaoTest {
         // Verify SNS calls.
         verify(mockSnsClient).createTopic("api-local-" + saved.getGuid());
         verify(mockSnsClient).setTopicAttributes(TOPIC_ARN, DynamoNotificationTopicDao.ATTR_DISPLAY_NAME,
-                TRUNCATED_DISPLAY_NAME);
+                "Short Name");
 
         // Verify DDB mapper.
         verify(mockMapper).save(topicCaptor.capture());

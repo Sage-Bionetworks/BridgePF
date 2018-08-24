@@ -8,12 +8,10 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import static org.sagebionetworks.bridge.TestUtils.assertResult;
@@ -37,7 +35,6 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.services.NotificationsService;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -85,8 +82,6 @@ public class ConsentControllerMockedTest {
     private Study study;
     private CriteriaContext context;
 
-    @Mock
-    private NotificationsService notificationsService;
     @Mock
     private StudyService studyService;
     @Mock
@@ -139,7 +134,6 @@ public class ConsentControllerMockedTest {
         
         controller = spy(new ConsentController());
         controller.setAccountDao(accountDao);
-        controller.setNotificationsService(notificationsService);
         controller.setSessionUpdateService(sessionUpdateService);
         controller.setStudyService(studyService);
         controller.setConsentService(consentService);
@@ -397,38 +391,6 @@ public class ConsentControllerMockedTest {
         verify(consentService).consentToResearch(eq(study), eq(SUBPOP_GUID), eq(participant),
                 signatureCaptor.capture(), eq(SharingScope.NO_SHARING), eq(true));
         validateSignature(signatureCaptor.getValue());
-    }
-
-    @Test
-    public void consentCreatesSmsNotificationRegistration() throws Exception {
-        // Mock consentService. Note that this test is a little artificial. We need to consent to both subpops before
-        // we see an SMS notification registration. But this involves a lot of dependencies. The whole thing is boiled
-        // down to what consentService.getConsentStatuses() returns, which is called after we create consent.
-        when(consentService.getConsentStatuses(any())).thenReturn(
-                makeConsentStatusMap(true, false),
-                makeConsentStatusMap(true, true));
-
-        // Mock play context.
-        String json = createJson("{'name':'Jack Aubrey','birthdate':'1970-10-10','imageData':'data:asdf'"+
-                ",'imageMimeType':'image/png','scope':'sponsors_and_partners'}");
-        TestUtils.mockPlayContextWithJson(json);
-
-        // Consent to the default subpop. We don't have SMS notification registrations yet.
-        controller.giveV3(DEFAULT_SUBPOP_GUID.getGuid());
-        verify(notificationsService, never()).createSmsRegistrationAfterConsent(any(), any());
-
-        // Consent to the other subpop. Now we have SMS notification registrations.
-        controller.giveV3(SUBPOP_GUID.getGuid());
-
-        ArgumentCaptor<CriteriaContext> contextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
-        verify(notificationsService).createSmsRegistrationAfterConsent(eq(participant), contextCaptor.capture());
-
-        // Also verify that the context contains the correct information from the participant.
-        CriteriaContext capturedContext = contextCaptor.getValue();
-        assertEquals(HEALTH_CODE, capturedContext.getHealthCode());
-        assertEquals(TestConstants.LANGUAGES, capturedContext.getLanguages());
-        assertEquals(TestConstants.USER_DATA_GROUPS, capturedContext.getUserDataGroups());
-        assertEquals(USER_ID, capturedContext.getUserId());
     }
 
     @Test
@@ -690,15 +652,5 @@ public class ConsentControllerMockedTest {
         assertEquals("1970-10-10", signature.getBirthdate());
         assertEquals("data:asdf", signature.getImageData());
         assertEquals("image/png", signature.getImageMimeType());
-    }
-
-    private static Map<SubpopulationGuid, ConsentStatus> makeConsentStatusMap(boolean consentToDefault,
-            boolean consentToSubpop) {
-        Map<SubpopulationGuid,ConsentStatus> map = new HashMap<>();
-        map.put(DEFAULT_SUBPOP_GUID, new ConsentStatus.Builder().withConsented(consentToDefault)
-                .withGuid(DEFAULT_SUBPOP_GUID).withName("Default Consent").withRequired(true).build());
-        map.put(SUBPOP_GUID, new ConsentStatus.Builder().withConsented(consentToSubpop).withGuid(SUBPOP_GUID)
-                .withName("Another Consent").withRequired(true).build());
-        return map;
     }
 }

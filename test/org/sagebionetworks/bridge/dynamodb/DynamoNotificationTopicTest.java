@@ -28,6 +28,7 @@ public class DynamoNotificationTopicTest {
         NotificationTopic topic = NotificationTopic.create();
         topic.setGuid("ABC");
         topic.setName("My Test Topic");
+        topic.setShortName("Test Topic");
         topic.setStudyId("test-study");
         topic.setTopicARN("aTopicARN");
         topic.setDescription("A description.");
@@ -42,6 +43,7 @@ public class DynamoNotificationTopicTest {
         JsonNode node = BridgeObjectMapper.get().valueToTree(topic);
         assertEquals("ABC", node.get("guid").asText());
         assertEquals("My Test Topic", node.get("name").asText());
+        assertEquals("Test Topic", node.get("shortName").textValue());
         assertEquals("NotificationTopic", node.get("type").asText());
         assertEquals("A description.", node.get("description").asText());
         assertEquals(DATE_TIME.toString(), node.get("createdOn").asText());
@@ -65,6 +67,7 @@ public class DynamoNotificationTopicTest {
         NotificationTopic deser = BridgeObjectMapper.get().readValue(node.toString(), NotificationTopic.class);
         assertEquals("ABC", deser.getGuid());
         assertEquals("My Test Topic", deser.getName());
+        assertEquals("Test Topic", deser.getShortName());
         assertNull("test-study", deser.getStudyId());
         assertEquals("A description.", deser.getDescription());
         assertEquals(TIMESTAMP, deser.getCreatedOn());

@@ -63,7 +63,6 @@ public class AuthenticationService {
     private BridgeConfig config;
     private ConsentService consentService;
     private AccountDao accountDao;
-    private NotificationsService notificationsService;
     private ParticipantService participantService;
     private StudyService studyService;
     private PasswordResetValidator passwordResetValidator;
@@ -86,12 +85,6 @@ public class AuthenticationService {
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
-    }
-
-    /** Notifications service, used to create a SMS notification registration for phone accounts. */
-    @Autowired
-    public final void setNotificationsService(NotificationsService notificationsService) {
-        this.notificationsService = notificationsService;
     }
 
     @Autowired
@@ -183,12 +176,6 @@ public class AuthenticationService {
             AccountId accountId = AccountId.forId(study.getIdentifier(), account.getId());
             account = accountDao.getAccount(accountId);
             session = getSessionFromAccount(study, context, account);
-
-            if (session.doesConsent()) {
-                // After consent, we should sign the user up for SMS notifications.
-                CriteriaContext updatedContext = updateContextFromSession(context, session);
-                notificationsService.createSmsRegistrationAfterConsent(session.getParticipant(), updatedContext);
-            }
         }
         cacheProvider.setUserSession(session);
         
@@ -385,12 +372,6 @@ public class AuthenticationService {
         if (!session.doesConsent() && intentService.registerIntentToParticipate(study, account)) {
             account = accountDao.getAccount(accountId);
             session = getSessionFromAccount(study, context, account);
-
-            if (session.doesConsent()) {
-                // After consent, we should sign the user up for SMS notifications.
-                CriteriaContext updatedContext = updateContextFromSession(context, session);
-                notificationsService.createSmsRegistrationAfterConsent(session.getParticipant(), updatedContext);
-            }
         }
         cacheProvider.setUserSession(session);
         if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {

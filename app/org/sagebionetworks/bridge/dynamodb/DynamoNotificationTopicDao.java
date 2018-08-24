@@ -120,12 +120,7 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
 
         // Display name is required for SMS notifications. Strangely, there's no way to set display name in the
         // create API, only the set attribute API.
-        // Display name has max length 10 chars.
-        String displayName = topic.getName();
-        if (displayName.length() > 10) {
-            displayName = displayName.substring(0, 10);
-        }
-        snsClient.setTopicAttributes(result.getTopicArn(), ATTR_DISPLAY_NAME, displayName);
+        snsClient.setTopicAttributes(result.getTopicArn(), ATTR_DISPLAY_NAME, topic.getShortName());
 
         topic.setTopicARN(result.getTopicArn());
         long timestamp = DateUtils.getCurrentMillisFromEpoch();

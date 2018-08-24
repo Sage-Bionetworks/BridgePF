@@ -19,12 +19,10 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -108,7 +106,6 @@ public class AuthenticationServiceMockTest {
             .withReauthToken(TOKEN).build();
     
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("ABC");
-    private static final SubpopulationGuid SUBPOP_GUID_2 = SubpopulationGuid.create("XYZ");
     private static final ConsentStatus CONSENTED_STATUS = new ConsentStatus.Builder().withName("Name")
             .withGuid(SUBPOP_GUID).withRequired(true).withConsented(true).build();
     private static final ConsentStatus UNCONSENTED_STATUS = new ConsentStatus.Builder().withName("Name")
@@ -135,8 +132,6 @@ public class AuthenticationServiceMockTest {
     private ConsentService consentService;
     @Mock
     private AccountDao accountDao;
-    @Mock
-    private NotificationsService notificationsService;
     @Mock
     private ParticipantService participantService;
     @Mock
@@ -180,16 +175,12 @@ public class AuthenticationServiceMockTest {
         service.setBridgeConfig(config);
         service.setConsentService(consentService);
         service.setAccountDao(accountDao);
-        service.setNotificationsService(notificationsService);
         service.setPasswordResetValidator(passwordResetValidator);
         service.setParticipantService(participantService);
         service.setStudyService(studyService);
         service.setAccountWorkflowService(accountWorkflowService);
         service.setExternalIdService(externalIdService);
         service.setIntentToParticipateService(intentService);
-
-        // Mock dependent services.
-        when(notificationsService.listRegistrations(any())).thenReturn(ImmutableList.of());
 
         doReturn(study).when(studyService).getStudy(STUDY_ID);
     }
@@ -788,17 +779,6 @@ public class AuthenticationServiceMockTest {
         when(intentService.registerIntentToParticipate(study, account)).thenReturn(true);
         
         service.signIn(study, CONTEXT, EMAIL_PASSWORD_SIGN_IN);
-
-        // Verify that we call Notifications Service.
-        ArgumentCaptor<CriteriaContext> contextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
-        verify(notificationsService).createSmsRegistrationAfterConsent(eq(PARTICIPANT_WITH_ATTRIBUTES), contextCaptor
-                .capture());
-
-        CriteriaContext context = contextCaptor.getValue();
-        assertEquals(HEALTH_CODE, context.getHealthCode());
-        assertEquals(LANGUAGES, context.getLanguages());
-        assertEquals(DATA_GROUP_SET, context.getUserDataGroups());
-        assertEquals(USER_ID, context.getUserId());
     }
     
     @Test
@@ -821,17 +801,6 @@ public class AuthenticationServiceMockTest {
         when(intentService.registerIntentToParticipate(study, account)).thenReturn(true);
         
         service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
-
-        // Verify that we call Notifications Service.
-        ArgumentCaptor<CriteriaContext> contextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
-        verify(notificationsService).createSmsRegistrationAfterConsent(eq(PARTICIPANT_WITH_ATTRIBUTES), contextCaptor
-                .capture());
-
-        CriteriaContext context = contextCaptor.getValue();
-        assertEquals(HEALTH_CODE, context.getHealthCode());
-        assertEquals(LANGUAGES, context.getLanguages());
-        assertEquals(DATA_GROUP_SET, context.getUserDataGroups());
-        assertEquals(USER_ID, context.getUserId());
     }
 
     @Test
@@ -854,17 +823,6 @@ public class AuthenticationServiceMockTest {
         when(intentService.registerIntentToParticipate(study, account)).thenReturn(true);
         
         service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
-
-        // Verify that we call Notifications Service.
-        ArgumentCaptor<CriteriaContext> contextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
-        verify(notificationsService).createSmsRegistrationAfterConsent(eq(PARTICIPANT_WITH_ATTRIBUTES), contextCaptor
-                .capture());
-
-        CriteriaContext context = contextCaptor.getValue();
-        assertEquals(HEALTH_CODE, context.getHealthCode());
-        assertEquals(LANGUAGES, context.getLanguages());
-        assertEquals(DATA_GROUP_SET, context.getUserDataGroups());
-        assertEquals(USER_ID, context.getUserId());
     }
     
     @Test
@@ -904,101 +862,6 @@ public class AuthenticationServiceMockTest {
         verify(intentService, never()).registerIntentToParticipate(study, account);
     }
 
-    @Test
-    public void signInWithIntentToParticipateWithMultipleConsentsDoesntCreateSmsRegistration() {
-        account.setId(USER_ID);
-        Account consentedAccount = Account.create();
-
-        doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
-        doReturn(PARTICIPANT_WITH_ATTRIBUTES).when(participantService).getParticipant(study, account,
-                false);
-        doReturn(makeConsentStatusMap(false, false)).when(consentService).getConsentStatuses(any(), eq(account));
-
-        doReturn(consentedAccount).when(accountDao).getAccount(any());
-        doReturn(PARTICIPANT_WITH_ATTRIBUTES).when(participantService).getParticipant(study, consentedAccount,
-                false);
-        doReturn(makeConsentStatusMap(true, false)).when(consentService).getConsentStatuses(any(),
-                eq(consentedAccount));
-
-        // This would normally throw except that the intentService reports consents were updated
-        when(intentService.registerIntentToParticipate(study, account)).thenReturn(true);
-
-        try {
-            service.signIn(study, CONTEXT, EMAIL_PASSWORD_SIGN_IN);
-            fail("expected exception");
-        } catch (ConsentRequiredException ex) {
-            // expected exception
-        }
-
-        // Verify that we call intent to register, but not notifications service.
-        verify(intentService).registerIntentToParticipate(study, account);
-        verify(notificationsService, never()).createSmsRegistrationAfterConsent(any(), any());
-    }
-
-    @Test
-    public void emailSignInWithIntentToParticipateWithMultipleConsentsDoesntCreateSmsRegistration() {
-        Account consentedAccount = Account.create();
-
-        when(accountWorkflowService.channelSignIn(ChannelType.EMAIL, CONTEXT, SIGN_IN_WITH_EMAIL,
-                SignInValidator.EMAIL_SIGNIN)).thenReturn(SIGN_IN_WITH_EMAIL.getAccountId());
-        when(accountDao.getAccountAfterAuthentication(any())).thenReturn(account);
-        when(participantService.getParticipant(study, account, false)).thenReturn(
-                PARTICIPANT_WITH_ATTRIBUTES);
-        when(consentService.getConsentStatuses(any(), eq(account))).thenReturn(makeConsentStatusMap(false, false));
-
-        when(accountDao.getAccount(any())).thenReturn(consentedAccount);
-        when(participantService.getParticipant(study, consentedAccount, false)).thenReturn(
-                PARTICIPANT_WITH_ATTRIBUTES);
-        when(consentService.getConsentStatuses(any(), eq(consentedAccount))).thenReturn(makeConsentStatusMap(true,
-                false));
-
-        // This would normally throw except that the intentService reports consents were updated
-        when(intentService.registerIntentToParticipate(study, account)).thenReturn(true);
-
-        try {
-            service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
-            fail("expected exception");
-        } catch (ConsentRequiredException ex) {
-            // expected exception
-        }
-
-        // Verify that we call intent to register, but not notifications service.
-        verify(intentService).registerIntentToParticipate(study, account);
-        verify(notificationsService, never()).createSmsRegistrationAfterConsent(any(), any());
-    }
-
-    @Test
-    public void phoneSignInWithIntentToParticipateWithMultipleConsentsDoesntCreateSmsRegistration() {
-        Account consentedAccount = Account.create();
-
-        when(accountWorkflowService.channelSignIn(ChannelType.PHONE, CONTEXT, SIGN_IN_WITH_PHONE,
-                SignInValidator.PHONE_SIGNIN)).thenReturn(SIGN_IN_WITH_PHONE.getAccountId());
-        when(accountDao.getAccountAfterAuthentication(any())).thenReturn(account);
-        when(participantService.getParticipant(study, account, false)).thenReturn(
-                PARTICIPANT_WITH_ATTRIBUTES);
-        when(consentService.getConsentStatuses(any(), eq(account))).thenReturn(makeConsentStatusMap(false, false));
-
-        when(accountDao.getAccount(any())).thenReturn(consentedAccount);
-        when(participantService.getParticipant(study, consentedAccount, false)).thenReturn(
-                PARTICIPANT_WITH_ATTRIBUTES);
-        when(consentService.getConsentStatuses(any(), eq(consentedAccount))).thenReturn(makeConsentStatusMap(true,
-                false));
-
-        // This would normally throw except that the intentService reports consents were updated
-        when(intentService.registerIntentToParticipate(study, account)).thenReturn(true);
-
-        try {
-            service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
-            fail("expected exception");
-        } catch (ConsentRequiredException ex) {
-            // expected exception
-        }
-
-        // Verify that we call intent to register, but not notifications service.
-        verify(intentService).registerIntentToParticipate(study, account);
-        verify(notificationsService, never()).createSmsRegistrationAfterConsent(any(), any());
-    }
-
     // Most of the other behaviors are tested in other methods. This test specifically tests the session created has
     // the correct attributes.
     @Test
@@ -1030,15 +893,5 @@ public class AuthenticationServiceMockTest {
         assertEquals(TestConstants.TEST_STUDY, session.getStudyIdentifier());
         assertEquals(REAUTH_TOKEN, session.getReauthToken());
         assertEquals(CONSENTED_STATUS_MAP, session.getConsentStatuses());
-    }
-
-    private static Map<SubpopulationGuid, ConsentStatus> makeConsentStatusMap(boolean consentToSubpop1,
-            boolean consentToSubpop2) {
-        Map<SubpopulationGuid,ConsentStatus> map = new HashMap<>();
-        map.put(SUBPOP_GUID, new ConsentStatus.Builder().withConsented(consentToSubpop1).withGuid(SUBPOP_GUID)
-                .withName("Consent 1").withRequired(true).build());
-        map.put(SUBPOP_GUID_2, new ConsentStatus.Builder().withConsented(consentToSubpop2).withGuid(SUBPOP_GUID_2)
-                .withName("Consent 2").withRequired(true).build());
-        return map;
     }
 }
