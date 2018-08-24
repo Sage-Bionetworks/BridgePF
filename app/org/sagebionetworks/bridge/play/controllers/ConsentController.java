@@ -150,7 +150,7 @@ public class ConsentController extends BaseController {
         return okResult(UserSessionInfo.toJSON(session));
     }
     
-    private Result giveConsentForVersion(int version, SubpopulationGuid subpopGuid) throws Exception {
+    private Result giveConsentForVersion(int version, SubpopulationGuid subpopGuid) {
         final UserSession session = getAuthenticatedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 
@@ -171,7 +171,7 @@ public class ConsentController extends BaseController {
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
         
         sessionUpdateService.updateConsentStatus(session, statuses, sharing.getSharingScope(), false);
-        
+
         return createdResult(UserSessionInfo.toJSON(session));
     }
 }

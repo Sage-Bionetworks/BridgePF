@@ -48,7 +48,10 @@ public class UserAdminServiceMockTest {
     
     @Mock
     private AuthenticationService authenticationService;
-    
+
+    @Mock
+    private NotificationsService notificationsService;
+
     @Mock
     private ParticipantService participantService;
     
@@ -95,6 +98,7 @@ public class UserAdminServiceMockTest {
         service = new UserAdminService();
         service.setAuthenticationService(authenticationService);
         service.setConsentService(consentService);
+        service.setNotificationsService(notificationsService);
         service.setParticipantService(participantService);
         service.setUploadService(uploadService);
         service.setAccountDao(accountDao);
@@ -123,8 +127,9 @@ public class UserAdminServiceMockTest {
     }
     
     private void addConsentStatus(Map<SubpopulationGuid,ConsentStatus> statuses, String guid) {
-        SubpopulationGuid subpopGuid = SubpopulationGuid.create("subpop1");
-        ConsentStatus status = new ConsentStatus.Builder().withConsented(false).withGuid(subpopGuid).withName("subpop1").withRequired(true).build();
+        SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
+        ConsentStatus status = new ConsentStatus.Builder().withConsented(false).withGuid(subpopGuid).withName(guid)
+                .withRequired(true).build();
         statuses.put(subpopGuid, status);
     }
     
@@ -224,6 +229,7 @@ public class UserAdminServiceMockTest {
         verify(cacheProvider).removeSessionByUserId("userId");
         verify(cacheProvider).removeRequestInfo("userId");
         verify(healthDataService).deleteRecordsForHealthCode("healthCode");
+        verify(notificationsService).deleteAllRegistrations(study.getStudyIdentifier(), "healthCode");
         verify(uploadService).deleteUploadsForHealthCode("healthCode");
         verify(scheduledActivityService).deleteActivitiesForUser("healthCode");
         verify(activityEventService).deleteActivityEvents("healthCode");

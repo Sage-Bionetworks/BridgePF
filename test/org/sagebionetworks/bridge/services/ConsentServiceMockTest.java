@@ -379,6 +379,8 @@ public class ConsentServiceMockTest {
                 assertNotNull(sig.getWithdrewOn());
             }
         }
+
+        verify(notificationsService).deleteAllRegistrations(study.getStudyIdentifier(), HEALTH_CODE);
     }
     
     @Test
@@ -442,6 +444,8 @@ public class ConsentServiceMockTest {
         assertEquals(SharingScope.NO_SHARING, account.getSharingScope());
         assertEquals(new Long(WITHDREW_ON), account.getConsentSignatureHistory(SUBPOP_GUID).get(0).getWithdrewOn());
         assertNull(account.getConsentSignatureHistory(SECOND_SUBPOP).get(0).getWithdrewOn());
+
+        verify(notificationsService).deleteAllRegistrations(study.getStudyIdentifier(), HEALTH_CODE);
     }
 
     @Test
@@ -454,6 +458,8 @@ public class ConsentServiceMockTest {
         assertEquals(SharingScope.NO_SHARING, account.getSharingScope());
         assertEquals(new Long(WITHDREW_ON), account.getConsentSignatureHistory(SUBPOP_GUID).get(0).getWithdrewOn());
         assertNull(account.getConsentSignatureHistory(SECOND_SUBPOP).get(0).getWithdrewOn());
+
+        verify(notificationsService).deleteAllRegistrations(study.getStudyIdentifier(), HEALTH_CODE);
     }
     
     @Test
@@ -467,6 +473,8 @@ public class ConsentServiceMockTest {
         
         assertEquals(new Long(WITHDREW_ON), account.getConsentSignatureHistory(SUBPOP_GUID).get(0).getWithdrewOn());
         assertNull(account.getConsentSignatureHistory(SECOND_SUBPOP).get(0).getWithdrewOn());
+
+        verify(notificationsService, never()).deleteAllRegistrations(any(), any());
     }
     
     @Test
@@ -479,6 +487,8 @@ public class ConsentServiceMockTest {
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, account.getSharingScope());
         assertEquals(new Long(WITHDREW_ON), account.getConsentSignatureHistory(SUBPOP_GUID).get(0).getWithdrewOn());
         assertNull(account.getConsentSignatureHistory(SECOND_SUBPOP).get(0).getWithdrewOn());
+
+        verify(notificationsService, never()).deleteAllRegistrations(any(), any());
     }
     
     @Test

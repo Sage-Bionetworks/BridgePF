@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.mockito.Matchers.anyString;
 import static org.sagebionetworks.bridge.TestUtils.getNotificationRegistration;
 import static org.sagebionetworks.bridge.TestUtils.getNotificationTopic;
 
@@ -19,6 +20,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 import org.sagebionetworks.bridge.models.notifications.TopicSubscription;
@@ -28,12 +30,13 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.model.SubscribeRequest;
 import com.amazonaws.services.sns.model.SubscribeResult;
-import com.amazonaws.services.sns.model.UnsubscribeRequest;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DynamoTopicSubscriptionDaoTest {
-    
+    private static final String ENDPOINT_ARN = "endpoint-arn";
     private static final AmazonServiceException EXCEPTION = new AmazonServiceException("Somethin' bad happened [test]");
+    private static final String PHONE = "+14255550123";
+    private static final String TOPIC_ARN = "topic-arn";
 
     private DynamoTopicSubscriptionDao subDao;
     
@@ -66,20 +69,28 @@ public class DynamoTopicSubscriptionDaoTest {
     }
     
     @Test
-    public void successfulSubscribe() {
+    public void successfulSubscribePushNotification() {
+        // Mock SNS.
         doReturn("subscriptionARN").when(mockSubscribeResult).getSubscriptionArn();
         doReturn(mockSubscribeResult).when(mockSnsClient).subscribe(any());
-        
-        NotificationRegistration registration = getNotificationRegistration();
-        NotificationTopic topic = getNotificationTopic();
 
+        // Make registration and topic.
+        NotificationRegistration registration = getNotificationRegistration();
+        registration.setProtocol(NotificationProtocol.APPLICATION);
+        registration.setEndpoint(ENDPOINT_ARN);
+
+        NotificationTopic topic = getNotificationTopic();
+        topic.setTopicARN(TOPIC_ARN);
+
+        // Execute and validate.
         TopicSubscription sub = subDao.subscribe(registration, topic);
 
         verify(mockSnsClient).subscribe(subscribeRequestCaptor.capture());
         
         SubscribeRequest request = subscribeRequestCaptor.getValue();
-        assertEquals("atopicArn", request.getTopicArn());
-        assertEquals("endpointARN", request.getEndpoint());
+        assertEquals(TOPIC_ARN, request.getTopicArn());
+        assertEquals("application", request.getProtocol());
+        assertEquals(ENDPOINT_ARN, request.getEndpoint());
         
         verify(mockMapper).save(subscriptionCaptor.capture());
         
@@ -92,7 +103,31 @@ public class DynamoTopicSubscriptionDaoTest {
         assertEquals("subscriptionARN", sub.getSubscriptionARN());
         assertEquals("topicGuid", sub.getTopicGuid());
     }
-    
+
+    @Test
+    public void successfulSubscribeSmsNotification() {
+        // Mock SNS.
+        doReturn("subscriptionARN").when(mockSubscribeResult).getSubscriptionArn();
+        doReturn(mockSubscribeResult).when(mockSnsClient).subscribe(any());
+
+        // Make registration and topic.
+        NotificationRegistration registration = getNotificationRegistration();
+        registration.setProtocol(NotificationProtocol.SMS);
+        registration.setEndpoint(PHONE);
+
+        NotificationTopic topic = getNotificationTopic();
+        topic.setTopicARN(TOPIC_ARN);
+
+        // Execute and validate. Only validate SNS subscribe request. Everything else is tested elsewhere.
+        subDao.subscribe(registration, topic);
+
+        verify(mockSnsClient).subscribe(subscribeRequestCaptor.capture());
+        SubscribeRequest request = subscribeRequestCaptor.getValue();
+        assertEquals(TOPIC_ARN, request.getTopicArn());
+        assertEquals("sms", request.getProtocol());
+        assertEquals(PHONE, request.getEndpoint());
+    }
+
     @Test
     public void subscribeWhenSnsFails() {
         doReturn("subscriptionARN").when(mockSubscribeResult).getSubscriptionArn();
@@ -122,7 +157,9 @@ public class DynamoTopicSubscriptionDaoTest {
         
         try {
             subDao.subscribe(registration, topic);
+            fail("expected exception");
         } catch(AmazonServiceException e) {
+            // expected exception
         }
         
         verify(mockSnsClient).subscribe(any());
@@ -183,6 +220,7 @@ public class DynamoTopicSubscriptionDaoTest {
             subDao.unsubscribe(registration, topic);
             fail("Should have thrown exception");
         } catch(AmazonServiceException e) {
+            // expected exception
         }
         
         verify(mockMapper).load(subscriptionCaptor.capture());
@@ -211,7 +249,9 @@ public class DynamoTopicSubscriptionDaoTest {
         
         try {
             subDao.unsubscribe(registration, topic);
+            fail("expected exception");
         } catch(AmazonServiceException e) {
+            // expected exception
         }
         
         verify(mockMapper).load(subscriptionCaptor.capture());
@@ -253,11 +293,13 @@ public class DynamoTopicSubscriptionDaoTest {
         TopicSubscription subscription = TopicSubscription.create();
         subscription.setSubscriptionARN("subscriptionARN");
         
-        doThrow(EXCEPTION).when(mockSnsClient).unsubscribe(any(UnsubscribeRequest.class));
+        doThrow(EXCEPTION).when(mockSnsClient).unsubscribe(anyString());
         
         try {
-            subDao.removeOrphanedSubscription(subscription);    
+            subDao.removeOrphanedSubscription(subscription);
+            fail("expected exception");
         } catch(AmazonServiceException e) {
+            // expected exception
         }
         
         verify(mockSnsClient).unsubscribe(unsubscribeStringCaptor.capture());

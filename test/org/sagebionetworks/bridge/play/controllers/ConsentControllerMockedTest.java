@@ -26,10 +26,10 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -59,6 +59,7 @@ import com.google.common.collect.Maps;
 import play.mvc.Result;
 import play.test.Helpers;
 
+@SuppressWarnings("unchecked")
 @RunWith(MockitoJUnitRunner.class)
 public class ConsentControllerMockedTest {
 
@@ -80,7 +81,7 @@ public class ConsentControllerMockedTest {
     private StudyParticipant participant;
     private Study study;
     private CriteriaContext context;
-    
+
     @Mock
     private StudyService studyService;
     @Mock
@@ -101,10 +102,11 @@ public class ConsentControllerMockedTest {
     @Before
     public void before() {
         DateTimeUtils.setCurrentMillisFixed(UNIX_TIMESTAMP);
-        
+
         participant = new StudyParticipant.Builder().withSharingScope(SharingScope.SPONSORS_AND_PARTNERS)
-                .withHealthCode(HEALTH_CODE).withId(USER_ID).build();
-        session = new UserSession(participant); 
+                .withHealthCode(HEALTH_CODE).withId(USER_ID).withDataGroups(TestConstants.USER_DATA_GROUPS)
+                .withLanguages(TestConstants.LANGUAGES).build();
+        session = new UserSession(participant);
         session.setStudyIdentifier(STUDY_IDENTIFIER);
         
         // one default consent and one new consent (neither signed, both required). When you withdraw, this
@@ -121,7 +123,8 @@ public class ConsentControllerMockedTest {
         when(studyService.getStudy(session.getStudyIdentifier())).thenReturn(study);
         
         context = new CriteriaContext.Builder().withUserId(USER_ID).withHealthCode(HEALTH_CODE)
-                .withStudyIdentifier(STUDY_IDENTIFIER).build();
+                .withStudyIdentifier(STUDY_IDENTIFIER).withLanguages(TestConstants.LANGUAGES)
+                .withUserDataGroups(TestConstants.USER_DATA_GROUPS).build();
         
         SessionUpdateService sessionUpdateService = new SessionUpdateService();
         // Stubbing the behavior of the consent service to we can validate changes are in the session
@@ -148,25 +151,23 @@ public class ConsentControllerMockedTest {
     }
     
     private Answer<Map<SubpopulationGuid,ConsentStatus>> createAnswer(final boolean consenting, final SubpopulationGuid... guids) {
-        return new Answer<Map<SubpopulationGuid,ConsentStatus>>() {
-            public Map<SubpopulationGuid,ConsentStatus> answer(InvocationOnMock invocation) throws Throwable {
-                Map<SubpopulationGuid,ConsentStatus> updatedStatuses = null;
-                for (SubpopulationGuid guid : guids) {
-                    ConsentStatus oldConsent = session.getConsentStatuses().get(guid);    
-                    ConsentStatus updatedConsent = new ConsentStatus.Builder()
-                            .withConsentStatus(oldConsent)
-                            .withConsented(consenting)
-                            .withSignedMostRecentConsent(consenting).build();
-                    updatedStatuses = updateMap(session.getConsentStatuses(), guid, updatedConsent);
-                }
-                return updatedStatuses;
+        return invocation -> {
+            Map<SubpopulationGuid,ConsentStatus> updatedStatuses = null;
+            for (SubpopulationGuid guid : guids) {
+                ConsentStatus oldConsent = session.getConsentStatuses().get(guid);
+                ConsentStatus updatedConsent = new ConsentStatus.Builder()
+                        .withConsentStatus(oldConsent)
+                        .withConsented(consenting)
+                        .withSignedMostRecentConsent(consenting).build();
+                updatedStatuses = updateMap(session.getConsentStatuses(), guid, updatedConsent);
             }
+            return updatedStatuses;
         };
     }
     
     private Map<SubpopulationGuid, ConsentStatus> updateMap(Map<SubpopulationGuid, ConsentStatus> map, SubpopulationGuid guid,
             ConsentStatus status) {
-        ImmutableMap.Builder<SubpopulationGuid,ConsentStatus> builder = new ImmutableMap.Builder<SubpopulationGuid,ConsentStatus>();
+        ImmutableMap.Builder<SubpopulationGuid,ConsentStatus> builder = new ImmutableMap.Builder<>();
         for (Map.Entry<SubpopulationGuid,ConsentStatus> entry : map.entrySet()) {
             if (entry.getKey().equals(guid)) {
                 builder.put(entry.getKey(), status);
@@ -391,7 +392,7 @@ public class ConsentControllerMockedTest {
                 signatureCaptor.capture(), eq(SharingScope.NO_SHARING), eq(true));
         validateSignature(signatureCaptor.getValue());
     }
-    
+
     @Test
     public void canWithdrawConsent() throws Exception {
         DateTimeUtils.setCurrentMillisFixed(20000);
@@ -652,5 +653,4 @@ public class ConsentControllerMockedTest {
         assertEquals("data:asdf", signature.getImageData());
         assertEquals("image/png", signature.getImageMimeType());
     }
-
 }

@@ -255,8 +255,11 @@ public abstract class BaseController extends Controller {
         if (!languages.isEmpty()) {
             accountDao.editAccount(session.getStudyIdentifier(), session.getHealthCode(),
                     account -> account.setLanguages(languages));
-            
-            sessionUpdateService.updateLanguage(session, languages);
+
+            CriteriaContext newContext = new CriteriaContext.Builder().withContext(getCriteriaContext(session))
+                    .withLanguages(languages).build();
+
+            sessionUpdateService.updateLanguage(session, newContext);
         }
         return languages;
     }

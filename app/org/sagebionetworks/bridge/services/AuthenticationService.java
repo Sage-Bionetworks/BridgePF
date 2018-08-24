@@ -55,9 +55,9 @@ public class AuthenticationService {
     
     static final TypeReference<Tuple<String>> TUPLE_TYPE = new TypeReference<Tuple<String>>() {};
     
-    public static enum ChannelType {
+    public enum ChannelType {
         EMAIL,
-        PHONE;
+        PHONE,
     }
     
     private CacheProvider cacheProvider;
@@ -87,6 +87,7 @@ public class AuthenticationService {
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
+
     @Autowired
     final void setPasswordResetValidator(PasswordResetValidator validator) {
         this.passwordResetValidator = validator;
@@ -131,7 +132,6 @@ public class AuthenticationService {
      * and the user's consent status is not re-calculated based on participation in one more more subpopulations. 
      * This only happens when calling session-constructing service methods (signIn and verifyEmail, both of which 
      * return newly constructed sessions).
-     * @param sessionToken
      * @return session
      *      the persisted user session calculated on sign in or during verify email workflow
      */
@@ -176,7 +176,7 @@ public class AuthenticationService {
         if (!session.doesConsent() && intentService.registerIntentToParticipate(study, account)) {
             AccountId accountId = AccountId.forId(study.getIdentifier(), account.getId());
             account = accountDao.getAccount(accountId);
-            session = getSessionFromAccount(study, context, account);        
+            session = getSessionFromAccount(study, context, account);
         }
         cacheProvider.setUserSession(session);
         
@@ -340,7 +340,7 @@ public class AuthenticationService {
         }
 
         String password = generatePassword(study.getPasswordPolicy().getMinLength());
-        String userId = null;
+        String userId;
         if (account == null) {
             // Create an account with password and external ID assigned. If the external ID has been 
             // assigned to another account, this creation will fail (external ID is a unique column).
@@ -355,7 +355,7 @@ public class AuthenticationService {
         }
         // Return the password and the user ID in case the account was just created.
         return new GeneratedPassword(externalId, userId, password);
-    };
+    }
     
     public String generatePassword(int policyLength) {
         return PasswordGenerator.INSTANCE.nextPassword(Math.max(32, policyLength));
@@ -383,7 +383,7 @@ public class AuthenticationService {
         
         if (!session.doesConsent() && intentService.registerIntentToParticipate(study, account)) {
             account = accountDao.getAccount(accountId);
-            session = getSessionFromAccount(study, context, account);        
+            session = getSessionFromAccount(study, context, account);
         }
         cacheProvider.setUserSession(session);
         if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
@@ -426,16 +426,21 @@ public class AuthenticationService {
         session.setStudyIdentifier(study.getStudyIdentifier());
         session.setReauthToken(account.getReauthToken());
         
-        CriteriaContext newContext = new CriteriaContext.Builder()
-                .withContext(context)
-                .withHealthCode(session.getHealthCode())
-                .withUserId(session.getId())
-                .withLanguages(session.getParticipant().getLanguages())
-                .withUserDataGroups(session.getParticipant().getDataGroups())
-                .build();
-        
+        CriteriaContext newContext = updateContextFromSession(context, session);
         session.setConsentStatuses(consentService.getConsentStatuses(newContext, account));
         
         return session;
+    }
+
+    // Sign-in methods contain a criteria context that includes no user information. After signing in, we need to
+    // create an updated context with user info.
+    private static CriteriaContext updateContextFromSession(CriteriaContext originalContext, UserSession session) {
+        return new CriteriaContext.Builder()
+                .withContext(originalContext)
+                .withHealthCode(session.getHealthCode())
+                .withLanguages(session.getParticipant().getLanguages())
+                .withUserDataGroups(session.getParticipant().getDataGroups())
+                .withUserId(session.getId())
+                .build();
     }
 }

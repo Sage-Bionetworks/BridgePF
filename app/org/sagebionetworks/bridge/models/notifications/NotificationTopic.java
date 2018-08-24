@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.notifications;
 import org.sagebionetworks.bridge.dynamodb.DynamoNotificationTopic;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.Criteria;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
@@ -38,7 +39,16 @@ public interface NotificationTopic extends BridgeEntity {
     
     /** @see #getName */
     void setName(String name);
-    
+
+    /**
+     * Short name for the topic, used as the display name for the topic in SNS. This also appears in SMS
+     * notifications. Must be 10 characters or less.
+     */
+    String getShortName();
+
+    /** @see #getShortName */
+    void setShortName(String shortName);
+
     /**
      * Description text for this topic, if needed.
      */
@@ -72,4 +82,13 @@ public interface NotificationTopic extends BridgeEntity {
     
     /** @see #getModifiedOn */
     void setModifiedOn(long modifiedOn);
+
+    /**
+     * If a topic has criteria, users can be automatically subscribed and unsubscribed when their criteria context
+     * changes.
+     */
+    Criteria getCriteria();
+
+    /** @see #getCriteria */
+    void setCriteria(Criteria criteria);
 }

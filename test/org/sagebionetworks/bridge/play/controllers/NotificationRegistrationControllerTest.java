@@ -5,8 +5,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.notNull;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Set;
@@ -22,10 +24,11 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ResourceList;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
-import org.sagebionetworks.bridge.models.notifications.SubscriptionRequest;
 import org.sagebionetworks.bridge.models.notifications.SubscriptionStatus;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -42,7 +45,8 @@ import play.test.Helpers;
 
 @RunWith(MockitoJUnitRunner.class)
 public class NotificationRegistrationControllerTest {
-
+    private static final StudyParticipant PARTICIPANT = TestUtils.getStudyParticipant(
+            NotificationRegistrationControllerTest.class);
     private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("test-study");
     private static final String OS_NAME = "osName";
     private static final String DEVICE_ID = "deviceId";
@@ -63,10 +67,7 @@ public class NotificationRegistrationControllerTest {
     
     @Captor
     private ArgumentCaptor<NotificationRegistration> registrationCaptor;
-    
-    @Captor
-    private ArgumentCaptor<SubscriptionRequest> subRequestCaptor;
-    
+
     @Captor
     private ArgumentCaptor<String> stringCaptor;
     
@@ -74,12 +75,13 @@ public class NotificationRegistrationControllerTest {
     private ArgumentCaptor<Set<String>> stringSetCaptor;
     
     @Before
-    public void before() throws Exception {
+    public void before() {
         controller.setNotificationService(mockNotificationService);
         controller.setNotificationTopicService(mockTopicService);
         
         doReturn(HEALTH_CODE).when(session).getHealthCode();
         doReturn(true).when(session).doesConsent();
+        when(session.getParticipant()).thenReturn(PARTICIPANT);
         doReturn(STUDY_ID).when(session).getStudyIdentifier();
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
     }
@@ -106,25 +108,30 @@ public class NotificationRegistrationControllerTest {
         assertEquals("deviceId", registration.getDeviceId());
         assertEquals("registrationGuid", registration.getGuid());
         assertEquals("osName", registration.getOsName());
-        assertNull(registration.getEndpointARN());
+        assertEquals("endpoint", registration.getEndpoint());
         assertNull(registration.getHealthCode());
     }
         
     @Test
     public void createRegistration() throws Exception {
-        doReturn(createRegList().get(0)).when(mockNotificationService).createRegistration(any(), any());
-        
+        // Mock service.
+        doReturn(createRegList().get(0)).when(mockNotificationService).createRegistration(any(), any(), any());
+
+        // Mock Play context.
         String json = TestUtils.createJson("{'deviceId':'"+DEVICE_ID+"','osName':'"+OS_NAME+"'}");
         TestUtils.mockPlayContextWithJson(json);
-        
+
+        // Execute and validate.
         Result result = controller.createRegistration();
         TestUtils.assertResult(result, 201);
         
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals(GUID, node.get("guid").asText());
         assertEquals("GuidHolder", node.get("type").asText());
-        
-        verify(mockNotificationService).createRegistration(eq(STUDY_ID), registrationCaptor.capture());
+
+        // Verify service.
+        verify(mockNotificationService).createRegistration(eq(STUDY_ID), notNull(CriteriaContext.class),
+                registrationCaptor.capture());
         
         NotificationRegistration registration = registrationCaptor.getValue();
         assertEquals(DEVICE_ID, registration.getDeviceId());
@@ -173,7 +180,7 @@ public class NotificationRegistrationControllerTest {
         Result result = controller.deleteRegistration(GUID);
         TestUtils.assertResult(result, 200, "Push notification registration deleted.");
         
-        verify(mockNotificationService).deleteRegistration(HEALTH_CODE, GUID);
+        verify(mockNotificationService).deleteRegistration(STUDY_ID, HEALTH_CODE, GUID);
     }
 
     @Test
@@ -224,7 +231,7 @@ public class NotificationRegistrationControllerTest {
 
     private void verifyRegistration(NotificationRegistration reg) {
         assertNull(reg.getHealthCode());
-        assertNull(reg.getEndpointARN());
+        assertEquals("endpoint", reg.getEndpoint());
         assertEquals(OS_NAME, reg.getOsName());
         assertEquals(GUID, reg.getGuid());
         assertEquals(DEVICE_ID, reg.getDeviceId());

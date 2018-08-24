@@ -22,9 +22,15 @@ public class NotificationTopicValidator implements Validator {
         if (isBlank(topic.getStudyId())) {
             errors.rejectValue("studyId", "is required");
         }
+
         if (isBlank(topic.getName())) {
             errors.rejectValue("name", "is required");
         }
-    }
 
+        if (isBlank(topic.getShortName())) {
+            errors.rejectValue("shortName", "is required");
+        } else if (topic.getShortName().length() > 10) {
+            errors.rejectValue("shortName", "must be 10 characters or less");
+        }
+    }
 }

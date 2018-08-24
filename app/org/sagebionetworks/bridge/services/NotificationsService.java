@@ -19,8 +19,11 @@ import org.sagebionetworks.bridge.dao.NotificationRegistrationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.NotImplementedException;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
+import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -41,13 +44,19 @@ import com.google.common.collect.Sets;
  */
 @Component
 public class NotificationsService {
-    private static Logger LOG = LoggerFactory.getLogger(NotificationsService.class);
-    
-    private StudyService studyService;
-    
-    private NotificationRegistrationDao notificationRegistrationDao;
+    private static final Logger LOG = LoggerFactory.getLogger(NotificationsService.class);
 
+    private ParticipantService participantService;
+    private StudyService studyService;
+    private NotificationRegistrationDao notificationRegistrationDao;
+    private NotificationTopicService notificationTopicService;
     private AmazonSNSClient snsClient;
+
+    /** Participant service, if we need to get the participant. */
+    @Autowired
+    public final void setParticipantService(ParticipantService participantService) {
+        this.participantService = participantService;
+    }
 
     @Autowired
     final void setStudyService(StudyService studyService) {
@@ -58,7 +67,16 @@ public class NotificationsService {
     final void setNotificationRegistrationDao(NotificationRegistrationDao notificationRegistrationDao) {
         this.notificationRegistrationDao = notificationRegistrationDao;
     }
-    
+
+    /**
+     * Notification topic service. When a new registration is created, we use this to determine any criteria-based
+     * topic subscriptions.
+     */
+    @Autowired
+    public final void setNotificationTopicService(NotificationTopicService notificationTopicService) {
+        this.notificationTopicService = notificationTopicService;
+    }
+
     @Resource(name = "snsClient")
     final void setSnsClient(AmazonSNSClient snsClient) {
         this.snsClient = snsClient;
@@ -85,27 +103,93 @@ public class NotificationsService {
         
         return notificationRegistrationDao.getRegistration(healthCode, guid);
     }
-    
+
     /**
-     * Create a new registration. The client will retrieve an identifying token (called different things and 
-     * in a different format on different platforms), and register it with Bridge. Bridge will return a 
-     * Bridge-specific GUID to track this registration to retrieve notifications, which the client can 
-     * delete at a later time. If the token already exists in an existing registration record, then that 
-     * registration record will be returned in lieu of creating a redundant record.
+     * <p>
+     * Create a new registration. We currently support push notifications (protocol "application") and SMS
+     * notifications.
+     * </p>
+     * <p>
+     * For push notifications, the client will retrieve an identifying token (called different things and in a
+     * different format on different platforms), and register it with Bridge.
+     * </p>
+     * <p>
+     * For SMS notifications, the client can only create notifications for the participant's own account, and only if
+     * that participant's phone number is verified.
+     * </p>
+     * <p>
+     * In both cases, Bridge will return a Bridge-specific GUID to track this registration to retrieve notifications,
+     * which the client can delete at a later time. If the token already exists in an existing registration record,
+     * then that registration record will be returned in lieu of creating a redundant record.
+     * </p>
      */
-    public NotificationRegistration createRegistration(StudyIdentifier studyId, NotificationRegistration registration) {
+    public NotificationRegistration createRegistration(StudyIdentifier studyId, CriteriaContext context,
+            NotificationRegistration registration) {
         checkNotNull(studyId);
+        checkNotNull(context);
         checkNotNull(registration);
-        
+
         adjustToCanonicalOsNameIfNeeded(registration);
         Study study = studyService.getStudy(studyId);
-        String platformARN = getPlatformARN(study, registration);
-        
         Validate.entityThrowingException(NotificationRegistrationValidator.INSTANCE, registration);
-        
-        return notificationRegistrationDao.createRegistration(platformARN, registration);
+
+        NotificationRegistration createdRegistration;
+        if (registration.getProtocol() == NotificationProtocol.APPLICATION) {
+            // This is a push notification registration. We'll need to generate an endpoint ARN.
+            String platformARN = getPlatformARN(study, registration);
+            createdRegistration = notificationRegistrationDao.createPushNotificationRegistration(platformARN,
+                    registration);
+        } else {
+            if (registration.getProtocol() == NotificationProtocol.SMS) {
+                // Can only create SMS registration for the user's own phone number, and only if it's verified.
+                StudyParticipant participant = participantService.getParticipant(study, context.getUserId(),
+                        false);
+                if (participant.getPhoneVerified() != Boolean.TRUE ||
+                        !participant.getPhone().getNumber().equals(registration.getEndpoint())) {
+                    throw new BadRequestException("Can only register notifications for your own verified phone number");
+                }
+            }
+
+            createdRegistration = notificationRegistrationDao.createRegistration(registration);
+        }
+
+        // Manage notifications, if necessary.
+        notificationTopicService.manageCriteriaBasedSubscriptions(context.getStudyIdentifier(), context,
+                registration.getHealthCode());
+
+        return createdRegistration;
     }
-    
+
+    /**
+     * This API is called after consent (either manual consent or intent to participate) to set up SMS notification
+     * registrations. If the user doesn't have a verified phone number, or they already have a notification
+     * registration, this API does nothing.
+     */
+    public void createSmsRegistrationAfterConsent(StudyParticipant participant, CriteriaContext context) {
+        checkNotNull(participant);
+        checkNotNull(context);
+
+        if (participant.getPhoneVerified() != Boolean.TRUE) {
+            // Shortcut: Phone not verified. Skip.
+            return;
+        }
+
+        // Register the phone number for notifications, if no registrations already exist.
+        List<NotificationRegistration> registrationList = listRegistrations(participant.getHealthCode());
+        if (!registrationList.isEmpty()) {
+            return;
+        }
+
+        // Create registration.
+        NotificationRegistration registration = NotificationRegistration.create();
+        registration.setHealthCode(participant.getHealthCode());
+        registration.setProtocol(NotificationProtocol.SMS);
+        registration.setEndpoint(participant.getPhone().getNumber());
+
+        // Create registration.
+        createRegistration(context.getStudyIdentifier(), context, registration);
+    }
+
     /**
      * Update an existing device registration with a new token that has been assigned by the client operating 
      * system. At least on iOS, the device token can change over the lifetime of the app, and it is considered 
@@ -122,14 +206,30 @@ public class NotificationsService {
         
         return notificationRegistrationDao.updateRegistration(registration);
     }
-    
+
+    /**
+     * Deletes all notification registrations for a user, generally used to clean up registrations when deleting a
+     * user.
+     */
+    public void deleteAllRegistrations(StudyIdentifier studyId, String healthCode) {
+        checkNotNull(studyId);
+        checkNotNull(healthCode);
+
+        List<NotificationRegistration> registrationList = listRegistrations(healthCode);
+        for (NotificationRegistration oneRegistration : registrationList) {
+            deleteRegistration(studyId, healthCode, oneRegistration.getGuid());
+        }
+    }
+
     /**
      * Delete a registration record. User can no longer be sent push notifications by the server.
      */
-    public void deleteRegistration(String healthCode, String guid) {
+    public void deleteRegistration(StudyIdentifier studyId, String healthCode, String guid) {
+        checkNotNull(studyId);
         checkNotNull(healthCode);
         checkNotNull(guid);
-        
+
+        notificationTopicService.unsubscribeAll(studyId, healthCode, guid);
         notificationRegistrationDao.deleteRegistration(healthCode, guid);
     }
     
@@ -153,15 +253,15 @@ public class NotificationsService {
         
         Set<String> erroredRegistrations = Sets.newHashSet();
         for (NotificationRegistration registration : registrations) {
-            String endpointARN = registration.getEndpointARN();
+            String endpointARN = registration.getEndpoint();
             
             PublishRequest request = new PublishRequest().withTargetArn(endpointARN)
                     .withSubject(message.getSubject()).withMessage(message.getMessage());
 
             try {
                 PublishResult result = snsClient.publish(request);
-                LOG.debug("Sent message to participant, study=" + studyId.getIdentifier() + ", endpointARN="
-                        + endpointARN + ", message ID=" + result.getMessageId());
+                LOG.debug("Sent message to participant registration=" + registration.getGuid() + ", study=" +
+                        studyId.getIdentifier() + ", message ID=" + result.getMessageId());
             } catch(AmazonServiceException e) {
                 LOG.warn("Error publishing SNS message to participant", e);
                 erroredRegistrations.add(registration.getGuid());

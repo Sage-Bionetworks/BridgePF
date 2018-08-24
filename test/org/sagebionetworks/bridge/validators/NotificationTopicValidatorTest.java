@@ -19,6 +19,7 @@ public class NotificationTopicValidatorTest {
         topic = NotificationTopic.create();
         topic.setGuid("ABC-DEF");
         topic.setName("Test Topic");
+        topic.setShortName("Test");
         topic.setStudyId("test-study");
         topic.setTopicARN("topic:arn");
     }
@@ -35,8 +36,20 @@ public class NotificationTopicValidatorTest {
     }
     
     @Test
-    public void deviceIdRequired() {
+    public void nameRequired() {
         topic.setName(null);
         assertValidatorMessage(VALIDATOR, topic, "name", " is required");
+    }
+
+    @Test
+    public void shortNameRequired() {
+        topic.setShortName(null);
+        assertValidatorMessage(VALIDATOR, topic, "shortName", "is required");
+    }
+
+    @Test
+    public void shortNameTooLong() {
+        topic.setShortName("This name is very very long");
+        assertValidatorMessage(VALIDATOR, topic, "shortName", "must be 10 characters or less");
     }
 }
