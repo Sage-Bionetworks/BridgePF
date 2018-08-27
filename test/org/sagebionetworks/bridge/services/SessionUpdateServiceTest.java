@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -12,6 +13,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableMap;
 import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,12 +36,24 @@ import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SessionUpdateServiceTest {
+    private static final String HEALTH_CODE = "health-code";
+    private static final StudyParticipant EMPTY_PARTICIPANT = new StudyParticipant.Builder()
+            .withHealthCode(HEALTH_CODE).build();
+
+    private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("consentA");
+    private static final ConsentStatus CONSENT_STATUS = new ConsentStatus.Builder().withName("consentA")
+            .withGuid(SUBPOP_GUID).withConsented(true).withSignedMostRecentConsent(true).build();
+    private static final Map<SubpopulationGuid, ConsentStatus> CONSENT_STATUS_MAP = ImmutableMap.of(SUBPOP_GUID,
+            CONSENT_STATUS);
 
     @Mock
     private ConsentService mockConsentService;
     
     @Mock
     private CacheProvider mockCacheProvider;
+
+    @Mock
+    private NotificationTopicService mockNotificationTopicService;
     
     private SessionUpdateService service;
     
@@ -48,6 +62,7 @@ public class SessionUpdateServiceTest {
         service = new SessionUpdateService();
         service.setConsentService(mockConsentService);
         service.setCacheProvider(mockCacheProvider);
+        service.setNotificationTopicService(mockNotificationTopicService);
     }
     
     @Test
@@ -63,16 +78,33 @@ public class SessionUpdateServiceTest {
     
     @Test
     public void updateLanguage() {
+        // Mock consent service to return dummy consents.
+        when(mockConsentService.getConsentStatuses(any())).thenReturn(CONSENT_STATUS_MAP);
+
+        // Create inputs.
         UserSession session = new UserSession();
+        session.setParticipant(EMPTY_PARTICIPANT);
+
         LinkedHashSet<String> languages = new LinkedHashSet<>();
         languages.add("es");
-        
-        service.updateLanguage(session, languages);
-        
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(API_STUDY_ID)
+                .withLanguages(languages).build();
+
+        // Execute test.
+        service.updateLanguage(session, context);
+
+        // Verify consent service.
+        verify(mockConsentService).getConsentStatuses(context);
+
+        // Verify saved session.
         verify(mockCacheProvider).setUserSession(session);
         assertEquals("es", session.getParticipant().getLanguages().iterator().next());
+        assertSame(CONSENT_STATUS_MAP, session.getConsentStatuses());
+
+        // Verify notification service.
+        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(API_STUDY_ID, context, HEALTH_CODE);
     }
-    
+
     @Test
     public void updateExternalId() {
         UserSession session = new UserSession();
@@ -86,15 +118,28 @@ public class SessionUpdateServiceTest {
     
     @Test
     public void updateParticipant() {
+        // Mock consent service to return dummy consents.
+        when(mockConsentService.getConsentStatuses(any())).thenReturn(CONSENT_STATUS_MAP);
+
+        // Create inputs.
         UserSession session = new UserSession();
-        StudyParticipant participant = new StudyParticipant.Builder().build();
-        
+        session.setParticipant(EMPTY_PARTICIPANT);
+
         CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(API_STUDY_ID).build();
-        
-        service.updateParticipant(session, context, participant);
-        
+
+        // Execute test.
+        service.updateParticipant(session, context, EMPTY_PARTICIPANT);
+
+        // Verify consent service.
+        verify(mockConsentService).getConsentStatuses(context);
+
+        // Verify saved session.
         verify(mockCacheProvider).setUserSession(session);
-        assertEquals(participant, session.getParticipant());
+        assertEquals(EMPTY_PARTICIPANT, session.getParticipant());
+        assertSame(CONSENT_STATUS_MAP, session.getConsentStatuses());
+
+        // Verify notification service.
+        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(API_STUDY_ID, context, HEALTH_CODE);
     }
     
     @Test
@@ -115,18 +160,33 @@ public class SessionUpdateServiceTest {
     
     @Test
     public void updateDataGroups() {
+        // Mock consent service to return dummy consents.
+        when(mockConsentService.getConsentStatuses(any())).thenReturn(CONSENT_STATUS_MAP);
+
+        // Create inputs.
         UserSession session = new UserSession();
+        session.setParticipant(EMPTY_PARTICIPANT);
+
         Set<String> dataGroups = Sets.newHashSet("data1");
         CriteriaContext context = new CriteriaContext.Builder()
                 .withUserDataGroups(dataGroups)
                 .withStudyIdentifier(API_STUDY_ID).build();
-        
+
+        // Execute test.
         service.updateDataGroups(session, context);
-        
+
+        // Verify consent service.
+        verify(mockConsentService).getConsentStatuses(context);
+
+        // Verify saved session.
         verify(mockCacheProvider).setUserSession(session);
         assertEquals(dataGroups, session.getParticipant().getDataGroups());
+        assertSame(CONSENT_STATUS_MAP, session.getConsentStatuses());
+
+        // Verify notification service.
+        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(API_STUDY_ID, context, HEALTH_CODE);
     }
-    
+
     @Test
     public void updateStudy() {
         UserSession session = new UserSession();

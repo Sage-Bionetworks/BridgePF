@@ -258,10 +258,11 @@ public class TestUtils {
         return new SubscriptionRequest(Sets.newHashSet("topicA", "topicB"));
     }
     
-    public static final NotificationTopic getNotificationTopic() {
+    public static NotificationTopic getNotificationTopic() {
         NotificationTopic topic = NotificationTopic.create();
         topic.setGuid("topicGuid");
         topic.setName("Test Topic Name");
+        topic.setShortName("Short Name");
         topic.setDescription("Test Description");
         topic.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         topic.setTopicARN("atopicArn");
@@ -285,10 +286,10 @@ public class TestUtils {
         return itp;
     }
     
-    public static final NotificationRegistration getNotificationRegistration() {
+    public static NotificationRegistration getNotificationRegistration() {
         NotificationRegistration registration = NotificationRegistration.create();
         registration.setDeviceId("deviceId");
-        registration.setEndpointARN("endpointARN");
+        registration.setEndpoint("endpoint");
         registration.setGuid("registrationGuid");
         registration.setHealthCode("healthCode");
         registration.setOsName("osName");

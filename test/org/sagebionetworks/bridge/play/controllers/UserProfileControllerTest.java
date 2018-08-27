@@ -11,6 +11,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
@@ -41,9 +42,9 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.play.controllers.UserProfileController;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.ExternalIdService;
+import org.sagebionetworks.bridge.services.NotificationTopicService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -131,6 +132,7 @@ public class UserProfileControllerTest {
         SessionUpdateService sessionUpdateService = new SessionUpdateService();
         sessionUpdateService.setCacheProvider(cacheProvider);
         sessionUpdateService.setConsentService(consentService);
+        sessionUpdateService.setNotificationTopicService(mock(NotificationTopicService.class));
         controller.setSessionUpdateService(sessionUpdateService);
         
         session = new UserSession(new StudyParticipant.Builder()

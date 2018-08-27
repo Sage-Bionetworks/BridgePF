@@ -2,11 +2,14 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
+import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -16,7 +19,8 @@ public class DynamoNotificationRegistration implements NotificationRegistration 
 
     private String healthCode;
     private String guid;
-    private String endpointARN;
+    private NotificationProtocol protocol;
+    private String endpoint;
     private String deviceId;
     private String osName;
     private long createdOn;
@@ -45,15 +49,34 @@ public class DynamoNotificationRegistration implements NotificationRegistration 
         this.guid = guid;
     }
 
+    /** {@inheritDoc} */
+    @DynamoDBTypeConverted(converter=EnumMarshaller.class)
     @Override
-    @JsonIgnore
-    public String getEndpointARN() {
-        return endpointARN;
+    public NotificationProtocol getProtocol() {
+        // Previous versions of this table did not specify protocol and assumed "application" by default. If protocol
+        // is not specified, return "application".
+        return protocol != null ? protocol : NotificationProtocol.APPLICATION;
     }
 
+    /** {@inheritDoc} */
     @Override
-    public void setEndpointARN(String endpointARN) {
-        this.endpointARN = endpointARN;
+    public void setProtocol(NotificationProtocol protocol) {
+        this.protocol = protocol;
+    }
+
+    // A previous version of this table called this "endpointARN". Retain the same name for backwards compatibility
+    // with the existing table.
+    /** {@inheritDoc} */
+    @DynamoDBAttribute(attributeName = "endpointARN")
+    @Override
+    public String getEndpoint() {
+        return endpoint;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setEndpoint(String endpoint) {
+        this.endpoint = endpoint;
     }
 
     @Override

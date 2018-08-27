@@ -95,13 +95,10 @@ public class DynamoSchedulePlanDaoTest {
         SchedulePlan savedPlan = schedulePlanDao.createSchedulePlan(new StudyIdentifierImpl("correct1"), abPlan);
         assertEquals("correct1", savedPlan.getStudyKey());
         plansToDelete.add(new Keys(savedPlan.getStudyKey(), savedPlan.getGuid()));
-
-        // Passing in a different study key creates a new plan (or throws a ConditionalCheckFailedException if there's 
-        // a version for an existing object). It does a create rather than an update, but it still enforces the correct study.
-        abPlan = TestUtils.getABTestSchedulePlan(new StudyIdentifierImpl("wrong-study"));
-        SchedulePlan nextPlan = schedulePlanDao.updateSchedulePlan(new StudyIdentifierImpl("correct2"), abPlan);
-        assertEquals("correct2", nextPlan.getStudyKey());
-        plansToDelete.add(new Keys(nextPlan.getStudyKey(), nextPlan.getGuid()));
+        
+        savedPlan.setStudyKey("wrong-study");
+        SchedulePlan nextPlan = schedulePlanDao.updateSchedulePlan(new StudyIdentifierImpl("correct1"), savedPlan);
+        assertEquals("correct1", nextPlan.getStudyKey());
     }
     
     @Test

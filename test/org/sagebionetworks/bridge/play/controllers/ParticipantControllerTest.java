@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
@@ -86,6 +87,7 @@ import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.ConsentService;
+import org.sagebionetworks.bridge.services.NotificationTopicService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -238,7 +240,8 @@ public class ParticipantControllerTest {
         SessionUpdateService sessionUpdateService = new SessionUpdateService();
         sessionUpdateService.setCacheProvider(mockCacheProvider);
         sessionUpdateService.setConsentService(mockConsentService);
-        
+        sessionUpdateService.setNotificationTopicService(mock(NotificationTopicService.class));
+
         controller.setSessionUpdateService(sessionUpdateService);
         
         mockPlayContext();

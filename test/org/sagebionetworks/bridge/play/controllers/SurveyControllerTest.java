@@ -23,7 +23,6 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.joda.time.DateTime;
@@ -59,7 +58,6 @@ import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SurveyService;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -83,7 +81,6 @@ public class SurveyControllerTest {
     private static final String SURVEY_GUID = "bbb";
     private static final DateTime CREATED_ON = DateTime.now();
     private static final GuidCreatedOnVersionHolder KEYS = new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, CREATED_ON.getMillis());
-    private static final Set<Roles> ADMIN_ROLE = ImmutableSet.of(Roles.ADMIN);
     
     private SurveyController controller;
     
@@ -358,12 +355,12 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, ADMIN, UNCONSENTED, null);
         
         Survey survey = getSurvey(false);
-        when(service.getSurvey(ImmutableSet.of(ADMIN), TestConstants.TEST_STUDY, KEYS, false, false)).thenReturn(survey);
+        when(service.getSurvey(TestConstants.TEST_STUDY, KEYS, false, false)).thenReturn(survey);
         
         Result result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "nonsense");
         TestUtils.assertResult(result, 200, "Survey deleted.");
         
-        verify(service).getSurvey(ImmutableSet.of(ADMIN), TestConstants.TEST_STUDY, KEYS, false, false);
+        verify(service).getSurvey(TestConstants.TEST_STUDY, KEYS, false, false);
         verify(service).deleteSurvey(TestConstants.TEST_STUDY, survey);
         verifyNoMoreInteractions(service);
     }
@@ -373,12 +370,12 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
         
         Survey survey = getSurvey(false);
-        when(service.getSurvey(ImmutableSet.of(DEVELOPER), TestConstants.TEST_STUDY, KEYS, false, false)).thenReturn(survey);
+        when(service.getSurvey(TestConstants.TEST_STUDY, KEYS, false, false)).thenReturn(survey);
         
         Result result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
         TestUtils.assertResult(result, 200, "Survey deleted.");
         
-        verify(service).getSurvey(ImmutableSet.of(DEVELOPER), TestConstants.TEST_STUDY, KEYS, false, false);
+        verify(service).getSurvey(TestConstants.TEST_STUDY, KEYS, false, false);
         verify(service).deleteSurvey(TestConstants.TEST_STUDY, survey);
         verifyNoMoreInteractions(service);
     }
@@ -388,12 +385,12 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, ADMIN, UNCONSENTED, null);
         
         Survey survey = getSurvey(false);
-        when(service.getSurvey(ImmutableSet.of(ADMIN), TestConstants.TEST_STUDY, KEYS, false, false)).thenReturn(survey);
+        when(service.getSurvey(TestConstants.TEST_STUDY, KEYS, false, false)).thenReturn(survey);
         
         Result result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
         TestUtils.assertResult(result, 200, "Survey deleted.");
         
-        verify(service).getSurvey(ImmutableSet.of(ADMIN), TestConstants.TEST_STUDY, KEYS, false, false);
+        verify(service).getSurvey(TestConstants.TEST_STUDY, KEYS, false, false);
         verify(service).deleteSurvey(TestConstants.TEST_STUDY, survey);
         verifyNoMoreInteractions(service);
     }
@@ -410,13 +407,13 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
         
         Survey survey = getSurvey(false);
-        when(service.getSurvey(ImmutableSet.of(DEVELOPER), TestConstants.TEST_STUDY, KEYS, false, false))
+        when(service.getSurvey(TestConstants.TEST_STUDY, KEYS, false, false))
                 .thenReturn(survey);
         
         Result result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
         TestUtils.assertResult(result, 200, "Survey deleted.");
 
-        verify(service).getSurvey(ImmutableSet.of(DEVELOPER), TestConstants.TEST_STUDY, KEYS, false, false);
+        verify(service).getSurvey(TestConstants.TEST_STUDY, KEYS, false, false);
         verify(service).deleteSurvey(TestConstants.TEST_STUDY, survey);
         verifyNoMoreInteractions(service);
     }
@@ -426,12 +423,12 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
         
         Survey survey = getSurvey(false);
-        when(service.getSurvey(ImmutableSet.of(DEVELOPER), TestConstants.TEST_STUDY, KEYS, false, false)).thenReturn(survey);
+        when(service.getSurvey(TestConstants.TEST_STUDY, KEYS, false, false)).thenReturn(survey);
         
         Result result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "true");
         TestUtils.assertResult(result, 200, "Survey deleted.");
         
-        verify(service).getSurvey(ImmutableSet.of(DEVELOPER), TestConstants.TEST_STUDY, KEYS, false, false);
+        verify(service).getSurvey(TestConstants.TEST_STUDY, KEYS, false, false);
         verify(service).deleteSurvey(TestConstants.TEST_STUDY, survey);
         verifyNoMoreInteractions(service);
     }
@@ -440,13 +437,13 @@ public class SurveyControllerTest {
         setupContext(API_STUDY_ID, ADMIN, UNCONSENTED, null);
         
         Survey survey = getSurvey(false);
-        when(service.getSurvey(ImmutableSet.of(ADMIN), TestConstants.TEST_STUDY, KEYS, true, false)).thenReturn(survey);
+        when(service.getSurvey(TestConstants.TEST_STUDY, KEYS, true, false)).thenReturn(survey);
         
         Result result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "true");
         TestUtils.assertResult(result, 200, "Survey deleted.");
         
-        verify(service).getSurvey(ImmutableSet.of(ADMIN), TestConstants.TEST_STUDY, KEYS, true, true);
-        verify(service).deleteSurveyPermanently(ADMIN_ROLE, API_STUDY_ID, survey);
+        verify(service).getSurvey(TestConstants.TEST_STUDY, KEYS, true, true);
+        verify(service).deleteSurveyPermanently(API_STUDY_ID, survey);
         verifyNoMoreInteractions(service);
     }
     
@@ -454,7 +451,7 @@ public class SurveyControllerTest {
     public void deleteSurveyThrowsGoodExceptionIfSurveyDoesntExist() throws Exception {
         setupContext(API_STUDY_ID, DEVELOPER, UNCONSENTED, null);
         
-        when(service.getSurvey(ImmutableSet.of(DEVELOPER), TestConstants.TEST_STUDY, KEYS, false, false)).thenReturn(null);
+        when(service.getSurvey(TestConstants.TEST_STUDY, KEYS, false, false)).thenReturn(null);
         
         controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), "false");
     }
@@ -608,7 +605,7 @@ public class SurveyControllerTest {
     
     @Test
     public void deleteSurveyInvalidatesCache() throws Exception {
-        assertCacheIsCleared((guid, dateString) -> controller.deleteSurvey(guid, dateString, "false"));
+        assertCacheIsCleared((guid, dateString) -> controller.deleteSurvey(guid, dateString, "false"), 2);
     }
     
     @Test
@@ -632,6 +629,10 @@ public class SurveyControllerTest {
     }
    
     private void assertCacheIsCleared(ExecuteSurvey executeSurvey) throws Exception {
+        assertCacheIsCleared(executeSurvey, 1);
+    }
+    
+    private void assertCacheIsCleared(ExecuteSurvey executeSurvey, int getCount) throws Exception {
         // Setup the cache to return content and verify the cache returns content
         Survey survey = new DynamoSurvey();
         survey.setStudyIdentifier("api");
@@ -639,7 +640,7 @@ public class SurveyControllerTest {
         survey.setCreatedOn(CREATED_ON.getMillis());
         
         setupContext(TEST_STUDY, DEVELOPER, false, survey);
-        when(service.getSurvey(any(), eq(TEST_STUDY), any(), anyBoolean(), anyBoolean())).thenReturn(survey);
+        when(service.getSurvey(eq(TEST_STUDY), any(), anyBoolean(), anyBoolean())).thenReturn(survey);
         
         viewCache.getView(viewCache.getCacheKey(
                 Survey.class, SURVEY_GUID, CREATED_ON.toString(), "api"), () -> { return survey; });
@@ -658,9 +659,9 @@ public class SurveyControllerTest {
         // execute the test method, this should delete the cache
         executeSurvey.execute(SURVEY_GUID, CREATED_ON.toString());
         
-        // This call now hits the service, not the cache, for a total of two calls to the service
+        // This call now hits the service, not the cache, for what should be one hit
         controller.getSurvey(SURVEY_GUID, CREATED_ON.toString());
-        verify(service).getSurvey(any(), any(), anyBoolean(), anyBoolean());
+        verify(service, times(getCount)).getSurvey(any(), any(), anyBoolean(), anyBoolean());
     }
     
     private Survey getSurvey(boolean makeNew) {

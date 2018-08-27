@@ -102,7 +102,8 @@ public class DynamoAppConfigDao implements AppConfigDao {
         checkNotNull(appConfig);
         
         DynamoAppConfig saved = loadAppConfig(new StudyIdentifierImpl(appConfig.getStudyId()), appConfig.getGuid());
-        if (saved == null) {
+        // If it doesn't exist, or it's deleted and not being undeleted, then return 404
+        if (saved == null || (appConfig.isDeleted() && saved.isDeleted())) {
             throw new EntityNotFoundException(AppConfig.class);
         }
         Criteria criteria = persistCriteria(appConfig);
@@ -116,24 +117,24 @@ public class DynamoAppConfigDao implements AppConfigDao {
         checkNotNull(studyId);
         checkNotNull(guid);
         
-        // If app config doesn't exist, fail silently. It's more user-friendly
         AppConfig appConfig = loadAppConfig(studyId, guid);
-        if (appConfig != null) {
-            appConfig.setDeleted(true);
-            mapper.save(appConfig);
+        if (appConfig == null || appConfig.isDeleted()) {
+            throw new EntityNotFoundException(AppConfig.class);
         }
+        appConfig.setDeleted(true);
+        mapper.save(appConfig);
     }
     
     public void deleteAppConfigPermanently(StudyIdentifier studyId, String guid) {
         checkNotNull(studyId);
         checkNotNull(guid);
         
-        // If app config doesn't exist, fail silently. It's more user-friendly
         DynamoAppConfig appConfig = loadAppConfig(studyId, guid);
-        if (appConfig != null) {
-            mapper.delete(appConfig);
-            criteriaDao.deleteCriteria(appConfig.getCriteria().getKey());
+        if (appConfig == null) {
+            throw new EntityNotFoundException(AppConfig.class);
         }
+        mapper.delete(appConfig);
+        criteriaDao.deleteCriteria(appConfig.getCriteria().getKey());
     }
     
     private String getKey(AppConfig appConfig) {

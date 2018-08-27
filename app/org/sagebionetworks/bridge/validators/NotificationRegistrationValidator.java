@@ -23,14 +23,26 @@ public class NotificationRegistrationValidator implements Validator {
         if (isBlank(registration.getHealthCode())) {
             errors.rejectValue("healthCode", "is required");
         }
-        if (isBlank(registration.getDeviceId())) {
-            errors.rejectValue("deviceId", "is required");
-        }
-        if (isBlank(registration.getOsName())) {
-            errors.rejectValue("osName", "is required");   
-        } else if (!OperatingSystem.ALL_OS_SYSTEMS.contains(registration.getOsName())) {
-            errors.rejectValue("osName", "is not a supported platform");
+
+        switch (registration.getProtocol()) {
+            case APPLICATION:
+                if (isBlank(registration.getDeviceId())) {
+                    errors.rejectValue("deviceId", "is required");
+                }
+                if (isBlank(registration.getOsName())) {
+                    errors.rejectValue("osName", "is required");
+                } else if (!OperatingSystem.ALL_OS_SYSTEMS.contains(registration.getOsName())) {
+                    errors.rejectValue("osName", "is not a supported platform");
+                }
+                break;
+            case SMS:
+                if (isBlank(registration.getEndpoint())) {
+                    errors.rejectValue("endpoint", "is required");
+                }
+                break;
+            default:
+                errors.rejectValue("protocol", "is not a supported protocol");
+                break;
         }
     }
-
 }

@@ -37,6 +37,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.FPHSService;
+import org.sagebionetworks.bridge.services.NotificationTopicService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -66,6 +67,7 @@ public class FPHSControllerTest {
         SessionUpdateService sessionUpdateService = new SessionUpdateService();
         sessionUpdateService.setCacheProvider(mock(CacheProvider.class));
         sessionUpdateService.setConsentService(consentService);
+        sessionUpdateService.setNotificationTopicService(mock(NotificationTopicService.class));
 
         Study study = Study.create();
         study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);

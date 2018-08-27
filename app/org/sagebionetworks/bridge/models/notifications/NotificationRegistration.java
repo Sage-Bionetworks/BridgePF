@@ -29,17 +29,24 @@ public interface NotificationRegistration extends BridgeEntity {
      */
     String getGuid();
     
-    /** @see getGuid */
+    /** @see #getGuid */
     void setGuid(String guid);
-    
+
+    /** Notification protocol of this particular registration. Examples: Application (push notification), SMS. */
+    NotificationProtocol getProtocol();
+
+    /** @see #getProtocol */
+    void setProtocol(NotificationProtocol protocol);
+
     /**
-     * The endpointARN generated when the user's device is registered for a specific 
-     * platform (using a platformARN).
+     * The endpoint that should be registered for the notification. For "sms" protocol, this is the participant's
+     * verified phone number in string form. For "application" protocol, this is the endpointARN generated when the
+     * user's device is registered for a specific platform (using a platformARN).
      */
-    String getEndpointARN();
+    String getEndpoint();
     
-    /** @see getEndpointARN */
-    void setEndpointARN(String endpointARN);
+    /** @see #getEndpoint */
+    void setEndpoint(String endpoint);
     
     /**
      * The device ID submitted by the client (for reference). This is either the 
@@ -48,7 +55,7 @@ public interface NotificationRegistration extends BridgeEntity {
      */
     String getDeviceId();
     
-    /** @see getDeviceId */
+    /** @see #getDeviceId */
     void setDeviceId(String deviceId);
     
     /**
@@ -57,7 +64,7 @@ public interface NotificationRegistration extends BridgeEntity {
      */
     String getOsName();
     
-    /** @see getPlatform */
+    /** @see #getOsName */
     void setOsName(String osName);
     
     /**
@@ -65,7 +72,7 @@ public interface NotificationRegistration extends BridgeEntity {
      */
     long getCreatedOn();
     
-    /** @see getCreatedOn */
+    /** @see #getCreatedOn */
     void setCreatedOn(long createdOn);
 
     /**
@@ -73,6 +80,6 @@ public interface NotificationRegistration extends BridgeEntity {
      */
     long getModifiedOn();
     
-    /** @see getModifiedOn */
+    /** @see #getModifiedOn */
     void setModifiedOn(long modifiedOn);
 }

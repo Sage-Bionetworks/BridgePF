@@ -278,6 +278,7 @@ public class ConsentService {
         }
         Map<SubpopulationGuid,ConsentStatus> statuses = getConsentStatuses(context, account);
         if (!ConsentStatus.isUserConsented(statuses)) {
+            notificationsService.deleteAllRegistrations(study.getStudyIdentifier(), participant.getHealthCode());
             account.setSharingScope(SharingScope.NO_SHARING);
         }
         accountDao.updateAccount(account, false);
@@ -306,6 +307,8 @@ public class ConsentService {
         }
         account.setSharingScope(SharingScope.NO_SHARING);
         accountDao.updateAccount(account, false);
+
+        notificationsService.deleteAllRegistrations(study.getStudyIdentifier(), participant.getHealthCode());
 
         sendWithdrawEmail(study, participant.getExternalId(), account, withdrawal, withdrewOn);
 

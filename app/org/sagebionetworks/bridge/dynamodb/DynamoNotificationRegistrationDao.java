@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.NotificationRegistrationDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 
@@ -49,7 +50,8 @@ public class DynamoNotificationRegistrationDao implements NotificationRegistrati
     final void setSnsClient(AmazonSNSClient snsClient) {
         this.snsClient = snsClient;
     }
-    
+
+    @SuppressWarnings("SimplifyStreamApiCallChains")
     @Override
     public List<NotificationRegistration> listRegistrations(String healthCode) {
         checkNotNull(healthCode);
@@ -82,8 +84,10 @@ public class DynamoNotificationRegistrationDao implements NotificationRegistrati
         return registration;
     }
 
+    /** {@inheritDoc} */
     @Override
-    public NotificationRegistration createRegistration(String platformARN, NotificationRegistration registration) {
+    public NotificationRegistration createPushNotificationRegistration(String platformARN,
+            NotificationRegistration registration) {
         checkNotNull(platformARN);
         checkNotNull(registration);
         checkNotNull(registration.getHealthCode());
@@ -95,26 +99,34 @@ public class DynamoNotificationRegistrationDao implements NotificationRegistrati
                 .withToken(registration.getDeviceId())
                 .withPlatformApplicationArn(platformARN);
         CreatePlatformEndpointResult result = snsClient.createPlatformEndpoint(request);
-        
-        // If the data is the same and returns an existing endpointARN, we want to re-use the original record 
+        registration.setEndpoint(result.getEndpointArn());
+        return createRegistration(registration);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public NotificationRegistration createRegistration(NotificationRegistration registration) {
+        checkNotNull(registration);
+        checkNotNull(registration.getEndpoint());
+
+        // If the data is the same and returns an existing endpoint, we want to re-use the original record
         // and GUID we provided to the client, not create a new record. Look for it.
-        NotificationRegistration existing = findExistingRecord(registration.getHealthCode(), result.getEndpointArn());
+        NotificationRegistration existing = findExistingRecord(registration.getHealthCode(),
+                registration.getEndpoint());
         long timestamp = DateUtils.getCurrentMillisFromEpoch();
         if (existing != null) {
             registration.setGuid(existing.getGuid());
             registration.setCreatedOn(existing.getCreatedOn());
         } else {
-            registration.setGuid(BridgeUtils.generateGuid());    
+            registration.setGuid(BridgeUtils.generateGuid());
             registration.setCreatedOn(timestamp);
         }
-        registration.setHealthCode(registration.getHealthCode());
         registration.setModifiedOn(timestamp);
-        registration.setEndpointARN(result.getEndpointArn());
-        
+
         mapper.save(registration);
         return registration;
     }
-    
+
     /**
      * Update an endpoint using the GUID that was supplied on creation. The only thing you can actually update is the
      * device token, but this is important to be able to update as it changes on some platforms.
@@ -124,18 +136,23 @@ public class DynamoNotificationRegistrationDao implements NotificationRegistrati
         checkNotNull(registration);
         checkNotNull(registration.getHealthCode());
         checkNotNull(registration.getGuid());
-        checkNotNull(registration.getDeviceId());
-        
+
         String guid = registration.getGuid();
         String deviceId = registration.getDeviceId();
         
         // Throws 404 if registration doesn't exist
         NotificationRegistration existingRegistration = getRegistration(registration.getHealthCode(), guid);
-        
+
+        // This API is only used to update the device token for push notifications. If the protocol isn't APPLICATION,
+        // do nothing.
+        if (existingRegistration.getProtocol() != NotificationProtocol.APPLICATION) {
+            return existingRegistration;
+        }
+
         // Don't call update unless token has changed
-        Map<String, String> attrs = getEndpointAttributes(existingRegistration.getEndpointARN());
+        Map<String, String> attrs = getEndpointAttributes(existingRegistration.getEndpoint());
         if (!attrs.get(TOKEN).equals(deviceId)) {
-            saveEndpointAttributes(registration.getHealthCode(), deviceId);
+            saveEndpointAttributes(existingRegistration.getEndpoint(), deviceId);
         
             existingRegistration.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
             existingRegistration.setDeviceId(deviceId);
@@ -151,17 +168,19 @@ public class DynamoNotificationRegistrationDao implements NotificationRegistrati
         
         // Throws 404 if registration doesn't exist
         NotificationRegistration registration = getRegistration(healthCode, guid);
-        
-        DeleteEndpointRequest request = new DeleteEndpointRequest().withEndpointArn(registration.getEndpointARN());
-        snsClient.deleteEndpoint(request);
-        
+
+        if (registration.getProtocol() == NotificationProtocol.APPLICATION) {
+            DeleteEndpointRequest request = new DeleteEndpointRequest().withEndpointArn(registration.getEndpoint());
+            snsClient.deleteEndpoint(request);
+        }
+
         mapper.delete(registration);
     }
 
-    private NotificationRegistration findExistingRecord(String healthCode, String endpointARN) {
+    private NotificationRegistration findExistingRecord(String healthCode, String endpoint) {
         List<NotificationRegistration> records = listRegistrations(healthCode);
         for (NotificationRegistration registration : records) {
-            if (endpointARN.equals(registration.getEndpointARN())) {
+            if (endpoint.equals(registration.getEndpoint())) {
                 return registration;
             }
         }
@@ -180,8 +199,9 @@ public class DynamoNotificationRegistrationDao implements NotificationRegistrati
         }
     }
 
-    private void saveEndpointAttributes(String healthCode, String deviceToken) {
+    private void saveEndpointAttributes(String endpointArn, String deviceToken) {
         SetEndpointAttributesRequest attrRequest = new SetEndpointAttributesRequest();
+        attrRequest.setEndpointArn(endpointArn);
         attrRequest.addAttributesEntry(TOKEN, deviceToken);
         attrRequest.addAttributesEntry(ENABLED, Boolean.TRUE.toString());
         snsClient.setEndpointAttributes(attrRequest);
