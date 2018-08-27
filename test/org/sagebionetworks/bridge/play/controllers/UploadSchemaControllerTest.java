@@ -103,6 +103,18 @@ public class UploadSchemaControllerTest {
     }
     
     @Test
+    public void deleteAllRevisionsOfUploadSchemaPermanentlyForDeveloperIsLogical() throws Exception {
+        UploadSchemaService mockSvc = mock(UploadSchemaService.class);
+
+        // setup, execute, and validate
+        UploadSchemaController controller = setupControllerWithService(mockSvc, Roles.DEVELOPER);
+        
+        Result result = controller.deleteAllRevisionsOfUploadSchema("delete-schema", "true");
+        TestUtils.assertResult(result, 200, "Schemas have been deleted.");
+        verify(mockSvc).deleteUploadSchemaById(TestConstants.TEST_STUDY, "delete-schema");
+    }
+    
+    @Test
     public void deleteSchemaRevision() throws Exception {
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
 
@@ -124,6 +136,19 @@ public class UploadSchemaControllerTest {
         Result result = controller.deleteSchemaRevision("delete-schema", 4, "true");
         TestUtils.assertResult(result, 200, "Schema revision has been deleted.");
         verify(mockSvc).deleteUploadSchemaByIdAndRevisionPermanently(TestConstants.TEST_STUDY, "delete-schema", 4);
+    }
+    
+    @Test
+    public void deleteSchemaRevisionPermanentlyForDeveloperIsLogical() throws Exception {
+        UploadSchemaService mockSvc = mock(UploadSchemaService.class);
+
+        // setup, execute, and validate
+        UploadSchemaController controller = setupControllerWithService(mockSvc, Roles.DEVELOPER);
+        
+        Result result = controller.deleteSchemaRevision("delete-schema", 4, "true");
+        TestUtils.assertResult(result, 200, "Schema revision has been deleted.");
+        // We do not call the permanent delete, we call the logical delete, as the user is a developer.
+        verify(mockSvc).deleteUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, "delete-schema", 4);
     }
     
     @Test

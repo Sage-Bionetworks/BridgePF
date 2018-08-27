@@ -381,6 +381,16 @@ public class UploadSchemaServiceTest {
 
         svc.deleteUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV);
     }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void deleteByIdAndRevOfLogicallyDeletedSchema() {
+        // mock dao to return logically deleted schema
+        UploadSchema schema = makeSimpleSchema();
+        schema.setDeleted(true);
+        when(dao.getUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(schema);
+
+        svc.deleteUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV);
+    }
 
     @Test(expected = EntityNotFoundException.class)
     public void deleteByIdAndRevPermanentlyNotFound() {
@@ -389,6 +399,17 @@ public class UploadSchemaServiceTest {
 
         svc.deleteUploadSchemaByIdAndRevisionPermanently(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV);
     }
+    
+    @Test
+    public void deleteByIdAndRevOfPermanentlyDeletedSchemaWorks() {
+        // mock dao to return logically deleted schema, you can permanently delete this
+        UploadSchema schema = makeSimpleSchema();
+        schema.setDeleted(true);
+        when(dao.getUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(schema);
+
+        svc.deleteUploadSchemaByIdAndRevisionPermanently(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV);
+        verify(dao).deleteUploadSchemasPermanently(ImmutableList.of(schema));
+    }    
     
     @Test(expected = BadRequestException.class)
     public void deleteByIdAndRevNotEmptySharedModules() {

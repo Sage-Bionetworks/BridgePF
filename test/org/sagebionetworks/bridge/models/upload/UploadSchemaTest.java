@@ -245,6 +245,7 @@ public class UploadSchemaTest {
         assertEquals("test-study", uploadSchema.getStudyId());
         assertEquals("survey-guid", uploadSchema.getSurveyGuid());
         assertEquals(surveyCreatedOnMillis, uploadSchema.getSurveyCreatedOn().longValue());
+        assertTrue(uploadSchema.isDeleted());
         assertEquals(6, ((DynamoUploadSchema) uploadSchema).getVersion().longValue());
 
         assertEquals(ImmutableSet.of("iOS", "Android"), uploadSchema.getAppVersionOperatingSystems());
@@ -282,6 +283,7 @@ public class UploadSchemaTest {
         assertEquals("test-study", jsonNode.get("studyId").textValue());
         assertEquals("survey-guid", jsonNode.get("surveyGuid").textValue());
         assertEquals("UploadSchema", jsonNode.get("type").textValue());
+        assertTrue(jsonNode.get("deleted").booleanValue());
         assertEquals(6,  jsonNode.get("version").intValue());
         assertTrue(jsonNode.get("deleted").booleanValue());
 
