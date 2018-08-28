@@ -628,12 +628,13 @@ public class StudyValidatorTest {
     @Test
     public void installAppLinksCannotExceedSMSLength() {
         String msg = "";
-        for (int i=0; i < BridgeConstants.SMS_CHARACTER_LIMIT; i++) {
+        for (int i = 0; i < BridgeConstants.APP_LINK_MAX_LENGTH; i++) {
             msg += "A";
         }
         msg += "A";
         study.getInstallLinks().put("foo", msg);
-        assertValidatorMessage(INSTANCE, study, "installLinks", "cannot be longer than "+BridgeConstants.SMS_CHARACTER_LIMIT+" characters");
+        assertValidatorMessage(INSTANCE, study, "installLinks", "cannot be longer than " +
+                BridgeConstants.APP_LINK_MAX_LENGTH + " characters");
     }
     
     @Test
