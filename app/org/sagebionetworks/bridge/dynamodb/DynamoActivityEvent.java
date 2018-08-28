@@ -65,7 +65,7 @@ public class DynamoActivityEvent implements ActivityEvent {
     public static class Builder {
         private String healthCode;
         private Long timestamp;
-        private ActivityEventObjectType type;
+        private ActivityEventObjectType objectType;
         private String objectId;
         private ActivityEventType eventType;
         private String answerValue;
@@ -83,15 +83,15 @@ public class DynamoActivityEvent implements ActivityEvent {
             return this;
         }
         public Builder withObjectType(ActivityEventObjectType type) {
-            this.type = type;
+            this.objectType = type;
             return this;
         }
         public Builder withObjectId(String objectId) {
             this.objectId = objectId;
             return this;
         }
-        public Builder withEventType(ActivityEventType type) {
-            this.eventType = type;
+        public Builder withEventType(ActivityEventType objectType) {
+            this.eventType = objectType;
             return this;
         }
         public Builder withAnswerValue(String answerValue) {
@@ -99,13 +99,10 @@ public class DynamoActivityEvent implements ActivityEvent {
             return this;
         }
         private String getEventId() {
-            if (type == null) {
+            if (objectType == null) {
                 return null;
             }
-            if (type == ActivityEventObjectType.ENROLLMENT) {
-                return type.name().toLowerCase();
-            }
-            String typeName = type.name().toLowerCase();
+            String typeName = objectType.name().toLowerCase();
             if (objectId != null && eventType != null) {
                 return String.format("%s:%s:%s", typeName, objectId, eventType.name().toLowerCase());
             } else if (objectId != null) {

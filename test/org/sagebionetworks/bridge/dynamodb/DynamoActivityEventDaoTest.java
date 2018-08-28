@@ -10,6 +10,7 @@ import javax.annotation.Resource;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,6 +37,11 @@ public class DynamoActivityEventDaoTest {
         healthCode = TestUtils.randomName(DynamoActivityEventDaoTest.class);
     }
     
+    @After
+    public void after() {
+        activityEventDao.deleteActivityEvents(healthCode);
+    }
+    
     @Test
     public void canCrudEvent() {
         // Put all the initial times in non-UTC timezone, they should come back in map in UTC.
@@ -59,10 +65,8 @@ public class DynamoActivityEventDaoTest {
         activityEventDao.publishEvent(event);
         
         Map<String,DateTime> map = activityEventDao.getActivityEventMap(healthCode);
-        assertEquals(6, map.size());
+        assertEquals(4, map.size());
         assertEquals(time1.withZone(DateTimeZone.UTC), map.get("enrollment"));
-        assertEquals(time1.withZone(DateTimeZone.UTC).minusWeeks(2), map.get("two_weeks_before_enrollment"));
-        assertEquals(time1.withZone(DateTimeZone.UTC).minusMonths(2), map.get("two_months_before_enrollment"));
         assertEquals(time2.withZone(DateTimeZone.UTC), map.get("survey:AAA-BBB-CCC:finished"));
         assertEquals(time3.withZone(DateTimeZone.UTC), map.get("question:DDD-EEE-FFF:answered=someValue"));
         assertEquals(time6.withZone(DateTimeZone.UTC), map.get("activity:AAA-BBB-CCC:finished"));
@@ -93,6 +97,21 @@ public class DynamoActivityEventDaoTest {
     }
     
     @Test
+    public void cannotSetEarlierTimestamp() {
+        final DateTime firstEvent = DateTime.now();
+        
+        DynamoActivityEvent event = getSurveyFinishedEvent(firstEvent);
+        activityEventDao.publishEvent(event);
+        
+        DynamoActivityEvent earlierEvent = getSurveyFinishedEvent(firstEvent.minusSeconds(1));
+        activityEventDao.publishEvent(earlierEvent);
+        
+        // It has not been advanced.
+        Map<String,DateTime> eventMap = activityEventDao.getActivityEventMap(healthCode);
+        assertEquals(firstEvent.withZone(DateTimeZone.UTC), eventMap.get(event.getEventId()));
+    }
+    
+    @Test
     public void ifNoEnrollmentNoCalculatedEvents() {
         Map<String,DateTime> map = activityEventDao.getActivityEventMap("not-a-health-code");
         assertTrue(map.isEmpty());
@@ -111,8 +130,24 @@ public class DynamoActivityEventDaoTest {
         
         Map<String,DateTime> eventMap = activityEventDao.getActivityEventMap(healthCode);
         assertEquals(firstEvent.withZone(DateTimeZone.UTC), eventMap.get("enrollment"));
+    }
+    
+    @Test
+    public void neverUpdateActivitiesRetrievedEvent() {
+        final DateTime firstEvent = DateTime.now();
+        DynamoActivityEvent event = new DynamoActivityEvent.Builder().withHealthCode(healthCode)
+                .withObjectType(ActivityEventObjectType.ACTIVITIES_RETRIEVED).withTimestamp(firstEvent).build();
         
-        activityEventDao.deleteActivityEvents(healthCode);
+        activityEventDao.publishEvent(event);
+        
+        // This does not work. You can't do this.
+        event = new DynamoActivityEvent.Builder().withHealthCode(healthCode)
+                .withObjectType(ActivityEventObjectType.ACTIVITIES_RETRIEVED).withTimestamp(firstEvent.plusHours(2))
+                .build();
+        activityEventDao.publishEvent(event);
+        
+        Map<String,DateTime> eventMap = activityEventDao.getActivityEventMap(healthCode);
+        assertEquals(firstEvent.withZone(DateTimeZone.UTC), eventMap.get("activities_retrieved"));
     }
     
     private DynamoActivityEvent getEnrollmentEvent(DateTime timestamp) {

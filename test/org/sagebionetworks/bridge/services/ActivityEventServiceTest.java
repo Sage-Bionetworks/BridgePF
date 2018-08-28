@@ -4,7 +4,7 @@ import static org.hamcrest.core.StringEndsWith.endsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -57,7 +57,7 @@ public class ActivityEventServiceTest {
         study.setActivityEventKeys(ImmutableSet.of("eventKey1", "eventKey2"));
 
         ArgumentCaptor<ActivityEvent> activityEventArgumentCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
-        doNothing().when(activityEventDao).publishEvent(activityEventArgumentCaptor.capture());
+        when(activityEventDao.publishEvent(activityEventArgumentCaptor.capture())).thenReturn(true);
 
         DateTime timestamp = DateTime.now();
         activityEventService.publishCustomEvent(study, "healthCode", "eventKey1", timestamp);
@@ -75,7 +75,7 @@ public class ActivityEventServiceTest {
         study.setAutomaticCustomEvents(ImmutableMap.of("3-days-after-enrollment", "P3D"));
 
         ArgumentCaptor<ActivityEvent> activityEventArgumentCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
-        doNothing().when(activityEventDao).publishEvent(activityEventArgumentCaptor.capture());
+        when(activityEventDao.publishEvent(activityEventArgumentCaptor.capture())).thenReturn(true);
 
         DateTime timestamp = DateTime.now().plusDays(3);
         activityEventService.publishCustomEvent(study, "healthCode", "3-days-after-enrollment",
@@ -186,8 +186,14 @@ public class ActivityEventServiceTest {
     public void canPublishEnrollmentEventWithAutomaticCustomEvents() {
         // Configure study with automatic custom events
         Study study = Study.create();
-        study.setAutomaticCustomEvents(ImmutableMap.<String, String>builder().put("3-days-after", "P3D")
-                .put("1-week-after", "P1W").put("13-weeks-after", "P13W").build());
+        // Note that these events include events that are implicitly and explicitly related to 
+        // enrollment, and some that are not applicable that should be ignored.
+        study.setAutomaticCustomEvents(ImmutableMap.<String, String>builder()
+                .put("3-days-after", "P3D") // defaults to enrollment
+                .put("1-week-after", "enrollment:P1W")
+                .put("13-weeks-after", "enrollment:P13W")
+                .put("5-years-after", "not_enrollment:P5Y")
+                .put("10-years-after", "not_entrollment:P10Y").build());
 
         // Create consent signature
         DateTime enrollment = DateTime.parse("2018-04-04T16:00-0700");
@@ -197,6 +203,8 @@ public class ActivityEventServiceTest {
                 .withConsentCreatedOn(enrollment.minusDays(10).getMillis())
                 .withSignedOn(enrollment.getMillis()).build();
 
+        when(activityEventDao.publishEvent(any())).thenReturn(true);
+        
         // Execute
         activityEventService.publishEnrollmentEvent(study,"AAA-BBB-CCC", signature);
 
@@ -225,6 +233,95 @@ public class ActivityEventServiceTest {
                 .getTimestamp().longValue());
         assertEquals("AAA-BBB-CCC", publishedEventList.get(3).getHealthCode());
     }
+    
+    @Test
+    public void whenNoEnrollmentEventPublishNoCustomEvents() {
+        // Configure study with automatic custom events
+        Study study = Study.create();
+        // Note that these events include events that are implicitly and explicitly related to 
+        // enrollment, and some that are not applicable that should be ignored.
+        study.setAutomaticCustomEvents(ImmutableMap.<String, String>builder()
+                .put("3-days-after", "P3D") // defaults to enrollment
+                .put("1-week-after", "enrollment:P1W")
+                .put("13-weeks-after", "enrollment:P13W")
+                .put("5-years-after", "not_enrollment:P5Y")
+                .put("10-years-after", "not_entrollment:P10Y").build());
+        
+        when(activityEventDao.publishEvent(any())).thenReturn(false);
+        
+        activityEventService.publishEnrollmentEvent(study,"AAA-BBB-CCC", new ConsentSignature.Builder().build());
+        
+        // Only happens once, none of the other custom events are published.
+        verify(activityEventDao, times(1)).publishEvent(any());
+    }
+    
+    @Test
+    public void whenNoActivitiesRetrievedEventPublishNoCustomEvents() {
+        // Configure study with automatic custom events
+        Study study = Study.create();
+        // Note that these events include events that are implicitly and explicitly related to 
+        // enrollment, and some that are not applicable that should be ignored.
+        study.setAutomaticCustomEvents(ImmutableMap.<String, String>builder()
+                .put("3-days-after", "P3D") // defaults to enrollment
+                .put("1-week-after", "enrollment:P1W")
+                .put("13-weeks-after", "enrollment:P13W")
+                .put("5-years-after", "not_enrollment:P5Y")
+                .put("10-years-after", "not_entrollment:P10Y").build());
+        
+        when(activityEventDao.publishEvent(any())).thenReturn(false);
+        
+        activityEventService.publishActivitiesRetrieved(study,"AAA-BBB-CCC", DateTime.now());
+        
+        // Only happens once, none of the other custom events are published.
+        verify(activityEventDao, times(1)).publishEvent(any());
+    }
+    
+    @Test
+    public void canPublishActivitiesRetrievedEventWithAutomaticCustomEvents() {
+        // Configure study with automatic custom events
+        Study study = Study.create();
+        // Note that these events include events that should be triggered for enrollment, 
+        // not activities retrieved. These are ignore.
+        study.setAutomaticCustomEvents(ImmutableMap.<String, String>builder()
+                .put("3-days-after", "activities_retrieved:P3D")
+                .put("1-week-after", "activities_retrieved:P1W")
+                .put("13-weeks-after", "activities_retrieved:P13W")
+                .put("5-years-after", "enrollment:P5Y")
+                .put("10-years-after", "enrollment:P10Y").build());
+
+        // Create consent signature
+        DateTime retrieved = DateTime.parse("2018-04-04T16:00-0700");
+        
+        when(activityEventDao.publishEvent(any())).thenReturn(true);
+
+        // Execute
+        activityEventService.publishActivitiesRetrieved(study, "AAA-BBB-CCC", retrieved);
+
+        // Verify published events (4)
+        ArgumentCaptor<ActivityEvent> publishedEventCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
+        verify(activityEventDao, times(4)).publishEvent(publishedEventCaptor.capture());
+
+        List<ActivityEvent> publishedEventList = publishedEventCaptor.getAllValues();
+
+        assertEquals("activities_retrieved", publishedEventList.get(0).getEventId());
+        assertEquals(retrieved.getMillis(), publishedEventList.get(0).getTimestamp().longValue());
+        assertEquals("AAA-BBB-CCC", publishedEventList.get(0).getHealthCode());
+
+        assertEquals("custom:3-days-after", publishedEventList.get(1).getEventId());
+        assertEquals(DateUtils.convertToMillisFromEpoch("2018-04-07T16:00-0700"), publishedEventList.get(1)
+                .getTimestamp().longValue());
+        assertEquals("AAA-BBB-CCC", publishedEventList.get(1).getHealthCode());
+
+        assertEquals("custom:1-week-after", publishedEventList.get(2).getEventId());
+        assertEquals(DateUtils.convertToMillisFromEpoch("2018-04-11T16:00-0700"), publishedEventList.get(2)
+                .getTimestamp().longValue());
+        assertEquals("AAA-BBB-CCC", publishedEventList.get(2).getHealthCode());
+
+        assertEquals("custom:13-weeks-after", publishedEventList.get(3).getEventId());
+        assertEquals(DateUtils.convertToMillisFromEpoch("2018-07-04T16:00-0700"), publishedEventList.get(3)
+                .getTimestamp().longValue());
+        assertEquals("AAA-BBB-CCC", publishedEventList.get(3).getHealthCode());
+    }    
 
     @Test
     public void canPublishSurveyAnswer() {

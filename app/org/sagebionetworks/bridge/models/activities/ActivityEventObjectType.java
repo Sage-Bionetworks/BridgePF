@@ -2,7 +2,15 @@ package org.sagebionetworks.bridge.models.activities;
 
 public enum ActivityEventObjectType {
     /**
-     * An enrollment event. The eventId will be "enrollment".
+     * Event for the first time the user successfully requests scheduled activities from the 
+     * server. This event is not recorded until the activities can be successfully returned to 
+     * the user, so if consent is required, it will have to be provided first. This event does 
+     * not update after creation.
+     */
+    ACTIVITIES_RETRIEVED,
+    /**
+     * An enrollment event. The eventId will be "enrollment". This event does not update after 
+     * creation.
      */
     ENROLLMENT,
     /**
@@ -28,26 +36,6 @@ public enum ActivityEventObjectType {
      * saved in a schedule plan).
      */
     ACTIVITY,
-    /** 
-     * This is a calculated event timestamp based on enrollment. It allows us to create schedules
-     * where the participant joins scheduling "mid-stream". For example, in FPHS, activities are 
-     * all scheduled from Saturday to Saturday using a cron expression, and a user, when they join, 
-     * get the tasks assigned the previous Saturday. This event can be used for periodic tasks 
-     * that happen weekly or biweekly. The eventId will be "two_weeks_before_enrollment".
-     * 
-     * @see org.sagebionetworks.bridge.dao.ActivityEventDao#getActivityEventMap 
-     */
-    TWO_WEEKS_BEFORE_ENROLLMENT,
-    /** 
-     * This is a calculated event timestamp based on enrollment. It allows us to create schedules
-     * where the participant joins scheduling "mid-stream". For example, in FPHS, activities are 
-     * all scheduled from Saturday to Saturday using a cron expression, and a user, when they join, 
-     * get the tasks assigned the previous Saturday. This event can be used for periodic tasks 
-     * that happen monthly or bimonthly. The eventId will be "two_months_before_enrollment".
-     * 
-     * @see org.sagebionetworks.bridge.dao.ActivityEventDao#getActivityEventMap 
-     */
-    TWO_MONTHS_BEFORE_ENROLLMENT,
     /**
      * A custom event defined at the study level.
      */

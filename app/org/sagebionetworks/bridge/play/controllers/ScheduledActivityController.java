@@ -23,6 +23,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ScheduledActivityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -107,6 +108,7 @@ public class ScheduledActivityController extends BaseController {
     
     public Result getScheduledActivitiesByDateRange(String startTimeString, String endTimeString) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
+        Study study = studyService.getStudy(session.getStudyIdentifier());
         
         DateTime startsOn = BridgeUtils.getDateTimeOrDefault(startTimeString, null);
         DateTime endsOn = BridgeUtils.getDateTimeOrDefault(endTimeString, null);
@@ -121,7 +123,7 @@ public class ScheduledActivityController extends BaseController {
         DateTimeZone requestTimeZone = startsOn.getZone();
         ScheduleContext context = getScheduledActivitiesInternal(session, requestTimeZone, startsOnInclusive, endsOn, 0);
 
-        List<ScheduledActivity> scheduledActivities = scheduledActivityService.getScheduledActivitiesV4(context);
+        List<ScheduledActivity> scheduledActivities = scheduledActivityService.getScheduledActivitiesV4(study, context);
         
         DateTimeRangeResourceList<ScheduledActivity> results = new DateTimeRangeResourceList<>(scheduledActivities)
                 .withRequestParam(ResourceList.START_TIME, startsOn)
@@ -154,6 +156,7 @@ public class ScheduledActivityController extends BaseController {
     private List<ScheduledActivity> getScheduledActivitiesInternalV3(String untilString, String offset,
             String daysAhead, String minimumPerScheduleString) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
+        Study study = studyService.getStudy(session.getStudyIdentifier());
         
         DateTime endsOn = null;
         DateTimeZone requestTimeZone = null;
@@ -173,7 +176,7 @@ public class ScheduledActivityController extends BaseController {
         }
         DateTime now = DateTime.now(requestTimeZone);
         ScheduleContext context = getScheduledActivitiesInternal(session, requestTimeZone, now, endsOn, minimumPerSchedule);
-        return scheduledActivityService.getScheduledActivities(context);
+        return scheduledActivityService.getScheduledActivities(study, context);
     }
     
     private ScheduleContext getScheduledActivitiesInternal(UserSession session, DateTimeZone requestTimeZone,

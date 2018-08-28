@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
@@ -70,14 +71,25 @@ public class ActivityEventService {
             .withHealthCode(healthCode)
             .withTimestamp(enrollment)
             .withObjectType(ActivityEventObjectType.ENROLLMENT).build();
-        activityEventDao.publishEvent(event);
-
-        // Create automatic events, as defined in the study
-        for (Map.Entry<String, String> oneAutomaticEvent : study.getAutomaticCustomEvents().entrySet()) {
-            String automaticEventKey = oneAutomaticEvent.getKey();
-            Period automaticEventDelay = Period.parse(oneAutomaticEvent.getValue());
-            DateTime automaticEventTime = enrollment.plus(automaticEventDelay);
-            publishCustomEvent(study, healthCode, automaticEventKey, automaticEventTime);
+        
+        if (activityEventDao.publishEvent(event)) {
+            // Create automatic events, as defined in the study
+            createAutomaticCustomEvents(study, healthCode, event);
+        }
+    }
+    
+    public void publishActivitiesRetrieved(Study study, String healthCode, DateTime timestamp) {
+        checkNotNull(healthCode);
+        checkNotNull(timestamp);
+        
+        ActivityEvent event = new DynamoActivityEvent.Builder()
+            .withHealthCode(healthCode)
+            .withTimestamp(timestamp)
+            .withObjectType(ActivityEventObjectType.ACTIVITIES_RETRIEVED).build();
+        
+        if (activityEventDao.publishEvent(event)) {
+            // Create automatic events, as defined in the study
+            createAutomaticCustomEvents(study, healthCode, event);
         }
     }
     
@@ -157,4 +169,25 @@ public class ActivityEventService {
         activityEventDao.deleteActivityEvents(healthCode);
     }
 
+    private void createAutomaticCustomEvents(Study study, String healthCode, ActivityEvent event) {
+        for (Map.Entry<String, String> oneAutomaticEvent : study.getAutomaticCustomEvents().entrySet()) {
+            String automaticEventKey = oneAutomaticEvent.getKey(); // new event key
+            // [originEventId:]Period, if originEventId is missing, defaults to "enrollment"
+            Tuple<String> autoEventSpec = parseAutoEventValue(oneAutomaticEvent.getValue());
+            
+            if (event.getEventId().startsWith(autoEventSpec.getLeft())) {
+                Period automaticEventDelay = Period.parse(autoEventSpec.getRight());
+                DateTime automaticEventTime = new DateTime(event.getTimestamp()).plus(automaticEventDelay);
+                publishCustomEvent(study, healthCode, automaticEventKey, automaticEventTime);                
+            }
+        }        
+    }
+    
+    private Tuple<String> parseAutoEventValue(String automaticEventValue) {
+        // though Period serialization does not contain semicolons, limit the split to the first occurrence
+        String[] valueElements = automaticEventValue.split(":", 2); 
+        return (valueElements.length == 1) ?
+            new Tuple<>(ActivityEventObjectType.ENROLLMENT.name().toLowerCase(), valueElements[0]) :
+            new Tuple<>(valueElements[0], valueElements[1]);
+    }
 }

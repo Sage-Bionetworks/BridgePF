@@ -129,7 +129,7 @@ public class ScheduledActivityServiceRecurringTest {
         // You get the schedule from yesterday that hasn't expired just yet (22nd), plus the 
         // 23rd, 24th and 25th
         ScheduleContext context = getContextWith2DayWindow(now, MSK);
-        List<ScheduledActivity> activities = service.getScheduledActivities(context);
+        List<ScheduledActivity> activities = service.getScheduledActivities(study, context);
         
         assertEquals(4, activities.size());
         assertEquals(msk0+"T10:00:00.000+03:00", activities.get(0).getScheduledOn().toString());
@@ -141,7 +141,7 @@ public class ScheduledActivityServiceRecurringTest {
         // (yesterday, today in Russia, tomorrow and the next day). One activity was created beyond
         // the window, over in Moscow... that is not returned because although it exists, we 
         // filter it out from the persisted activities retrieved from the db.
-        activities = service.getScheduledActivities(getContextWith2DayWindow(now, PST));
+        activities = service.getScheduledActivities(study, getContextWith2DayWindow(now, PST));
 
         assertEquals(4, activities.size());
         assertEquals(pst1+"T10:00:00.000-07:00", activities.get(0).getScheduledOn().toString());
@@ -154,7 +154,7 @@ public class ScheduledActivityServiceRecurringTest {
         
         // He hasn't finished any activities. The 22nd expires but it's too early in the day 
         // for the 23rd to expire (earlier than 10am), so, 4 activities, but with different dates.
-        activities = service.getScheduledActivities(getContextWith2DayWindow(now, MSK));
+        activities = service.getScheduledActivities(study, getContextWith2DayWindow(now, MSK));
         assertEquals(4, activities.size());
         assertEquals(msk1+"T10:00:00.000+03:00", activities.get(0).getScheduledOn().toString());
         assertEquals(msk2+"T10:00:00.000+03:00", activities.get(1).getScheduledOn().toString());
@@ -167,7 +167,7 @@ public class ScheduledActivityServiceRecurringTest {
         service.updateScheduledActivities(testUser.getHealthCode(), activities);
         
         // This is easy, Dave has the later activities and that's it, at this point.
-        activities = service.getScheduledActivities(getContextWith2DayWindow(now, MSK));
+        activities = service.getScheduledActivities(study, getContextWith2DayWindow(now, MSK));
         
         assertEquals(2, activities.size()); //2
         assertEquals(msk3+"T10:00:00.000+03:00", activities.get(0).getScheduledOn().toString());
@@ -183,12 +183,12 @@ public class ScheduledActivityServiceRecurringTest {
         // Four days...
         DateTime endsOn = NOW.plusDays(4);
         ScheduleContext context = getContext(NOW, DateTimeZone.UTC, endsOn);
-        List<ScheduledActivity> activities = service.getScheduledActivities(context);
+        List<ScheduledActivity> activities = service.getScheduledActivities(study, context);
         
         // Zero days... there are fewer activities
         endsOn = NOW.plusDays(0);
         context = getContext(NOW, DateTimeZone.UTC, endsOn);
-        List<ScheduledActivity> activities2 = service.getScheduledActivities(context);
+        List<ScheduledActivity> activities2 = service.getScheduledActivities(study, context);
         
         assertTrue(activities2.size() < activities.size());
     }
