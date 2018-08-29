@@ -188,7 +188,7 @@ public class ActivityEventService {
     }
     
     private Tuple<String> parseAutoEventValue(String automaticEventValue) {
-        // though Period serialization does not contain semicolons, limit the split to the first occurrence
+        // Will property split something like "custom:myEvent:P3W"
         int lastIndex = automaticEventValue.lastIndexOf(":P");
         if (lastIndex == -1) {
             return new Tuple<>(ActivityEventObjectType.ENROLLMENT.name().toLowerCase(), automaticEventValue); 
