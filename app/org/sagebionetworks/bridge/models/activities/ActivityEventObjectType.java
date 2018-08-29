@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models.activities;
 
+import java.util.EnumSet;
+
 public enum ActivityEventObjectType {
     /**
      * Event for the first time the user successfully requests scheduled activities from the 
@@ -40,4 +42,6 @@ public enum ActivityEventObjectType {
      * A custom event defined at the study level.
      */
     CUSTOM;
+    
+    public static final EnumSet<ActivityEventObjectType> UNARY_EVENTS = EnumSet.of(ENROLLMENT, ACTIVITIES_RETRIEVED);
 }

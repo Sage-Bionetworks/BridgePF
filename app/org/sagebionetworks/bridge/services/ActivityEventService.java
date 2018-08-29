@@ -12,7 +12,7 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.Period;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -177,7 +177,7 @@ public class ActivityEventService {
         for (Map.Entry<String, String> oneAutomaticEvent : study.getAutomaticCustomEvents().entrySet()) {
             String automaticEventKey = oneAutomaticEvent.getKey(); // new event key
             // [originEventId:]Period, if originEventId is missing, defaults to "enrollment"
-            Tuple<String> autoEventSpec = parseAutoEventValue(oneAutomaticEvent.getValue());
+            Tuple<String> autoEventSpec = BridgeUtils.parseAutoEventValue(oneAutomaticEvent.getValue());
             
             if (event.getEventId().startsWith(autoEventSpec.getLeft())) {
                 Period automaticEventDelay = Period.parse(autoEventSpec.getRight());
@@ -186,14 +186,4 @@ public class ActivityEventService {
             }
         }        
     }
-    
-    private Tuple<String> parseAutoEventValue(String automaticEventValue) {
-        // Will property split something like "custom:myEvent:P3W"
-        int lastIndex = automaticEventValue.lastIndexOf(":P");
-        if (lastIndex == -1) {
-            return new Tuple<>(ActivityEventObjectType.ENROLLMENT.name().toLowerCase(), automaticEventValue); 
-        }
-        return new Tuple<>(automaticEventValue.substring(0, lastIndex), automaticEventValue.substring(lastIndex+1));
-    }
-    
 }
