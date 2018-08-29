@@ -179,6 +179,10 @@ public class ScheduledActivityService {
         checkNotNull(context);
         
         Validate.nonEntityThrowingException(VALIDATOR, context);
+
+        String healthCode = context.getCriteriaContext().getHealthCode();
+        activityEventService.publishActivitiesRetrieved(study, healthCode, DateUtils.getCurrentDateTime());
+        
         // Add events for scheduling
         Map<String, DateTime> events = createEventsMap(context);
         ScheduleContext updatedContext = new ScheduleContext.Builder().withContext(context).withEvents(events).build();
@@ -195,10 +199,7 @@ public class ScheduledActivityService {
         List<ScheduledActivity> saves = performMerge(scheduledActivities, dbMap);
         activityDao.saveActivities(saves);
         
-        List<ScheduledActivity> orderedActivities = orderActivities(scheduledActivities, V3_FILTER);
-        String healthCode = context.getCriteriaContext().getHealthCode();
-        activityEventService.publishActivitiesRetrieved(study, healthCode, DateUtils.getCurrentDateTime());
-        return orderedActivities;
+        return orderActivities(scheduledActivities, V3_FILTER);
     }
     
     public List<ScheduledActivity> getScheduledActivitiesV4(Study study, ScheduleContext context) {
@@ -206,6 +207,10 @@ public class ScheduledActivityService {
         checkNotNull(context);
         
         Validate.nonEntityThrowingException(VALIDATOR, context);
+        
+        String healthCode = context.getCriteriaContext().getHealthCode();
+        activityEventService.publishActivitiesRetrieved(study, healthCode, DateUtils.getCurrentDateTime());
+        
         // Add events for scheduling
         Map<String, DateTime> events = createEventsMap(context);
         ScheduleContext updatedContext = new ScheduleContext.Builder().withContext(context).withEvents(events).build();
@@ -225,10 +230,7 @@ public class ScheduledActivityService {
         // added to the activities that will be returned.
         scheduledActivities.addAll(dbMap.values());
         
-        List<ScheduledActivity> orderedActivities = orderActivities(scheduledActivities, V4_FILTER);
-        String healthCode = context.getCriteriaContext().getHealthCode();
-        activityEventService.publishActivitiesRetrieved(study, healthCode, DateUtils.getCurrentDateTime());
-        return orderedActivities;
+        return orderActivities(scheduledActivities, V4_FILTER);
     }
     
     protected List<ScheduledActivity> performMerge(List<ScheduledActivity> scheduledActivities,

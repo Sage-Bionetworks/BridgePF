@@ -54,7 +54,11 @@ public class ActivityEventService {
                 .withObjectType(ActivityEventObjectType.CUSTOM)
                 .withObjectId(eventKey)
                 .withTimestamp(timestamp).build();
-        activityEventDao.publishEvent(event);
+        
+        if (activityEventDao.publishEvent(event)) {
+            // Create automatic events, as defined in the study
+            createAutomaticCustomEvents(study, healthCode, event);
+        }
     }
 
     /**
@@ -185,9 +189,11 @@ public class ActivityEventService {
     
     private Tuple<String> parseAutoEventValue(String automaticEventValue) {
         // though Period serialization does not contain semicolons, limit the split to the first occurrence
-        String[] valueElements = automaticEventValue.split(":", 2); 
-        return (valueElements.length == 1) ?
-            new Tuple<>(ActivityEventObjectType.ENROLLMENT.name().toLowerCase(), valueElements[0]) :
-            new Tuple<>(valueElements[0], valueElements[1]);
+        int lastIndex = automaticEventValue.lastIndexOf(":P");
+        if (lastIndex == -1) {
+            return new Tuple<>(ActivityEventObjectType.ENROLLMENT.name().toLowerCase(), automaticEventValue); 
+        }
+        return new Tuple<>(automaticEventValue.substring(0, lastIndex), automaticEventValue.substring(lastIndex+1));
     }
+    
 }

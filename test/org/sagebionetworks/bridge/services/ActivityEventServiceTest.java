@@ -321,7 +321,43 @@ public class ActivityEventServiceTest {
         assertEquals(DateUtils.convertToMillisFromEpoch("2018-07-04T16:00-0700"), publishedEventList.get(3)
                 .getTimestamp().longValue());
         assertEquals("AAA-BBB-CCC", publishedEventList.get(3).getHealthCode());
-    }    
+    }
+    
+    @Test
+    public void canPublishCustomEventWithAutomaticCustomEvents() {
+        // This also verifies the correct parsing of the custom event key, which contains a colon.
+        Study study = Study.create();
+        study.setActivityEventKeys(ImmutableSet.of("myEvent"));
+        study.setAutomaticCustomEvents(ImmutableMap.<String, String>builder()
+                .put("3-days-after", "custom:myEvent:P3D")
+                .put("1-week-after", "custom:myEvent:P1W").build());
+        DateTime timestamp = DateTime.parse("2018-04-04T16:00-0700");
+        
+        when(activityEventDao.publishEvent(any())).thenReturn(true);
+
+        // Execute
+        activityEventService.publishCustomEvent(study, "AAA-BBB-CCC", "myEvent", timestamp);
+
+        // Verify published events (3)
+        ArgumentCaptor<ActivityEvent> publishedEventCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
+        verify(activityEventDao, times(3)).publishEvent(publishedEventCaptor.capture());
+
+        List<ActivityEvent> publishedEventList = publishedEventCaptor.getAllValues();
+        
+        assertEquals("custom:myEvent", publishedEventList.get(0).getEventId());
+        assertEquals(timestamp.getMillis(), publishedEventList.get(0).getTimestamp().longValue());
+        assertEquals("AAA-BBB-CCC", publishedEventList.get(0).getHealthCode());
+
+        assertEquals("custom:3-days-after", publishedEventList.get(1).getEventId());
+        assertEquals(DateUtils.convertToMillisFromEpoch("2018-04-07T16:00-0700"), publishedEventList.get(1)
+                .getTimestamp().longValue());
+        assertEquals("AAA-BBB-CCC", publishedEventList.get(1).getHealthCode());
+
+        assertEquals("custom:1-week-after", publishedEventList.get(2).getEventId());
+        assertEquals(DateUtils.convertToMillisFromEpoch("2018-04-11T16:00-0700"), publishedEventList.get(2)
+                .getTimestamp().longValue());
+        assertEquals("AAA-BBB-CCC", publishedEventList.get(2).getHealthCode());
+    }
 
     @Test
     public void canPublishSurveyAnswer() {
