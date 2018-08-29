@@ -72,7 +72,8 @@ public class ActivityEventServiceTest {
     @Test
     public void canPublishCustomEventFromAutomaticEvents() {
         Study study = Study.create();
-        study.setAutomaticCustomEvents(ImmutableMap.of("3-days-after-enrollment", "P3D"));
+        study.setActivityEventKeys(ImmutableSet.of("myEvent"));
+        study.setAutomaticCustomEvents(ImmutableMap.of("3-days-after-enrollment", "myEvent:P3D"));
 
         ArgumentCaptor<ActivityEvent> activityEventArgumentCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
         when(activityEventDao.publishEvent(activityEventArgumentCaptor.capture())).thenReturn(true);
@@ -189,7 +190,7 @@ public class ActivityEventServiceTest {
         // Note that these events include events that are implicitly and explicitly related to 
         // enrollment, and some that are not applicable that should be ignored.
         study.setAutomaticCustomEvents(ImmutableMap.<String, String>builder()
-                .put("3-days-after", "P3D") // defaults to enrollment
+                .put("3-days-after", "enrollment:P3D") // defaults to enrollment
                 .put("1-week-after", "enrollment:P1W")
                 .put("13-weeks-after", "enrollment:P13W")
                 .put("5-years-after", "not_enrollment:P5Y")
@@ -241,7 +242,7 @@ public class ActivityEventServiceTest {
         // Note that these events include events that are implicitly and explicitly related to 
         // enrollment, and some that are not applicable that should be ignored.
         study.setAutomaticCustomEvents(ImmutableMap.<String, String>builder()
-                .put("3-days-after", "P3D") // defaults to enrollment
+                .put("3-days-after", "enrollment:P3D")
                 .put("1-week-after", "enrollment:P1W")
                 .put("13-weeks-after", "enrollment:P13W")
                 .put("5-years-after", "not_enrollment:P5Y")
@@ -256,13 +257,13 @@ public class ActivityEventServiceTest {
     }
     
     @Test
-    public void whenNoActivitiesRetrievedEventPublishNoCustomEvents() {
+    public void whenActivitiesRetrievedEventFailsPublishNoAutomaticEvents() {
         // Configure study with automatic custom events
         Study study = Study.create();
-        // Note that these events include events that are implicitly and explicitly related to 
-        // enrollment, and some that are not applicable that should be ignored.
+        // Note that these automatic events include events that are triggered by enrollment, 
+        // and some that are not, that should be ignored
         study.setAutomaticCustomEvents(ImmutableMap.<String, String>builder()
-                .put("3-days-after", "P3D") // defaults to enrollment
+                .put("3-days-after", "enrollment:P3D")
                 .put("1-week-after", "enrollment:P1W")
                 .put("13-weeks-after", "enrollment:P13W")
                 .put("5-years-after", "not_enrollment:P5Y")
@@ -271,6 +272,46 @@ public class ActivityEventServiceTest {
         when(activityEventDao.publishEvent(any())).thenReturn(false);
         
         activityEventService.publishActivitiesRetrieved(study,"AAA-BBB-CCC", DateTime.now());
+        
+        // Only happens once, none of the other custom events are published.
+        verify(activityEventDao, times(1)).publishEvent(any());
+    }
+    
+    @Test
+    public void whenEnrollmentEventFailsPublishNoAutomaticEvents() {
+        // Configure study with automatic custom events
+        Study study = Study.create();
+        // Note that these automatic events include events that are triggered by enrollment, 
+        // and some that are not, that should be ignored
+        study.setAutomaticCustomEvents(ImmutableMap.<String, String>builder()
+                .put("3-days-after", "enrollment:P3D")
+                .put("1-week-after", "enrollment:P1W")
+                .put("13-weeks-after", "enrollment:P13W")
+                .put("5-years-after", "not_enrollment:P5Y")
+                .put("10-years-after", "not_entrollment:P10Y").build());
+        
+        when(activityEventDao.publishEvent(any())).thenReturn(false);
+        
+        activityEventService.publishEnrollmentEvent(study,"AAA-BBB-CCC", new ConsentSignature.Builder().build());
+        
+        // Only happens once, none of the other custom events are published.
+        verify(activityEventDao, times(1)).publishEvent(any());
+    }
+
+    @Test
+    public void whenCustomEventFailsPublishNoAutomaticEvents() {
+        // Configure study with automatic custom events
+        Study study = Study.create();
+        study.setActivityEventKeys(ImmutableSet.of("myEvent"));
+        // Note that these automatic events include events that are triggered by enrollment, 
+        // and some that are not, that should be ignored
+        study.setAutomaticCustomEvents(ImmutableMap.<String, String>builder()
+                .put("3-days-after", "myEvent:P3D")
+                .put("1-week-after", "myEvent:P1W").build());
+        
+        when(activityEventDao.publishEvent(any())).thenReturn(false);
+        
+        activityEventService.publishCustomEvent(study,"AAA-BBB-CCC", "myEvent", DateTime.now());
         
         // Only happens once, none of the other custom events are published.
         verify(activityEventDao, times(1)).publishEvent(any());
@@ -329,8 +370,8 @@ public class ActivityEventServiceTest {
         Study study = Study.create();
         study.setActivityEventKeys(ImmutableSet.of("myEvent"));
         study.setAutomaticCustomEvents(ImmutableMap.<String, String>builder()
-                .put("3-days-after", "custom:myEvent:P3D")
-                .put("1-week-after", "custom:myEvent:P1W").build());
+                .put("3-days-after", "myEvent:P3D")
+                .put("1-week-after", "myEvent:P1W").build());
         DateTime timestamp = DateTime.parse("2018-04-04T16:00-0700");
         
         when(activityEventDao.publishEvent(any())).thenReturn(true);

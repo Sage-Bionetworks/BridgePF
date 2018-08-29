@@ -27,6 +27,9 @@ public class BridgeConstants {
     /** A common string constraint Synapse places on model identifiers. */
     public static final String SYNAPSE_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_-]+$";
     
+    /** The pattern used to validate activity event keys and automatic custom event keys. */
+    public static final String BRIDGE_EVENT_ID_PATTERN = "^[a-zA-Z0-9_-]+$";
+    
     /** The pattern of a valid JavaScript variable/object property name. */
     public  static final String JS_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_][a-zA-Z0-9_-]*$";
     

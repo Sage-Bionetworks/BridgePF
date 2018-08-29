@@ -127,13 +127,13 @@ public class StudyValidatorTest {
     @Test
     public void rejectEventKeysWithColons() {
         study.setActivityEventKeys(Sets.newHashSet("a-1", "b:2"));
-        assertValidatorMessage(INSTANCE, study, "activityEventKeys", StudyValidator.SYNAPSE_IDENTIFIER_ERROR);
+        assertValidatorMessage(INSTANCE, study, "activityEventKeys", StudyValidator.BRIDGE_EVENT_ID_ERROR);
     }
 
     @Test
     public void cannotCreateIdentifierWithColons() {
         study.setActivityEventKeys(Sets.newHashSet("a-1", "b:2"));
-        assertValidatorMessage(INSTANCE, study, "activityEventKeys", StudyValidator.SYNAPSE_IDENTIFIER_ERROR);
+        assertValidatorMessage(INSTANCE, study, "activityEventKeys", StudyValidator.BRIDGE_EVENT_ID_ERROR);
     }
 
     @Test
@@ -792,14 +792,16 @@ public class StudyValidatorTest {
     @Test
     public void validAutomaticCustomEventWithCustomOriginEvent() {
         study.setActivityEventKeys(ImmutableSet.of("externalEvent"));
-        study.setAutomaticCustomEvents(ImmutableMap.of("myEvent", "custom:externalEvent:P-14D"));
+        study.setAutomaticCustomEvents(ImmutableMap.of("myEvent", "externalEvent:P-14D"));
         Validate.entityThrowingException(INSTANCE, study);
     }
 
+    // This was the original form of this configuration, it will not throw an error until we 
+    // clarify the event we want to trigger off of
     @Test
-    public void validAutomaticCustomEventForDefault() {
+    public void validAutomaticCustomEventWithNoEventSpecified() {
         study.setAutomaticCustomEvents(ImmutableMap.of("myEvent", "P-14D"));
-        Validate.entityThrowingException(INSTANCE, study);
+        assertValidatorMessage(INSTANCE, study, "automaticCustomEvents[myEvent]", "'null' is not a valid custom or system event ID");
     }
     
     @Test
@@ -817,7 +819,7 @@ public class StudyValidatorTest {
     @Test
     public void invalidAutomaticCustomEventKey() {
         study.setAutomaticCustomEvents(ImmutableMap.of("@not-valid", "activities_retrieved:P-14D"));
-        assertValidatorMessage(INSTANCE, study, "automaticCustomEvents[@not-valid]", StudyValidator.SYNAPSE_IDENTIFIER_ERROR);
+        assertValidatorMessage(INSTANCE, study, "automaticCustomEvents[@not-valid]", StudyValidator.BRIDGE_EVENT_ID_ERROR);
     }
     
     @Test
@@ -828,7 +830,7 @@ public class StudyValidatorTest {
     
     @Test
     public void invalidAutomaticCustomEventOriginEvent() {
-        study.setAutomaticCustomEvents(ImmutableMap.of("myEvent", "custom:does-not-exist-event:P2W"));
-        assertValidatorMessage(INSTANCE, study, "automaticCustomEvents[myEvent]", "'custom:does-not-exist-event' is not a valid custom or system event ID");
+        study.setAutomaticCustomEvents(ImmutableMap.of("myEvent", "does-not-exist-event:P2W"));
+        assertValidatorMessage(INSTANCE, study, "automaticCustomEvents[myEvent]", "'does-not-exist-event' is not a valid custom or system event ID");
     }
 }

@@ -33,7 +33,6 @@ import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -69,10 +68,10 @@ public class BridgeUtils {
     private static final ThreadLocal<String> REQUEST_ID_THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
 
     public static Tuple<String> parseAutoEventValue(String automaticEventValue) {
-        // Will property split something like "custom:myEvent:P3W"
         int lastIndex = automaticEventValue.lastIndexOf(":P");
         if (lastIndex == -1) {
-            return new Tuple<>(ActivityEventObjectType.ENROLLMENT.name().toLowerCase(), automaticEventValue); 
+            // This will certainly not pass validation
+            return new Tuple<>(null, automaticEventValue); 
         }
         return new Tuple<>(automaticEventValue.substring(0, lastIndex), automaticEventValue.substring(lastIndex+1));
     }

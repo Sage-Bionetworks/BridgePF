@@ -40,7 +40,7 @@ public class StudyValidator implements Validator {
     public static final StudyValidator INSTANCE = new StudyValidator();
     
     static final String BRIDGE_IDENTIFIER_ERROR = "must contain only lower-case letters and/or numbers with optional dashes";
-    static final String SYNAPSE_IDENTIFIER_ERROR = "must contain only lower- or upper-case letters, numbers, dashes, and/or underscores";
+    static final String BRIDGE_EVENT_ID_ERROR = "must contain only lower- or upper-case letters, numbers, dashes, and/or underscores";
     
     private static final int MAX_SYNAPSE_LENGTH = 250;
     private static final Pattern FINGERPRINT_PATTERN = Pattern.compile("^[0-9a-fA-F:]{95,95}$");
@@ -80,8 +80,8 @@ public class StudyValidator implements Validator {
             }
         }
         if (study.getActivityEventKeys().stream()
-                .anyMatch(k -> !k.matches(BridgeConstants.SYNAPSE_IDENTIFIER_PATTERN))) {
-            errors.rejectValue("activityEventKeys", SYNAPSE_IDENTIFIER_ERROR);
+                .anyMatch(k -> !k.matches(BridgeConstants.BRIDGE_EVENT_ID_PATTERN))) {
+            errors.rejectValue("activityEventKeys", BridgeConstants.BRIDGE_EVENT_ID_PATTERN);
         }
         if (study.getAutomaticCustomEvents() != null) {
             for (Map.Entry<String, String> entry : study.getAutomaticCustomEvents().entrySet()) {
@@ -89,8 +89,8 @@ public class StudyValidator implements Validator {
                 String value = entry.getValue();
                 
                 // Validate that the key follows the same rules for activity event keys
-                if (!key.matches(BridgeConstants.SYNAPSE_IDENTIFIER_PATTERN)) {
-                    errors.rejectValue("automaticCustomEvents["+key+"]", SYNAPSE_IDENTIFIER_ERROR);
+                if (!key.matches(BridgeConstants.BRIDGE_EVENT_ID_PATTERN)) {
+                    errors.rejectValue("automaticCustomEvents["+key+"]", BridgeConstants.BRIDGE_EVENT_ID_PATTERN);
                 }
                 
                 Tuple<String> autoEventSpec = BridgeUtils.parseAutoEventValue(value);
@@ -282,13 +282,7 @@ public class StudyValidator implements Validator {
                 return true;
             }
         }
-        for (String customKey : customKeys) {
-            String oneCustomKey = "custom:" + customKey;
-            if (oneCustomKey.equals(proposedKey)) {
-                return true;
-            }
-        }
-        return false;
+        return customKeys.contains(proposedKey);
     }
     
     private void validateEmail(Errors errors, String emailString, String fieldName) {

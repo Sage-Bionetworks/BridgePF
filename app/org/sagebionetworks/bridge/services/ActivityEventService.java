@@ -176,13 +176,21 @@ public class ActivityEventService {
     private void createAutomaticCustomEvents(Study study, String healthCode, ActivityEvent event) {
         for (Map.Entry<String, String> oneAutomaticEvent : study.getAutomaticCustomEvents().entrySet()) {
             String automaticEventKey = oneAutomaticEvent.getKey(); // new event key
-            // [originEventId:]Period, if originEventId is missing, defaults to "enrollment"
-            Tuple<String> autoEventSpec = BridgeUtils.parseAutoEventValue(oneAutomaticEvent.getValue());
+            Tuple<String> autoEventSpec = BridgeUtils.parseAutoEventValue(oneAutomaticEvent.getValue()); // originEventId:Period
             
-            if (event.getEventId().startsWith(autoEventSpec.getLeft())) {
+            // enrollment, activities_retrieved, or any of the custom:* events defined by the user.
+            if (event.getEventId().equals(autoEventSpec.getLeft()) || 
+                event.getEventId().startsWith("custom:"+autoEventSpec.getLeft())) {
+                
                 Period automaticEventDelay = Period.parse(autoEventSpec.getRight());
                 DateTime automaticEventTime = new DateTime(event.getTimestamp()).plus(automaticEventDelay);
-                publishCustomEvent(study, healthCode, automaticEventKey, automaticEventTime);                
+                
+                ActivityEvent automaticEvent = new DynamoActivityEvent.Builder()
+                        .withHealthCode(healthCode)
+                        .withObjectType(ActivityEventObjectType.CUSTOM)
+                        .withObjectId(automaticEventKey)
+                        .withTimestamp(automaticEventTime).build();
+                activityEventDao.publishEvent(automaticEvent);
             }
         }        
     }
