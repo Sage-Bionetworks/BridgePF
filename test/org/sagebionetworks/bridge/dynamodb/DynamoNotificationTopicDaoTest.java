@@ -102,7 +102,7 @@ public class DynamoNotificationTopicDaoTest {
     }
     
     @Test
-    public void listTopics() {
+    public void listTopicsIncludeDeleted() {
         // Mock DDB to return topics.
         DynamoNotificationTopic topicWithoutCriteria = (DynamoNotificationTopic) getNotificationTopic();
         topicWithoutCriteria.setGuid(GUID_WITHOUT_CRITERIA);
@@ -115,7 +115,7 @@ public class DynamoNotificationTopicDaoTest {
         mockListCall(topicWithoutCriteria, topicWithCriteria);
 
         // Execute and verify.
-        List<NotificationTopic> topics = dao.listTopics(TEST_STUDY);
+        List<NotificationTopic> topics = dao.listTopics(TEST_STUDY, true);
         assertEquals(2, topics.size());
 
         assertEquals(GUID_WITHOUT_CRITERIA, topics.get(0).getGuid());
@@ -131,6 +131,23 @@ public class DynamoNotificationTopicDaoTest {
         DynamoNotificationTopic capturedTopic = capturedQuery.getHashKeyValues();
         assertEquals(TEST_STUDY_IDENTIFIER, capturedTopic.getStudyId());
         assertNull(capturedTopic.getGuid());
+        assertNull(capturedQuery.getQueryFilter()); // deleted are not being filtered out
+    }
+    
+    @Test
+    public void listTopicsExcludeDeleted() {
+        mockListCall();
+
+        // Execute and verify.
+        dao.listTopics(TEST_STUDY, false);
+
+        // Verify query.
+        verify(mockMapper).queryPage(eq(DynamoNotificationTopic.class), queryExpressionCaptor.capture());
+        
+        // Query expression does include filter of deleted items.
+        DynamoDBQueryExpression<DynamoNotificationTopic> capturedQuery = queryExpressionCaptor.getValue();
+        assertEquals("{AttributeValueList: [{N: 1,}],ComparisonOperator: NE}",
+                capturedQuery.getQueryFilter().get("deleted").toString());
     }
     
     @Test(expected = EntityNotFoundException.class)
@@ -308,15 +325,40 @@ public class DynamoNotificationTopicDaoTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void deleteTopicNotFound() {
-        dao.deleteTopic(TEST_STUDY, "anything");
+        dao.deleteTopic(TEST_STUDY, "ABC-DEF");
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void deleteTopicAlreadyDeleted() {
+        NotificationTopic existingTopic = getNotificationTopic();
+        existingTopic.setDeleted(true);
+        when(mockMapper.load(any())).thenReturn(existingTopic);
+        
+        dao.deleteTopic(TEST_STUDY, "ABC-DEF");
     }
     
     @Test
     public void deleteTopic() {
+        NotificationTopic existingTopic = getNotificationTopic();
+        when(mockMapper.load(any())).thenReturn(existingTopic);
+        
+        dao.deleteTopic(TEST_STUDY, "ABC-DEF");
+        
+        verify(mockMapper).save(topicCaptor.capture());
+        assertTrue(topicCaptor.getValue().isDeleted());
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void deleteTopicPermanentlyNotFound() {
+        dao.deleteTopicPermanently(TEST_STUDY, "anything");
+    }
+    
+    @Test
+    public void deleteTopicPermanently() {
         NotificationTopic topic = getNotificationTopic();
         doReturn(topic).when(mockMapper).load(any());
 
-        dao.deleteTopic(TEST_STUDY, "anything");
+        dao.deleteTopicPermanently(TEST_STUDY, "anything");
         
         verify(mockSnsClient).deleteTopic(deleteTopicRequestCaptor.capture());
         DeleteTopicRequest capturedRequest = deleteTopicRequestCaptor.getValue();
@@ -329,7 +371,7 @@ public class DynamoNotificationTopicDaoTest {
     }
 
     @Test
-    public void deleteTopicWithCriteria() {
+    public void deleteTopicPermanentlyWithCriteria() {
         // Mock existing topic with criteria. Note that criteria is loaded in a separate table.
         NotificationTopic existingTopic = getNotificationTopic();
         existingTopic.setGuid(GUID_WITH_CRITERIA);
@@ -337,7 +379,7 @@ public class DynamoNotificationTopicDaoTest {
         when(mockMapper.load(any())).thenReturn(existingTopic);
 
         // Execute.
-        dao.deleteTopic(TEST_STUDY, GUID_WITH_CRITERIA);
+        dao.deleteTopicPermanently(TEST_STUDY, GUID_WITH_CRITERIA);
 
         // Verify criteria DAO.
         verify(mockCriteriaDao).deleteCriteria(DynamoNotificationTopicDao.CRITERIA_KEY_PREFIX +
@@ -394,23 +436,23 @@ public class DynamoNotificationTopicDaoTest {
     
     // If the SNS record fails to delete, the DDB record will still be there.
     @Test
-    public void noOrphanOnDeleteWhereSNSFails() {
+    public void noOrphanOnPermanentDeleteWhereSNSFails() {
         doReturn(getNotificationTopic()).when(mockMapper).load(any());
         doThrow(new AmazonServiceException("error")).when(mockSnsClient).deleteTopic(any(DeleteTopicRequest.class));
         
-        dao.deleteTopic(TEST_STUDY, "guid");
+        dao.deleteTopicPermanently(TEST_STUDY, "guid");
         
         verify(mockMapper).delete(any());
     }
     
     // If the DDB record fails to delete, the SNS record will still be there.
     @Test
-    public void noOrphanOnDeleteWhereDDBFails() {
+    public void noOrphanOnPermanentDeleteWhereDDBFails() {
         doReturn(getNotificationTopic()).when(mockMapper).load(any());
         doThrow(new RuntimeException()).when(mockMapper).delete(any());
         
         try {
-            dao.deleteTopic(TEST_STUDY, "guid");
+            dao.deleteTopicPermanently(TEST_STUDY, "guid");
             fail("Should have thrown exception");
         } catch(RuntimeException e) {
             // expected exception

@@ -72,10 +72,10 @@ public class NotificationTopicService {
         this.snsClient = snsClient;
     }
     
-    public List<NotificationTopic> listTopics(StudyIdentifier studyId) {
+    public List<NotificationTopic> listTopics(StudyIdentifier studyId, boolean includeDeleted) {
         checkNotNull(studyId);
         
-        return topicDao.listTopics(studyId);
+        return topicDao.listTopics(studyId, includeDeleted);
     }
     
     public NotificationTopic getTopic(StudyIdentifier studyId, String guid) {
@@ -108,6 +108,16 @@ public class NotificationTopicService {
         topicDao.deleteTopic(studyId, guid);
     }
     
+    public void deleteTopicPermanently(StudyIdentifier studyId, String guid) {
+        checkNotNull(studyId);
+        checkNotNull(guid);
+        
+        topicDao.deleteTopicPermanently(studyId, guid);
+    }
+    
+    /**
+     * Delete all the topics in the study permanently.
+     */
     public void deleteAllTopics(StudyIdentifier studyId) {
         checkNotNull(studyId);
         
@@ -139,7 +149,7 @@ public class NotificationTopicService {
         Set<String> subscribedTopicGuids = subscriptionDao.listSubscriptions(registration)
                 .stream().map(TopicSubscription::getTopicGuid).collect(Collectors.toSet());
         
-        List<NotificationTopic> topics = topicDao.listTopics(studyId);
+        List<NotificationTopic> topics = topicDao.listTopics(studyId, false);
         List<SubscriptionStatus> statuses = Lists.newArrayListWithCapacity(topics.size());
         for (NotificationTopic topic : topics) {
             boolean isCurrentlySubscribed = subscribedTopicGuids.contains(topic.getGuid());
@@ -160,8 +170,9 @@ public class NotificationTopicService {
         checkNotNull(healthCode);
         checkArgument(isNotBlank(healthCode));
 
-        // Check study for topics. Only consider topics with criteria.
-        List<NotificationTopic> allTopicList = topicDao.listTopics(studyId);
+        // Check study for topics. Only consider topics with criteria. Include logically deleted topics 
+        // so that if they are undeleted, the user's subscription state is correct
+        List<NotificationTopic> allTopicList = topicDao.listTopics(studyId, true);
         List<NotificationTopic> criteriaTopicList = allTopicList.stream()
                 .filter(topic -> topic.getCriteria() != null).collect(Collectors.toList());
         if (criteriaTopicList.isEmpty()) {
@@ -231,7 +242,7 @@ public class NotificationTopicService {
         checkNotNull(desiredTopicGuidSet);
 
         // This API can only subscribe/unsubscribe from topics that aren't managed by criteria.
-        List<NotificationTopic> allTopicList = topicDao.listTopics(studyId);
+        List<NotificationTopic> allTopicList = topicDao.listTopics(studyId, false);
         List<NotificationTopic> manualSubscriptionTopicList = allTopicList.stream()
                 .filter(topic -> topic.getCriteria() == null).collect(Collectors.toList());
         if (manualSubscriptionTopicList.isEmpty()) {

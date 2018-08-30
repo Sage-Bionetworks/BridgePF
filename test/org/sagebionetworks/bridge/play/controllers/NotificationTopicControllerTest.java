@@ -6,6 +6,8 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
@@ -77,16 +79,17 @@ public class NotificationTopicControllerTest {
         doReturn(TEST_STUDY).when(mockUserSession).getStudyIdentifier();
 
         doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);
     }
 
     @Test
-    public void getAllTopics() throws Exception {
+    public void getAllTopicsIncludeDeleted() throws Exception {
         mockPlayContext();
         NotificationTopic topic = getNotificationTopic();
-        doReturn(Lists.newArrayList(topic)).when(mockTopicService).listTopics(TEST_STUDY);
+        doReturn(Lists.newArrayList(topic)).when(mockTopicService).listTopics(TEST_STUDY, true);
 
-        Result result = controller.getAllTopics();
+        Result result = controller.getAllTopics("true");
         TestUtils.assertResult(result, 200);
 
         JsonNode node = getResultNode(result);
@@ -98,6 +101,20 @@ public class NotificationTopicControllerTest {
         assertEquals(topic.getGuid(), topics.getItems().get(0).getGuid());
     }
 
+    @Test
+    public void getAllTopicsExcludeDeleted() throws Exception {
+        mockPlayContext();
+        NotificationTopic topic = getNotificationTopic();
+        doReturn(Lists.newArrayList(topic)).when(mockTopicService).listTopics(TEST_STUDY, false);
+
+        Result result = controller.getAllTopics("false");
+        TestUtils.assertResult(result, 200);
+
+        // It's enough to test it's there, the prior test has a more complete test of the payload
+        JsonNode node = getResultNode(result);
+        assertEquals(1, node.get("items").size());
+    }
+    
     @Test
     public void createTopic() throws Exception {
         NotificationTopic topic = getNotificationTopic();
@@ -152,12 +169,32 @@ public class NotificationTopicControllerTest {
         assertEquals(topic.getName(), returned.getName());
         assertEquals(GUID, returned.getGuid());
     }
-
+    
     @Test
     public void deleteTopic() throws Exception {
-        Result result = controller.deleteTopic(GUID);
+        Result result = controller.deleteTopic(GUID, "false");
         TestUtils.assertResult(result, 200);
 
+        verify(mockTopicService).deleteTopic(TEST_STUDY, GUID);
+    }
+    
+    @Test
+    public void deleteTopicPermanently() throws Exception {
+        when(mockUserSession.isInRole(ADMIN)).thenReturn(true);
+        
+        Result result = controller.deleteTopic(GUID, "true");
+        TestUtils.assertResult(result, 200);
+
+        // Does not delete permanently because permissions are wrong; just logically deletes
+        verify(mockTopicService).deleteTopicPermanently(TEST_STUDY, GUID);
+    }
+
+    @Test
+    public void deleteTopicPermanentlyForDeveloper() throws Exception {
+        Result result = controller.deleteTopic(GUID, "true");
+        TestUtils.assertResult(result, 200);
+
+        // Does not delete permanently because permissions are wrong; just logically deletes
         verify(mockTopicService).deleteTopic(TEST_STUDY, GUID);
     }
 

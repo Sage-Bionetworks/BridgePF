@@ -91,4 +91,12 @@ public interface NotificationTopic extends BridgeEntity {
 
     /** @see #getCriteria */
     void setCriteria(Criteria criteria);
+    
+    /**
+     * Is this topic deleted? It will not be returned through the API unless deleted items are included.
+     */
+    boolean isDeleted();
+    
+    /** @see #isDeleted */
+    void setDeleted(boolean deleted);
 }

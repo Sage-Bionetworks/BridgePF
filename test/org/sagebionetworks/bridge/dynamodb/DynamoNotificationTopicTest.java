@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -34,6 +35,7 @@ public class DynamoNotificationTopicTest {
         topic.setDescription("A description.");
         topic.setCreatedOn(TIMESTAMP);
         topic.setModifiedOn(TIMESTAMP);
+        topic.setDeleted(true);
 
         Criteria criteria = Criteria.create();
         criteria.setAllOfGroups(ImmutableSet.of("group1", "group2"));
@@ -41,15 +43,16 @@ public class DynamoNotificationTopicTest {
 
         // Serialize to JSON.
         JsonNode node = BridgeObjectMapper.get().valueToTree(topic);
-        assertEquals("ABC", node.get("guid").asText());
-        assertEquals("My Test Topic", node.get("name").asText());
+        assertEquals("ABC", node.get("guid").textValue());
+        assertEquals("My Test Topic", node.get("name").textValue());
         assertEquals("Test Topic", node.get("shortName").textValue());
-        assertEquals("NotificationTopic", node.get("type").asText());
-        assertEquals("A description.", node.get("description").asText());
-        assertEquals(DATE_TIME.toString(), node.get("createdOn").asText());
-        assertEquals(DATE_TIME.toString(), node.get("modifiedOn").asText());
+        assertEquals("NotificationTopic", node.get("type").textValue());
+        assertEquals("A description.", node.get("description").textValue());
+        assertEquals(DATE_TIME.toString(), node.get("createdOn").textValue());
+        assertEquals(DATE_TIME.toString(), node.get("modifiedOn").textValue());
         assertNull(node.get("studyId"));
         assertNull(node.get("topicARN"));
+        assertTrue(node.get("deleted").booleanValue());
 
         JsonNode criteriaNode = node.get("criteria");
         JsonNode allOfGroupsNode = criteriaNode.get("allOfGroups");
@@ -74,5 +77,6 @@ public class DynamoNotificationTopicTest {
         assertEquals(TIMESTAMP, deser.getModifiedOn());
         assertNull(deser.getTopicARN());
         assertEquals(criteria, deser.getCriteria());
+        assertTrue(deser.isDeleted());
     }
 }
