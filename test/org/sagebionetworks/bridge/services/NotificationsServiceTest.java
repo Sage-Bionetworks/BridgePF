@@ -439,7 +439,7 @@ public class NotificationsServiceTest {
     public void sendSMSMessageTooLongInvalid() {
         doReturn(mockPublishResult).when(mockSnsClient).publish(any());
         String message = "This is my SMS message.";
-        for (int i=0; i < 3; i++) {
+        for (int i=0; i < 5; i++) {
             message += message;
         }
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
