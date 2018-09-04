@@ -152,16 +152,19 @@ public class SubpopulationService {
      * Get all subpopulations defined for this study that have not been deleted. If 
      * there are no subpopulations, a default subpopulation will be created with a 
      * default consent.
-     * @param studyId
-     * @return
      */
-    public List<Subpopulation> getSubpopulations(StudyIdentifier studyId) {
+    public List<Subpopulation> getSubpopulations(StudyIdentifier studyId, boolean includeDeleted) {
         checkNotNull(studyId);
         
+        // If retrieving all subpopulations, which is unusual, do not use the cache. Cache is always
+        // of the undeleted subpopulations only.
+        if (includeDeleted) {
+            return subpopDao.getSubpopulations(studyId, true, includeDeleted);
+        }
         CacheKey subpopListKey = CacheKey.subpopList(studyId);
         List<Subpopulation> subpops = cacheProvider.getObject(subpopListKey, SURVEY_LIST_REF);
         if (subpops == null) {
-            subpops = subpopDao.getSubpopulations(studyId, true, false);
+            subpops = subpopDao.getSubpopulations(studyId, true, includeDeleted);
             cacheProvider.setObject(subpopListKey, subpops);
         }
         return subpops;
@@ -193,7 +196,7 @@ public class SubpopulationService {
     public List<Subpopulation> getSubpopulationsForUser(CriteriaContext context) {
         checkNotNull(context);
         
-        List<Subpopulation> subpops = getSubpopulations(context.getStudyIdentifier());
+        List<Subpopulation> subpops = getSubpopulations(context.getStudyIdentifier(), false);
 
         return subpops.stream().filter(subpop -> {
             return CriteriaUtils.matchCriteria(context, subpop.getCriteria());
@@ -201,18 +204,25 @@ public class SubpopulationService {
     }
 
     /**
-     * Delete a subpopulation.
-     * @param studyId
-     * @param subpopGuid
-     * @param physicalDelete if true, will physically remove the record from the database. Otherwise, it is 
-     *      marked deleted in the database.
+     * Delete a subpopulation and remove it from cache.
      */
-    public void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid, boolean physicalDelete) {
+    public void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
         checkNotNull(studyId);
         checkNotNull(subpopGuid);
         
-        // Will throw EntityNotFoundException if the subpopulation is not in the study
-        subpopDao.deleteSubpopulation(studyId, subpopGuid, physicalDelete, false);
+        subpopDao.deleteSubpopulation(studyId, subpopGuid);
+        cacheProvider.removeObject(CacheKey.subpop(subpopGuid, studyId));
+        cacheProvider.removeObject(CacheKey.subpopList(studyId));
+    }
+    
+    /**
+     * Permanently delete a subpopulation and remove it from cache.
+     */
+    public void deleteSubpopulationPermanently(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
+        checkNotNull(studyId);
+        checkNotNull(subpopGuid);
+        
+        subpopDao.deleteSubpopulationPermanently(studyId, subpopGuid);
         cacheProvider.removeObject(CacheKey.subpop(subpopGuid, studyId));
         cacheProvider.removeObject(CacheKey.subpopList(studyId));
     }
@@ -225,10 +235,10 @@ public class SubpopulationService {
     public void deleteAllSubpopulations(StudyIdentifier studyId) {
         checkNotNull(studyId);
         
-        List<Subpopulation> subpops = getSubpopulations(studyId);
+        List<Subpopulation> subpops = getSubpopulations(studyId, true);
         if (!subpops.isEmpty()) {
             for (Subpopulation subpop : subpops) {
-                subpopDao.deleteSubpopulation(studyId, subpop.getGuid(), true, true);
+                subpopDao.deleteSubpopulationPermanently(studyId, subpop.getGuid());
                 cacheProvider.removeObject(CacheKey.subpop(subpop.getGuid(), studyId));
                 cacheProvider.removeObject(CacheKey.subpopList(studyId));
             }

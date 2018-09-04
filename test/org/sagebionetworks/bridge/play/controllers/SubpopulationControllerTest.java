@@ -5,7 +5,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestUtils.assertResult;
@@ -89,13 +88,13 @@ public class SubpopulationControllerTest {
     }
     
     @Test
-    public void getAllSubpopulations() throws Exception {
+    public void getAllSubpopulationsExcludeDeleted() throws Exception {
         TestUtils.mockPlayContext();
         
         List<Subpopulation> list = createSubpopulationList();
-        when(subpopService.getSubpopulations(study.getStudyIdentifier())).thenReturn(list);
+        when(subpopService.getSubpopulations(study.getStudyIdentifier(), false)).thenReturn(list);
         
-        Result result = controller.getAllSubpopulations();
+        Result result = controller.getAllSubpopulations("false");
         TestUtils.assertResult(result, 200);
 
         String json = Helpers.contentAsString(result);
@@ -103,13 +102,38 @@ public class SubpopulationControllerTest {
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         JsonNode oneSubpop = node.get("items").get(0);
         assertNull(oneSubpop.get("studyIdentifier"));
-        assertNull(oneSubpop.get("deleted"));
         
         ResourceList<Subpopulation> rList = BridgeObjectMapper.get().readValue(json, subpopType);
         assertEquals(list, rList.getItems());
         assertEquals(2, rList.getItems().size());
         
-        verify(subpopService).getSubpopulations(study.getStudyIdentifier());
+        verify(subpopService).getSubpopulations(study.getStudyIdentifier(), false);
+    }
+
+    @Test
+    public void getAllSubpopulationsIncludeDeleted() throws Exception {
+        TestUtils.mockPlayContext();
+        
+        List<Subpopulation> list = createSubpopulationList();
+        when(subpopService.getSubpopulations(study.getStudyIdentifier(), false)).thenReturn(list);
+        
+        Result result = controller.getAllSubpopulations("true");
+        TestUtils.assertResult(result, 200);
+        
+        verify(subpopService).getSubpopulations(study.getStudyIdentifier(), true);
+    }
+
+    @Test
+    public void getAllSubpopulationsDefaultExcludeDeleted() throws Exception {
+        TestUtils.mockPlayContext();
+        
+        List<Subpopulation> list = createSubpopulationList();
+        when(subpopService.getSubpopulations(study.getStudyIdentifier(), false)).thenReturn(list);
+        
+        Result result = controller.getAllSubpopulations(null);
+        TestUtils.assertResult(result, 200);
+        
+        verify(subpopService).getSubpopulations(study.getStudyIdentifier(), false);
     }
     
     @Test
@@ -191,7 +215,6 @@ public class SubpopulationControllerTest {
         assertEquals("Subpopulation", node.get("type").asText());
         assertEquals("AAA", node.get("guid").asText());
         assertNull(node.get("studyIdentifier"));
-        assertNull(node.get("deleted"));
         
         verify(subpopService).getSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID);
     }
@@ -211,44 +234,54 @@ public class SubpopulationControllerTest {
     }
     
     @Test
-    public void deleteSubpopulation() throws Exception {
+    public void deleteSubpopulationDefaultsToLogical() throws Exception {
         TestUtils.mockPlayContext();
 
         Result result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), null);
         
         assertResult(result, 200, "Subpopulation has been deleted.");
-        verify(subpopService).deleteSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID, false);
+        verify(subpopService).deleteSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID);
     }
     
-    @Test(expected = UnauthorizedException.class)
-    public void researchersCannotSubmitPhysicalDelete() throws Exception {
-        controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), "true");
-    }
-
     @Test
-    public void adminCanSubmitPhysicalDelete() throws Exception {
-        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet(Roles.ADMIN)).build();
-        session.setParticipant(participant);
+    public void deleteSubpopulationLogically() throws Exception {
+        TestUtils.mockPlayContext();
+
+        Result result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), "false");
         
+        assertResult(result, 200, "Subpopulation has been deleted.");
+        verify(subpopService).deleteSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID);
+    }
+    
+    @Test
+    public void deleteSubpopulationPhysically() throws Exception {
+        participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet(Roles.ADMIN)).build();
+        session = new UserSession(participant);
+        session.setStudyIdentifier(STUDY_IDENTIFIER);
+        session.setAuthenticated(true);
+        doReturn(session).when(controller).getSessionIfItExists();
+        
+        TestUtils.mockPlayContext();
+
         Result result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), "true");
         
-        // Message indicates a physical (permanent) delete, true is submitted
-        assertResult(result, 200, "Subpopulation has been permanently deleted.");
-
-        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet(Roles.DEVELOPER, Roles.ADMIN)).build();
-        session.setParticipant(participant);
-        result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), "true");
-        assertResult(result, 200, "Subpopulation has been permanently deleted.");
-        
-        verify(subpopService, times(2)).deleteSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID, true);
+        assertResult(result, 200, "Subpopulation has been deleted.");
+        verify(subpopService).deleteSubpopulationPermanently(STUDY_IDENTIFIER, SUBPOP_GUID);
     }
     
+    @Test
+    public void deleteSubpopulationPhysicallyIsLogicalForResearcher() throws Exception {
+        controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), "true");
+        
+        verify(subpopService).deleteSubpopulation(STUDY_IDENTIFIER, SUBPOP_GUID);
+    }
+
     @Test(expected = UnauthorizedException.class)
     public void getAllSubpopulationsRequiresDeveloper() throws Exception {
         session.setParticipant(
                 new StudyParticipant.Builder().copyOf(participant).withRoles(Sets.newHashSet(Roles.ADMIN)).build());
         
-        controller.getAllSubpopulations();
+        controller.getAllSubpopulations("false");
     }
     
     @Test(expected = UnauthorizedException.class)

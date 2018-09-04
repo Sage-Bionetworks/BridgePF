@@ -123,7 +123,7 @@ POST   /v3/sharedmodules/metadata/:id/versions/:version @org.sagebionetworks.bri
 DELETE /v3/sharedmodules/metadata/:id/versions/:version @org.sagebionetworks.bridge.play.controllers.SharedModuleMetadataController.deleteMetadataByIdAndVersion(id: String, version: Int)
 
 # Study Subpopulations
-GET    /v3/subpopulations        @org.sagebionetworks.bridge.play.controllers.SubpopulationController.getAllSubpopulations
+GET    /v3/subpopulations        @org.sagebionetworks.bridge.play.controllers.SubpopulationController.getAllSubpopulations(includeDeleted: String ?= "false")
 POST   /v3/subpopulations        @org.sagebionetworks.bridge.play.controllers.SubpopulationController.createSubpopulation
 GET    /v3/subpopulations/:guid  @org.sagebionetworks.bridge.play.controllers.SubpopulationController.getSubpopulation(guid: String)
 POST   /v3/subpopulations/:guid  @org.sagebionetworks.bridge.play.controllers.SubpopulationController.updateSubpopulation(guid: String)
