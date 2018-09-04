@@ -9,14 +9,13 @@ public interface ActivityEventDao {
 
     /**
      * Publish an event into this user's event stream. This event becomes available 
-     * for scheduling activities for this user.
+     * for scheduling activities for this user. Returns true if the event is recorded.
      */
-    void publishEvent(ActivityEvent event);
+    boolean publishEvent(ActivityEvent event);
     
     /**
      * Get a map of events, where the string key is an event identifier, and the value 
-     * is the timestamp of the event. This map will include calculated events like 
-     * "two_weeks_before_enrollment".
+     * is the timestamp of the event.
      * 
      * @see org.sagebionetworks.bridge.models.activities.ActivityEventObjectType
      */

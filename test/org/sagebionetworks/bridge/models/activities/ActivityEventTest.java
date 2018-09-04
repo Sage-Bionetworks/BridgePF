@@ -77,10 +77,25 @@ public class ActivityEventTest {
     
     @Test
     public void simpleActivityEventIdIsCorrect() {
-        ActivityEvent event = new DynamoActivityEvent.Builder().withHealthCode("BBB").withObjectType(ActivityEventObjectType.ENROLLMENT)
-                        .withTimestamp(DateTime.now()).build();
+        DateTime now = DateTime.now();
+        ActivityEvent event = new DynamoActivityEvent.Builder().withHealthCode("BBB")
+                .withObjectType(ActivityEventObjectType.ENROLLMENT).withTimestamp(now).build();
         
+        assertEquals("BBB", event.getHealthCode());
+        assertEquals(now, new DateTime(event.getTimestamp()));
         assertEquals("enrollment", event.getEventId());
+    }
+    
+    @Test
+    public void activitiesRetrievedEvent() {
+        DateTime now = DateTime.now();
+        ActivityEvent event = new DynamoActivityEvent.Builder()
+                .withObjectType(ActivityEventObjectType.ACTIVITIES_RETRIEVED).withHealthCode("BBB").withTimestamp(now)
+                .build();
+        
+        assertEquals("BBB", event.getHealthCode());
+        assertEquals(now, new DateTime(event.getTimestamp()));
+        assertEquals("activities_retrieved", event.getEventId());
     }
 
     @Test

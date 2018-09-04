@@ -7,6 +7,9 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -100,13 +103,13 @@ public class StudyValidatorTest {
     @Test
     public void cannotCreateIdentifierWithUppercase() {
         study.setIdentifier("Test");
-        assertValidatorMessage(INSTANCE, study, "identifier", "must contain only lower-case letters and/or numbers with optional dashes");
+        assertValidatorMessage(INSTANCE, study, "identifier", StudyValidator.BRIDGE_IDENTIFIER_ERROR);
     }
 
     @Test
     public void cannotCreateInvalidIdentifierWithSpaces() {
         study.setIdentifier("test test");
-        assertValidatorMessage(INSTANCE, study, "identifier", "must contain only lower-case letters and/or numbers with optional dashes");
+        assertValidatorMessage(INSTANCE, study, "identifier", StudyValidator.BRIDGE_IDENTIFIER_ERROR);
     }
 
     @Test
@@ -124,13 +127,13 @@ public class StudyValidatorTest {
     @Test
     public void rejectEventKeysWithColons() {
         study.setActivityEventKeys(Sets.newHashSet("a-1", "b:2"));
-        assertValidatorMessage(INSTANCE, study, "activityEventKeys", "must contain only lower-case letters and/or numbers with optional dashes");
+        assertValidatorMessage(INSTANCE, study, "activityEventKeys", StudyValidator.BRIDGE_EVENT_ID_ERROR);
     }
 
     @Test
     public void cannotCreateIdentifierWithColons() {
         study.setActivityEventKeys(Sets.newHashSet("a-1", "b:2"));
-        assertValidatorMessage(INSTANCE, study, "activityEventKeys", "must contain only lower-case letters and/or numbers with optional dashes");
+        assertValidatorMessage(INSTANCE, study, "activityEventKeys", StudyValidator.BRIDGE_EVENT_ID_ERROR);
     }
 
     @Test
@@ -785,5 +788,50 @@ public class StudyValidatorTest {
     public void signedConsentTemplateRequiresNoTemplateVars() {
         study.setSignedConsentTemplate(new EmailTemplate("subject", "no template var", MimeType.TEXT));
         Validate.entityThrowingException(INSTANCE, study);
+    }
+    
+    @Test
+    public void validAutomaticCustomEventWithCustomOriginEvent() {
+        study.setActivityEventKeys(ImmutableSet.of("externalEvent"));
+        study.setAutomaticCustomEvents(ImmutableMap.of("myEvent", "externalEvent:P-14D"));
+        Validate.entityThrowingException(INSTANCE, study);
+    }
+
+    // This was the original form of this configuration, it will not throw an error until we 
+    // clarify the event we want to trigger off of
+    @Test
+    public void validAutomaticCustomEventWithNoEventSpecified() {
+        study.setAutomaticCustomEvents(ImmutableMap.of("myEvent", "P-14D"));
+        assertValidatorMessage(INSTANCE, study, "automaticCustomEvents[myEvent]", "'null' is not a valid custom or system event ID");
+    }
+    
+    @Test
+    public void validAutomaticCustomEventForEnrollment() {
+        study.setAutomaticCustomEvents(ImmutableMap.of("myEvent", "enrollment:P-14D"));
+        Validate.entityThrowingException(INSTANCE, study);
+    }
+    
+    @Test
+    public void validAutomaticCustomEventForActivitiesRetrieved() {
+        study.setAutomaticCustomEvents(ImmutableMap.of("myEvent", "activities_retrieved:P-14D"));
+        Validate.entityThrowingException(INSTANCE, study);
+    }
+
+    @Test
+    public void invalidAutomaticCustomEventKey() {
+        study.setAutomaticCustomEvents(ImmutableMap.of("@not-valid", "activities_retrieved:P-14D"));
+        assertValidatorMessage(INSTANCE, study, "automaticCustomEvents[@not-valid]", StudyValidator.BRIDGE_EVENT_ID_ERROR);
+    }
+    
+    @Test
+    public void invalidAutomaticCustomEventPeriod() {
+        study.setAutomaticCustomEvents(ImmutableMap.of("myEvent", "activities_retrieved:Pweeks"));
+        assertValidatorMessage(INSTANCE, study, "automaticCustomEvents[myEvent]", "'Pweeks' is not a valid ISO 8601 period");
+    }
+    
+    @Test
+    public void invalidAutomaticCustomEventOriginEvent() {
+        study.setAutomaticCustomEvents(ImmutableMap.of("myEvent", "does-not-exist-event:P2W"));
+        assertValidatorMessage(INSTANCE, study, "automaticCustomEvents[myEvent]", "'does-not-exist-event' is not a valid custom or system event ID");
     }
 }

@@ -5,6 +5,8 @@ import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.time.Period;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -15,7 +17,9 @@ import org.apache.commons.validator.routines.EmailValidator;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
 import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
@@ -34,6 +38,9 @@ import org.springframework.validation.Validator;
 @Component
 public class StudyValidator implements Validator {
     public static final StudyValidator INSTANCE = new StudyValidator();
+    
+    static final String BRIDGE_IDENTIFIER_ERROR = "must contain only lower-case letters and/or numbers with optional dashes";
+    static final String BRIDGE_EVENT_ID_ERROR = "must contain only lower- or upper-case letters, numbers, dashes, and/or underscores";
     
     private static final int MAX_SYNAPSE_LENGTH = 250;
     private static final Pattern FINGERPRINT_PATTERN = Pattern.compile("^[0-9a-fA-F:]{95,95}$");
@@ -66,16 +73,39 @@ public class StudyValidator implements Validator {
             errors.rejectValue("identifier", "is required");
         } else {
             if (!study.getIdentifier().matches(BridgeConstants.BRIDGE_IDENTIFIER_PATTERN)) {
-                errors.rejectValue("identifier", "must contain only lower-case letters and/or numbers with optional dashes");
+                errors.rejectValue("identifier", BRIDGE_IDENTIFIER_ERROR);
             }
             if (study.getIdentifier().length() < 2) {
                 errors.rejectValue("identifier", "must be at least 2 characters");
             }
         }
         if (study.getActivityEventKeys().stream()
-                .anyMatch(k -> !k.matches(BridgeConstants.BRIDGE_IDENTIFIER_PATTERN))) {
-            errors.rejectValue("activityEventKeys", "must contain only lower-case letters and/or numbers with " +
-                    "optional dashes");
+                .anyMatch(k -> !k.matches(BridgeConstants.BRIDGE_EVENT_ID_PATTERN))) {
+            errors.rejectValue("activityEventKeys", BridgeConstants.BRIDGE_EVENT_ID_PATTERN);
+        }
+        if (study.getAutomaticCustomEvents() != null) {
+            for (Map.Entry<String, String> entry : study.getAutomaticCustomEvents().entrySet()) {
+                String key = entry.getKey();
+                String value = entry.getValue();
+                
+                // Validate that the key follows the same rules for activity event keys
+                if (!key.matches(BridgeConstants.BRIDGE_EVENT_ID_PATTERN)) {
+                    errors.rejectValue("automaticCustomEvents["+key+"]", BridgeConstants.BRIDGE_EVENT_ID_PATTERN);
+                }
+                
+                Tuple<String> autoEventSpec = BridgeUtils.parseAutoEventValue(value);
+                
+                String originEventKey = autoEventSpec.getLeft();
+                if (!specifiesValidEventKey(study.getActivityEventKeys(), originEventKey)) {
+                    errors.rejectValue("automaticCustomEvents["+key+"]", "'" + originEventKey + "' is not a valid custom or system event ID");
+                }
+                String periodString = autoEventSpec.getRight();
+                try {
+                    Period.parse(periodString);
+                } catch(DateTimeParseException e) {
+                    errors.rejectValue("automaticCustomEvents["+key+"]", "'" + periodString + "' is not a valid ISO 8601 period");
+                }
+            }
         }
         if (isBlank(study.getName())) {
             errors.rejectValue("name", "is required");
@@ -245,6 +275,15 @@ public class StudyValidator implements Validator {
                 return link.getNamespace() + "." + link.getPackageName();
             });
         }
+    }
+    
+    private boolean specifiesValidEventKey(Set<String> customKeys, String proposedKey) {
+        for (ActivityEventObjectType type : ActivityEventObjectType.UNARY_EVENTS) {
+            if (type.name().toLowerCase().equals(proposedKey)) {
+                return true;
+            }
+        }
+        return customKeys.contains(proposedKey);
     }
     
     private void validateEmail(Errors errors, String emailString, String fieldName) {

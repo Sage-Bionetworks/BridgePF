@@ -1,12 +1,10 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TWO_WEEKS_BEFORE_ENROLLMENT;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TWO_MONTHS_BEFORE_ENROLLMENT;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Resource;
 
@@ -16,6 +14,7 @@ import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
+import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
 import org.springframework.stereotype.Component;
 
@@ -25,15 +24,16 @@ import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 @Component
 public class DynamoActivityEventDao implements ActivityEventDao {
 
     private static final String ANSWERED_EVENT_POSTFIX = ":"+ActivityEventType.ANSWERED.name().toLowerCase();
-    private static final String TWO_WEEKS = TWO_WEEKS_BEFORE_ENROLLMENT.name().toLowerCase();
-    private static final String TWO_MONTHS = TWO_MONTHS_BEFORE_ENROLLMENT.name().toLowerCase();
-    
+    private static final Set<String> IMMUTABLE_EVENTS = ImmutableSet.of(
+            ActivityEventObjectType.ENROLLMENT.name().toLowerCase(),
+            ActivityEventObjectType.ACTIVITIES_RETRIEVED.name().toLowerCase());
     private DynamoDBMapper mapper;
 
     @Resource(name = "activityEventDdbMapper")
@@ -42,7 +42,7 @@ public class DynamoActivityEventDao implements ActivityEventDao {
     }
     
     @Override
-    public void publishEvent(ActivityEvent event) {
+    public boolean publishEvent(ActivityEvent event) {
         checkNotNull(event);
         
         DynamoActivityEvent hashKey = new DynamoActivityEvent();
@@ -50,9 +50,11 @@ public class DynamoActivityEventDao implements ActivityEventDao {
         hashKey.setEventId(event.getEventId());
         
         ActivityEvent savedEvent = mapper.load(hashKey);
-        if (isLaterNonEnrollmentEvent(savedEvent, event)) {
+        if (isNewOrMutable(savedEvent, event) && isLater(savedEvent, event)) {
             mapper.save(event);
+            return true;
         }
+        return false;
     }
 
     @Override
@@ -69,10 +71,6 @@ public class DynamoActivityEventDao implements ActivityEventDao {
         Builder<String,DateTime> builder = ImmutableMap.<String,DateTime>builder();
         for (DynamoActivityEvent event : queryResults) {
             builder.put(getEventMapKey(event), new DateTime(event.getTimestamp(), DateTimeZone.UTC));
-            if (isEnrollment(event)) {
-                builder.put(TWO_WEEKS, new DateTime(event.getTimestamp(), DateTimeZone.UTC).minusWeeks(2));
-                builder.put(TWO_MONTHS, new DateTime(event.getTimestamp(), DateTimeZone.UTC).minusMonths(2));
-            }
         }
         return builder.build();
     }
@@ -97,18 +95,21 @@ public class DynamoActivityEventDao implements ActivityEventDao {
         }
     }
     
-    private boolean isEnrollment(ActivityEvent event) {
-        return ENROLLMENT.name().toLowerCase().equals(event.getEventId());
-    }
-    
-    // Enrollment can only be recorded once, even if user withdraws and re-enrolls. Tasks are 
-    // not deleted and so one-time tasks are not re-scheduled against a new enrollment date.
-    // Only save if the timestamp is later than the current timestamp in the table
-    private boolean isLaterNonEnrollmentEvent(ActivityEvent savedEvent, ActivityEvent event) {
+    // Some events can only be recorded once. 
+    private boolean isNewOrMutable(ActivityEvent savedEvent, ActivityEvent event) {
         if (savedEvent == null) {
             return true;
         }
-        return (!"enrollment".equals(event.getEventId()) && event.getTimestamp() > savedEvent.getTimestamp());
+        return (!IMMUTABLE_EVENTS.contains(event.getEventId()));
+    }
+    
+    // Events cannot be recorded unless the timestamp submitted is later than the currently
+    // recorded timestamp.
+    private boolean isLater(ActivityEvent savedEvent, ActivityEvent event) {
+        if (savedEvent == null) {
+            return true;
+        }
+        return event.getTimestamp() > savedEvent.getTimestamp();
     }
 
     /**
