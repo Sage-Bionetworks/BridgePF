@@ -81,7 +81,7 @@ public class StudyValidator implements Validator {
         }
         if (study.getActivityEventKeys().stream()
                 .anyMatch(k -> !k.matches(BridgeConstants.BRIDGE_EVENT_ID_PATTERN))) {
-            errors.rejectValue("activityEventKeys", BridgeConstants.BRIDGE_EVENT_ID_PATTERN);
+            errors.rejectValue("activityEventKeys", BRIDGE_EVENT_ID_ERROR);
         }
         if (study.getAutomaticCustomEvents() != null) {
             for (Map.Entry<String, String> entry : study.getAutomaticCustomEvents().entrySet()) {
@@ -90,7 +90,7 @@ public class StudyValidator implements Validator {
                 
                 // Validate that the key follows the same rules for activity event keys
                 if (!key.matches(BridgeConstants.BRIDGE_EVENT_ID_PATTERN)) {
-                    errors.rejectValue("automaticCustomEvents["+key+"]", BridgeConstants.BRIDGE_EVENT_ID_PATTERN);
+                    errors.rejectValue("automaticCustomEvents["+key+"]", BRIDGE_EVENT_ID_ERROR);
                 }
                 
                 Tuple<String> autoEventSpec = BridgeUtils.parseAutoEventValue(value);
