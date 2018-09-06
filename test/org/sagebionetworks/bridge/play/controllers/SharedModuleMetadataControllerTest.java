@@ -67,7 +67,7 @@ public class SharedModuleMetadataControllerTest {
         // mock controller with session with shared study
         mockSession = new UserSession();
         mockSession.setStudyIdentifier(BridgeConstants.SHARED_STUDY_ID);
-        doReturn(mockSession).when(controller).getAuthenticatedSession(any());
+        doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER);
     }
 
     @Test
@@ -90,12 +90,14 @@ public class SharedModuleMetadataControllerTest {
 
     @Test
     public void deleteByIdAllVersions() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+        
         // setup, execute, and validate
-        Result result = controller.deleteMetadataByIdAllVersions(MODULE_ID);
+        Result result = controller.deleteMetadataByIdAllVersions(MODULE_ID, "false");
         TestUtils.assertResult(result, 200);
 
         // verify backend
-        verify(mockSvc).deleteMetadataByIdAllVersions(MODULE_ID);
+        verify(mockSvc).deleteMetadataByIdAllVersionsPermanently(MODULE_ID);
 
         // validate permissions
         verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
@@ -103,15 +105,17 @@ public class SharedModuleMetadataControllerTest {
 
     @Test
     public void deleteByIdAndVersion() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+        
         // setup, execute, and validate
-        Result result = controller.deleteMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION);
+        Result result = controller.deleteMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION, "false");
         TestUtils.assertResult(result, 200);
 
         // verify backend
-        verify(mockSvc).deleteMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION);
+        verify(mockSvc).deleteMetadataByIdAndVersionPermanently(MODULE_ID, MODULE_VERSION);
 
         // validate permissions
-        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
     }
 
     @Test
@@ -247,16 +251,19 @@ public class SharedModuleMetadataControllerTest {
 
     @Test(expected = UnauthorizedException.class)
     public void nonSharedStudyCantDeleteByIdAllVersions() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+        
         // Set session to return API study instead. This will cause the server to throw an 403 Unauthorized.
         mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
-        controller.deleteMetadataByIdAllVersions(MODULE_ID);
+        controller.deleteMetadataByIdAllVersions(MODULE_ID, "false");
     }
 
     @Test(expected = UnauthorizedException.class)
     public void nonSharedStudyCantDeleteByIdAndVersion() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
         // Set session to return API study instead. This will cause the server to throw an 403 Unauthorized.
         mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
-        controller.deleteMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION);
+        controller.deleteMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION, "false");
     }
 
     @Test(expected = UnauthorizedException.class)

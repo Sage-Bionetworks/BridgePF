@@ -119,22 +119,22 @@ public class SharedModuleMetadataService {
      * Deletes all metadata for module versions with the given ID. Throws EntityNotFoundException if there are no such
      * module versions.
      */
-    public void deleteMetadataByIdAllVersions(String id) {
+    public void deleteMetadataByIdAllVersionsPermanently(String id) {
         // Check that module exists. Module ID is validated by get().
         getMetadataByIdLatestVersion(id);
 
-        metadataDao.deleteMetadataByIdAllVersions(id);
+        metadataDao.deleteMetadataByIdAllVersionsPermanently(id);
     }
 
     /**
      * Deletes metadata for the specified module ID and version. Throws EntityNotFoundException if that module version
      * doesn't exist.
      */
-    public void deleteMetadataByIdAndVersion(String id, int version) {
+    public void deleteMetadataByIdAndVersionPermanently(String id, int version) {
         // Check that module exists. Module ID and version is validated by get().
         getMetadataByIdAndVersion(id, version);
 
-        metadataDao.deleteMetadataByIdAndVersion(id, version);
+        metadataDao.deleteMetadataByIdAndVersionPermanently(id, version);
     }
 
     /** Gets metadata for the specified version of the specified module. */

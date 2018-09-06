@@ -45,16 +45,26 @@ public class SharedModuleMetadataController extends BaseController {
     }
 
     /** Deletes all metadata for module versions with the given ID. */
-    public Result deleteMetadataByIdAllVersions(String id) {
-        verifySharedDeveloperAccess();
-        metadataService.deleteMetadataByIdAllVersions(id);
+    public Result deleteMetadataByIdAllVersions(String id, String physical) {
+        UserSession session = verifySharedDeveloperOrAdminAccess();
+        
+        if ("true".equals(physical) && session.isInRole(Roles.ADMIN)) {
+            metadataService.deleteMetadataByIdAllVersionsPermanently(id);    
+        } else {
+            //metadataService.deleteMetadataByIdAllVersions(id);
+        }
         return okResult("Metadata has been deleted.");
     }
 
     /** Deletes metadata for the specified module ID and version. */
-    public Result deleteMetadataByIdAndVersion(String id, int version) {
-        verifySharedDeveloperAccess();
-        metadataService.deleteMetadataByIdAndVersion(id, version);
+    public Result deleteMetadataByIdAndVersion(String id, int version, String physical) {
+        UserSession session = verifySharedDeveloperOrAdminAccess();
+        
+        if ("true".equals(physical) && session.isInRole(Roles.ADMIN)) {
+            metadataService.deleteMetadataByIdAndVersionPermanently(id, version);    
+        } else {
+            // metadataService.deleteMetadataByIdAndVersion(id, version);
+        }
         return okResult("Metadata has been deleted.");
     }
 
@@ -142,11 +152,22 @@ public class SharedModuleMetadataController extends BaseController {
 
     // Helper method to verify caller permissions for write operations. You need to be a developer in the "shared"
     // study (the study for the Shared Module Library).
-    private void verifySharedDeveloperAccess() {
+    private UserSession verifySharedDeveloperAccess() {
         UserSession session = getAuthenticatedSession(Roles.DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         if (!BridgeConstants.SHARED_STUDY_ID_STRING.equals(studyId.getIdentifier())) {
             throw new UnauthorizedException();
         }
+        return session;
     }
+    
+    private UserSession verifySharedDeveloperOrAdminAccess() {
+        UserSession session = getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+        StudyIdentifier studyId = session.getStudyIdentifier();
+        if (!BridgeConstants.SHARED_STUDY_ID_STRING.equals(studyId.getIdentifier())) {
+            throw new UnauthorizedException();
+        }
+        return session;
+    }
+    
 }

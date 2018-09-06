@@ -99,7 +99,7 @@ public class HibernateSharedModuleMetadataTest {
 
         // Convert back to JSON
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(metadata, JsonNode.class);
-        assertEquals(12, jsonNode.size());
+        assertEquals(13, jsonNode.size());
         assertEquals(MODULE_ID, jsonNode.get("id").textValue());
         assertTrue(jsonNode.get("licenseRestricted").booleanValue());
         assertEquals(MODULE_NAME, jsonNode.get("name").textValue());
@@ -130,7 +130,8 @@ public class HibernateSharedModuleMetadataTest {
                 "   \"name\":\"" + MODULE_NAME + "\",\n" +
                 "   \"surveyCreatedOn\":\"" + SURVEY_CREATED_ON_STRING + "\",\n" +
                 "   \"surveyGuid\":\"" + SURVEY_GUID + "\",\n" +
-                "   \"version\":" + MODULE_VERSION + "\n" +
+                "   \"version\":" + MODULE_VERSION + ",\n" +
+                "   \"deleted\":true\n" +
                 "}";
 
         // Convert to POJO - Test only the fields we set, so that we don't have exploding tests.
@@ -143,7 +144,7 @@ public class HibernateSharedModuleMetadataTest {
 
         // Convert back to JSON. licenseRestricted and published default to false. tags defaults to empty set.
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(metadata, JsonNode.class);
-        assertEquals(10, jsonNode.size());
+        assertEquals(11, jsonNode.size());
         assertEquals(MODULE_ID, jsonNode.get("id").textValue());
         assertFalse(jsonNode.get("licenseRestricted").booleanValue());
         assertEquals(MODULE_NAME, jsonNode.get("name").textValue());
@@ -153,6 +154,7 @@ public class HibernateSharedModuleMetadataTest {
         assertEquals(0, jsonNode.get("tags").size());
         assertEquals(MODULE_VERSION, jsonNode.get("version").intValue());
         assertEquals("survey", jsonNode.get("moduleType").textValue());
+        assertTrue(jsonNode.get("deleted").booleanValue());
         assertEquals("SharedModuleMetadata", jsonNode.get("type").textValue());
 
         String surveyCreatedOnString = jsonNode.get("surveyCreatedOn").textValue();

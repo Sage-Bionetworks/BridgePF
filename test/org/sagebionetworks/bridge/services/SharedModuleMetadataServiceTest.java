@@ -181,74 +181,74 @@ public class SharedModuleMetadataServiceTest {
     }
 
     @Test(expected = BadRequestException.class)
-    public void deleteByIdAllVersionsNullId() {
-        svc.deleteMetadataByIdAllVersions(null);
+    public void deleteByIdAllVersionsPermanentlyNullId() {
+        svc.deleteMetadataByIdAllVersionsPermanently(null);
     }
 
     @Test(expected = BadRequestException.class)
-    public void deleteByIdAllVersionsEmptyId() {
-        svc.deleteMetadataByIdAllVersions("");
+    public void deleteByIdAllVersionsPermanentlyEmptyId() {
+        svc.deleteMetadataByIdAllVersionsPermanently("");
     }
 
     @Test(expected = BadRequestException.class)
-    public void deleteByIdAllVersionsBlankId() {
-        svc.deleteMetadataByIdAllVersions("   ");
+    public void deleteByIdAllVersionsPermanentlyBlankId() {
+        svc.deleteMetadataByIdAllVersionsPermanently("   ");
     }
 
     @Test(expected = EntityNotFoundException.class)
-    public void deleteByIdAllVersionsNotFound() {
+    public void deleteByIdAllVersionsPermanentlyNotFound() {
         doReturn(ImmutableList.of()).when(svc).queryMetadataById(MODULE_ID, true, false, null, null, null);
-        svc.deleteMetadataByIdAllVersions(MODULE_ID);
+        svc.deleteMetadataByIdAllVersionsPermanently(MODULE_ID);
     }
 
     @Test
-    public void deleteByIdAllVersionsSuccess() {
+    public void deleteByIdAllVersionsPermanentlySuccess() {
         doReturn(ImmutableList.of(makeValidMetadata())).when(svc).queryMetadataById(MODULE_ID, true, false, null, null, null);
-        svc.deleteMetadataByIdAllVersions(MODULE_ID);
-        verify(mockDao).deleteMetadataByIdAllVersions(MODULE_ID);
+        svc.deleteMetadataByIdAllVersionsPermanently(MODULE_ID);
+        verify(mockDao).deleteMetadataByIdAllVersionsPermanently(MODULE_ID);
     }
 
     @Test(expected = BadRequestException.class)
-    public void deleteByIdAndVersionNullId() {
-        svc.deleteMetadataByIdAndVersion(null, MODULE_VERSION);
+    public void deleteByIdAndVersionPermanentlyNullId() {
+        svc.deleteMetadataByIdAndVersionPermanently(null, MODULE_VERSION);
     }
 
     @Test(expected = BadRequestException.class)
-    public void deleteByIdAndVersionEmptyId() {
-        svc.deleteMetadataByIdAndVersion("", MODULE_VERSION);
+    public void deleteByIdAndVersionPermanentlyEmptyId() {
+        svc.deleteMetadataByIdAndVersionPermanently("", MODULE_VERSION);
     }
 
     @Test(expected = BadRequestException.class)
-    public void deleteByIdAndVersionBlankId() {
-        svc.deleteMetadataByIdAndVersion("   ", MODULE_VERSION);
+    public void deleteByIdAndVersionPermanentlyBlankId() {
+        svc.deleteMetadataByIdAndVersionPermanently("   ", MODULE_VERSION);
     }
 
     @Test(expected = BadRequestException.class)
-    public void deleteByIdAndVersionNegativeVersion() {
-        svc.deleteMetadataByIdAndVersion(MODULE_ID, -1);
+    public void deleteByIdAndVersionPermanentlyNegativeVersion() {
+        svc.deleteMetadataByIdAndVersionPermanently(MODULE_ID, -1);
     }
 
     @Test(expected = BadRequestException.class)
-    public void deleteByIdAndVersionZeroVersion() {
-        svc.deleteMetadataByIdAndVersion(MODULE_ID, 0);
+    public void deleteByIdAndVersionPermanentlyZeroVersion() {
+        svc.deleteMetadataByIdAndVersionPermanently(MODULE_ID, 0);
     }
 
     @Test(expected = EntityNotFoundException.class)
-    public void deleteByIdAndVersionNotFound() {
+    public void deleteByIdAndVersionPermanentlyNotFound() {
         // mock dao to return null
         when(mockDao.getMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION)).thenReturn(null);
 
-        svc.deleteMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION);
+        svc.deleteMetadataByIdAndVersionPermanently(MODULE_ID, MODULE_VERSION);
     }
 
     @Test
-    public void deleteByIdAndVersionSuccess() {
+    public void deleteByIdAndVersionPermanentlySuccess() {
         // mock get
         when(mockDao.getMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION)).thenReturn(makeValidMetadata());
 
         // execute and verify delete call
-        svc.deleteMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION);
-        verify(mockDao).deleteMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION);
+        svc.deleteMetadataByIdAndVersionPermanently(MODULE_ID, MODULE_VERSION);
+        verify(mockDao).deleteMetadataByIdAndVersionPermanently(MODULE_ID, MODULE_VERSION);
     }
 
     @Test(expected = BadRequestException.class)
