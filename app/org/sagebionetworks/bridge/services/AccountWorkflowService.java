@@ -685,6 +685,13 @@ public class AccountWorkflowService {
 
     // Check if the request is throttled. Key is either email address or phone, depending on the type.
     private boolean isRequestThrottled(ThrottleRequestType type, String userId) {
+        if (type == ThrottleRequestType.PHONE_SIGNIN) {
+            // mPower 2.0 is currently blocked because of issues with phone sign-in. Long-term, we'll want to add a
+            // grace period for the phone token, similar to reauth. Short-term, we disable throttling for phone sign-in
+            // (but not for email, so it doesn't impact our spam rating).
+            return false;
+        }
+
         // Generate key, which is in the form of channel-throttling:[type]:[userId].
         String cacheKey = "channel-throttling:" + type.toString().toLowerCase() + ":" + userId;
 

@@ -30,6 +30,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.time.DateUtils;
+import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -66,6 +67,15 @@ public class BridgeUtils {
     // "request context" object into every method of every class.
     private static final ThreadLocal<String> REQUEST_ID_THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
 
+    public static Tuple<String> parseAutoEventValue(String automaticEventValue) {
+        int lastIndex = automaticEventValue.lastIndexOf(":P");
+        if (lastIndex == -1) {
+            // This will certainly not pass validation
+            return new Tuple<>(null, automaticEventValue); 
+        }
+        return new Tuple<>(automaticEventValue.substring(0, lastIndex), automaticEventValue.substring(lastIndex+1));
+    }
+    
     public static boolean isExternalIdAccount(StudyParticipant participant) {
         return (StringUtils.isNotBlank(participant.getExternalId()) && 
                 StringUtils.isBlank(participant.getEmail()) && 

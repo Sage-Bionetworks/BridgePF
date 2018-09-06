@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.NotificationRegistrationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -45,6 +44,11 @@ import com.google.common.collect.Sets;
 @Component
 public class NotificationsService {
     private static final Logger LOG = LoggerFactory.getLogger(NotificationsService.class);
+
+    // mPower 2.0 study burst notifications can be fairly long. The longest one has 230 chars of fixed content, an app
+    // url that's 53 characters long, and some freeform text that can be potentially 255 characters long, for a total
+    // of 538 characters. Round to a nice round 600 characters (about 4.5 SMS messages, if broken up).
+    private static final int SMS_CHARACTER_LIMIT = 600;
 
     private ParticipantService participantService;
     private StudyService studyService;
@@ -280,9 +284,7 @@ public class NotificationsService {
         
         PublishRequest request = provider.getSmsRequest();
 
-        // Limited to 140 bytes in GSM. We can test the length in ASCII (GSM is not a supported encoding in the 
-        // JDK) and this is a rough approximation as both are 7-bit encodings.
-        if (request.getMessage().getBytes(Charset.forName("US-ASCII")).length > BridgeConstants.SMS_CHARACTER_LIMIT) {
+        if (request.getMessage().getBytes(Charset.forName("US-ASCII")).length > SMS_CHARACTER_LIMIT) {
             throw new BridgeServiceException("SMS message cannot be longer than 140 UTF-8/ASCII characters.");
         }
         

@@ -20,11 +20,9 @@ import static org.sagebionetworks.bridge.services.SharedModuleMetadataServiceTes
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -34,7 +32,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.SurveyDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
@@ -66,7 +63,6 @@ public class SurveyServiceMockTest {
     private static final String SURVEY_GUID = "surveyGuid";
     private static final DateTime SURVEY_CREATED_ON = DateTime.parse("2017-02-08T20:07:57.179Z");
     private static final GuidCreatedOnVersionHolder SURVEY_KEYS = new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, 1337);
-    private static final Set<Roles> ADMIN_ROLE = ImmutableSet.of(Roles.ADMIN);
 
     @Mock
     SurveyPublishValidator mockSurveyPublishValidator;

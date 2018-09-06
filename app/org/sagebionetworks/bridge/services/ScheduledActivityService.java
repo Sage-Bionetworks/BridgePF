@@ -43,6 +43,8 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -78,7 +80,7 @@ public class ScheduledActivityService {
     private SurveyService surveyService;
     
     private AppConfigService appConfigService;
-
+    
     @Autowired
     final void setScheduledActivityDao(ScheduledActivityDao activityDao) {
         this.activityDao = activityDao;
@@ -172,10 +174,15 @@ public class ScheduledActivityService {
         return DateTime.now();
     }
 
-    public List<ScheduledActivity> getScheduledActivities(ScheduleContext context) {
+    public List<ScheduledActivity> getScheduledActivities(Study study, ScheduleContext context) {
+        checkNotNull(study);
         checkNotNull(context);
         
         Validate.nonEntityThrowingException(VALIDATOR, context);
+
+        String healthCode = context.getCriteriaContext().getHealthCode();
+        activityEventService.publishActivitiesRetrieved(study, healthCode, DateUtils.getCurrentDateTime());
+        
         // Add events for scheduling
         Map<String, DateTime> events = createEventsMap(context);
         ScheduleContext updatedContext = new ScheduleContext.Builder().withContext(context).withEvents(events).build();
@@ -195,10 +202,15 @@ public class ScheduledActivityService {
         return orderActivities(scheduledActivities, V3_FILTER);
     }
     
-    public List<ScheduledActivity> getScheduledActivitiesV4(ScheduleContext context) {
+    public List<ScheduledActivity> getScheduledActivitiesV4(Study study, ScheduleContext context) {
+        checkNotNull(study);
         checkNotNull(context);
         
         Validate.nonEntityThrowingException(VALIDATOR, context);
+        
+        String healthCode = context.getCriteriaContext().getHealthCode();
+        activityEventService.publishActivitiesRetrieved(study, healthCode, DateUtils.getCurrentDateTime());
+        
         // Add events for scheduling
         Map<String, DateTime> events = createEventsMap(context);
         ScheduleContext updatedContext = new ScheduleContext.Builder().withContext(context).withEvents(events).build();

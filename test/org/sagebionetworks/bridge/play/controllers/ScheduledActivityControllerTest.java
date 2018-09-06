@@ -56,6 +56,7 @@ import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.ScheduledActivityService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -91,6 +92,8 @@ public class ScheduledActivityControllerTest {
     private static final String USER_AGENT = "App Name/4 SDK/2";
     
     private static final ClientInfo CLIENT_INFO = ClientInfo.fromUserAgentCache(USER_AGENT);
+    
+    private static final Study STUDY = Study.create();  
     
     private static final TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>> FORWARD_CURSOR_PAGED_ACTIVITIES_REF =
             new TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>>() {
@@ -166,7 +169,7 @@ public class ScheduledActivityControllerTest {
         session = new UserSession(participant);
         session.setStudyIdentifier(TEST_STUDY);
         
-        when(scheduledActivityService.getScheduledActivities(any(ScheduleContext.class))).thenReturn(list);
+        when(scheduledActivityService.getScheduledActivities(eq(STUDY), any(ScheduleContext.class))).thenReturn(list);
 
         doReturn(ACCOUNT_CREATED_ON).when(account).getCreatedOn();
         doReturn(study).when(studyService).getStudy(TEST_STUDY_IDENTIFIER);
@@ -177,6 +180,9 @@ public class ScheduledActivityControllerTest {
         controller.setCacheProvider(cacheProvider);
         controller.setAccountDao(accountDao);
         controller.setBridgeConfig(bridgeConfig);
+        
+        STUDY.setIdentifier("api");
+        when(studyService.getStudy(new StudyIdentifierImpl("api"))).thenReturn(STUDY);
         
         when(bridgeConfig.getEnvironment()).thenReturn(Environment.UAT);
         
@@ -199,7 +205,7 @@ public class ScheduledActivityControllerTest {
         verify(account).setTimeZone(MSK);
         assertEquals(MSK, session.getParticipant().getTimeZone());
         
-        verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
+        verify(scheduledActivityService).getScheduledActivities(eq(STUDY), contextCaptor.capture());
         ScheduleContext context = contextCaptor.getValue();
         assertEquals(MSK, context.getInitialTimeZone());
     }
@@ -215,7 +221,7 @@ public class ScheduledActivityControllerTest {
         
         controller.getScheduledActivities(null, "-07:00", "3", "5");
         
-        verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
+        verify(scheduledActivityService).getScheduledActivities(eq(STUDY), contextCaptor.capture());
         ScheduleContext context = contextCaptor.getValue();
         assertEquals(UNK, context.getInitialTimeZone());
     }
@@ -225,7 +231,7 @@ public class ScheduledActivityControllerTest {
     public void utcTimeZoneParsedCorrectly() throws Exception {
         controller.getScheduledActivities(null, "+0:00", "3", "5");
         
-        verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
+        verify(scheduledActivityService).getScheduledActivities(eq(STUDY), contextCaptor.capture());
         ScheduleContext context = contextCaptor.getValue();
         assertEquals("+00:00", DateUtils.timeZoneToOffsetString(context.getInitialTimeZone()));
     }
@@ -236,12 +242,12 @@ public class ScheduledActivityControllerTest {
         DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
         List<ScheduledActivity> list = Lists.newArrayList();
         scheduledActivityService = mock(ScheduledActivityService.class);
-        when(scheduledActivityService.getScheduledActivities(any(ScheduleContext.class))).thenReturn(list);
+        when(scheduledActivityService.getScheduledActivities(eq(STUDY), any(ScheduleContext.class))).thenReturn(list);
         controller.setScheduledActivityService(scheduledActivityService);
         
         controller.getScheduledActivities(null, "+03:00", "3", "5");
         
-        verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
+        verify(scheduledActivityService).getScheduledActivities(eq(STUDY), contextCaptor.capture());
         
         ScheduleContext context = contextCaptor.getValue();
         assertEquals(MSK, context.getInitialTimeZone());
@@ -311,7 +317,7 @@ public class ScheduledActivityControllerTest {
         
         Result result = controller.getScheduledActivities(now.toString(), null, null, null);
         TestUtils.assertResult(result, 200);
-        verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
+        verify(scheduledActivityService).getScheduledActivities(eq(STUDY), contextCaptor.capture());
         verifyNoMoreInteractions(scheduledActivityService);
         assertEquals(now, contextCaptor.getValue().getEndsOn());
         assertEquals(now.getZone(), contextCaptor.getValue().getInitialTimeZone());
@@ -329,7 +335,7 @@ public class ScheduledActivityControllerTest {
         Result result = controller.getScheduledActivities(null, "+03:00", "3", null);
         TestUtils.assertResult(result, 200);
         
-        verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
+        verify(scheduledActivityService).getScheduledActivities(eq(STUDY), contextCaptor.capture());
         verifyNoMoreInteractions(scheduledActivityService);
         assertEquals(expectedEndsOn, contextCaptor.getValue().getEndsOn().withMillisOfSecond(0));
         assertEquals(expectedEndsOn.getZone(), contextCaptor.getValue().getInitialTimeZone());
@@ -361,7 +367,7 @@ public class ScheduledActivityControllerTest {
         Result result = controller.getScheduledActivities(null, "-07:00", "3", null);
         TestUtils.assertResult(result, 200);
         
-        verify(scheduledActivityService).getScheduledActivities(contextCaptor.capture());
+        verify(scheduledActivityService).getScheduledActivities(eq(STUDY), contextCaptor.capture());
         ScheduleContext context = contextCaptor.getValue();
         assertEquals(ACCOUNT_CREATED_ON.withZone(DateTimeZone.UTC), context.getAccountCreatedOn());
     }
@@ -501,7 +507,7 @@ public class ScheduledActivityControllerTest {
         
         verify(sessionUpdateService).updateTimeZone(any(UserSession.class), timeZoneCaptor.capture());
         verify(cacheProvider).updateRequestInfo(requestInfoCaptor.capture());
-        verify(scheduledActivityService).getScheduledActivitiesV4(contextCaptor.capture());
+        verify(scheduledActivityService).getScheduledActivitiesV4(eq(STUDY), contextCaptor.capture());
         
         assertEquals(startsOn.getZone(), timeZoneCaptor.getValue());
         

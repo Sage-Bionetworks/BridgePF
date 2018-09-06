@@ -12,10 +12,11 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.Period;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
@@ -53,7 +54,11 @@ public class ActivityEventService {
                 .withObjectType(ActivityEventObjectType.CUSTOM)
                 .withObjectId(eventKey)
                 .withTimestamp(timestamp).build();
-        activityEventDao.publishEvent(event);
+        
+        if (activityEventDao.publishEvent(event)) {
+            // Create automatic events, as defined in the study
+            createAutomaticCustomEvents(study, healthCode, event);
+        }
     }
 
     /**
@@ -70,14 +75,25 @@ public class ActivityEventService {
             .withHealthCode(healthCode)
             .withTimestamp(enrollment)
             .withObjectType(ActivityEventObjectType.ENROLLMENT).build();
-        activityEventDao.publishEvent(event);
-
-        // Create automatic events, as defined in the study
-        for (Map.Entry<String, String> oneAutomaticEvent : study.getAutomaticCustomEvents().entrySet()) {
-            String automaticEventKey = oneAutomaticEvent.getKey();
-            Period automaticEventDelay = Period.parse(oneAutomaticEvent.getValue());
-            DateTime automaticEventTime = enrollment.plus(automaticEventDelay);
-            publishCustomEvent(study, healthCode, automaticEventKey, automaticEventTime);
+        
+        if (activityEventDao.publishEvent(event)) {
+            // Create automatic events, as defined in the study
+            createAutomaticCustomEvents(study, healthCode, event);
+        }
+    }
+    
+    public void publishActivitiesRetrieved(Study study, String healthCode, DateTime timestamp) {
+        checkNotNull(healthCode);
+        checkNotNull(timestamp);
+        
+        ActivityEvent event = new DynamoActivityEvent.Builder()
+            .withHealthCode(healthCode)
+            .withTimestamp(timestamp)
+            .withObjectType(ActivityEventObjectType.ACTIVITIES_RETRIEVED).build();
+        
+        if (activityEventDao.publishEvent(event)) {
+            // Create automatic events, as defined in the study
+            createAutomaticCustomEvents(study, healthCode, event);
         }
     }
     
@@ -157,4 +173,25 @@ public class ActivityEventService {
         activityEventDao.deleteActivityEvents(healthCode);
     }
 
+    private void createAutomaticCustomEvents(Study study, String healthCode, ActivityEvent event) {
+        for (Map.Entry<String, String> oneAutomaticEvent : study.getAutomaticCustomEvents().entrySet()) {
+            String automaticEventKey = oneAutomaticEvent.getKey(); // new event key
+            Tuple<String> autoEventSpec = BridgeUtils.parseAutoEventValue(oneAutomaticEvent.getValue()); // originEventId:Period
+            
+            // enrollment, activities_retrieved, or any of the custom:* events defined by the user.
+            if (event.getEventId().equals(autoEventSpec.getLeft()) || 
+                event.getEventId().startsWith("custom:"+autoEventSpec.getLeft())) {
+                
+                Period automaticEventDelay = Period.parse(autoEventSpec.getRight());
+                DateTime automaticEventTime = new DateTime(event.getTimestamp()).plus(automaticEventDelay);
+                
+                ActivityEvent automaticEvent = new DynamoActivityEvent.Builder()
+                        .withHealthCode(healthCode)
+                        .withObjectType(ActivityEventObjectType.CUSTOM)
+                        .withObjectId(automaticEventKey)
+                        .withTimestamp(automaticEventTime).build();
+                activityEventDao.publishEvent(automaticEvent);
+            }
+        }        
+    }
 }

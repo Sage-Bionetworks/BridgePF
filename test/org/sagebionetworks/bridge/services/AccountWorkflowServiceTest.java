@@ -1150,11 +1150,11 @@ public class AccountWorkflowServiceTest {
         when(mockAccountDao.getAccount(any())).thenReturn(mockAccount);
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
 
-        // Throttle limit is 2. Request 3 times. Get 2 texts.
+        // This is currently disabled. Request 3 times, get 3 texts.
         service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
         service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
         service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
-        verify(mockNotificationsService, times(2)).sendSmsMessage(any());
+        verify(mockNotificationsService, times(3)).sendSmsMessage(any());
     }
 
     @Test

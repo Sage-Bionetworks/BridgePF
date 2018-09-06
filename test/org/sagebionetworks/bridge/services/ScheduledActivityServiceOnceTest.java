@@ -98,8 +98,8 @@ public class ScheduledActivityServiceOnceTest {
         schedule.addTimes(LocalTime.parse("13:11"));
         schedulePlanService.updateSchedulePlan(study, schedulePlan);
         
-        List<ScheduledActivity> first = service.getScheduledActivities(getContextWith2DayAdvance(PST));
-        List<ScheduledActivity> second = service.getScheduledActivities(getContextWith2DayAdvance(MSK));
+        List<ScheduledActivity> first = service.getScheduledActivities(study, getContextWith2DayAdvance(PST));
+        List<ScheduledActivity> second = service.getScheduledActivities(study, getContextWith2DayAdvance(MSK));
         assertEquals(1, first.size());
         assertEquals(1, second.size());
         
