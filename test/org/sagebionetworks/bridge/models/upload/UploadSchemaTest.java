@@ -216,6 +216,7 @@ public class UploadSchemaTest {
                 "   \"schemaId\":\"test-schema\",\n" +
                 "   \"schemaType\":\"ios_survey\",\n" +
                 "   \"studyId\":\"test-study\",\n" +
+                "   \"deleted\":true,\n"+
                 "   \"surveyGuid\":\"survey-guid\",\n" +
                 "   \"surveyCreatedOn\":\"" + surveyCreatedOnStr + "\",\n" +
                 "   \"version\":6,\n" +
@@ -244,6 +245,7 @@ public class UploadSchemaTest {
         assertEquals("test-study", uploadSchema.getStudyId());
         assertEquals("survey-guid", uploadSchema.getSurveyGuid());
         assertEquals(surveyCreatedOnMillis, uploadSchema.getSurveyCreatedOn().longValue());
+        assertTrue(uploadSchema.isDeleted());
         assertEquals(6, ((DynamoUploadSchema) uploadSchema).getVersion().longValue());
 
         assertEquals(ImmutableSet.of("iOS", "Android"), uploadSchema.getAppVersionOperatingSystems());
@@ -271,7 +273,7 @@ public class UploadSchemaTest {
         // for consistency in tests, we should do it the same way every time.
         String convertedJson = BridgeObjectMapper.get().writeValueAsString(uploadSchema);
         JsonNode jsonNode = BridgeObjectMapper.get().readTree(convertedJson);
-        assertEquals(14, jsonNode.size());
+        assertEquals(15, jsonNode.size());
         assertEquals(MODULE_ID, jsonNode.get("moduleId").textValue());
         assertEquals(MODULE_VERSION, jsonNode.get("moduleVersion").intValue());
         assertEquals("Test Schema", jsonNode.get("name").textValue());
@@ -281,7 +283,9 @@ public class UploadSchemaTest {
         assertEquals("test-study", jsonNode.get("studyId").textValue());
         assertEquals("survey-guid", jsonNode.get("surveyGuid").textValue());
         assertEquals("UploadSchema", jsonNode.get("type").textValue());
+        assertTrue(jsonNode.get("deleted").booleanValue());
         assertEquals(6,  jsonNode.get("version").intValue());
+        assertTrue(jsonNode.get("deleted").booleanValue());
 
         JsonNode maxAppVersionMap = jsonNode.get("maxAppVersions");
         assertEquals(2, maxAppVersionMap.size());

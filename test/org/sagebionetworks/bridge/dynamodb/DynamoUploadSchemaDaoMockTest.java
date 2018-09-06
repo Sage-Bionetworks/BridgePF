@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -13,12 +14,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Map;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -48,6 +51,7 @@ public class DynamoUploadSchemaDaoMockTest {
     public void create() {
         // Create a schema with a version, to make sure we clear it.
         daoInputSchema.setVersion(3L);
+        daoInputSchema.setDeleted(true);
 
         // execute
         UploadSchema daoOutputSchema = dao.createSchemaRevision(daoInputSchema);
@@ -58,6 +62,7 @@ public class DynamoUploadSchemaDaoMockTest {
 
         DynamoUploadSchema mapperInputSchema = mapperInputSchemaCaptor.getValue();
         assertNull(mapperInputSchema.getVersion());
+        assertFalse(mapperInputSchema.isDeleted());
 
         // schema returned by dao is the same one that was sent to the mapper
         assertSame(mapperInputSchema, daoOutputSchema);
@@ -73,19 +78,33 @@ public class DynamoUploadSchemaDaoMockTest {
         dao.deleteUploadSchemas(schemaListToDelete);
 
         // verify schema was passed to mapper
-        verify(mapper).batchDelete(schemaListToDelete);
+        verify(mapper).batchSave(schemaListToDelete);
+        assertTrue(schemaListToDelete.stream().allMatch(schema -> schema.isDeleted()));
     }
 
     @Test
-    public void allSchemasAllRevisions() {
+    public void deletePermanently() {
+        // mock mapper to return an empty list of failures (all success)
+        List<UploadSchema> schemaListToDelete = ImmutableList.of(new DynamoUploadSchema());
+        when(mapper.batchDelete(schemaListToDelete)).thenReturn(ImmutableList.of());
+
+        // execute
+        dao.deleteUploadSchemasPermanently(schemaListToDelete);
+
+        // verify schema was passed to mapper
+        verify(mapper).batchDelete(schemaListToDelete);
+    }
+    
+    @Test
+    public void allSchemasAllRevisionsExcludeDeleted() {
         // spy index helper
         List<DynamoUploadSchema> mapperOutputSchemaList = ImmutableList.of(new DynamoUploadSchema());
         ArgumentCaptor<DynamoUploadSchema> indexHashKeyCaptor = ArgumentCaptor.forClass(DynamoUploadSchema.class);
         doReturn(mapperOutputSchemaList).when(dao).indexHelper(eq(DynamoUploadSchemaDao.STUDY_ID_INDEX_NAME),
-                indexHashKeyCaptor.capture());
+                indexHashKeyCaptor.capture(), eq(false));
 
         // execute
-        List<UploadSchema> daoOutputSchemaList = dao.getAllUploadSchemasAllRevisions(TestConstants.TEST_STUDY);
+        List<UploadSchema> daoOutputSchemaList = dao.getAllUploadSchemasAllRevisions(TestConstants.TEST_STUDY, false);
 
         // validate index hash key
         DynamoUploadSchema indexHashKey = indexHashKeyCaptor.getValue();
@@ -96,7 +115,49 @@ public class DynamoUploadSchemaDaoMockTest {
     }
 
     @Test
-    public void getSchemaAllRevisions() {
+    public void allSchemasAllRevisionsIncludeDeleted() {
+        // spy index helper
+        List<DynamoUploadSchema> mapperOutputSchemaList = ImmutableList.of(new DynamoUploadSchema());
+        ArgumentCaptor<DynamoUploadSchema> indexHashKeyCaptor = ArgumentCaptor.forClass(DynamoUploadSchema.class);
+        doReturn(mapperOutputSchemaList).when(dao).indexHelper(eq(DynamoUploadSchemaDao.STUDY_ID_INDEX_NAME),
+                indexHashKeyCaptor.capture(), eq(true));
+
+        // execute
+        List<UploadSchema> daoOutputSchemaList = dao.getAllUploadSchemasAllRevisions(TestConstants.TEST_STUDY, true);
+
+        // validate index hash key
+        DynamoUploadSchema indexHashKey = indexHashKeyCaptor.getValue();
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, indexHashKey.getStudyId());
+
+        // Verify DAO output
+        assertSame(mapperOutputSchemaList, daoOutputSchemaList);
+    }
+
+    @Test
+    public void deleteFlagFiltersIndexHelper() {
+        DynamoUploadSchema undeletedSchema = new DynamoUploadSchema();
+        
+        DynamoUploadSchema deletedSchema = new DynamoUploadSchema();
+        deletedSchema.setDeleted(true);
+        
+        Map<String,List<Object>> map = Maps.newHashMap();
+        map.put("A", ImmutableList.of(undeletedSchema));
+        map.put("B", ImmutableList.of(deletedSchema));
+        
+        when(mapper.batchLoad(any(List.class))).thenReturn(map);
+        
+        List<UploadSchema> results1 = dao.indexHelper("indexName", new DynamoUploadSchema(), false);
+        assertEquals(1, results1.size());
+        assertEquals(undeletedSchema, results1.get(0));
+        
+        List<UploadSchema> results2 = dao.indexHelper("indexName", new DynamoUploadSchema(), true);
+        assertEquals(2, results2.size());
+        assertEquals(undeletedSchema, results2.get(0));
+        assertEquals(deletedSchema, results2.get(1));
+    }
+
+    @Test
+    public void getSchemaAllRevisionsIncludeDeleted() {
         // spy query
         List<DynamoUploadSchema> mapperOutputSchemaList = ImmutableList.of(new DynamoUploadSchema());
         ArgumentCaptor<DynamoDBQueryExpression> mapperQueryCaptor = ArgumentCaptor.forClass(
@@ -105,13 +166,39 @@ public class DynamoUploadSchemaDaoMockTest {
 
         // execute
         List<UploadSchema> daoOutputSchemaList = dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY,
-                SCHEMA_ID);
+                SCHEMA_ID, true);
 
         // validate query
         DynamoDBQueryExpression<DynamoUploadSchema> mapperQuery = mapperQueryCaptor.getValue();
         assertFalse(mapperQuery.isScanIndexForward());
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, mapperQuery.getHashKeyValues().getStudyId());
         assertEquals(SCHEMA_ID, mapperQuery.getHashKeyValues().getSchemaId());
+        assertNull(mapperQuery.getQueryFilter());
+
+        // Verify DAO output is same as mapper output. We use equals because they are different instances, but contain
+        // the same objects.
+        assertEquals(mapperOutputSchemaList, daoOutputSchemaList);
+    }
+    
+    @Test
+    public void getSchemaAllRevisionsExcludeDeleted() {
+        // spy query
+        List<DynamoUploadSchema> mapperOutputSchemaList = ImmutableList.of(new DynamoUploadSchema());
+        ArgumentCaptor<DynamoDBQueryExpression> mapperQueryCaptor = ArgumentCaptor.forClass(
+                DynamoDBQueryExpression.class);
+        doReturn(mapperOutputSchemaList).when(dao).queryHelper(mapperQueryCaptor.capture());
+
+        // execute
+        List<UploadSchema> daoOutputSchemaList = dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY,
+                SCHEMA_ID, false);
+
+        // validate query
+        DynamoDBQueryExpression<DynamoUploadSchema> mapperQuery = mapperQueryCaptor.getValue();
+        assertFalse(mapperQuery.isScanIndexForward());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, mapperQuery.getHashKeyValues().getStudyId());
+        assertEquals(SCHEMA_ID, mapperQuery.getHashKeyValues().getSchemaId());
+        assertEquals("{deleted={AttributeValueList: [{N: 1,}],ComparisonOperator: NE}}",
+                mapperQuery.getQueryFilter().toString());
 
         // Verify DAO output is same as mapper output. We use equals because they are different instances, but contain
         // the same objects.
@@ -181,6 +268,9 @@ public class DynamoUploadSchemaDaoMockTest {
 
     @Test
     public void update() {
+        // We can mark something deleted (or not) on an update
+        daoInputSchema.setDeleted(true);
+        
         // execute (no additional setup required)
         UploadSchema daoOutputSchema = dao.updateSchemaRevision(daoInputSchema);
 
@@ -191,5 +281,6 @@ public class DynamoUploadSchemaDaoMockTest {
         // schema returned by dao is the same one that was sent to the mapper
         DynamoUploadSchema mapperInputSchema = mapperInputSchemaCaptor.getValue();
         assertSame(mapperInputSchema, daoOutputSchema);
+        assertTrue(mapperInputSchema.isDeleted());
     }
 }

@@ -331,7 +331,7 @@ public class DynamoSurveyDao implements SurveyDao {
             // Delete the schemas as well, or they accumulate.
             try {
                 StudyIdentifier studyId = new StudyIdentifierImpl(existing.getStudyIdentifier());
-                uploadSchemaService.deleteUploadSchemaById(studyId, existing.getIdentifier());
+                uploadSchemaService.deleteUploadSchemaByIdPermanently(studyId, existing.getIdentifier());
             } catch(EntityNotFoundException e) {
                 // This is OK. Just means this survey wasn't published.
             }

@@ -40,6 +40,7 @@ public class DynamoActivityEventDaoTest {
     @After
     public void after() {
         activityEventDao.deleteActivityEvents(healthCode);
+        assertEquals(0, activityEventDao.getActivityEventMap(healthCode).size());
     }
     
     @Test
@@ -89,11 +90,6 @@ public class DynamoActivityEventDaoTest {
         // an "either or" scheduling conflict. The user can only answer one way or another on a 
         // given question, even if the answer is updated.
         assertNull(map.get("question:DDD-EEE-FFF:answered=someAnswer"));
-        
-        activityEventDao.deleteActivityEvents(healthCode);
-        
-        map = activityEventDao.getActivityEventMap(healthCode);
-        assertEquals(0, map.size());
     }
     
     @Test

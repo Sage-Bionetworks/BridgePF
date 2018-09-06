@@ -10,6 +10,9 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
 import com.google.common.collect.ImmutableList;
@@ -57,6 +60,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         // schema rev from a previously existing one. It also means if they get a schema rev and then try to create
         // that schema rev again, we'll correctly throw a ConcurrentModificationException.
         ddbSchema.setVersion(null);
+        ddbSchema.setDeleted(false);
 
         // Call DDB to create.
         try {
@@ -70,21 +74,32 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
     /** {@inheritDoc} */
     @Override
     public void deleteUploadSchemas(List<UploadSchema> schemaList) {
+        for (UploadSchema schema : schemaList) {
+            schema.setDeleted(true);
+        }
+        List<DynamoDBMapper.FailedBatch> failureList = mapper.batchSave(schemaList);
+        BridgeUtils.ifFailuresThrowException(failureList);
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public void deleteUploadSchemasPermanently(List<UploadSchema> schemaList) {
         List<DynamoDBMapper.FailedBatch> failureList = mapper.batchDelete(schemaList);
         BridgeUtils.ifFailuresThrowException(failureList);
     }
 
     /** {@inheritDoc} */
     @Override
-    public List<UploadSchema> getAllUploadSchemasAllRevisions(StudyIdentifier studyId) {
+    public List<UploadSchema> getAllUploadSchemasAllRevisions(StudyIdentifier studyId, boolean includeDeleted) {
         DynamoUploadSchema hashKey = new DynamoUploadSchema();
         hashKey.setStudyId(studyId.getIdentifier());
-        return indexHelper(STUDY_ID_INDEX_NAME, hashKey);
+        return indexHelper(STUDY_ID_INDEX_NAME, hashKey, includeDeleted);
     }
 
     /** {@inheritDoc} */
     @Override
-    public List<UploadSchema> getUploadSchemaAllRevisionsById(StudyIdentifier studyId, String schemaId) {
+    public List<UploadSchema> getUploadSchemaAllRevisionsById(StudyIdentifier studyId, String schemaId,
+            boolean includeDeleted) {
         // Make hash key.
         DynamoUploadSchema key = new DynamoUploadSchema();
         key.setStudyId(studyId.getIdentifier());
@@ -93,6 +108,11 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         // Get all revisions, in reverse sort order (highest first)
         DynamoDBQueryExpression<DynamoUploadSchema> ddbQuery = new DynamoDBQueryExpression<DynamoUploadSchema>()
                 .withHashKeyValues(key).withScanIndexForward(false);
+        if (!includeDeleted) {
+            ddbQuery.withQueryFilterEntry("deleted", new Condition()
+                .withComparisonOperator(ComparisonOperator.NE)
+                .withAttributeValueList(new AttributeValue().withN("1")));
+        }
         List<DynamoUploadSchema> schemaList = queryHelper(ddbQuery);
 
         // Convert generic types.
@@ -146,7 +166,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
     // attributes. This can get pretty hairy. Long-term, we need to refactor this code into DynamoIndexHelper.
     // See https://sagebionetworks.jira.com/browse/BRIDGE-1467
     // Package-scoped to be available for spying in unit tests.
-    List<UploadSchema> indexHelper(String indexName, DynamoUploadSchema hashKey) {
+    List<UploadSchema> indexHelper(String indexName, DynamoUploadSchema hashKey, boolean includeDeleted) {
         // Note that consistent reads are not allowed for global secondary indices.
         DynamoDBQueryExpression<DynamoUploadSchema> query = new DynamoDBQueryExpression<DynamoUploadSchema>()
                 .withIndexName(indexName).withHashKeyValues(hashKey).withConsistentRead(false);
@@ -162,8 +182,10 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
                     throw new BridgeServiceException("DynamoDB returned objects of type " +
                             oneResult.getClass().getName() + " instead of DynamoUploadSchema");
                 }
-
-                schemaList.add((UploadSchema) oneResult);
+                UploadSchema oneSchema = (UploadSchema) oneResult;
+                if (!oneSchema.isDeleted() || includeDeleted) {
+                    schemaList.add(oneSchema);    
+                }
             }
         }
 

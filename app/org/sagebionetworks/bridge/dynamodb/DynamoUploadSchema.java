@@ -55,6 +55,7 @@ public class DynamoUploadSchema implements UploadSchema {
     private Long surveyCreatedOn;
     private String studyId;
     private Long version;
+    private boolean deleted;
 
     /** {@inheritDoc} */
     @DynamoDBIgnore
@@ -334,6 +335,15 @@ public class DynamoUploadSchema implements UploadSchema {
     /** @see #getVersion */
     public void setVersion(Long version) {
         this.version = version;
+    }
+    
+    @DynamoDBAttribute
+    public boolean isDeleted() {
+        return deleted;
+    }
+    
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
     }
 
     /** Custom DynamoDB marshaller for the field definition list. This uses Jackson to convert to and from JSON. */
