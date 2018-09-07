@@ -328,9 +328,8 @@ public class ParticipantService {
         }
         updateAccountAndRoles(study, callerRoles, account, participant);
         
-        // Only Admin and Worker accounts controlled by us should be able to bypass email verification. This is
-        // primarily used for integration tests, but is sometimes used to bootstrap external developers and
-        // researchers.
+        // Allow admin and worker accounts to toggle status; in particular, to disable/enable accounts. Note 
+        // however that admins can bypass phone/email verification as a result.
         if (participant.getStatus() != null) {
             if (callerRoles.contains(Roles.ADMIN) || callerRoles.contains(Roles.WORKER)) {
                 account.setStatus(participant.getStatus());

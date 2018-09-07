@@ -4,7 +4,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.ResourceList.START_TIME;
@@ -226,7 +225,7 @@ public class ParticipantController extends BaseController {
     }
     
     public Result getParticipant(String userId, boolean consents) throws Exception {
-        UserSession session = getAuthenticatedSession(ADMIN, RESEARCHER);
+        UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         AccountId accountId = BridgeUtils.parseAccountId(study.getIdentifier(), userId);
@@ -268,7 +267,7 @@ public class ParticipantController extends BaseController {
     }
     
     public Result updateParticipant(String userId) {
-        UserSession session = getAuthenticatedSession(ADMIN, RESEARCHER);
+        UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
