@@ -47,11 +47,13 @@ import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
+import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
@@ -142,6 +144,47 @@ public class ParticipantService {
     @Autowired
     final void setActivityEventService(ActivityEventService activityEventService) {
         this.activityEventService = activityEventService;
+    }
+
+    /**
+     * This is a developer API to backfill SMS notification registrations for a user. We generally prefer the app
+     * register notifications, but sometimes the work can't be done on time, so we want study developers to have the
+     * option of backfilling these.
+     */
+    public void createSmsNotificationRegistration(StudyIdentifier studyId, String userId) {
+        checkNotNull(studyId);
+        checkNotNull(userId);
+
+        // Account must have a verified phone number.
+        Account account = accountDao.getAccount(AccountId.forId(studyId.getIdentifier(), userId));
+        if (account.getPhoneVerified() != Boolean.TRUE) {
+            throw new BadRequestException("Can't create SMS notification registration for user " + userId +
+                    ": user has no verified phone number");
+        }
+
+        // We need the account's request info to build the criteria context.
+        RequestInfo requestInfo = cacheProvider.getRequestInfo(userId);
+        if (requestInfo == null) {
+            throw new BadRequestException("Can't create SMS notification registration for user " + userId +
+                    ": user has no request info");
+        }
+        CriteriaContext criteriaContext = new CriteriaContext.Builder()
+                .withStudyIdentifier(studyId)
+                .withUserId(userId)
+                .withHealthCode(account.getHealthCode())
+                .withClientInfo(requestInfo.getClientInfo())
+                .withLanguages(requestInfo.getLanguages())
+                .withUserDataGroups(requestInfo.getUserDataGroups())
+                .build();
+
+        // Create registration.
+        NotificationRegistration registration = NotificationRegistration.create();
+        registration.setHealthCode(account.getHealthCode());
+        registration.setProtocol(NotificationProtocol.SMS);
+        registration.setEndpoint(account.getPhone().getNumber());
+
+        // Create registration.
+        notificationsService.createRegistration(studyId, criteriaContext, registration);
     }
 
     public StudyParticipant getParticipant(Study study, AccountId accountId, boolean includeHistory) {
