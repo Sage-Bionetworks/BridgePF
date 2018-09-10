@@ -432,16 +432,15 @@ public class ParticipantService {
         }
     }
 
-    public void withdrawAllConsents(Study study, String userId, Withdrawal withdrawal, long withdrewOn) {
+    public void withdrawFromStudy(Study study, String userId, Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(study);
         checkNotNull(userId);
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
 
         StudyParticipant participant = getParticipant(study, userId, false);
-        CriteriaContext context = getCriteriaContextForParticipant(study, participant);
 
-        consentService.withdrawAllConsents(study, participant, context, withdrawal, withdrewOn);
+        consentService.withdrawFromStudy(study, participant, withdrawal, withdrewOn);
     }
 
     public void withdrawConsent(Study study, String userId,

@@ -289,31 +289,37 @@ public class ConsentService {
     }
     
     /**
-     * Withdraw user from any and all consents, and turn off sharing. Because a user's criteria for being included in a 
-     * consent can change over time, this is really the best method for ensuring a user is withdrawn from everything. 
-     * But in cases where there are studies with distinct and separate consents, you must selectively withdraw from 
-     * the consent for a specific subpopulation.
+     * Withdraw user from any and all consents, turn off sharing, unregister the device from any notifications, and 
+     * delete the identifiers of the account. Because a user's criteria for being included in a consent can change 
+     * over time, this is really the best method for ensuring a user is withdrawn from everything. But in cases where 
+     * there are studies with distinct and separate consents, you can also selectively withdraw from the consent for 
+     * a specific subpopulation without dropping out of the study.
      */
-    public Map<SubpopulationGuid, ConsentStatus> withdrawAllConsents(Study study, StudyParticipant participant,
-            CriteriaContext context, Withdrawal withdrawal, long withdrewOn) {
+    public void withdrawFromStudy(Study study, StudyParticipant participant, Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(study);
-        checkNotNull(context);
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
 
-        Account account = accountDao.getAccount(context.getAccountId());
+        AccountId accountId = AccountId.forId(study.getIdentifier(), participant.getId());
+        Account account = accountDao.getAccount(accountId);
         for (SubpopulationGuid subpopGuid : account.getAllConsentSignatureHistories().keySet()) {
             withdrawSignatures(account, subpopGuid, withdrewOn);
         }
+        sendWithdrawEmail(study, participant.getExternalId(), account, withdrawal, withdrewOn);
+        
+        // Forget this person. If the user registers again at a later date, it is as if they have created
+        // a new account. But we hold on to this record so we can still retrieve the consent records for a 
+        // given healthCode.
         account.setSharingScope(SharingScope.NO_SHARING);
-        accountDao.updateAccount(account, false);
+        account.setNotifyByEmail(false);
+        account.setEmail(null);
+        account.setEmailVerified(false);
+        account.setPhone(null);
+        account.setPhoneVerified(false);
+        account.setExternalId(null);
+        accountDao.updateAccount(account, true);
 
         notificationsService.deleteAllRegistrations(study.getStudyIdentifier(), participant.getHealthCode());
-
-        sendWithdrawEmail(study, participant.getExternalId(), account, withdrawal, withdrewOn);
-
-        // But we don't need to query, we know these are all withdraw.
-        return getConsentStatuses(context, account);
     }
 
     // Helper method, which abstracts away logic for sending withdraw notification email.

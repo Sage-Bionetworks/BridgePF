@@ -1136,12 +1136,11 @@ public class ParticipantServiceTest {
         Withdrawal withdrawal = new Withdrawal("Reasons");
         long withdrewOn = DateTime.now().getMillis();
         
-        participantService.withdrawAllConsents(STUDY, ID, withdrawal, withdrewOn);
+        participantService.withdrawFromStudy(STUDY, ID, withdrawal, withdrewOn);
         
-        verify(consentService).withdrawAllConsents(eq(STUDY), participantCaptor.capture(),
-            contextCaptor.capture(), eq(withdrawal), eq(withdrewOn));
+        verify(consentService).withdrawFromStudy(eq(STUDY), participantCaptor.capture(),
+            eq(withdrawal), eq(withdrewOn));
         assertEquals(ID, participantCaptor.getValue().getId());
-        assertEquals(ID, contextCaptor.getValue().getUserId());
     }
     
     @Test
@@ -1496,7 +1495,6 @@ public class ParticipantServiceTest {
         }
     }
     
-    @SuppressWarnings("unchecked")
     @Test
     public void usedExternalIdThrows() {
         mockHealthCodeAndAccountRetrieval();
@@ -1506,7 +1504,8 @@ public class ParticipantServiceTest {
         identifier.setHealthCode("AAA");
         when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(identifier);
         
-        when(accountDao.createAccount(any(), any())).thenThrow(new EntityAlreadyExistsException(Account.class, (String)null, (Map)null));
+        when(accountDao.createAccount(any(), any()))
+                .thenThrow(new EntityAlreadyExistsException(Account.class, (String) null, (Map<String, Object>) null));
         try {
             participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
             fail("Should have thrown exception");

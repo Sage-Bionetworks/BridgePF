@@ -436,19 +436,16 @@ public class ConsentControllerMockedTest {
     }
     
     @Test
-    public void canWithdrawFromAllConsents() throws Exception {
+    public void canWithdrawFromStudy() throws Exception {
         DateTimeUtils.setCurrentMillisFixed(20000);
         String json = createJson("{'reason':'There is a reason for everything.'}");
         TestUtils.mockPlayContextWithJson(json);
         
-        when(consentService.withdrawAllConsents(eq(study), eq(participant), eq(context), any(), anyInt()))
-                .thenAnswer(createAnswer(true, SUBPOP_GUID, DEFAULT_SUBPOP_GUID));
+        Result result = controller.withdrawFromStudy();
         
-        Result result = controller.withdrawFromAllConsents();
+        TestUtils.assertResult(result, 200, "Signed out.");
         
-        assertWithdrawnInSession(result, SharingScope.NO_SHARING, SUBPOP_GUID);
-        
-        verify(consentService).withdrawAllConsents(study, participant, context, new Withdrawal("There is a reason for everything."), 20000);
+        verify(consentService).withdrawFromStudy(study, participant, new Withdrawal("There is a reason for everything."), 20000);
     }
     
     @Test
@@ -636,7 +633,7 @@ public class ConsentControllerMockedTest {
     private void assertWithdrawnInSession(Result result, SharingScope sharingScope, SubpopulationGuid subpopGuid) throws Exception {
         TestUtils.assertResult(result, 200);
         JsonNode node = TestUtils.getJson(result);
-
+        
         assertEquals(USER_ID, node.get("id").asText());
         assertEquals(sharingScope.name().toLowerCase(), node.get("sharingScope").asText());
         assertEquals(sharingScope != SharingScope.NO_SHARING, node.get("dataSharing").asBoolean());

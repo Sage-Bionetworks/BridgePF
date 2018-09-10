@@ -330,13 +330,13 @@ public class ConsentServiceMockTest {
     }
 
     @Test
-    public void withdrawAllConsentsWithEmail() throws Exception {
+    public void withdrawFromStudyWithEmail() throws Exception {
         setupWithdrawTest();
         TestUtils.mockEditAccount(accountDao, account);
         
-        consentService.withdrawAllConsents(study, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON);
+        consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
-        verify(accountDao).updateAccount(accountCaptor.capture(), eq(false));
+        verify(accountDao).updateAccount(accountCaptor.capture(), eq(true));
         assertEquals(SharingScope.NO_SHARING, account.getSharingScope());
 
         ArgumentCaptor<MimeTypeEmailProvider> emailCaptor = ArgumentCaptor.forClass(MimeTypeEmailProvider.class);
@@ -353,6 +353,13 @@ public class ConsentServiceMockTest {
                 email.getMessageParts().get(0).getContent());
 
         Account updatedAccount = accountCaptor.getValue();
+        assertEquals(SharingScope.NO_SHARING, account.getSharingScope());
+        assertFalse(account.getNotifyByEmail());
+        assertNull(account.getEmail());
+        assertFalse(account.getEmailVerified());
+        assertNull(account.getPhone());
+        assertFalse(account.getPhoneVerified());
+        assertNull(account.getExternalId());
         for (List<ConsentSignature> signatures : updatedAccount.getAllConsentSignatureHistories().values()) {
             for (ConsentSignature sig : signatures) {
                 assertNotNull(sig.getWithdrewOn());
@@ -361,15 +368,15 @@ public class ConsentServiceMockTest {
     }
     
     @Test
-    public void withdrawAllConsentsWithPhone() {
+    public void withdrawFromStudyWithPhone() {
         TestUtils.mockEditAccount(accountDao, account);
         account.setPhone(TestConstants.PHONE);
         account.setHealthCode(PARTICIPANT.getHealthCode());
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
         
-        consentService.withdrawAllConsents(study, PHONE_PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON);
+        consentService.withdrawFromStudy(study, PHONE_PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
-        verify(accountDao).updateAccount(accountCaptor.capture(), eq(false));
+        verify(accountDao).updateAccount(accountCaptor.capture(), eq(true));
         assertEquals(SharingScope.NO_SHARING, account.getSharingScope());
         verify(sendMailService, never()).sendEmail(any(MimeTypeEmailProvider.class));
         
@@ -416,10 +423,10 @@ public class ConsentServiceMockTest {
     }
 
     @Test
-    public void withdrawAllWithNotificationEmailVerifiedNull() throws Exception {
+    public void withdrawFromStudyNotificationEmailVerifiedNull() throws Exception {
         setupWithdrawTest();
         study.setConsentNotificationEmailVerified(null);
-        consentService.withdrawAllConsents(study, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON);
+        consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
         // For backwards-compatibility, verified=null means the email is verified.
         verify(sendMailService).sendEmail(any(WithdrawConsentEmailProvider.class));
@@ -429,7 +436,7 @@ public class ConsentServiceMockTest {
     public void withdrawAllWithNotificationEmailVerifiedFalse() throws Exception {
         setupWithdrawTest();
         study.setConsentNotificationEmailVerified(false);
-        consentService.withdrawAllConsents(study, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON);
+        consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
         // verified=false means the email is never sent.
         verify(sendMailService, never()).sendEmail(any());
@@ -563,7 +570,7 @@ public class ConsentServiceMockTest {
         setupWithdrawTest(true, true);
         study.setConsentNotificationEmail(null);
         
-        consentService.withdrawAllConsents(study, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
+        consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, WITHDREW_ON);
         
         verify(sendMailService, never()).sendEmail(any());
     }
