@@ -28,7 +28,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
-
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -56,6 +56,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
+import play.mvc.Http.Response;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -439,13 +440,15 @@ public class ConsentControllerMockedTest {
     public void canWithdrawFromStudy() throws Exception {
         DateTimeUtils.setCurrentMillisFixed(20000);
         String json = createJson("{'reason':'There is a reason for everything.'}");
-        TestUtils.mockPlayContextWithJson(json);
+        Response mockResponse = TestUtils.mockPlayContextWithJson(json);
         
         Result result = controller.withdrawFromStudy();
         
         TestUtils.assertResult(result, 200, "Signed out.");
         
         verify(consentService).withdrawFromStudy(study, participant, new Withdrawal("There is a reason for everything."), 20000);
+        verify(authenticationService).signOut(session);
+        verify(mockResponse).discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
     }
     
     @Test
