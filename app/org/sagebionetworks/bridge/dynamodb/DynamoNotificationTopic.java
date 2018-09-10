@@ -25,6 +25,7 @@ public class DynamoNotificationTopic implements NotificationTopic {
     private long createdOn;
     private long modifiedOn;
     private Criteria criteria;
+    private boolean deleted;
     
     @DynamoDBHashKey
     @Override
@@ -103,17 +104,25 @@ public class DynamoNotificationTopic implements NotificationTopic {
     public void setModifiedOn(long modifiedOn) {
         this.modifiedOn = modifiedOn;
     }
-
     /** {@inheritDoc} */
     @DynamoDBIgnore
     @Override
     public Criteria getCriteria() {
         return criteria;
     }
-
     /** {@inheritDoc} */
     @Override
     public void setCriteria(Criteria criteria) {
         this.criteria = criteria;
+    }
+    /** {@inheritDoc} */
+    @Override
+    public boolean isDeleted() {
+        return deleted;
+    }
+    /** {@inheritDoc} */
+    @Override
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
     }
 }

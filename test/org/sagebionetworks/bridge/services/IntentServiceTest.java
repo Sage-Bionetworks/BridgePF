@@ -228,13 +228,13 @@ public class IntentServiceTest {
         
         when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         when(mockStudy.getIdentifier()).thenReturn(TestConstants.TEST_STUDY_IDENTIFIER);
-        when(mockSubpopService.getSubpopulations(TestConstants.TEST_STUDY))
+        when(mockSubpopService.getSubpopulations(TestConstants.TEST_STUDY, false))
                 .thenReturn(Lists.newArrayList(subpopA, subpopB));
         when(mockCacheProvider.getObject(key, IntentToParticipate.class)).thenReturn(intent);
         
         service.registerIntentToParticipate(mockStudy, account);
         
-        verify(mockSubpopService).getSubpopulations(TestConstants.TEST_STUDY);
+        verify(mockSubpopService).getSubpopulations(TestConstants.TEST_STUDY, false);
         verify(mockCacheProvider).removeObject(key);
         verify(mockConsentService).consentToResearch(eq(mockStudy), eq(SubpopulationGuid.create("BBB")), 
                 any(), eq(intent.getConsentSignature()), eq(intent.getScope()), eq(true));
@@ -282,7 +282,7 @@ public class IntentServiceTest {
         
         when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         when(mockStudy.getIdentifier()).thenReturn(TestConstants.TEST_STUDY_IDENTIFIER);
-        when(mockSubpopService.getSubpopulations(TestConstants.TEST_STUDY))
+        when(mockSubpopService.getSubpopulations(TestConstants.TEST_STUDY, false))
                 .thenReturn(Lists.newArrayList(subpopA, subpopB));
         when(mockCacheProvider.getObject(keyAAA, IntentToParticipate.class)).thenReturn(intentAAA);
         when(mockCacheProvider.getObject(keyBBB, IntentToParticipate.class)).thenReturn(intentBBB);
@@ -290,7 +290,7 @@ public class IntentServiceTest {
         
         service.registerIntentToParticipate(mockStudy, account);
         
-        verify(mockSubpopService).getSubpopulations(TestConstants.TEST_STUDY);
+        verify(mockSubpopService).getSubpopulations(TestConstants.TEST_STUDY, false);
         verify(mockCacheProvider).removeObject(keyAAA);
         verify(mockCacheProvider).removeObject(keyBBB);
         verify(mockConsentService).consentToResearch(eq(mockStudy), eq(SubpopulationGuid.create("AAA")), 
@@ -328,13 +328,13 @@ public class IntentServiceTest {
         
         when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         when(mockStudy.getIdentifier()).thenReturn(TestConstants.TEST_STUDY_IDENTIFIER);
-        when(mockSubpopService.getSubpopulations(TestConstants.TEST_STUDY))
+        when(mockSubpopService.getSubpopulations(TestConstants.TEST_STUDY, false))
                 .thenReturn(Lists.newArrayList(subpopA, subpopB));
         when(mockParticipantService.getParticipant(any(Study.class), any(String.class), eq(false))).thenReturn(participant);
         
         service.registerIntentToParticipate(mockStudy, account);
         
-        verify(mockSubpopService).getSubpopulations(TestConstants.TEST_STUDY);
+        verify(mockSubpopService).getSubpopulations(TestConstants.TEST_STUDY, false);
         verify(mockCacheProvider, never()).removeObject(key);
         verifyNoMoreInteractions(mockConsentService); 
     }

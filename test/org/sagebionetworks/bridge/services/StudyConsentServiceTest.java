@@ -75,7 +75,7 @@ public class StudyConsentServiceTest {
     @After
     public void after() {
         studyConsentDao.deleteAllConsents(subpopulation.getGuid());
-        subpopService.deleteSubpopulation(study.getStudyIdentifier(), subpopulation.getGuid(), true);
+        subpopService.deleteSubpopulationPermanently(study.getStudyIdentifier(), subpopulation.getGuid());
     }
 
     @Test

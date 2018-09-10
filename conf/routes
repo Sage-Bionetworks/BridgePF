@@ -103,7 +103,7 @@ POST   /v3/participants/:userId/signOut                                @org.sage
 POST   /v3/participants/:userId/requestResetPassword                   @org.sagebionetworks.bridge.play.controllers.ParticipantController.requestResetPassword(userId: String)
 POST   /v3/participants/:userId/resendEmailVerification                @org.sagebionetworks.bridge.play.controllers.ParticipantController.resendEmailVerification(userId: String)
 POST   /v3/participants/:userId/resendPhoneVerification                @org.sagebionetworks.bridge.play.controllers.ParticipantController.resendPhoneVerification(userId: String)
-POST   /v3/participants/:userId/consents/withdraw                      @org.sagebionetworks.bridge.play.controllers.ParticipantController.withdrawFromAllConsents(userId: String)
+POST   /v3/participants/:userId/consents/withdraw                      @org.sagebionetworks.bridge.play.controllers.ParticipantController.withdrawFromStudy(userId: String)
 POST   /v3/participants/:userId/consents/:guid/resendConsent           @org.sagebionetworks.bridge.play.controllers.ParticipantController.resendConsentAgreement(userId: String, guid: String)
 POST   /v3/participants/:userId/consents/:guid/withdraw                @org.sagebionetworks.bridge.play.controllers.ParticipantController.withdrawConsent(userId: String, guid: String)
 GET    /v3/participants/:userId/activityEvents                         @org.sagebionetworks.bridge.play.controllers.ParticipantController.getActivityEvents(userId: String)
@@ -124,7 +124,7 @@ POST   /v3/sharedmodules/metadata/:id/versions/:version @org.sagebionetworks.bri
 DELETE /v3/sharedmodules/metadata/:id/versions/:version @org.sagebionetworks.bridge.play.controllers.SharedModuleMetadataController.deleteMetadataByIdAndVersion(id: String, version: Int)
 
 # Study Subpopulations
-GET    /v3/subpopulations        @org.sagebionetworks.bridge.play.controllers.SubpopulationController.getAllSubpopulations
+GET    /v3/subpopulations        @org.sagebionetworks.bridge.play.controllers.SubpopulationController.getAllSubpopulations(includeDeleted: String ?= "false")
 POST   /v3/subpopulations        @org.sagebionetworks.bridge.play.controllers.SubpopulationController.createSubpopulation
 GET    /v3/subpopulations/:guid  @org.sagebionetworks.bridge.play.controllers.SubpopulationController.getSubpopulation(guid: String)
 POST   /v3/subpopulations/:guid  @org.sagebionetworks.bridge.play.controllers.SubpopulationController.updateSubpopulation(guid: String)
@@ -148,7 +148,7 @@ GET    /v3/consents/signature            @org.sagebionetworks.bridge.play.contro
 POST   /v3/consents/signature            @org.sagebionetworks.bridge.play.controllers.ConsentController.giveV2
 POST   /v3/consents/signature/withdraw   @org.sagebionetworks.bridge.play.controllers.ConsentController.withdrawConsent
 POST   /v3/consents/signature/email      @org.sagebionetworks.bridge.play.controllers.ConsentController.emailCopy
-POST   /v3/consents/withdraw             @org.sagebionetworks.bridge.play.controllers.ConsentController.withdrawFromAllConsents
+POST   /v3/consents/withdraw             @org.sagebionetworks.bridge.play.controllers.ConsentController.withdrawFromStudy
 GET    /v3/consents                      @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getAllConsents
 POST   /v3/consents                      @org.sagebionetworks.bridge.play.controllers.StudyConsentController.addConsent
 GET    /v3/consents/recent               @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getMostRecentConsent
@@ -236,11 +236,11 @@ GET    /v3/notifications/:guid/subscriptions  @org.sagebionetworks.bridge.play.c
 POST   /v3/notifications/:guid/subscriptions  @org.sagebionetworks.bridge.play.controllers.NotificationRegistrationController.subscribe(guid: String)
  
 # Topics
-GET    /v3/topics                        @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.getAllTopics
+GET    /v3/topics                        @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.getAllTopics(includeDeleted: String ?= "false")
 POST   /v3/topics                        @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.createTopic
 GET    /v3/topics/:guid                  @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.getTopic(guid: String)
 POST   /v3/topics/:guid                  @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.updateTopic(guid: String)
-DELETE /v3/topics/:guid                  @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.deleteTopic(guid: String)
+DELETE /v3/topics/:guid                  @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.deleteTopic(guid: String, physical: String ?= "false")
 POST   /v3/topics/:guid/sendNotification @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.sendNotification(guid: String)
 
 # AppConfigs
@@ -302,7 +302,7 @@ GET    /v3/backfill/:name          @org.sagebionetworks.bridge.play.controllers.
 POST   /v3/backfill/:name/start    @org.sagebionetworks.bridge.play.controllers.BackfillController.start(name: String)
  
 # Admin APIs for across studies
-POST   /v3/studies/:studyId/users                                       @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUserWithStudyId(studyId: String)
+POST   /v3/studies/:studyId/users  @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUserWithStudyId(studyId: String)
 
 # Cache Management
 GET    /v3/cache           @org.sagebionetworks.bridge.play.controllers.CacheAdminController.listItems

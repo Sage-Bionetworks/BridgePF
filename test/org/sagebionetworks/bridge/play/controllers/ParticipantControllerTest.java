@@ -766,9 +766,9 @@ public class ParticipantControllerTest {
             String json = "{\"reason\":\"Because, reasons.\"}";
             TestUtils.mockPlayContextWithJson(json);
             
-            controller.withdrawFromAllConsents(ID);
+            controller.withdrawFromStudy(ID);
             
-            verify(mockParticipantService).withdrawAllConsents(study, ID, new Withdrawal("Because, reasons."), 20000);
+            verify(mockParticipantService).withdrawFromStudy(study, ID, new Withdrawal("Because, reasons."), 20000);
         } finally {
             DateTimeUtils.setCurrentMillisSystem();
         }

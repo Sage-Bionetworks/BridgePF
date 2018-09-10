@@ -691,7 +691,7 @@ public class ParticipantServiceTest {
         subpop2.setPublishedConsentCreatedOn(CONSENT_PUBLICATION_DATE);
         
         subpopulations.add(subpop2);
-        when(subpopService.getSubpopulations(STUDY.getStudyIdentifier())).thenReturn(subpopulations);
+        when(subpopService.getSubpopulations(STUDY.getStudyIdentifier(), false)).thenReturn(subpopulations);
 
         when(subpopService.getSubpopulation(STUDY.getStudyIdentifier(), SUBPOP_GUID_1)).thenReturn(subpop1);
         when(subpopService.getSubpopulation(STUDY.getStudyIdentifier(), SUBPOP_GUID_2)).thenReturn(subpop2);
@@ -953,7 +953,7 @@ public class ParticipantServiceTest {
         
         doReturn(STUDY.getIdentifier()).when(subpopulation).getGuidString();
         doReturn(SUBPOP_GUID).when(subpopulation).getGuid();
-        doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(STUDY.getStudyIdentifier());
+        doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(STUDY.getStudyIdentifier(), false);
         
         StudyParticipant participant = participantService.getParticipant(STUDY, ID, false);
 
@@ -985,7 +985,7 @@ public class ParticipantServiceTest {
         
         doReturn(STUDY.getIdentifier()).when(subpopulation).getGuidString();
         doReturn(SUBPOP_GUID).when(subpopulation).getGuid();
-        doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(STUDY.getStudyIdentifier());
+        doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(STUDY.getStudyIdentifier(), false);
         
         StudyParticipant participant = participantService.getParticipant(STUDY, ID, true);
 
@@ -999,7 +999,7 @@ public class ParticipantServiceTest {
 
         doReturn(STUDY.getIdentifier()).when(subpopulation).getGuidString();
         doReturn(SUBPOP_GUID).when(subpopulation).getGuid();
-        doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(STUDY.getStudyIdentifier());
+        doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(STUDY.getStudyIdentifier(), false);
 
         // Execute and validate
         StudyParticipant participant = participantService.getParticipant(STUDY, ID, true);
@@ -1013,7 +1013,7 @@ public class ParticipantServiceTest {
 
         doReturn(STUDY.getIdentifier()).when(subpopulation).getGuidString();
         doReturn(SUBPOP_GUID).when(subpopulation).getGuid();
-        doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(STUDY.getStudyIdentifier());
+        doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(STUDY.getStudyIdentifier(), false);
 
         when(cacheProvider.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
 
@@ -1206,12 +1206,11 @@ public class ParticipantServiceTest {
         Withdrawal withdrawal = new Withdrawal("Reasons");
         long withdrewOn = DateTime.now().getMillis();
         
-        participantService.withdrawAllConsents(STUDY, ID, withdrawal, withdrewOn);
+        participantService.withdrawFromStudy(STUDY, ID, withdrawal, withdrewOn);
         
-        verify(consentService).withdrawAllConsents(eq(STUDY), participantCaptor.capture(),
-            contextCaptor.capture(), eq(withdrawal), eq(withdrewOn));
+        verify(consentService).withdrawFromStudy(eq(STUDY), participantCaptor.capture(),
+            eq(withdrawal), eq(withdrewOn));
         assertEquals(ID, participantCaptor.getValue().getId());
-        assertEquals(ID, contextCaptor.getValue().getUserId());
     }
     
     @Test
@@ -1566,7 +1565,6 @@ public class ParticipantServiceTest {
         }
     }
     
-    @SuppressWarnings("unchecked")
     @Test
     public void usedExternalIdThrows() {
         mockHealthCodeAndAccountRetrieval();
@@ -1576,7 +1574,8 @@ public class ParticipantServiceTest {
         identifier.setHealthCode("AAA");
         when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(identifier);
         
-        when(accountDao.createAccount(any(), any())).thenThrow(new EntityAlreadyExistsException(Account.class, (String)null, (Map)null));
+        when(accountDao.createAccount(any(), any()))
+                .thenThrow(new EntityAlreadyExistsException(Account.class, (String) null, (Map<String, Object>) null));
         try {
             participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
             fail("Should have thrown exception");

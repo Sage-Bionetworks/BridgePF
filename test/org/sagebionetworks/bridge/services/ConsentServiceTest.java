@@ -104,7 +104,7 @@ public class ConsentServiceTest {
         study = studyService.createStudy(study);
         
         // Default is always created, so use it for this test.
-        defaultSubpopulation = subpopService.getSubpopulations(study).get(0);
+        defaultSubpopulation = subpopService.getSubpopulations(study, false).get(0);
         
         testUser = helper.getBuilder(ConsentServiceTest.class).withStudy(study).withConsent(false).build();
         
@@ -427,8 +427,7 @@ public class ConsentServiceTest {
                 .count();
         assertEquals(2, count);
 
-        consentService.withdrawAllConsents(study, testUser.getStudyParticipant(), testUser.getCriteriaContext(),
-                WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
+        consentService.withdrawFromStudy(study, testUser.getStudyParticipant(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
         count = consentService.getConsentStatuses(context).values().stream().filter(ConsentStatus::isConsented).count();
         assertEquals(0, count);
     }

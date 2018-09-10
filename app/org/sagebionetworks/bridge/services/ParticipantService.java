@@ -243,7 +243,7 @@ public class ParticipantService {
 
         if (includeHistory) {
             Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
-            List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier());
+            List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier(), false);
             for (Subpopulation subpop : subpopulations) {
                 // always returns a list, even if empty
                 List<UserConsentHistory> history = getUserConsentHistory(account, subpop.getGuid());
@@ -475,16 +475,15 @@ public class ParticipantService {
         }
     }
 
-    public void withdrawAllConsents(Study study, String userId, Withdrawal withdrawal, long withdrewOn) {
+    public void withdrawFromStudy(Study study, String userId, Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(study);
         checkNotNull(userId);
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
 
         StudyParticipant participant = getParticipant(study, userId, false);
-        CriteriaContext context = getCriteriaContextForParticipant(study, participant);
 
-        consentService.withdrawAllConsents(study, participant, context, withdrawal, withdrewOn);
+        consentService.withdrawFromStudy(study, participant, withdrawal, withdrewOn);
     }
 
     public void withdrawConsent(Study study, String userId,

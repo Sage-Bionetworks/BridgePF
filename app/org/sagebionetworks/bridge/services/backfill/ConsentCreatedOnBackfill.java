@@ -47,7 +47,7 @@ public class ConsentCreatedOnBackfill extends AsyncBackfillTemplate {
         for (Study study : studies) {
             callback.newRecords(getBackfillRecordFactory().createOnly(task, "Examining study " + study.getIdentifier() + "..."));
             
-            List<Subpopulation> subpopulations = subpopulationService.getSubpopulations(study.getStudyIdentifier());
+            List<Subpopulation> subpopulations = subpopulationService.getSubpopulations(study.getStudyIdentifier(), true);
             for (Subpopulation subpopulation : subpopulations) {
                 StudyConsent consent = studyConsentDao.getConsent(subpopulation.getGuid(),
                         subpopulation.getPublishedConsentCreatedOn());

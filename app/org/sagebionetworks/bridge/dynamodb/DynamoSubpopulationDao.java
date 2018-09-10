@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableList;
 @Component
 public class DynamoSubpopulationDao implements SubpopulationDao {
     
+    private static final String CANNOT_DELETE_DEFAULT_SUBPOP_MSG = "Cannot delete the default subpopulation for a study.";
     private DynamoDBMapper mapper;
     private StudyConsentDao studyConsentDao;
     private CriteriaDao criteriaDao;
@@ -79,16 +80,17 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         }
         StudyIdentifier studyId = new StudyIdentifierImpl(subpop.getStudyIdentifier());
         Subpopulation existing = getSubpopulation(studyId, subpop.getGuid());
-        if (existing == null || existing.isDeleted()) {
+        if (existing.isDeleted() && subpop.isDeleted()) {
             throw new EntityNotFoundException(Subpopulation.class);
         }
-        
+        // You also can't set the deleted flag to deleted if this is the default subpopulation.
+        if (existing.isDefaultGroup() && subpop.isDeleted()) {
+            throw new BadRequestException(CANNOT_DELETE_DEFAULT_SUBPOP_MSG);
+        }
         Criteria criteria = persistCriteria(subpop);
         subpop.setCriteria(criteria);
+        subpop.setDefaultGroup(existing.isDefaultGroup());
         
-        // these are ignored if submitted. delete remains what it was
-        subpop.setDefaultGroup(existing.isDefaultGroup()); 
-        subpop.setDeleted(false);
         mapper.save(subpop);
         return subpop;
     }
@@ -102,7 +104,8 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
                 new DynamoDBQueryExpression<DynamoSubpopulation>().withHashKeyValues(hashKey);
         
         // Get all the records because we only create a default if there are no physical records, 
-        // regardless of the deletion status.
+        // regardless of the deletion status. This was a bootstrapping step and at this point, 
+        // no new studies will be created without a default subpopulation.
         List<DynamoSubpopulation> subpops = mapper.query(DynamoSubpopulation.class, query);
         if (createDefault && subpops.isEmpty()) {
             Subpopulation subpop = createDefaultSubpopulation(studyId);
@@ -157,23 +160,26 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     }
 
     @Override
-    public void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid, boolean physicalDelete,
-            boolean allowDeleteOfDefault) {
+    public void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
         Subpopulation subpop = getSubpopulation(studyId, subpopGuid);
-        if (subpop == null || (!physicalDelete && subpop.isDeleted())) {
+        
+        if (subpop.isDeleted()) {
             throw new EntityNotFoundException(Subpopulation.class);
         }
-        if (!allowDeleteOfDefault && subpop.isDefaultGroup()) {
-            throw new BadRequestException("Cannot delete the default subpopulation for a study.");
+        if (subpop.isDefaultGroup()) {
+            throw new BadRequestException(CANNOT_DELETE_DEFAULT_SUBPOP_MSG);
         }
-        if (physicalDelete) {
-            studyConsentDao.deleteAllConsents(subpopGuid);
-            criteriaDao.deleteCriteria(subpop.getCriteria().getKey());
-            mapper.delete(subpop);
-        } else {
-            subpop.setDeleted(true);
-            mapper.save(subpop);
-        }
+        subpop.setDeleted(true);
+        mapper.save(subpop);
+    }
+    
+    @Override
+    public void deleteSubpopulationPermanently(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
+        Subpopulation subpop = getSubpopulation(studyId, subpopGuid);
+        
+        studyConsentDao.deleteAllConsents(subpopGuid);
+        criteriaDao.deleteCriteria(subpop.getCriteria().getKey());
+        mapper.delete(subpop);
     }
     
     private String getKey(Subpopulation subpop) {
