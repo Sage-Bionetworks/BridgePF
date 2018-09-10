@@ -427,8 +427,7 @@ public class ConsentServiceTest {
                 .count();
         assertEquals(2, count);
 
-        consentService.withdrawAllConsents(study, testUser.getStudyParticipant(), testUser.getCriteriaContext(),
-                WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
+        consentService.withdrawFromStudy(study, testUser.getStudyParticipant(), WITHDRAWAL, WITHDRAWAL_TIMESTAMP);
         count = consentService.getConsentStatuses(context).values().stream().filter(ConsentStatus::isConsented).count();
         assertEquals(0, count);
     }

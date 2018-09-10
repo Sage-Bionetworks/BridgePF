@@ -27,7 +27,9 @@ public class WithdrawConsentEmailProvider extends MimeTypeEmailProvider {
     private static final String SUB_TYPE_HTML = "html";
 
     private final String externalId;
-    private final Account account;
+    private final String firstName;
+    private final String lastName;
+    private final String email;
     private final Withdrawal withdrawal;
     private final long withdrewOn;
     private final List<String> recipients;
@@ -35,7 +37,9 @@ public class WithdrawConsentEmailProvider extends MimeTypeEmailProvider {
     public WithdrawConsentEmailProvider(Study study, String externalId, Account account, Withdrawal withdrawal, long withdrewOn) {
         super(study);
         this.externalId = externalId;
-        this.account = account;
+        this.firstName = account.getFirstName();
+        this.lastName = account.getLastName();
+        this.email = account.getEmail();
         this.withdrawal = withdrawal;
         this.withdrewOn = withdrewOn;
         this.recipients = Lists.newArrayList();
@@ -85,8 +89,8 @@ public class WithdrawConsentEmailProvider extends MimeTypeEmailProvider {
     }
     
     private String getUserLabel() {
-        String label = String.format("%s %s &lt;%s&gt;", nullSafeCleanHtml(account.getFirstName()),
-                nullSafeCleanHtml(account.getLastName()), account.getEmail());
+        String label = String.format("%s %s &lt;%s&gt;", nullSafeCleanHtml(firstName), nullSafeCleanHtml(lastName),
+                email);
         if (externalId != null) {
             label += " (external ID: " + nullSafeCleanHtml(externalId) + ") ";
         }

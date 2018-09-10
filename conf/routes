@@ -102,7 +102,7 @@ POST   /v3/participants/:userId/signOut                                @org.sage
 POST   /v3/participants/:userId/requestResetPassword                   @org.sagebionetworks.bridge.play.controllers.ParticipantController.requestResetPassword(userId: String)
 POST   /v3/participants/:userId/resendEmailVerification                @org.sagebionetworks.bridge.play.controllers.ParticipantController.resendEmailVerification(userId: String)
 POST   /v3/participants/:userId/resendPhoneVerification                @org.sagebionetworks.bridge.play.controllers.ParticipantController.resendPhoneVerification(userId: String)
-POST   /v3/participants/:userId/consents/withdraw                      @org.sagebionetworks.bridge.play.controllers.ParticipantController.withdrawFromAllConsents(userId: String)
+POST   /v3/participants/:userId/consents/withdraw                      @org.sagebionetworks.bridge.play.controllers.ParticipantController.withdrawFromStudy(userId: String)
 POST   /v3/participants/:userId/consents/:guid/resendConsent           @org.sagebionetworks.bridge.play.controllers.ParticipantController.resendConsentAgreement(userId: String, guid: String)
 POST   /v3/participants/:userId/consents/:guid/withdraw                @org.sagebionetworks.bridge.play.controllers.ParticipantController.withdrawConsent(userId: String, guid: String)
 GET    /v3/participants/:userId/activityEvents                         @org.sagebionetworks.bridge.play.controllers.ParticipantController.getActivityEvents(userId: String)
@@ -147,7 +147,7 @@ GET    /v3/consents/signature            @org.sagebionetworks.bridge.play.contro
 POST   /v3/consents/signature            @org.sagebionetworks.bridge.play.controllers.ConsentController.giveV2
 POST   /v3/consents/signature/withdraw   @org.sagebionetworks.bridge.play.controllers.ConsentController.withdrawConsent
 POST   /v3/consents/signature/email      @org.sagebionetworks.bridge.play.controllers.ConsentController.emailCopy
-POST   /v3/consents/withdraw             @org.sagebionetworks.bridge.play.controllers.ConsentController.withdrawFromAllConsents
+POST   /v3/consents/withdraw             @org.sagebionetworks.bridge.play.controllers.ConsentController.withdrawFromStudy
 GET    /v3/consents                      @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getAllConsents
 POST   /v3/consents                      @org.sagebionetworks.bridge.play.controllers.StudyConsentController.addConsent
 GET    /v3/consents/recent               @org.sagebionetworks.bridge.play.controllers.StudyConsentController.getMostRecentConsent
@@ -301,7 +301,7 @@ GET    /v3/backfill/:name          @org.sagebionetworks.bridge.play.controllers.
 POST   /v3/backfill/:name/start    @org.sagebionetworks.bridge.play.controllers.BackfillController.start(name: String)
  
 # Admin APIs for across studies
-POST   /v3/studies/:studyId/users                                       @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUserWithStudyId(studyId: String)
+POST   /v3/studies/:studyId/users  @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUserWithStudyId(studyId: String)
 
 # Cache Management
 GET    /v3/cache           @org.sagebionetworks.bridge.play.controllers.CacheAdminController.listItems

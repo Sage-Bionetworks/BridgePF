@@ -357,14 +357,14 @@ public class ParticipantController extends BaseController {
         return okResult("Consent agreement resent to user.");
     }
     
-    public Result withdrawFromAllConsents(String userId) {
+    public Result withdrawFromStudy(String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
         Withdrawal withdrawal = parseJson(request(), Withdrawal.class);
         long withdrewOn = DateTime.now().getMillis();
         
-        participantService.withdrawAllConsents(study, userId, withdrawal, withdrewOn);
+        participantService.withdrawFromStudy(study, userId, withdrawal, withdrewOn);
         
         return okResult("User has been withdrawn from the study.");
     }
