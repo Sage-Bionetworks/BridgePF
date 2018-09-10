@@ -14,7 +14,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 public interface Subpopulation extends BridgeEntity {
     ObjectWriter SUBPOP_WRITER = new BridgeObjectMapper().writer(
             new SimpleFilterProvider().addFilter("filter",
-            SimpleBeanPropertyFilter.serializeAllExcept("studyIdentifier", "deleted")));
+            SimpleBeanPropertyFilter.serializeAllExcept("studyIdentifier")));
 
     static Subpopulation create() {
         return new DynamoSubpopulation();

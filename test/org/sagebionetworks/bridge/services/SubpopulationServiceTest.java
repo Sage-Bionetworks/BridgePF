@@ -271,7 +271,7 @@ public class SubpopulationServiceTest {
 
         when(subpopDao.getSubpopulations(TEST_STUDY, true, false)).thenReturn(ImmutableList.of(subpop1, subpop2));
         
-        List<Subpopulation> results = service.getSubpopulations(TEST_STUDY);
+        List<Subpopulation> results = service.getSubpopulations(TEST_STUDY, false);
         assertEquals(2, results.size());
         assertEquals(subpop1, results.get(0));
         assertEquals(subpop2, results.get(1));
@@ -289,12 +289,23 @@ public class SubpopulationServiceTest {
         assertEquals(subpop, result);
         verify(subpopDao).getSubpopulation(TEST_STUDY, SUBPOP_GUID);
     }
-    
+
     @Test
     public void deleteSubpopulation() {
-        service.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, true);
+        service.deleteSubpopulation(TEST_STUDY, SUBPOP_GUID);
         
-        verify(subpopDao).deleteSubpopulation(TEST_STUDY, SUBPOP_GUID, true, false);
+        verify(subpopDao).deleteSubpopulation(TEST_STUDY, SUBPOP_GUID);
+        verify(cacheProvider).removeObject(CacheKey.subpop(SUBPOP_GUID, TEST_STUDY));
+        verify(cacheProvider).removeObject(CacheKey.subpopList(TEST_STUDY));
+    }
+    
+    @Test
+    public void deleteSubpopulationPermanently() {
+        service.deleteSubpopulationPermanently(TEST_STUDY, SUBPOP_GUID);
+        
+        verify(subpopDao).deleteSubpopulationPermanently(TEST_STUDY, SUBPOP_GUID);
+        verify(cacheProvider).removeObject(CacheKey.subpop(SUBPOP_GUID, TEST_STUDY));
+        verify(cacheProvider).removeObject(CacheKey.subpopList(TEST_STUDY));
     }
     
     @Test
@@ -392,12 +403,12 @@ public class SubpopulationServiceTest {
         subpop1.setDefaultGroup(true);
         Subpopulation subpop2 = createSubpop(SUBPOP_2, null, null, null);
         
-        when(subpopDao.getSubpopulations(TEST_STUDY, true, false)).thenReturn(ImmutableList.of(subpop1, subpop2));
+        when(subpopDao.getSubpopulations(TEST_STUDY, true, true)).thenReturn(ImmutableList.of(subpop1, subpop2));
         
         service.deleteAllSubpopulations(TEST_STUDY);
         
-        verify(subpopDao).deleteSubpopulation(TEST_STUDY, subpop1.getGuid(), true, true);
-        verify(subpopDao).deleteSubpopulation(TEST_STUDY, subpop2.getGuid(), true, true);
+        verify(subpopDao).deleteSubpopulationPermanently(TEST_STUDY, subpop1.getGuid());
+        verify(subpopDao).deleteSubpopulationPermanently(TEST_STUDY, subpop2.getGuid());
         verify(cacheProvider).removeObject(CacheKey.subpop(subpop1.getGuid(), TEST_STUDY));
         verify(cacheProvider, times(2)).removeObject(CacheKey.subpopList(TEST_STUDY));
     }

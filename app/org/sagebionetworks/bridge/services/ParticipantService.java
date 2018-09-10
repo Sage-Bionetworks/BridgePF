@@ -200,7 +200,7 @@ public class ParticipantService {
 
         if (includeHistory) {
             Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
-            List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier());
+            List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier(), false);
             for (Subpopulation subpop : subpopulations) {
                 // always returns a list, even if empty
                 List<UserConsentHistory> history = getUserConsentHistory(account, subpop.getGuid());

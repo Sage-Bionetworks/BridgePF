@@ -9,7 +9,6 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -30,10 +29,10 @@ public class SubpopulationController extends BaseController {
         this.subpopService = subpopService;
     }
 
-    public Result getAllSubpopulations() throws Exception {
+    public Result getAllSubpopulations(String includeDeleted) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
-        List<Subpopulation> subpopulations = subpopService.getSubpopulations(session.getStudyIdentifier());
+        List<Subpopulation> subpopulations = subpopService.getSubpopulations(session.getStudyIdentifier(), Boolean.valueOf(includeDeleted));
         
         String ser = Subpopulation.SUBPOP_WRITER.writeValueAsString(new ResourceList<Subpopulation>(subpopulations));
         return ok(ser).as(BridgeConstants.JSON_MIME_TYPE);
@@ -67,20 +66,16 @@ public class SubpopulationController extends BaseController {
         String ser = Subpopulation.SUBPOP_WRITER.writeValueAsString(subpop);
         return ok(ser).as(BridgeConstants.JSON_MIME_TYPE);
     }
-    public Result deleteSubpopulation(String guid, String physicalDeleteString) {
+    public Result deleteSubpopulation(String guid, String physical) {
         UserSession session = getAuthenticatedSession(ADMIN, DEVELOPER);
 
-        // Only admins can request a physical delete.
-        boolean physicalDelete = ("true".equals(physicalDeleteString));
-        if (physicalDelete && !session.isInRole(ADMIN)) {
-            throw new UnauthorizedException();
-        }
-        
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
-        subpopService.deleteSubpopulation(session.getStudyIdentifier(), subpopGuid, physicalDelete);
-
-        String message = (physicalDelete) ? "Subpopulation has been permanently deleted." : "Subpopulation has been deleted.";
-        return okResult(message);
+        if ("true".equals(physical) && session.isInRole(ADMIN)) {
+            subpopService.deleteSubpopulationPermanently(session.getStudyIdentifier(), subpopGuid);
+        } else {
+            subpopService.deleteSubpopulation(session.getStudyIdentifier(), subpopGuid);
+        }
+        return okResult("Subpopulation has been deleted.");
     }
 
 }

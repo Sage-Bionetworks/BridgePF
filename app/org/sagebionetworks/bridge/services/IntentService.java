@@ -129,7 +129,7 @@ public class IntentService {
         }
         boolean consentsUpdated = false;
         StudyParticipant participant = null;
-        List<Subpopulation> subpops = subpopService.getSubpopulations(study.getStudyIdentifier());
+        List<Subpopulation> subpops = subpopService.getSubpopulations(study.getStudyIdentifier(), false);
         for (Subpopulation subpop : subpops) {
             CacheKey cacheKey = CacheKey.itp(subpop.getGuid(), study.getStudyIdentifier(), phone);
             IntentToParticipate intent = cacheProvider.getObject(cacheKey, IntentToParticipate.class);

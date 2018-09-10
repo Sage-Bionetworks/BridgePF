@@ -104,7 +104,7 @@ public class ConsentServiceTest {
         study = studyService.createStudy(study);
         
         // Default is always created, so use it for this test.
-        defaultSubpopulation = subpopService.getSubpopulations(study).get(0);
+        defaultSubpopulation = subpopService.getSubpopulations(study, false).get(0);
         
         testUser = helper.getBuilder(ConsentServiceTest.class).withStudy(study).withConsent(false).build();
         
