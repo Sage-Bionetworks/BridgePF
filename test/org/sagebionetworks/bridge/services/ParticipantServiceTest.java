@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Before;
@@ -72,6 +73,8 @@ import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
+import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
+import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -486,6 +489,115 @@ public class ParticipantServiceTest {
         assertEquals(AccountStatus.ENABLED, account.getStatus());
         assertNull(account.getPhoneVerified());
         assertNull(account.getEmailVerified());
+    }
+
+    @Test
+    public void createSmsNotificationRegistration_PhoneNotVerified() {
+        // Mock account w/ email but no phone.
+        mockHealthCodeAndAccountRetrieval(EMAIL, null);
+        account.setPhoneVerified(null);
+
+        // Execute.
+        try {
+            participantService.createSmsRegistration(STUDY, ID);
+            fail("expected exception");
+        } catch (BadRequestException ex) {
+            // Verify error message.
+            assertTrue(ex.getMessage().contains("user has no verified phone number"));
+        }
+    }
+
+    @Test
+    public void createSmsNotificationRegistration_NoRequestInfo() {
+        // Mock account w/ phone.
+        mockHealthCodeAndAccountRetrieval(null, PHONE);
+        account.setPhoneVerified(true);
+
+        // Mock request info to return null.
+        when(cacheProvider.getRequestInfo(ID)).thenReturn(null);
+
+        // Execute.
+        try {
+            participantService.createSmsRegistration(STUDY, ID);
+            fail("expected exception");
+        } catch (BadRequestException ex) {
+            // Verify error message.
+            assertTrue(ex.getMessage().contains("user has no request info"));
+        }
+    }
+
+    @Test
+    public void createSmsNotificationRegistration_NotConsented() {
+        // Mock account w/ phone.
+        mockHealthCodeAndAccountRetrieval(null, PHONE);
+        account.setPhoneVerified(true);
+
+        // Mock request info.
+        when(cacheProvider.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
+
+        // Mock subpop service.
+        when(subpopulation.getGuid()).thenReturn(SUBPOP_GUID);
+        when(subpopulation.getGuidString()).thenReturn(SUBPOP_GUID.getGuid());
+        when(subpopService.getSubpopulations(TestConstants.TEST_STUDY, false)).thenReturn(
+                ImmutableList.of(subpopulation));
+
+        // Mock consent service
+        ConsentStatus consentStatus = new ConsentStatus.Builder().withName("My Consent").withGuid(SUBPOP_GUID)
+                .withRequired(true).withConsented(false).withSignedMostRecentConsent(false).build();
+        when(consentService.getConsentStatuses(any(), any())).thenReturn(ImmutableMap.of(SUBPOP_GUID, consentStatus));
+
+        // Execute.
+        try {
+            participantService.createSmsRegistration(STUDY, ID);
+            fail("expected exception");
+        } catch (BadRequestException ex) {
+            // Verify error message.
+            assertTrue(ex.getMessage().contains("user is not consented"));
+        }
+    }
+
+    @Test
+    public void createSmsNotificationRegistration_Success() {
+        // Mock account w/ phone.
+        mockHealthCodeAndAccountRetrieval(null, PHONE);
+        account.setPhoneVerified(true);
+
+        // Mock request info.
+        when(cacheProvider.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
+
+        // Mock subpop service.
+        when(subpopulation.getGuid()).thenReturn(SUBPOP_GUID);
+        when(subpopulation.getGuidString()).thenReturn(SUBPOP_GUID.getGuid());
+        when(subpopService.getSubpopulations(TestConstants.TEST_STUDY, false)).thenReturn(
+                ImmutableList.of(subpopulation));
+
+        // Mock consent service
+        ConsentStatus consentStatus = new ConsentStatus.Builder().withName("My Consent").withGuid(SUBPOP_GUID)
+                .withRequired(true).withConsented(true).withSignedMostRecentConsent(false).build();
+        when(consentService.getConsentStatuses(any(), any())).thenReturn(ImmutableMap.of(SUBPOP_GUID, consentStatus));
+
+        // Execute.
+        participantService.createSmsRegistration(STUDY, ID);
+
+        // Verify.
+        ArgumentCaptor<CriteriaContext> criteriaContextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
+        ArgumentCaptor<NotificationRegistration> registrationCaptor = ArgumentCaptor.forClass(
+                NotificationRegistration.class);
+        verify(notificationsService).createRegistration(eq(TestConstants.TEST_STUDY), criteriaContextCaptor.capture(),
+                registrationCaptor.capture());
+
+        CriteriaContext criteriaContext = criteriaContextCaptor.getValue();
+        assertEquals(TestConstants.TEST_STUDY, criteriaContext.getStudyIdentifier());
+        assertEquals(ID, criteriaContext.getUserId());
+        assertEquals(HEALTH_CODE, criteriaContext.getHealthCode());
+        assertEquals(CLIENT_INFO, criteriaContext.getClientInfo());
+        assertEquals(TestConstants.LANGUAGES, criteriaContext.getLanguages());
+        assertEquals(TestConstants.USER_DATA_GROUPS, criteriaContext.getUserDataGroups());
+
+        NotificationRegistration registration = registrationCaptor.getValue();
+        assertEquals(HEALTH_CODE, registration.getHealthCode());
+        assertEquals(NotificationProtocol.SMS, registration.getProtocol());
+        assertEquals(PHONE.getNumber(), registration.getEndpoint());
     }
 
     @Test
