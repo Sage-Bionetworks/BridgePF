@@ -254,11 +254,11 @@ public class ParticipantControllerTest {
                 .withRoles(ImmutableSet.of(Roles.RESEARCHER)).build());
 
         // Execute.
-        Result result = controller.createSmsNotificationRegistration(ID);
+        Result result = controller.createSmsRegistration(ID);
         assertResult(result, 201, "SMS notification registration created");
 
         // Verify dependent services.
-        verify(mockParticipantService).createSmsNotificationRegistration(TestConstants.TEST_STUDY, ID);
+        verify(mockParticipantService).createSmsRegistration(study, ID);
     }
 
     @SuppressWarnings("deprecation")

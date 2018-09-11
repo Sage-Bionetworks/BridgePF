@@ -75,11 +75,13 @@ public class ParticipantController extends BaseController {
         this.userAdminService = userAdminService;
     }
 
-    /** Developer API to allow backfill of SMS notification registrations. */
+    /** Researcher API to allow backfill of SMS notification registrations. */
     @BodyParser.Of(BodyParser.Empty.class)
-    public Result createSmsNotificationRegistration(String userId) {
+    public Result createSmsRegistration(String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        participantService.createSmsNotificationRegistration(session.getStudyIdentifier(), userId);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+
+        participantService.createSmsRegistration(study, userId);
         return createdResult("SMS notification registration created");
     }
 

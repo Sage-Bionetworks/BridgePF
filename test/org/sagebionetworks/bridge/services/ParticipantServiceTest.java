@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Before;
@@ -498,7 +499,7 @@ public class ParticipantServiceTest {
 
         // Execute.
         try {
-            participantService.createSmsNotificationRegistration(TestConstants.TEST_STUDY, ID);
+            participantService.createSmsRegistration(STUDY, ID);
             fail("expected exception");
         } catch (BadRequestException ex) {
             // Verify error message.
@@ -517,11 +518,41 @@ public class ParticipantServiceTest {
 
         // Execute.
         try {
-            participantService.createSmsNotificationRegistration(TestConstants.TEST_STUDY, ID);
+            participantService.createSmsRegistration(STUDY, ID);
             fail("expected exception");
         } catch (BadRequestException ex) {
             // Verify error message.
             assertTrue(ex.getMessage().contains("user has no request info"));
+        }
+    }
+
+    @Test
+    public void createSmsNotificationRegistration_NotConsented() {
+        // Mock account w/ phone.
+        mockHealthCodeAndAccountRetrieval(null, PHONE);
+        account.setPhoneVerified(true);
+
+        // Mock request info.
+        when(cacheProvider.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
+
+        // Mock subpop service.
+        when(subpopulation.getGuid()).thenReturn(SUBPOP_GUID);
+        when(subpopulation.getGuidString()).thenReturn(SUBPOP_GUID.getGuid());
+        when(subpopService.getSubpopulations(TestConstants.TEST_STUDY, false)).thenReturn(
+                ImmutableList.of(subpopulation));
+
+        // Mock consent service
+        ConsentStatus consentStatus = new ConsentStatus.Builder().withName("My Consent").withGuid(SUBPOP_GUID)
+                .withRequired(true).withConsented(false).withSignedMostRecentConsent(false).build();
+        when(consentService.getConsentStatuses(any(), any())).thenReturn(ImmutableMap.of(SUBPOP_GUID, consentStatus));
+
+        // Execute.
+        try {
+            participantService.createSmsRegistration(STUDY, ID);
+            fail("expected exception");
+        } catch (BadRequestException ex) {
+            // Verify error message.
+            assertTrue(ex.getMessage().contains("user is not consented"));
         }
     }
 
@@ -531,11 +562,22 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval(null, PHONE);
         account.setPhoneVerified(true);
 
-        // Mock request info to return null.
+        // Mock request info.
         when(cacheProvider.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
 
+        // Mock subpop service.
+        when(subpopulation.getGuid()).thenReturn(SUBPOP_GUID);
+        when(subpopulation.getGuidString()).thenReturn(SUBPOP_GUID.getGuid());
+        when(subpopService.getSubpopulations(TestConstants.TEST_STUDY, false)).thenReturn(
+                ImmutableList.of(subpopulation));
+
+        // Mock consent service
+        ConsentStatus consentStatus = new ConsentStatus.Builder().withName("My Consent").withGuid(SUBPOP_GUID)
+                .withRequired(true).withConsented(true).withSignedMostRecentConsent(false).build();
+        when(consentService.getConsentStatuses(any(), any())).thenReturn(ImmutableMap.of(SUBPOP_GUID, consentStatus));
+
         // Execute.
-        participantService.createSmsNotificationRegistration(TestConstants.TEST_STUDY, ID);
+        participantService.createSmsRegistration(STUDY, ID);
 
         // Verify.
         ArgumentCaptor<CriteriaContext> criteriaContextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
