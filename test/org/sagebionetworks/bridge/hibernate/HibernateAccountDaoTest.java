@@ -414,6 +414,30 @@ public class HibernateAccountDaoTest {
         // execute
         dao.changePassword(account, ChannelType.EMAIL, DUMMY_PASSWORD);
     }
+    
+    @Test
+    public void changePasswordForExternalId() {
+        // mock hibernate
+        HibernateAccount hibernateAccount = new HibernateAccount();
+        hibernateAccount.setId(ACCOUNT_ID);
+        hibernateAccount.setStatus(AccountStatus.UNVERIFIED);
+        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
+
+        // Set up test account
+        GenericAccount account = new GenericAccount();
+        account.setId(ACCOUNT_ID);
+
+        // execute and verify
+        dao.changePassword(account, null, DUMMY_PASSWORD);
+        ArgumentCaptor<HibernateAccount> updatedAccountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
+        verify(mockHibernateHelper).update(updatedAccountCaptor.capture());
+
+        // Simpler than changePasswordSuccess() test as we're only verifying phone is verified
+        HibernateAccount updatedAccount = updatedAccountCaptor.getValue();
+        assertNull(updatedAccount.getEmailVerified());
+        assertNull(updatedAccount.getPhoneVerified());
+        assertEquals(AccountStatus.ENABLED, updatedAccount.getStatus());
+    }
 
     @Test
     public void authenticateSuccessWithHealthCode() throws Exception {

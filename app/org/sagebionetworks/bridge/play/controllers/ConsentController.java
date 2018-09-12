@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.play.controllers;
 import java.util.Map;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -114,20 +115,17 @@ public class ConsentController extends BaseController {
         return okResult(UserSessionInfo.toJSON(session));
     }
     
-    public Result withdrawFromAllConsents() {
+    public Result withdrawFromStudy() {
         final UserSession session = getAuthenticatedSession();
         final Withdrawal withdrawal = parseJson(request(), Withdrawal.class);
         final Study study = studyService.getStudy(session.getStudyIdentifier());
         final long withdrewOn = DateTime.now().getMillis();
         
-        CriteriaContext context = getCriteriaContext(session);
+        consentService.withdrawFromStudy(study, session.getParticipant(), withdrawal, withdrewOn);
         
-        Map<SubpopulationGuid, ConsentStatus> statuses = consentService.withdrawAllConsents(study, session.getParticipant(),
-                context, withdrawal, withdrewOn);
-        
-        sessionUpdateService.updateConsentStatus(session, statuses, SharingScope.NO_SHARING, true);
-        
-        return okResult(UserSessionInfo.toJSON(session)); 
+        authenticationService.signOut(session);
+        response().discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
+        return okResult("Signed out.");
     }
     
     @BodyParser.Of(BodyParser.Empty.class)

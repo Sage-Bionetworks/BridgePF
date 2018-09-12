@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestUtils.getNotificationMessage;
 import static org.sagebionetworks.bridge.TestUtils.getNotificationRegistration;
@@ -186,64 +184,6 @@ public class NotificationsServiceTest {
         NotificationRegistration registration = getSmsNotificationRegistration();
         registration.setEndpoint("+14255550123");
         service.createRegistration(STUDY_ID, DUMMY_CONTEXT, registration);
-    }
-
-    @Test
-    public void createSmsRegistrationAfterConsent_PhoneNotVerified() {
-        // Execute.
-        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withHealthCode(HEALTH_CODE)
-                .withPhone(TestConstants.PHONE).withPhoneVerified(null).build();
-        service.createSmsRegistrationAfterConsent(participant, DUMMY_CONTEXT);
-
-        // Verify we don't call backends.
-        verifyZeroInteractions(mockNotificationTopicService);
-        verifyZeroInteractions(mockRegistrationDao);
-    }
-
-    @Test
-    public void createSmsRegistrationAfterConsent_AlreadyRegistered() {
-        // Mock registration dao with SMS registration.
-        when(mockRegistrationDao.listRegistrations(HEALTH_CODE)).thenReturn(ImmutableList.of(
-                getSmsNotificationRegistration()));
-
-        // Execute.
-        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withHealthCode(HEALTH_CODE)
-                .withPhone(TestConstants.PHONE).withPhoneVerified(true).build();
-        service.createSmsRegistrationAfterConsent(participant, DUMMY_CONTEXT);
-
-        // Verify we don't call backends.
-        verifyZeroInteractions(mockNotificationTopicService);
-
-        verify(mockRegistrationDao).listRegistrations(HEALTH_CODE);
-        verifyNoMoreInteractions(mockRegistrationDao);
-    }
-
-    @Test
-    public void createSmsRegistrationAfterConsent() {
-        // Mock registration DAO.
-        when(mockRegistrationDao.listRegistrations(HEALTH_CODE)).thenReturn(ImmutableList.of());
-
-        when(mockRegistrationDao.createRegistration(any())).thenAnswer(invocation -> invocation.getArgumentAt(
-                0, NotificationRegistration.class));
-
-        // Mock participant service.
-        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withHealthCode(HEALTH_CODE)
-                .withPhone(TestConstants.PHONE).withPhoneVerified(true).build();
-        when(mockParticipantService.getParticipant(mockStudy, USER_ID, false)).thenReturn(participant);
-
-        // Execute.
-        service.createSmsRegistrationAfterConsent(participant, DUMMY_CONTEXT);
-
-        // Verify dependencies.
-        ArgumentCaptor<NotificationRegistration> registrationCaptor = ArgumentCaptor.forClass(
-                NotificationRegistration.class);
-        verify(mockRegistrationDao).createRegistration(registrationCaptor.capture());
-        NotificationRegistration registration = registrationCaptor.getValue();
-        assertEquals(HEALTH_CODE, registration.getHealthCode());
-        assertEquals(NotificationProtocol.SMS, registration.getProtocol());
-        assertEquals(TestConstants.PHONE.getNumber(), registration.getEndpoint());
-
-        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(STUDY_ID, DUMMY_CONTEXT, HEALTH_CODE);
     }
 
     @Test

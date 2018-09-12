@@ -133,4 +133,12 @@ public interface UploadSchema extends BridgeEntity {
 
     /** @see #getStudyId */
     void setStudyId(String studyId);
+    
+    /**
+     * Is this schema revision marked as deleted?
+     */
+    boolean isDeleted();
+    
+    /** @see #isDeleted */
+    void setDeleted(boolean deleted);
 }

@@ -167,10 +167,14 @@ public class HibernateAccountDao implements AccountDao {
         if (channelType == ChannelType.EMAIL) {
             hibernateAccount.setStatus(AccountStatus.ENABLED);
             hibernateAccount.setEmailVerified(true);    
-        }
-        if (channelType == ChannelType.PHONE) {
+        } else if (channelType == ChannelType.PHONE) {
             hibernateAccount.setStatus(AccountStatus.ENABLED);
             hibernateAccount.setPhoneVerified(true);    
+        } else if (channelType == null) {
+            // If there's no channel type, we're assuming a password-based sign-in using
+            // external ID (the third identifying credential that can be used), so here
+            // we will enable the account.
+            hibernateAccount.setStatus(AccountStatus.ENABLED);
         }
         hibernateHelper.update(hibernateAccount);
     }

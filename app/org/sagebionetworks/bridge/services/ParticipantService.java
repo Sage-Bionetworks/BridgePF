@@ -47,6 +47,7 @@ import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
+import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
@@ -144,6 +145,54 @@ public class ParticipantService {
         this.activityEventService = activityEventService;
     }
 
+    /**
+     * This is a researcher API to backfill SMS notification registrations for a user. We generally prefer the app
+     * register notifications, but sometimes the work can't be done on time, so we want study developers to have the
+     * option of backfilling these.
+     */
+    public void createSmsRegistration(Study study, String userId) {
+        checkNotNull(study);
+        checkNotNull(userId);
+
+        // Account must have a verified phone number.
+        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), userId));
+        if (account.getPhoneVerified() != Boolean.TRUE) {
+            throw new BadRequestException("Can't create SMS notification registration for user " + userId +
+                    ": user has no verified phone number");
+        }
+
+        // We need the account's request info to build the criteria context.
+        RequestInfo requestInfo = cacheProvider.getRequestInfo(userId);
+        if (requestInfo == null) {
+            throw new BadRequestException("Can't create SMS notification registration for user " + userId +
+                    ": user has no request info");
+        }
+        CriteriaContext criteriaContext = new CriteriaContext.Builder()
+                .withStudyIdentifier(study.getStudyIdentifier())
+                .withUserId(userId)
+                .withHealthCode(account.getHealthCode())
+                .withClientInfo(requestInfo.getClientInfo())
+                .withLanguages(requestInfo.getLanguages())
+                .withUserDataGroups(requestInfo.getUserDataGroups())
+                .build();
+
+        // Participant must be consented.
+        StudyParticipant participant = getParticipant(study, account, true);
+        if (participant.isConsented() != Boolean.TRUE) {
+            throw new BadRequestException("Can't create SMS notification registration for user " + userId +
+                    ": user is not consented");
+        }
+
+        // Create registration.
+        NotificationRegistration registration = NotificationRegistration.create();
+        registration.setHealthCode(account.getHealthCode());
+        registration.setProtocol(NotificationProtocol.SMS);
+        registration.setEndpoint(account.getPhone().getNumber());
+
+        // Create registration.
+        notificationsService.createRegistration(study.getStudyIdentifier(), criteriaContext, registration);
+    }
+
     public StudyParticipant getParticipant(Study study, AccountId accountId, boolean includeHistory) {
         Account account = accountDao.getAccount(accountId);
         if (account == null) {
@@ -200,7 +249,7 @@ public class ParticipantService {
 
         if (includeHistory) {
             Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
-            List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier());
+            List<Subpopulation> subpopulations = subpopService.getSubpopulations(study.getStudyIdentifier(), false);
             for (Subpopulation subpop : subpopulations) {
                 // always returns a list, even if empty
                 List<UserConsentHistory> history = getUserConsentHistory(account, subpop.getGuid());
@@ -270,24 +319,25 @@ public class ParticipantService {
                 participant.getExternalId(), participant.getPassword());
 
         updateAccountAndRoles(study, callerRoles, account, participant);
-
-        account.setStatus(AccountStatus.ENABLED);
+        
+        account.setStatus(AccountStatus.UNVERIFIED);
 
         // enabled unless we need any kind of verification
         boolean sendEmailVerification = shouldSendVerification && study.isEmailVerificationEnabled();
-        if (participant.getEmail() != null) {
-            if (sendEmailVerification) {
-                account.setStatus(AccountStatus.UNVERIFIED);
-            } else {
-                account.setEmailVerified(true); // not verifying, so consider it verified if it exists
-            }
+        if (participant.getEmail() != null && !sendEmailVerification) {
+            // not verifying, so consider it verified
+            account.setEmailVerified(true); 
+            account.setStatus(AccountStatus.ENABLED);
         }
-        if (participant.getPhone() != null) {
-            if (shouldSendVerification) {
-                account.setStatus(AccountStatus.UNVERIFIED);
-            } else {
-                account.setPhoneVerified(true); // not verifying, so consider it verified if it exists
-            }
+        if (participant.getPhone() != null && !shouldSendVerification) {
+            // not verifying, so consider it verified
+            account.setPhoneVerified(true); 
+            account.setStatus(AccountStatus.ENABLED);
+        }
+        // If external ID only was provided, then the account will need to be enabled through use of the 
+        // the AuthenticationService.generatePassword() pathway.
+        if (shouldEnableCompleteExternalIdAccount(participant)) {
+            account.setStatus(AccountStatus.ENABLED);
         }
         String accountId = accountDao.createAccount(study, account);
         externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());    
@@ -301,6 +351,11 @@ public class ParticipantService {
             accountWorkflowService.sendPhoneVerificationToken(study, accountId, account.getPhone());
         }
         return new IdentifierHolder(accountId);
+    }
+    
+    private boolean shouldEnableCompleteExternalIdAccount(StudyParticipant participant) {
+        return participant.getEmail() == null && participant.getPhone() == null && 
+            participant.getExternalId() != null && participant.getPassword() != null;
     }
 
     public void updateParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant) {
@@ -322,9 +377,8 @@ public class ParticipantService {
         }
         updateAccountAndRoles(study, callerRoles, account, participant);
         
-        // Only Admin and Worker accounts controlled by us should be able to bypass email verification. This is
-        // primarily used for integration tests, but is sometimes used to bootstrap external developers and
-        // researchers.
+        // Allow admin and worker accounts to toggle status; in particular, to disable/enable accounts. Note 
+        // however that admins can bypass phone/email verification as a result.
         if (participant.getStatus() != null) {
             if (callerRoles.contains(Roles.ADMIN) || callerRoles.contains(Roles.WORKER)) {
                 account.setStatus(participant.getStatus());
@@ -427,16 +481,15 @@ public class ParticipantService {
         }
     }
 
-    public void withdrawAllConsents(Study study, String userId, Withdrawal withdrawal, long withdrewOn) {
+    public void withdrawFromStudy(Study study, String userId, Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(study);
         checkNotNull(userId);
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
 
         StudyParticipant participant = getParticipant(study, userId, false);
-        CriteriaContext context = getCriteriaContextForParticipant(study, participant);
 
-        consentService.withdrawAllConsents(study, participant, context, withdrawal, withdrewOn);
+        consentService.withdrawFromStudy(study, participant, withdrawal, withdrewOn);
     }
 
     public void withdrawConsent(Study study, String userId,

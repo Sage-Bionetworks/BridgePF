@@ -62,20 +62,26 @@ public class UploadSchemaController extends BaseController {
         return okResult(UploadSchema.PUBLIC_SCHEMA_WRITER, createdSchema);
     }
 
-    /**
-     * Admin API to delete all revisions of a schema with the given schema ID in the given study. If the schema doesn't
-     * exist, this API throws a 404 exception.
-     *
-     * @param studyId
-     *         study ID that the schema lives in
-     * @param schemaId
-     *         schema to delete
-     * @return Play result with the OK message
-     */
-    public Result deleteAllRevisionsOfUploadSchema(String studyId, String schemaId) {
-        getAuthenticatedSession(ADMIN);
-        uploadSchemaService.deleteUploadSchemaById(new StudyIdentifierImpl(studyId), schemaId);
+    public Result deleteAllRevisionsOfUploadSchema(String schemaId, String physical) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
+        
+        if ("true".equals(physical) && session.isInRole(ADMIN)) {
+            uploadSchemaService.deleteUploadSchemaByIdPermanently(session.getStudyIdentifier(), schemaId);
+        } else {
+            uploadSchemaService.deleteUploadSchemaById(session.getStudyIdentifier(), schemaId);    
+        }
         return okResult("Schemas have been deleted.");
+    }
+    
+    public Result deleteSchemaRevision(String schemaId, int revision, String physical) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
+        
+        if ("true".equals(physical) && session.isInRole(ADMIN)) {
+            uploadSchemaService.deleteUploadSchemaByIdAndRevisionPermanently(session.getStudyIdentifier(), schemaId, revision);
+        } else {
+            uploadSchemaService.deleteUploadSchemaByIdAndRevision(session.getStudyIdentifier(), schemaId, revision);
+        }
+        return okResult("Schema revision has been deleted.");
     }
 
     /**
@@ -100,13 +106,17 @@ public class UploadSchemaController extends BaseController {
      * schema doesn't exist, this API throws a 404 exception.
      * @param schemaId
      *         schema ID to fetch
+     * @param includeDeleted
+     *         "true" if logically deleted items should be included in results, they are excluded otherwise
      * @return Play result with an array of all revisions of the fetched schema in JSON format
      */
-    public Result getUploadSchemaAllRevisions(String schemaId) throws JsonProcessingException, IOException {
+    public Result getUploadSchemaAllRevisions(String schemaId, String includeDeleted)
+            throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         
-        List<UploadSchema> uploadSchemas = uploadSchemaService.getUploadSchemaAllRevisions(studyId, schemaId);
+        List<UploadSchema> uploadSchemas = uploadSchemaService.getUploadSchemaAllRevisions(studyId, schemaId,
+                Boolean.valueOf(includeDeleted));
         ResourceList<UploadSchema> uploadSchemaResourceList = new ResourceList<>(uploadSchemas);
         return okResult(UploadSchema.PUBLIC_SCHEMA_WRITER, uploadSchemaResourceList);
     }
@@ -153,11 +163,11 @@ public class UploadSchemaController extends BaseController {
      * 
      * @return Play result with list of schemas for this study
      */
-    public Result getUploadSchemasForStudy() throws Exception {
+    public Result getUploadSchemasForStudy(String includeDeleted) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
-        List<UploadSchema> schemaList = uploadSchemaService.getUploadSchemasForStudy(studyId);
+        List<UploadSchema> schemaList = uploadSchemaService.getUploadSchemasForStudy(studyId, Boolean.valueOf(includeDeleted));
         ResourceList<UploadSchema> schemaResourceList = new ResourceList<>(schemaList);
         return okResult(UploadSchema.PUBLIC_SCHEMA_WRITER, schemaResourceList);
     }

@@ -44,15 +44,13 @@ public interface SubpopulationDao {
     Subpopulation updateSubpopulation(Subpopulation subpop);
 
     /**
-     * Delete a subpopulation. This is a logical delete only, because we cannot be certain that no 
-     * one has signed a consent for this subpopulation and need to keep the consent document around.
-     *
-     * @param physicalDelete physically delete this subpopulation from the database. This is only done via an
-     *      admin-api for the purposes of cleanup after integration tests.
-     * @param allowDeleteOfDefault allow the service to delete the default subpopulation, as part of deleting
-     *      a study. 
+     * Logically delete a subpopulation. You cannot logically delete the default subpopulation for a study. 
      */
-    void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid, boolean physicalDelete,
-            boolean allowDeleteOfDefault);
+    void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid);
+    
+    /**
+     * Delete a subpopulation permanently. 
+     */
+    void deleteSubpopulationPermanently(StudyIdentifier studyId, SubpopulationGuid subpopGuid);
     
 }

@@ -165,36 +165,6 @@ public class NotificationsService {
     }
 
     /**
-     * This API is called after consent (either manual consent or intent to participate) to set up SMS notification
-     * registrations. If the user doesn't have a verified phone number, or they already have a notification
-     * registration, this API does nothing.
-     */
-    public void createSmsRegistrationAfterConsent(StudyParticipant participant, CriteriaContext context) {
-        checkNotNull(participant);
-        checkNotNull(context);
-
-        if (participant.getPhoneVerified() != Boolean.TRUE) {
-            // Shortcut: Phone not verified. Skip.
-            return;
-        }
-
-        // Register the phone number for notifications, if no registrations already exist.
-        List<NotificationRegistration> registrationList = listRegistrations(participant.getHealthCode());
-        if (!registrationList.isEmpty()) {
-            return;
-        }
-
-        // Create registration.
-        NotificationRegistration registration = NotificationRegistration.create();
-        registration.setHealthCode(participant.getHealthCode());
-        registration.setProtocol(NotificationProtocol.SMS);
-        registration.setEndpoint(participant.getPhone().getNumber());
-
-        // Create registration.
-        createRegistration(context.getStudyIdentifier(), context, registration);
-    }
-
-    /**
      * Update an existing device registration with a new token that has been assigned by the client operating 
      * system. At least on iOS, the device token can change over the lifetime of the app, and it is considered 
      * best practice to re-send this token to the server on every start-up of the app. The registration record 

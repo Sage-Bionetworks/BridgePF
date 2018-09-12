@@ -7,7 +7,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 public interface NotificationTopicDao {
 
-    List<NotificationTopic> listTopics(StudyIdentifier studyId);
+    List<NotificationTopic> listTopics(StudyIdentifier studyId, boolean includeDeleted);
     
     NotificationTopic getTopic(StudyIdentifier studyId, String guid);
     
@@ -16,6 +16,8 @@ public interface NotificationTopicDao {
     NotificationTopic updateTopic(NotificationTopic topic);
     
     void deleteTopic(StudyIdentifier studyId, String guid);
+    
+    void deleteTopicPermanently(StudyIdentifier studyId, String guid);
     
     void deleteAllTopics(StudyIdentifier studyId);
     

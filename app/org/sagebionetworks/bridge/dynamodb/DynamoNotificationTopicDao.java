@@ -25,6 +25,9 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.model.CreateTopicResult;
 import com.amazonaws.services.sns.model.DeleteTopicRequest;
@@ -64,16 +67,22 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
     }
 
     @Override
-    public List<NotificationTopic> listTopics(StudyIdentifier studyId) {
+    public List<NotificationTopic> listTopics(StudyIdentifier studyId, boolean includeDeleted) {
         checkNotNull(studyId);
 
         // Consistent reads is set to true, because this is the table's primary key, and having reliable tests is more
         // important than saving a small amount of DDB capacity.
         DynamoNotificationTopic hashKey = new DynamoNotificationTopic();
         hashKey.setStudyId(studyId.getIdentifier());
-        DynamoDBQueryExpression<DynamoNotificationTopic> query = new DynamoDBQueryExpression<DynamoNotificationTopic>()
-                .withConsistentRead(true).withHashKeyValues(hashKey);
-
+        
+        DynamoDBQueryExpression<DynamoNotificationTopic> query = new DynamoDBQueryExpression<DynamoNotificationTopic>();
+        query.withConsistentRead(true);
+        query.withHashKeyValues(hashKey);
+        if (!includeDeleted) {
+            query.withQueryFilterEntry("deleted", new Condition()
+                .withComparisonOperator(ComparisonOperator.NE)
+                .withAttributeValueList(new AttributeValue().withN("1")));
+        }
         QueryResultPage<DynamoNotificationTopic> resultPage = mapper.queryPage(DynamoNotificationTopic.class, query);
         List<DynamoNotificationTopic> topicList = resultPage.getResults();
 
@@ -149,9 +158,22 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
         mapper.save(existing);
         return existing;
     }
-
+    
     @Override
     public void deleteTopic(StudyIdentifier studyId, String guid) {
+        checkNotNull(studyId);
+        checkNotNull(guid);
+        
+        NotificationTopic existing = getTopicInternal(studyId.getIdentifier(), guid);
+        if (existing.isDeleted()) {
+            throw new EntityNotFoundException(NotificationTopic.class);
+        }
+        existing.setDeleted(true);
+        mapper.save(existing);
+    }
+
+    @Override
+    public void deleteTopicPermanently(StudyIdentifier studyId, String guid) {
         checkNotNull(studyId);
         checkNotNull(guid);
         
@@ -185,10 +207,10 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
     public void deleteAllTopics(StudyIdentifier studyId) {
         checkNotNull(studyId);
         
-        List<NotificationTopic> topics = listTopics(studyId);
+        List<NotificationTopic> topics = listTopics(studyId, true);
         // Delete them individually. 
         for (NotificationTopic topic : topics) {
-            deleteTopic(studyId, topic.getGuid());
+            deleteTopicPermanently(studyId, topic.getGuid());
         }
     }
 

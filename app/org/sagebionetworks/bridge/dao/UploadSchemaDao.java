@@ -13,14 +13,17 @@ public interface UploadSchemaDao {
      */
     UploadSchema createSchemaRevision(UploadSchema schema);
 
-    /** Deletes the given schemas. */
+    /** Deletes the given schemas by marking them deleted. */
     void deleteUploadSchemas(List<UploadSchema> schemaList);
+    
+    /** Deletes the given schemas by removing them from the database. */
+    void deleteUploadSchemasPermanently(List<UploadSchema> schemaList);
 
     /** Returns all revisions of all schemas in the specified study. */
-    List<UploadSchema> getAllUploadSchemasAllRevisions(StudyIdentifier studyId);
+    List<UploadSchema> getAllUploadSchemasAllRevisions(StudyIdentifier studyId, boolean includeDeleted);
 
     /** Fetch all revisions of a single upload schema. */
-    List<UploadSchema> getUploadSchemaAllRevisionsById(StudyIdentifier studyId, String schemaId);
+    List<UploadSchema> getUploadSchemaAllRevisionsById(StudyIdentifier studyId, String schemaId, boolean includeDeleted);
 
     /** Fetches the upload schema for the specified study, schema ID, and revision. */
     UploadSchema getUploadSchemaByIdAndRevision(StudyIdentifier studyId, String schemaId, int revision);

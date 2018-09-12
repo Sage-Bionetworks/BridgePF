@@ -28,7 +28,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
-
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -56,6 +56,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
+import play.mvc.Http.Response;
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -436,19 +437,18 @@ public class ConsentControllerMockedTest {
     }
     
     @Test
-    public void canWithdrawFromAllConsents() throws Exception {
+    public void canWithdrawFromStudy() throws Exception {
         DateTimeUtils.setCurrentMillisFixed(20000);
         String json = createJson("{'reason':'There is a reason for everything.'}");
-        TestUtils.mockPlayContextWithJson(json);
+        Response mockResponse = TestUtils.mockPlayContextWithJson(json);
         
-        when(consentService.withdrawAllConsents(eq(study), eq(participant), eq(context), any(), anyInt()))
-                .thenAnswer(createAnswer(true, SUBPOP_GUID, DEFAULT_SUBPOP_GUID));
+        Result result = controller.withdrawFromStudy();
         
-        Result result = controller.withdrawFromAllConsents();
+        TestUtils.assertResult(result, 200, "Signed out.");
         
-        assertWithdrawnInSession(result, SharingScope.NO_SHARING, SUBPOP_GUID);
-        
-        verify(consentService).withdrawAllConsents(study, participant, context, new Withdrawal("There is a reason for everything."), 20000);
+        verify(consentService).withdrawFromStudy(study, participant, new Withdrawal("There is a reason for everything."), 20000);
+        verify(authenticationService).signOut(session);
+        verify(mockResponse).discardCookie(BridgeConstants.SESSION_TOKEN_HEADER);
     }
     
     @Test
@@ -636,7 +636,7 @@ public class ConsentControllerMockedTest {
     private void assertWithdrawnInSession(Result result, SharingScope sharingScope, SubpopulationGuid subpopGuid) throws Exception {
         TestUtils.assertResult(result, 200);
         JsonNode node = TestUtils.getJson(result);
-
+        
         assertEquals(USER_ID, node.get("id").asText());
         assertEquals(sharingScope.name().toLowerCase(), node.get("sharingScope").asText());
         assertEquals(sharingScope != SharingScope.NO_SHARING, node.get("dataSharing").asBoolean());

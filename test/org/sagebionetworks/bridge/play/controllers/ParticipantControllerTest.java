@@ -246,7 +246,21 @@ public class ParticipantControllerTest {
         
         mockPlayContext();
     }
-    
+
+    @Test
+    public void createSmsNotificationRegistration() throws Exception {
+        // Requires researcher role.
+        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
+                .withRoles(ImmutableSet.of(Roles.RESEARCHER)).build());
+
+        // Execute.
+        Result result = controller.createSmsRegistration(ID);
+        assertResult(result, 201, "SMS notification registration created");
+
+        // Verify dependent services.
+        verify(mockParticipantService).createSmsRegistration(study, ID);
+    }
+
     @SuppressWarnings("deprecation")
     @Test
     public void getParticipants() throws Exception {
@@ -752,9 +766,9 @@ public class ParticipantControllerTest {
             String json = "{\"reason\":\"Because, reasons.\"}";
             TestUtils.mockPlayContextWithJson(json);
             
-            controller.withdrawFromAllConsents(ID);
+            controller.withdrawFromStudy(ID);
             
-            verify(mockParticipantService).withdrawAllConsents(study, ID, new Withdrawal("Because, reasons."), 20000);
+            verify(mockParticipantService).withdrawFromStudy(study, ID, new Withdrawal("Because, reasons."), 20000);
         } finally {
             DateTimeUtils.setCurrentMillisSystem();
         }

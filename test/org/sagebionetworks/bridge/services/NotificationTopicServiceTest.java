@@ -156,12 +156,12 @@ public class NotificationTopicServiceTest {
     @Test
     public void listTopics() {
         List<NotificationTopic> list = Lists.newArrayList(getNotificationTopic(), getNotificationTopic());
-        doReturn(list).when(mockTopicDao).listTopics(TEST_STUDY);
+        doReturn(list).when(mockTopicDao).listTopics(TEST_STUDY, true);
         
-        List<NotificationTopic> results = service.listTopics(TEST_STUDY);
+        List<NotificationTopic> results = service.listTopics(TEST_STUDY, true);
         assertEquals(2, results.size());
         
-        verify(mockTopicDao).listTopics(TEST_STUDY);
+        verify(mockTopicDao).listTopics(TEST_STUDY, true);
     }
     
     @Test
@@ -220,12 +220,19 @@ public class NotificationTopicServiceTest {
             verify(mockTopicDao, never()).updateTopic(topic);
         }        
     }
-    
+
     @Test
     public void deleteTopic() {
         service.deleteTopic(TEST_STUDY, "ABC-DEF");
         
         verify(mockTopicDao).deleteTopic(TEST_STUDY, "ABC-DEF");
+    }
+    
+    @Test
+    public void deleteTopicPermanently() {
+        service.deleteTopicPermanently(TEST_STUDY, "ABC-DEF");
+        
+        verify(mockTopicDao).deleteTopicPermanently(TEST_STUDY, "ABC-DEF");
     }
     
     @Test
@@ -272,7 +279,7 @@ public class NotificationTopicServiceTest {
         
         doReturn(mockNotificationRegistration).when(mockRegistrationDao).getRegistration("healthCode", "registrationGuid");
         doReturn(subscribedTopicsStartOfTest).when(mockSubscriptionDao).listSubscriptions(mockNotificationRegistration);
-        doReturn(allTopics).when(mockTopicDao).listTopics(TEST_STUDY);
+        doReturn(allTopics).when(mockTopicDao).listTopics(TEST_STUDY, false);
         
         List<SubscriptionStatus> statuses = service.currentSubscriptionStatuses(TEST_STUDY, "healthCode", "registrationGuid");
         
@@ -290,7 +297,7 @@ public class NotificationTopicServiceTest {
         
         doReturn(mockNotificationRegistration).when(mockRegistrationDao).getRegistration("healthCode", "registrationGuid");
         doReturn(subscribedTopicsStartOfTest).when(mockSubscriptionDao).listSubscriptions(mockNotificationRegistration);
-        doReturn(allTopics).when(mockTopicDao).listTopics(TEST_STUDY);
+        doReturn(allTopics).when(mockTopicDao).listTopics(TEST_STUDY, false);
         
         List<SubscriptionStatus> statuses = service.currentSubscriptionStatuses(TEST_STUDY, "healthCode", "registrationGuid");
         assertTrue(statuses.isEmpty());
@@ -299,7 +306,7 @@ public class NotificationTopicServiceTest {
     @Test
     public void manageCriteriaBasedSubscriptions_NoCriteriaTopics() {
         // Topic list includes only manual subscriptions.
-        when(mockTopicDao.listTopics(TEST_STUDY)).thenReturn(ImmutableList.of(MANUAL_TOPIC_1, MANUAL_TOPIC_2));
+        when(mockTopicDao.listTopics(TEST_STUDY, true)).thenReturn(ImmutableList.of(MANUAL_TOPIC_1, MANUAL_TOPIC_2));
 
         // Execute test.
         service.manageCriteriaBasedSubscriptions(TEST_STUDY, EMPTY_CONTEXT, HEALTH_CODE);
@@ -311,7 +318,7 @@ public class NotificationTopicServiceTest {
     @Test
     public void manageCriteriaBasedSubscriptions_NoRegistrations() {
         // Mock back-ends.
-        when(mockTopicDao.listTopics(TEST_STUDY)).thenReturn(ImmutableList.of(CRITERIA_TOPIC_1, CRITERIA_TOPIC_2,
+        when(mockTopicDao.listTopics(TEST_STUDY, true)).thenReturn(ImmutableList.of(CRITERIA_TOPIC_1, CRITERIA_TOPIC_2,
                 MANUAL_TOPIC_1, MANUAL_TOPIC_2));
         when(mockRegistrationDao.listRegistrations(HEALTH_CODE)).thenReturn(ImmutableList.of());
 
@@ -325,7 +332,7 @@ public class NotificationTopicServiceTest {
     @Test
     public void manageCriteriaBasedSubscriptions() {
         // 2 criteria-based topics, 2 manual topics.
-        when(mockTopicDao.listTopics(TEST_STUDY)).thenReturn(ImmutableList.of(CRITERIA_TOPIC_1, CRITERIA_TOPIC_2,
+        when(mockTopicDao.listTopics(TEST_STUDY, true)).thenReturn(ImmutableList.of(CRITERIA_TOPIC_1, CRITERIA_TOPIC_2,
                 MANUAL_TOPIC_1, MANUAL_TOPIC_2));
 
         // 2 registrations.
@@ -399,7 +406,7 @@ public class NotificationTopicServiceTest {
     @Test
     public void subscribe_NoManualTopics() {
         // Topic list includes only criteria subscriptions.
-        when(mockTopicDao.listTopics(TEST_STUDY)).thenReturn(ImmutableList.of(CRITERIA_TOPIC_1, CRITERIA_TOPIC_2));
+        when(mockTopicDao.listTopics(TEST_STUDY, false)).thenReturn(ImmutableList.of(CRITERIA_TOPIC_1, CRITERIA_TOPIC_2));
 
         // Execute test. We pass in criteria topic guids for test purposes, but these are ignored.
         List<SubscriptionStatus> statusList = service.subscribe(TEST_STUDY, HEALTH_CODE, PUSH_REGISTRATION.getGuid(),
@@ -419,7 +426,7 @@ public class NotificationTopicServiceTest {
         //   4. Not subscribed and we stay unsubscribed.
 
         // 2 criteria-based topics, just to make sure we ignore those. 4 manual topics.
-        when(mockTopicDao.listTopics(TEST_STUDY)).thenReturn(ImmutableList.of(CRITERIA_TOPIC_1, CRITERIA_TOPIC_2,
+        when(mockTopicDao.listTopics(TEST_STUDY, false)).thenReturn(ImmutableList.of(CRITERIA_TOPIC_1, CRITERIA_TOPIC_2,
                 MANUAL_TOPIC_1, MANUAL_TOPIC_2, MANUAL_TOPIC_3, MANUAL_TOPIC_4));
 
         // Mock registration dao.

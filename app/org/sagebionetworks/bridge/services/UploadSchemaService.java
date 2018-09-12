@@ -531,7 +531,19 @@ public class UploadSchemaService {
     public void deleteUploadSchemaById(StudyIdentifier studyId, String schemaId) {
         // Schema ID is validated by getUploadSchemaAllRevisions()
 
-        List<UploadSchema> schemaList = getUploadSchemaAllRevisions(studyId, schemaId);
+        List<UploadSchema> schemaList = getSchemaRevisionsForDelete(studyId, schemaId);
+        uploadSchemaDao.deleteUploadSchemas(schemaList);
+    }
+
+    public void deleteUploadSchemaByIdPermanently(StudyIdentifier studyId, String schemaId) {
+        // Schema ID is validated by getUploadSchemaAllRevisions()
+
+        List<UploadSchema> schemaList = getSchemaRevisionsForDelete(studyId, schemaId);
+        uploadSchemaDao.deleteUploadSchemasPermanently(schemaList);
+    }
+
+    protected List<UploadSchema> getSchemaRevisionsForDelete(StudyIdentifier studyId, String schemaId) {
+        List<UploadSchema> schemaList = getUploadSchemaAllRevisions(studyId, schemaId, true);
 
         List<Integer> revisions = new ArrayList<>();
         for (int i = 0; i < schemaList.size(); i++) {
@@ -547,10 +559,9 @@ public class UploadSchemaService {
         if (sharedModuleMetadataList.size() != 0) {
             throw new BadRequestException("Cannot delete specified Upload Schema because a shared module still refers to it.");
         }
-
-        uploadSchemaDao.deleteUploadSchemas(schemaList);
+        return schemaList;
     }
-
+    
     /**
      * Service handler for deleting an upload schema with the specified study, schema ID, and revision. If the schema
      * doesn't exist, this API throws an EntityNotFoundException.
@@ -558,31 +569,32 @@ public class UploadSchemaService {
     public void deleteUploadSchemaByIdAndRevision(StudyIdentifier studyId, String schemaId, int rev) {
         // Schema ID and rev are validated by getUploadSchemaByIdAndRev()
 
-        UploadSchema schema = getUploadSchemaByIdAndRev(studyId, schemaId, rev);
-        
-        Map<String,Object> parameters = new HashMap<>();
-        parameters.put("schemaId", schemaId);
-        parameters.put("schemaRevision", rev);
-
-        List<SharedModuleMetadata> sharedModuleMetadataList = sharedModuleMetadataService.queryAllMetadata(false, false,
-                "schemaId=:schemaId AND schemaRevision=:schemaRevision", parameters, null);
-
-        if (sharedModuleMetadataList.size() != 0) {
-            throw new BadRequestException("Cannot delete specified Upload Schema because a shared module still refers to it.");
+        UploadSchema schema = getRevisionForDeletion(studyId, schemaId, rev);
+        if (schema == null || schema.isDeleted()) {
+            throw new EntityNotFoundException(UploadSchema.class);
         }
+        uploadSchemaDao.deleteUploadSchemas(ImmutableList.of(schema));    
+    }
+    
+    public void deleteUploadSchemaByIdAndRevisionPermanently(StudyIdentifier studyId, String schemaId, int rev) {
+        // Schema ID and rev are validated by getUploadSchemaByIdAndRev()
 
-        uploadSchemaDao.deleteUploadSchemas(ImmutableList.of(schema));
+        UploadSchema schema = getRevisionForDeletion(studyId, schemaId, rev);
+        if (schema == null) {
+            throw new EntityNotFoundException(UploadSchema.class);
+        }
+        uploadSchemaDao.deleteUploadSchemasPermanently(ImmutableList.of(schema));    
     }
 
     /** Returns all revisions of all schemas. */
-    public List<UploadSchema> getAllUploadSchemasAllRevisions(StudyIdentifier studyId) {
-        return uploadSchemaDao.getAllUploadSchemasAllRevisions(studyId);
+    public List<UploadSchema> getAllUploadSchemasAllRevisions(StudyIdentifier studyId, boolean includeDeleted) {
+        return uploadSchemaDao.getAllUploadSchemasAllRevisions(studyId, includeDeleted);
     }
 
     /** Service handler for fetching the most recent revision of all upload schemas in a study. */
-    public List<UploadSchema> getUploadSchemasForStudy(StudyIdentifier studyId) {
+    public List<UploadSchema> getUploadSchemasForStudy(StudyIdentifier studyId, boolean includeDeleted) {
         // Get all schemas. No simple query for just latest schemas.
-        List<UploadSchema> allSchemasAllRevisions = getAllUploadSchemasAllRevisions(studyId);
+        List<UploadSchema> allSchemasAllRevisions = getAllUploadSchemasAllRevisions(studyId, includeDeleted);
 
         // Iterate schemas and pick out latest for each schema ID.
         // Find the most recent version of each schema with a unique schemaId
@@ -620,17 +632,45 @@ public class UploadSchemaService {
         }
         return uploadSchemaDao.getUploadSchemaLatestRevisionById(studyId, schemaId);
     }
+    
+    /**
+     * Private helper method to get the latest version of an upload schema, but doesn't throw if the schema does not
+     * exist. User inputs are validated (schemaId and revision) and the method will throw a BadRequestException if 
+     * the schema is referenced as part of shared module metadata.
+     */
+    private UploadSchema getRevisionForDeletion(StudyIdentifier studyId, String schemaId, int revision) {
+        if (StringUtils.isBlank(schemaId)) {
+            throw new BadRequestException("Schema ID must be specified");
+        }
+        if (revision <= 0) {
+            throw new BadRequestException("Revision must be specified and positive");
+        }
+        UploadSchema schema = uploadSchemaDao.getUploadSchemaByIdAndRevision(studyId, schemaId, revision);
+        if (schema != null) {
+            Map<String,Object> parameters = new HashMap<>();
+            parameters.put("schemaId", schemaId);
+            parameters.put("schemaRevision", revision);
+
+            List<SharedModuleMetadata> sharedModuleMetadataList = sharedModuleMetadataService.queryAllMetadata(false, false,
+                    "schemaId=:schemaId AND schemaRevision=:schemaRevision", parameters, null);
+
+            if (sharedModuleMetadataList.size() != 0) {
+                throw new BadRequestException("Cannot delete specified Upload Schema because a shared module still refers to it.");
+            }
+        }
+        return schema;
+    }
 
     /**
      * Service handler for fetching upload schemas. This method fetches all revisions of an an upload schema for
      * the specified study and schema ID. If the schema doesn't exist, this handler throws an EntityNotFoundException.
      */
-    public List<UploadSchema> getUploadSchemaAllRevisions(StudyIdentifier studyId, String schemaId) {
+    public List<UploadSchema> getUploadSchemaAllRevisions(StudyIdentifier studyId, String schemaId, boolean includeDeleted) {
         if (StringUtils.isBlank(schemaId)) {
             throw new BadRequestException("Schema ID must be specified");
         }
 
-        List<UploadSchema> schemaList = uploadSchemaDao.getUploadSchemaAllRevisionsById(studyId, schemaId);
+        List<UploadSchema> schemaList = uploadSchemaDao.getUploadSchemaAllRevisionsById(studyId, schemaId, includeDeleted);
         if (schemaList.isEmpty()) {
             throw new EntityNotFoundException(UploadSchema.class);
         }
@@ -666,7 +706,7 @@ public class UploadSchemaService {
         checkNotNull(studyId, "Study ID must be specified");
         checkNotNull(clientInfo, "Client Info must be specified");
 
-        List<UploadSchema> schemaList = getUploadSchemaAllRevisions(studyId, schemaId);
+        List<UploadSchema> schemaList = getUploadSchemaAllRevisions(studyId, schemaId, false);
         return schemaList.stream().filter(schema -> isSchemaAvailableForClientInfo(schema, clientInfo))
                 .max((schema1, schema2) -> Integer.compare(schema1.getRevision(), schema2.getRevision())).orElse(null);
     }
@@ -715,7 +755,9 @@ public class UploadSchemaService {
         // Get existing schema revision. This also validates schema ID and rev and throws if the schema revision
         // doesn't exist.
         UploadSchema oldSchema = getUploadSchemaByIdAndRev(studyId, schemaId, revision);
-
+        if (oldSchema.isDeleted() && schemaToUpdate.isDeleted()) {
+            throw new EntityNotFoundException(UploadSchema.class);
+        }
         // Schemas associated with shared module can't be modified.
         if (StringUtils.isNotBlank(oldSchema.getModuleId())) {
             throw new BadRequestException("Schema " + oldSchema.getSchemaId() + " was imported from a shared module " +

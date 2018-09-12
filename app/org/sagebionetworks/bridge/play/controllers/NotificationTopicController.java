@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 
 import java.util.List;
 
@@ -26,10 +27,11 @@ public class NotificationTopicController extends BaseController {
         this.topicService = topicService;
     }
     
-    public Result getAllTopics() {
+    public Result getAllTopics(String includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         
-        List<NotificationTopic> list = topicService.listTopics(session.getStudyIdentifier());
+        List<NotificationTopic> list = topicService.listTopics(session.getStudyIdentifier(),
+                Boolean.valueOf(includeDeleted));
         
         return okResult(list);
     }
@@ -65,11 +67,14 @@ public class NotificationTopicController extends BaseController {
         return okResult(new GuidHolder(updated.getGuid()));
     }
     
-    public Result deleteTopic(String guid) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
-        
-        topicService.deleteTopic(session.getStudyIdentifier(), guid);
-        
+    public Result deleteTopic(String guid, String physical) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
+
+        if ("true".equals(physical) && session.isInRole(ADMIN)) {
+            topicService.deleteTopicPermanently(session.getStudyIdentifier(), guid);
+        } else {
+            topicService.deleteTopic(session.getStudyIdentifier(), guid);
+        }
         return okResult("Topic deleted.");
     }
     
