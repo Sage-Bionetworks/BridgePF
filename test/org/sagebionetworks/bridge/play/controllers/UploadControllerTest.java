@@ -12,6 +12,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import java.net.URL;
 
@@ -293,7 +294,7 @@ public class UploadControllerTest {
     @Test
     public void getUploadById() throws Exception {
         TestUtils.mockPlayContext();
-        doReturn(researcherSession).when(controller).getAuthenticatedSession(ADMIN);
+        doReturn(researcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
         
         HealthDataRecord record = HealthDataRecord.create();
         record.setHealthCode(HEALTH_CODE);
@@ -317,7 +318,7 @@ public class UploadControllerTest {
     @Test
     public void getUploadByRecordId() throws Exception {
         TestUtils.mockPlayContext();
-        doReturn(researcherSession).when(controller).getAuthenticatedSession(ADMIN);
+        doReturn(researcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
         
         HealthDataRecord record = HealthDataRecord.create();
         record.setUploadId(UPLOAD_ID);
@@ -343,7 +344,7 @@ public class UploadControllerTest {
     @Test(expected = EntityNotFoundException.class)
     public void getUploadByRecordIdRecordMissing() throws Exception {
         TestUtils.mockPlayContext();
-        doReturn(researcherSession).when(controller).getAuthenticatedSession(ADMIN);
+        doReturn(researcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
         
         when(healthDataService.getRecordById("record-id")).thenReturn(null);
 

@@ -156,7 +156,7 @@ public class UploadController extends BaseController {
     }
     
     public Result getUpload(String uploadId) {
-        getAuthenticatedSession(Roles.ADMIN);
+        getAuthenticatedSession(Roles.ADMIN, Roles.WORKER);
 
         if (uploadId.startsWith("recordId:")) {
             String recordId = uploadId.split(":")[1];
