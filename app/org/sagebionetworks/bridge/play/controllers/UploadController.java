@@ -6,6 +6,7 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.RequestInfo;
@@ -20,8 +21,6 @@ import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.sagebionetworks.bridge.services.UploadService;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -54,7 +53,7 @@ public class UploadController extends BaseController {
     }
 
     /** Gets validation status and messages for the given upload ID. */
-    public Result getValidationStatus(String uploadId) throws JsonProcessingException, IOException {
+    public Result getValidationStatus(String uploadId) throws IOException {
         UserSession session = getAuthenticatedAndConsentedSession();
         
         // If not a researcher, validate that this user owns the upload
@@ -71,7 +70,7 @@ public class UploadController extends BaseController {
         return okResult(HealthDataRecord.PUBLIC_RECORD_WRITER, validationStatus);
     }
     
-    public Result upload() throws Exception {
+    public Result upload() {
         UserSession session = getAuthenticatedAndConsentedSession();
         UploadRequest uploadRequest = UploadRequest.fromJson(requestToJSON(request()));
         UploadSession uploadSession = uploadService.createUpload(session.getStudyIdentifier(), session.getParticipant(),
@@ -103,32 +102,42 @@ public class UploadController extends BaseController {
      * If synchronous is set to anything else, we will return a validation status immediately (which will often be in
      * the "validation_in_progress" state) and let upload validation run in the background.
      * </p>
+     * <p>
+     * If redrive is set to "true", then we allow upload validation of uploads that are already complete. This is to
+     * allow redrives and backfills.
+     * </p>
      */
     @BodyParser.Of(BodyParser.Empty.class)
-    public Result uploadComplete(String uploadId, String synchronous) throws Exception {
+    public Result uploadComplete(String uploadId, String synchronous, String redrive) throws Exception {
         final Metrics metrics = getMetrics();
         if (metrics != null) {
             metrics.setUploadId(uploadId);
         }
 
+        // Boolean.valueOf() converts "true" (ignoring case) to true, and everything else to false (including null).
+        boolean redriveBool = Boolean.valueOf(redrive);
+
         // User can be a worker account (get study and health code from the upload itself)...
         UserSession session = getAuthenticatedSession();
+        Upload upload = uploadService.getUpload(uploadId);
+        StudyIdentifier studyIdentifier;
+        UploadCompletionClient uploadCompletionClient;
         if (session.isInRole(Roles.WORKER)) {
-            
-            Upload upload = uploadService.getUpload(uploadId);
             String studyId = healthCodeDao.getStudyIdentifier(upload.getHealthCode());
-            uploadService.uploadComplete(new StudyIdentifierImpl(studyId), UploadCompletionClient.S3_WORKER, upload);
+            studyIdentifier = new StudyIdentifierImpl(studyId);
+            uploadCompletionClient = UploadCompletionClient.S3_WORKER;
         } else {
             // Or, the consented user that originally made the upload request. Check that health codes match.
             // Do not need to look up the study.
             session = getAuthenticatedAndConsentedSession();
-
-            Upload upload = uploadService.getUpload(uploadId);
             if (!session.getHealthCode().equals(upload.getHealthCode())) {
                 throw new UnauthorizedException();
             }
-            uploadService.uploadComplete(session.getStudyIdentifier(), UploadCompletionClient.APP, upload);
+
+            studyIdentifier = session.getStudyIdentifier();
+            uploadCompletionClient = UploadCompletionClient.APP;
         }
+        uploadService.uploadComplete(studyIdentifier, uploadCompletionClient, upload, redriveBool);
 
         // Boolean.valueOf() converts "true" (ignoring case) to true, and everything else to false (including null).
         boolean synchronousBool = Boolean.valueOf(synchronous);
@@ -146,7 +155,7 @@ public class UploadController extends BaseController {
         return okResult(HealthDataRecord.PUBLIC_RECORD_WRITER, validationStatus);
     }
     
-    public Result getUpload(String uploadId) throws Exception {
+    public Result getUpload(String uploadId) {
         getAuthenticatedSession(Roles.ADMIN);
 
         if (uploadId.startsWith("recordId:")) {
