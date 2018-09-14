@@ -201,8 +201,6 @@ public class SharedModuleMetadataServiceTest {
         doReturn(ImmutableList.of()).when(svc).queryMetadataById(MODULE_ID, true, false, null, null, null, false);
         svc.deleteMetadataByIdAllVersionsPermanently(MODULE_ID);
     }
-
-    // A
     
     @Test
     public void deleteByIdAllVersionsPermanentlySuccess() {
@@ -211,8 +209,6 @@ public class SharedModuleMetadataServiceTest {
         verify(mockDao).deleteMetadataByIdAllVersionsPermanently(MODULE_ID);
     }
 
-    // A
-    
     @Test(expected = BadRequestException.class)
     public void deleteByIdAndVersionPermanentlyNullId() {
         svc.deleteMetadataByIdAndVersionPermanently(null, MODULE_VERSION);
@@ -276,8 +272,6 @@ public class SharedModuleMetadataServiceTest {
         doReturn(ImmutableList.of()).when(svc).queryMetadataById(MODULE_ID, true, false, null, null, null, false);
         svc.deleteMetadataByIdAllVersions(MODULE_ID);
     }
-    
-    // A
 
     @Test
     public void deleteByIdAllVersionsSuccess() {
@@ -286,8 +280,6 @@ public class SharedModuleMetadataServiceTest {
         verify(mockDao).deleteMetadataByIdAllVersions(MODULE_ID);
     }
     
-    // A
-
     @Test(expected = BadRequestException.class)
     public void deleteByIdAndVersionNullId() {
         svc.deleteMetadataByIdAndVersion(null, MODULE_VERSION);
@@ -403,8 +395,6 @@ public class SharedModuleMetadataServiceTest {
         doReturn(ImmutableList.of()).when(svc).queryMetadataById(MODULE_ID, true, false, null, null, null, false);
         svc.getMetadataByIdLatestVersion(MODULE_ID);
     }
-    
-    // A
 
     @Test
     public void byIdLatestVersionSuccess() {
@@ -416,29 +406,36 @@ public class SharedModuleMetadataServiceTest {
         SharedModuleMetadata svcOutputMetadata = svc.getMetadataByIdLatestVersion(MODULE_ID);
         assertSame(daoOutputMetadata, svcOutputMetadata);
     }
-    
-    // A
 
     @Test(expected = BadRequestException.class)
-    public void queryAllMostRecentWithWhere() {
+    public void queryAllMostRecentWithWhereExcludeDeleted() {
         svc.queryAllMetadata(true, false, "foo='bar'", null, null, false);
     }
 
-    // A
+    @Test(expected = BadRequestException.class)
+    public void queryAllMostRecentWithWhereIncludeDeleted() {
+        svc.queryAllMetadata(true, false, "foo='bar'", null, null, true);
+    }
     
     @Test
-    public void queryAllMostRecentPublished() {
+    public void queryAllMostRecentPublishedExcludeDeleted() {
         queryMostRecentHelper("published=true AND deleted=false", null, true, false);
     }
-
-    // A
     
     @Test
-    public void queryAllMostRecent() {
+    public void queryAllMostRecentPublishedIncludeDeleted() {
+        queryMostRecentHelper("published=true", null, true, true);
+    }
+    
+    @Test
+    public void queryAllMostRecentExcludeDeleted() {
         queryMostRecentHelper("deleted=false", null, false, false);
     }
     
-    // A
+    @Test
+    public void queryAllMostRecentIncludeDeleted() {
+        queryMostRecentHelper("", null, false, true);
+    }
 
     private void queryMostRecentHelper(String expectedWhereClause, Map<String,Object> parameters, boolean published, boolean includeDeleted) {
         // set up mock dao - We want 2 different modules with 2 different versions each.
@@ -469,32 +466,44 @@ public class SharedModuleMetadataServiceTest {
     }
 
     @Test
-    public void queryAllPublishedAndWhere() {
+    public void queryAllPublishedAndWhereExcludeDeleted() {
         queryHelper("foo='bar' AND published=true AND deleted=false", true, "foo='bar'", null, false);
     }
     
-    // A
+    @Test
+    public void queryAllPublishedAndWhereIncludeDeleted() {
+        queryHelper("foo='bar' AND published=true", true, "foo='bar'", null, true);
+    }
 
     @Test
-    public void queryAllPublishedWithoutWhere() {
+    public void queryAllPublishedWithoutWhereExcludeDeleted() {
         queryHelper("published=true AND deleted=false", true, null, null, false);
     }
     
-    // A
+    @Test
+    public void queryAllPublishedWithoutWhereIncludeDeleted() {
+        queryHelper("published=true", true, null, null, true);
+    }
 
     @Test
-    public void queryAllWhereWithoutPublished() {
+    public void queryAllWhereWithoutPublishedExcludeDeleted() {
         queryHelper("foo='bar' AND deleted=false", false, "foo='bar'", null, false);
     }
     
-    // A
+    @Test
+    public void queryAllWhereWithoutPublishedIncludeDeleted() {
+        queryHelper("foo='bar'", false, "foo='bar'", null, true);
+    }
 
     @Test
-    public void queryAllGetAll() {
+    public void queryAllGetAllExcludeDeleted() {
         queryHelper("deleted=false", false, null, null, false);
     }
     
-    // A
+    @Test
+    public void queryAllGetAllIncludeDeleted() {
+        queryHelper("", false, null, null, true);
+    }
 
     private void queryHelper(String expectedWhereClause, boolean published, String inputWhereClause, Map<String,Object> parameters, boolean includeDeleted) {
         // set up mock dao - Dummy list is fine.
@@ -508,7 +517,7 @@ public class SharedModuleMetadataServiceTest {
     }
 
     @Test
-    public void queryWithTags() {
+    public void queryWithTagsExcludeDeleted() {
         // null query with 2 tags
         Set<String> tags = ImmutableSet.of("foo", "bar");
 
@@ -563,31 +572,90 @@ public class SharedModuleMetadataServiceTest {
         assertTrue(svcOutputMetadataList.contains(metadata5));
     }
     
-    // A
+    @Test
+    public void queryWithTagsIncludeDeleted() {
+        // null query with 2 tags
+        Set<String> tags = ImmutableSet.of("foo", "bar");
+
+        // Our test cases:
+        // 1. no tags (out)
+        // 2. one tag (in)
+        // 3. both tags (in)
+        // 4. superset of tags (in)
+        // 5. intersection of tags (in)
+        // 6. disjunction of tags (out)
+
+        // 1. no tags (out)
+        SharedModuleMetadata metadata1 = makeValidMetadata();
+        metadata1.setId("module-1");
+
+        // 2. one tag (in)
+        SharedModuleMetadata metadata2 = makeValidMetadata();
+        metadata2.setId("module-2");
+        metadata2.setTags(ImmutableSet.of("foo"));
+
+        // 3. both tags (in)
+        SharedModuleMetadata metadata3 = makeValidMetadata();
+        metadata3.setId("module-3");
+        metadata3.setTags(ImmutableSet.of("foo", "bar"));
+
+        // 4. superset of tags (in)
+        SharedModuleMetadata metadata4 = makeValidMetadata();
+        metadata4.setId("module-4");
+        metadata4.setTags(ImmutableSet.of("foo", "bar", "baz"));
+
+        // 5. intersection of tags (in)
+        SharedModuleMetadata metadata5 = makeValidMetadata();
+        metadata5.setId("module-5");
+        metadata5.setTags(ImmutableSet.of("foo", "baz"));
+
+        // 6. disjunction of tags (out)
+        SharedModuleMetadata metadata6 = makeValidMetadata();
+        metadata6.setId("module-6");
+        metadata6.setTags(ImmutableSet.of("asdf", "jkl;"));
+
+        // set up mock dao
+        List<SharedModuleMetadata> daoOutputMetadataList = ImmutableList.of(metadata1, metadata2, metadata3, metadata4,
+                metadata5, metadata6);
+        when(mockDao.queryMetadata("foo='bar'", null)).thenReturn(daoOutputMetadataList);
+
+        // execute and validate
+        List<SharedModuleMetadata> svcOutputMetadataList = svc.queryAllMetadata(false, false, "foo='bar'", null, tags, true);
+        assertEquals(4, svcOutputMetadataList.size());
+    }
 
     @Test(expected = BadRequestException.class)
-    public void queryByIdNullId() {
+    public void queryByIdNullIdExcludeDeleted() {
         svc.queryMetadataById(null, true, true, "foo='bar'", null, ImmutableSet.of("foo", "bar", "baz"), false);
     }
 
-    // A
+    @Test(expected = BadRequestException.class)
+    public void queryByIdNullIdIncludeDeleted() {
+        svc.queryMetadataById(null, true, true, "foo='bar'", null, ImmutableSet.of("foo", "bar", "baz"), true);
+    }
     
     @Test(expected = BadRequestException.class)
-    public void queryByIdEmptyId() {
+    public void queryByIdEmptyIdExcludeDeleted() {
         svc.queryMetadataById("", true, true, "foo='bar'", null, ImmutableSet.of("foo", "bar", "baz"), false);
     }
 
-    // A
+    @Test(expected = BadRequestException.class)
+    public void queryByIdEmptyIdIncludeDeleted() {
+        svc.queryMetadataById("", true, true, "foo='bar'", null, ImmutableSet.of("foo", "bar", "baz"), true);
+    }
     
     @Test(expected = BadRequestException.class)
-    public void queryByIdBlankId() {
+    public void queryByIdBlankIdExcludeDeleted() {
         svc.queryMetadataById("   ", true, true, "foo='bar'", null, ImmutableSet.of("foo", "bar", "baz"), false);
     }
     
-    // A
+    @Test(expected = BadRequestException.class)
+    public void queryByIdBlankIdIncludeDeleted() {
+        svc.queryMetadataById("   ", true, true, "foo='bar'", null, ImmutableSet.of("foo", "bar", "baz"), true);
+    }
 
     @Test
-    public void queryByIdSuccess() {
+    public void queryByIdSuccessExcludeDeleted() {
         Set<String> tags = ImmutableSet.of("foo", "bar", "baz");
 
         // We want 2 different modules with 2 different versions each.
@@ -619,8 +687,37 @@ public class SharedModuleMetadataServiceTest {
         assertTrue(svcOutputMetadataList.contains(moduleBVersion4));
     }
     
-    // A
+    @Test
+    public void queryByIdSuccessIncludeDeleted() {
+        Set<String> tags = ImmutableSet.of("foo", "bar", "baz");
 
+        // We want 2 different modules with 2 different versions each.
+        SharedModuleMetadata moduleAVersion1 = makeValidMetadata();
+        moduleAVersion1.setId("module-A");
+        moduleAVersion1.setVersion(1);
+
+        SharedModuleMetadata moduleAVersion2 = makeValidMetadata();
+        moduleAVersion2.setId("module-A");
+        moduleAVersion2.setVersion(2);
+
+        SharedModuleMetadata moduleBVersion3 = makeValidMetadata();
+        moduleBVersion3.setId("module-B");
+        moduleBVersion3.setVersion(3);
+
+        SharedModuleMetadata moduleBVersion4 = makeValidMetadata();
+        moduleBVersion4.setId("module-B");
+        moduleBVersion4.setVersion(4);
+
+        // Spy query all, so we don't have to depend on that complex logic.
+        doReturn(ImmutableList.of(moduleAVersion1, moduleAVersion2, moduleBVersion3, moduleBVersion4)).when(svc)
+                .queryAllMetadata(true, true, "foo='bar'", null, tags, true);
+
+        // execute and validate
+        List<SharedModuleMetadata> svcOutputMetadataList = svc.queryMetadataById("module-B", true, true, "foo='bar'",
+                null, tags, true);
+        assertEquals(2, svcOutputMetadataList.size());
+    }
+    
     @Test(expected = BadRequestException.class)
     public void updateNullId() {
         svc.updateMetadata(null, MODULE_VERSION, makeValidMetadata());
