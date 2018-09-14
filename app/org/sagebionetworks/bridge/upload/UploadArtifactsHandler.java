@@ -28,6 +28,14 @@ public class UploadArtifactsHandler implements UploadValidationHandler {
         // Upload health data record. Set record ID to be the same as upload ID.
         HealthDataRecord record = context.getHealthDataRecord();
         record.setId(uploadId);
+
+        // If the record already exists (for example, this is a redrive), we need to set the version attribute properly
+        // so we overwrite the old record properly.
+        HealthDataRecord oldRecord = healthDataService.getRecordById(uploadId);
+        if (oldRecord != null) {
+            record.setVersion(oldRecord.getVersion());
+        }
+
         String recordId = healthDataService.createOrUpdateRecord(record);
         context.setRecordId(recordId);
     }

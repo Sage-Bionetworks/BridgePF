@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -180,11 +181,12 @@ public class UploadControllerTest {
         TestUtils.mockPlayContext();
 
         // execute and validate
-        Result result = controller.uploadComplete(UPLOAD_ID, null);
+        Result result = controller.uploadComplete(UPLOAD_ID, null, null);
         validateValidationStatus(result);
 
         // verify back-end calls
-        verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")), eq(UploadCompletionClient.S3_WORKER), uploadCaptor.capture());
+        verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")),
+                eq(UploadCompletionClient.S3_WORKER), uploadCaptor.capture(), eq(false));
         Upload upload = uploadCaptor.getValue();
         assertEquals("consented-user-health-code", upload.getHealthCode());
 
@@ -200,11 +202,12 @@ public class UploadControllerTest {
         TestUtils.mockPlayContext();
 
         // execute and validate
-        Result result = controller.uploadComplete(UPLOAD_ID, null);
+        Result result = controller.uploadComplete(UPLOAD_ID, null, null);
         validateValidationStatus(result);
 
         // verify back-end calls
-        verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")), eq(UploadCompletionClient.APP), uploadCaptor.capture());
+        verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")),
+                eq(UploadCompletionClient.APP), uploadCaptor.capture(), eq(false));
         Upload upload = uploadCaptor.getValue();
         assertEquals("consented-user-health-code", upload.getHealthCode());
 
@@ -225,14 +228,14 @@ public class UploadControllerTest {
 
         // execute and catch exception
         try {
-            controller.uploadComplete(UPLOAD_ID, null);
+            controller.uploadComplete(UPLOAD_ID, null, null);
             fail("Should have thrown exception");
         } catch(UnauthorizedException e) {
             // expected exception
         }
 
         // verify back-end calls
-        verify(uploadService, never()).uploadComplete(any(), any(), any());
+        verify(uploadService, never()).uploadComplete(any(), any(), any(), anyBoolean());
         verify(uploadService, never()).getUploadValidationStatus(any());
         verify(uploadService, never()).pollUploadValidationStatusUntilComplete(any());
     }
@@ -245,14 +248,32 @@ public class UploadControllerTest {
         TestUtils.mockPlayContext();
 
         // execute and validate
-        Result result = controller.uploadComplete(UPLOAD_ID, "true");
+        Result result = controller.uploadComplete(UPLOAD_ID, "true", null);
         validateValidationStatus(result);
 
         // verify back-end calls
         verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")),
-                eq(UploadCompletionClient.APP), any());
+                eq(UploadCompletionClient.APP), any(), eq(false));
         verify(uploadService).pollUploadValidationStatusUntilComplete(UPLOAD_ID);
         verify(uploadService, never()).getUploadValidationStatus(any());
+    }
+
+    @Test
+    public void uploadCompleteRedriveFlag() throws Exception {
+        // setup controller
+        doReturn(consentedUserSession).when(controller).getAuthenticatedSession();
+        doReturn(consentedUserSession).when(controller).getAuthenticatedAndConsentedSession();
+        TestUtils.mockPlayContext();
+
+        // execute and validate
+        Result result = controller.uploadComplete(UPLOAD_ID, null, "true");
+        validateValidationStatus(result);
+
+        // verify back-end calls
+        verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")),
+                eq(UploadCompletionClient.APP), any(), eq(true));
+        verify(uploadService).getUploadValidationStatus(UPLOAD_ID);
+        verify(uploadService, never()).pollUploadValidationStatusUntilComplete(any());
     }
 
     @Test

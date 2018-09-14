@@ -8,43 +8,61 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
-import org.joda.time.LocalDate;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.services.HealthDataService;
 
 public class UploadArtifactsHandlerTest {
-    private static final long ARBITRARY_TIMESTAMP = 1424136378727L;
     private static final String TEST_UPLOAD_ID = "test-upload";
 
-    @Test
-    public void test() throws Exception {
-        // mock health data service
-        HealthDataService mockHealthDataService = mock(HealthDataService.class);
+    private HealthDataService mockHealthDataService;
+    private UploadArtifactsHandler handler;
+
+    @Before
+    public void setup() {
+        // Mock health data service.
+        mockHealthDataService = mock(HealthDataService.class);
         when(mockHealthDataService.createOrUpdateRecord(any())).thenAnswer(invocation -> invocation.getArgumentAt(
                 0, HealthDataRecord.class).getId());
 
-        // set up handler
-        UploadArtifactsHandler handler = new UploadArtifactsHandler();
+        // Set up handler.
+        handler = new UploadArtifactsHandler();
         handler.setHealthDataService(mockHealthDataService);
+    }
 
-        // Make record. Attachments are handled earlier in the call chain, and the data JSON node just contains the S3
-        // filename of the attachment.
-        String dataJsonText = "{\n" +
-                "   \"json.json.string\":\"This is a string\",\n" +
-                "   \"json.json.int\":42,\n" +
-                "   \"json.json.attachment\":\"" + TEST_UPLOAD_ID + "-json.json.attachment\"\n" +
-                "}";
-        JsonNode dataJson = BridgeObjectMapper.get().readTree(dataJsonText);
-        HealthDataRecord record = createValidRecord(dataJson);
+    @Test
+    public void createNewRecord() {
+        test();
+    }
+
+    @Test
+    public void updateExistingRecord() {
+        // Mock health data service to return existing record. The only values that matter are version.
+        HealthDataRecord existingRecord = HealthDataRecord.create();
+        existingRecord.setId(TEST_UPLOAD_ID);
+        existingRecord.setVersion(42L);
+
+        when(mockHealthDataService.getRecordById(TEST_UPLOAD_ID)).thenReturn(existingRecord);
+
+        // Execute test.
+        test();
+
+        // Verify version was set properly.
+        ArgumentCaptor<HealthDataRecord> createdRecordCaptor = ArgumentCaptor.forClass(HealthDataRecord.class);
+        verify(mockHealthDataService).createOrUpdateRecord(createdRecordCaptor.capture());
+
+        HealthDataRecord createdRecord = createdRecordCaptor.getValue();
+        assertEquals(42L, createdRecord.getVersion().longValue());
+    }
+
+    private void test() {
+        // Make record. This test handles records almost entirely opaquely, so for the purposes of this test, a blank
+        // record will suffice.
+        HealthDataRecord record = HealthDataRecord.create();
 
         // only need upload ID from upload
         DynamoUpload2 upload = new DynamoUpload2();
@@ -71,26 +89,5 @@ public class UploadArtifactsHandlerTest {
 
         // validate no messages on the context
         assertTrue(context.getMessageList().isEmpty());
-    }
-
-    // creates a record that has all the valid values filled in, with the data JsonNode specified
-    private static HealthDataRecord createValidRecord(JsonNode dataNode) {
-        // none of these values matter (except data, which is specified), so just fill in whatever
-        // All that matters is that the values are written to DDB.
-        HealthDataRecord record = HealthDataRecord.create();
-        record.setCreatedOn(ARBITRARY_TIMESTAMP);
-        record.setData(dataNode);
-        record.setHealthCode("dummy-healthcode");
-        record.setMetadata(BridgeObjectMapper.get().createObjectNode());
-        record.setSchemaId("dummy-schema");
-        record.setSchemaRevision(1);
-        record.setStudyId("dummy-study");
-        record.setUploadDate(LocalDate.parse("2015-11-18"));
-        record.setUploadId(TEST_UPLOAD_ID);
-        record.setUserExternalId("dummy-external-ID");
-        record.setUserSharingScope(SharingScope.SPONSORS_AND_PARTNERS);
-        record.setUserDataGroups(TestConstants.USER_DATA_GROUPS);
-        record.setVersion(42L);
-        return record;
     }
 }

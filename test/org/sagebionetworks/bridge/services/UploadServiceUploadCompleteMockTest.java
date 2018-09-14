@@ -68,7 +68,7 @@ public class UploadServiceUploadCompleteMockTest {
         upload.setStatus(UploadStatus.VALIDATION_IN_PROGRESS);
 
         // execute
-        svc.uploadComplete(TEST_STUDY, APP, upload);
+        svc.uploadComplete(TEST_STUDY, APP, upload, false);
 
         // Verify upload DAO and validation aren't called. Can skip S3 because we don't want to over-specify our tests.
         verifyZeroInteractions(mockUploadDao, mockUploadValidationService);
@@ -86,7 +86,7 @@ public class UploadServiceUploadCompleteMockTest {
         upload.setDuplicateUploadId(DUPE_UPLOAD_ID);
 
         // execute
-        svc.uploadComplete(TEST_STUDY, APP, upload);
+        svc.uploadComplete(TEST_STUDY, APP, upload, false);
 
         // Similarly, verify upload DAO and validation aren't called.
         verifyZeroInteractions(mockUploadDao, mockUploadValidationService);
@@ -106,7 +106,7 @@ public class UploadServiceUploadCompleteMockTest {
 
         // execute
         try {
-            svc.uploadComplete(TEST_STUDY, APP, upload);
+            svc.uploadComplete(TEST_STUDY, APP, upload, false);
             fail("expected exception");
         } catch (NotFoundException ex) {
             // expected exception
@@ -130,7 +130,7 @@ public class UploadServiceUploadCompleteMockTest {
 
         // execute
         try {
-            svc.uploadComplete(TEST_STUDY, APP, upload);
+            svc.uploadComplete(TEST_STUDY, APP, upload, false);
             fail("expected exception");
         } catch (BridgeServiceException ex) {
             // expected exception
@@ -149,7 +149,7 @@ public class UploadServiceUploadCompleteMockTest {
         upload.setStatus(UploadStatus.SUCCEEDED);
 
         // execute
-        svc.uploadComplete(TEST_STUDY, APP, upload);
+        svc.uploadComplete(TEST_STUDY, APP, upload, false);
 
         // Verify S3, upload DAO and validation aren't called.
         verifyZeroInteractions(mockUploadDao, mockUploadValidationService, mockS3Client);
@@ -171,7 +171,7 @@ public class UploadServiceUploadCompleteMockTest {
         doThrow(ConcurrentModificationException.class).when(mockUploadDao).uploadComplete(APP, upload);
 
         // execute
-        svc.uploadComplete(TestConstants.TEST_STUDY, APP, upload);
+        svc.uploadComplete(TestConstants.TEST_STUDY, APP, upload, false);
 
         // Verify upload DAO and validation.
         verify(mockUploadValidationService, never()).validateUpload(any(StudyIdentifier.class), any(Upload.class));
@@ -190,7 +190,27 @@ public class UploadServiceUploadCompleteMockTest {
         when(mockS3Client.getObjectMetadata(TEST_BUCKET, TEST_UPLOAD_ID)).thenReturn(mockObjMetadata);
 
         // execute
-        svc.uploadComplete(TestConstants.TEST_STUDY, APP, upload);
+        svc.uploadComplete(TestConstants.TEST_STUDY, APP, upload, false);
+
+        // Verify upload DAO and validation.
+        verify(mockUploadDao).uploadComplete(APP, upload);
+        verify(mockUploadValidationService).validateUpload(TestConstants.TEST_STUDY, upload);
+    }
+
+    @Test
+    public void redrive() {
+        // Create upload that's already marked as succeeded.
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setUploadId(TEST_UPLOAD_ID);
+        upload.setStatus(UploadStatus.SUCCEEDED);
+
+        // mock S3
+        ObjectMetadata mockObjMetadata = mock(ObjectMetadata.class);
+        when(mockObjMetadata.getSSEAlgorithm()).thenReturn(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+        when(mockS3Client.getObjectMetadata(TEST_BUCKET, TEST_UPLOAD_ID)).thenReturn(mockObjMetadata);
+
+        // execute
+        svc.uploadComplete(TestConstants.TEST_STUDY, APP, upload, true);
 
         // Verify upload DAO and validation.
         verify(mockUploadDao).uploadComplete(APP, upload);
