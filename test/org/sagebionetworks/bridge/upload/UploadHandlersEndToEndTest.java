@@ -128,10 +128,10 @@ public class UploadHandlersEndToEndTest {
 
         when(mockHealthDataService.getRecordById(any())).thenAnswer(invocation -> {
             String recordId = invocation.getArgumentAt(0, String.class);
-            if (recordId.equals(savedRecord.getId())) {
-                return savedRecord;
-            } else {
+            if (savedRecord == null || !savedRecord.getId().equals(recordId)) {
                 return null;
+            } else {
+                return savedRecord;
             }
         });
 
@@ -152,7 +152,7 @@ public class UploadHandlersEndToEndTest {
         DateTimeUtils.setCurrentMillisSystem();
     }
 
-    private void test(UploadSchema schema, Survey survey, Map<String, String> fileMap) throws Exception {
+    private void test(UploadSchema schema, Survey survey, Map<String, String> fileMap) {
         // fileMap is in strings. Convert to bytes so we can use the Zipper.
         Map<String, byte[]> fileBytesMap = new HashMap<>();
         for (Map.Entry<String, String> oneFile : fileMap.entrySet()) {
@@ -316,7 +316,7 @@ public class UploadHandlersEndToEndTest {
         assertEquals("my-meta-value", userMetadataNode.get("my-meta-key").textValue());
     }
 
-    private void testSurvey(Map<String, String> fileMap) throws Exception {
+    private void testSurvey(Map<String, String> fileMap) {
         // set up schema
         List<UploadFieldDefinition> fieldDefList = ImmutableList.of(
                 new UploadFieldDefinition.Builder().withName("AAA").withType(UploadFieldType.SINGLE_CHOICE)
@@ -378,7 +378,7 @@ public class UploadHandlersEndToEndTest {
     }
 
     @Test
-    public void v1LegacySurvey() throws Exception {
+    public void v1LegacySurvey() {
         // set up upload files
         String infoJsonText = "{\n" +
                 "   \"files\":[{\n" +
@@ -433,7 +433,7 @@ public class UploadHandlersEndToEndTest {
     }
 
     @Test
-    public void v2GenericSurvey() throws Exception {
+    public void v2GenericSurvey() {
         // set up upload files
         String infoJsonText = "{\n" +
                 "   \"createdOn\":\"" + CREATED_ON_STRING + "\",\n" +
@@ -652,7 +652,7 @@ public class UploadHandlersEndToEndTest {
         testNonSurvey(infoJsonText);
     }
 
-    private void validateTextAttachment(String expected, String attachmentId) throws Exception {
+    private void validateTextAttachment(String expected, String attachmentId) {
         byte[] uploadedFileContent = uploadedFileContentMap.get(attachmentId);
         assertEquals(expected, new String(uploadedFileContent, Charsets.UTF_8));
     }
