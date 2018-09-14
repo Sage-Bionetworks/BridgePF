@@ -81,6 +81,7 @@ public class HibernateSharedModuleMetadataTest {
                 "   \"schemaId\":\"" + SCHEMA_ID + "\",\n" +
                 "   \"schemaRevision\":" + SCHEMA_REV + ",\n" +
                 "   \"tags\":[\"foo\", \"bar\", \"baz\"],\n" +
+                "   \"delete\":false,\n" +
                 "   \"version\":" + MODULE_VERSION + "\n" +
                 "}";
 
@@ -95,6 +96,7 @@ public class HibernateSharedModuleMetadataTest {
         assertEquals(SCHEMA_ID, metadata.getSchemaId());
         assertEquals(SCHEMA_REV, metadata.getSchemaRevision().intValue());
         assertEquals(MODULE_TAGS, metadata.getTags());
+        assertFalse(metadata.isDeleted());
         assertEquals(MODULE_VERSION, metadata.getVersion());
 
         // Convert back to JSON
@@ -110,6 +112,7 @@ public class HibernateSharedModuleMetadataTest {
         assertEquals(SCHEMA_REV, jsonNode.get("schemaRevision").intValue());
         assertEquals(MODULE_VERSION, jsonNode.get("version").intValue());
         assertEquals("schema", jsonNode.get("moduleType").textValue());
+        assertFalse(jsonNode.get("deleted").booleanValue());
         assertEquals("SharedModuleMetadata", jsonNode.get("type").textValue());
 
         JsonNode tagsNode = jsonNode.get("tags");

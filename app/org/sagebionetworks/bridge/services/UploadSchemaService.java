@@ -554,7 +554,7 @@ public class UploadSchemaService {
         parameters.put("schemaRevisions", revisions);
 
         List<SharedModuleMetadata> sharedModuleMetadataList = sharedModuleMetadataService.queryAllMetadata(false, false,
-                "schemaId=:schemaId AND schemaRevision IN :schemaRevisions", parameters, null);
+                "schemaId=:schemaId AND schemaRevision IN :schemaRevisions", parameters, null, true);
 
         if (sharedModuleMetadataList.size() != 0) {
             throw new BadRequestException("Cannot delete specified Upload Schema because a shared module still refers to it.");
@@ -652,7 +652,7 @@ public class UploadSchemaService {
             parameters.put("schemaRevision", revision);
 
             List<SharedModuleMetadata> sharedModuleMetadataList = sharedModuleMetadataService.queryAllMetadata(false, false,
-                    "schemaId=:schemaId AND schemaRevision=:schemaRevision", parameters, null);
+                    "schemaId=:schemaId AND schemaRevision=:schemaRevision", parameters, null, true);
 
             if (sharedModuleMetadataList.size() != 0) {
                 throw new BadRequestException("Cannot delete specified Upload Schema because a shared module still refers to it.");

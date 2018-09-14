@@ -19,7 +19,6 @@ import play.mvc.Result;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
-import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -51,7 +50,7 @@ public class SharedModuleMetadataController extends BaseController {
         if ("true".equals(physical) && session.isInRole(Roles.ADMIN)) {
             metadataService.deleteMetadataByIdAllVersionsPermanently(id);    
         } else {
-            //metadataService.deleteMetadataByIdAllVersions(id);
+            metadataService.deleteMetadataByIdAllVersions(id);
         }
         return okResult("Metadata has been deleted.");
     }
@@ -63,7 +62,7 @@ public class SharedModuleMetadataController extends BaseController {
         if ("true".equals(physical) && session.isInRole(Roles.ADMIN)) {
             metadataService.deleteMetadataByIdAndVersionPermanently(id, version);    
         } else {
-            // metadataService.deleteMetadataByIdAndVersion(id, version);
+            metadataService.deleteMetadataByIdAndVersion(id, version);
         }
         return okResult("Metadata has been deleted.");
     }
@@ -95,9 +94,11 @@ public class SharedModuleMetadataController extends BaseController {
     
     /**
      * Queries module metadata using the set of given parameters. See
-     * {@link SharedModuleMetadataService#queryAllMetadata} for details.
+     * {@link SharedModuleMetadataService#queryAllMetadata} for details. This method does not
+     * require authentication.
      */
-    public Result queryAllMetadata(String mostRecentString, String publishedString, String name, String notes, String tagsString) {
+    public Result queryAllMetadata(String mostRecentString, String publishedString, String name, String notes,
+            String tagsString, String includeDeleted) {
         // Parse inputs
         boolean mostRecent = Boolean.parseBoolean(mostRecentString);
         boolean published = Boolean.parseBoolean(publishedString);
@@ -108,14 +109,13 @@ public class SharedModuleMetadataController extends BaseController {
         
         // Call service
         List<SharedModuleMetadata> metadataList = metadataService.queryAllMetadata(mostRecent, published, where,
-                parameters, tagSet);
-        ResourceList<SharedModuleMetadata> resourceList = new ResourceList<>(metadataList);
-        return okResult(resourceList);
+                parameters, tagSet, Boolean.valueOf(includeDeleted));
+        return okResult(metadataList);
     }
 
     /** Similar to queryAllMetadata, except this only queries on module versions of the specified ID. */
     public Result queryMetadataById(String id, String mostRecentString, String publishedString, String name,
-            String notes, String tagsString) {
+            String notes, String tagsString, String includeDeleted) {
         // Parse inputs
         boolean mostRecent = Boolean.parseBoolean(mostRecentString);
         boolean published = Boolean.parseBoolean(publishedString);
@@ -126,9 +126,8 @@ public class SharedModuleMetadataController extends BaseController {
         
         // Call service
         List<SharedModuleMetadata> metadataList = metadataService.queryMetadataById(id, mostRecent, published, where,
-                parameters, tagSet);
-        ResourceList<SharedModuleMetadata> resourceList = new ResourceList<>(metadataList);
-        return okResult(resourceList);
+                parameters, tagSet, Boolean.valueOf(includeDeleted));
+        return okResult(metadataList);
     }
 
     // Helper method to parse tags from URL query params. Package-scoped for unit tests.

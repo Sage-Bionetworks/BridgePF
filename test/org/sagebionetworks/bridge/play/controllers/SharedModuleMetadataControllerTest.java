@@ -30,6 +30,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ResourceList;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
 import org.sagebionetworks.bridge.services.SharedModuleMetadataService;
@@ -89,26 +90,28 @@ public class SharedModuleMetadataControllerTest {
     }
 
     @Test
-    public void deleteByIdAllVersions() throws Exception {
+    public void deleteByIdAllVersionsPermanently() throws Exception {
+        mockSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.ADMIN)).build());
         doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
         
         // setup, execute, and validate
-        Result result = controller.deleteMetadataByIdAllVersions(MODULE_ID, "false");
+        Result result = controller.deleteMetadataByIdAllVersions(MODULE_ID, "true");
         TestUtils.assertResult(result, 200);
 
         // verify backend
         verify(mockSvc).deleteMetadataByIdAllVersionsPermanently(MODULE_ID);
 
         // validate permissions
-        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
     }
 
     @Test
-    public void deleteByIdAndVersion() throws Exception {
+    public void deleteByIdAndVersionPermanently() throws Exception {
+        mockSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.ADMIN)).build());
         doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
         
         // setup, execute, and validate
-        Result result = controller.deleteMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION, "false");
+        Result result = controller.deleteMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION, "true");
         TestUtils.assertResult(result, 200);
 
         // verify backend
@@ -152,16 +155,34 @@ public class SharedModuleMetadataControllerTest {
         
         // mock service
         when(mockSvc.queryAllMetadata(true, true, "name like :name or notes like :notes", parameters,
-                ImmutableSet.of("foo", "bar", "baz"))).thenReturn(ImmutableList.of(makeValidMetadata()));
+                ImmutableSet.of("foo", "bar", "baz"), true)).thenReturn(ImmutableList.of(makeValidMetadata()));
 
         // setup, execute, and validate
-        Result result = controller.queryAllMetadata("true", "true", "name", "notes", "foo,bar,baz");
+        Result result = controller.queryAllMetadata("true", "true", "name", "notes", "foo,bar,baz", "true");
         TestUtils.assertResult(result, 200);
         assertMetadataListInResult(result);
 
         verify(controller, times(0)).getAuthenticatedSession(any());
     }
 
+    @Test
+    public void queryAllWithDefaultIncludeDeleted() throws Exception {
+        Map<String,Object> parameters = new HashMap<>();
+        parameters.put("name", "%name%");
+        parameters.put("notes", "%notes%");
+        
+        // mock service
+        when(mockSvc.queryAllMetadata(true, true, "name like :name or notes like :notes", parameters,
+                ImmutableSet.of("foo", "bar", "baz"), false)).thenReturn(ImmutableList.of(makeValidMetadata()));
+
+        // setup, execute, and validate
+        Result result = controller.queryAllMetadata("true", "true", "name", "notes", "foo,bar,baz", null);
+        TestUtils.assertResult(result, 200);
+        assertMetadataListInResult(result);
+
+        verify(controller, times(0)).getAuthenticatedSession(any());
+    }
+    
     @Test
     public void queryById() throws Exception {
         Map<String,Object> parameters = new HashMap<>();
@@ -170,16 +191,34 @@ public class SharedModuleMetadataControllerTest {
         
         // mock service
         when(mockSvc.queryMetadataById(MODULE_ID, true, true, "name like :name or notes like :notes", parameters,
-                ImmutableSet.of("foo", "bar", "baz"))).thenReturn(ImmutableList.of(makeValidMetadata()));
+                ImmutableSet.of("foo", "bar", "baz"), false)).thenReturn(ImmutableList.of(makeValidMetadata()));
 
         // setup, execute, and validate
-        Result result = controller.queryMetadataById(MODULE_ID, "true", "true", "name", "notes", "foo,bar,baz");
+        Result result = controller.queryMetadataById(MODULE_ID, "true", "true", "name", "notes", "foo,bar,baz", "false");
         TestUtils.assertResult(result, 200);
         assertMetadataListInResult(result);
 
         verify(controller, times(0)).getAuthenticatedSession(any());
     }
 
+    @Test
+    public void queryByIdWithDefaultIncludeDeleted() throws Exception {
+        Map<String,Object> parameters = new HashMap<>();
+        parameters.put("name", "%name%");
+        parameters.put("notes", "%notes%");
+        
+        // mock service
+        when(mockSvc.queryMetadataById(MODULE_ID, true, true, "name like :name or notes like :notes", parameters,
+                ImmutableSet.of("foo", "bar", "baz"), false)).thenReturn(ImmutableList.of(makeValidMetadata()));
+
+        // setup, execute, and validate
+        Result result = controller.queryMetadataById(MODULE_ID, "true", "true", "name", "notes", "foo,bar,baz", null);
+        TestUtils.assertResult(result, 200);
+        assertMetadataListInResult(result);
+
+        verify(controller, times(0)).getAuthenticatedSession(any());
+    }
+    
     @Test
     public void parseTags() {
         assertEquals(ImmutableSet.of(), SharedModuleMetadataController.parseTags(null));

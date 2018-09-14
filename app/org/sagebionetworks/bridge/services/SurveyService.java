@@ -207,8 +207,9 @@ public class SurveyService {
         parameters.put("surveyGuid", keys.getGuid());
         parameters.put("surveyCreatedOn", keys.getCreatedOn());
         
+        // We do include deleted shared modules so they are not broken when a survey is deleted
         List<SharedModuleMetadata> sharedModuleMetadataList = sharedModuleMetadataService.queryAllMetadata(false, false,
-                "surveyGuid=:surveyGuid AND surveyCreatedOn=:surveyCreatedOn", parameters, null);
+                "surveyGuid=:surveyGuid AND surveyCreatedOn=:surveyCreatedOn", parameters, null, true);
 
         if (sharedModuleMetadataList.size() != 0) {
             throw new BadRequestException("Cannot delete specified survey because a shared module still refers to it.");

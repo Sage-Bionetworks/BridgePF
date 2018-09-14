@@ -53,7 +53,7 @@ public class HibernateSharedModuleMetadataDao implements SharedModuleMetadataDao
 
     /** {@inheritDoc} */
     @Override
-    public void deleteMetadataByIdAllVersions2(String id) {
+    public void deleteMetadataByIdAllVersions(String id) {
         sessionHelper(session -> {
             session.createQuery("update HibernateSharedModuleMetadata m set m.deleted = true where m.id='" + id + "'")
                     .executeUpdate();
@@ -63,7 +63,7 @@ public class HibernateSharedModuleMetadataDao implements SharedModuleMetadataDao
 
     /** {@inheritDoc} */
     @Override
-    public void deleteMetadataByIdAndVersion2(String id, int version) {
+    public void deleteMetadataByIdAndVersion(String id, int version) {
         sessionHelper(session -> {
             session.createQuery("update HibernateSharedModuleMetadata m set m.deleted = true where m.id='" + id
                     + "' and m.version = " + version).executeUpdate();

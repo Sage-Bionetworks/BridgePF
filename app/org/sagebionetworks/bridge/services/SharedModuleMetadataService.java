@@ -2,7 +2,9 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID;
+import static org.sagebionetworks.bridge.BridgeUtils.AND_JOINER;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import org.sagebionetworks.bridge.dao.SharedModuleMetadataDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -116,6 +117,41 @@ public class SharedModuleMetadataService {
     }
 
     /**
+     * Deletes all metadata for module versions with the given ID. Throws EntityNotFoundException 
+     * if there are no such module versions.
+     */
+    public void deleteMetadataByIdAllVersions(String id) {
+        if (StringUtils.isBlank(id)) {
+            throw new BadRequestException("id must be specified");
+        }
+        // Check that module exists. Module ID is validated by get(). Don't validate that there's 
+        // at least one that hasn't been logically deleted because it could be expensive.
+        getMetadataByIdLatestVersion(id);
+        
+        metadataDao.deleteMetadataByIdAllVersions(id);
+    }
+
+    /**
+     * Deletes metadata for the specified module ID and version. Throws EntityNotFoundException 
+     * if that module version doesn't exist or is already logically deleted.
+     */
+    public void deleteMetadataByIdAndVersion(String id, int version) {
+        // Check that module exists. Module ID and version is validated by get().
+        if (StringUtils.isBlank(id)) {
+            throw new BadRequestException("id must be specified");
+        }
+        if (version <= 0) {
+            throw new BadRequestException("version must be positive");
+        }
+        SharedModuleMetadata existingMetadata = metadataDao.getMetadataByIdAndVersion(id, version);
+        
+        if (existingMetadata == null || existingMetadata.isDeleted()) {
+            throw new EntityNotFoundException(SharedModuleMetadata.class);
+        }
+        metadataDao.deleteMetadataByIdAndVersion(id, version);
+    }
+    
+    /**
      * Deletes all metadata for module versions with the given ID. Throws EntityNotFoundException if there are no such
      * module versions.
      */
@@ -163,12 +199,13 @@ public class SharedModuleMetadataService {
     }
 
     // Helper method to get the latest metadata, but doesn't throw EntityNotFoundException if it doesn't exist. Note,
-    // it still validates the input and will throw a BadRequestException.
+    // it still validates the input and will throw a BadRequestException. It also looks for the most recent undeleted
+    // metadata object (it doesn't include deleted objects).
     private SharedModuleMetadata getLatestNoThrow(String id) {
         if (StringUtils.isBlank(id)) {
             throw new BadRequestException("id must be specified");
         }
-        List<SharedModuleMetadata> queryMetadataList = queryMetadataById(id, true, false, null, null, null);
+        List<SharedModuleMetadata> queryMetadataList = queryMetadataById(id, true, false, null, null, null, false);
 
         if (queryMetadataList.isEmpty()) {
             // If there are no results, return null instead of throwing.
@@ -205,34 +242,26 @@ public class SharedModuleMetadataService {
      * </p>
      */
     public List<SharedModuleMetadata> queryAllMetadata(boolean mostRecent, boolean published, String where,
-            Map<String, Object> parameters, Set<String> tags) {
+            Map<String, Object> parameters, Set<String> tags, boolean includeDeleted) {
         boolean hasWhere = StringUtils.isNotBlank(where);
-        String whereInternal = null;
-        if (mostRecent) {
-            if (hasWhere) {
-                // This is disallowed because of the confusion (both from Bridge developers and from Study managers) on
-                // how this would actually work.
-                throw new BadRequestException("mostrecent=true cannot be specified with where clause");
-            }
-
-            if (published) {
-                // Most recent published version is a special case. This is implemented by first querying for published
-                // versions, then filtering for most recent.
-                whereInternal = "published=true";
-            }
-        } else {
-            if (published && hasWhere) {
-                // Published and where both contribute to the query.
-                whereInternal = "published=true AND " + where;
-            } else if (published) {
-                whereInternal = "published=true";
-            } else if (hasWhere) {
-                whereInternal = where;
-            }
+        
+        if (mostRecent && hasWhere) {
+            // This is disallowed because of the confusion (both from Bridge developers and from Study managers) on
+            // how this would actually work.
+            throw new BadRequestException("mostrecent=true cannot be specified with where clause");
         }
-
+        List<String> expressions = new ArrayList<>();
+        if (hasWhere) {
+            expressions.add(where);    
+        }
+        if (published) {
+            expressions.add("published=true");
+        }
+        if (!includeDeleted) {
+            expressions.add("deleted=false");
+        }
         // Run actual query.
-        List<SharedModuleMetadata> metadataList = metadataDao.queryMetadata(whereInternal, parameters);
+        List<SharedModuleMetadata> metadataList = metadataDao.queryMetadata(AND_JOINER.join(expressions), parameters);
 
         // Map to find latest versions for each metadata by ID. This is applied before tags.
         if (mostRecent) {
@@ -259,13 +288,14 @@ public class SharedModuleMetadataService {
 
     /** Similar to queryAllMetadata, except this only queries on module versions of the specified ID. */
     public List<SharedModuleMetadata> queryMetadataById(String id, boolean mostRecent, boolean published, String where,
-            Map<String, Object> parameters, Set<String> tags) {
+            Map<String, Object> parameters, Set<String> tags, boolean includeDeleted) {
         if (StringUtils.isBlank(id)) {
             throw new BadRequestException("id must be specified");
         }
 
         // Query all metadata and just filter by ID.
-        List<SharedModuleMetadata> queryAllMetadataList = queryAllMetadata(mostRecent, published, where, parameters, tags);
+        List<SharedModuleMetadata> queryAllMetadataList = queryAllMetadata(mostRecent, published, where, parameters,
+                tags, includeDeleted);
         return queryAllMetadataList.stream().filter(metadata -> id.equals(metadata.getId())).collect(Collectors
                 .toList());
     }
@@ -276,7 +306,11 @@ public class SharedModuleMetadataService {
      */
     public SharedModuleMetadata updateMetadata(String id, int version, SharedModuleMetadata metadata) {
         // Check that module exists. Module ID and version are validated by get().
-        getMetadataByIdAndVersion(id, version);
+        SharedModuleMetadata existingMetadata = getMetadataByIdAndVersion(id, version);
+        
+        if (existingMetadata.isDeleted() && metadata.isDeleted()) {
+            throw new EntityNotFoundException(SharedModuleMetadata.class);
+        }
 
         // Set id and version on the metadata object, to verify we are setting the correct module version.
         metadata.setId(id);

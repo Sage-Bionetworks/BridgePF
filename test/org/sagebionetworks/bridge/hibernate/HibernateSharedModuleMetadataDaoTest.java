@@ -90,6 +90,31 @@ public class HibernateSharedModuleMetadataDaoTest {
     }
 
     @Test
+    public void deleteByIdAllVersions() {
+        Query mockQuery = mock(Query.class);
+        when(mockSession.createQuery("update HibernateSharedModuleMetadata m set m.deleted = true where m.id='" + MODULE_ID + "'"))
+                .thenReturn(mockQuery);
+        
+        dao.deleteMetadataByIdAllVersions(MODULE_ID);
+        
+        verify(mockSession).createQuery("update HibernateSharedModuleMetadata m set m.deleted = true where m.id='" + MODULE_ID + "'");
+        verifySessionAndTransaction();
+    }
+
+    @Test
+    public void deleteByIdAndVersion() {
+        Query mockQuery = mock(Query.class);
+        when(mockSession.createQuery("update HibernateSharedModuleMetadata m set m.deleted = true where m.id='"
+                + MODULE_ID + "' and m.version = " + MODULE_VERSION)).thenReturn(mockQuery);
+
+        dao.deleteMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION);
+
+        verify(mockSession).createQuery("update HibernateSharedModuleMetadata m set m.deleted = true where m.id='"
+                + MODULE_ID + "' and m.version = " + MODULE_VERSION);
+        verifySessionAndTransaction();
+    }
+    
+    @Test
     public void deleteByIdAllVersionsPermanently() {
         // mock query
         Query mockQuery = mock(Query.class);
