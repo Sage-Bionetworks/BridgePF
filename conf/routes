@@ -200,7 +200,7 @@ POST   /v4/activities                              @org.sagebionetworks.bridge.p
 
 # Uploads
 POST   /v3/uploads                     @org.sagebionetworks.bridge.play.controllers.UploadController.upload
-POST   /v3/uploads/:uploadId/complete  @org.sagebionetworks.bridge.play.controllers.UploadController.uploadComplete(uploadId: String, synchronous: String ?= "false")
+POST   /v3/uploads/:uploadId/complete  @org.sagebionetworks.bridge.play.controllers.UploadController.uploadComplete(uploadId: String, synchronous: String ?= "false", redrive: String ?= "false")
 GET    /v3/uploadstatuses/:uploadId    @org.sagebionetworks.bridge.play.controllers.UploadController.getValidationStatus(uploadId: String)
 GET    /v3/uploads/:uploadId           @org.sagebionetworks.bridge.play.controllers.UploadController.getUpload(uploadId: String)
 
@@ -353,7 +353,7 @@ POST   /api/v2/consent/dataSharing           @org.sagebionetworks.bridge.play.co
 
 # API - Upload
 POST   /api/v1/upload                  @org.sagebionetworks.bridge.play.controllers.UploadController.upload
-POST   /api/v1/upload/:id/complete     @org.sagebionetworks.bridge.play.controllers.UploadController.uploadComplete(id: String, synchronous: String ?= "false")
+POST   /api/v1/upload/:id/complete     @org.sagebionetworks.bridge.play.controllers.UploadController.uploadComplete(id: String, synchronous: String ?= "false", redrive: String ?= "false")
 GET    /api/v1/upload/:id/status       @org.sagebionetworks.bridge.play.controllers.UploadController.getValidationStatus(id: String)
 
 # Assets, there are only two, a robots file and a favicon.ico

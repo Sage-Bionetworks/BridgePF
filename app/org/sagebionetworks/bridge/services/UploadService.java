@@ -403,11 +403,12 @@ public class UploadService {
         }
     }
 
-    public void uploadComplete(StudyIdentifier studyId, UploadCompletionClient completedBy, Upload upload) {
+    public void uploadComplete(StudyIdentifier studyId, UploadCompletionClient completedBy, Upload upload,
+            boolean redrive) {
         String uploadId = upload.getUploadId();
 
         // We don't want to kick off upload validation on an upload that already has upload validation.
-        if (!upload.canBeValidated()) {
+        if (!upload.canBeValidated() && !redrive) {
             logger.info(String.format("uploadComplete called for upload %s, which is already complete", uploadId));
             return;
         }
