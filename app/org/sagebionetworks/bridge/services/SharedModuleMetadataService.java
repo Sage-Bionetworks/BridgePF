@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -69,6 +70,7 @@ public class SharedModuleMetadataService {
         if (metadata.getVersion() == 0) {
             metadata.setVersion(oldVersion + 1);
         }
+        metadata.setDeleted(false);
 
         // validate metadata
         Validate.entityThrowingException(SharedModuleMetadataValidator.INSTANCE, metadata);
@@ -156,9 +158,16 @@ public class SharedModuleMetadataService {
      * module versions.
      */
     public void deleteMetadataByIdAllVersionsPermanently(String id) {
-        // Check that module exists. Module ID is validated by get().
-        getMetadataByIdLatestVersion(id);
-
+        if (StringUtils.isBlank(id)) {
+            throw new BadRequestException("id must be specified");
+        }
+        
+        // Check that module exists, at least in deleted form
+        Map<String,Object> parameters = ImmutableMap.of("id", id);
+        List<SharedModuleMetadata> queryMetadataList = metadataDao.queryMetadata("id=:id", parameters);
+        if (queryMetadataList.isEmpty()) {
+            throw new EntityNotFoundException(SharedModuleMetadata.class);
+        }
         metadataDao.deleteMetadataByIdAllVersionsPermanently(id);
     }
 
@@ -258,11 +267,10 @@ public class SharedModuleMetadataService {
             expressions.add("published=true");
         }
         if (!includeDeleted) {
-            expressions.add("deleted=false");
+            expressions.add("deleted!=true");
         }
         // Run actual query.
         List<SharedModuleMetadata> metadataList = metadataDao.queryMetadata(AND_JOINER.join(expressions), parameters);
-
         // Map to find latest versions for each metadata by ID. This is applied before tags.
         if (mostRecent) {
             Map<String, SharedModuleMetadata> latestMetadataById = new HashMap<>();

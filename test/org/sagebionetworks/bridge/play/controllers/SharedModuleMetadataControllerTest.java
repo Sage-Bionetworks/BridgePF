@@ -88,7 +88,112 @@ public class SharedModuleMetadataControllerTest {
         // validate permissions
         verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
     }
+    
+    @Test
+    public void deleteMetadataByIdAllVersionsOK() throws Exception {
+        mockSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.DEVELOPER)).build());
+        doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+        
+        Result result = controller.deleteMetadataByIdAllVersions(MODULE_ID, "false");
+        TestUtils.assertResult(result, 200);
 
+        verify(mockSvc).deleteMetadataByIdAllVersions(MODULE_ID);
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+    }
+    
+    @Test
+    public void deleteMetadataByIdAllVersionsDefaultsToLogical() throws Exception {
+        mockSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.ADMIN)).build());
+        doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+        
+        Result result = controller.deleteMetadataByIdAllVersions(MODULE_ID, null);
+        TestUtils.assertResult(result, 200);
+
+        verify(mockSvc).deleteMetadataByIdAllVersions(MODULE_ID);
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+    }
+    
+    @Test
+    public void deleteMetadataByIdAllVersionsDevDefaultsToLogical() throws Exception {
+        mockSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.DEVELOPER)).build());
+        doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+        
+        Result result = controller.deleteMetadataByIdAllVersions(MODULE_ID, "true");
+        TestUtils.assertResult(result, 200);
+
+        verify(mockSvc).deleteMetadataByIdAllVersions(MODULE_ID);
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+    }
+    
+    @Test
+    public void deleteMetadataByIdAllVersionsAdminPhysical() throws Exception {
+        mockSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.ADMIN)).build());
+        doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+        
+        // setup, execute, and validate
+        Result result = controller.deleteMetadataByIdAllVersions(MODULE_ID, "true");
+        TestUtils.assertResult(result, 200);
+
+        // verify backend
+        verify(mockSvc).deleteMetadataByIdAllVersionsPermanently(MODULE_ID);
+
+        // validate permissions
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+    }
+    
+    @Test
+    public void deleteMetadataByIdAndVersionOK() throws Exception {
+        mockSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.ADMIN)).build());
+        doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+        
+        // setup, execute, and validate
+        Result result = controller.deleteMetadataByIdAndVersion(MODULE_ID, 3, "false");
+        TestUtils.assertResult(result, 200);
+
+        verify(mockSvc).deleteMetadataByIdAndVersion(MODULE_ID, 3);
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+    }
+    
+    @Test
+    public void deleteMetadataByIdAndVersionDefaultsToLogical() throws Exception {
+        mockSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.ADMIN)).build());
+        doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+        
+        // setup, execute, and validate
+        Result result = controller.deleteMetadataByIdAndVersion(MODULE_ID, 3, null);
+        TestUtils.assertResult(result, 200);
+
+        verify(mockSvc).deleteMetadataByIdAndVersion(MODULE_ID, 3);
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+    }
+    
+    @Test
+    public void deleteMetadataByIdAndVersionDevDefaultsToLogical() throws Exception {
+        mockSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.DEVELOPER)).build());
+        doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+        
+        // setup, execute, and validate
+        Result result = controller.deleteMetadataByIdAndVersion(MODULE_ID, 3, "true");
+        TestUtils.assertResult(result, 200);
+
+        verify(mockSvc).deleteMetadataByIdAndVersion(MODULE_ID, 3);
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+    }
+    
+    @Test
+    public void deleteMetadataByIdAndVersionAdminPhysical() throws Exception {
+        mockSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.ADMIN)).build());
+        doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+        
+        // setup, execute, and validate
+        Result result = controller.deleteMetadataByIdAndVersion(MODULE_ID, 3, "true");
+        TestUtils.assertResult(result, 200);
+
+        // verify backend
+        verify(mockSvc).deleteMetadataByIdAndVersionPermanently(MODULE_ID, 3);
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+    }
+    
     @Test
     public void deleteByIdAllVersionsPermanently() throws Exception {
         mockSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.ADMIN)).build());
@@ -104,7 +209,7 @@ public class SharedModuleMetadataControllerTest {
         // validate permissions
         verify(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
     }
-
+    
     @Test
     public void deleteByIdAndVersionPermanently() throws Exception {
         mockSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.ADMIN)).build());
@@ -121,6 +226,18 @@ public class SharedModuleMetadataControllerTest {
         verify(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
     }
 
+    @Test
+    public void deleteByIdAndVersionLogically() throws Exception {
+    }
+
+    @Test
+    public void deleteByIdAndVersionDefaultsToLogicalDelete() throws Exception {
+    }
+    
+    @Test
+    public void deleteByIdAndVersionByDeveloperDefaultsToLogicalDelete() throws Exception {
+    }
+    
     @Test
     public void byIdAndVersion() throws Exception {
         // mock service
