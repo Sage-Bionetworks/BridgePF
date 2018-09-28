@@ -10,6 +10,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Resource;
@@ -18,6 +19,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.google.common.base.Stopwatch;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
@@ -57,9 +59,8 @@ import com.lowagie.text.DocumentException;
 
 @Component
 public class StudyConsentService {
+    private static final Logger logger = LoggerFactory.getLogger(StudyConsentService.class);
 
-    private static Logger logger = LoggerFactory.getLogger(StudyConsentService.class);
-    
     // Documented to be threat-safe
     private static final CharSequenceTranslator XML_ESCAPER = StringEscapeUtils.ESCAPE_XML11;
     
@@ -123,7 +124,12 @@ public class StudyConsentService {
         String storagePath = subpopGuid.getGuid() + "." + createdOn;
         logger.info("Accessing bucket: " + CONSENTS_BUCKET + " with storagePath: " + storagePath);
         try {
+            Stopwatch stopwatch = Stopwatch.createStarted();
             s3Helper.writeBytesToS3(CONSENTS_BUCKET, storagePath, sanitizedContent.getBytes());
+            logger.info("Finished writing consent to bucket " + CONSENTS_BUCKET + " storagePath " + storagePath +
+                    " (" + sanitizedContent.length() + " chars) in " + stopwatch.elapsed(TimeUnit.MILLISECONDS) +
+                    " ms");
+
             StudyConsent consent = studyConsentDao.addConsent(subpopGuid, storagePath, createdOn);
             return new StudyConsentView(consent, sanitizedContent);
         } catch(Throwable t) {
@@ -234,7 +240,12 @@ public class StudyConsentService {
     
     private String loadDocumentContent(StudyConsent consent) {
         try {
-            return s3Helper.readS3FileAsString(CONSENTS_BUCKET, consent.getStoragePath());
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            String content = s3Helper.readS3FileAsString(CONSENTS_BUCKET, consent.getStoragePath());
+            logger.info("Finished reading consent from bucket " + CONSENTS_BUCKET + " storagePath " +
+                    consent.getStoragePath() + " (" + content.length() + " chars) in " +
+                    stopwatch.elapsed(TimeUnit.MILLISECONDS) + " ms");
+            return content;
         } catch(IOException ioe) {
             logger.error("Failure loading storagePath: " + consent.getStoragePath());
             throw new BridgeServiceException(ioe);
@@ -276,11 +287,6 @@ public class StudyConsentService {
     /**
      * Write the byte array to a bucket at S3. The bucket will be given world read privileges, and the request
      * will be returned with the appropriate content type header for the document's MimeType.
-     * @param bucket
-     * @param key
-     * @param data
-     * @param type
-     * @throws IOException
      */
     private void writeBytesToPublicS3(@Nonnull String bucket, @Nonnull String key, @Nonnull byte[] data,
             @Nonnull MimeType type) throws IOException {
@@ -289,7 +295,11 @@ public class StudyConsentService {
             metadata.setContentType(type.toString());
             PutObjectRequest request = new PutObjectRequest(bucket, key, dataInputStream, metadata)
                     .withCannedAcl(CannedAccessControlList.PublicRead);
+
+            Stopwatch stopwatch = Stopwatch.createStarted();
             s3Client.putObject(request);
+            logger.info("Finished writing to bucket " + bucket + " key " + key + " (" + data.length + " bytes) in " +
+                    stopwatch.elapsed(TimeUnit.MILLISECONDS) + " ms");
         }
     }
 }
