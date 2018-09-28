@@ -12,6 +12,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -23,6 +24,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
@@ -416,7 +418,10 @@ public class UploadService {
         final String objectId = upload.getObjectId();
         ObjectMetadata obj;
         try {
+            Stopwatch stopwatch = Stopwatch.createStarted();
             obj = s3Client.getObjectMetadata(uploadBucket, objectId);
+            logger.info("Finished getting S3 metadata for bucket " + uploadBucket + " key " + objectId + " in " +
+                    stopwatch.elapsed(TimeUnit.MILLISECONDS) + " ms");
         } catch (AmazonS3Exception ex) {
             if (ex.getStatusCode() == 404) {
                 throw new NotFoundException(ex);
