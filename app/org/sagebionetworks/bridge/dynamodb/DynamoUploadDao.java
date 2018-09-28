@@ -33,14 +33,17 @@ import com.google.common.collect.Iterables;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -56,6 +59,7 @@ import org.sagebionetworks.bridge.models.upload.UploadStatus;
 public class DynamoUploadDao implements UploadDao {
     private DynamoDBMapper mapper;
     private DynamoIndexHelper healthCodeRequestedOnIndex;
+    private HealthCodeDao healthCodeDao;
 
     private static final String UPLOAD_ID = "uploadId";
     private static final String STUDY_ID = "studyId";
@@ -78,6 +82,11 @@ public class DynamoUploadDao implements UploadDao {
     @Resource(name = "uploadHealthCodeRequestedOnIndex")
     final void setHealthCodeRequestedOnIndex(DynamoIndexHelper healthCodeRequestedOnIndex) {
         this.healthCodeRequestedOnIndex = healthCodeRequestedOnIndex;
+    }
+    
+    @Autowired
+    final void setHealthCodeDao(HealthCodeDao healthCodeDao) {
+        this.healthCodeDao = healthCodeDao;
     }
     
     /** {@inheritDoc} */
@@ -113,9 +122,18 @@ public class DynamoUploadDao implements UploadDao {
         key.setUploadId(uploadId);
         DynamoUpload2 upload = mapper.load(key);
         if (upload != null) {
+            // Very old uploads (2+ years ago) did not have studyId set; for these we must do 
+            // a lookup in the legacy DynamoHealthCode table.
+            if (upload.getStudyId() == null) { 
+                String studyId = healthCodeDao.getStudyIdentifier(upload.getHealthCode());
+                if (studyId == null) {
+                    throw new EntityNotFoundException(DynamoStudy.class,
+                            "Study not found for upload. User may have been deleted from system.");
+                }
+                upload.setStudyId(studyId);
+            }
             return upload;
         }
-
         throw new NotFoundException(String.format("Upload ID %s not found", uploadId));
     }
     

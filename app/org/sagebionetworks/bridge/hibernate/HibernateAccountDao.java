@@ -47,7 +47,6 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
-import org.sagebionetworks.bridge.models.accounts.HealthId;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
@@ -58,7 +57,6 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AuthenticationService;
-import org.sagebionetworks.bridge.services.HealthCodeService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -79,15 +77,8 @@ public class HibernateAccountDao implements AccountDao {
     static final String PHONE_QUERY = "from HibernateAccount where studyId=:studyId and phone.number=:number and phone.regionCode=:regionCode";
     static final String EXTID_QUERY = "from HibernateAccount where studyId=:studyId and externalId=:externalId";
     
-    private HealthCodeService healthCodeService;
     private HibernateHelper hibernateHelper;
     private CacheProvider cacheProvider;
-
-    /** Health code service, because this DAO is expected to generate health codes for new accounts. */
-    @Autowired
-    public final void setHealthCodeService(HealthCodeService healthCodeService) {
-        this.healthCodeService = healthCodeService;
-    }
 
     /** This makes interfacing with Hibernate easier. */
     @Autowired
@@ -294,7 +285,6 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public Account constructAccount(Study study, String email, Phone phone, String externalId, String password) {
-        HealthId healthId = healthCodeService.createMapping(study.getStudyIdentifier());
         // Set basic params from inputs.
         GenericAccount account = new GenericAccount();
         account.setStudyId(study.getStudyIdentifier());
@@ -302,7 +292,7 @@ public class HibernateAccountDao implements AccountDao {
         account.setPhone(phone);
         account.setEmailVerified(Boolean.FALSE);
         account.setPhoneVerified(Boolean.FALSE);
-        account.setHealthId(healthId);
+        account.setHealthCode(generateHealthCode());
         account.setExternalId(externalId);
 
         // Hash password if it has been supplied.
@@ -314,6 +304,11 @@ public class HibernateAccountDao implements AccountDao {
             account.setPasswordHash(passwordHash);
         }
         return account;
+    }
+    
+    // Provided to override in tests
+    protected String generateHealthCode() {
+        return BridgeUtils.generateGuid();
     }
 
     /** {@inheritDoc} */
@@ -624,7 +619,6 @@ public class HibernateAccountDao implements AccountDao {
         hibernateAccount.setEmailVerified(genericAccount.getEmailVerified());
         hibernateAccount.setPhoneVerified(genericAccount.getPhoneVerified());
         hibernateAccount.setHealthCode(genericAccount.getHealthCode());
-        hibernateAccount.setHealthId(genericAccount.getHealthId());
         hibernateAccount.setFirstName(genericAccount.getFirstName());
         hibernateAccount.setLastName(genericAccount.getLastName());
         hibernateAccount.setRoles(genericAccount.getRoles());
@@ -701,13 +695,8 @@ public class HibernateAccountDao implements AccountDao {
     // are left in a bad state. This method validates the health code mapping on a HibernateAccount and updates it as
     // is necessary.
     private boolean validateHealthCode(HibernateAccount hibernateAccount) {
-        if (StringUtils.isBlank(hibernateAccount.getHealthCode()) ||
-                StringUtils.isBlank(hibernateAccount.getHealthId())) {
-            // Generate health code mapping.
-            StudyIdentifier studyId = new StudyIdentifierImpl(hibernateAccount.getStudyId());
-            HealthId healthId = healthCodeService.createMapping(studyId);
-            hibernateAccount.setHealthCode(healthId.getCode());
-            hibernateAccount.setHealthId(healthId.getId());
+        if (StringUtils.isBlank(hibernateAccount.getHealthCode())) {
+            hibernateAccount.setHealthCode(generateHealthCode());
 
             // We modified it. Update modifiedOn.
             long modifiedOn = DateUtils.getCurrentMillisFromEpoch();
@@ -736,7 +725,6 @@ public class HibernateAccountDao implements AccountDao {
         account.setReauthTokenHash(hibernateAccount.getReauthTokenHash());
         account.setReauthTokenModifiedOn(hibernateAccount.getReauthTokenModifiedOn());
         account.setHealthCode(hibernateAccount.getHealthCode());
-        account.setHealthId(hibernateAccount.getHealthId());
         account.setStatus(hibernateAccount.getStatus());
         account.setRoles(hibernateAccount.getRoles());
         account.setVersion(hibernateAccount.getVersion());

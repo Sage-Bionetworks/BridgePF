@@ -33,7 +33,6 @@ import play.test.Helpers;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -67,9 +66,6 @@ public class UploadControllerTest {
     private UploadService uploadService;
     
     @Mock
-    private HealthCodeDao healthCodeDao;
-    
-    @Mock
     private HealthDataService healthDataService;
     
     @Mock
@@ -96,18 +92,24 @@ public class UploadControllerTest {
     @Captor
     private ArgumentCaptor<RequestInfo> requestInfoCaptor;
     
+    private DynamoUpload2 upload;
+    
     @Before
     public void before() {
         controller.setUploadService(uploadService);
-        controller.setHealthCodeDao(healthCodeDao);
         controller.setCacheProvider(cacheProvider);
         controller.setHealthDataService(healthDataService);
 
         // mock uploadService.getUpload()
-        DynamoUpload2 upload = new DynamoUpload2();
+        upload = new DynamoUpload2();
         upload.setHealthCode("consented-user-health-code");
         upload.setUploadId("upload-id");
         doReturn(upload).when(uploadService).getUpload("upload-id");
+        
+        upload.setStudyId("worker-health-code");
+        // mock healthCodeDao
+        //doReturn("worker-study-id").when(healthCodeDao).getStudyIdentifier("worker-health-code");
+        //doReturn("consented-user-study-id").when(healthCodeDao).getStudyIdentifier("consented-user-health-code");
 
         // mock uploadService.get/pollUploadValidationStatus()
         // mock UploadService with validation status
@@ -151,10 +153,6 @@ public class UploadControllerTest {
         participant = new StudyParticipant.Builder().withRoles(Sets.newHashSet()).build();
         doReturn(participant).when(otherUserSession).getParticipant();
         doReturn(true).when(otherUserSession).doesConsent();
-
-        // mock healthCodeDao
-        doReturn("worker-study-id").when(healthCodeDao).getStudyIdentifier("worker-health-code");
-        doReturn("consented-user-study-id").when(healthCodeDao).getStudyIdentifier("consented-user-health-code");
     }
     
     @Test
@@ -177,6 +175,7 @@ public class UploadControllerTest {
     
     @Test
     public void uploadCompleteAcceptsWorker() throws Exception {
+        upload.setStudyId("consented-user-study-id");
         // setup controller
         doReturn(workerSession).when(controller).getAuthenticatedSession();
         TestUtils.mockPlayContext();

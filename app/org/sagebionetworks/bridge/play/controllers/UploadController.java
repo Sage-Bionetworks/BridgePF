@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.play.controllers;
 import java.io.IOException;
 
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -34,8 +33,6 @@ public class UploadController extends BaseController {
     private UploadService uploadService;
     
     private HealthDataService healthDataService;
-    
-    private HealthCodeDao healthCodeDao;
 
     @Autowired
     final void setUploadService(UploadService uploadService) {
@@ -47,11 +44,6 @@ public class UploadController extends BaseController {
         this.healthDataService = healthDataService;
     }
     
-    @Autowired
-    final void setHealthCodeDao(HealthCodeDao healthCodeDao) {
-        this.healthCodeDao = healthCodeDao;
-    }
-
     /** Gets validation status and messages for the given upload ID. */
     public Result getValidationStatus(String uploadId) throws IOException {
         UserSession session = getAuthenticatedAndConsentedSession();
@@ -123,8 +115,7 @@ public class UploadController extends BaseController {
         StudyIdentifier studyIdentifier;
         UploadCompletionClient uploadCompletionClient;
         if (session.isInRole(Roles.WORKER)) {
-            String studyId = healthCodeDao.getStudyIdentifier(upload.getHealthCode());
-            studyIdentifier = new StudyIdentifierImpl(studyId);
+            studyIdentifier = new StudyIdentifierImpl(upload.getStudyId());
             uploadCompletionClient = UploadCompletionClient.S3_WORKER;
         } else {
             // Or, the consented user that originally made the upload request. Check that health codes match.

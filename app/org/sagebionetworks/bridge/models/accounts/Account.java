@@ -77,8 +77,6 @@ public interface Account extends BridgeEntity {
     String getHealthCode();
     void setHealthCode(String healthCode);
 
-    void setHealthId(HealthId healthId);
-
     AccountStatus getStatus();
     void setStatus(AccountStatus status);
 

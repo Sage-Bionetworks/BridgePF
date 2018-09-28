@@ -14,7 +14,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import org.joda.time.format.ISODateTimeFormat;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthCode;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
@@ -163,18 +162,7 @@ public class BulkDownloadUtil {
         System.out.println("Downloading files from S3 and cross-referencing study ID from health code...");
         List<UploadObject> uploads = new ArrayList<>();
         for (DynamoUpload2 oneUploadMetadata : uploadMetadataList) {
-            String studyId;
-
-            // fetch study from DDB HealthCode table
-            DynamoHealthCode key = new DynamoHealthCode();
-            key.setCode(oneUploadMetadata.getHealthCode());
-            DynamoHealthCode entry = healthCodeMapper.load(key);
-            if (entry == null) {
-                System.out.println(String.format("No study found for uploadId %s, healthcode %s",
-                        oneUploadMetadata.getUploadId(), oneUploadMetadata.getHealthCode()));
-                continue;
-            }
-            studyId = entry.getStudyIdentifier();
+            String studyId = oneUploadMetadata.getStudyId();
 
             uploads.add(new UploadObject(oneUploadMetadata, studyId));
         }
