@@ -227,18 +227,6 @@ public class SharedModuleMetadataControllerTest {
     }
 
     @Test
-    public void deleteByIdAndVersionLogically() throws Exception {
-    }
-
-    @Test
-    public void deleteByIdAndVersionDefaultsToLogicalDelete() throws Exception {
-    }
-    
-    @Test
-    public void deleteByIdAndVersionByDeveloperDefaultsToLogicalDelete() throws Exception {
-    }
-    
-    @Test
     public void byIdAndVersion() throws Exception {
         // mock service
         when(mockSvc.getMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION)).thenReturn(makeValidMetadata());
