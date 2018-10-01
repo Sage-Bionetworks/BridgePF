@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.google.common.collect.Maps;
@@ -41,7 +42,6 @@ import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
-import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
@@ -60,7 +60,6 @@ import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.validators.AccountSummarySearchValidator;
-import org.sagebionetworks.bridge.validators.IdentifierUpdateValidator;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -313,7 +312,7 @@ public class ParticipantService {
         if (study.getAccountLimit() > 0) {
             throwExceptionIfLimitMetOrExceeded(study);
         }
-        Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, study, true), participant);
+        Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, study, null), participant);
         
         Account account = accountDao.constructAccount(study, participant.getEmail(), participant.getPhone(),
                 participant.getExternalId(), participant.getPassword());
@@ -358,24 +357,34 @@ public class ParticipantService {
             participant.getExternalId() != null && participant.getPassword() != null;
     }
 
-    public void updateParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant) {
+    public StudyParticipant updateParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant) {
         checkNotNull(study);
         checkNotNull(callerRoles);
         checkNotNull(participant);
         
-        Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, study, false), participant);
-        
         Account account = getAccountThrowingException(study, participant.getId());
-
-        // Prevent optimistic locking exception until operations are combined into one operation. 
-        account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), account.getId()));
-        // Allow external ID to be added on an update if it doesn't exist.
         
-        boolean assigningExternalId = (account.getExternalId() == null && participant.getExternalId() != null);
-        if (assigningExternalId) {
-            account.setExternalId(participant.getExternalId());    
-        }
+        Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, study, account), participant);
+        
         updateAccountAndRoles(study, callerRoles, account, participant);
+        
+        boolean assigningExternalId = !Objects.equals(participant.getExternalId(), account.getExternalId());
+        boolean assigningEmail = !Objects.equals(participant.getEmail(), account.getEmail());
+        boolean assigningPhone = !Objects.equals(participant.getPhone(), account.getPhone());
+        if (assigningExternalId) {
+            if (account.getExternalId() != null) {
+                externalIdService.unassignExternalId(study, account.getExternalId(), account.getHealthCode());
+            }
+            account.setExternalId(participant.getExternalId());
+        }
+        if (assigningEmail) {
+            account.setEmail(participant.getEmail());
+            account.setEmailVerified(false);
+        }
+        if (assigningPhone) {
+            account.setPhone(participant.getPhone());
+            account.setPhoneVerified(false);
+        }
         
         // Allow admin and worker accounts to toggle status; in particular, to disable/enable accounts. Note 
         // however that admins can bypass phone/email verification as a result.
@@ -384,13 +393,22 @@ public class ParticipantService {
                 account.setStatus(participant.getStatus());
             }
         }
-        accountDao.updateAccount(account, false);
+        accountDao.updateAccount(account, true);
         
         if (assigningExternalId) {
             externalIdService.assignExternalId(study, account.getExternalId(), account.getHealthCode());    
         }
+        // Don't send verification if you're removing an email address
+        if (assigningEmail && account.getEmail() != null && !study.isAutoVerificationEmailSuppressed()) {
+            accountWorkflowService.sendEmailVerificationToken(study, account.getId(), account.getEmail());
+        }
+        // Don't send verification if you're removing a phone number
+        if (assigningPhone && account.getPhone() != null && !study.isAutoVerificationPhoneSuppressed()) {
+            accountWorkflowService.sendPhoneVerificationToken(study, account.getId(), account.getPhone());
+        }
+        return getParticipant(study, account, true);
     }
-
+    
     private void throwExceptionIfLimitMetOrExceeded(Study study) {
         // It's sufficient to get minimum number of records, we're looking only at the total of all accounts
         PagedResourceList<AccountSummary> summaries = getPagedAccountSummaries(study, AccountSummarySearch.EMPTY_SEARCH);
@@ -409,7 +427,7 @@ public class ParticipantService {
         account.setDataGroups(participant.getDataGroups());
         account.setLanguages(participant.getLanguages());
         account.setMigrationVersion(AccountDao.MIGRATION_VERSION);
-        // Do not copy timezone or external ID. Neither can be updated once set.
+        // Do not copy timezone. Cannot be updated once set. Email, phone, and externalId are all handled separately.
         
         for (String attribute : study.getUserProfileAttributes()) {
             String value = participant.getAttributes().get(attribute);
@@ -600,69 +618,6 @@ public class ParticipantService {
 
         return activityEventService.getActivityEventList(account.getHealthCode());
     }
-    
-    public StudyParticipant updateIdentifiers(Study study, CriteriaContext context, IdentifierUpdate update) {
-        checkNotNull(study);
-        checkNotNull(context);
-        checkNotNull(update);
-        
-        // Validate
-        Validate.entityThrowingException(new IdentifierUpdateValidator(study, externalIdService), update);
-        
-        // Sign in
-        Account account;
-        // These throw exceptions for not found, disabled, and not yet verified.
-        if (update.getSignIn().getReauthToken() != null) {
-            account = accountDao.reauthenticate(study, update.getSignIn());
-        } else {
-            account = accountDao.authenticate(study, update.getSignIn());
-        }
-        
-        // Verify the account matches the current caller
-        if (!account.getId().equals(context.getUserId())) {
-            throw new EntityNotFoundException(Account.class);
-        }
-        
-        // reload account, or you will get an optimistic lock exception
-        account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), account.getId()));
-        
-        // Update if account has an empty field and there's an update
-        boolean sendEmailVerification = false;
-        boolean assignExternalId = false;
-        boolean accountUpdated = false;
-        if (update.getPhoneUpdate() != null && account.getPhone() == null) {
-            account.setPhone(update.getPhoneUpdate());
-            account.setPhoneVerified(false);
-            accountUpdated = true;
-        }
-        if (update.getEmailUpdate() != null && account.getEmail() == null) {
-            account.setEmail(update.getEmailUpdate());
-            account.setEmailVerified( !study.isEmailVerificationEnabled() );
-            sendEmailVerification = true;
-            accountUpdated = true;
-        }
-        if (update.getExternalIdUpdate() != null && account.getExternalId() == null) {
-            account.setExternalId(update.getExternalIdUpdate());
-            accountUpdated = true;
-            assignExternalId = true;
-        }
-        // save. if this throws a constraint exception, further services are not called
-        if (accountUpdated) {
-            accountDao.updateAccount(account, true);   
-        }
-        if (sendEmailVerification && 
-            study.isEmailVerificationEnabled() && 
-            !study.isAutoVerificationEmailSuppressed()) {
-            accountWorkflowService.sendEmailVerificationToken(study, account.getId(), account.getEmail());
-        }
-        if (assignExternalId) {
-            externalIdService.assignExternalId(study, account.getExternalId(), account.getHealthCode());
-        }
-        
-        // return updated StudyParticipant to update and return session
-        return getParticipant(study, account.getId(), false);
-    }
-     
     
     private CriteriaContext getCriteriaContextForParticipant(Study study, StudyParticipant participant) {
         RequestInfo info = cacheProvider.getRequestInfo(participant.getId());

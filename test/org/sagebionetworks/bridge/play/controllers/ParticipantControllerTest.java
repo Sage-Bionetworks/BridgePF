@@ -55,7 +55,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -68,9 +67,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
-import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
-import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
@@ -125,17 +122,6 @@ public class ParticipantControllerTest {
     
     private static final AccountSummary SUMMARY = new AccountSummary("firstName", "lastName", "email",
             TestConstants.PHONE, "externalId", "id", DateTime.now(), AccountStatus.ENABLED, TestConstants.TEST_STUDY);
-
-    private static final SignIn EMAIL_PASSWORD_SIGN_IN_REQUEST = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
-            .withEmail(TestConstants.EMAIL).withPassword(TestConstants.PASSWORD).build();
-    private static final SignIn PHONE_PASSWORD_SIGN_IN_REQUEST = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
-            .withPhone(TestConstants.PHONE).withPassword(TestConstants.PASSWORD).build();
-    private static final IdentifierUpdate PHONE_UPDATE = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN_REQUEST, null,
-            TestConstants.PHONE, null);
-    private static final IdentifierUpdate EMAIL_UPDATE = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN_REQUEST,
-            TestConstants.EMAIL, null, null);
-    private static final IdentifierUpdate EXTID_UPDATE = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN_REQUEST,
-            null, null, "some-new-extid");
     
     @Spy
     private ParticipantController controller;
@@ -181,9 +167,6 @@ public class ParticipantControllerTest {
 
     @Captor
     private ArgumentCaptor<CriteriaContext> contextCaptor;
-    
-    @Captor
-    private ArgumentCaptor<IdentifierUpdate> identifierUpdateCaptor;
     
     @Captor
     private ArgumentCaptor<AccountSummarySearch> searchCaptor;
@@ -371,8 +354,10 @@ public class ParticipantControllerTest {
                 "'attributes':{'can_be_recontacted':'true'},"+
                 "'languages':['en','fr']}"));
         
+        when(mockParticipantService.updateParticipant(eq(study), eq(CALLER_ROLES), any())).thenReturn(participant);
+        
         Result result = controller.updateParticipant(ID);
-        assertResult(result, 200, "Participant updated.");
+        assertEquals(200, result.status());
         
         verify(mockParticipantService).updateParticipant(eq(study), eq(CALLER_ROLES), participantCaptor.capture());
         
@@ -493,8 +478,11 @@ public class ParticipantControllerTest {
     public void updateParticipantWithMismatchedIdsUsesURL() throws Exception {
         mockPlayContextWithJson(createJson("{'id':'id2'}"));
         
+        when(mockParticipantService.updateParticipant(eq(study), eq(session.getParticipant().getRoles()),
+                any())).thenReturn(new StudyParticipant.Builder().build());
+        
         Result result = controller.updateParticipant("id1");
-        assertResult(result, 200, "Participant updated.");
+        assertEquals(200, result.status());
         
         verify(mockParticipantService).updateParticipant(eq(study), eq(CALLER_ROLES), participantCaptor.capture());
         
@@ -529,8 +517,9 @@ public class ParticipantControllerTest {
                 .copyOf(TestUtils.getStudyParticipant(ParticipantControllerTest.class))
                 .withHealthCode("healthCode").build();
         
-        doReturn(participant).when(mockParticipantService).getParticipant(study, ID, false);
-        doReturn(new UserSession(participant)).when(authService).getSession(eq(study), any());
+        when(mockParticipantService.getParticipant(study, ID, false)).thenReturn(participant);
+        when(mockParticipantService.updateParticipant(eq(study), eq(NO_CALLER_ROLES), any())).thenReturn(participant);
+        when(authService.getSession(eq(study), any())).thenReturn(new UserSession(participant));
         
         String json = MAPPER.writeValueAsString(participant);
         mockPlayContextWithJson(json);
@@ -577,7 +566,9 @@ public class ParticipantControllerTest {
                 .withLanguages(TestUtils.newLinkedHashSet("en"))
                 .withStatus(AccountStatus.DISABLED)
                 .withExternalId("POWERS").build();
-        doReturn(participant).when(mockParticipantService).getParticipant(study, ID, false);
+        
+        when(mockParticipantService.getParticipant(study, ID, false)).thenReturn(participant);
+        when(mockParticipantService.updateParticipant(eq(study), eq(NO_CALLER_ROLES), any())).thenReturn(participant);
         
         mockPlayContextWithJson(createJson("{'externalId':'simpleStringChange',"+
                 "'sharingScope':'no_sharing',"+
@@ -632,7 +623,8 @@ public class ParticipantControllerTest {
         // All values should be copied over here.
         StudyParticipant participant = TestUtils.getStudyParticipant(ParticipantControllerTest.class);
         participant = new StudyParticipant.Builder().copyOf(participant).withId(ID).build();
-        doReturn(participant).when(mockParticipantService).getParticipant(study, ID, false);
+        when(mockParticipantService.getParticipant(study, ID, false)).thenReturn(participant);
+        when(mockParticipantService.updateParticipant(study, NO_CALLER_ROLES, participant)).thenReturn(participant);
         
         // Now change to some other ID
         participant = new StudyParticipant.Builder().copyOf(participant).withId("someOtherId").build();
@@ -998,84 +990,6 @@ public class ParticipantControllerTest {
                 eq(null), startTimeCaptor.capture(), endTimeCaptor.capture(), eq(null), eq(BridgeConstants.API_DEFAULT_PAGE_SIZE));
         assertNull(startTimeCaptor.getValue());
         assertNull(endTimeCaptor.getValue());
-    }
-    
-    
-    @Test
-    public void updateIdentifiersWithPhone() throws Exception {
-        mockPlayContextWithJson(PHONE_UPDATE);
-        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
-        
-        when(mockParticipantService.updateIdentifiers(eq(study), any(), any())).thenReturn(participant);
-        
-        Result result = controller.updateIdentifiers();
-        assertResult(result, 200);
-        
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
-        assertEquals(ID, node.get("id").textValue());
-        
-        verify(mockParticipantService).updateIdentifiers(eq(study), contextCaptor.capture(), identifierUpdateCaptor.capture());
-        verify(mockCacheProvider).setUserSession(sessionCaptor.capture());
-        assertEquals(participant.getId(), sessionCaptor.getValue().getId());
-        
-        IdentifierUpdate update = identifierUpdateCaptor.getValue();
-        assertEquals(EMAIL_PASSWORD_SIGN_IN_REQUEST.getEmail(), update.getSignIn().getEmail());
-        assertEquals(EMAIL_PASSWORD_SIGN_IN_REQUEST.getPassword(), update.getSignIn().getPassword());
-        assertEquals(TestConstants.PHONE, update.getPhoneUpdate());
-        assertNull(update.getEmailUpdate());
-    }
-
-    @Test
-    public void updateIdentifiersWithEmail() throws Exception {
-        mockPlayContextWithJson(EMAIL_UPDATE);
-        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
-        
-        when(mockParticipantService.updateIdentifiers(eq(study), any(), any())).thenReturn(participant);
-        
-        Result result = controller.updateIdentifiers();
-        assertResult(result, 200);
-        
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
-        assertEquals(ID, node.get("id").textValue());
-        
-        verify(mockParticipantService).updateIdentifiers(eq(study), contextCaptor.capture(), identifierUpdateCaptor.capture());
-        
-        IdentifierUpdate update = identifierUpdateCaptor.getValue();
-        assertEquals(PHONE_PASSWORD_SIGN_IN_REQUEST.getPhone(), update.getSignIn().getPhone());
-        assertEquals(PHONE_PASSWORD_SIGN_IN_REQUEST.getPassword(), update.getSignIn().getPassword());
-        assertEquals(TestConstants.EMAIL, update.getEmailUpdate());
-        assertNull(update.getPhoneUpdate());
-    }
-
-    @Test
-    public void updateIdentifiersWithExternalId() throws Exception {
-        mockPlayContextWithJson(EXTID_UPDATE);
-        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
-        
-        when(mockParticipantService.updateIdentifiers(eq(study), any(), any())).thenReturn(participant);
-        
-        Result result = controller.updateIdentifiers();
-        assertResult(result, 200);
-        
-        JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
-        assertEquals(ID, node.get("id").textValue());
-        
-        verify(mockParticipantService).updateIdentifiers(eq(study), contextCaptor.capture(), identifierUpdateCaptor.capture());
-        
-        IdentifierUpdate update = identifierUpdateCaptor.getValue();
-        assertEquals(PHONE_PASSWORD_SIGN_IN_REQUEST.getPhone(), update.getSignIn().getPhone());
-        assertEquals(PHONE_PASSWORD_SIGN_IN_REQUEST.getPassword(), update.getSignIn().getPassword());
-        assertEquals("some-new-extid", update.getExternalIdUpdate());
-        assertNull(update.getPhoneUpdate());
-    }
-    
-    @Test(expected = NotAuthenticatedException.class)
-    public void updateIdentifierRequiresAuthentication() throws Exception {
-        doReturn(null).when(controller).getSessionIfItExists();
-        mockPlayContextWithJson(PHONE_UPDATE);
-        when(mockParticipantService.updateIdentifiers(any(), any(), any())).thenReturn(participant);
-        
-        controller.updateIdentifiers();
     }
     
     @Test

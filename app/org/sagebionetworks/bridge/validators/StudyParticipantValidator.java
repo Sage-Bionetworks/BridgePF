@@ -10,6 +10,7 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -22,12 +23,14 @@ public class StudyParticipantValidator implements Validator {
     private static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
     private final ExternalIdService externalIdService;
     private final Study study;
+    private final Account existingAccount;
     private final boolean isNew;
     
-    public StudyParticipantValidator(ExternalIdService externalIdService, Study study, boolean isNew) {
+    public StudyParticipantValidator(ExternalIdService externalIdService, Study study, Account existingAccount) {
         this.externalIdService = externalIdService;
         this.study = study;
-        this.isNew = isNew;
+        this.existingAccount = existingAccount;
+        this.isNew = (existingAccount == null);
     }
     
     @Override
@@ -39,25 +42,27 @@ public class StudyParticipantValidator implements Validator {
     public void validate(Object object, Errors errors) {
         StudyParticipant participant = (StudyParticipant)object;
         
+        Phone phone = participant.getPhone();
+        String email = participant.getEmail();
+        String externalId = participant.getExternalId();
+        
+        if (email == null && isBlank(externalId) && phone == null) {
+            errors.reject("email, phone, or externalId is required");
+        }
+        // If provided, phone must be valid
+        if (phone != null && !Phone.isValid(phone)) {
+            errors.rejectValue("phone", "does not appear to be a phone number");
+        }
+        // If provided, email must be valid
+        if (email != null && !EMAIL_VALIDATOR.isValid(email)) {
+            errors.rejectValue("email", "does not appear to be an email address");
+        }
+        // Never okay to have an empty external ID string. It can produce errors later when querying for ext IDs
+        if (participant.getExternalId() != null && StringUtils.isBlank(participant.getExternalId())) {
+            errors.rejectValue("externalId", "cannot be blank");
+        }
         if (isNew) {
-            Phone phone = participant.getPhone();
-            String email = participant.getEmail();
-            String externalId = participant.getExternalId();
-            if (email == null && isBlank(externalId) && phone == null) {
-                errors.reject("email, phone, or externalId is required");
-            }
-            // If provided, phone must be valid
-            if (phone != null && !Phone.isValid(phone)) {
-                errors.rejectValue("phone", "does not appear to be a phone number");
-            }
-            // If provided, email must be valid
-            if (email != null && !EMAIL_VALIDATOR.isValid(email)) {
-                errors.rejectValue("email", "does not appear to be an email address");
-            }
-            // External ID is required for non-administrative accounts when it is required on sign-up. Whether you're 
-            // a researcher or not, however, if you add an external ID and we're managing them, we're going to validate
-            // that yours is correct.
-            if (participant.getRoles().isEmpty() && study.isExternalIdRequiredOnSignup() && isBlank(participant.getExternalId())) {
+            if (study.isExternalIdRequiredOnSignup() && participant.getRoles().isEmpty() && isBlank(participant.getExternalId())) {
                 errors.rejectValue("externalId", "is required");
             }
             // Password is optional, but validation is applied if supplied, any time it is 
@@ -71,20 +76,23 @@ public class StudyParticipantValidator implements Validator {
             if (isBlank(participant.getId())) {
                 errors.rejectValue("id", "is required");
             }
+            // cannot delete an external ID if external IDs are being validated. Different than checks 
+            // below that 1) it's accurate and 2) it's not blank/empty string.
+            if (study.isExternalIdValidationEnabled() && 
+                participant.getExternalId() == null && 
+                existingAccount.getExternalId() != null) {
+                errors.rejectValue("externalId", "cannot be deleted");
+            }
         }
         // External ID can be updated during creation or on update. We validate it if IDs are 
         // managed. If it's already assigned to another user, the database constraints will 
         // prevent this record's persistence.
         if (study.isExternalIdValidationEnabled() && StringUtils.isNotBlank(participant.getExternalId())) {
-            ExternalIdentifier externalId = externalIdService.getExternalId(study.getStudyIdentifier(),
+            ExternalIdentifier externalIdObj = externalIdService.getExternalId(study.getStudyIdentifier(),
                     participant.getExternalId());
-            if (externalId == null) {
+            if (externalIdObj == null) {
                 errors.rejectValue("externalId", "is not a valid external ID");
             }
-        }
-        // Never okay to have a blank external ID. It can produce errors later when querying for ext IDs
-        if (participant.getExternalId() != null && StringUtils.isBlank(participant.getExternalId())) {
-            errors.rejectValue("externalId", "cannot be blank");
         }
                 
         for (String dataGroup : participant.getDataGroups()) {

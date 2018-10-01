@@ -197,41 +197,35 @@ public class UserProfileControllerTest {
     @Test
     @SuppressWarnings("deprecation")
     public void updateUserProfile() throws Exception {
+        String jsonString = TestUtils.createJson("{'firstName':'newFirstName','lastName':'newLastName',"
+                + "'username':'email@email.com','foo':'belgium','externalId':'newExternalId','type':'UserProfile'}");
+        
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("existingHealthCode")
-                .withExternalId("originalId")
-                .withFirstName("OldFirstName")
-                .withLastName("OldLastName")
+                .withExternalId("existingExternalId")
+                .withFirstName("existingFirstName")
+                .withLastName("existingLastName")
                 .withId(ID).build();
         doReturn(participant).when(participantService).getParticipant(study, ID, false);
+        doReturn(participant).when(participantService).updateParticipant(eq(study), any(), any());
         
         // This has a field that should not be passed to the StudyParticipant, because it didn't exist before
-        // (externalId)
-        TestUtils.mockPlayContextWithJson(TestUtils.createJson("{'firstName':'First','lastName':'Last',"+
-                "'username':'email@email.com','foo':'belgium','externalId':'updatedId','type':'UserProfile'}"));
+        // we moved to the participant API (externalId)
+        TestUtils.mockPlayContextWithJson(jsonString);
         
         Result result = controller.updateUserProfile();
-        
         TestUtils.assertResult(result, 200);
-        JsonNode node = TestUtils.getJson(result);
-        assertEquals("First", node.get("firstName").asText());
-        assertEquals("Last", node.get("lastName").asText());
-        assertEquals("originalId", node.get("externalId").asText());
                 
         // Verify that existing user information (health code) has been retrieved and used when updating session
         verify(participantService).updateParticipant(eq(study), any(), participantCaptor.capture());
         StudyParticipant capturedParticipant = participantCaptor.getValue();
         assertEquals("existingHealthCode", capturedParticipant.getHealthCode());
-        assertEquals("originalId", capturedParticipant.getExternalId());
-        
-        verify(participantService).updateParticipant(eq(study), eq(Sets.newHashSet()), participantCaptor.capture());
-        
-        StudyParticipant persisted = participantCaptor.getValue();
-        assertEquals(ID, persisted.getId());
-        assertEquals("First", persisted.getFirstName());
-        assertEquals("Last", persisted.getLastName());
-        assertEquals("originalId", persisted.getExternalId()); // not changed by the JSON submitted
-        assertEquals("belgium", persisted.getAttributes().get("foo"));
+        assertEquals("existingExternalId", capturedParticipant.getExternalId());
+        assertEquals(ID, capturedParticipant.getId());
+        assertEquals("newFirstName", capturedParticipant.getFirstName());
+        assertEquals("newLastName", capturedParticipant.getLastName());
+        assertEquals("existingExternalId", capturedParticipant.getExternalId()); // not changed by the JSON submitted
+        assertEquals("belgium", capturedParticipant.getAttributes().get("foo"));
     }
     
     @Test

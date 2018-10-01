@@ -370,7 +370,7 @@ public class StudyService {
 
         // validate participants at first
         for (StudyParticipant user : users) {
-            Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, study, true), user);
+            Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, study, null), user);
         }
 
         // validate roles for each user

@@ -124,13 +124,12 @@ public class UserAdminServiceTest {
 
     @Test
     public void cannotCreateUserWithSameEmail() {
-        
         session = userAdminService.createUser(study, participant, null, true, false);
         try {
             userAdminService.createUser(study, participant, null, false, false);
             fail("Sign up with email already in use should throw an exception");
         } catch(EntityAlreadyExistsException e) { 
-            assertEquals("Account already exists.", e.getMessage());
+            assertEquals("Email address has already been used by another account.", e.getMessage());
         }
     }
 

@@ -116,11 +116,11 @@ public class UserProfileController extends BaseController {
                 .withLastName(JsonUtils.asText(node, "lastName"))
                 .withAttributes(attributes)
                 .withId(userId).build();
-        participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
+        StudyParticipant asUpdated = participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
         
         CriteriaContext context = getCriteriaContext(session);
         
-        sessionUpdateService.updateParticipant(session, context, updated);
+        sessionUpdateService.updateParticipant(session, context, asUpdated);
         
         CacheKey cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, study.getIdentifier());
         viewCache.removeView(cacheKey);

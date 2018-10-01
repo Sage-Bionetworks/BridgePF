@@ -11,9 +11,12 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.Config;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -31,11 +34,18 @@ public class ExternalIdService {
     
     private ExternalIdDao externalIdDao;
     
+    private AccountDao accountDao;
+    
     private ExternalIdsValidator validator;
     
     @Autowired
     final void setExternalIdDao(ExternalIdDao externalIdDao) {
         this.externalIdDao = externalIdDao;
+    }
+    
+    @Autowired
+    final void setAccountDao(AccountDao accountDao) {
+        this.accountDao = accountDao;
     }
     
     @Autowired
@@ -90,8 +100,18 @@ public class ExternalIdService {
         checkNotNull(study);
         checkNotNull(externalIdentifiers);
         
+        // This will fail if validation is enabled and any of these external identifiers are in use
+        // by a participant. That will need to be resolved either by disabling validation or deleting
+        // the account.
         if (study.isExternalIdValidationEnabled()) {
-            throw new BadRequestException("Cannot delete IDs while externalId validation is enabled for this study.");
+            for(String externalId : externalIdentifiers) {
+                AccountId accountId = AccountId.forExternalId(study.getIdentifier(), externalId);
+                Account account = accountDao.getAccount(accountId);
+                if (account != null) {
+                    throw new BadRequestException("Cannot delete externalId '" + externalId
+                            + "' because it is in use and validation is enabled.");
+                }
+            }
         }
         externalIdDao.deleteExternalIds(study.getStudyIdentifier(), externalIdentifiers);    
     }

@@ -86,7 +86,6 @@ POST   /v3/participants                  @org.sagebionetworks.bridge.play.contro
 POST   /v3/participants/search           @org.sagebionetworks.bridge.play.controllers.ParticipantController.searchForAccountSummaries
 GET    /v3/participants/self             @org.sagebionetworks.bridge.play.controllers.ParticipantController.getSelfParticipant
 POST   /v3/participants/self             @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateSelfParticipant
-POST   /v3/participants/self/identifiers @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateIdentifiers
 
 GET    /v3/participants/:userId                                        @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipant(userId: String, consents: Boolean ?= true)
 POST   /v3/participants/:userId                                        @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateParticipant(userId: String)

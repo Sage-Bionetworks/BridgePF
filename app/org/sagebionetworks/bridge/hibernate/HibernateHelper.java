@@ -5,18 +5,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import javax.persistence.OptimisticLockException;
-import javax.persistence.PersistenceException;
-
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
-import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 
 /** Encapsulates common scenarios for using Hibernate to make it easier to use. */
 @Component
@@ -34,18 +28,7 @@ public class HibernateHelper {
      * would violate a key constraint, most commonly if the row already exists.
      */
     public void create(Object obj) {
-        try {
-            execute(session -> session.save(obj));
-        } catch (PersistenceException ex) {
-            // If you try to create a row that already exists, Hibernate will throw a PersistenceException wrapped in a
-            // ConstraintViolationException.
-            if (ex.getCause() instanceof ConstraintViolationException) {
-                throw new ConcurrentModificationException(
-                        "Attempting to write a new row that violates key constraints");
-            } else {
-                throw ex;
-            }
-        }
+        execute(session -> session.save(obj));
     }
 
     /** Deletes the given object. */
@@ -128,15 +111,10 @@ public class HibernateHelper {
 
     /** Updates a single object. */
     public <T> T update(T obj) {
-        try {
-            return execute(session -> {
-                session.update(obj);
-                return obj;
-            });
-        } catch (OptimisticLockException ex) {
-            throw new ConcurrentModificationException("Row has the wrong version number; it may have been saved in " +
-                    "the background.");
-        }
+        return execute(session -> {
+            session.update(obj);
+            return obj;
+        });
     }
 
     // Helper function, which handles opening and closing sessions and transactions.

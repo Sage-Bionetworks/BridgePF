@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -16,9 +17,11 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.Config;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.Lists;
@@ -37,6 +40,9 @@ public class ExternalIdServiceTest {
     @Mock
     private ExternalIdDao externalIdDao;
     
+    @Mock
+    private AccountDao accountDao;
+    
     private ExternalIdService externalIdService;
     
     @Before
@@ -46,6 +52,7 @@ public class ExternalIdServiceTest {
         
         externalIdService = new ExternalIdService();
         externalIdService.setExternalIdDao(externalIdDao);
+        externalIdService.setAccountDao(accountDao);
         externalIdService.setConfig(config);
     }
     
@@ -89,6 +96,9 @@ public class ExternalIdServiceTest {
     @Test
     public void deleteExternalIdsWithValidationDisabled() {
         STUDY.setExternalIdValidationEnabled(false);
+        // Note that the ExternalId record may even be assigned, but we do not care
+        when(accountDao.getAccount(any())).thenReturn(Account.create());
+        
         externalIdService.deleteExternalIds(STUDY, EXT_IDS);
         
         verify(externalIdDao).deleteExternalIds(STUDY.getStudyIdentifier(), EXT_IDS);
@@ -97,11 +107,21 @@ public class ExternalIdServiceTest {
     @Test
     public void deleteExternalIdsWithValidationEnabled() {
         STUDY.setExternalIdValidationEnabled(true);
+        when(accountDao.getAccount(any())).thenReturn(Account.create());
         try {
             externalIdService.deleteExternalIds(STUDY, EXT_IDS);
             fail("Should have thrown exception");
         } catch(BadRequestException e) {
         }
         verifyNoMoreInteractions(externalIdDao);
+    }
+    
+    @Test
+    public void deleteExternalIdsWithValidationEnabledButNotAssignedWorks() {
+        STUDY.setExternalIdValidationEnabled(true);
+        
+        externalIdService.deleteExternalIds(STUDY, EXT_IDS);
+        
+        verify(externalIdDao).deleteExternalIds(STUDY.getStudyIdentifier(), EXT_IDS);
     }
 }

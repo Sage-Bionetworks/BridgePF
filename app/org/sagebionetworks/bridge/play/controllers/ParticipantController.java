@@ -39,7 +39,6 @@ import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
-import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
@@ -112,18 +111,18 @@ public class ParticipantController extends BaseController {
                 .copyOf(existing)
                 .copyFieldsOf(participant, fieldNames)
                 .withId(session.getId()).build();
-        participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
+        StudyParticipant asUpdated = participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withLanguages(session.getParticipant().getLanguages())
                 .withClientInfo(getClientInfoFromUserAgentHeader())
                 .withHealthCode(session.getHealthCode())
                 .withUserId(session.getId())
-                .withUserDataGroups(updated.getDataGroups())
+                .withUserDataGroups(asUpdated.getDataGroups())
                 .withStudyIdentifier(session.getStudyIdentifier())
                 .build();
         
-        sessionUpdateService.updateParticipant(session, context, updated);
+        sessionUpdateService.updateParticipant(session, context, asUpdated);
         
         return okResult(UserSessionInfo.toJSON(session));
     }
@@ -166,20 +165,6 @@ public class ParticipantController extends BaseController {
         
         return getActivityHistoryInternalV2(study, userId, activityGuid, scheduledOnStart, scheduledOnEnd, offsetBy,
                 offsetKey, pageSize);
-    }
-    
-    public Result updateIdentifiers() throws Exception {
-        UserSession session = getAuthenticatedSession();
-        
-        IdentifierUpdate update = parseJson(request(), IdentifierUpdate.class);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
-
-        CriteriaContext context = getCriteriaContext(session);
-        
-        StudyParticipant participant = participantService.updateIdentifiers(study, context, update);
-        sessionUpdateService.updateParticipant(session, context, participant);
-        
-        return okResult(UserSessionInfo.toJSON(session));
     }
     
     @Deprecated
@@ -285,9 +270,10 @@ public class ParticipantController extends BaseController {
         participant = new StudyParticipant.Builder()
                 .copyOf(participant)
                 .withId(userId).build();
-        participantService.updateParticipant(study, session.getParticipant().getRoles(), participant);
+        StudyParticipant asUpdated = participantService.updateParticipant(study, session.getParticipant().getRoles(),
+                participant);
 
-        return okResult("Participant updated.");
+        return okResult(asUpdated);
     }
     
     @BodyParser.Of(BodyParser.Empty.class)
