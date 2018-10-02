@@ -46,7 +46,6 @@ public class HibernateAccount {
     private Map<HibernateAccountConsentKey, HibernateAccountConsent> consents;
     private Long createdOn;
     private String healthCode;
-    private String healthId;
     private Long modifiedOn;
     private String firstName;
     private String lastName;
@@ -211,16 +210,6 @@ public class HibernateAccount {
     /** @see #getHealthCode */
     public void setHealthCode(String healthCode) {
         this.healthCode = healthCode;
-    }
-
-    /** Account health ID, which maps to health code. */
-    public String getHealthId() {
-        return healthId;
-    }
-
-    /** @see #getHealthId */
-    public void setHealthId(String healthId) {
-        this.healthId = healthId;
     }
 
     /** Epoch milliseconds when the account was last modified, including password but NOT 

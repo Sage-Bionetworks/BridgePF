@@ -11,6 +11,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -58,7 +59,6 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.GenericAccount;
-import org.sagebionetworks.bridge.models.accounts.HealthIdImpl;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
@@ -69,7 +69,6 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
-import org.sagebionetworks.bridge.services.HealthCodeService;
 
 @RunWith(MockitoJUnitRunner.class)
 public class HibernateAccountDaoTest {
@@ -83,7 +82,6 @@ public class HibernateAccountDaoTest {
     private static final Phone OTHER_PHONE = new Phone("+12065881469", "US");
     private static final String OTHER_EMAIL = "other-email@example.com";
     private static final String HEALTH_CODE = "health-code";
-    private static final String HEALTH_ID = "health-id";
     private static final long MOCK_NOW_MILLIS = DateTime.parse("2017-05-19T14:45:27.593-0700").getMillis();
     private static final String FIRST_NAME = "Eggplant";
     private static final String LAST_NAME = "McTester";
@@ -121,7 +119,6 @@ public class HibernateAccountDaoTest {
     ArgumentCaptor<Map<String,Object>> paramCaptor;
     
     private Study study;
-    private HealthCodeService mockHealthCodeService;
     private HibernateAccountDao dao;
     private HibernateHelper mockHibernateHelper;
     private CacheProvider mockCacheProvider;
@@ -138,7 +135,6 @@ public class HibernateAccountDaoTest {
 
     @Before
     public void before() {
-        mockHealthCodeService = mock(HealthCodeService.class);
         mockHibernateHelper = mock(HibernateHelper.class);
         mockCacheProvider = mock(CacheProvider.class);
         
@@ -149,13 +145,10 @@ public class HibernateAccountDaoTest {
             return account;
         });
         
-        dao = new HibernateAccountDao();
-        dao.setHealthCodeService(mockHealthCodeService);
+        dao = spy(new HibernateAccountDao());
         dao.setHibernateHelper(mockHibernateHelper);
         dao.setCacheProvider(mockCacheProvider);
-        
-        when(mockHealthCodeService.createMapping(TestConstants.TEST_STUDY)).thenReturn(new HealthIdImpl(HEALTH_ID,
-                HEALTH_CODE));
+        when(dao.generateHealthCode()).thenReturn(HEALTH_CODE);
         
         study = Study.create();
         study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
@@ -444,7 +437,6 @@ public class HibernateAccountDaoTest {
         // mock hibernate
         HibernateAccount hibernateAccount = makeValidHibernateAccount(true, false);
         hibernateAccount.setHealthCode("original-" + HEALTH_CODE);
-        hibernateAccount.setHealthId("original-" + HEALTH_ID);
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any())).thenReturn(ImmutableList.of(hibernateAccount));
 
         String originalReauthTokenHash = hibernateAccount.getReauthTokenHash();
@@ -455,7 +447,6 @@ public class HibernateAccountDaoTest {
         assertEquals(TestConstants.TEST_STUDY, account.getStudyIdentifier());
         assertEquals(EMAIL, account.getEmail());
         assertEquals("original-" + HEALTH_CODE, account.getHealthCode());
-        assertEquals("original-" + HEALTH_ID, account.getHealthId());
         assertNotNull(account.getReauthToken());
         assertEquals(2, account.getVersion()); // version was incremented by reauthentication
         assertNotEquals(originalReauthTokenHash, account.getReauthToken());
@@ -467,12 +458,10 @@ public class HibernateAccountDaoTest {
         ArgumentCaptor<HibernateAccount> accountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
         
         // We don't create a new health code mapping nor update the account.
-        verify(mockHealthCodeService, never()).createMapping(any());
         verify(mockHibernateHelper, times(1)).update(accountCaptor.capture());
         
         // healthCodes have not been changed
         assertEquals("original-" + HEALTH_CODE, accountCaptor.getValue().getHealthCode());
-        assertEquals("original-" + HEALTH_ID, accountCaptor.getValue().getHealthId());
         assertNotEquals(originalReauthTokenHash, accountCaptor.getValue().getReauthTokenHash());
     }
 
@@ -481,7 +470,6 @@ public class HibernateAccountDaoTest {
         // mock hibernate
         HibernateAccount hibernateAccount = makeValidHibernateAccount(true, false);
         // Clear these fields to verify that they are created
-        hibernateAccount.setHealthId(null);
         hibernateAccount.setHealthCode(null);
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
                 .thenReturn(ImmutableList.of(hibernateAccount));
@@ -492,7 +480,6 @@ public class HibernateAccountDaoTest {
         assertEquals(TestConstants.TEST_STUDY, account.getStudyIdentifier());
         assertEquals(EMAIL, account.getEmail());
         assertEquals(HEALTH_CODE, account.getHealthCode());
-        assertEquals(HEALTH_ID, account.getHealthId());
 
         // verify query
         verify(mockHibernateHelper).queryGet("from HibernateAccount where studyId=:studyId and email=:email",
@@ -814,7 +801,7 @@ public class HibernateAccountDaoTest {
         assertNotEquals(PasswordAlgorithm.BCRYPT, captured.getReauthTokenAlgorithm());
         assertNotEquals("AAA", captured.getReauthTokenHash());
         assertNotEquals(originalTimestamp, captured.getReauthTokenModifiedOn());
-     // version has been incremented because reauth token was rotated
+        // version has been incremented because reauth token was rotated
         assertEquals(2, captured.getVersion()); 
     }
     
@@ -834,7 +821,6 @@ public class HibernateAccountDaoTest {
         assertEquals(Boolean.FALSE, account.getEmailVerified());
         assertEquals(Boolean.FALSE, account.getPhoneVerified());
         assertEquals(HEALTH_CODE, account.getHealthCode());
-        assertEquals(HEALTH_ID, account.getHealthId());
         assertEquals(EXTERNAL_ID, account.getExternalId());
         assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, account.getPasswordAlgorithm());
 
@@ -852,7 +838,6 @@ public class HibernateAccountDaoTest {
         assertEquals(Boolean.FALSE, account.getEmailVerified());
         assertEquals(Boolean.FALSE, account.getPhoneVerified());
         assertEquals(HEALTH_CODE, account.getHealthCode());
-        assertEquals(HEALTH_ID, account.getHealthId());
         assertEquals(EXTERNAL_ID, account.getExternalId());
         assertNull(account.getPasswordHash());
         assertNull(account.getPasswordAlgorithm());
@@ -1119,7 +1104,6 @@ public class HibernateAccountDaoTest {
         // mock hibernate
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
         hibernateAccount.setHealthCode("original-" + HEALTH_CODE);
-        hibernateAccount.setHealthId("original-" + HEALTH_ID);
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
 
         // execute and validate - just validate ID, study, and email, and health code mapping
@@ -1128,10 +1112,6 @@ public class HibernateAccountDaoTest {
         assertEquals(TestConstants.TEST_STUDY, account.getStudyIdentifier());
         assertEquals(EMAIL, account.getEmail());
         assertEquals("original-" + HEALTH_CODE, account.getHealthCode());
-        assertEquals("original-" + HEALTH_ID, account.getHealthId());
-
-        // We don't create a new health code mapping nor update the account.
-        verify(mockHealthCodeService, never()).createMapping(any());
         verify(mockHibernateHelper, never()).update(any());
     }
 
@@ -1140,7 +1120,6 @@ public class HibernateAccountDaoTest {
         // mock hibernate
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
         // Clear these fields to verify that they are created
-        hibernateAccount.setHealthId(null);
         hibernateAccount.setHealthCode(null);
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(
                 hibernateAccount);
@@ -1151,7 +1130,6 @@ public class HibernateAccountDaoTest {
         assertEquals(TestConstants.TEST_STUDY, account.getStudyIdentifier());
         assertEquals(EMAIL, account.getEmail());
         assertEquals(HEALTH_CODE, account.getHealthCode());
-        assertEquals(HEALTH_ID, account.getHealthId());
 
         // Verify we create the new health code mapping
         verifyCreatedHealthCode();
@@ -1172,7 +1150,6 @@ public class HibernateAccountDaoTest {
         // mock hibernate
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
         hibernateAccount.setHealthCode("original-" + HEALTH_CODE);
-        hibernateAccount.setHealthId("original-" + HEALTH_ID);
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any())).thenReturn(ImmutableList.of(hibernateAccount));
 
         // execute and validate - just validate ID, study, and email, and health code mapping
@@ -1181,14 +1158,12 @@ public class HibernateAccountDaoTest {
         assertEquals(TestConstants.TEST_STUDY, account.getStudyIdentifier());
         assertEquals(EMAIL, account.getEmail());
         assertEquals("original-" + HEALTH_CODE, account.getHealthCode());
-        assertEquals("original-" + HEALTH_ID, account.getHealthId());
 
         // verify hibernate query
         verify(mockHibernateHelper).queryGet("from HibernateAccount where studyId=:studyId and email=:email",
                 EMAIL_QUERY_PARAMS, null, null, HibernateAccount.class);
 
         // We don't create a new health code mapping nor update the account.
-        verify(mockHealthCodeService, never()).createMapping(any());
         verify(mockHibernateHelper, never()).update(any());
     }
 
@@ -1197,7 +1172,6 @@ public class HibernateAccountDaoTest {
         // mock hibernate
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
         // Clear these fields to verify that they are created
-        hibernateAccount.setHealthId(null);
         hibernateAccount.setHealthCode(null);
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
                 .thenReturn(ImmutableList.of(hibernateAccount));
@@ -1208,7 +1182,6 @@ public class HibernateAccountDaoTest {
         assertEquals(TestConstants.TEST_STUDY, account.getStudyIdentifier());
         assertEquals(EMAIL, account.getEmail());
         assertEquals(HEALTH_CODE, account.getHealthCode());
-        assertEquals(HEALTH_ID, account.getHealthId());
 
         // verify hibernate query
         verify(mockHibernateHelper).queryGet("from HibernateAccount where studyId=:studyId and email=:email",
@@ -1652,7 +1625,6 @@ public class HibernateAccountDaoTest {
         // mock hibernate
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
         hibernateAccount.setHealthCode(HEALTH_CODE);
-        hibernateAccount.setHealthId(HEALTH_ID);
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any())).thenReturn(ImmutableList.of(hibernateAccount));
 
         // execute and validate
@@ -1686,7 +1658,6 @@ public class HibernateAccountDaoTest {
         genericAccount.setPhoneVerified(Boolean.FALSE);
         genericAccount.setCreatedOn(CREATED_ON);
         genericAccount.setHealthCode(HEALTH_CODE);
-        genericAccount.setHealthId(HEALTH_ID);
         genericAccount.setFirstName(FIRST_NAME);
         genericAccount.setLastName(LAST_NAME);
         genericAccount.setPasswordAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
@@ -1743,7 +1714,6 @@ public class HibernateAccountDaoTest {
         assertEquals(Boolean.FALSE, hibernateAccount.getPhoneVerified());
         assertEquals(CREATED_ON.getMillis(), hibernateAccount.getCreatedOn().longValue());
         assertEquals(HEALTH_CODE, hibernateAccount.getHealthCode());
-        assertEquals(HEALTH_ID, hibernateAccount.getHealthId());
         assertEquals(FIRST_NAME, hibernateAccount.getFirstName());
         assertEquals(LAST_NAME, hibernateAccount.getLastName());
         assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, hibernateAccount.getPasswordAlgorithm());
@@ -1811,7 +1781,6 @@ public class HibernateAccountDaoTest {
         hibernateAccount.setPhoneVerified(Boolean.FALSE);
         hibernateAccount.setCreatedOn(CREATED_ON.getMillis());
         hibernateAccount.setHealthCode(HEALTH_CODE);
-        hibernateAccount.setHealthId(HEALTH_ID);
         hibernateAccount.setFirstName(FIRST_NAME);
         hibernateAccount.setLastName(LAST_NAME);
         hibernateAccount.setPasswordAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
@@ -1885,7 +1854,6 @@ public class HibernateAccountDaoTest {
         assertEquals(Boolean.TRUE, genericAccount.getEmailVerified());
         assertEquals(Boolean.FALSE, genericAccount.getPhoneVerified());
         assertEquals(HEALTH_CODE, genericAccount.getHealthCode());
-        assertEquals(HEALTH_ID, genericAccount.getHealthId());
         assertEquals(FIRST_NAME, genericAccount.getFirstName());
         assertEquals(LAST_NAME, genericAccount.getLastName());
         assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, genericAccount.getPasswordAlgorithm());
@@ -2014,9 +1982,7 @@ public class HibernateAccountDaoTest {
     @Test
     public void editAccountSuccess() throws Exception {
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
-        // To prevent two updates during test, enter healthCode/healthId
         hibernateAccount.setHealthCode("A");
-        hibernateAccount.setHealthId("B");
         // mock hibernate
         when(mockHibernateHelper.queryGet("from HibernateAccount where studyId=:studyId and healthCode=:healthCode",
                 HEALTHCODE_QUERY_PARAMS, null, null, HibernateAccount.class))
@@ -2035,9 +2001,7 @@ public class HibernateAccountDaoTest {
     @Test
     public void editAccountCannotChangeSensitiveFields() throws Exception {
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
-        // To prevent two updates during test, enter healthCode/healthId
         hibernateAccount.setHealthCode("A");
-        hibernateAccount.setHealthId("B");
         // mock hibernate
         when(mockHibernateHelper.queryGet("from HibernateAccount where studyId=:studyId and healthCode=:healthCode",
                 HEALTHCODE_QUERY_PARAMS, null, null, HibernateAccount.class))
@@ -2203,16 +2167,12 @@ public class HibernateAccountDaoTest {
     }
     
     private void verifyCreatedHealthCode() {
-        // Verify we create the new health code mapping
-        verify(mockHealthCodeService).createMapping(TestConstants.TEST_STUDY);
-
         ArgumentCaptor<HibernateAccount> updatedAccountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
         verify(mockHibernateHelper).update(updatedAccountCaptor.capture());
 
         HibernateAccount updatedAccount = updatedAccountCaptor.getValue();
         assertEquals(ACCOUNT_ID, updatedAccount.getId());
         assertEquals(HEALTH_CODE, updatedAccount.getHealthCode());
-        assertEquals(HEALTH_ID, updatedAccount.getHealthId());
         assertEquals(MOCK_NOW_MILLIS, updatedAccount.getModifiedOn().longValue());
     }
 
@@ -2251,7 +2211,6 @@ public class HibernateAccountDaoTest {
     private static HibernateAccount makeValidHibernateAccount(boolean generatePasswordHash, boolean generateReauthHash) throws Exception {
         HibernateAccount hibernateAccount = new HibernateAccount();
         hibernateAccount.setId(ACCOUNT_ID);
-        hibernateAccount.setHealthId(HEALTH_ID);
         hibernateAccount.setHealthCode(HEALTH_CODE);
         hibernateAccount.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         hibernateAccount.setPhone(TestConstants.PHONE);

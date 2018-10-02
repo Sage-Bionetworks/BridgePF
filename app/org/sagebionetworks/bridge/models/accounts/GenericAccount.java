@@ -39,7 +39,6 @@ public class GenericAccount implements Account {
     private Boolean emailVerified;
     private Boolean phoneVerified;
     private String healthCode;
-    private String healthId;
     private String id;
     private String firstName;
     private String lastName;
@@ -271,23 +270,6 @@ public class GenericAccount implements Account {
     @Override
     public void setHealthCode(String healthCode) {
         this.healthCode = healthCode;
-    }
-
-    /** Account health ID, which maps to health code. */
-    public String getHealthId() {
-        return healthId;
-    }
-
-    /** @see #getHealthId */
-    public void setHealthId(String healthId) {
-        this.healthId = healthId;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void setHealthId(HealthId healthId) {
-        this.healthCode = healthId.getCode();
-        this.healthId = healthId.getId();
     }
 
     /** {@inheritDoc} */

@@ -1,14 +1,10 @@
 package org.sagebionetworks.bridge.dao;
 
 public interface HealthCodeDao {
-
     /**
-     * @return true, if the code does not exist yet and is set; false, if the code already exists.
+     * Return the ID of the study associated with this health code; or null if 
+     * the health code does not exist. This DAO exists for legacy uploads that 
+     * do not have a studyId associated with them.
      */
-    boolean setIfNotExist(String code, String studyId);
-
-    /**
-     * @return The ID of the study associated with this health code; or null if the health code does not exist.
-     */
-    String getStudyIdentifier(String code);
+    String getStudyIdentifier(String healthCode);
 }
