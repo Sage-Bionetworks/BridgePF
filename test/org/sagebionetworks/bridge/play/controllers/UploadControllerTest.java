@@ -33,6 +33,7 @@ import play.test.Helpers;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -69,6 +70,9 @@ public class UploadControllerTest {
     private HealthDataService healthDataService;
     
     @Mock
+    private HealthCodeDao healthCodeDao;
+    
+    @Mock
     private UserSession workerSession;
     
     @Mock
@@ -99,6 +103,7 @@ public class UploadControllerTest {
         controller.setUploadService(uploadService);
         controller.setCacheProvider(cacheProvider);
         controller.setHealthDataService(healthDataService);
+        controller.setHealthCodeDao(healthCodeDao);
 
         // mock uploadService.getUpload()
         upload = new DynamoUpload2();
@@ -189,6 +194,30 @@ public class UploadControllerTest {
                 eq(UploadCompletionClient.S3_WORKER), uploadCaptor.capture(), eq(false));
         Upload upload = uploadCaptor.getValue();
         assertEquals("consented-user-health-code", upload.getHealthCode());
+
+        verify(uploadService).getUploadValidationStatus(UPLOAD_ID);
+        verify(uploadService, never()).pollUploadValidationStatusUntilComplete(any());
+    }
+    
+    @Test
+    public void uploadCompleteWithMissingStudyId() throws Exception {
+        upload.setStudyId(null); // no studyId, must look up by healthCode
+        upload.setHealthCode(HEALTH_CODE);
+        // setup controller
+        doReturn(workerSession).when(controller).getAuthenticatedSession();
+        doReturn("studyId").when(healthCodeDao).getStudyIdentifier(HEALTH_CODE);
+        TestUtils.mockPlayContext();
+
+        // execute and validate
+        Result result = controller.uploadComplete(UPLOAD_ID, null, null);
+        validateValidationStatus(result);
+
+        // verify back-end calls
+        verify(healthCodeDao).getStudyIdentifier(HEALTH_CODE);
+        verify(uploadService).uploadComplete(eq(new StudyIdentifierImpl("studyId")),
+                eq(UploadCompletionClient.S3_WORKER), uploadCaptor.capture(), eq(false));
+        Upload upload = uploadCaptor.getValue();
+        assertEquals(HEALTH_CODE, upload.getHealthCode());
 
         verify(uploadService).getUploadValidationStatus(UPLOAD_ID);
         verify(uploadService, never()).pollUploadValidationStatusUntilComplete(any());
