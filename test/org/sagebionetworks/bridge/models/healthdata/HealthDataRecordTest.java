@@ -63,7 +63,7 @@ public class HealthDataRecordTest {
     }
 
     @Test
-    public void optionalValues() throws Exception {
+    public void optionalValues() {
         // optional values
         long uploadedOn = 1462575525894L;
 
@@ -73,6 +73,7 @@ public class HealthDataRecordTest {
         record.setAppVersion(APP_VERSION);
         record.setCreatedOnTimeZone("+0900");
         record.setPhoneInfo(PHONE_INFO);
+        record.setRawDataAttachmentId("raw.zip");
         record.setSynapseExporterStatus(HealthDataRecord.ExporterStatus.NOT_EXPORTED);
         record.setUploadId("optional upload ID");
         record.setUploadedOn(uploadedOn);
@@ -88,6 +89,7 @@ public class HealthDataRecordTest {
         assertEquals(APP_VERSION, record.getAppVersion());
         assertEquals("+0900", record.getCreatedOnTimeZone());
         assertEquals(PHONE_INFO, record.getPhoneInfo());
+        assertEquals("raw.zip", record.getRawDataAttachmentId());
         assertEquals(HealthDataRecord.ExporterStatus.NOT_EXPORTED, record.getSynapseExporterStatus());
         assertEquals("optional upload ID", record.getUploadId());
         assertEquals(uploadedOn, record.getUploadedOn().longValue());
@@ -272,6 +274,7 @@ public class HealthDataRecordTest {
                 "   \"id\":\"json record ID\",\n" +
                 "   \"metadata\":{\"myMetadata\":\"myMetaValue\"},\n" +
                 "   \"phoneInfo\":\"" + PHONE_INFO + "\",\n" +
+                "   \"rawDataAttachmentId\":\"raw.zip\",\n" +
                 "   \"schemaId\":\"json schema\",\n" +
                 "   \"schemaRevision\":3,\n" +
                 "   \"studyId\":\"json study\",\n" +
@@ -295,6 +298,7 @@ public class HealthDataRecordTest {
         assertEquals("json healthcode", record.getHealthCode());
         assertEquals("json record ID", record.getId());
         assertEquals(PHONE_INFO, record.getPhoneInfo());
+        assertEquals("raw.zip", record.getRawDataAttachmentId());
         assertEquals("json schema", record.getSchemaId());
         assertEquals(3, record.getSchemaRevision());
         assertEquals("json study", record.getStudyId());
@@ -321,12 +325,13 @@ public class HealthDataRecordTest {
 
         // then convert to a map so we can validate the raw JSON
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(21, jsonMap.size());
+        assertEquals(22, jsonMap.size());
         assertEquals(APP_VERSION, jsonMap.get("appVersion"));
         assertEquals("-0800", jsonMap.get("createdOnTimeZone"));
         assertEquals("json healthcode", jsonMap.get("healthCode"));
         assertEquals("json record ID", jsonMap.get("id"));
         assertEquals(PHONE_INFO, jsonMap.get("phoneInfo"));
+        assertEquals("raw.zip", jsonMap.get("rawDataAttachmentId"));
         assertEquals("json schema", jsonMap.get("schemaId"));
         assertEquals(3, jsonMap.get("schemaRevision"));
         assertEquals("json study", jsonMap.get("studyId"));
@@ -360,7 +365,7 @@ public class HealthDataRecordTest {
 
         // Convert back to map again. Only validate a few key fields are present and the filtered fields are absent.
         Map<String, Object> publicJsonMap = BridgeObjectMapper.get().readValue(publicJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(20, publicJsonMap.size());
+        assertEquals(21, publicJsonMap.size());
         assertFalse(publicJsonMap.containsKey("healthCode"));
         assertEquals("json record ID", publicJsonMap.get("id"));
     }
