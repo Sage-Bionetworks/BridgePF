@@ -55,7 +55,8 @@ public class HibernateSharedModuleMetadataDao implements SharedModuleMetadataDao
     @Override
     public void deleteMetadataByIdAllVersions(String id) {
         sessionHelper(session -> {
-            session.createQuery("delete from HibernateSharedModuleMetadata where id='" + id + "'").executeUpdate();
+            session.createQuery("update HibernateSharedModuleMetadata m set m.deleted = true where m.id='" + id + "'")
+                    .executeUpdate();
             return null;
         });
     }
@@ -63,6 +64,25 @@ public class HibernateSharedModuleMetadataDao implements SharedModuleMetadataDao
     /** {@inheritDoc} */
     @Override
     public void deleteMetadataByIdAndVersion(String id, int version) {
+        sessionHelper(session -> {
+            session.createQuery("update HibernateSharedModuleMetadata m set m.deleted = true where m.id='" + id
+                    + "' and m.version = " + version).executeUpdate();
+            return null;
+        });
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public void deleteMetadataByIdAllVersionsPermanently(String id) {
+        sessionHelper(session -> {
+            session.createQuery("delete from HibernateSharedModuleMetadata where id='" + id + "'").executeUpdate();
+            return null;
+        });
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void deleteMetadataByIdAndVersionPermanently(String id, int version) {
         sessionHelper(session -> {
             session.createQuery("delete from HibernateSharedModuleMetadata where id='" + id + "' and version=" +
                     version).executeUpdate();

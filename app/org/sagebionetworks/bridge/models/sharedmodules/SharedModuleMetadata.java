@@ -97,6 +97,12 @@ public interface SharedModuleMetadata extends BridgeEntity {
 
     /** @see #getTags */
     void setTags(Set<String> tags);
+    
+    /** Has this version of the module metadata been logically deleted? */
+    boolean isDeleted();
+    
+    /** @see #isDeleted */
+    void setDeleted(boolean deleted);
 
     /** Module version. */
     int getVersion();

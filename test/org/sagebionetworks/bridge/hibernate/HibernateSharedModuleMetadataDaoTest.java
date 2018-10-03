@@ -91,13 +91,38 @@ public class HibernateSharedModuleMetadataDaoTest {
 
     @Test
     public void deleteByIdAllVersions() {
+        Query mockQuery = mock(Query.class);
+        when(mockSession.createQuery("update HibernateSharedModuleMetadata m set m.deleted = true where m.id='" + MODULE_ID + "'"))
+                .thenReturn(mockQuery);
+        
+        dao.deleteMetadataByIdAllVersions(MODULE_ID);
+        
+        verify(mockSession).createQuery("update HibernateSharedModuleMetadata m set m.deleted = true where m.id='" + MODULE_ID + "'");
+        verifySessionAndTransaction();
+    }
+
+    @Test
+    public void deleteByIdAndVersion() {
+        Query mockQuery = mock(Query.class);
+        when(mockSession.createQuery("update HibernateSharedModuleMetadata m set m.deleted = true where m.id='"
+                + MODULE_ID + "' and m.version = " + MODULE_VERSION)).thenReturn(mockQuery);
+
+        dao.deleteMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION);
+
+        verify(mockSession).createQuery("update HibernateSharedModuleMetadata m set m.deleted = true where m.id='"
+                + MODULE_ID + "' and m.version = " + MODULE_VERSION);
+        verifySessionAndTransaction();
+    }
+    
+    @Test
+    public void deleteByIdAllVersionsPermanently() {
         // mock query
         Query mockQuery = mock(Query.class);
         when(mockSession.createQuery("delete from HibernateSharedModuleMetadata where id='" + MODULE_ID + "'"))
                 .thenReturn(mockQuery);
 
         // execute
-        dao.deleteMetadataByIdAllVersions(MODULE_ID);
+        dao.deleteMetadataByIdAllVersionsPermanently(MODULE_ID);
 
         // verify backends
         verify(mockQuery).executeUpdate();
@@ -105,14 +130,14 @@ public class HibernateSharedModuleMetadataDaoTest {
     }
 
     @Test
-    public void deleteByIdAndVersion() {
+    public void deleteByIdAndVersionPermanently() {
         // mock query
         Query mockQuery = mock(Query.class);
         when(mockSession.createQuery("delete from HibernateSharedModuleMetadata where id='" + MODULE_ID +
                 "' and version=" + MODULE_VERSION)).thenReturn(mockQuery);
 
         // execute
-        dao.deleteMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION);
+        dao.deleteMetadataByIdAndVersionPermanently(MODULE_ID, MODULE_VERSION);
 
         // validate backends
         verify(mockQuery).executeUpdate();

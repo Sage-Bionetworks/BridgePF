@@ -30,7 +30,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -104,6 +106,9 @@ public class DynamoUploadDaoMockTest {
     @Mock
     QueryResultPage<DynamoUpload2> queryPage2;
     
+    @Mock
+    HealthCodeDao healthCodeDao;
+    
     @Captor
     private ArgumentCaptor<QuerySpec> querySpecCaptor;
     
@@ -119,6 +124,7 @@ public class DynamoUploadDaoMockTest {
     public void before() {
         dao = new DynamoUploadDao();
         dao.setDdbMapper(mockMapper);
+        dao.setHealthCodeDao(healthCodeDao);
         dao.setHealthCodeRequestedOnIndex(mockIndexHelper);
         
         when(mockIndexHelper.getIndex()).thenReturn(mockIndex);
@@ -170,6 +176,7 @@ public class DynamoUploadDaoMockTest {
     public void getUpload() {
         // mock DDB mapper
         DynamoUpload2 upload = new DynamoUpload2();
+        upload.setStudyId("studyId");
         when(mockMapper.load(uploadCaptor.capture())).thenReturn(upload);
 
         // execute
@@ -179,7 +186,30 @@ public class DynamoUploadDaoMockTest {
         // validate we passed in the expected key
         assertEquals("test-get-upload", uploadCaptor.getValue().getUploadId());
     }
+    
+    @Test
+    public void getUploadWithoutStudyId() {
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setHealthCode("healthCode");
+        when(mockMapper.load(uploadCaptor.capture())).thenReturn(upload);
+        
+        when(healthCodeDao.getStudyIdentifier(upload.getHealthCode())).thenReturn("studyId");
+        
+        Upload retVal = dao.getUpload("test-get-upload");
+        assertEquals("studyId", retVal.getStudyId());
+    }
 
+    @Test(expected = EntityNotFoundException.class)
+    public void getUploadWithoutStudyIdAndNoHealthCodeRecord() {
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setHealthCode("healthCode");
+        when(mockMapper.load(uploadCaptor.capture())).thenReturn(upload);
+        
+        when(healthCodeDao.getStudyIdentifier(upload.getHealthCode())).thenReturn(null);
+        
+        dao.getUpload("test-get-upload");
+    }
+    
     @Test
     public void getUploadNotFound() {
         when(mockMapper.load(uploadCaptor.capture())).thenReturn(null);

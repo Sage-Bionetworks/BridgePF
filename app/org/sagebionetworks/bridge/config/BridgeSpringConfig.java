@@ -72,6 +72,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoAppConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
 import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoFPHSExternalIdentifier;
+import org.sagebionetworks.bridge.dynamodb.DynamoHealthCode;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadDedupe;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
@@ -272,6 +273,12 @@ public class BridgeSpringConfig {
         return new DynamoNamingHelper(bridgeConfig);
     }
 
+    @Bean(name = "healthCodeDdbMapper")
+    @Autowired
+    public DynamoDBMapper healthCodeDdbMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoHealthCode.class);
+    }
+    
     @Bean(name = "compoundActivityDefinitionDdbMapper")
     @Autowired
     public DynamoDBMapper compoundActivityDefinitionDdbMapper(DynamoUtils dynamoUtils) {

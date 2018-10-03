@@ -107,20 +107,11 @@ public class GenericAccountTest {
     }
 
     @Test
-    public void healthCodeHealthId() {
+    public void healthCode() {
         GenericAccount account = new GenericAccount();
-
-        // Can set individually.
-        account.setHealthId("dummy-health-id-1");
-        assertEquals("dummy-health-id-1", account.getHealthId());
 
         account.setHealthCode("dummy-health-code-1");
         assertEquals("dummy-health-code-1", account.getHealthCode());
-
-        // Can set from HealthId object.
-        account.setHealthId(new HealthIdImpl("dummy-health-id-2", "dummy-health-code-2"));
-        assertEquals("dummy-health-id-2", account.getHealthId());
-        assertEquals("dummy-health-code-2", account.getHealthCode());
     }
 
     @Test

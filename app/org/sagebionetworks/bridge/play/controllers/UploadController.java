@@ -46,12 +46,12 @@ public class UploadController extends BaseController {
     final void setHealthDataService(HealthDataService healthDataService) {
         this.healthDataService = healthDataService;
     }
-    
+
     @Autowired
     final void setHealthCodeDao(HealthCodeDao healthCodeDao) {
         this.healthCodeDao = healthCodeDao;
     }
-
+    
     /** Gets validation status and messages for the given upload ID. */
     public Result getValidationStatus(String uploadId) throws IOException {
         UserSession session = getAuthenticatedAndConsentedSession();
@@ -123,7 +123,10 @@ public class UploadController extends BaseController {
         StudyIdentifier studyIdentifier;
         UploadCompletionClient uploadCompletionClient;
         if (session.isInRole(Roles.WORKER)) {
-            String studyId = healthCodeDao.getStudyIdentifier(upload.getHealthCode());
+            String studyId = upload.getStudyId();
+            if (studyId == null) {
+                studyId = healthCodeDao.getStudyIdentifier(upload.getHealthCode());
+            }
             studyIdentifier = new StudyIdentifierImpl(studyId);
             uploadCompletionClient = UploadCompletionClient.S3_WORKER;
         } else {

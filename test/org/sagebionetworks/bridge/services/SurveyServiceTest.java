@@ -70,7 +70,7 @@ public class SurveyServiceTest {
     public void before() {
         mockSharedModuleMetadataService = mock(SharedModuleMetadataService.class);
         when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
-                anySetOf(String.class))).thenReturn(ImmutableList.of());
+                anySetOf(String.class), anyBoolean())).thenReturn(ImmutableList.of());
         testSurvey = new TestSurvey(SurveyServiceTest.class, true);
         surveysToDelete = new HashSet<>();
         surveyService.setSharedModuleMetadataService(mockSharedModuleMetadataService);

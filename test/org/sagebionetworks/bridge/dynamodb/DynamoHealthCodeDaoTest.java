@@ -1,40 +1,59 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import javax.annotation.Resource;
-
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
-import org.sagebionetworks.bridge.BridgeUtils;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 
-@ContextConfiguration("classpath:test-context.xml")
-@RunWith(SpringJUnit4ClassRunner.class)
+@RunWith(MockitoJUnitRunner.class)
 public class DynamoHealthCodeDaoTest {
 
-    @Resource
+    @Mock
+    private DynamoDBMapper mapper;
+    
+    @Captor
+    private ArgumentCaptor<DynamoHealthCode> codeCaptor;
+    
     private DynamoHealthCodeDao healthCodeDao;
+    
+    @Before
+    public void before() {
+        healthCodeDao = new DynamoHealthCodeDao();
+        healthCodeDao.setMapper(mapper);
+    }
+    
 
     @Test
-    public void test() {
-        String healthCode = generateTestGuid();
-        String studyId = generateTestGuid();
-        String randomString = generateTestGuid();
+    public void successfullyRetrieveStudyId() {
+        DynamoHealthCode code = new DynamoHealthCode();
+        code.setCode("healthCode");
+        code.setStudyIdentifier("studyId");
+        code.setVersion(1L);
+        when(mapper.load(any())).thenReturn(code);
         
-        assertTrue(healthCodeDao.setIfNotExist(healthCode, studyId));
-        assertFalse(healthCodeDao.setIfNotExist(healthCode, studyId));
-        assertEquals(studyId, healthCodeDao.getStudyIdentifier(healthCode));
-        assertNull(healthCodeDao.getStudyIdentifier(randomString));
+        String result = healthCodeDao.getStudyIdentifier("healthCode");
+        
+        verify(mapper).load(codeCaptor.capture());
+        
+        assertEquals("studyId", result);
+        assertEquals("healthCode", codeCaptor.getValue().getCode());
     }
     
-    private String generateTestGuid() {
-        return "DynamoHealthIdDaoTest-" + BridgeUtils.generateGuid();
+    @Test
+    public void noRecord() {
+        when(mapper.load(any())).thenReturn(null);
+        
+        assertNull(healthCodeDao.getStudyIdentifier("healthCode"));
     }
-    
 }
