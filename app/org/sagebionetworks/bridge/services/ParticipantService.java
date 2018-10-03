@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.google.common.collect.Maps;
@@ -369,11 +370,15 @@ public class ParticipantService {
 
         // Prevent optimistic locking exception until operations are combined into one operation. 
         account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), account.getId()));
-        // Allow external ID to be added on an update if it doesn't exist.
         
-        boolean assigningExternalId = (account.getExternalId() == null && participant.getExternalId() != null);
-        if (assigningExternalId) {
-            account.setExternalId(participant.getExternalId());    
+        // External ID can be changed by a researcher, if it is changed, unassign/assign as necessary.
+        boolean assigningExternalId = callerRoles.contains(Roles.RESEARCHER) && 
+                !Objects.equals(account.getExternalId(), participant.getExternalId());
+        if  (assigningExternalId) {
+            if (account.getExternalId() != null) {
+                externalIdService.unassignExternalId(study, account.getExternalId(), account.getHealthCode());    
+            }
+            account.setExternalId(participant.getExternalId());
         }
         updateAccountAndRoles(study, callerRoles, account, participant);
         
