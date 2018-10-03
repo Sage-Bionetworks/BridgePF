@@ -36,6 +36,7 @@ public class HibernateSharedModuleMetadata implements SharedModuleMetadata {
     private Long surveyCreatedOn;
     private String surveyGuid;
     private Set<String> tags;
+    private boolean deleted;
     private int version;
 
     /** {@inheritDoc} */
@@ -179,6 +180,18 @@ public class HibernateSharedModuleMetadata implements SharedModuleMetadata {
         // object and (2) callers who call getTag() can't modify the value. However, Hibernate does really weird things
         // if we try to copy this to an ImmutableSet, so we'll just use the value as is.
         this.tags = tags;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public boolean isDeleted() {
+        return deleted;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
     }
 
     /** {@inheritDoc} */

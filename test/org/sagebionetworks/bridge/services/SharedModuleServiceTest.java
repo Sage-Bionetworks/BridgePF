@@ -163,7 +163,7 @@ public class SharedModuleServiceTest {
     @Test(expected = EntityNotFoundException.class)
     public void latestPublishedNotFound() {
         // mock metadataService to return empty list
-        when(mockMetadataService.queryMetadataById(MODULE_ID, true, true, null, null, null))
+        when(mockMetadataService.queryMetadataById(MODULE_ID, true, true, null, null, null, false))
                 .thenReturn(ImmutableList.of());
 
         // execute
@@ -173,7 +173,7 @@ public class SharedModuleServiceTest {
     @Test
     public void latestPublishedSuccess() {
         // mock metadata service
-        when(mockMetadataService.queryMetadataById(MODULE_ID, true, true, null, null, null))
+        when(mockMetadataService.queryMetadataById(MODULE_ID, true, true, null, null, null, false))
                 .thenReturn(ImmutableList.of(makeValidMetadataWithSchema()));
 
         ArgumentCaptor<UploadSchema> schemaArgumentCaptor = ArgumentCaptor.forClass(UploadSchema.class);

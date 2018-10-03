@@ -174,7 +174,7 @@ public class SurveyServiceMockTest {
 
         // verify query args
         verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(),
-                paramsCaptor.capture(), eq(null));
+                paramsCaptor.capture(), eq(null), eq(true));
 
         String queryStr = queryCaptor.getValue();
         assertEquals("surveyGuid=:surveyGuid AND surveyCreatedOn=:surveyCreatedOn", queryStr);
@@ -203,7 +203,7 @@ public class SurveyServiceMockTest {
 
         // verify query args
         verify(mockSharedModuleMetadataService).queryAllMetadata(eq(false), eq(false), queryCaptor.capture(),
-                paramsCaptor.capture(), eq(null));
+                paramsCaptor.capture(), eq(null), eq(true));
 
         String queryStr = queryCaptor.getValue();
         assertEquals("surveyGuid=:surveyGuid AND surveyCreatedOn=:surveyCreatedOn", queryStr);
@@ -217,7 +217,7 @@ public class SurveyServiceMockTest {
     @Test(expected = BadRequestException.class)
     public void logicallyDeleteSurveyNotEmptySharedModules() {
         when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
-                anySetOf(String.class))).thenReturn(ImmutableList.of(makeValidMetadata()));
+                anySetOf(String.class), anyBoolean())).thenReturn(ImmutableList.of(makeValidMetadata()));
 
         Survey survey = createSurvey();
         
@@ -228,7 +228,7 @@ public class SurveyServiceMockTest {
     @Test(expected = BadRequestException.class)
     public void physicallyDeleteSurveyNotEmptySharedModules() {
         when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
-                anySetOf(String.class))).thenReturn(ImmutableList.of(makeValidMetadata()));
+                anySetOf(String.class), anyBoolean())).thenReturn(ImmutableList.of(makeValidMetadata()));
 
         doReturn(ImmutableList.of()).when(mockSchedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
         Survey survey = createSurvey();

@@ -10,12 +10,18 @@ public interface SharedModuleMetadataDao {
     /** Creates the specified metadata object. */
     SharedModuleMetadata createMetadata(SharedModuleMetadata metadata);
 
-    /** Deletes all metadata for module versions with the given ID. */
+    /** Logically deletes all metadata for module versions with the given ID. */
     void deleteMetadataByIdAllVersions(String id);
 
-    /** Deletes metadata for the specified module ID and version. */
+    /** Logically deletes metadata for the specified module ID and version. */
     void deleteMetadataByIdAndVersion(String id, int version);
 
+    /** Physically deletes all metadata for module versions with the given ID. */
+    void deleteMetadataByIdAllVersionsPermanently(String id);
+
+    /** Physically deletes metadata for the specified module ID and version. */
+    void deleteMetadataByIdAndVersionPermanently(String id, int version);
+    
     /** Gets metadata for the specified version of the specified module. */
     SharedModuleMetadata getMetadataByIdAndVersion(String id, int version);
 
