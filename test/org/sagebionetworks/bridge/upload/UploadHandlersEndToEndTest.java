@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.upload;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -7,7 +8,6 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
@@ -102,6 +102,7 @@ public class UploadHandlersEndToEndTest {
     private S3Helper mockS3UploadHelper;
     private HealthDataRecord savedRecord;
     private Map<String, byte[]> uploadedFileContentMap;
+    private byte[] zippedFile;
 
     @BeforeClass
     public static void mockDateTime() {
@@ -168,7 +169,7 @@ public class UploadHandlersEndToEndTest {
         UploadArchiveService unzipService = new UploadArchiveService();
         unzipService.setMaxNumZipEntries(1000000);
         unzipService.setMaxZipEntrySize(1000000);
-        byte[] zippedFile = unzipService.zip(fileBytesMap);
+        zippedFile = unzipService.zip(fileBytesMap);
 
         // Set up UploadFileHelper
         UploadFileHelper uploadFileHelper = new UploadFileHelper();
@@ -265,6 +266,10 @@ public class UploadHandlersEndToEndTest {
         when(mockHealthDataService.getRecordsByHealthcodeCreatedOnSchemaId(HEALTH_CODE, CREATED_ON_MILLIS,
                 schema.getSchemaId())).thenReturn(ImmutableList.of());
 
+        // Set up UploadRawZipHandler.
+        UploadRawZipHandler uploadRawZipHandler = new UploadRawZipHandler();
+        uploadRawZipHandler.setS3Helper(mockS3UploadHelper);
+
         // set up UploadArtifactsHandler
         UploadArtifactsHandler uploadArtifactsHandler = new UploadArtifactsHandler();
         uploadArtifactsHandler.setHealthDataService(mockHealthDataService);
@@ -272,7 +277,7 @@ public class UploadHandlersEndToEndTest {
         // set up task factory
         List<UploadValidationHandler> handlerList = ImmutableList.of(s3DownloadHandler, decryptHandler, unzipHandler,
                 initRecordHandler, uploadFormatHandler, strictValidationHandler, transcribeConsentHandler,
-                uploadArtifactsHandler);
+                uploadRawZipHandler, uploadArtifactsHandler);
 
         UploadValidationTaskFactory taskFactory = new UploadValidationTaskFactory();
         taskFactory.setFileHelper(inMemoryFileHelper);
@@ -370,8 +375,8 @@ public class UploadHandlersEndToEndTest {
         assertEquals("Yes", deliciousNode.get(0).textValue());
         assertEquals("Maybe", deliciousNode.get(1).textValue());
 
-        // validate no uploads to S3
-        verifyZeroInteractions(mockS3UploadHelper);
+        // We upload the unencrypted zipped file back to S3.
+        validateRawDataAttachment();
 
         // verify upload dao write validation status
         verify(mockUploadDao).writeValidationStatus(UPLOAD, UploadStatus.SUCCEEDED, ImmutableList.of(), UPLOAD_ID);
@@ -596,6 +601,9 @@ public class UploadHandlersEndToEndTest {
         assertEquals("inside", hhhNode.get(1).textValue());
         assertEquals("file", hhhNode.get(2).textValue());
 
+        // We upload the unencrypted zipped file back to S3.
+        validateRawDataAttachment();
+
         // verify upload dao write validation status
         verify(mockUploadDao).writeValidationStatus(UPLOAD, UploadStatus.SUCCEEDED, ImmutableList.of(), UPLOAD_ID);
     }
@@ -662,5 +670,13 @@ public class UploadHandlersEndToEndTest {
         verify(mockS3UploadHelper).writeBytesToS3(eq(TestConstants.ATTACHMENT_BUCKET), eq(attachmentId),
                 attachmentContentCaptor.capture());
         return BridgeObjectMapper.get().readTree(attachmentContentCaptor.getValue());
+    }
+
+    private void validateRawDataAttachment() {
+        String expectedRawDataAttachmentId = UPLOAD_ID + "-raw.zip";
+        verify(mockS3UploadHelper).writeFileToS3(eq(TestConstants.ATTACHMENT_BUCKET), eq(expectedRawDataAttachmentId),
+                any());
+        byte[] rawDataBytes = uploadedFileContentMap.get(expectedRawDataAttachmentId);
+        assertArrayEquals(zippedFile, rawDataBytes);
     }
 }

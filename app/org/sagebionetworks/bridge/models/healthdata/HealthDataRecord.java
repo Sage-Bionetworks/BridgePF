@@ -89,6 +89,15 @@ public interface HealthDataRecord extends BridgeEntity {
     /** @see #getPhoneInfo */
     void setPhoneInfo(String phoneInfo);
 
+    /**
+     * Attachment ID (S3 key) that contains the raw data. This is the unencrypted zip file for uploads, or JSON blob
+     * for directly submitted records.
+     */
+    String getRawDataAttachmentId();
+
+    /** @see #getRawDataAttachmentId */
+    void setRawDataAttachmentId(String rawDataAttachmentId);
+
     /** Schema ID of the health data. */
     String getSchemaId();
 

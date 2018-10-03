@@ -23,6 +23,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.LocalDate;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -40,6 +41,7 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
+import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.upload.StrictValidationHandler;
 import org.sagebionetworks.bridge.upload.TranscribeConsentHandler;
 import org.sagebionetworks.bridge.upload.UploadArtifactsHandler;
@@ -70,6 +72,17 @@ public class HealthDataServiceSubmitHealthDataTest {
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
             .build();
 
+    private HealthDataRecord createdRecord;
+    private S3Helper mockS3Helper;
+    private SurveyService mockSurveyService;
+    private StrictValidationHandler mockStrictValidationHandler;
+    private TranscribeConsentHandler mockTranscribeConsentHandler;
+    private UploadArtifactsHandler mockUploadArtifactsHandler;
+    private UploadFileHelper mockUploadFileHelper;
+    private HealthDataService svc;
+    private UploadSchema schema;
+    private Survey survey;
+
     @BeforeClass
     public static void mockNow() {
         DateTimeUtils.setCurrentMillisFixed(MOCK_NOW_MILLIS);
@@ -80,15 +93,74 @@ public class HealthDataServiceSubmitHealthDataTest {
         DateTimeUtils.setCurrentMillisSystem();
     }
 
+    @Before
+    public void before() throws Exception {
+        // Mock Schema Service.
+        schema = UploadSchema.create();
+        schema.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        schema.setSchemaId(SCHEMA_ID);
+        schema.setRevision(SCHEMA_REV);
+
+        UploadSchemaService mockSchemaService = mock(UploadSchemaService.class);
+        when(mockSchemaService.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(
+                schema);
+
+        // Mock survey service.
+        survey = Survey.create();
+        survey.setGuid(SURVEY_GUID);
+        survey.setCreatedOn(SURVEY_CREATED_ON_MILLIS);
+        survey.setIdentifier(SCHEMA_ID);
+        survey.setSchemaRevision(SCHEMA_REV);
+
+        mockSurveyService = mock(SurveyService.class);
+        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY,
+                new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS), false, true))
+                .thenReturn(survey);
+
+        // Mock upload file helper.
+        mockUploadFileHelper = mock(UploadFileHelper.class);
+        when(mockUploadFileHelper.uploadJsonNodeAsAttachment(any(), any(), any())).thenReturn(ATTACHMENT_ID_NODE);
+
+        // Mock other dependencies.
+        mockS3Helper = mock(S3Helper.class);
+        mockStrictValidationHandler = mock(StrictValidationHandler.class);
+        mockTranscribeConsentHandler = mock(TranscribeConsentHandler.class);
+        mockUploadArtifactsHandler = mock(UploadArtifactsHandler.class);
+
+        // UploadArtifactsHandler needs to write record ID back into the context.
+        doAnswer(invocation -> {
+            UploadValidationContext context = invocation.getArgumentAt(0, UploadValidationContext.class);
+            HealthDataRecord record = context.getHealthDataRecord();
+            record.setId(context.getUploadId());
+            context.setRecordId(context.getUploadId());
+            return null;
+        }).when(mockUploadArtifactsHandler).handle(any());
+
+        // Set up service.
+        svc = spy(new HealthDataService());
+        svc.setS3Helper(mockS3Helper);
+        svc.setSchemaService(mockSchemaService);
+        svc.setSurveyService(mockSurveyService);
+        svc.setUploadFileHelper(mockUploadFileHelper);
+        svc.setStrictValidationHandler(mockStrictValidationHandler);
+        svc.setTranscribeConsentHandler(mockTranscribeConsentHandler);
+        svc.setUploadArtifactsHandler(mockUploadArtifactsHandler);
+
+        // Spy getRecordById(). This decouples the submitHealthData implementation from the getRecord implementation.
+        // At this point, we only care about data flow. Don't worry about the actual content.
+        createdRecord = HealthDataRecord.create();
+        doReturn(createdRecord).when(svc).getRecordById(any());
+    }
+
     @Test(expected = InvalidEntityException.class)
     public void nullSubmission() throws Exception {
-        new HealthDataService().submitHealthData(TestConstants.TEST_STUDY, PARTICIPANT, null);
+        svc.submitHealthData(TestConstants.TEST_STUDY, PARTICIPANT, null);
     }
 
     @Test(expected = InvalidEntityException.class)
     public void invalidSubmission() throws Exception {
         HealthDataSubmission submission = makeValidBuilderWithSchema().withData(null).build();
-        new HealthDataService().submitHealthData(TestConstants.TEST_STUDY, PARTICIPANT, submission);
+        svc.submitHealthData(TestConstants.TEST_STUDY, PARTICIPANT, submission);
     }
 
     @Test
@@ -104,47 +176,7 @@ public class HealthDataServiceSubmitHealthDataTest {
                 new UploadFieldDefinition.Builder().withName("attachment-field")
                         .withType(UploadFieldType.ATTACHMENT_V2).build(),
                 new UploadFieldDefinition.Builder().withName("normal-field").withType(UploadFieldType.STRING).build());
-
-        UploadSchema schema = UploadSchema.create();
-        schema.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
-        schema.setSchemaId(SCHEMA_ID);
-        schema.setRevision(SCHEMA_REV);
         schema.setFieldDefinitions(fieldDefList);
-
-        UploadSchemaService mockSchemaService = mock(UploadSchemaService.class);
-        when(mockSchemaService.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(
-                schema);
-
-        // Mock upload file helper
-        UploadFileHelper mockUploadFileHelper = mock(UploadFileHelper.class);
-        when(mockUploadFileHelper.uploadJsonNodeAsAttachment(any(), any(), any())).thenReturn(ATTACHMENT_ID_NODE);
-
-        // mock handlers
-        StrictValidationHandler mockStrictValidationHandler = mock(StrictValidationHandler.class);
-        TranscribeConsentHandler mockTranscribeConsentHandler = mock(TranscribeConsentHandler.class);
-        UploadArtifactsHandler mockUploadArtifactsHandler = mock(UploadArtifactsHandler.class);
-
-        // UploadArtifactsHandler needs to write record ID back into the context.
-        doAnswer(invocation -> {
-            UploadValidationContext context = invocation.getArgumentAt(0, UploadValidationContext.class);
-            HealthDataRecord record = context.getHealthDataRecord();
-            record.setId(context.getUploadId());
-            context.setRecordId(context.getUploadId());
-            return null;
-        }).when(mockUploadArtifactsHandler).handle(any());
-
-        // set up service
-        HealthDataService svc = spy(new HealthDataService());
-        svc.setSchemaService(mockSchemaService);
-        svc.setUploadFileHelper(mockUploadFileHelper);
-        svc.setStrictValidationHandler(mockStrictValidationHandler);
-        svc.setTranscribeConsentHandler(mockTranscribeConsentHandler);
-        svc.setUploadArtifactsHandler(mockUploadArtifactsHandler);
-
-        // Spy getRecordById(). This decouples the submitHealthData implementation from the getRecord implementation.
-        // At this point, we only care about data flow. Don't worry about the actual content.
-        HealthDataRecord internalRecord = HealthDataRecord.create();
-        doReturn(internalRecord).when(svc).getRecordById(any());
 
         // setup input
         ObjectNode inputData = BridgeObjectMapper.get().createObjectNode();
@@ -164,7 +196,7 @@ public class HealthDataServiceSubmitHealthDataTest {
         HealthDataRecord svcOutputRecord = svc.submitHealthData(TestConstants.TEST_STUDY, PARTICIPANT, submission);
 
         // verify that we return the record returned by the internal getRecordById() call.
-        assertSame(internalRecord, svcOutputRecord);
+        assertSame(createdRecord, svcOutputRecord);
 
         // Verify strict validation handler called. While we're at it, verify that we constructed the context and
         // record correctly.
@@ -218,6 +250,17 @@ public class HealthDataServiceSubmitHealthDataTest {
         assertEquals(1, userMetadata.size());
         assertEquals("sample-metadata-value", userMetadata.get("sample-metadata-key").textValue());
 
+        // Validate raw data submitted to S3
+        String expectedRawDataAttachmentId = uploadId + HealthDataService.RAW_ATTACHMENT_SUFFIX;
+        ArgumentCaptor<byte[]> rawBytesCaptor = ArgumentCaptor.forClass(byte[].class);
+        verify(mockS3Helper).writeBytesToS3(eq(HealthDataService.ATTACHMENT_BUCKET), eq(expectedRawDataAttachmentId),
+                rawBytesCaptor.capture());
+        assertEquals(expectedRawDataAttachmentId, contextRecord.getRawDataAttachmentId());
+
+        byte[] rawBytes = rawBytesCaptor.getValue();
+        JsonNode rawJsonNode = BridgeObjectMapper.get().readTree(rawBytes);
+        assertEquals(inputData, rawJsonNode);
+
         // validate the other handlers are called
         verify(mockTranscribeConsentHandler).handle(context);
         verify(mockUploadArtifactsHandler).handle(context);
@@ -231,54 +274,7 @@ public class HealthDataServiceSubmitHealthDataTest {
         // mock schema service
         List<UploadFieldDefinition> fieldDefList = ImmutableList.of(new UploadFieldDefinition.Builder()
                 .withName("answer-me").withType(UploadFieldType.SINGLE_CHOICE).build());
-
-        UploadSchema schema = UploadSchema.create();
-        schema.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
-        schema.setSchemaId(SCHEMA_ID);
-        schema.setRevision(SCHEMA_REV);
         schema.setFieldDefinitions(fieldDefList);
-
-        UploadSchemaService mockSchemaService = mock(UploadSchemaService.class);
-        when(mockSchemaService.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(
-                schema);
-
-        // mock survey service
-        Survey survey = Survey.create();
-        survey.setGuid(SURVEY_GUID);
-        survey.setCreatedOn(SURVEY_CREATED_ON_MILLIS);
-        survey.setIdentifier(SCHEMA_ID);
-        survey.setSchemaRevision(SCHEMA_REV);
-
-        SurveyService mockSurveyService = mock(SurveyService.class);
-        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY,
-                new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS), false, true))
-                        .thenReturn(survey);
-
-        // mock handlers
-        StrictValidationHandler mockStrictValidationHandler = mock(StrictValidationHandler.class);
-        TranscribeConsentHandler mockTranscribeConsentHandler = mock(TranscribeConsentHandler.class);
-        UploadArtifactsHandler mockUploadArtifactsHandler = mock(UploadArtifactsHandler.class);
-
-        // UploadArtifactsHandler needs to write record ID back into the context.
-        doAnswer(invocation -> {
-            UploadValidationContext context = invocation.getArgumentAt(0, UploadValidationContext.class);
-            HealthDataRecord record = context.getHealthDataRecord();
-            context.setRecordId(record.getUploadId());
-            return null;
-        }).when(mockUploadArtifactsHandler).handle(any());
-
-        // set up service
-        HealthDataService svc = spy(new HealthDataService());
-        svc.setSchemaService(mockSchemaService);
-        svc.setSurveyService(mockSurveyService);
-        svc.setStrictValidationHandler(mockStrictValidationHandler);
-        svc.setTranscribeConsentHandler(mockTranscribeConsentHandler);
-        svc.setUploadArtifactsHandler(mockUploadArtifactsHandler);
-
-        // Spy getRecordById(). This decouples the submitHealthData implementation from the getRecord implementation.
-        // At this point, we only care about data flow. Don't worry about the actual content.
-        HealthDataRecord internalRecord = HealthDataRecord.create();
-        doReturn(internalRecord).when(svc).getRecordById(any());
 
         // setup input
         ObjectNode inputData = BridgeObjectMapper.get().createObjectNode();
@@ -309,19 +305,8 @@ public class HealthDataServiceSubmitHealthDataTest {
 
     @Test(expected = EntityNotFoundException.class)
     public void surveyWithoutSchema() throws Exception {
-        // mock survey service
-        Survey survey = Survey.create();
-        survey.setGuid(SURVEY_GUID);
-        survey.setCreatedOn(SURVEY_CREATED_ON_MILLIS);
-
-        SurveyService mockSurveyService = mock(SurveyService.class);
-        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY,
-                new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS), false, true))
-                        .thenReturn(survey);
-
-        // set up service
-        HealthDataService svc = new HealthDataService();
-        svc.setSurveyService(mockSurveyService);
+        // Survey has no schema.
+        survey.setSchemaRevision(null);
 
         // setup input
         ObjectNode inputData = BridgeObjectMapper.get().createObjectNode();
@@ -337,26 +322,11 @@ public class HealthDataServiceSubmitHealthDataTest {
         // mock schema service
         List<UploadFieldDefinition> fieldDefList = ImmutableList.of(new UploadFieldDefinition.Builder()
                 .withName("simple-field").withType(UploadFieldType.INT).build());
-
-        UploadSchema schema = UploadSchema.create();
-        schema.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
-        schema.setSchemaId(SCHEMA_ID);
-        schema.setRevision(SCHEMA_REV);
         schema.setFieldDefinitions(fieldDefList);
-
-        UploadSchemaService mockSchemaService = mock(UploadSchemaService.class);
-        when(mockSchemaService.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, SCHEMA_ID, SCHEMA_REV)).thenReturn(
-                schema);
 
         // mock handlers - Only StrictValidationHandler will be called. Also, since we're not calling the actual
         // StrictValidationHandler, we need to make it throw.
-        StrictValidationHandler mockStrictValidationHandler = mock(StrictValidationHandler.class);
         doThrow(UploadValidationException.class).when(mockStrictValidationHandler).handle(any());
-
-        // set up service
-        HealthDataService svc = new HealthDataService();
-        svc.setSchemaService(mockSchemaService);
-        svc.setStrictValidationHandler(mockStrictValidationHandler);
 
         // setup input
         ObjectNode inputData = BridgeObjectMapper.get().createObjectNode();
