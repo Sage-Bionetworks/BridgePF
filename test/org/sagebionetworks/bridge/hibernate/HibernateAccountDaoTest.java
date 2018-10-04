@@ -988,7 +988,7 @@ public class HibernateAccountDaoTest {
         account.setExternalId(EXTERNAL_ID);
         
         // Execute. Identifiers not allows to change.
-        dao.updateAccount(account, false);
+        dao.updateAccount(account);
 
         // verify hibernate update
         ArgumentCaptor<HibernateAccount> updatedHibernateAccountCaptor = ArgumentCaptor.forClass(
@@ -1023,7 +1023,7 @@ public class HibernateAccountDaoTest {
         account.setReauthTokenHash("bad reauth token hash");
         account.setReauthTokenModifiedOn(MOCK_NOW_MILLIS);
         
-        dao.updateAccount(account, false);
+        dao.updateAccount(account);
         
         ArgumentCaptor<HibernateAccount> updatedHibernateAccountCaptor = ArgumentCaptor.forClass(
                 HibernateAccount.class);
@@ -1047,7 +1047,7 @@ public class HibernateAccountDaoTest {
 
         // execute
         try {
-            dao.updateAccount(makeValidGenericAccount(), false);
+            dao.updateAccount(makeValidGenericAccount());
             fail("expected exception");
         } catch (EntityNotFoundException ex) {
             assertEquals("Account " + ACCOUNT_ID + " not found", ex.getMessage());
@@ -1082,7 +1082,7 @@ public class HibernateAccountDaoTest {
         account.setExternalId(EXTERNAL_ID);
         
         // Identifiers ARE allowed to change here.
-        dao.updateAccount(account, true);
+        dao.updateAccount(account);
 
         // Capture the update
         ArgumentCaptor<HibernateAccount> updatedHibernateAccountCaptor = ArgumentCaptor.forClass(

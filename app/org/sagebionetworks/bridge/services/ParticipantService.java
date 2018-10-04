@@ -389,7 +389,7 @@ public class ParticipantService {
                 account.setStatus(participant.getStatus());
             }
         }
-        accountDao.updateAccount(account, false);
+        accountDao.updateAccount(account);
         
         if (assigningExternalId) {
             externalIdService.assignExternalId(study, account.getExternalId(), account.getHealthCode());    
@@ -653,7 +653,7 @@ public class ParticipantService {
         }
         // save. if this throws a constraint exception, further services are not called
         if (accountUpdated) {
-            accountDao.updateAccount(account, true);   
+            accountDao.updateAccount(account);   
         }
         if (sendEmailVerification && 
             study.isEmailVerificationEnabled() && 

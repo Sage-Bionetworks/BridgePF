@@ -170,7 +170,7 @@ public class AuthenticationServiceTest {
             account.setPhoneVerified(true);
             account.setEmailVerified(true);
             account.setStatus(AccountStatus.ENABLED);
-            accountDao.updateAccount(account, true);
+            accountDao.updateAccount(account);
             
             CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY)
                     .build();
