@@ -35,6 +35,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private String id;
     private JsonNode metadata;
     private String phoneInfo;
+    private String rawDataAttachmentId;
     private String schemaId;
     private int schemaRevision;
     private String studyId;
@@ -150,6 +151,18 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     @Override
     public void setPhoneInfo(String phoneInfo) {
         this.phoneInfo = phoneInfo;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public String getRawDataAttachmentId() {
+        return rawDataAttachmentId;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setRawDataAttachmentId(String rawDataAttachmentId) {
+        this.rawDataAttachmentId = rawDataAttachmentId;
     }
 
     /** {@inheritDoc} */

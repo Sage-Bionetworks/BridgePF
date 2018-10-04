@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -8,9 +9,11 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Charsets;
 import org.apache.commons.lang3.StringUtils;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -26,6 +29,7 @@ import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
+import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.schema.SchemaUtils;
 import org.sagebionetworks.bridge.upload.StrictValidationHandler;
 import org.sagebionetworks.bridge.upload.TranscribeConsentHandler;
@@ -53,7 +57,12 @@ import org.springframework.validation.Validator;
 /** Service handler for health data APIs. */
 @Component
 public class HealthDataService {
+    // Package-scoped for unit tests.
+    static final String ATTACHMENT_BUCKET = BridgeConfigFactory.getConfig().getProperty("attachment.bucket");
+    static final String RAW_ATTACHMENT_SUFFIX = "-raw.json";
+
     private HealthDataDao healthDataDao;
+    private S3Helper s3Helper;
     private SurveyService surveyService;
     private UploadSchemaService schemaService;
     private UploadFileHelper uploadFileHelper;
@@ -70,6 +79,12 @@ public class HealthDataService {
     @Autowired
     public final void setHealthDataDao(HealthDataDao healthDataDao) {
         this.healthDataDao = healthDataDao;
+    }
+
+    /** S3 Helper, used to submit raw JSON as an attachment. */
+    @Autowired
+    public void setS3Helper(S3Helper s3Helper) {
+        this.s3Helper = s3Helper;
     }
 
     /** Survey service, if we're submitting a survey response. */
@@ -118,7 +133,7 @@ public class HealthDataService {
      * incurring the overhead of creating a bunch of small files to upload to S3.
      */
     public HealthDataRecord submitHealthData(StudyIdentifier studyId, StudyParticipant participant,
-            HealthDataSubmission healthDataSubmission) throws JsonProcessingException, UploadValidationException {
+            HealthDataSubmission healthDataSubmission) throws IOException, UploadValidationException {
         // validate health data submission
         if (healthDataSubmission == null) {
             throw new InvalidEntityException("Health data submission cannot be null");
@@ -161,8 +176,20 @@ public class HealthDataService {
             throw new BadRequestException(ex);
         }
 
-        // Transcribe Consent and Upload Artifacts.
+        // Transcribe Consent.
         transcribeConsentHandler.handle(uploadValidationContext);
+
+        // Upload raw JSON as the raw data attachment. This is different from how the upload validation handles it.
+        // Attachment ID is "[uploadId]-raw.json".
+        String rawDataAttachmentId = uploadId + RAW_ATTACHMENT_SUFFIX;
+        String rawDataValue = BridgeObjectMapper.get().writerWithDefaultPrettyPrinter().writeValueAsString(
+                healthDataSubmission.getData());
+        byte[] rawDataBytes = rawDataValue.getBytes(Charsets.UTF_8);
+        s3Helper.writeBytesToS3(ATTACHMENT_BUCKET, rawDataAttachmentId, rawDataBytes);
+
+        record.setRawDataAttachmentId(rawDataAttachmentId);
+
+        // Upload Artifacts.
         uploadArtifactsHandler.handle(uploadValidationContext);
 
         // UploadArtifactsHandler doesn't return the record. It also may make potentially two writes to the record

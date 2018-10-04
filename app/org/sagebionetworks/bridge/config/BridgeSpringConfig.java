@@ -89,6 +89,7 @@ import org.sagebionetworks.bridge.upload.TranscribeConsentHandler;
 import org.sagebionetworks.bridge.upload.UnzipHandler;
 import org.sagebionetworks.bridge.upload.UploadArtifactsHandler;
 import org.sagebionetworks.bridge.upload.UploadFormatHandler;
+import org.sagebionetworks.bridge.upload.UploadRawZipHandler;
 import org.sagebionetworks.bridge.upload.UploadValidationHandler;
 
 /**
@@ -458,10 +459,10 @@ public class BridgeSpringConfig {
             DecryptHandler decryptHandler, UnzipHandler unzipHandler,
             InitRecordHandler initRecordHandler, UploadFormatHandler uploadFormatHandler,
             StrictValidationHandler strictValidationHandler, TranscribeConsentHandler transcribeConsentHandler,
-            UploadArtifactsHandler uploadArtifactsHandler) {
+            UploadRawZipHandler uploadRawZipHandler, UploadArtifactsHandler uploadArtifactsHandler) {
         return ImmutableList.of(s3DownloadHandler, decryptHandler, unzipHandler,
                 initRecordHandler, uploadFormatHandler, strictValidationHandler, transcribeConsentHandler,
-                uploadArtifactsHandler);
+                uploadRawZipHandler, uploadArtifactsHandler);
     }
 
     @Bean(name = "uploadSchemaDdbMapper")
