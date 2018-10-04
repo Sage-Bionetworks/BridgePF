@@ -106,11 +106,17 @@ public final class ConsentPdf {
         String username = Jsoup.clean(consentSignature.getName(), Whitelist.none());
         
         if (studyConsentAgreement.contains("<html")) {
-            // proceed as we used to
+            // legacy format, proceed as we used to. Note that once phone number was added to the system, 
+            // we didn't check for a null email, so this has been added after manual repair of consents 
+            // exposed this bug.
             String userEmail = signer.getEmail();
             String html = studyConsentAgreement.replace("@@name@@", username);
             html = html.replace("@@signing.date@@", signingDate);
-            html = html.replace("@@email@@", userEmail);
+            if (signer.getEmail() != null && Boolean.TRUE.equals(signer.getEmailVerified())) {
+                html = html.replace("@@email@@", userEmail);
+            } else {
+                html = html.replace("@@email@@", "");
+            }
             html = html.replace("@@sharing@@", sharingLabel);
             return html;
         } else {

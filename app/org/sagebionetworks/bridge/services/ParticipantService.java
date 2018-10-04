@@ -371,9 +371,15 @@ public class ParticipantService {
         // Prevent optimistic locking exception until operations are combined into one operation. 
         account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), account.getId()));
         
-        // External ID can be changed by a researcher, if it is changed, unassign/assign as necessary.
-        boolean assigningExternalId = callerRoles.contains(Roles.RESEARCHER) && 
+        // Rules for updating external ID are complex. Users can add an external ID to their own accounts
+        // (but not change or remove it); researchers can change an external ID. In the latter case, the 
+        // old external ID needs to be unassigned first.
+        boolean isSimpleAdd = account.getExternalId() == null && participant.getExternalId() != null;
+        boolean isResearcherChange = callerRoles.contains(Roles.RESEARCHER) && 
                 !Objects.equals(account.getExternalId(), participant.getExternalId());
+        
+        boolean assigningExternalId = isSimpleAdd || isResearcherChange;
+        
         if  (assigningExternalId) {
             if (account.getExternalId() != null) {
                 externalIdService.unassignExternalId(study, account.getExternalId(), account.getHealthCode());    
@@ -382,8 +388,7 @@ public class ParticipantService {
         }
         updateAccountAndRoles(study, callerRoles, account, participant);
         
-        // Allow admin and worker accounts to toggle status; in particular, to disable/enable accounts. Note 
-        // however that admins can bypass phone/email verification as a result.
+        // Allow admin and worker accounts to toggle status; in particular, to disable/enable accounts.
         if (participant.getStatus() != null) {
             if (callerRoles.contains(Roles.ADMIN) || callerRoles.contains(Roles.WORKER)) {
                 account.setStatus(participant.getStatus());
