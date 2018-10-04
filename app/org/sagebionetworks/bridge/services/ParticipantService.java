@@ -367,13 +367,9 @@ public class ParticipantService {
         Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, study, false), participant);
         
         Account account = getAccountThrowingException(study, participant.getId());
-
-        // Prevent optimistic locking exception until operations are combined into one operation. 
-        account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), account.getId()));
         
-        // Rules for updating external ID are complex. Users can add an external ID to their own accounts
-        // (but not change or remove it); researchers can change an external ID. In the latter case, the 
-        // old external ID needs to be unassigned first.
+        // Users can add an external ID to their own accounts (but not change or remove it); researchers can 
+        // change an external ID. In the latter case, the old external ID needs to be unassigned first.
         boolean isSimpleAdd = account.getExternalId() == null && participant.getExternalId() != null;
         boolean isResearcherChange = callerRoles.contains(Roles.RESEARCHER) && 
                 !Objects.equals(account.getExternalId(), participant.getExternalId());

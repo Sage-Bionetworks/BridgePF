@@ -1884,12 +1884,15 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval();
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
-                .withExternalId(null).build();
+                .withExternalId("newExternalId").build();
         
         participantService.updateParticipant(STUDY, CALLER_ROLES, participant);
         
         verify(accountDao).updateAccount(accountCaptor.capture());
-        assertNull(accountCaptor.getValue().getExternalId());
+        assertEquals("newExternalId", accountCaptor.getValue().getExternalId());
+        
+        verify(externalIdService).unassignExternalId(STUDY, EXTERNAL_ID, HEALTH_CODE);
+        verify(externalIdService).assignExternalId(STUDY, "newExternalId", HEALTH_CODE);
     }
     
     // There's no actual vs expected here because either we don't set it, or we set it and that's what we're verifying,
