@@ -1855,6 +1855,43 @@ public class ParticipantServiceTest {
         participantService.sendSmsMessage(STUDY, ID, template);
     }
     
+    @Test
+    public void normalUserCanAddExternalIdOnUpdate() {
+        mockHealthCodeAndAccountRetrieval();
+        account.setExternalId(null);
+        
+        participantService.updateParticipant(STUDY, ImmutableSet.of(), PARTICIPANT);
+        
+        verify(accountDao).updateAccount(accountCaptor.capture());
+        assertEquals(EXTERNAL_ID, accountCaptor.getValue().getExternalId());
+    }
+    
+    @Test
+    public void normalUserCannotChangeExternalIdOnUpdate() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withExternalId("newExternalId").build();
+        
+        participantService.updateParticipant(STUDY, ImmutableSet.of(), participant);
+        
+        verify(accountDao).updateAccount(accountCaptor.capture());
+        assertEquals(EXTERNAL_ID, accountCaptor.getValue().getExternalId());
+    }
+    
+    @Test
+    public void researcherCanChangeExternalIdOnUpdate() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withExternalId(null).build();
+        
+        participantService.updateParticipant(STUDY, CALLER_ROLES, participant);
+        
+        verify(accountDao).updateAccount(accountCaptor.capture());
+        assertNull(accountCaptor.getValue().getExternalId());
+    }
+    
     // There's no actual vs expected here because either we don't set it, or we set it and that's what we're verifying,
     // that it has been set. If the setter is not called, the existing status will be sent back to account store.
     private void verifyStatusUpdate(Set<Roles> roles, boolean canSetStatus) {
