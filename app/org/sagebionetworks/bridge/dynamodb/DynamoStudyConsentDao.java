@@ -5,7 +5,6 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -14,7 +13,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 
@@ -78,20 +76,10 @@ public class DynamoStudyConsentDao implements StudyConsentDao {
         }
         return results;
     }
-    
+
+    /** {@inheritDoc} */
     @Override
-    public void deleteAllConsents(SubpopulationGuid subpopGuid) {
-        DynamoStudyConsent1 hashKey = new DynamoStudyConsent1();
-        hashKey.setSubpopulationGuid(subpopGuid.getGuid());
-        DynamoDBQueryExpression<DynamoStudyConsent1> queryExpression = 
-                new DynamoDBQueryExpression<DynamoStudyConsent1>()
-                .withHashKeyValues(hashKey)
-                .withScanIndexForward(false);
-        
-        List<? extends StudyConsent> consentsToDelete = mapper.query(DynamoStudyConsent1.class, queryExpression);
-        if (!consentsToDelete.isEmpty()) {
-            List<FailedBatch> failures = mapper.batchDelete(consentsToDelete);
-            BridgeUtils.ifFailuresThrowException(failures);
-        }
+    public void deleteConsentPermanently(StudyConsent consent) {
+        mapper.delete(consent);
     }
 }

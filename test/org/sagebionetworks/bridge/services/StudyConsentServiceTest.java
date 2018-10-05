@@ -36,9 +36,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
 public class StudyConsentServiceTest {
-
-    private static final String BUCKET = BridgeConfigFactory.getConfig().getConsentsBucket();
-
     @Resource
     private StudyConsentDao studyConsentDao;
 
@@ -74,8 +71,11 @@ public class StudyConsentServiceTest {
     
     @After
     public void after() {
-        studyConsentDao.deleteAllConsents(subpopulation.getGuid());
         subpopService.deleteSubpopulationPermanently(study.getStudyIdentifier(), subpopulation.getGuid());
+
+        // Verify we've deleted all consents for this subpop.
+        List<StudyConsent> consentList = studyConsentService.getAllConsents(subpopulation.getGuid());
+        assertTrue(consentList.isEmpty());
     }
 
     @Test
@@ -106,7 +106,7 @@ public class StudyConsentServiceTest {
     public void studyConsentWithFileAndS3ContentTakesS3Content() throws Exception {
         long createdOn = DateUtils.getCurrentMillisFromEpoch();
         String key = subpopulation.getGuidString() + "." + createdOn;
-        s3Helper.writeBytesToS3(BUCKET, key, "<document/>".getBytes());
+        s3Helper.writeBytesToS3(StudyConsentService.CONSENTS_BUCKET, key, "<document/>".getBytes());
         
         studyConsentDao.addConsent(subpopulation.getGuid(), key, createdOn);
         // The junk path should not prevent the service from getting the S3 content.
@@ -183,10 +183,8 @@ public class StudyConsentServiceTest {
         studyConsentService.publishConsent(study, subpopulation, view.getCreatedOn());
 
         // Now retrieve the HTML version of the document and verify it has been updated.
-        // Removing SSL because IOUtils doesn't support it and although we do it, we don't need to.
-        String htmlURL = subpopulation.getConsentHTML();
-        
-        String retrievedContent = IOUtils.toString(new URL(htmlURL).openStream(), Charset.forName("UTF-8"));
+        String retrievedContent = s3Helper.readS3FileAsString(StudyConsentService.PUBLICATIONS_BUCKET,
+                subpopulation.getGuidString() + StudyConsentService.CONSENT_HTML_SUFFIX);
         assertTrue(retrievedContent.contains(content));
     }
     

@@ -22,12 +22,9 @@ public interface StudyConsentDao {
      */
     StudyConsent getConsent(SubpopulationGuid subpopGuid, long consentCreatedOn);
 
-    /**
-     * Delete all the consents for a subpopulation. Only call when physically deleting a subpopulation
-     * (usually as part of a test).
-     */
-    void deleteAllConsents(SubpopulationGuid subpopGuid);
-    
+    /** Permanently deletes the specified consent. */
+    void deleteConsentPermanently(StudyConsent consent);
+
     /**
      * Gets all the consents in reverse order of the timestamp, for a particularly subpopulation.
      */

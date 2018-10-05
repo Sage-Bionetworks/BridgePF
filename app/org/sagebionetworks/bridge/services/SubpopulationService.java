@@ -221,7 +221,8 @@ public class SubpopulationService {
     public void deleteSubpopulationPermanently(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
         checkNotNull(studyId);
         checkNotNull(subpopGuid);
-        
+
+        studyConsentService.deleteAllConsentsPermanently(subpopGuid);
         subpopDao.deleteSubpopulationPermanently(studyId, subpopGuid);
         cacheProvider.removeObject(CacheKey.subpop(subpopGuid, studyId));
         cacheProvider.removeObject(CacheKey.subpopList(studyId));
@@ -238,9 +239,7 @@ public class SubpopulationService {
         List<Subpopulation> subpops = getSubpopulations(studyId, true);
         if (!subpops.isEmpty()) {
             for (Subpopulation subpop : subpops) {
-                subpopDao.deleteSubpopulationPermanently(studyId, subpop.getGuid());
-                cacheProvider.removeObject(CacheKey.subpop(subpop.getGuid(), studyId));
-                cacheProvider.removeObject(CacheKey.subpopList(studyId));
+                deleteSubpopulationPermanently(studyId, subpop.getGuid());
             }
         }
     }
