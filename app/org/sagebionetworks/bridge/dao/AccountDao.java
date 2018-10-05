@@ -82,7 +82,7 @@ public interface AccountDao {
      * Save account changes. Account should have been retrieved from the getAccount() method 
      * (constructAccount() is not sufficient).
      */
-    void updateAccount(Account account, boolean allowIdentifierUpdates);
+    void updateAccount(Account account);
     
     /**
      * Load, and if it exists, edit and save an account. 

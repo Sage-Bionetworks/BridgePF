@@ -988,7 +988,7 @@ public class HibernateAccountDaoTest {
         account.setExternalId(EXTERNAL_ID);
         
         // Execute. Identifiers not allows to change.
-        dao.updateAccount(account, false);
+        dao.updateAccount(account);
 
         // verify hibernate update
         ArgumentCaptor<HibernateAccount> updatedHibernateAccountCaptor = ArgumentCaptor.forClass(
@@ -998,11 +998,11 @@ public class HibernateAccountDaoTest {
         HibernateAccount updatedHibernateAccount = updatedHibernateAccountCaptor.getValue();
         assertEquals(ACCOUNT_ID, updatedHibernateAccount.getId());
         assertEquals("persisted-study", updatedHibernateAccount.getStudyId());
-        assertEquals("persisted@example.com", updatedHibernateAccount.getEmail());
-        assertEquals(PHONE.getNationalFormat(),
+        assertEquals(OTHER_EMAIL, updatedHibernateAccount.getEmail());
+        assertEquals(OTHER_PHONE.getNationalFormat(),
                 updatedHibernateAccount.getPhone().getNationalFormat());
-        assertEquals(Boolean.TRUE, updatedHibernateAccount.getEmailVerified());
-        assertEquals(Boolean.TRUE, updatedHibernateAccount.getPhoneVerified());
+        assertEquals(Boolean.FALSE, updatedHibernateAccount.getEmailVerified());
+        assertEquals(Boolean.FALSE, updatedHibernateAccount.getPhoneVerified());
         assertEquals(1234, updatedHibernateAccount.getCreatedOn().longValue());
         assertEquals(5678, updatedHibernateAccount.getPasswordModifiedOn().longValue());
         assertEquals(MOCK_NOW_MILLIS, updatedHibernateAccount.getModifiedOn().longValue());
@@ -1023,7 +1023,7 @@ public class HibernateAccountDaoTest {
         account.setReauthTokenHash("bad reauth token hash");
         account.setReauthTokenModifiedOn(MOCK_NOW_MILLIS);
         
-        dao.updateAccount(account, false);
+        dao.updateAccount(account);
         
         ArgumentCaptor<HibernateAccount> updatedHibernateAccountCaptor = ArgumentCaptor.forClass(
                 HibernateAccount.class);
@@ -1047,7 +1047,7 @@ public class HibernateAccountDaoTest {
 
         // execute
         try {
-            dao.updateAccount(makeValidGenericAccount(), false);
+            dao.updateAccount(makeValidGenericAccount());
             fail("expected exception");
         } catch (EntityNotFoundException ex) {
             assertEquals("Account " + ACCOUNT_ID + " not found", ex.getMessage());
@@ -1082,7 +1082,7 @@ public class HibernateAccountDaoTest {
         account.setExternalId(EXTERNAL_ID);
         
         // Identifiers ARE allowed to change here.
-        dao.updateAccount(account, true);
+        dao.updateAccount(account);
 
         // Capture the update
         ArgumentCaptor<HibernateAccount> updatedHibernateAccountCaptor = ArgumentCaptor.forClass(
@@ -1996,25 +1996,6 @@ public class HibernateAccountDaoTest {
         verify(mockHibernateHelper).update(updatedAccountCaptor.capture());
         
         assertEquals("ChangedFirstName", updatedAccountCaptor.getValue().getFirstName());
-    }
-    
-    @Test
-    public void editAccountCannotChangeSensitiveFields() throws Exception {
-        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
-        hibernateAccount.setHealthCode("A");
-        // mock hibernate
-        when(mockHibernateHelper.queryGet("from HibernateAccount where studyId=:studyId and healthCode=:healthCode",
-                HEALTHCODE_QUERY_PARAMS, null, null, HibernateAccount.class))
-                        .thenReturn(ImmutableList.of(hibernateAccount));
-        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
-
-        // execute and validate
-        dao.editAccount(TestConstants.TEST_STUDY, HEALTH_CODE, account -> account.setEmail("JUNK"));
-        
-        ArgumentCaptor<HibernateAccount> updatedAccountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
-        verify(mockHibernateHelper).update(updatedAccountCaptor.capture());
-        
-        assertEquals(EMAIL, updatedAccountCaptor.getValue().getEmail());
     }
     
     @Test
