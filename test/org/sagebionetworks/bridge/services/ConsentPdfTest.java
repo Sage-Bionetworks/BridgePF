@@ -60,7 +60,7 @@ public class ConsentPdfTest {
         
         assertTrue(consentPdf.getBytes().length > 0);
     }
-
+    
     @Test
     public void docWithNullUserTimeZone() throws Exception {
         ConsentSignature sig = makeSignatureWithoutImage();
@@ -125,6 +125,20 @@ public class ConsentPdfTest {
         
         String output = consentPdf.getFormattedConsentDocument();
         validateNewDocBody(output);
+    }
+    
+    @Test
+    public void legacyDocWithNoEmail() throws Exception {
+        ConsentSignature sig = makeSignatureWithImage();
+        
+        StudyParticipant noEmailParticipant = new StudyParticipant.Builder().copyOf(EMAIL_PARTICIPANT)
+                .withEmail(null).build();
+        
+        ConsentPdf consentPdf = new ConsentPdf(study, noEmailParticipant, sig, SharingScope.NO_SHARING, LEGACY_DOCUMENT,
+                consentBodyTemplate);
+
+        String output = consentPdf.getFormattedConsentDocument();
+        assertTrue(!output.contains("@@email@@"));
     }
 
     @Test
