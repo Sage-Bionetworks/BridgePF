@@ -22,12 +22,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import javax.persistence.PersistenceException;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import org.hibernate.exception.ConstraintViolationException;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
@@ -882,8 +885,9 @@ public class HibernateAccountDaoTest {
         when(mockHibernateHelper.queryGet(queryCaptor.capture(), eq(EMAIL_QUERY_PARAMS), any(), any(), any()))
                 .thenReturn(ImmutableList.of(otherHibernateAccount));
 
-        doThrow(ConcurrentModificationException.class).when(mockHibernateHelper).create(any());
-
+        ConstraintViolationException cve = new ConstraintViolationException("Duplicate entry for key 'Accounts-StudyId-Email-Index'", null, null);
+        doThrow(new PersistenceException(cve)).when(mockHibernateHelper).create(any());
+        
         // execute
         try {
             dao.createAccount(study, makeValidGenericAccount());
@@ -898,8 +902,9 @@ public class HibernateAccountDaoTest {
     public void createAccountAlreadyExistsButNotFound() {
         // mock hibernate
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any())).thenReturn(ImmutableList.of());
-        doThrow(ConcurrentModificationException.class).when(mockHibernateHelper).create(any());
-
+        ConstraintViolationException cve = new ConstraintViolationException("Duplicate entry for key 'Accounts-StudyId-Email-Index'", null, null);
+        doThrow(new PersistenceException(cve)).when(mockHibernateHelper).create(any());
+        
         // execute
         dao.createAccount(study, makeValidGenericAccount());
     }
@@ -915,8 +920,9 @@ public class HibernateAccountDaoTest {
         when(mockHibernateHelper.queryGet(queryCaptor.capture(), eq(PHONE_QUERY_PARAMS), any(), any(), any()))
                 .thenReturn(ImmutableList.of(otherHibernateAccount));
 
-        doThrow(ConcurrentModificationException.class).when(mockHibernateHelper).create(any());
-
+        ConstraintViolationException cve = new ConstraintViolationException("Duplicate entry for key 'Accounts-StudyId-Phone-Index'", null, null);
+        doThrow(new PersistenceException(cve)).when(mockHibernateHelper).create(any());
+        
         // execute
         try {
             GenericAccount account = makeValidGenericAccount();
@@ -945,8 +951,9 @@ public class HibernateAccountDaoTest {
         when(mockHibernateHelper.queryGet(queryCaptor.capture(), eq(params), any(), any(), any()))
                 .thenReturn(ImmutableList.of(otherHibernateAccount));
 
-        doThrow(ConcurrentModificationException.class).when(mockHibernateHelper).create(any());
-
+        ConstraintViolationException cve = new ConstraintViolationException("Duplicate entry for key 'Accounts-StudyId-ExternalId-Index'", null, null);
+        doThrow(new PersistenceException(cve)).when(mockHibernateHelper).create(any());
+        
         // execute
         try {
             GenericAccount account = makeValidGenericAccount();
@@ -2164,6 +2171,190 @@ public class HibernateAccountDaoTest {
                 .thenReturn(ImmutableList.of(hibernateAccount));
 
         dao.authenticate(study, PASSWORD_SIGNIN);
+    }
+    
+    // This test (when applied to HibernateHelper) used to validate a conversion to 
+    // ConcurrentModificationException, but now we retain the constraint violation 
+    // exception and convert it to the Bridge namespace.
+    @Test(expected = org.sagebionetworks.bridge.exceptions.ConstraintViolationException.class)
+    public void genericConstraintViolationOnCreate() {
+        PersistenceException ex = new PersistenceException(mock(ConstraintViolationException.class));
+        doThrow(ex).when(mockHibernateHelper).create(any());
+        
+        GenericAccount account = makeValidGenericAccount();
+        dao.createAccount(study, account);
+    }
+    
+    @Test(expected = org.sagebionetworks.bridge.exceptions.ConstraintViolationException.class)
+    public void genericConstraintViolationOnUpdate() throws Exception {
+        PersistenceException ex = new PersistenceException(mock(ConstraintViolationException.class));
+        doThrow(ex).when(mockHibernateHelper).update(any());
+        
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
+        when(mockHibernateHelper.getById(eq(HibernateAccount.class), any())).thenReturn(hibernateAccount);
+         GenericAccount account = makeValidGenericAccount();
+        dao.updateAccount(account, true);
+    }
+    
+    @Test
+    public void emailConstraintViolationOnCreate() throws Exception {
+        ConstraintViolationException cve = new ConstraintViolationException(
+                "Duplicate entry ABC for key 'Accounts-StudyId-Email-Index'", null, null);
+        PersistenceException ex = new PersistenceException(cve);
+        doThrow(ex).when(mockHibernateHelper).create(any());
+     
+        GenericAccount account = makeValidGenericAccount();
+        account.setId("id");
+        
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
+        hibernateAccount.setId("id2");
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), eq(HibernateAccount.class)))
+                .thenReturn(ImmutableList.of(hibernateAccount));
+        try {
+            dao.createAccount(study, account);
+            fail("Should have thrown an exception");
+        } catch(EntityAlreadyExistsException e) {
+            assertEquals("Email address has already been used by another account.", e.getMessage());
+            assertEquals("id2", e.getEntityKeys().get("userId"));
+        }
+    }
+    
+    @Test
+    public void emailConstraintViolationOnUpdate() throws Exception {
+        ConstraintViolationException cve = new ConstraintViolationException(
+                "Duplicate entry ABC for key 'Accounts-StudyId-Email-Index'", null, null);
+        PersistenceException ex = new PersistenceException(cve);
+        doThrow(ex).when(mockHibernateHelper).update(any());
+        
+        GenericAccount account = makeValidGenericAccount();
+        account.setId("id");
+        
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
+        hibernateAccount.setId("id2");
+        when(mockHibernateHelper.getById(eq(HibernateAccount.class), any())).thenReturn(hibernateAccount);
+        
+        try {
+            dao.updateAccount(account, true);
+            fail("Should have thrown an exception");
+        } catch(EntityAlreadyExistsException e) {
+            assertEquals("Email address has already been used by another account.", e.getMessage());
+            assertEquals("id2", e.getEntityKeys().get("userId"));
+        }
+    }
+    
+    @Test
+    public void phoneConstraintViolationOnCreate() throws Exception {
+        ConstraintViolationException cve = new ConstraintViolationException(
+                "Duplicate entry ABC for key 'Accounts-StudyId-Phone-Index'", null, null);
+        PersistenceException ex = new PersistenceException(cve);
+        doThrow(ex).when(mockHibernateHelper).create(any());
+     
+        GenericAccount account = makeValidGenericAccount();
+        account.setId("id");
+        
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
+        hibernateAccount.setId("id2");
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), eq(HibernateAccount.class)))
+                .thenReturn(ImmutableList.of(hibernateAccount));
+        try {
+            dao.createAccount(study, account);
+            fail("Should have thrown an exception");
+        } catch(EntityAlreadyExistsException e) {
+            assertEquals("Phone number has already been used by another account.", e.getMessage());
+            assertEquals("id2", e.getEntityKeys().get("userId"));
+        }
+    }
+    
+    @Test
+    public void phoneConstraintViolationOnUpdate() throws Exception {
+        ConstraintViolationException cve = new ConstraintViolationException(
+                "Duplicate entry ABC for key 'Accounts-StudyId-Phone-Index'", null, null);
+        PersistenceException ex = new PersistenceException(cve);
+        doThrow(ex).when(mockHibernateHelper).update(any());
+        
+        GenericAccount account = makeValidGenericAccount();
+        account.setId("id");
+        
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
+        hibernateAccount.setId("id2");
+        when(mockHibernateHelper.getById(eq(HibernateAccount.class), any())).thenReturn(hibernateAccount);
+        
+        try {
+            dao.updateAccount(account, true);
+            fail("Should have thrown an exception");
+        } catch(EntityAlreadyExistsException e) {
+            assertEquals("Phone number has already been used by another account.", e.getMessage());
+            assertEquals("id2", e.getEntityKeys().get("userId"));
+        }
+    }
+    
+    @Test
+    public void externalIdConstraintViolationOnCreate() throws Exception {
+        ConstraintViolationException cve = new ConstraintViolationException(
+                "Duplicate entry ABC for key 'Accounts-StudyId-ExternalId-Index'", null, null);
+        PersistenceException ex = new PersistenceException(cve);
+        doThrow(ex).when(mockHibernateHelper).create(any());
+     
+        GenericAccount account = makeValidGenericAccount();
+        account.setId("id");
+        
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
+        hibernateAccount.setId("id2");
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), eq(HibernateAccount.class)))
+                .thenReturn(ImmutableList.of(hibernateAccount));
+        try {
+            dao.createAccount(study, account);
+            fail("Should have thrown an exception");
+        } catch(EntityAlreadyExistsException e) {
+            assertEquals("External ID has already been used by another account.", e.getMessage());
+            assertEquals("id2", e.getEntityKeys().get("userId"));
+        }
+    }
+    
+    @Test
+    public void externalIdConstraintViolationOnUpdate() throws Exception {
+        ConstraintViolationException cve = new ConstraintViolationException(
+                "Duplicate entry ABC for key 'Accounts-StudyId-ExternalId-Index'", null, null);
+        PersistenceException ex = new PersistenceException(cve);
+        doThrow(ex).when(mockHibernateHelper).update(any());
+        
+        GenericAccount account = makeValidGenericAccount();
+        account.setId("id");
+        
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
+        hibernateAccount.setId("id2");
+        when(mockHibernateHelper.getById(eq(HibernateAccount.class), any())).thenReturn(hibernateAccount);
+        
+        try {
+            dao.updateAccount(account, true);
+            fail("Should have thrown an exception");
+        } catch(EntityAlreadyExistsException e) {
+            assertEquals("External ID has already been used by another account.", e.getMessage());
+            assertEquals("id2", e.getEntityKeys().get("userId"));
+        }
+    }    
+    
+    @Test(expected = ConcurrentModificationException.class)
+    public void updateConcurrentModification() throws Exception {
+        PersistenceException ex = new javax.persistence.OptimisticLockException();
+        doThrow(ex).when(mockHibernateHelper).update(any());
+        
+        when(mockHibernateHelper.getById(eq(HibernateAccount.class), any()))
+                .thenReturn(makeValidHibernateAccount(false, false));
+        
+        GenericAccount account = makeValidGenericAccount();
+        dao.updateAccount(account, true);
+    }
+    
+    @Test(expected = BridgeServiceException.class)
+    public void unforeseenPersistenceException() throws Exception {
+        PersistenceException ex = new javax.persistence.TransactionRequiredException();
+        doThrow(ex).when(mockHibernateHelper).update(any());
+        
+        when(mockHibernateHelper.getById(eq(HibernateAccount.class), any()))
+        .thenReturn(makeValidHibernateAccount(false, false));
+         GenericAccount account = makeValidGenericAccount();
+        dao.updateAccount(account, true);
     }
     
     private void verifyCreatedHealthCode() {

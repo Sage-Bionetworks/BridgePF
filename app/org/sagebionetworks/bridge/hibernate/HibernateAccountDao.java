@@ -19,6 +19,9 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import javax.persistence.OptimisticLockException;
+import javax.persistence.PersistenceException;
+
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -34,6 +37,7 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
+import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -61,6 +65,8 @@ import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Joiner;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -130,7 +136,11 @@ public class HibernateAccountDao implements AccountDao {
                 hibernateAccount.setStatus(AccountStatus.ENABLED);
             }
             hibernateAccount.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-            hibernateHelper.update(hibernateAccount);
+            try {
+                hibernateHelper.update(hibernateAccount);    
+            } catch(PersistenceException pe) {
+                throw convertPersistenceException(pe, hibernateAccount.getId());
+            }
         }
     }
 
@@ -167,7 +177,11 @@ public class HibernateAccountDao implements AccountDao {
             // we will enable the account.
             hibernateAccount.setStatus(AccountStatus.ENABLED);
         }
-        hibernateHelper.update(hibernateAccount);
+        try {
+            hibernateHelper.update(hibernateAccount);
+        } catch(PersistenceException pe) {
+            throw convertPersistenceException(pe, account.getId()); 
+        }
     }
 
     /** {@inheritDoc} */
@@ -216,8 +230,12 @@ public class HibernateAccountDao implements AccountDao {
         Account account = unmarshallAccount(hibernateAccount);
         accountUpdated = updateReauthToken(study, hibernateAccount, account) || accountUpdated;
         if (accountUpdated) {
-            HibernateAccount updated = hibernateHelper.update(hibernateAccount);
-            account.setVersion(updated.getVersion());
+            try {
+                HibernateAccount updated = hibernateHelper.update(hibernateAccount);
+                account.setVersion(updated.getVersion());
+            } catch(PersistenceException pe) {
+                throw convertPersistenceException(pe, hibernateAccount.getId());
+            }
         }
         return account;
     }
@@ -231,8 +249,12 @@ public class HibernateAccountDao implements AccountDao {
             Account account = unmarshallAccount(hibernateAccount);
             accountUpdated = updateReauthToken(null, hibernateAccount, account) || accountUpdated;
             if (accountUpdated) {
-                HibernateAccount updated = hibernateHelper.update(hibernateAccount);
-                account.setVersion(updated.getVersion());
+                try {
+                    HibernateAccount updated = hibernateHelper.update(hibernateAccount);
+                    account.setVersion(updated.getVersion());
+                } catch(PersistenceException pe) {
+                    throw convertPersistenceException(pe, hibernateAccount.getId());
+                }
             }
             return account;
         } else {
@@ -248,9 +270,68 @@ public class HibernateAccountDao implements AccountDao {
             hibernateAccount.setReauthTokenHash(null);
             hibernateAccount.setReauthTokenAlgorithm(null);
             hibernateAccount.setReauthTokenModifiedOn(null);
-            hibernateHelper.update(hibernateAccount);
+            try { 
+                hibernateHelper.update(hibernateAccount);
+            } catch(PersistenceException pe) {
+                throw convertPersistenceException(pe, hibernateAccount.getId());
+            }            
         }
     }
+    
+    private RuntimeException convertPersistenceException(PersistenceException exception, String userId) {
+        // The sequence of type-checking and unwrapping of this exception is significant as unfortunately, 
+        // the hierarchy of wrapped exceptions is very specific. 
+        if (exception instanceof OptimisticLockException) {
+            return new ConcurrentModificationException(
+                    "Account has the wrong version number; it may have been saved in the background.");
+        }
+        if (exception.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
+            // The specific error message is buried in the root MySQLIntegrityConstraintViolationException
+            Throwable cause = Throwables.getRootCause(exception);
+            String message = cause.getMessage();
+            if (message != null && userId != null) {
+                Map<String,Object> entityKeys = ImmutableMap.of("userId", userId);
+                
+                if (message.matches("Duplicate entry.*for key 'Accounts-StudyId-ExternalId-Index'")) {
+                    return new EntityAlreadyExistsException(Account.class, "External ID has already been used by another account.", entityKeys);
+                } else if (message.matches("Duplicate entry.*for key 'Accounts-StudyId-Email-Index'")) {
+                    return new EntityAlreadyExistsException(Account.class, "Email address has already been used by another account.", entityKeys);
+                } else if (message.matches("Duplicate entry.*for key 'Accounts-StudyId-Phone-Index'")) {
+                    return new EntityAlreadyExistsException(Account.class, "Phone number has already been used by another account.", entityKeys);
+                }
+            }
+            ConstraintViolationException.Builder cveBuilder = new ConstraintViolationException.Builder();
+            if (message != null) {
+                cveBuilder.withMessage(cause.getMessage());
+            }
+            return cveBuilder.build();
+        }
+        return new BridgeServiceException(exception);
+    }
+    
+    /**
+     * In cases where there are multiple identifiers, the first one used may not be the cause
+     * of the conflict that prevented a create. Seek until you find an account with the same 
+     * identifier. Common example of this is a unique email/phone but the external ID has already 
+     * been taken.
+     */
+    private HibernateAccount seekForAccount(String studyId, Account account) {
+        HibernateAccount otherAccount = null;
+        AccountId accountId = null;
+        if (account.getEmail() != null) {
+            accountId = AccountId.forEmail(studyId, account.getEmail());
+            otherAccount = getHibernateAccount(accountId);
+        }
+        if (otherAccount == null && account.getPhone() != null) {
+            accountId = AccountId.forPhone(studyId, account.getPhone());
+            otherAccount = getHibernateAccount(accountId);
+        } 
+        if (otherAccount == null && account.getExternalId() != null) {
+            accountId = AccountId.forExternalId(studyId, account.getExternalId());
+            otherAccount = getHibernateAccount(accountId);
+        }
+        return otherAccount;
+    }    
     
     private boolean updateReauthToken(Study study, HibernateAccount hibernateAccount, Account account) {
         if (study != null && !study.isReauthenticationEnabled()) {
@@ -326,24 +407,10 @@ public class HibernateAccountDao implements AccountDao {
         // Create account
         try {
             hibernateHelper.create(hibernateAccount);
-        } catch (ConcurrentModificationException ex) {
-            // Account can conflict because studyId + email|phone|externalId|healthCode have been used for an 
-            // existing account. 
-            AccountId accountId = null;
-            if (hibernateAccount.getEmail() != null) {
-                accountId = AccountId.forEmail(study.getIdentifier(), account.getEmail());
-            } else if (hibernateAccount.getPhone() != null) {
-                accountId = AccountId.forPhone(study.getIdentifier(), account.getPhone());
-            } else if (hibernateAccount.getExternalId() != null) {
-                accountId = AccountId.forExternalId(study.getIdentifier(), account.getExternalId());
-            }
-            HibernateAccount otherAccount = getHibernateAccount(accountId);
-            if (otherAccount != null) {
-                throw new EntityAlreadyExistsException(Account.class, "userId", otherAccount.getId());
-            } else {
-                throw new BridgeServiceException("Conflict creating an account, but can't find an existing " +
-                        "account with the same study and email, phone, or externalId");
-            }
+        } catch (PersistenceException pe) {
+            // Find the ID of the account creating a constraint violation
+            HibernateAccount otherAccount = seekForAccount(study.getIdentifier(), account);
+            throw convertPersistenceException(pe, (otherAccount == null) ? null : otherAccount.getId());            
         }
         return userId;
     }
@@ -379,7 +446,11 @@ public class HibernateAccountDao implements AccountDao {
         accountToUpdate.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
 
         // Update
-        hibernateHelper.update(accountToUpdate);
+        try {
+            hibernateHelper.update(accountToUpdate);            
+        } catch(PersistenceException pe) {
+            throw convertPersistenceException(pe, persistedAccount.getId());    
+        }
     }
     
     /** {@inheritDoc} */
@@ -401,8 +472,12 @@ public class HibernateAccountDao implements AccountDao {
             boolean accountUpdated = validateHealthCode(hibernateAccount);
             Account account = unmarshallAccount(hibernateAccount);
             if (accountUpdated) {
-                HibernateAccount updated = hibernateHelper.update(hibernateAccount);
-                account.setVersion(updated.getVersion());
+                try {
+                    HibernateAccount updated = hibernateHelper.update(hibernateAccount);
+                    account.setVersion(updated.getVersion());
+                } catch(PersistenceException pe) {
+                    throw convertPersistenceException(pe, hibernateAccount.getId());
+                }                
             }
             return account;
         } else {

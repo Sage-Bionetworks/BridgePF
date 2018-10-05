@@ -5,7 +5,6 @@ import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doCallRealMethod;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -16,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import javax.persistence.OptimisticLockException;
 import javax.persistence.PersistenceException;
 
 import com.google.common.collect.ImmutableList;
@@ -26,12 +24,9 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
-import org.hibernate.exception.ConstraintViolationException;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
-
-import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 
 @SuppressWarnings("unchecked")
 public class HibernateHelperTest {
@@ -60,18 +55,6 @@ public class HibernateHelperTest {
         Object testObj = new Object();
         helper.create(testObj);
         verify(mockSession).save(testObj);
-    }
-
-    @Test(expected = ConcurrentModificationException.class)
-    public void createConcurrentModificationException() {
-        // mock session to throw - Need to mock the ConstraintViolationException, because the exception itself is
-        // pretty heavy-weight.
-        PersistenceException ex = new PersistenceException(mock(ConstraintViolationException.class));
-        when(mockSession.save(any())).thenThrow(ex);
-
-        // setup and execute
-        Object testObj = new Object();
-        helper.create(testObj);
     }
 
     @Test(expected = PersistenceException.class)
@@ -225,15 +208,6 @@ public class HibernateHelperTest {
         Object received = helper.update(testObj);
         assertSame(testObj, received);
         verify(mockSession).update(testObj);
-    }
-
-    @Test(expected = ConcurrentModificationException.class)
-    public void updateConcurrentModification() {
-        // Note: It's the transaction.commit() that throws, not the session.update(). However, to simplify error
-        // handling tests, we're going to have the update() throw.
-        Object testObj = new Object();
-        doThrow(OptimisticLockException.class).when(mockSession).update(testObj);
-        helper.update(testObj);
     }
 
     @Test
