@@ -222,8 +222,8 @@ public class SubpopulationService {
         checkNotNull(studyId);
         checkNotNull(subpopGuid);
 
-        studyConsentService.deleteAllConsentsPermanently(subpopGuid);
         subpopDao.deleteSubpopulationPermanently(studyId, subpopGuid);
+        studyConsentService.deleteAllConsentsPermanently(subpopGuid);
         cacheProvider.removeObject(CacheKey.subpop(subpopGuid, studyId));
         cacheProvider.removeObject(CacheKey.subpopList(studyId));
     }
