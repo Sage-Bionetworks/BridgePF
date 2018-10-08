@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.CriteriaDao;
-import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -33,19 +32,13 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     
     private static final String CANNOT_DELETE_DEFAULT_SUBPOP_MSG = "Cannot delete the default subpopulation for a study.";
     private DynamoDBMapper mapper;
-    private StudyConsentDao studyConsentDao;
     private CriteriaDao criteriaDao;
 
     @Resource(name = "subpopulationDdbMapper")
     final void setMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
     }
-    
-    @Autowired
-    final void setStudyConsentDao(StudyConsentDao studyConsentDao) {
-        this.studyConsentDao = studyConsentDao;
-    }
-    
+
     @Autowired
     final void setCriteriaDao(CriteriaDao criteriaDao) {
         this.criteriaDao = criteriaDao;
@@ -176,8 +169,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     @Override
     public void deleteSubpopulationPermanently(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
         Subpopulation subpop = getSubpopulation(studyId, subpopGuid);
-        
-        studyConsentDao.deleteAllConsents(subpopGuid);
+
         criteriaDao.deleteCriteria(subpop.getCriteria().getKey());
         mapper.delete(subpop);
     }

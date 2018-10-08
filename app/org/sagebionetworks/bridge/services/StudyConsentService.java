@@ -61,6 +61,9 @@ import com.lowagie.text.DocumentException;
 public class StudyConsentService {
     private static final Logger logger = LoggerFactory.getLogger(StudyConsentService.class);
 
+    static final String CONSENT_HTML_SUFFIX = "/consent.html";
+    static final String CONSENT_PDF_SUFFIX = "/consent.pdf";
+
     // Documented to be threat-safe
     private static final CharSequenceTranslator XML_ESCAPER = StringEscapeUtils.ESCAPE_XML11;
     
@@ -69,8 +72,8 @@ public class StudyConsentService {
     private SubpopulationService subpopService;
     private AmazonS3Client s3Client;
     private S3Helper s3Helper;
-    private static final String CONSENTS_BUCKET = BridgeConfigFactory.getConfig().getConsentsBucket();
-    private static final String PUBLICATIONS_BUCKET = BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs");
+    static final String CONSENTS_BUCKET = BridgeConfigFactory.getConfig().getConsentsBucket();
+    static final String PUBLICATIONS_BUCKET = BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs");
     private String fullPageTemplate;
     
     @Value("classpath:study-defaults/consent-unsigned-page.xhtml")
@@ -135,6 +138,22 @@ public class StudyConsentService {
         } catch(Throwable t) {
             throw new BridgeServiceException(t);
         }
+    }
+
+    /** Physically delete all the consents for a subpopulation. */
+    public void deleteAllConsentsPermanently(SubpopulationGuid subpopulationGuid) {
+        checkNotNull(subpopulationGuid);
+
+        // We need to load all consents, so we know their storage paths and can delete their S3 contents.
+        List<StudyConsent> consentList = getAllConsents(subpopulationGuid);
+        for (StudyConsent consent : consentList) {
+            studyConsentDao.deleteConsentPermanently(consent);
+            s3Client.deleteObject(CONSENTS_BUCKET, consent.getStoragePath());
+        }
+
+        // We need to delete from the publications bucket.
+        s3Client.deleteObject(PUBLICATIONS_BUCKET, subpopulationGuid.getGuid() + CONSENT_HTML_SUFFIX);
+        s3Client.deleteObject(PUBLICATIONS_BUCKET, subpopulationGuid.getGuid() + CONSENT_PDF_SUFFIX);
     }
 
     /**
@@ -266,20 +285,20 @@ public class StudyConsentService {
 
         map.put("consent.body", resolvedHTML);
         resolvedHTML = BridgeUtils.resolveTemplate(fullPageTemplate, map);
-        
-        String key = subpopGuid.getGuid()+"/consent.html";
+
+        String key = subpopGuid.getGuid() + CONSENT_HTML_SUFFIX;
         byte[] bytes = resolvedHTML.getBytes(Charset.forName(("UTF-8")));
         writeBytesToPublicS3(PUBLICATIONS_BUCKET, key, bytes, MimeType.HTML);
         
         // Now create and post a PDF version !
-        try (ByteArrayBuilder buffer = new ByteArrayBuilder();) {
+        try (ByteArrayBuilder buffer = new ByteArrayBuilder()) {
             ITextRenderer renderer = new ITextRenderer();
             renderer.setDocumentFromString(resolvedHTML);
             renderer.layout();
             renderer.createPDF(buffer);
             buffer.flush();
-            
-            key = subpopGuid.getGuid()+"/consent.pdf";
+
+            key = subpopGuid.getGuid() + CONSENT_PDF_SUFFIX;
             writeBytesToPublicS3(PUBLICATIONS_BUCKET, key, buffer.toByteArray(), MimeType.PDF);
         }
     }
