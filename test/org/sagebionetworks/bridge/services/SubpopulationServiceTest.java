@@ -302,7 +302,8 @@ public class SubpopulationServiceTest {
     @Test
     public void deleteSubpopulationPermanently() {
         service.deleteSubpopulationPermanently(TEST_STUDY, SUBPOP_GUID);
-        
+
+        verify(studyConsentService).deleteAllConsentsPermanently(SUBPOP_GUID);
         verify(subpopDao).deleteSubpopulationPermanently(TEST_STUDY, SUBPOP_GUID);
         verify(cacheProvider).removeObject(CacheKey.subpop(SUBPOP_GUID, TEST_STUDY));
         verify(cacheProvider).removeObject(CacheKey.subpopList(TEST_STUDY));
@@ -406,10 +407,15 @@ public class SubpopulationServiceTest {
         when(subpopDao.getSubpopulations(TEST_STUDY, true, true)).thenReturn(ImmutableList.of(subpop1, subpop2));
         
         service.deleteAllSubpopulations(TEST_STUDY);
-        
+
+        verify(studyConsentService).deleteAllConsentsPermanently(subpop1.getGuid());
         verify(subpopDao).deleteSubpopulationPermanently(TEST_STUDY, subpop1.getGuid());
-        verify(subpopDao).deleteSubpopulationPermanently(TEST_STUDY, subpop2.getGuid());
         verify(cacheProvider).removeObject(CacheKey.subpop(subpop1.getGuid(), TEST_STUDY));
+
+        verify(studyConsentService).deleteAllConsentsPermanently(subpop2.getGuid());
+        verify(subpopDao).deleteSubpopulationPermanently(TEST_STUDY, subpop2.getGuid());
+        verify(cacheProvider).removeObject(CacheKey.subpop(subpop2.getGuid(), TEST_STUDY));
+
         verify(cacheProvider, times(2)).removeObject(CacheKey.subpopList(TEST_STUDY));
     }
     

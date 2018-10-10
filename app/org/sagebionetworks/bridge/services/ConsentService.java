@@ -180,7 +180,7 @@ public class ConsentService {
         consentListCopy.add(withConsentCreatedOnSignature);
         account.setConsentSignatureHistory(subpopGuid, consentListCopy);
         account.setSharingScope(sharingScope);
-        accountDao.updateAccount(account, false);
+        accountDao.updateAccount(account);
         
         // Publish an enrollment event, set sharing scope 
         activityEventService.publishEnrollmentEvent(study, participant.getHealthCode(), withConsentCreatedOnSignature);
@@ -281,7 +281,7 @@ public class ConsentService {
             notificationsService.deleteAllRegistrations(study.getStudyIdentifier(), participant.getHealthCode());
             account.setSharingScope(SharingScope.NO_SHARING);
         }
-        accountDao.updateAccount(account, false);
+        accountDao.updateAccount(account);
         
         sendWithdrawEmail(study, participant.getExternalId(), account, withdrawal, withdrewOn);
 
@@ -317,7 +317,7 @@ public class ConsentService {
         account.setPhone(null);
         account.setPhoneVerified(false);
         account.setExternalId(null);
-        accountDao.updateAccount(account, true);
+        accountDao.updateAccount(account);
 
         notificationsService.deleteAllRegistrations(study.getStudyIdentifier(), participant.getHealthCode());
     }

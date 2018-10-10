@@ -30,7 +30,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.CriteriaDao;
-import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.OperatingSystem;
@@ -57,9 +56,6 @@ public class DynamoSubpopulationDaoMockTest {
     private DynamoDBMapper mapper;
     
     @Mock
-    private StudyConsentDao studyConsentDao;
-    
-    @Mock
     private CriteriaDao criteriaDao;
     
     @Captor
@@ -74,7 +70,6 @@ public class DynamoSubpopulationDaoMockTest {
     @Before
     public void before() {
         dao.setMapper(mapper);
-        dao.setStudyConsentDao(studyConsentDao);
         dao.setCriteriaDao(criteriaDao);
         
         List<DynamoSubpopulation> list = Lists.newArrayList((DynamoSubpopulation)createSubpopulation());
@@ -171,7 +166,6 @@ public class DynamoSubpopulationDaoMockTest {
         doReturn(Criteria.create()).when(criteriaDao).getCriteria(any());
         
         dao.deleteSubpopulationPermanently(TEST_STUDY, SUBPOP_GUID);
-        verify(studyConsentDao).deleteAllConsents(SUBPOP_GUID);
         verify(criteriaDao).deleteCriteria(defaultSubpop.getCriteria().getKey());
         verify(mapper).delete(defaultSubpop);
     }

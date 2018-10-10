@@ -417,7 +417,7 @@ public class HibernateAccountDao implements AccountDao {
 
     /** {@inheritDoc} */
     @Override
-    public void updateAccount(Account account, boolean allowIdentifierUpdates) {
+    public void updateAccount(Account account) {
         String accountId = account.getId();
         HibernateAccount accountToUpdate = marshallAccount(account);
 
@@ -435,13 +435,6 @@ public class HibernateAccountDao implements AccountDao {
         accountToUpdate.setReauthTokenAlgorithm(persistedAccount.getReauthTokenAlgorithm());
         accountToUpdate.setReauthTokenHash(persistedAccount.getReauthTokenHash());
         accountToUpdate.setReauthTokenModifiedOn(persistedAccount.getReauthTokenModifiedOn());
-        if (!allowIdentifierUpdates) {
-            accountToUpdate.setEmail(persistedAccount.getEmail());
-            accountToUpdate.setPhone(persistedAccount.getPhone());
-            accountToUpdate.setEmailVerified(persistedAccount.getEmailVerified());
-            accountToUpdate.setPhoneVerified(persistedAccount.getPhoneVerified());
-        }
-
         // Update modifiedOn.
         accountToUpdate.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
 
@@ -460,7 +453,7 @@ public class HibernateAccountDao implements AccountDao {
         Account account = getAccount(accountId);
         if (account != null) {
             accountEdits.accept(account);
-            updateAccount(account, false);
+            updateAccount(account);
         }
     }
 
