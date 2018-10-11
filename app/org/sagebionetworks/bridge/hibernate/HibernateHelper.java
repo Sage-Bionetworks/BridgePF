@@ -5,13 +5,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import javax.persistence.OptimisticLockException;
-import javax.persistence.PersistenceException;
-
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
-import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

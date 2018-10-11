@@ -306,7 +306,9 @@ public class HibernateAccountDao implements AccountDao {
             }
             return cveBuilder.build();
         }
-        return new BridgeServiceException(exception);
+        // do not wrap or translate, consistent with other calls to HibernateHelper which are not
+        // being caught and passed through this method.
+        return exception;
     }
     
     /**
@@ -442,7 +444,9 @@ public class HibernateAccountDao implements AccountDao {
         try {
             hibernateHelper.update(accountToUpdate);            
         } catch(PersistenceException pe) {
-            throw convertPersistenceException(pe, persistedAccount.getId());    
+            // Find the ID of the account creating a constraint violation, if there is one
+            HibernateAccount otherAccount = seekForAccount(persistedAccount.getStudyId(), account);
+            throw convertPersistenceException(pe, (otherAccount == null) ? null : otherAccount.getId());            
         }
     }
     

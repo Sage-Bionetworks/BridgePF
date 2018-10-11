@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 
 import javax.persistence.PersistenceException;
+import javax.persistence.QueryTimeoutException;
+import javax.persistence.TransactionRequiredException;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -144,7 +146,9 @@ public class HibernateAccountDaoTest {
         // Mock successful update.
         when(mockHibernateHelper.update(any())).thenAnswer(invocation -> {
             HibernateAccount account = invocation.getArgumentAt(0, HibernateAccount.class);
-            account.setVersion(account.getVersion()+1);
+            if (account != null) {
+                account.setVersion(account.getVersion()+1);    
+            }
             return account;
         });
         
@@ -2174,7 +2178,7 @@ public class HibernateAccountDaoTest {
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
         when(mockHibernateHelper.getById(eq(HibernateAccount.class), any())).thenReturn(hibernateAccount);
          GenericAccount account = makeValidGenericAccount();
-        dao.updateAccount(account, true);
+        dao.updateAccount(account);
     }
     
     @Test
@@ -2212,10 +2216,12 @@ public class HibernateAccountDaoTest {
         
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
         hibernateAccount.setId("id2");
-        when(mockHibernateHelper.getById(eq(HibernateAccount.class), any())).thenReturn(hibernateAccount);
+        when(mockHibernateHelper.getById(any(), any())).thenReturn(hibernateAccount);
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
+                .thenReturn(ImmutableList.of(hibernateAccount));
         
         try {
-            dao.updateAccount(account, true);
+            dao.updateAccount(account);
             fail("Should have thrown an exception");
         } catch(EntityAlreadyExistsException e) {
             assertEquals("Email address has already been used by another account.", e.getMessage());
@@ -2259,9 +2265,11 @@ public class HibernateAccountDaoTest {
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
         hibernateAccount.setId("id2");
         when(mockHibernateHelper.getById(eq(HibernateAccount.class), any())).thenReturn(hibernateAccount);
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
+            .thenReturn(ImmutableList.of(hibernateAccount));
         
         try {
-            dao.updateAccount(account, true);
+            dao.updateAccount(account);
             fail("Should have thrown an exception");
         } catch(EntityAlreadyExistsException e) {
             assertEquals("Phone number has already been used by another account.", e.getMessage());
@@ -2305,9 +2313,11 @@ public class HibernateAccountDaoTest {
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false, false);
         hibernateAccount.setId("id2");
         when(mockHibernateHelper.getById(eq(HibernateAccount.class), any())).thenReturn(hibernateAccount);
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
+            .thenReturn(ImmutableList.of(hibernateAccount));
         
         try {
-            dao.updateAccount(account, true);
+            dao.updateAccount(account);
             fail("Should have thrown an exception");
         } catch(EntityAlreadyExistsException e) {
             assertEquals("External ID has already been used by another account.", e.getMessage());
@@ -2324,20 +2334,44 @@ public class HibernateAccountDaoTest {
                 .thenReturn(makeValidHibernateAccount(false, false));
         
         GenericAccount account = makeValidGenericAccount();
-        dao.updateAccount(account, true);
+        dao.updateAccount(account);
     }
     
-    @Test(expected = BridgeServiceException.class)
+    @Test(expected = TransactionRequiredException.class)
     public void unforeseenPersistenceException() throws Exception {
         PersistenceException ex = new javax.persistence.TransactionRequiredException();
         doThrow(ex).when(mockHibernateHelper).update(any());
         
         when(mockHibernateHelper.getById(eq(HibernateAccount.class), any()))
-        .thenReturn(makeValidHibernateAccount(false, false));
-         GenericAccount account = makeValidGenericAccount();
-        dao.updateAccount(account, true);
+            .thenReturn(makeValidHibernateAccount(false, false));
+        GenericAccount account = makeValidGenericAccount();
+        dao.updateAccount(account);
     }
     
+    // The next four tests verify that other kinds of persistence exceptions are processed 
+    // correctly. There may be exceptions like this that we haven't seen in running code. As 
+    // long as they're persistence exceptions, the handling should work.
+    
+    @Test(expected = PersistenceException.class)
+    public void queryTimeoutExceptionWrappedByPersistenceException() throws Exception {
+        when(mockHibernateHelper.getById(eq(HibernateAccount.class), any()))
+                .thenReturn(makeValidHibernateAccount(false, false));
+        when(mockHibernateHelper.update(any())).thenThrow(new PersistenceException(new QueryTimeoutException()));
+        
+        Account account = makeValidGenericAccount();
+        dao.updateAccount(account);
+    }
+
+    @Test(expected = QueryTimeoutException.class)
+    public void queryTimeoutExceptionNotWrappedByPersistenceException() throws Exception {
+        when(mockHibernateHelper.getById(eq(HibernateAccount.class), any()))
+                .thenReturn(makeValidHibernateAccount(false, false));
+        when(mockHibernateHelper.update(any())).thenThrow(new QueryTimeoutException());
+        
+        Account account = makeValidGenericAccount();
+        dao.updateAccount(account);
+    }
+
     private void verifyCreatedHealthCode() {
         ArgumentCaptor<HibernateAccount> updatedAccountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
         verify(mockHibernateHelper).update(updatedAccountCaptor.capture());

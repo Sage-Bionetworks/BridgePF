@@ -13,11 +13,13 @@ import java.util.Map;
 
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughputExceededException;
 import org.aopalliance.intercept.MethodInvocation;
+import org.hibernate.QueryParameterException;
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
@@ -172,9 +174,25 @@ public class ExceptionInterceptorTest {
 
         assertStatusCode(500, result, node);
     }
-
+    
+    // Is this behavior desirable? If you do not wrap a RuntimeException in BridgeServiceException, 
+    // it's still reported as a 500 response, but the JSON will be based on that object, so e.g. the 
+    // type will be an internal detail and unknown to the API caller.
     @Test
     public void bridgeServiceExceptionCorrectlyReported() throws Throwable {
+        MethodInvocation invocation = mock(MethodInvocation.class);
+        when(invocation.proceed()).thenThrow(new BridgeServiceException(new QueryParameterException("external system error")));
+        
+        Result result = (Result)interceptor.invoke(invocation);
+        JsonNode node = new ObjectMapper().readTree(contentAsString(result));
+        
+        assertEquals(500, node.get("statusCode").intValue());
+        assertEquals("org.hibernate.QueryParameterException: external system error", node.get("message").textValue());
+        assertEquals("BridgeServiceException", node.get("type").textValue());
+    }
+
+    @Test
+    public void bridgeValidationExceptionCorrectlyReported() throws Throwable {
         Study study = new DynamoStudy();
         try {
             Validate.entityThrowingException(new StudyValidator(), study); 
@@ -185,7 +203,7 @@ public class ExceptionInterceptorTest {
             
             Result result = (Result)interceptor.invoke(invocation);
             JsonNode node = new ObjectMapper().readTree(contentAsString(result));
-            
+
             assertEquals(5, node.size());
             assertEquals("identifier is required", node.get("errors").get("identifier").get(0).textValue());
             assertEquals("InvalidEntityException", node.get("type").textValue());
