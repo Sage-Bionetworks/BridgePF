@@ -175,9 +175,9 @@ public class ExceptionInterceptorTest {
         assertStatusCode(500, result, node);
     }
     
-    // Is this behavior desirable? If you do not wrap a RuntimeException in BridgeServiceException, 
-    // it's still reported as a 500 response, but the JSON will be based on that object, so e.g. the 
-    // type will be an internal detail and unknown to the API caller.
+    // If you do not wrap a RuntimeException in BridgeServiceException, it's still reported as a 500 response, 
+    // but the JSON will be based on that object, so e.g. the type will be the type of the exception. That and 
+    // usually other details are internal to the system and will not make sense to an API caller.
     @Test
     public void bridgeServiceExceptionCorrectlyReported() throws Throwable {
         MethodInvocation invocation = mock(MethodInvocation.class);
