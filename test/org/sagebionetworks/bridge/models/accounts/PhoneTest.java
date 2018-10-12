@@ -39,6 +39,11 @@ public class PhoneTest {
     }
     
     @Test
+    public void testToString() {
+        assertEquals("Phone [regionCode=US, number=9712486796]", TestConstants.PHONE.toString());
+    }
+    
+    @Test
     public void verifyPhoneFormatting() {
         // Forbidden planet, game store in London, in a local phone format.
         // Note that it's GB, not UK (!)
