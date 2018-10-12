@@ -374,7 +374,7 @@ public class AuthenticationServiceTest {
         ArgumentCaptor<AccountId> accountIdCaptor = ArgumentCaptor.forClass(AccountId.class);
         verify(accountWorkflowServiceSpy).notifyAccountExists(eq(testUser.getStudy()), accountIdCaptor.capture());
         assertEquals(testUser.getStudyIdentifier().getIdentifier(), accountIdCaptor.getValue().getStudyId());
-        assertEquals(testUser.getId(), accountIdCaptor.getValue().getId());
+        assertEquals(testUser.getEmail(), accountIdCaptor.getValue().getEmail());
     }
     
     @Test

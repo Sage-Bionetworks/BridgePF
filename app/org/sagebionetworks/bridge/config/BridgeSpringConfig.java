@@ -77,7 +77,9 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadDedupe;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.dynamodb.DynamoUtils;
+import org.sagebionetworks.bridge.hibernate.AccountPersistentExceptionConverter;
 import org.sagebionetworks.bridge.hibernate.HibernateAccount;
+import org.sagebionetworks.bridge.hibernate.HibernateHelper;
 import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.s3.S3Helper;
@@ -543,6 +545,11 @@ public class BridgeSpringConfig {
         return metadataSources.buildMetadata().buildSessionFactory();
     }
 
+    @Bean(name = "accountHibernateHelper")
+    public HibernateHelper accountHibernateHelper(SessionFactory sessionFactory) {
+        return new HibernateHelper(sessionFactory, new AccountPersistentExceptionConverter());
+    }
+    
     @Bean(name = "sessionExpireInSeconds")
     public int getSessionExpireInSeconds() {
         return BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;

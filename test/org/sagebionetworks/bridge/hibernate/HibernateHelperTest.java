@@ -4,9 +4,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import javax.persistence.OptimisticLockException;
 import javax.persistence.PersistenceException;
 
 import com.google.common.collect.ImmutableList;
@@ -23,10 +25,14 @@ import com.google.common.collect.ImmutableMap;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.query.Query;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 
 @SuppressWarnings("unchecked")
 public class HibernateHelperTest {
@@ -36,14 +42,16 @@ public class HibernateHelperTest {
 
     private HibernateHelper helper;
     private Session mockSession;
-
+    private SessionFactory mockSessionFactory;
+    
     @Before
     public void setup() {
         // mock session
         mockSession = mock(Session.class);
+        mockSessionFactory = mock(SessionFactory.class);
 
         // Spy Hibernate helper. This allows us to mock execute() and test it independently later.
-        helper = spy(new HibernateHelper());
+        helper = spy(new HibernateHelper(mockSessionFactory, new AccountPersistentExceptionConverter()));
         doAnswer(invocation -> {
             Function<Session, ?> function = invocation.getArgumentAt(0, Function.class);
             return function.apply(mockSession);
@@ -57,7 +65,7 @@ public class HibernateHelperTest {
         verify(mockSession).save(testObj);
     }
 
-    @Test(expected = PersistenceException.class)
+    @Test(expected = BridgeServiceException.class)
     public void createOtherException() {
         when(mockSession.save(any())).thenThrow(new PersistenceException());
         Object testObj = new Object();
@@ -223,8 +231,9 @@ public class HibernateHelperTest {
         when(mockSessionFactory.openSession()).thenReturn(mockSession);
 
         // un-spy HibernateHelper.execute()
-        doCallRealMethod().when(helper).execute(any());
-        helper.setHibernateSessionFactory(mockSessionFactory);
+        // doCallRealMethod().when(helper).execute(any());
+        //helper.setHibernateSessionFactory(mockSessionFactory);
+        helper = new HibernateHelper(mockSessionFactory, new AccountPersistentExceptionConverter());
 
         // mock function, so we can verify that it was called, and with the session we expect.
         Object functionOutput = new Object();
@@ -235,7 +244,7 @@ public class HibernateHelperTest {
         InOrder inOrder = inOrder(mockSessionFactory, mockSession, mockTransaction, mockFunction);
 
         // execute and validate
-        Object helperOutput = helper.execute(mockFunction);
+        Object helperOutput = helper.executeWithExceptionHandling(null, mockFunction);
         assertSame(functionOutput, helperOutput);
 
         inOrder.verify(mockSessionFactory).openSession();
@@ -244,4 +253,84 @@ public class HibernateHelperTest {
         inOrder.verify(mockTransaction).commit();
         inOrder.verify(mockSession).close();
     }
+    
+    // These methods verify that the helper is using the exception converter. The exact behavior of the
+    // converter is tested separately.
+    
+    @Test(expected = ConcurrentModificationException.class)
+    public void createConvertsExceptions() throws Exception {
+        reset(helper); // clear the doAnswer set up in @before 
+        // this isn't exactly when the exception is thrown, but it's close enough to simulate
+        doThrow(new OptimisticLockException()).when(mockSessionFactory).openSession();
+        
+        HibernateAccount account = new HibernateAccount();
+        account.setStudyId("testStudy");
+        
+        helper.create(account);
+    }
+
+    @Test(expected = ConcurrentModificationException.class)
+    public void deleteByIdConvertsExceptions() {
+        reset(helper); // clear the doAnswer set up in @before 
+        // this isn't exactly when the exception is thrown, but it's close enough to simulate
+        doThrow(new OptimisticLockException()).when(mockSessionFactory).openSession();
+        
+        HibernateAccount account = new HibernateAccount();
+        account.setStudyId("testStudy");
+        
+        helper.deleteById(HibernateAccount.class, "whatever");
+    }
+    
+    @Test(expected = ConcurrentModificationException.class)
+    public void getByIdConvertsExceptions() {
+        reset(helper); // clear the doAnswer set up in @before 
+        // this isn't exactly when the exception is thrown, but it's close enough to simulate
+        doThrow(new OptimisticLockException()).when(mockSessionFactory).openSession();
+        
+        HibernateAccount account = new HibernateAccount();
+        account.setStudyId("testStudy");
+        
+        helper.getById(HibernateAccount.class, "whatever");
+    }
+    
+    @Test(expected = ConcurrentModificationException.class)
+    public void queryCountConvertsExceptions() { 
+        reset(helper); // clear the doAnswer set up in @before 
+        // this isn't exactly when the exception is thrown, but it's close enough to simulate
+        doThrow(new OptimisticLockException()).when(mockSessionFactory).openSession();
+        
+        HibernateAccount account = new HibernateAccount();
+        account.setStudyId("testStudy");
+        
+        helper.queryCount("query string", ImmutableMap.of());
+    }
+    
+    @Test(expected = ConcurrentModificationException.class)
+    public void queryGetConvertsExceptions() {
+        reset(helper); // clear the doAnswer set up in @before 
+        // this isn't exactly when the exception is thrown, but it's close enough to simulate
+        doThrow(new OptimisticLockException()).when(mockSessionFactory).openSession();
+        
+        HibernateAccount account = new HibernateAccount();
+        account.setStudyId("testStudy");
+        
+        helper.queryGet("query string", ImmutableMap.of(), 0, 20, HibernateAccount.class);
+    }
+    
+    @Test(expected = EntityAlreadyExistsException.class)
+    public void queryUpdateConvertsExceptions() throws Exception {
+        ConstraintViolationException cve = new ConstraintViolationException(
+                "Duplicate entry 'studyTest-email@email.com' for key 'Accounts-StudyId-Email-Index'", null, null);
+        PersistenceException ex = new PersistenceException(cve);
+        
+        reset(helper); // clear the doAnswer set up in @before 
+        // this isn't exactly when the exception is thrown, but it's close enough to simulate
+        doThrow(ex).when(mockSessionFactory).openSession();
+        
+        HibernateAccount account = new HibernateAccount();
+        account.setStudyId("testStudy");
+
+        helper.update(account);    
+    }
+ 
 }
