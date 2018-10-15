@@ -327,7 +327,7 @@ public class HibernateHelperTest {
         HibernateAccount account = new HibernateAccount();
         account.setStudyId("testStudy");
 
-        helper.update(account);    
+        helper.queryUpdate("query string", ImmutableMap.of());    
     }
     
     @Test
