@@ -47,6 +47,7 @@ public class DynamoAppConfigElementTest {
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(element);
         assertNull(node.get("key"));
+        assertNull(node.get("studyId"));
         assertEquals(1L, node.get("revision").longValue());
         assertEquals("id", node.get("id").textValue());
         assertTrue(node.get("published").booleanValue());
@@ -57,7 +58,8 @@ public class DynamoAppConfigElementTest {
         assertEquals(2L, node.get("version").longValue());
         
         AppConfigElement deser = BridgeObjectMapper.get().readValue(node.toString(), AppConfigElement.class);
-        ((DynamoAppConfigElement)deser).setKey("studyId:id");
+        element.setKey(null);
+        element.setStudyId(null);
         
         assertEquals(element, deser);
     }

@@ -107,7 +107,7 @@ public final class DynamoAppConfigElement implements AppConfigElement {
     
     @Override
     public int hashCode() {
-        return Objects.hash(key, id, revision, published, deleted, data, createdOn, modifiedOn, version);
+        return Objects.hash(key, studyId, id, revision, published, deleted, data, createdOn, modifiedOn, version);
     }
     @Override
     public boolean equals(Object obj) {
@@ -117,6 +117,7 @@ public final class DynamoAppConfigElement implements AppConfigElement {
             return false;
         DynamoAppConfigElement other = (DynamoAppConfigElement) obj;
         return Objects.equals(key, other.key) &&
+                Objects.equals(studyId, other.studyId) &&
                 Objects.equals(id, other.id) &&
                 Objects.equals(revision, other.revision) &&
                 Objects.equals(published, other.published) &&

@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
@@ -9,17 +10,16 @@ import org.sagebionetworks.bridge.dao.AppConfigElementDao;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.google.common.collect.Maps;
+import com.newrelic.agent.deps.com.google.common.collect.Lists;
 
 @Component
 public class DynamoAppConfigElementDao implements AppConfigElementDao {
@@ -41,9 +41,31 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
         DynamoAppConfigElement key = new DynamoAppConfigElement();
         key.setStudyId(studyId.getIdentifier());
         
-        indexHelper.
-
-        return null;
+        // This only retrieves the keys of these elements and the deleted flag, which is included in the GSI
+        List<DynamoAppConfigElement> elements = indexHelper.queryKeys(DynamoAppConfigElement.class, "studyId",
+                studyId.getIdentifier(), null);
+        
+        // Looking for the highest revision of each ID
+        Map<String,Long> versionMap = Maps.newHashMap();
+        for (DynamoAppConfigElement oneElement : elements) {
+            if (includeDeleted || !oneElement.isDeleted()) {
+                Long existingRevision = versionMap.get(oneElement.getId());
+                if (existingRevision == null || oneElement.getRevision() > existingRevision) {
+                    versionMap.put(oneElement.getId(), oneElement.getRevision());
+                }
+            }
+        }
+        
+        List<AppConfigElement> mostRecentElements = Lists.newArrayListWithCapacity(versionMap.size());
+        for (Map.Entry<String,Long> entry : versionMap.entrySet()) {
+            DynamoAppConfigElement oneKey = new DynamoAppConfigElement();
+            oneKey.setKey(studyId.getIdentifier() + ":" + entry.getKey());
+            oneKey.setRevision(entry.getValue());
+            
+            DynamoAppConfigElement appConfigElement = mapper.load(oneKey);
+            mostRecentElements.add(appConfigElement);
+        }
+        return mostRecentElements;
     }
 
     @Override
