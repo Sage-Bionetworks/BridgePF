@@ -13,6 +13,12 @@ public interface AppConfigElement extends BridgeEntity {
         return new DynamoAppConfigElement();
     }
     
+    void setKey(String key);
+    String getKey();
+    
+    void setStudyId(String studyId);
+    String getStudyId();
+    
     void setId(String id);
     String getId();
     
@@ -34,4 +40,6 @@ public interface AppConfigElement extends BridgeEntity {
     void setModifiedOn(long modifiedOn);
     long getModifiedOn();
     
+    void setVersion(Long version);
+    Long getVersion();
 }

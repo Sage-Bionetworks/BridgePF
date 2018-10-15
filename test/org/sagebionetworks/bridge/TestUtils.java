@@ -50,6 +50,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
@@ -508,6 +509,19 @@ public class TestUtils {
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setCronTrigger("0 0 8 ? * TUE *");
         return schedule;
+    }
+    
+    public static AppConfigElement getAppConfigElement() {
+        AppConfigElement element = AppConfigElement.create();
+        element.setId("id");
+        element.setRevision(3L);
+        element.setPublished(false);
+        element.setDeleted(false);
+        element.setData(getClientData());
+        element.setCreatedOn(DateTime.now().getMillis());
+        element.setModifiedOn(DateTime.now().getMillis());
+        element.setVersion(1L);
+        return element;
     }
     
     public static JsonNode getClientData() {

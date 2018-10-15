@@ -69,6 +69,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.dynamodb.DynamoSubpopulation;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.dynamodb.DynamoAppConfig;
+import org.sagebionetworks.bridge.dynamodb.DynamoAppConfigElement;
 import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
 import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoFPHSExternalIdentifier;
@@ -326,6 +327,19 @@ public class BridgeSpringConfig {
     @Autowired
     public DynamoDBMapper appConfigDdbMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoAppConfig.class);
+    }
+    
+    @Bean(name = "appConfigElementDdbMapper")
+    @Autowired
+    public DynamoDBMapper appConfigElementDdbMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoAppConfigElement.class);
+    }
+    
+    @Bean(name = "appConfigElementStudyIndex")
+    @Autowired
+    public DynamoIndexHelper appConfigElementStudyIndex(AmazonDynamoDBClient dynamoDBClient, DynamoUtils dynamoUtils,
+            DynamoNamingHelper dynamoNamingHelper) {
+        return DynamoIndexHelper.create(DynamoAppConfigElement.class, "studyId-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
     }
     
     @Bean(name = "surveyMapper")
