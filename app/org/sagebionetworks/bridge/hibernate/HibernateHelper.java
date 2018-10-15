@@ -12,10 +12,8 @@ import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.springframework.stereotype.Component;
 
 /** Encapsulates common scenarios for using Hibernate to make it easier to use. */
-@Component
 public class HibernateHelper {
     private SessionFactory hibernateSessionFactory;
     private PersistenceExceptionConverter exceptionConverter;

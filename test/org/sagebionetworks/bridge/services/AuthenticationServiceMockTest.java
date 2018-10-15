@@ -482,7 +482,7 @@ public class AuthenticationServiceMockTest {
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail(RECIPIENT_EMAIL).withPassword(PASSWORD)
                 .build();
-        doThrow(new EntityAlreadyExistsException(StudyParticipant.class, "email", RECIPIENT_EMAIL)).when(participantService)
+        doThrow(new EntityAlreadyExistsException(StudyParticipant.class, "userId", "user-id")).when(participantService)
                 .createParticipant(study, NO_CALLER_ROLES, participant, true);
         
         service.signUp(study, participant);
@@ -493,7 +493,7 @@ public class AuthenticationServiceMockTest {
         verify(accountWorkflowService).notifyAccountExists(eq(study), accountIdCaptor.capture());
         
         AccountId captured = accountIdCaptor.getValue();
-        assertEquals("email@email.com", captured.getEmail());
+        assertEquals("user-id", captured.getId());
         assertEquals(STUDY_ID, captured.getStudyId());
     }
     

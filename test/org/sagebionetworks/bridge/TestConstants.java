@@ -4,8 +4,11 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import javax.persistence.PersistenceException;
+
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.hibernate.PersistenceExceptionConverter;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -103,4 +106,12 @@ public class TestConstants {
             Lists.newArrayList("/appId3/", "/appId3/*"));
     public static final AppleAppLink APPLE_APP_LINK_4 = new AppleAppLink("studyId4",
             Lists.newArrayList("/appId4/", "/appId4/*"));
+    
+    public static final PersistenceExceptionConverter PASSTHROUGH_PERSISTENCE_CONVERTER = new PersistenceExceptionConverter() {
+        @Override
+        public RuntimeException convert(PersistenceException exception, Object entity) {
+            return exception;
+        }
+    };
+
 }

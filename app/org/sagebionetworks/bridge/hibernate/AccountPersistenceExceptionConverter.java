@@ -1,22 +1,27 @@
 package org.sagebionetworks.bridge.hibernate;
 
-import java.util.Map;
-
 import javax.persistence.OptimisticLockException;
 import javax.persistence.PersistenceException;
 
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.springframework.stereotype.Component;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 
 @Component
-public class AccountPersistentExceptionConverter implements PersistenceExceptionConverter {
-
+public class AccountPersistenceExceptionConverter implements PersistenceExceptionConverter {
+    private final AccountDao accountDao;
+    
+    public AccountPersistenceExceptionConverter(AccountDao accountDao) {
+        this.accountDao = accountDao;
+    }
+    
     @Override
     public RuntimeException convert(PersistenceException exception, Object entity) {
         // The sequence of type-checking and unwrapping of this exception is significant as unfortunately, 
@@ -31,25 +36,25 @@ public class AccountPersistentExceptionConverter implements PersistenceException
             String message = cause.getMessage();
             if (message != null && entity != null) {
                 HibernateAccount account = (HibernateAccount)entity;
-                // These are the constraint violation messages. Instead of finding the userId with another 
-                // trip to the database... just include the credential that is conflicting. It makes more 
-                // sense and we're still able to find the pre-existing account with this information.
+                // These are the constraint violation messages. To ensure we don't log credentials, we look
+                // up the existing account and its userId to report in the EntityAlreadyExistsException.
+                // Messages:
                 // "Duplicate entry 'api-email@email.com' for key 'Accounts-StudyId-Email-Index'"
                 // "Duplicate entry 'api-+12064953700' for key 'Accounts-StudyId-Phone-Index'"
                 // "Duplicate entry 'api-ext' for key 'Accounts-StudyId-ExternalId-Index'" 
-                
+                EntityAlreadyExistsException eae = null;
                 if (message.matches("Duplicate entry.*for key 'Accounts-StudyId-ExternalId-Index'")) {
-                    return new EntityAlreadyExistsException(Account.class,
-                            "External ID has already been used by another account.",
-                            getEntityKey("externalId", account.getExternalId()));
+                    eae = createEntityAlreadyExistsException("External ID",
+                            AccountId.forExternalId(account.getStudyId(), account.getExternalId()));
                 } else if (message.matches("Duplicate entry.*for key 'Accounts-StudyId-Email-Index'")) {
-                    return new EntityAlreadyExistsException(Account.class,
-                            "Email address has already been used by another account.",
-                            getEntityKey("email", account.getEmail()));
+                    eae = createEntityAlreadyExistsException("Email address",
+                            AccountId.forEmail(account.getStudyId(), account.getEmail()));
                 } else if (message.matches("Duplicate entry.*for key 'Accounts-StudyId-Phone-Index'")) {
-                    return new EntityAlreadyExistsException(Account.class,
-                            "Phone number has already been used by another account.",
-                            getEntityKey("phone", account.getPhone()));
+                    eae = createEntityAlreadyExistsException("Phone number",
+                            AccountId.forPhone(account.getStudyId(), account.getPhone()));
+                }
+                if (eae != null) {
+                    return eae;
                 }
             }
             ConstraintViolationException.Builder cveBuilder = new ConstraintViolationException.Builder();
@@ -61,11 +66,14 @@ public class AccountPersistentExceptionConverter implements PersistenceException
         return exception;
     }
     
-    private Map<String,Object> getEntityKey(String keyName, Object keyValue) {
-        if (keyValue != null) {
-            return ImmutableMap.of(keyName, keyValue);
+    private EntityAlreadyExistsException createEntityAlreadyExistsException(String credentialName, AccountId accountId) {
+        Account existingAccount = accountDao.getAccount(accountId);
+        if (existingAccount != null) {
+            return new EntityAlreadyExistsException(Account.class,
+                    credentialName + " has already been used by another account.",
+                    ImmutableMap.of("userId", existingAccount.getId()));
         }
-        return ImmutableMap.of();
+        return null;
     }
 
 }

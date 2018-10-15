@@ -57,6 +57,7 @@ import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptorCacheLoader;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoIndexHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoReportData;
@@ -77,10 +78,11 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadDedupe;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.dynamodb.DynamoUtils;
-import org.sagebionetworks.bridge.hibernate.AccountPersistentExceptionConverter;
+import org.sagebionetworks.bridge.hibernate.AccountPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.hibernate.HibernateAccount;
 import org.sagebionetworks.bridge.hibernate.HibernateHelper;
 import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
+import org.sagebionetworks.bridge.hibernate.PersistenceExceptionConverter;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
@@ -545,9 +547,16 @@ public class BridgeSpringConfig {
         return metadataSources.buildMetadata().buildSessionFactory();
     }
 
+    @Bean(name = "accountPersistenceExceptionConverter")
+    public PersistenceExceptionConverter accountPersistenceExceptionConverter(AccountDao accountDao) {
+        return new AccountPersistenceExceptionConverter(accountDao);
+    }
+    
     @Bean(name = "accountHibernateHelper")
-    public HibernateHelper accountHibernateHelper(SessionFactory sessionFactory) {
-        return new HibernateHelper(sessionFactory, new AccountPersistentExceptionConverter());
+    @Autowired
+    public HibernateHelper accountHibernateHelper(AccountDao accountDao, SessionFactory sessionFactory,
+            PersistenceExceptionConverter converter) {
+        return new HibernateHelper(sessionFactory, converter);
     }
     
     @Bean(name = "sessionExpireInSeconds")
