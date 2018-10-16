@@ -106,12 +106,5 @@ public class TestConstants {
             Lists.newArrayList("/appId3/", "/appId3/*"));
     public static final AppleAppLink APPLE_APP_LINK_4 = new AppleAppLink("studyId4",
             Lists.newArrayList("/appId4/", "/appId4/*"));
-    
-    public static final PersistenceExceptionConverter PASSTHROUGH_PERSISTENCE_CONVERTER = new PersistenceExceptionConverter() {
-        @Override
-        public RuntimeException convert(PersistenceException exception, Object entity) {
-            return exception;
-        }
-    };
 
 }

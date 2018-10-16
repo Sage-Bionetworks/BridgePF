@@ -31,27 +31,28 @@ import org.hibernate.query.Query;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
-import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 
 @SuppressWarnings("unchecked")
 public class HibernateHelperTest {
     private static final String QUERY = "from DummyTable";
     private static final Map<String, Object> PARAMETERS = new ImmutableMap.Builder<String, Object>().put("id", 10L)
             .put("studyId", "study-test").build();
+    private static final RuntimeException TEST_EXCEPTION = new RuntimeException();
 
     private HibernateHelper helper;
     private Session mockSession;
     private SessionFactory mockSessionFactory;
+    private PersistenceExceptionConverter mockExceptionConverter;
     
     @Before
     public void setup() {
         // mock session
         mockSession = mock(Session.class);
         mockSessionFactory = mock(SessionFactory.class);
+        mockExceptionConverter = mock(PersistenceExceptionConverter.class);
 
         // Spy Hibernate helper. This allows us to mock execute() and test it independently later.
-        helper = spy(new HibernateHelper(mockSessionFactory, TestConstants.PASSTHROUGH_PERSISTENCE_CONVERTER));
+        helper = spy(new HibernateHelper(mockSessionFactory, mockExceptionConverter));
         doAnswer(invocation -> {
             Function<Session, ?> function = invocation.getArgumentAt(0, Function.class);
             return function.apply(mockSession);
@@ -65,11 +66,21 @@ public class HibernateHelperTest {
         verify(mockSession).save(testObj);
     }
 
-    @Test(expected = BridgeServiceException.class)
+    @Test
     public void createOtherException() {
-        when(mockSession.save(any())).thenThrow(new PersistenceException());
+        PersistenceException ex = new PersistenceException();
+        when(mockSession.save(any())).thenThrow(ex);
         Object testObj = new Object();
-        helper.create(testObj);
+        
+        when(mockExceptionConverter.convert(ex, testObj)).thenReturn(TEST_EXCEPTION);
+        
+        try {
+            helper.create(testObj);
+            fail("Should have thrown exception");
+        } catch(Exception e) {
+            assertSame(TEST_EXCEPTION, e);
+        }
+        verify(mockExceptionConverter).convert(ex, testObj);
     }
 
     @Test
@@ -230,7 +241,7 @@ public class HibernateHelperTest {
         SessionFactory mockSessionFactory = mock(SessionFactory.class);
         when(mockSessionFactory.openSession()).thenReturn(mockSession);
 
-        helper = new HibernateHelper(mockSessionFactory, TestConstants.PASSTHROUGH_PERSISTENCE_CONVERTER);
+        helper = new HibernateHelper(mockSessionFactory, mockExceptionConverter);
 
         // mock function, so we can verify that it was called, and with the session we expect.
         Object functionOutput = new Object();
@@ -254,67 +265,112 @@ public class HibernateHelperTest {
     // These methods verify that the helper is using the exception converter. The exact behavior of the
     // converter is tested separately.
     
-    @Test(expected = BridgeServiceException.class)
+    @Test
     public void createConvertsExceptions() throws Exception {
         reset(helper); // clear the doAnswer set up in @before 
         // this isn't exactly when the exception is thrown, but it's close enough to simulate
-        doThrow(new OptimisticLockException()).when(mockSessionFactory).openSession();
+        OptimisticLockException ex = new OptimisticLockException();
+        doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
         account.setStudyId("testStudy");
         
-        helper.create(account);
+        when(mockExceptionConverter.convert(ex, account)).thenReturn(TEST_EXCEPTION);
+        
+        try {
+            helper.create(account);
+            fail("Should have thrown exception");
+        } catch(Exception e) {
+            assertSame(TEST_EXCEPTION, e);
+        }
+        verify(mockExceptionConverter).convert(ex, account);
     }
 
-    @Test(expected = BridgeServiceException.class)
+    @Test
     public void deleteByIdConvertsExceptions() {
         reset(helper); // clear the doAnswer set up in @before 
         // this isn't exactly when the exception is thrown, but it's close enough to simulate
-        doThrow(new OptimisticLockException()).when(mockSessionFactory).openSession();
+        OptimisticLockException ex = new OptimisticLockException();
+        doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
         account.setStudyId("testStudy");
         
-        helper.deleteById(HibernateAccount.class, "whatever");
+        when(mockExceptionConverter.convert(ex, null)).thenReturn(TEST_EXCEPTION);
+        
+        try {
+            helper.deleteById(HibernateAccount.class, "whatever");
+            fail("Should have thrown exception");
+        } catch(Exception e) {
+            assertSame(TEST_EXCEPTION, e);
+        }
+        verify(mockExceptionConverter).convert(ex, null);
     }
     
-    @Test(expected = BridgeServiceException.class)
+    @Test
     public void getByIdConvertsExceptions() {
         reset(helper); // clear the doAnswer set up in @before 
         // this isn't exactly when the exception is thrown, but it's close enough to simulate
-        doThrow(new OptimisticLockException()).when(mockSessionFactory).openSession();
+        OptimisticLockException ex = new OptimisticLockException();
+        doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
         account.setStudyId("testStudy");
         
-        helper.getById(HibernateAccount.class, "whatever");
+        when(mockExceptionConverter.convert(ex, null)).thenReturn(TEST_EXCEPTION);
+        
+        try {
+            helper.getById(HibernateAccount.class, "whatever");
+            fail("Should have thrown exception");
+        } catch(Exception e) {
+            assertSame(TEST_EXCEPTION, e);
+        }
+        verify(mockExceptionConverter).convert(ex, null);
     }
     
-    @Test(expected = BridgeServiceException.class)
+    @Test
     public void queryCountConvertsExceptions() { 
         reset(helper); // clear the doAnswer set up in @before 
         // this isn't exactly when the exception is thrown, but it's close enough to simulate
-        doThrow(new OptimisticLockException()).when(mockSessionFactory).openSession();
+        OptimisticLockException ex = new OptimisticLockException();
+        doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
         account.setStudyId("testStudy");
         
-        helper.queryCount("query string", ImmutableMap.of());
+        when(mockExceptionConverter.convert(ex, null)).thenReturn(TEST_EXCEPTION);
+        
+        try {
+            helper.queryCount("query string", ImmutableMap.of());
+            fail("Should have thrown exception");
+        } catch(Exception e) {
+            assertSame(TEST_EXCEPTION, e);
+        }
+        verify(mockExceptionConverter).convert(ex, null);
     }
     
-    @Test(expected = BridgeServiceException.class)
+    @Test
     public void queryGetConvertsExceptions() {
         reset(helper); // clear the doAnswer set up in @before 
         // this isn't exactly when the exception is thrown, but it's close enough to simulate
-        doThrow(new OptimisticLockException()).when(mockSessionFactory).openSession();
+        OptimisticLockException ex = new OptimisticLockException();
+        doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
         account.setStudyId("testStudy");
         
-        helper.queryGet("query string", ImmutableMap.of(), 0, 20, HibernateAccount.class);
+        when(mockExceptionConverter.convert(ex, null)).thenReturn(TEST_EXCEPTION);
+        
+        try {
+            helper.queryGet("query string", ImmutableMap.of(), 0, 20, HibernateAccount.class);
+            fail("Should have thrown exception");
+        } catch(Exception e) {
+            assertSame(TEST_EXCEPTION, e);
+        }
+        verify(mockExceptionConverter).convert(ex, null);
     }
     
-    @Test(expected = BridgeServiceException.class)
+    @Test
     public void queryUpdateConvertsExceptions() throws Exception {
         ConstraintViolationException cve = new ConstraintViolationException(
                 "Duplicate entry 'studyTest-email@email.com' for key 'Accounts-StudyId-Email-Index'", null, null);
@@ -326,8 +382,41 @@ public class HibernateHelperTest {
         
         HibernateAccount account = new HibernateAccount();
         account.setStudyId("testStudy");
+        
+        when(mockExceptionConverter.convert(ex, null)).thenReturn(TEST_EXCEPTION);
+        
+        try {
+            helper.queryUpdate("query string", ImmutableMap.of());
+            fail("Should have thrown exception");
+        } catch(Exception e) {
+            assertSame(TEST_EXCEPTION, e);
+        }
+        verify(mockExceptionConverter).convert(ex, null);
+    }
+    
+    @Test
+    public void updateConvertsExceptions() throws Exception {
+        ConstraintViolationException cve = new ConstraintViolationException(
+                "Duplicate entry 'studyTest-email@email.com' for key 'Accounts-StudyId-Email-Index'", null, null);
+        PersistenceException ex = new PersistenceException(cve);
+        
+        
+        reset(helper); // clear the doAnswer set up in @before 
+        // this isn't exactly when the exception is thrown, but it's close enough to simulate
+        doThrow(ex).when(mockSessionFactory).openSession();
+        
+        HibernateAccount account = new HibernateAccount();
+        account.setStudyId("testStudy");
 
-        helper.queryUpdate("query string", ImmutableMap.of());    
+        when(mockExceptionConverter.convert(ex, account)).thenReturn(TEST_EXCEPTION);
+
+        try {
+            helper.update(account);
+            fail("Should have thrown exception");
+        } catch(Exception e) {
+            assertSame(TEST_EXCEPTION, e);
+        }
+        verify(mockExceptionConverter).convert(ex, account);
     }
     
     @Test

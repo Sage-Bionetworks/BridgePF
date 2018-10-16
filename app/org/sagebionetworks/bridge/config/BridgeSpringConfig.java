@@ -547,15 +547,10 @@ public class BridgeSpringConfig {
         return metadataSources.buildMetadata().buildSessionFactory();
     }
 
-    @Bean(name = "accountPersistenceExceptionConverter")
-    public PersistenceExceptionConverter accountPersistenceExceptionConverter(AccountDao accountDao) {
-        return new AccountPersistenceExceptionConverter(accountDao);
-    }
-    
     @Bean(name = "accountHibernateHelper")
     @Autowired
     public HibernateHelper accountHibernateHelper(AccountDao accountDao, SessionFactory sessionFactory,
-            PersistenceExceptionConverter converter) {
+            AccountPersistenceExceptionConverter converter) {
         return new HibernateHelper(sessionFactory, converter);
     }
     

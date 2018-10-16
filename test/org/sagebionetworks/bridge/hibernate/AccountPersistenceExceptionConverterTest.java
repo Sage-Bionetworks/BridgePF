@@ -121,9 +121,10 @@ public class AccountPersistenceExceptionConverterTest {
                 "Duplicate entry 'testStudy-ext' for key 'Accounts-StudyId-ExternalId-Index'", null, null);
         PersistenceException pe = new PersistenceException(cve);
         
+        // It is converted to a generic constraint violation exception
         RuntimeException result = converter.convert(pe, account);
         assertEquals(ConstraintViolationException.class, result.getClass());
-        assertEquals("Duplicate entry 'testStudy-ext' for key 'Accounts-StudyId-ExternalId-Index'", result.getMessage());
+        assertEquals("Accounts table constraint prevented save or update.", result.getMessage());
     }    
     
     // This scenario should not happen, but were it to happen, it would not generate an NPE exception.
@@ -138,7 +139,7 @@ public class AccountPersistenceExceptionConverterTest {
     }
     
     @Test
-    public void constraintViolationException() {
+    public void constraintViolationExceptionMessageIsHidden() {
         HibernateAccount account = new HibernateAccount();
         account.setStudyId("testStudy");
         
@@ -148,7 +149,7 @@ public class AccountPersistenceExceptionConverterTest {
         
         RuntimeException result = converter.convert(pe, account);
         assertEquals(ConstraintViolationException.class, result.getClass());
-        assertEquals("This is a generic constraint violation.", result.getMessage());
+        assertEquals("Accounts table constraint prevented save or update.", result.getMessage());
     }
     
     @Test

@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.google.common.base.Throwables;
@@ -18,6 +19,7 @@ import com.google.common.collect.ImmutableMap;
 public class AccountPersistenceExceptionConverter implements PersistenceExceptionConverter {
     private final AccountDao accountDao;
     
+    @Autowired
     public AccountPersistenceExceptionConverter(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
@@ -57,11 +59,8 @@ public class AccountPersistenceExceptionConverter implements PersistenceExceptio
                     return eae;
                 }
             }
-            ConstraintViolationException.Builder cveBuilder = new ConstraintViolationException.Builder();
-            if (message != null) {
-                cveBuilder.withMessage(cause.getMessage());
-            }
-            return cveBuilder.build();
+            return new ConstraintViolationException.Builder()
+                    .withMessage("Accounts table constraint prevented save or update.").build();
         }
         return exception;
     }
