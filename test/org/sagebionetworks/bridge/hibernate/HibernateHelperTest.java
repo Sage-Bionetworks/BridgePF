@@ -31,6 +31,7 @@ import org.hibernate.query.Query;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 
 @SuppressWarnings("unchecked")
 public class HibernateHelperTest {
@@ -420,20 +421,25 @@ public class HibernateHelperTest {
     }
     
     @Test
-    public void converterReturnsTheOriginalException() throws Exception {
-        // This exception is not in the PersistenceException hierarchy and should be returned as is.
-        IllegalArgumentException iae = new IllegalArgumentException("Illegal argument.");
-        reset(helper); // clear the doAnswer set up in @before 
+    public void returnsUnconvertedExceptionAsServiceException() throws Exception {
+        reset(helper); // clear the doAnswer set up in @before
+        
         // this isn't exactly when the exception is thrown, but it's close enough to simulate
-        doThrow(iae).when(mockSessionFactory).openSession();
+        PersistenceException pe = new PersistenceException(TEST_EXCEPTION);
+        doThrow(pe).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
         account.setStudyId("testStudy");
+        
+        // This does not convert the exception, it hands it back.
+        when(mockExceptionConverter.convert(pe, account)).thenReturn(pe);
+        
         try {
             helper.update(account);
             fail("Should have thrown exception");
-        } catch(RuntimeException e) {
-            assertSame(iae, e);
+        } catch(BridgeServiceException e) {
+            // So we wrap it with a BridgeServiceException
+            assertSame(pe, e.getCause());
         }
     }
  
