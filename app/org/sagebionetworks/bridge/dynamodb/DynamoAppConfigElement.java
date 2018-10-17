@@ -9,9 +9,11 @@ import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperFieldModel.DynamoDBAttributeType;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTyped;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -61,15 +63,19 @@ public final class DynamoAppConfigElement implements AppConfigElement {
     public void setId(String id) {
         this.id = id;
     }
+    @DynamoDBTyped(DynamoDBAttributeType.BOOL)
     public boolean isPublished() {
         return published;
     }
+    @DynamoDBTyped(DynamoDBAttributeType.BOOL)
     public void setPublished(boolean published) {
         this.published = published;
     }
+    @DynamoDBTyped(DynamoDBAttributeType.BOOL)
     public boolean isDeleted() {
         return deleted;
     }
+    @DynamoDBTyped(DynamoDBAttributeType.BOOL)
     public void setDeleted(boolean deleted) {
         this.deleted = deleted;
     }

@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.services.AppConfigElementService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
+import play.mvc.BodyParser;
 import play.mvc.Result;
 
 @Controller
@@ -57,16 +58,6 @@ public class AppConfigElementsController extends BaseController {
         return okResult(resourceList);
     }
     
-    public Result createElementRevision(String id) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
-        
-        AppConfigElement element = parseJson(request(), AppConfigElement.class);
-        element.setId(id);
-        
-        VersionHolder version = service.createElementRevision(session.getStudyIdentifier(), element);
-        return createdResult(version);
-    }
-
     public Result getMostRecentlyPublishedElement(String id) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
@@ -95,6 +86,7 @@ public class AppConfigElementsController extends BaseController {
         return okResult(holder);
     }
     
+    @BodyParser.Of(BodyParser.Empty.class)
     public Result publishElementRevision(String id, String revisionString) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Long revision = BridgeUtils.getLongOrDefault(revisionString, 0L);

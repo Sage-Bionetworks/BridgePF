@@ -43,21 +43,24 @@ public class AppConfigElementService {
         checkNotNull(studyId);
         checkNotNull(element);
         
-        Validate.entityThrowingException(AppConfigElementValidator.CREATE_VALIDATOR, element);
-        
-        AppConfigElement existing = getElementRevision(studyId, element.getId(), 1L);
-        if (existing != null) {
-            throw new EntityAlreadyExistsException(AppConfigElement.class,
-                    ImmutableMap.of("id", element.getId(), "revision", element.getRevision()));
+        if (element.getRevision() == null) {
+            element.setRevision(1L);
         }
         element.setKey(studyId.getIdentifier() + ":" + element.getId());
         element.setStudyId(studyId.getIdentifier());
-        element.setRevision(1L);
         element.setVersion(null);
         element.setDeleted(false);
         element.setCreatedOn(getDateTime().getMillis());
         element.setModifiedOn(element.getCreatedOn());
         
+        Validate.entityThrowingException(AppConfigElementValidator.CREATE_VALIDATOR, element);
+        
+        AppConfigElement existing = appConfigElementDao.getElementRevision(studyId, element.getId(),
+                element.getRevision());
+        if (existing != null) {
+            throw new EntityAlreadyExistsException(AppConfigElement.class,
+                    ImmutableMap.of("id", existing.getId(), "revision", existing.getRevision()));
+        }
         return appConfigElementDao.saveElementRevision(element);
     }
 
@@ -68,39 +71,26 @@ public class AppConfigElementService {
         return appConfigElementDao.getElementRevisions(studyId, id, includeDeleted);
     }
     
-    public VersionHolder createElementRevision(StudyIdentifier studyId, AppConfigElement element) {
-        checkNotNull(studyId);
-        checkNotNull(element);
-        
-        Validate.entityThrowingException(AppConfigElementValidator.CREATE_VALIDATOR, element);
-        
-        AppConfigElement existing = getElementRevision(studyId, element.getId(), element.getRevision());
-        if (existing != null) {
-            throw new EntityAlreadyExistsException(AppConfigElement.class,
-                    ImmutableMap.of("id", element.getId(), "revision", element.getRevision()));
-        }
-        // We do not set the revision, it should have been supplied by the user
-        element.setKey(studyId.getIdentifier() + ":" + element.getId());
-        element.setStudyId(studyId.getIdentifier());
-        element.setDeleted(false);
-        element.setCreatedOn(getDateTime().getMillis());
-        element.setModifiedOn(element.getCreatedOn());
-
-        return appConfigElementDao.saveElementRevision(element);
-    }
-
     public AppConfigElement getMostRecentlyPublishedElement(StudyIdentifier studyId, String id) {
         checkNotNull(studyId);
         checkNotNull(id);
         
-        return appConfigElementDao.getMostRecentlyPublishedElement(studyId, id);
+        AppConfigElement element = appConfigElementDao.getMostRecentlyPublishedElement(studyId, id);
+        if (element == null) {
+            throw new EntityNotFoundException(AppConfigElement.class);
+        }
+        return element;
     }
 
     public AppConfigElement getElementRevision(StudyIdentifier studyId, String id, long revision) {
         checkNotNull(studyId);
         checkNotNull(id);
         
-        return appConfigElementDao.getElementRevision(studyId, id, revision);
+        AppConfigElement element = appConfigElementDao.getElementRevision(studyId, id, revision);
+        if (element == null) {
+            throw new EntityNotFoundException(AppConfigElement.class);
+        }
+        return element;
     }
 
     public VersionHolder updateElementRevision(StudyIdentifier studyId, AppConfigElement element) {
@@ -110,15 +100,16 @@ public class AppConfigElementService {
         Validate.entityThrowingException(AppConfigElementValidator.UPDATE_VALIDATOR, element);
         
         AppConfigElement existing = getElementRevision(studyId, element.getId(), element.getRevision());
-        if (existing == null) {
-            throw new EntityNotFoundException(AppConfigElement.class);
-        }
         if (element.isDeleted() && existing.isDeleted()) {
             throw new EntityNotFoundException(AppConfigElement.class);
+        }
+        if (element.isPublished()) {
+            throw new EntityPublishedException("App config element cannot be changed, it is published.");
         }
         element.setKey(studyId.getIdentifier() + ":" + element.getId());
         element.setStudyId(studyId.getIdentifier());
         element.setModifiedOn(getDateTime().getMillis());
+        element.setPublished(existing.isPublished()); // cannot unpublish something
         return appConfigElementDao.saveElementRevision(element);
     }
     
@@ -127,7 +118,7 @@ public class AppConfigElementService {
         checkNotNull(id);
         
         AppConfigElement existing = getElementRevision(studyId, id, revision);
-        if (existing == null || existing.isDeleted()) {
+        if (existing.isDeleted()) {
             throw new EntityNotFoundException(AppConfigElement.class);
         }
         if (existing.isPublished()) {
@@ -143,9 +134,6 @@ public class AppConfigElementService {
         checkNotNull(id);
         
         AppConfigElement existing = getElementRevision(studyId, id, revision);
-        if (existing == null) {
-            throw new EntityNotFoundException(AppConfigElement.class);
-        }
         existing.setDeleted(true);
         existing.setModifiedOn(getDateTime().getMillis());
         appConfigElementDao.saveElementRevision(existing);
@@ -168,10 +156,8 @@ public class AppConfigElementService {
         checkNotNull(studyId);
         checkNotNull(id);
         
-        AppConfigElement existing = getElementRevision(studyId, id, revision);
-        if (existing == null) {
-            throw new EntityNotFoundException(AppConfigElement.class);
-        }
+        // Throws exception if the element does not exist.
+        getElementRevision(studyId, id, revision);
         appConfigElementDao.deleteElementRevisionPermanently(studyId, id, revision);
     }
     

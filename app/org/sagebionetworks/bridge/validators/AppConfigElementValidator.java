@@ -32,14 +32,14 @@ public class AppConfigElementValidator implements Validator {
             } else if (appConfigElement.getVersion() < 0) {
                 errors.rejectValue("version", "cannot be negative");
             }
+            if (appConfigElement.getRevision() == null) {
+                errors.rejectValue("revision", "is required");
+            } else if (appConfigElement.getRevision() < 0) {
+                errors.rejectValue("revision", "cannot be negative");
+            }
         }
         if (isBlank(appConfigElement.getId())) {
             errors.rejectValue("id", "is required");
-        }
-        if (appConfigElement.getRevision() == null) {
-            errors.rejectValue("revision", "is required");
-        } else if (appConfigElement.getRevision() < 0) {
-            errors.rejectValue("revision", "cannot be negative");
         }
         if (appConfigElement.getData() == null) {
             errors.rejectValue("data", "is required");

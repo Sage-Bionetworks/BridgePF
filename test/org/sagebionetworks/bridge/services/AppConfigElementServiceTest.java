@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
@@ -72,6 +73,7 @@ public class AppConfigElementServiceTest {
     @Test
     public void createElement() {
         AppConfigElement element = TestUtils.getAppConfigElement();
+        element.setRevision(null);
         element.setDeleted(true);
         
         service.createElement(TEST_STUDY, element);
@@ -90,7 +92,7 @@ public class AppConfigElementServiceTest {
     @Test(expected = EntityAlreadyExistsException.class)
     public void createElementThatExists() {
         AppConfigElement element = TestUtils.getAppConfigElement();
-        when(dao.getElementRevision(TEST_STUDY, element.getId(), 1L)).thenReturn(element);
+        when(dao.getElementRevision(TEST_STUDY, element.getId(), 3L)).thenReturn(element);
         
         service.createElement(TEST_STUDY, element);
     }
@@ -114,33 +116,20 @@ public class AppConfigElementServiceTest {
         
         verify(dao).getElementRevisions(TEST_STUDY, "id", false);
     }
-    
-    @Test
-    public void createElementRevision() {
-        AppConfigElement element = TestUtils.getAppConfigElement();
-        element.setDeleted(true);
-        when(dao.saveElementRevision(element)).thenReturn(VERSION_HOLDER);
-        
-        VersionHolder returnedVersion = service.createElementRevision(TEST_STUDY, element);
-        assertEquals(VERSION_HOLDER, returnedVersion);
-        
-        verify(dao).saveElementRevision(elementCaptor.capture());
-        AppConfigElement captured = elementCaptor.getValue();
-        assertFalse(captured.isDeleted());
-        assertEquals("api", captured.getStudyId());
-        assertEquals("api:id", captured.getKey());
-    }
 
-    @Test(expected = EntityAlreadyExistsException.class)
-    public void createElementRevisionThatAlreadyExists() {
-        AppConfigElement element = TestUtils.getAppConfigElement();
-        when(dao.getElementRevision(TEST_STUDY, element.getId(), element.getRevision())).thenReturn(element);
-        
-        service.createElementRevision(TEST_STUDY, element);
-    }
-    
     @Test
     public void getMostRecentlyPublishedElement() {
+        AppConfigElement element = AppConfigElement.create();
+        when(dao.getMostRecentlyPublishedElement(TEST_STUDY, "id")).thenReturn(element);
+        
+        AppConfigElement returned = service.getMostRecentlyPublishedElement(TEST_STUDY, "id");
+        assertEquals(element, returned);
+        
+        verify(dao).getMostRecentlyPublishedElement(TEST_STUDY, "id");
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void getMostRecentlyPublishedElementDoesNotExist() {
         service.getMostRecentlyPublishedElement(TEST_STUDY, "id");
         
         verify(dao).getMostRecentlyPublishedElement(TEST_STUDY, "id");
@@ -148,6 +137,17 @@ public class AppConfigElementServiceTest {
 
     @Test
     public void getElementRevision() {
+        AppConfigElement element = AppConfigElement.create();
+        when(dao.getElementRevision(TEST_STUDY, "id", 3L)).thenReturn(AppConfigElement.create());
+        
+        AppConfigElement returned = service.getElementRevision(TEST_STUDY, "id", 3L);
+        assertEquals(element, returned);
+        
+        verify(dao).getElementRevision(TEST_STUDY, "id", 3L);
+    }
+    
+    @Test(expected = EntityNotFoundException.class)
+    public void getElementRevisionDoesNotExist() {
         service.getElementRevision(TEST_STUDY, "id", 3L);
         
         verify(dao).getElementRevision(TEST_STUDY, "id", 3L);

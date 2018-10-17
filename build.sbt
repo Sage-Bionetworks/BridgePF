@@ -45,10 +45,10 @@ libraryDependencies ++= Seq(
   "commons-io" % "commons-io" % "2.4",
   "org.apache.logging.log4j" % "log4j-api" % "2.6.1",
   // Jackson
-  "com.fasterxml.jackson.core" % "jackson-annotations" % "2.7.3",
-  "com.fasterxml.jackson.core" % "jackson-core" % "2.7.3",
-  "com.fasterxml.jackson.core" % "jackson-databind" % "2.7.3",
-  "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % "2.7.3",
+  "com.fasterxml.jackson.core" % "jackson-annotations" % "2.9.4",
+  "com.fasterxml.jackson.core" % "jackson-core" % "2.9.4",
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.4",
+  "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % "2.9.4",
   
   // Guava
   "com.google.guava" % "guava" % "18.0",

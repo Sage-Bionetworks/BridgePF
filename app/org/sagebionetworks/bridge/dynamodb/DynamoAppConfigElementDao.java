@@ -49,9 +49,10 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
         Map<String,Long> versionMap = Maps.newHashMap();
         for (DynamoAppConfigElement oneElement : elements) {
             if (includeDeleted || !oneElement.isDeleted()) {
-                Long existingRevision = versionMap.get(oneElement.getId());
+                String elementKey = studyId.getIdentifier() + ":" + oneElement.getId();
+                Long existingRevision = versionMap.get(elementKey);
                 if (existingRevision == null || oneElement.getRevision() > existingRevision) {
-                    versionMap.put(oneElement.getId(), oneElement.getRevision());
+                    versionMap.put(elementKey, oneElement.getRevision());
                 }
             }
         }
@@ -59,7 +60,7 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
         List<AppConfigElement> mostRecentElements = Lists.newArrayListWithCapacity(versionMap.size());
         for (Map.Entry<String,Long> entry : versionMap.entrySet()) {
             DynamoAppConfigElement oneKey = new DynamoAppConfigElement();
-            oneKey.setKey(studyId.getIdentifier() + ":" + entry.getKey());
+            oneKey.setKey(entry.getKey());
             oneKey.setRevision(entry.getValue());
             
             DynamoAppConfigElement appConfigElement = mapper.load(oneKey);
@@ -75,17 +76,16 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
 
         DynamoDBQueryExpression<DynamoAppConfigElement> query = new DynamoDBQueryExpression<DynamoAppConfigElement>()
                 .withHashKeyValues(key);
-        query.withQueryFilterEntry("deleted", new Condition()
-            .withComparisonOperator(ComparisonOperator.NE)
-            .withAttributeValueList(new AttributeValue().withN("1")));
+        excludeDeleted(query);
+        // exclude unpublished
         query.withQueryFilterEntry("published", new Condition()
-                .withComparisonOperator(ComparisonOperator.NE)
-                .withAttributeValueList(new AttributeValue().withN("0")));
+                .withComparisonOperator(ComparisonOperator.EQ)
+                .withAttributeValueList(new AttributeValue().withBOOL(Boolean.TRUE)));
         query.setScanIndexForward(false);
         
         PaginatedQueryList<DynamoAppConfigElement> results = mapper.query(DynamoAppConfigElement.class, query);
         
-        return (results.isEmpty()) ? null : results.iterator().next();
+        return (results.isEmpty()) ? null : results.get(0);
     }
 
     @Override
@@ -94,15 +94,20 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
         key.setKey(studyId.getIdentifier() + ":" + id);
 
         DynamoDBQueryExpression<DynamoAppConfigElement> query = new DynamoDBQueryExpression<DynamoAppConfigElement>()
-                .withHashKeyValues(key);
+                .withHashKeyValues(key)
+                .withScanIndexForward(false);
         if (!includeDeleted) {
-            query.withQueryFilterEntry("deleted", new Condition()
-                .withComparisonOperator(ComparisonOperator.NE)
-                .withAttributeValueList(new AttributeValue().withN("1")));
+            excludeDeleted(query);
         }
         PaginatedQueryList<DynamoAppConfigElement> results = mapper.query(DynamoAppConfigElement.class, query);
         
         return results.stream().collect(Collectors.toList());
+    }
+    
+    private void excludeDeleted(DynamoDBQueryExpression<DynamoAppConfigElement> query) {
+        query.withQueryFilterEntry("deleted", new Condition()
+                .withComparisonOperator(ComparisonOperator.EQ)
+                .withAttributeValueList(new AttributeValue().withBOOL(Boolean.FALSE)));
     }
 
     @Override
@@ -122,11 +127,10 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
 
     @Override
     public void deleteElementRevisionPermanently(StudyIdentifier studyId, String id, long revision) {
-        AppConfigElement key = new DynamoAppConfigElement();
-        key.setKey(studyId.getIdentifier() + ":" + id);
-        key.setRevision(revision);
-        
-        mapper.delete(key);
+        AppConfigElement element = getElementRevision(studyId, id, revision);
+        if (element != null) {
+            mapper.delete(element);
+        }
     }
 
 }

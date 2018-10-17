@@ -175,23 +175,6 @@ public class AppConfigElementsControllerTest {
     }
     
     @Test
-    public void createElementRevision() throws Exception {
-        AppConfigElement element = AppConfigElement.create();
-        element.setId("an-id"); // we use the id and revision supplied in the URL
-        when(service.createElementRevision(eq(TestConstants.TEST_STUDY), any())).thenReturn(VERSION_HOLDER);
-        TestUtils.mockPlayContextWithJson(element);
-        
-        Result result = controller.createElementRevision("use-this-id");
-        VersionHolder returnedHolder = TestUtils.getResponsePayload(result, VersionHolder.class);
-        assertEquals(201, result.status());
-        assertEquals(new Long(1), returnedHolder.getVersion());
-        
-        verify(service).createElementRevision(eq(TestConstants.TEST_STUDY), elementCaptor.capture());
-        AppConfigElement savedElement = elementCaptor.getValue();
-        assertEquals("use-this-id", savedElement.getId());
-    }
-
-    @Test
     public void getMostRecentlyPublishedElement() throws Exception {
         TestUtils.mockPlayContext();
         AppConfigElement element = AppConfigElement.create();
