@@ -14,19 +14,26 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.NotificationRegistrationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.NotImplementedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
+import org.sagebionetworks.bridge.models.sms.SmsMessage;
+import org.sagebionetworks.bridge.models.sms.SmsOptOutSettings;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
+import org.sagebionetworks.bridge.sms.TwilioHelper;
+import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.validators.NotificationMessageValidator;
 import org.sagebionetworks.bridge.validators.NotificationRegistrationValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -45,21 +52,40 @@ import com.google.common.collect.Sets;
 public class NotificationsService {
     private static final Logger LOG = LoggerFactory.getLogger(NotificationsService.class);
 
+    static final String CONFIG_KEY_TWILIO_ENABLED = "twilio.enabled";
+
     // mPower 2.0 study burst notifications can be fairly long. The longest one has 230 chars of fixed content, an app
     // url that's 53 characters long, and some freeform text that can be potentially 255 characters long, for a total
     // of 538 characters. Round to a nice round 600 characters (about 4.5 SMS messages, if broken up).
     private static final int SMS_CHARACTER_LIMIT = 600;
 
+    private boolean twilioEnabled = false;
+
     private ParticipantService participantService;
+    private SmsService smsService;
     private StudyService studyService;
     private NotificationRegistrationDao notificationRegistrationDao;
     private NotificationTopicService notificationTopicService;
     private AmazonSNSClient snsClient;
+    private TwilioHelper twilioHelper;
+
+    /** Bridge config. */
+    @Autowired
+    public final void setBridgeConfig(BridgeConfig bridgeConfig) {
+        String twilioEnabledStr = bridgeConfig.get(CONFIG_KEY_TWILIO_ENABLED);
+        twilioEnabled = Boolean.parseBoolean(twilioEnabledStr);
+    }
 
     /** Participant service, if we need to get the participant. */
     @Autowired
     public final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
+    }
+
+    /** SMS service, used for managing SMS log and opt-outs. */
+    @Autowired
+    public final void setSmsService(SmsService smsService) {
+        this.smsService = smsService;
     }
 
     @Autowired
@@ -85,7 +111,13 @@ public class NotificationsService {
     final void setSnsClient(AmazonSNSClient snsClient) {
         this.snsClient = snsClient;
     }
-    
+
+    /** Twilio helper, used for sending SMS through Twilio. */
+    @Autowired
+    public final void setTwilioHelper(TwilioHelper twilioHelper) {
+        this.twilioHelper = twilioHelper;
+    }
+
     /**
      * Return all the registrations for this user. There may be more than one, if a user installs 
      * the application on different devices. It is possible there may be multiple registrations on 
@@ -251,17 +283,55 @@ public class NotificationsService {
     
     public void sendSmsMessage(SmsMessageProvider provider) {
         checkNotNull(provider);
-        
-        PublishRequest request = provider.getSmsRequest();
+        StudyIdentifier studyId = provider.getStudy().getStudyIdentifier();
+        Phone recipientPhone = provider.getPhone();
+        String message = provider.getFormattedMessage();
 
-        if (request.getMessage().getBytes(Charset.forName("US-ASCII")).length > SMS_CHARACTER_LIMIT) {
-            throw new BridgeServiceException("SMS message cannot be longer than 140 UTF-8/ASCII characters.");
+        // Check max SMS length.
+        if (message.getBytes(Charset.forName("US-ASCII")).length > SMS_CHARACTER_LIMIT) {
+            throw new BridgeServiceException("SMS message cannot be longer than 600 UTF-8/ASCII characters.");
         }
-        
-        PublishResult result = snsClient.publish(request);
 
-        LOG.debug("Sent SMS message, study=" + provider.getStudy().getStudyIdentifier().getIdentifier()
-                + ", message ID=" + result.getMessageId());
+        // Check SMS opt-out.
+        SmsOptOutSettings smsOptOutSettings = smsService.getOptOutSettings(recipientPhone.getNumber());
+        if (smsOptOutSettings != null) {
+            switch (provider.getSmsTypeEnum()) {
+                case PROMOTIONAL:
+                    if (smsOptOutSettings.getPromotionalOptOutForStudy(studyId.getIdentifier())) {
+                        return;
+                    }
+                    break;
+                case TRANSACTIONAL:
+                    if (smsOptOutSettings.getTransactionalOptOutForStudy(studyId.getIdentifier())) {
+                        return;
+                    }
+                    break;
+                default:
+                    LOG.error("Unexpected SMS type " + provider.getSmsType());
+                    break;
+            }
+        }
+
+        // Send SMS.
+        String messageId;
+        if (twilioEnabled) {
+            messageId = twilioHelper.sendSms(recipientPhone, message);
+        } else {
+            PublishResult result = snsClient.publish(provider.getSmsRequest());
+            messageId = result.getMessageId();
+        }
+
+        // Log SMS message.
+        SmsMessage smsMessage = SmsMessage.create();
+        smsMessage.setNumber(recipientPhone.getNumber());
+        smsMessage.setSentOn(DateUtils.getCurrentMillisFromEpoch());
+        smsMessage.setMessageBody(message);
+        smsMessage.setMessageId(messageId);
+        smsMessage.setSmsType(provider.getSmsTypeEnum());
+        smsMessage.setStudyId(studyId.getIdentifier());
+        smsService.logMessage(smsMessage);
+
+        LOG.debug("Sent SMS message, study=" + studyId.getIdentifier() + ", message ID=" + messageId);
     }
 
     private String getPlatformARN(Study study, NotificationRegistration registration) {

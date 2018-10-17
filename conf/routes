@@ -50,6 +50,9 @@ POST /v3/export/start @org.sagebionetworks.bridge.play.controllers.ExportControl
 # Health Data
 POST /v3/healthdata @org.sagebionetworks.bridge.play.controllers.HealthDataController.submitHealthData
 
+# SMS Webhook
+POST /v3/sms/response @org.sagebionetworks.bridge.play.controllers.SmsController.handleIncomingSms
+
 # Users
 POST   /v3/users                          @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUser
 DELETE /v3/users/:userId                  @org.sagebionetworks.bridge.play.controllers.UserManagementController.deleteUser(userId: String)
@@ -91,6 +94,9 @@ POST   /v3/participants/self/identifiers @org.sagebionetworks.bridge.play.contro
 GET    /v3/participants/:userId                                        @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipant(userId: String, consents: Boolean ?= true)
 POST   /v3/participants/:userId                                        @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateParticipant(userId: String)
 DELETE /v3/participants/:userId                                        @org.sagebionetworks.bridge.play.controllers.ParticipantController.deleteTestParticipant(userId: String)
+GET    /v3/participants/:userId/sms/optout                             @org.sagebionetworks.bridge.play.controllers.SmsController.getOptOutSettings(userId: String)
+POST   /v3/participants/:userId/sms/optout                             @org.sagebionetworks.bridge.play.controllers.SmsController.setOptOutSettings(userId: String)
+GET    /v3/participants/:userId/sms/recent                             @org.sagebionetworks.bridge.play.controllers.SmsController.getMostRecentMessage(userId: String)
 GET    /v3/participants/:userId/uploads                                @org.sagebionetworks.bridge.play.controllers.ParticipantController.getUploads(userId: String, startTime: String ?= null, endTime: String ?= null, pageSize: Integer ?= null, offsetKey: String ?= null)
 GET    /v3/participants/:userId/requestInfo                            @org.sagebionetworks.bridge.play.controllers.ParticipantController.getRequestInfo(userId: String)
 DELETE /v3/participants/:userId/activities                             @org.sagebionetworks.bridge.play.controllers.ParticipantController.deleteActivities(userId: String)
