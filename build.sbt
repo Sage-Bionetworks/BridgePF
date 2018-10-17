@@ -18,7 +18,7 @@ libraryDependencies ++= Seq(
   cache,
   filters,
   // Sage packages
-  "org.sagebionetworks" % "bridge-base" % "2.7.15",
+  "org.sagebionetworks" % "bridge-base" % "2.7.16",
   "org.sagebionetworks" % "synapseJavaClient" % "206.0",
   // AWS
   "com.amazonaws" % "aws-java-sdk-s3" % "1.11.198",
@@ -38,17 +38,17 @@ libraryDependencies ++= Seq(
   // C3P0, used for connection pooling for Hibernate
  "org.hibernate" % "hibernate-c3p0" % "5.2.9.Final",
   // Spring
-  "org.springframework" % "spring-context" % "4.3.7.RELEASE",
+  "org.springframework" % "spring-context" % "4.3.18.RELEASE",
   // Apache Commons
   "org.apache.commons" % "commons-lang3" % "3.4",
   "commons-validator" % "commons-validator" % "1.4.1",
   "commons-io" % "commons-io" % "2.4",
   "org.apache.logging.log4j" % "log4j-api" % "2.6.1",
   // Jackson
-  "com.fasterxml.jackson.core" % "jackson-annotations" % "2.7.3",
-  "com.fasterxml.jackson.core" % "jackson-core" % "2.7.3",
-  "com.fasterxml.jackson.core" % "jackson-databind" % "2.7.3",
-  "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % "2.7.3",
+  "com.fasterxml.jackson.core" % "jackson-annotations" % "2.9.7",
+  "com.fasterxml.jackson.core" % "jackson-core" % "2.9.7",
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.7",
+  "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % "2.9.7",
   
   // Guava
   "com.google.guava" % "guava" % "18.0",
@@ -74,7 +74,7 @@ libraryDependencies ++= Seq(
   "junit" % "junit" % "4.12" % Test,
   "org.mockito" % "mockito-core" % "1.10.19" % Test,
   "org.sagebionetworks" % "BridgeTestUtils" % "1.4" % Test,
-  "org.springframework" % "spring-test" % "4.2.4.RELEASE" % Test,
+  "org.springframework" % "spring-test" % "4.3.18.RELEASE" % Test,
   "nl.jqno.equalsverifier" % "equalsverifier" % "1.7.2" % Test
 )
 
