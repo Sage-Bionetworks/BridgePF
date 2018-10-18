@@ -90,4 +90,9 @@ public final class Phone {
         Phone other = (Phone) obj;
         return Objects.equals(getNumber(), other.getNumber()) && Objects.equals(regionCode, other.regionCode);
     }
+
+    @Override
+    public String toString() {
+        return "Phone [regionCode=" + regionCode + ", number=" + number + "]";
+    }
 }

@@ -5,28 +5,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import javax.persistence.OptimisticLockException;
 import javax.persistence.PersistenceException;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
-import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.query.Query;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 
 /** Encapsulates common scenarios for using Hibernate to make it easier to use. */
-@Component
 public class HibernateHelper {
     private SessionFactory hibernateSessionFactory;
+    private PersistenceExceptionConverter exceptionConverter;
 
-    /** Hibernate session factory, used to talk to SQL. Configured via Spring. */
-    @Autowired
-    public final void setHibernateSessionFactory(SessionFactory hibernateSessionFactory) {
+    public HibernateHelper(SessionFactory hibernateSessionFactory, PersistenceExceptionConverter exceptionConverter) {
         this.hibernateSessionFactory = hibernateSessionFactory;
+        this.exceptionConverter = exceptionConverter;
     }
 
     /**
@@ -34,18 +28,7 @@ public class HibernateHelper {
      * would violate a key constraint, most commonly if the row already exists.
      */
     public void create(Object obj) {
-        try {
-            execute(session -> session.save(obj));
-        } catch (PersistenceException ex) {
-            // If you try to create a row that already exists, Hibernate will throw a PersistenceException wrapped in a
-            // ConstraintViolationException.
-            if (ex.getCause() instanceof ConstraintViolationException) {
-                throw new ConcurrentModificationException(
-                        "Attempting to write a new row that violates key constraints");
-            } else {
-                throw ex;
-            }
-        }
+        executeWithExceptionHandling(obj, session -> session.save(obj));
     }
 
     /** Deletes the given object. */
@@ -53,7 +36,7 @@ public class HibernateHelper {
         // Hibernate optimistic versioning also applies to deletes. However, unlike updates, when we delete something,
         // we want it gone, so we generally don't care about optimistic versioning. In order to handle this in
         // Hibernate, we need to load the whole object before deleting it.
-        execute(session -> {
+        executeWithExceptionHandling(null, session -> {
             T obj = session.get(clazz, id);
             session.delete(obj);
             return null;
@@ -62,7 +45,7 @@ public class HibernateHelper {
 
     /** Get by the table's primary key. Returns null if the object doesn't exist. */
     public <T> T getById(Class<T> clazz, Serializable id) {
-        return execute(session -> session.get(clazz, id));
+        return executeWithExceptionHandling(null, session -> session.get(clazz, id));
     }
 
     /**
@@ -71,7 +54,7 @@ public class HibernateHelper {
     public int queryCount(String queryString, Map<String,Object> parameters) {
         // Hibernate returns a long for a count. However, we never expect more than 2 billion rows, for obvious
         // reasons.
-        Long count = execute(session -> {
+        Long count = executeWithExceptionHandling(null, session -> {
             Query<Long> query = session.createQuery("select count(*) " + queryString, Long.class);
             if (parameters != null) {
                 for (Map.Entry<String, Object> entry : parameters.entrySet()) {
@@ -93,7 +76,7 @@ public class HibernateHelper {
      * and limit for pagination.
      */
     public <T> List<T> queryGet(String queryString, Map<String,Object> parameters, Integer offset, Integer limit, Class<T> clazz) {
-        return execute(session -> {
+        return executeWithExceptionHandling(null, session -> {
             Query<T> query = session.createQuery(queryString, clazz);
             if (parameters != null) {
                 for (Map.Entry<String, Object> entry : parameters.entrySet()) {
@@ -115,7 +98,7 @@ public class HibernateHelper {
      * rows affected by this query.
      */
     public int queryUpdate(String queryString, Map<String,Object> parameters) {
-        return execute(session -> { 
+        return executeWithExceptionHandling(null, session -> { 
             Query<?> query = session.createQuery(queryString);
             if (parameters != null) {
                 for (Map.Entry<String, Object> entry : parameters.entrySet()) {
@@ -128,14 +111,22 @@ public class HibernateHelper {
 
     /** Updates a single object. */
     public <T> T update(T obj) {
+        return executeWithExceptionHandling(obj, session -> {
+            session.update(obj);
+            return obj;
+        });
+    }
+    
+    <T> T executeWithExceptionHandling(T originalEntity, Function<Session, T> function) {
         try {
-            return execute(session -> {
-                session.update(obj);
-                return obj;
-            });
-        } catch (OptimisticLockException ex) {
-            throw new ConcurrentModificationException("Row has the wrong version number; it may have been saved in " +
-                    "the background.");
+            return execute(function);
+        } catch(PersistenceException pe) {
+            RuntimeException ex = exceptionConverter.convert(pe, originalEntity);
+            if (ex == pe) {
+                throw new BridgeServiceException(ex);
+            } else {
+                throw ex;
+            }
         }
     }
 

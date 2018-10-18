@@ -39,6 +39,19 @@ public class AccountIdTest {
     }
     
     @Test
+    public void testToString() {
+        assertEquals("AccountId [studyId=api, credential=user-id]", AccountId.forId(TEST_STUDY_IDENTIFIER, "user-id").toString());
+        
+        assertEquals("AccountId [studyId=api, credential=Phone [regionCode=US, number=9712486796]]", AccountId.forPhone(TEST_STUDY_IDENTIFIER, PHONE).toString());
+        
+        assertEquals("AccountId [studyId=api, credential=email]", AccountId.forEmail(TEST_STUDY_IDENTIFIER, "email").toString());
+        
+        assertEquals("AccountId [studyId=api, credential=HEALTH_CODE]", AccountId.forHealthCode(TEST_STUDY_IDENTIFIER, "DEF-GHI").toString());
+        
+        assertEquals("AccountId [studyId=api, credential=EXTID]", AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "EXTID").toString());
+    }
+    
+    @Test
     public void factoryMethodsWork() {
         String number = PHONE.getNumber();
         assertEquals("one", AccountId.forId(TEST_STUDY_IDENTIFIER, "one").getId());
