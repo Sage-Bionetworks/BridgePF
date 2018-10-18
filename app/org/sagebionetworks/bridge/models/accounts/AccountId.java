@@ -3,11 +3,14 @@ package org.sagebionetworks.bridge.models.accounts;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Objects;
+import java.util.Set;
 
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Joiner;
+import com.google.common.collect.Sets;
 
 /**
  * An identifier that can be used to find an account (a study identifier with an ID, email, or phone number).
@@ -130,4 +133,10 @@ public final class AccountId implements BridgeEntity {
                 Objects.equals(externalId, other.externalId) && 
                 Objects.equals(usePreconditions, other.usePreconditions);
     }
+    @Override
+    public String toString() {
+        Set<Object> keys = Sets.newHashSet(id, email, phone, externalId, (healthCode==null) ? null : "HEALTH_CODE");
+        return "AccountId [studyId=" + studyId + ", credential=" + Joiner.on(", ").skipNulls().join(keys) + "]";
+    }
+    
 }

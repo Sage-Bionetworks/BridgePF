@@ -19,6 +19,8 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import javax.annotation.Resource;
+
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -33,8 +35,6 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -81,7 +81,7 @@ public class HibernateAccountDao implements AccountDao {
     private CacheProvider cacheProvider;
 
     /** This makes interfacing with Hibernate easier. */
-    @Autowired
+    @Resource(name = "accountHibernateHelper")
     public final void setHibernateHelper(HibernateHelper hibernateHelper) {
         this.hibernateHelper = hibernateHelper;
     }
@@ -130,7 +130,7 @@ public class HibernateAccountDao implements AccountDao {
                 hibernateAccount.setStatus(AccountStatus.ENABLED);
             }
             hibernateAccount.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-            hibernateHelper.update(hibernateAccount);
+            hibernateHelper.update(hibernateAccount);    
         }
     }
 
@@ -324,27 +324,7 @@ public class HibernateAccountDao implements AccountDao {
         hibernateAccount.setMigrationVersion(AccountDao.MIGRATION_VERSION);
 
         // Create account
-        try {
-            hibernateHelper.create(hibernateAccount);
-        } catch (ConcurrentModificationException ex) {
-            // Account can conflict because studyId + email|phone|externalId|healthCode have been used for an 
-            // existing account. 
-            AccountId accountId = null;
-            if (hibernateAccount.getEmail() != null) {
-                accountId = AccountId.forEmail(study.getIdentifier(), account.getEmail());
-            } else if (hibernateAccount.getPhone() != null) {
-                accountId = AccountId.forPhone(study.getIdentifier(), account.getPhone());
-            } else if (hibernateAccount.getExternalId() != null) {
-                accountId = AccountId.forExternalId(study.getIdentifier(), account.getExternalId());
-            }
-            HibernateAccount otherAccount = getHibernateAccount(accountId);
-            if (otherAccount != null) {
-                throw new EntityAlreadyExistsException(Account.class, "userId", otherAccount.getId());
-            } else {
-                throw new BridgeServiceException("Conflict creating an account, but can't find an existing " +
-                        "account with the same study and email, phone, or externalId");
-            }
-        }
+        hibernateHelper.create(hibernateAccount);
         return userId;
     }
 
@@ -372,7 +352,7 @@ public class HibernateAccountDao implements AccountDao {
         accountToUpdate.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
 
         // Update
-        hibernateHelper.update(accountToUpdate);
+        hibernateHelper.update(accountToUpdate);            
     }
     
     /** {@inheritDoc} */

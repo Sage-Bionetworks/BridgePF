@@ -7,7 +7,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -47,8 +46,6 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -141,7 +138,9 @@ public class HibernateAccountDaoTest {
         // Mock successful update.
         when(mockHibernateHelper.update(any())).thenAnswer(invocation -> {
             HibernateAccount account = invocation.getArgumentAt(0, HibernateAccount.class);
-            account.setVersion(account.getVersion()+1);
+            if (account != null) {
+                account.setVersion(account.getVersion()+1);    
+            }
             return account;
         });
         
@@ -869,96 +868,6 @@ public class HibernateAccountDaoTest {
         assertEquals(MOCK_NOW_MILLIS, createdHibernateAccount.getPasswordModifiedOn().longValue());
         assertEquals(AccountStatus.ENABLED, createdHibernateAccount.getStatus());
         assertEquals(AccountDao.MIGRATION_VERSION, createdHibernateAccount.getMigrationVersion());
-    }
-
-    @Test
-    public void createAccountAlreadyExists() {
-        // mock hibernate
-        String otherAccountId = "other-account-id";
-        HibernateAccount otherHibernateAccount = new HibernateAccount();
-        otherHibernateAccount.setId(otherAccountId);
-        otherHibernateAccount.setMigrationVersion(AccountDao.MIGRATION_VERSION);
-        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
-        when(mockHibernateHelper.queryGet(queryCaptor.capture(), eq(EMAIL_QUERY_PARAMS), any(), any(), any()))
-                .thenReturn(ImmutableList.of(otherHibernateAccount));
-
-        doThrow(ConcurrentModificationException.class).when(mockHibernateHelper).create(any());
-
-        // execute
-        try {
-            dao.createAccount(study, makeValidGenericAccount());
-            fail("expected exception");
-        } catch (EntityAlreadyExistsException ex) {
-            assertEquals(otherAccountId, ex.getEntity().get("userId"));
-            assertTrue(queryCaptor.getValue().contains("email=:email"));
-        }
-    }
-
-    @Test(expected = BridgeServiceException.class)
-    public void createAccountAlreadyExistsButNotFound() {
-        // mock hibernate
-        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any())).thenReturn(ImmutableList.of());
-        doThrow(ConcurrentModificationException.class).when(mockHibernateHelper).create(any());
-
-        // execute
-        dao.createAccount(study, makeValidGenericAccount());
-    }
-
-    @Test
-    public void createAccountAlreadyExistsForPhoneAccount() {
-        String otherAccountId = "other-account-id";
-        HibernateAccount otherHibernateAccount = new HibernateAccount();
-        otherHibernateAccount.setId(otherAccountId);
-        otherHibernateAccount.setMigrationVersion(AccountDao.MIGRATION_VERSION);
-        
-        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
-        when(mockHibernateHelper.queryGet(queryCaptor.capture(), eq(PHONE_QUERY_PARAMS), any(), any(), any()))
-                .thenReturn(ImmutableList.of(otherHibernateAccount));
-
-        doThrow(ConcurrentModificationException.class).when(mockHibernateHelper).create(any());
-
-        // execute
-        try {
-            GenericAccount account = makeValidGenericAccount();
-            account.setEmail(null);
-            account.setPhone(TestConstants.PHONE);
-            dao.createAccount(study, account);
-            fail("expected exception");
-        } catch (EntityAlreadyExistsException ex) {
-            assertEquals(otherAccountId, ex.getEntity().get("userId"));
-            assertTrue(queryCaptor.getValue().contains("phone.number=:number and phone.regionCode=:regionCode"));
-        }
-    }
-    
-    @Test
-    public void createAccountAlreadyExistsForExternalIdAccount() {
-        String externalId = "other-account-id";
-        HibernateAccount otherHibernateAccount = new HibernateAccount();
-        otherHibernateAccount.setId("userId");
-        otherHibernateAccount.setExternalId(externalId);
-        
-        Map<String,Object> params = new HashMap<>();
-        params.put("studyId", TestConstants.TEST_STUDY_IDENTIFIER);
-        params.put("externalId", externalId);
-        
-        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
-        when(mockHibernateHelper.queryGet(queryCaptor.capture(), eq(params), any(), any(), any()))
-                .thenReturn(ImmutableList.of(otherHibernateAccount));
-
-        doThrow(ConcurrentModificationException.class).when(mockHibernateHelper).create(any());
-
-        // execute
-        try {
-            GenericAccount account = makeValidGenericAccount();
-            account.setEmail(null);
-            account.setPhone(null);
-            account.setExternalId(externalId);
-            dao.createAccount(study, account);
-            fail("expected exception");
-        } catch (EntityAlreadyExistsException ex) {
-            assertEquals("userId", ex.getEntity().get("userId"));
-            assertTrue(queryCaptor.getValue().contains("externalId=:externalId"));
-        }
     }
     
     @Test
@@ -2146,7 +2055,7 @@ public class HibernateAccountDaoTest {
 
         dao.authenticate(study, PASSWORD_SIGNIN);
     }
-    
+
     private void verifyCreatedHealthCode() {
         ArgumentCaptor<HibernateAccount> updatedAccountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
         verify(mockHibernateHelper).update(updatedAccountCaptor.capture());
