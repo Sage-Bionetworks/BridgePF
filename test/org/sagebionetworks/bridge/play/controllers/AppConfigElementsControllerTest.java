@@ -207,6 +207,7 @@ public class AppConfigElementsControllerTest {
     @Test
     public void updateElementRevision() throws Exception {
         AppConfigElement element = AppConfigElement.create();
+        // These values should be overwritten by the values in the URL
         element.setId("element-id");
         element.setRevision(3L);
         TestUtils.mockPlayContextWithJson(element);
@@ -225,14 +226,14 @@ public class AppConfigElementsControllerTest {
     @Test
     public void publishElementRevision() throws Exception {
         TestUtils.mockPlayContext();
-        when(service.publishElementRevision(TestConstants.TEST_STUDY, "id", 3L)).thenReturn(VERSION_HOLDER);
+        when(service.publishElementRevision(TestConstants.TEST_STUDY, "id", 1L)).thenReturn(VERSION_HOLDER);
         
-        Result result = controller.publishElementRevision("id", "3");
+        Result result = controller.publishElementRevision("id", "1");
         VersionHolder returnedHolder = TestUtils.getResponsePayload(result, VersionHolder.class);
         assertEquals(200, result.status());
         assertEquals(new Long(1), returnedHolder.getVersion());
         
-        verify(service).publishElementRevision(TestConstants.TEST_STUDY, "id", 3L);
+        verify(service).publishElementRevision(TestConstants.TEST_STUDY, "id", 1L);
     }
     
     @Test

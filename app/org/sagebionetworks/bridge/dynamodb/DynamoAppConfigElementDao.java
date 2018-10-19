@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.dao.AppConfigElementDao;
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -18,6 +19,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.google.common.collect.Maps;
 import com.newrelic.agent.deps.com.google.common.collect.Lists;
 
@@ -121,15 +123,23 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
 
     @Override
     public VersionHolder saveElementRevision(AppConfigElement element) {
-        mapper.save(element);
-        return new VersionHolder(element.getVersion());
+        try {
+            mapper.save(element);
+            return new VersionHolder(element.getVersion());
+        } catch(ConditionalCheckFailedException e) {
+            throw new ConcurrentModificationException(element);
+        }
     }
 
     @Override
     public void deleteElementRevisionPermanently(StudyIdentifier studyId, String id, long revision) {
         AppConfigElement element = getElementRevision(studyId, id, revision);
         if (element != null) {
-            mapper.delete(element);
+            try {
+                mapper.delete(element);
+            } catch(ConditionalCheckFailedException e) {
+                throw new ConcurrentModificationException(element);
+            }
         }
     }
 

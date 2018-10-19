@@ -67,7 +67,6 @@ public final class DynamoAppConfigElement implements AppConfigElement {
     public boolean isPublished() {
         return published;
     }
-    @DynamoDBTyped(DynamoDBAttributeType.BOOL)
     public void setPublished(boolean published) {
         this.published = published;
     }
@@ -75,7 +74,6 @@ public final class DynamoAppConfigElement implements AppConfigElement {
     public boolean isDeleted() {
         return deleted;
     }
-    @DynamoDBTyped(DynamoDBAttributeType.BOOL)
     public void setDeleted(boolean deleted) {
         this.deleted = deleted;
     }

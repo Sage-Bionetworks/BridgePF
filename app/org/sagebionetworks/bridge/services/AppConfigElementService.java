@@ -53,7 +53,7 @@ public class AppConfigElementService {
         element.setCreatedOn(getDateTime().getMillis());
         element.setModifiedOn(element.getCreatedOn());
         
-        Validate.entityThrowingException(AppConfigElementValidator.CREATE_VALIDATOR, element);
+        Validate.entityThrowingException(AppConfigElementValidator.INSTANCE, element);
         
         AppConfigElement existing = appConfigElementDao.getElementRevision(studyId, element.getId(),
                 element.getRevision());
@@ -97,13 +97,13 @@ public class AppConfigElementService {
         checkNotNull(studyId);
         checkNotNull(element);
         
-        Validate.entityThrowingException(AppConfigElementValidator.UPDATE_VALIDATOR, element);
+        Validate.entityThrowingException(AppConfigElementValidator.INSTANCE, element);
         
         AppConfigElement existing = getElementRevision(studyId, element.getId(), element.getRevision());
         if (element.isDeleted() && existing.isDeleted()) {
             throw new EntityNotFoundException(AppConfigElement.class);
         }
-        if (element.isPublished()) {
+        if (existing.isPublished()) {
             throw new EntityPublishedException("App config element cannot be changed, it is published.");
         }
         element.setKey(studyId.getIdentifier() + ":" + element.getId());
