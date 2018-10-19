@@ -29,6 +29,7 @@ public class AppConfigElementService {
         this.appConfigElementDao = appConfigElementDao;
     }
     
+    // In order to mock time for tests
     DateTime getDateTime() {
         return DateTime.now();
     }
@@ -46,14 +47,15 @@ public class AppConfigElementService {
         if (element.getRevision() == null) {
             element.setRevision(1L);
         }
+        // Validate that ID exists before you try and use it to set the key
+        Validate.entityThrowingException(AppConfigElementValidator.INSTANCE, element);
+        
         element.setKey(studyId.getIdentifier() + ":" + element.getId());
         element.setStudyId(studyId.getIdentifier());
         element.setVersion(null);
         element.setDeleted(false);
         element.setCreatedOn(getDateTime().getMillis());
         element.setModifiedOn(element.getCreatedOn());
-        
-        Validate.entityThrowingException(AppConfigElementValidator.INSTANCE, element);
         
         AppConfigElement existing = appConfigElementDao.getElementRevision(studyId, element.getId(),
                 element.getRevision());
@@ -109,7 +111,9 @@ public class AppConfigElementService {
         element.setKey(studyId.getIdentifier() + ":" + element.getId());
         element.setStudyId(studyId.getIdentifier());
         element.setModifiedOn(getDateTime().getMillis());
-        element.setPublished(existing.isPublished()); // cannot unpublish something
+        // cannot unpublish something or change the creation timestamp
+        element.setCreatedOn(existing.getCreatedOn());
+        element.setPublished(existing.isPublished());
         return appConfigElementDao.saveElementRevision(element);
     }
     

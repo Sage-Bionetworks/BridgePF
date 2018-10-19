@@ -37,7 +37,10 @@ public class AppConfigElementValidatorTest {
         assertValidatorMessage(VALIDATOR, element, "revision", "is required");
         
         element.setRevision(-3L);
-        assertValidatorMessage(VALIDATOR, element, "revision", "cannot be negative");
+        assertValidatorMessage(VALIDATOR, element, "revision", "must be positive");
+        
+        element.setRevision(0L);
+        assertValidatorMessage(VALIDATOR, element, "revision", "must be positive");
     }
     
     @Test

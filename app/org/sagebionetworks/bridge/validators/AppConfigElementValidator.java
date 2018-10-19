@@ -24,8 +24,8 @@ public class AppConfigElementValidator implements Validator {
         }
         if (appConfigElement.getRevision() == null) {
             errors.rejectValue("revision", "is required");
-        } else if (appConfigElement.getRevision() < 0) {
-            errors.rejectValue("revision", "cannot be negative");
+        } else if (appConfigElement.getRevision() < 1) {
+            errors.rejectValue("revision", "must be positive");
         }
         if (appConfigElement.getData() == null) {
             errors.rejectValue("data", "is required");

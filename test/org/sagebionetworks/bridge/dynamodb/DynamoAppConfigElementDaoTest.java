@@ -108,6 +108,7 @@ public class DynamoAppConfigElementDaoTest {
         
         assertEquals("api:id", query.getHashKeyValues().getKey());
         assertFalse(query.isScanIndexForward());
+        assertEquals(new Integer(1), query.getLimit());
         
         Condition deleteCondition = query.getQueryFilter().get("deleted");
         assertEquals("EQ", deleteCondition.getComparisonOperator());

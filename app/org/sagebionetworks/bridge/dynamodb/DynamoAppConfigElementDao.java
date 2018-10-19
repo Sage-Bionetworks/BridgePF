@@ -23,6 +23,11 @@ import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.google.common.collect.Maps;
 import com.newrelic.agent.deps.com.google.common.collect.Lists;
 
+/**
+ * The index "studyId-index" must be a GSI that includes the fields key, revision, studyId, 
+ * id, and deleted. Our DynamoDB introspection and table creation code does not currently support
+ * configuration of the fields included in a GSI, this needs to be created manually.
+ */
 @Component
 public class DynamoAppConfigElementDao implements AppConfigElementDao {
     private DynamoDBMapper mapper;
@@ -84,6 +89,7 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
                 .withComparisonOperator(ComparisonOperator.EQ)
                 .withAttributeValueList(new AttributeValue().withBOOL(Boolean.TRUE)));
         query.setScanIndexForward(false);
+        query.setLimit(1);
         
         PaginatedQueryList<DynamoAppConfigElement> results = mapper.query(DynamoAppConfigElement.class, query);
         
