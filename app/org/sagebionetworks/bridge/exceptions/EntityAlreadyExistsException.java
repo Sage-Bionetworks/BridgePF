@@ -33,14 +33,19 @@ public class EntityAlreadyExistsException extends BridgeServiceException {
     public String getEntityClass() {
         return BridgeUtils.getTypeName(entityClass);
     }
-
+    
+    /**
+     * These are the keys that are conflicting and indicate an entity already exists in the system. However, for users, where 
+     * credentials can conflict and they are sensitive information, we use the account's ID instead (even if it's something like
+     * an email address that has already been used).
+     */
     public Map<String, Object> getEntityKeys() {
         return entityKeys;
     }
     
     /**
-     * This originally returned a JSONified version of the entity, but will no return just the keys. No known case where
-     * this is currently being used.
+     * This originally returned a JSONified version of the entity, but will now return just the keys. No known case
+     * where this is currently being used.
      */
     public Map<String, Object> getEntity() {
         return entityKeys;

@@ -266,12 +266,12 @@ public class AuthenticationService {
         } catch(EntityAlreadyExistsException e) {
             // Suppress this and send an email to notify the user that the account already exists. From 
             // this call, we simply return a 200 the same as any other sign up. Otherwise the response 
-            // reveals that the email has been taken.
-            AccountId accountId = AccountId.forId(study.getIdentifier(), (String) e.getEntityKeys().get("userId"));
+            // reveals that the credential has been taken.
+            LOG.info("Sign up attempt using credential that exists in account '"+e.getEntityKeys().get("userId")+"'");
+            AccountId accountId = AccountId.forId(study.getIdentifier(), (String)e.getEntityKeys().get("userId"));
             accountWorkflowService.notifyAccountExists(study, accountId);
-            LOG.info("Sign up attempt for existing email address in study '"+study.getIdentifier()+"'");
+            return null;
         }
-        return null;
     }
 
     public void verifyChannel(ChannelType type, Verification verification) {
