@@ -67,11 +67,11 @@ public class AppConfigElementService {
         return appConfigElementDao.getElementRevisions(studyId, id, includeDeleted);
     }
     
-    public AppConfigElement getMostRecentlyPublishedElement(StudyIdentifier studyId, String id) {
+    public AppConfigElement getMostRecentElement(StudyIdentifier studyId, String id) {
         checkNotNull(studyId);
         checkNotNull(id);
         
-        AppConfigElement element = appConfigElementDao.getMostRecentlyPublishedElement(studyId, id);
+        AppConfigElement element = appConfigElementDao.getMostRecentElement(studyId, id);
         if (element == null) {
             throw new EntityNotFoundException(AppConfigElement.class);
         }

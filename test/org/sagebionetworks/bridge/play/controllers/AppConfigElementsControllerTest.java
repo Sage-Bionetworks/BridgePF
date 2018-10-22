@@ -176,18 +176,18 @@ public class AppConfigElementsControllerTest {
     }
     
     @Test
-    public void getMostRecentlyPublishedElement() throws Exception {
+    public void getMostRecentElement() throws Exception {
         TestUtils.mockPlayContext();
         AppConfigElement element = AppConfigElement.create();
         element.setId("element-id");
-        when(service.getMostRecentlyPublishedElement(TestConstants.TEST_STUDY, "element-id")).thenReturn(element);
+        when(service.getMostRecentElement(TestConstants.TEST_STUDY, "element-id")).thenReturn(element);
         
-        Result result = controller.getMostRecentlyPublishedElement("element-id");
+        Result result = controller.getMostRecentElement("element-id");
         AppConfigElement returnedElement = TestUtils.getResponsePayload(result, AppConfigElement.class);
         assertEquals(200, result.status());
         assertEquals("element-id", returnedElement.getId());
         
-        verify(service).getMostRecentlyPublishedElement(TestConstants.TEST_STUDY, "element-id");
+        verify(service).getMostRecentElement(TestConstants.TEST_STUDY, "element-id");
     }
 
     @Test

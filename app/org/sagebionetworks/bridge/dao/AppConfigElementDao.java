@@ -10,7 +10,7 @@ public interface AppConfigElementDao {
     
     List<AppConfigElement> getMostRecentElements(StudyIdentifier studyId, boolean includeDeleted);
     
-    AppConfigElement getMostRecentlyPublishedElement(StudyIdentifier studyId, String id);
+    AppConfigElement getMostRecentElement(StudyIdentifier studyId, String id);
 
     List<AppConfigElement> getElementRevisions(StudyIdentifier studyId, String id, boolean includeDeleted);
     

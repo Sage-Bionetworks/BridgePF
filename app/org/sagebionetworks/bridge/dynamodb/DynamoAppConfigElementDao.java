@@ -75,17 +75,13 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
     }
 
     @Override
-    public AppConfigElement getMostRecentlyPublishedElement(StudyIdentifier studyId, String id) {
+    public AppConfigElement getMostRecentElement(StudyIdentifier studyId, String id) {
         DynamoAppConfigElement key = new DynamoAppConfigElement();
         key.setKey(studyId, id);
 
         DynamoDBQueryExpression<DynamoAppConfigElement> query = new DynamoDBQueryExpression<DynamoAppConfigElement>()
                 .withHashKeyValues(key);
         excludeDeleted(query);
-        // exclude unpublished
-        query.withQueryFilterEntry("published", new Condition()
-                .withComparisonOperator(ComparisonOperator.EQ)
-                .withAttributeValueList(new AttributeValue().withBOOL(Boolean.TRUE)));
         query.setScanIndexForward(false);
         query.setLimit(1);
         

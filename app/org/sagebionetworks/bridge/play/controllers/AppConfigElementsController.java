@@ -58,10 +58,10 @@ public class AppConfigElementsController extends BaseController {
         return okResult(resourceList);
     }
     
-    public Result getMostRecentlyPublishedElement(String id) {
+    public Result getMostRecentElement(String id) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
-        AppConfigElement element = service.getMostRecentlyPublishedElement(session.getStudyIdentifier(), id);
+        AppConfigElement element = service.getMostRecentElement(session.getStudyIdentifier(), id);
         return okResult(element);
     }
 

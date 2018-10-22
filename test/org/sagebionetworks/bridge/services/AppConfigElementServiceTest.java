@@ -156,21 +156,21 @@ public class AppConfigElementServiceTest {
     }
 
     @Test
-    public void getMostRecentlyPublishedElement() {
+    public void getMostRecentElement() {
         AppConfigElement element = AppConfigElement.create();
-        when(dao.getMostRecentlyPublishedElement(TEST_STUDY, "id")).thenReturn(element);
+        when(dao.getMostRecentElement(TEST_STUDY, "id")).thenReturn(element);
         
-        AppConfigElement returned = service.getMostRecentlyPublishedElement(TEST_STUDY, "id");
+        AppConfigElement returned = service.getMostRecentElement(TEST_STUDY, "id");
         assertEquals(element, returned);
         
-        verify(dao).getMostRecentlyPublishedElement(TEST_STUDY, "id");
+        verify(dao).getMostRecentElement(TEST_STUDY, "id");
     }
     
     @Test(expected = EntityNotFoundException.class)
-    public void getMostRecentlyPublishedElementDoesNotExist() {
-        service.getMostRecentlyPublishedElement(TEST_STUDY, "id");
+    public void getMostRecentElementDoesNotExist() {
+        service.getMostRecentElement(TEST_STUDY, "id");
         
-        verify(dao).getMostRecentlyPublishedElement(TEST_STUDY, "id");
+        verify(dao).getMostRecentElement(TEST_STUDY, "id");
     }
 
     @Test

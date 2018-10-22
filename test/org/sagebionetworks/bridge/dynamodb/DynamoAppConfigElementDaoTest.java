@@ -91,12 +91,12 @@ public class DynamoAppConfigElementDaoTest {
 
     
     @Test
-    public void getMostRecentlyPublishedElement() {
+    public void getMostRecentElement() {
         DynamoAppConfigElement element = new DynamoAppConfigElement();
         when(mockMapper.query(eq(DynamoAppConfigElement.class), any())).thenReturn(mockResults);
         when(mockResults.get(0)).thenReturn(element);
         
-        AppConfigElement returned = dao.getMostRecentlyPublishedElement(TestConstants.TEST_STUDY, "id");
+        AppConfigElement returned = dao.getMostRecentElement(TestConstants.TEST_STUDY, "id");
         assertEquals(element, returned);
         
         verify(mockMapper).query(eq(DynamoAppConfigElement.class), queryCaptor.capture());
@@ -116,11 +116,11 @@ public class DynamoAppConfigElementDaoTest {
     }
 
     @Test
-    public void getMostRecentlyPublishedElementNotFound() {
+    public void getMostRecentElementNotFound() {
         when(mockMapper.query(eq(DynamoAppConfigElement.class), any())).thenReturn(mockResults);
         when(mockResults.get(0)).thenReturn(null);
         
-        AppConfigElement returned = dao.getMostRecentlyPublishedElement(TestConstants.TEST_STUDY, "id");
+        AppConfigElement returned = dao.getMostRecentElement(TestConstants.TEST_STUDY, "id");
         assertNull(returned);
     }
     

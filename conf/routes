@@ -248,7 +248,7 @@ GET    /v3/appconfigs/elements                                 @org.sagebionetwo
 POST   /v3/appconfigs/elements                                 @org.sagebionetworks.bridge.play.controllers.AppConfigElementsController.createElement
 GET    /v3/appconfigs/elements/:id                             @org.sagebionetworks.bridge.play.controllers.AppConfigElementsController.getElementRevisions(id: String, includeDeleted: String ?= "false")
 DELETE /v3/appconfigs/elements/:id                             @org.sagebionetworks.bridge.play.controllers.AppConfigElementsController.deleteElementAllRevisions(id: String, physical: String ?= "false")
-GET    /v3/appconfigs/elements/:id/published                   @org.sagebionetworks.bridge.play.controllers.AppConfigElementsController.getMostRecentlyPublishedElement(id: String)
+GET    /v3/appconfigs/elements/:id/recent                      @org.sagebionetworks.bridge.play.controllers.AppConfigElementsController.getMostRecentElement(id: String)
 GET    /v3/appconfigs/elements/:id/revisions/:revision         @org.sagebionetworks.bridge.play.controllers.AppConfigElementsController.getElementRevision(id: String, revision: String)
 POST   /v3/appconfigs/elements/:id/revisions/:revision         @org.sagebionetworks.bridge.play.controllers.AppConfigElementsController.updateElementRevision(id: String, revision: String)
 DELETE /v3/appconfigs/elements/:id/revisions/:revision         @org.sagebionetworks.bridge.play.controllers.AppConfigElementsController.deleteElementRevision(id : String, revision: String, physical: String ?= "false")
