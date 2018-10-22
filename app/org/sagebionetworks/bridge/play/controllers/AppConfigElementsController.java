@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import java.util.List;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -14,7 +15,6 @@ import org.sagebionetworks.bridge.services.AppConfigElementService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
-import play.mvc.BodyParser;
 import play.mvc.Result;
 
 @Controller
@@ -67,7 +67,10 @@ public class AppConfigElementsController extends BaseController {
 
     public Result getElementRevision(String id, String revisionString) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Long revision = BridgeUtils.getLongOrDefault(revisionString, 0L);
+        Long revision = BridgeUtils.getLongOrDefault(revisionString, null);
+        if (revision == null) {
+            throw new BadRequestException("Revision is not a valid revision number");
+        }
         
         AppConfigElement element = service.getElementRevision(session.getStudyIdentifier(), id, revision);
         
@@ -76,22 +79,16 @@ public class AppConfigElementsController extends BaseController {
 
     public Result updateElementRevision(String id, String revisionString) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Long revision = BridgeUtils.getLongOrDefault(revisionString, 0L);
+        Long revision = BridgeUtils.getLongOrDefault(revisionString, null);
+        if (revision == null) {
+            throw new BadRequestException("Revision is not a valid revision number");
+        }
         
         AppConfigElement element = parseJson(request(), AppConfigElement.class);
         element.setId(id);
         element.setRevision(revision);
         
         VersionHolder holder = service.updateElementRevision(session.getStudyIdentifier(), element);
-        return okResult(holder);
-    }
-    
-    @BodyParser.Of(BodyParser.Empty.class)
-    public Result publishElementRevision(String id, String revisionString) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
-        Long revision = BridgeUtils.getLongOrDefault(revisionString, 0L);
-        
-        VersionHolder holder = service.publishElementRevision(session.getStudyIdentifier(), id, revision);
         return okResult(holder);
     }
     
@@ -109,7 +106,10 @@ public class AppConfigElementsController extends BaseController {
     public Result deleteElementRevision(String id, String revisionString, String physical) {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         
-        Long revision = BridgeUtils.getLongOrDefault(revisionString, 0L);
+        Long revision = BridgeUtils.getLongOrDefault(revisionString, null);
+        if (revision == null) {
+            throw new BadRequestException("Revision is not a valid revision number");
+        }
         
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
             service.deleteElementRevisionPermanently(session.getStudyIdentifier(), id, revision);

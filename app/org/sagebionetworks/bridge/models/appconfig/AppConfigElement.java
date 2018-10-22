@@ -28,9 +28,6 @@ public interface AppConfigElement extends BridgeEntity {
     void setRevision(Long revision);
     Long getRevision();
     
-    void setPublished(boolean published);
-    boolean isPublished();
-    
     void setDeleted(boolean deleted);
     boolean isDeleted();
     

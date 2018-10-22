@@ -24,11 +24,6 @@ import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-/**
- * The index "studyId-index" must be a GSI that includes the fields key, revision, studyId, 
- * id, and deleted. Our DynamoDB introspection and table creation code does not currently support
- * configuration of the fields included in a GSI, this needs to be created manually.
- */
 @Component
 public class DynamoAppConfigElementDao implements AppConfigElementDao {
     static final String STUDY_ID_INDEX_NAME = "studyId-index";

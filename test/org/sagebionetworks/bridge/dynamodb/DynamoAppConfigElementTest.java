@@ -39,7 +39,6 @@ public class DynamoAppConfigElementTest {
         element.setStudyId("studyId");
         element.setRevision(1L);
         element.setId("id");
-        element.setPublished(true);
         element.setDeleted(true);
         element.setData(TestUtils.getClientData());
         element.setCreatedOn(CREATED_ON.getMillis());
@@ -51,12 +50,12 @@ public class DynamoAppConfigElementTest {
         assertNull(node.get("studyId"));
         assertEquals(1L, node.get("revision").longValue());
         assertEquals("id", node.get("id").textValue());
-        assertTrue(node.get("published").booleanValue());
         assertTrue(node.get("deleted").booleanValue());
         assertEquals(TestUtils.getClientData(), node.get("data"));
         assertEquals(CREATED_ON.toString(), node.get("createdOn").textValue());
         assertEquals(MODIFIED_ON.toString(), node.get("modifiedOn").textValue());
         assertEquals(2L, node.get("version").longValue());
+        assertEquals("AppConfigElement", node.get("type").textValue());
         
         AppConfigElement deser = BridgeObjectMapper.get().readValue(node.toString(), AppConfigElement.class);
         element.setKey(null);

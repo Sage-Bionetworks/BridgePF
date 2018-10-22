@@ -4,7 +4,6 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 
 @SuppressWarnings("serial")
 @NoStackTraceException
-@Deprecated // Use EntityPublishedException
 public class PublishedSurveyException extends BridgeServiceException {
     
     private final Survey survey;

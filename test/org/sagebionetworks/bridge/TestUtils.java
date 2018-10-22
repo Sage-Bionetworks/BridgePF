@@ -515,11 +515,10 @@ public class TestUtils {
         AppConfigElement element = AppConfigElement.create();
         element.setId("id");
         element.setRevision(3L);
-        element.setPublished(false);
         element.setDeleted(false);
         element.setData(getClientData());
-        element.setCreatedOn(DateTime.now().getMillis());
-        element.setModifiedOn(DateTime.now().getMillis());
+        element.setCreatedOn(DateTime.now().minusHours(2).getMillis());
+        element.setModifiedOn(DateTime.now().minusHours(1).getMillis());
         element.setVersion(1L);
         return element;
     }

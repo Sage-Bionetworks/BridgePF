@@ -22,6 +22,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -204,6 +205,11 @@ public class AppConfigElementsControllerTest {
         verify(service).getElementRevision(TestConstants.TEST_STUDY, "id", 3L);
     }
 
+    @Test(expected = BadRequestException.class)
+    public void getElementRevisionBadRevisionNumber() throws Exception {
+        controller.getElementRevision("id", "three");
+    }
+    
     @Test
     public void updateElementRevision() throws Exception {
         AppConfigElement element = AppConfigElement.create();
@@ -223,17 +229,9 @@ public class AppConfigElementsControllerTest {
         assertEquals(new Long(1), elementCaptor.getValue().getRevision());
     }
     
-    @Test
-    public void publishElementRevision() throws Exception {
-        TestUtils.mockPlayContext();
-        when(service.publishElementRevision(TestConstants.TEST_STUDY, "id", 1L)).thenReturn(VERSION_HOLDER);
-        
-        Result result = controller.publishElementRevision("id", "1");
-        VersionHolder returnedHolder = TestUtils.getResponsePayload(result, VersionHolder.class);
-        assertEquals(200, result.status());
-        assertEquals(new Long(1), returnedHolder.getVersion());
-        
-        verify(service).publishElementRevision(TestConstants.TEST_STUDY, "id", 1L);
+    @Test(expected = BadRequestException.class)
+    public void updateElementRevisionBadRevisionNumber() {
+        controller.updateElementRevision("id", "one");
     }
     
     @Test
@@ -275,6 +273,13 @@ public class AppConfigElementsControllerTest {
         TestUtils.assertResult(result, 200, "App config element revision deleted.");
      
         verify(service).deleteElementRevision(TestConstants.TEST_STUDY, "id", 3L);
+    }
+    
+    @Test(expected = BadRequestException.class)
+    public void deleteElementRevisionBadRevisionNumber() throws Exception {
+        TestUtils.mockPlayContext();
+        
+        controller.deleteElementRevision("id", "three", "false");
     }
     
     @Test

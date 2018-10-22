@@ -29,7 +29,6 @@ public final class DynamoAppConfigElement implements AppConfigElement {
     private String id;
     private String studyId;
     private Long revision;
-    private boolean published;
     private boolean deleted;
     private JsonNode data;
     private long createdOn;
@@ -68,13 +67,6 @@ public final class DynamoAppConfigElement implements AppConfigElement {
     }
     public void setId(String id) {
         this.id = id;
-    }
-    @DynamoDBTyped(DynamoDBAttributeType.BOOL)
-    public boolean isPublished() {
-        return published;
-    }
-    public void setPublished(boolean published) {
-        this.published = published;
     }
     @DynamoDBTyped(DynamoDBAttributeType.BOOL)
     public boolean isDeleted() {
@@ -117,7 +109,7 @@ public final class DynamoAppConfigElement implements AppConfigElement {
     
     @Override
     public int hashCode() {
-        return Objects.hash(key, studyId, id, revision, published, deleted, data, createdOn, modifiedOn, version);
+        return Objects.hash(key, studyId, id, revision, deleted, data, createdOn, modifiedOn, version);
     }
     @Override
     public boolean equals(Object obj) {
@@ -130,7 +122,6 @@ public final class DynamoAppConfigElement implements AppConfigElement {
                 Objects.equals(studyId, other.studyId) &&
                 Objects.equals(id, other.id) &&
                 Objects.equals(revision, other.revision) &&
-                Objects.equals(published, other.published) &&
                 Objects.equals(deleted, other.deleted) &&
                 Objects.equals(data, other.data) &&
                 Objects.equals(createdOn, other.createdOn) &&

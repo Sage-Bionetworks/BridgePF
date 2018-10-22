@@ -14,6 +14,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,7 +28,6 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AppConfigElementDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.EntityPublishedException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
@@ -37,8 +38,9 @@ import com.google.common.collect.ImmutableList;
 public class AppConfigElementServiceTest {
     
     private static final DateTime TIMESTAMP = DateTime.now();
-    private static final List<AppConfigElement> ELEMENTS = ImmutableList.of(AppConfigElement.create(), AppConfigElement.create());
     private static final VersionHolder VERSION_HOLDER = new VersionHolder(TestUtils.getAppConfigElement().getVersion());
+    
+    private List<AppConfigElement> elements;
     
     @Mock
     private AppConfigElementDao dao;
@@ -51,12 +53,19 @@ public class AppConfigElementServiceTest {
     
     @Before
     public void before() {
+        DateTimeUtils.setCurrentMillisFixed(TIMESTAMP.getMillis());
         service.setAppConfigElementDao(dao);
+        elements = ImmutableList.of(AppConfigElement.create(), AppConfigElement.create());
+    }
+    
+    @After
+    public void after() {
+        DateTimeUtils.setCurrentMillisSystem();
     }
 
     @Test
     public void getMostRecentElementsIncludesDeleted() {
-        when(dao.getMostRecentElements(TEST_STUDY, true)).thenReturn(ELEMENTS);
+        when(dao.getMostRecentElements(TEST_STUDY, true)).thenReturn(elements);
         
         List<AppConfigElement> returnedElements = service.getMostRecentElements(TEST_STUDY, true);
         
@@ -66,7 +75,7 @@ public class AppConfigElementServiceTest {
     
     @Test
     public void getMostRecentElementsExcludesDeleted() {
-        when(dao.getMostRecentElements(TEST_STUDY, false)).thenReturn(ELEMENTS);
+        when(dao.getMostRecentElements(TEST_STUDY, false)).thenReturn(elements);
         
         List<AppConfigElement> returnedElements = service.getMostRecentElements(TEST_STUDY, false);
         
@@ -76,8 +85,6 @@ public class AppConfigElementServiceTest {
     
     @Test
     public void createElement() {
-        when(service.getDateTime()).thenReturn(TIMESTAMP);
-
         AppConfigElement element = TestUtils.getAppConfigElement();
         element.setRevision(null);
         element.setDeleted(true);
@@ -112,10 +119,25 @@ public class AppConfigElementServiceTest {
         
         service.createElement(TEST_STUDY, element);
     }
+    
+    @Test
+    public void createElementWithArbitraryRevision() {
+        AppConfigElement element = TestUtils.getAppConfigElement(); // revision = 3
+        
+        when(dao.saveElementRevision(element)).thenReturn(VERSION_HOLDER);
+        
+        VersionHolder returned = service.createElement(TEST_STUDY, element);
+        assertEquals(VERSION_HOLDER, returned);
+        
+        verify(dao).saveElementRevision(elementCaptor.capture());
+        
+        // Revision was maintained because it was set, and doesn't exist
+        assertEquals(new Long(3), elementCaptor.getValue().getRevision());
+    }
 
     @Test
     public void getElementRevisionsIncludeDeleted() {
-        when(dao.getElementRevisions(TEST_STUDY, "id", true)).thenReturn(ELEMENTS);
+        when(dao.getElementRevisions(TEST_STUDY, "id", true)).thenReturn(elements);
         
         List<AppConfigElement> returnedElements = service.getElementRevisions(TEST_STUDY, "id", true);
         assertEquals(2, returnedElements.size());
@@ -125,7 +147,7 @@ public class AppConfigElementServiceTest {
     
     @Test
     public void getElementRevisionsExcludeDeleted() {
-        when(dao.getElementRevisions(TEST_STUDY, "id", false)).thenReturn(ELEMENTS);
+        when(dao.getElementRevisions(TEST_STUDY, "id", false)).thenReturn(elements);
         
         List<AppConfigElement> returnedElements = service.getElementRevisions(TEST_STUDY, "id", false);
         assertEquals(2, returnedElements.size());
@@ -171,12 +193,9 @@ public class AppConfigElementServiceTest {
 
     @Test
     public void updateElementRevision() {
-        when(service.getDateTime()).thenReturn(TIMESTAMP);
         AppConfigElement element = TestUtils.getAppConfigElement();
-        element.setPublished(true); // you cannot change this
         
         AppConfigElement existing = TestUtils.getAppConfigElement();
-        existing.setPublished(false);
         when(dao.getElementRevision(TEST_STUDY, element.getId(), element.getRevision())).thenReturn(existing);
         when(dao.saveElementRevision(element)).thenReturn(VERSION_HOLDER);
         
@@ -187,7 +206,6 @@ public class AppConfigElementServiceTest {
         AppConfigElement captured = elementCaptor.getValue(); 
         assertEquals("api", captured.getStudyId());
         assertEquals("api:id", captured.getKey());
-        assertFalse(captured.isPublished());
         assertNotEquals(TIMESTAMP.getMillis(), captured.getCreatedOn());
         assertEquals(TIMESTAMP.getMillis(), captured.getModifiedOn());
     }
@@ -195,16 +213,6 @@ public class AppConfigElementServiceTest {
     @Test(expected = InvalidEntityException.class)
     public void updateElementRevisionValidates() {
         service.updateElementRevision(TEST_STUDY, AppConfigElement.create());
-    }
-    
-    @Test(expected = EntityPublishedException.class)
-    public void updateElementRevisionCannotModifyPublished() {
-        AppConfigElement element = TestUtils.getAppConfigElement();
-        element.setPublished(true); // you cannot change a published entity
-        
-        when(dao.getElementRevision(TEST_STUDY, element.getId(), element.getRevision())).thenReturn(element);
-        
-        service.updateElementRevision(TEST_STUDY, element);
     }
     
     @Test(expected = EntityNotFoundException.class)
@@ -255,55 +263,12 @@ public class AppConfigElementServiceTest {
     }
     
     @Test
-    public void publishElementRevision() {
-        when(service.getDateTime()).thenReturn(TIMESTAMP);
-        
-        AppConfigElement element = TestUtils.getAppConfigElement();
-        element.setPublished(false);
-        when(dao.getElementRevision(TEST_STUDY, element.getId(), element.getRevision())).thenReturn(element);
-        when(dao.saveElementRevision(element)).thenReturn(VERSION_HOLDER);
-        
-        VersionHolder returned = service.publishElementRevision(TEST_STUDY, "id", 3L);
-        assertEquals(VERSION_HOLDER, returned);
-        
-        verify(dao).saveElementRevision(elementCaptor.capture());
-        AppConfigElement captured = elementCaptor.getValue();
-        assertTrue(captured.isPublished());
-        assertNotEquals(TIMESTAMP.getMillis(), captured.getCreatedOn());
-        assertEquals(TIMESTAMP.getMillis(), captured.getModifiedOn());
-    }
-    
-    @Test(expected = EntityNotFoundException.class)
-    public void publisheElementThatDoesNotExist() {
-        service.publishElementRevision(TEST_STUDY, "id", 3L);
-    }
-    
-    @Test(expected = EntityNotFoundException.class)
-    public void publishElementThatIsLogicallDeleted() {
-        AppConfigElement element = TestUtils.getAppConfigElement();
-        element.setDeleted(true);
-        when(dao.getElementRevision(TEST_STUDY, element.getId(), element.getRevision())).thenReturn(element);
-        
-        service.publishElementRevision(TEST_STUDY, "id", 3L);
-    }
-    
-    @Test(expected = EntityPublishedException.class)
-    public void publishElementThatIsPublished() {
-        AppConfigElement element = TestUtils.getAppConfigElement();
-        element.setPublished(true);
-        when(dao.getElementRevision(TEST_STUDY, element.getId(), element.getRevision())).thenReturn(element);
-        
-        service.publishElementRevision(TEST_STUDY, "id", 3L);
-    }
-    
-    @Test
     public void deleteElementAllRevisions() {
-        when(service.getDateTime()).thenReturn(TIMESTAMP);
-        when(dao.getElementRevisions(TEST_STUDY, "id", false)).thenReturn(ELEMENTS);        
+        when(dao.getElementRevisions(TEST_STUDY, "id", false)).thenReturn(elements);        
         
         service.deleteElementAllRevisions(TEST_STUDY, "id");
         
-        for(AppConfigElement element : ELEMENTS) {
+        for(AppConfigElement element : elements) {
             assertTrue(element.isDeleted());
             assertNotEquals(TIMESTAMP.getMillis(), element.getCreatedOn());
             assertEquals(TIMESTAMP.getMillis(), element.getModifiedOn());
@@ -315,11 +280,11 @@ public class AppConfigElementServiceTest {
     
     @Test
     public void deleteElementAllRevisionsPermanently() {
-        ELEMENTS.get(0).setId("id");
-        ELEMENTS.get(0).setRevision(1L);
-        ELEMENTS.get(1).setId("id");
-        ELEMENTS.get(1).setRevision(2L);
-        when(dao.getElementRevisions(TEST_STUDY, "id", true)).thenReturn(ELEMENTS);        
+        elements.get(0).setId("id");
+        elements.get(0).setRevision(1L);
+        elements.get(1).setId("id");
+        elements.get(1).setRevision(2L);
+        when(dao.getElementRevisions(TEST_STUDY, "id", true)).thenReturn(elements);        
         
         service.deleteElementAllRevisionsPermanently(TEST_STUDY, "id");
         
@@ -330,8 +295,6 @@ public class AppConfigElementServiceTest {
     
     @Test
     public void deleteElementRevision() {
-        when(service.getDateTime()).thenReturn(TIMESTAMP);
-        
         AppConfigElement element = TestUtils.getAppConfigElement();
         element.setDeleted(false);
         when(dao.getElementRevision(TEST_STUDY, element.getId(), element.getRevision())).thenReturn(element);

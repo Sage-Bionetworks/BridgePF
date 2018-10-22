@@ -8,7 +8,6 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dao.AppConfigElementDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.EntityPublishedException;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -29,11 +28,6 @@ public class AppConfigElementService {
         this.appConfigElementDao = appConfigElementDao;
     }
     
-    // In order to mock time for tests
-    DateTime getDateTime() {
-        return DateTime.now();
-    }
-
     public List<AppConfigElement> getMostRecentElements(StudyIdentifier studyId, boolean includeDeleted) {
         checkNotNull(studyId);
         
@@ -54,7 +48,7 @@ public class AppConfigElementService {
         element.setStudyId(studyId.getIdentifier());
         element.setVersion(null);
         element.setDeleted(false);
-        element.setCreatedOn(getDateTime().getMillis());
+        element.setCreatedOn(DateTime.now().getMillis());
         element.setModifiedOn(element.getCreatedOn());
         
         AppConfigElement existing = appConfigElementDao.getElementRevision(studyId, element.getId(),
@@ -105,32 +99,12 @@ public class AppConfigElementService {
         if (element.isDeleted() && existing.isDeleted()) {
             throw new EntityNotFoundException(AppConfigElement.class);
         }
-        if (existing.isPublished()) {
-            throw new EntityPublishedException("App config element cannot be changed, it is published.");
-        }
         element.setKey(studyId, element.getId());
         element.setStudyId(studyId.getIdentifier());
-        element.setModifiedOn(getDateTime().getMillis());
+        element.setModifiedOn(DateTime.now().getMillis());
         // cannot unpublish something or change the creation timestamp
         element.setCreatedOn(existing.getCreatedOn());
-        element.setPublished(existing.isPublished());
         return appConfigElementDao.saveElementRevision(element);
-    }
-    
-    public VersionHolder publishElementRevision(StudyIdentifier studyId, String id, long revision) {
-        checkNotNull(studyId);
-        checkNotNull(id);
-        
-        AppConfigElement existing = getElementRevision(studyId, id, revision);
-        if (existing.isDeleted()) {
-            throw new EntityNotFoundException(AppConfigElement.class);
-        }
-        if (existing.isPublished()) {
-            throw new EntityPublishedException("App config element is already published.");
-        }
-        existing.setModifiedOn(getDateTime().getMillis());
-        existing.setPublished(true);
-        return appConfigElementDao.saveElementRevision(existing);
     }
     
     public void deleteElementRevision(StudyIdentifier studyId, String id, long revision) {
@@ -139,7 +113,7 @@ public class AppConfigElementService {
         
         AppConfigElement existing = getElementRevision(studyId, id, revision);
         existing.setDeleted(true);
-        existing.setModifiedOn(getDateTime().getMillis());
+        existing.setModifiedOn(DateTime.now().getMillis());
         appConfigElementDao.saveElementRevision(existing);
     }
     
@@ -148,7 +122,7 @@ public class AppConfigElementService {
         checkNotNull(id);
         
         List<AppConfigElement> elements = appConfigElementDao.getElementRevisions(studyId, id, false);
-        long modifiedOn = getDateTime().getMillis();
+        long modifiedOn = DateTime.now().getMillis();
         for (AppConfigElement oneElement : elements) {
             oneElement.setDeleted(true);
             oneElement.setModifiedOn(modifiedOn);

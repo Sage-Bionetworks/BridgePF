@@ -251,7 +251,6 @@ DELETE /v3/appconfigs/elements/:id                             @org.sagebionetwo
 GET    /v3/appconfigs/elements/:id/published                   @org.sagebionetworks.bridge.play.controllers.AppConfigElementsController.getMostRecentlyPublishedElement(id: String)
 GET    /v3/appconfigs/elements/:id/revisions/:revision         @org.sagebionetworks.bridge.play.controllers.AppConfigElementsController.getElementRevision(id: String, revision: String)
 POST   /v3/appconfigs/elements/:id/revisions/:revision         @org.sagebionetworks.bridge.play.controllers.AppConfigElementsController.updateElementRevision(id: String, revision: String)
-POST   /v3/appconfigs/elements/:id/revisions/:revision/publish @org.sagebionetworks.bridge.play.controllers.AppConfigElementsController.publishElementRevision(id: String, revision: String)
 DELETE /v3/appconfigs/elements/:id/revisions/:revision         @org.sagebionetworks.bridge.play.controllers.AppConfigElementsController.deleteElementRevision(id : String, revision: String, physical: String ?= "false")
 
 # AppConfigs
