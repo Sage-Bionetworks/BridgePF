@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -32,15 +33,13 @@ import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DynamoAppConfigElementDaoTest {
 
     @Mock
     private DynamoDBMapper mockMapper;
-    
-    @Mock
-    private DynamoIndexHelper mockIndexHelper;
     
     @Mock
     private PaginatedQueryList<DynamoAppConfigElement> mockResults;
@@ -57,14 +56,12 @@ public class DynamoAppConfigElementDaoTest {
     public void before() {
         dao = new DynamoAppConfigElementDao();
         dao.setMapper(mockMapper);
-        dao.setIndexHelper(mockIndexHelper);
     }
     
+    @SuppressWarnings("unchecked")
     @Test
     public void getMostRecentElementsIncludeDeleted() {
-        when(mockIndexHelper.queryKeys(DynamoAppConfigElement.class, "studyId", TestConstants.TEST_STUDY.getIdentifier(),
-                null)).thenReturn(appConfigElementListId1And2());
-        when(mockMapper.load(any())).thenAnswer(invocation -> invocation.getArgumentAt(0, DynamoAppConfigElement.class));
+        when(mockMapper.batchLoad(any(List.class))).thenReturn(appConfigElementMapId1And2());
         
         List<AppConfigElement> returned = dao.getMostRecentElements(TestConstants.TEST_STUDY, true);
         assertEquals(2, returned.size());
@@ -72,11 +69,13 @@ public class DynamoAppConfigElementDaoTest {
         assertIdAndRevision(returned.get(1), "id2", 3L);
     }
     
+    @Mock
+    private PaginatedQueryList<DynamoAppConfigElement> mockQueryList;
+    
+    @SuppressWarnings("unchecked")
     @Test
     public void getMostRecentElementsExcludeDeleted() {
-        when(mockIndexHelper.queryKeys(DynamoAppConfigElement.class, "studyId", TestConstants.TEST_STUDY.getIdentifier(),
-                null)).thenReturn(appConfigElementListId1And2());
-        when(mockMapper.load(any())).thenAnswer(invocation -> invocation.getArgumentAt(0, DynamoAppConfigElement.class));
+        when(mockMapper.batchLoad(any(List.class))).thenReturn(appConfigElementMapId1And2());
         
         List<AppConfigElement> returned = dao.getMostRecentElements(TestConstants.TEST_STUDY, false);
         assertEquals(2, returned.size());
@@ -86,9 +85,6 @@ public class DynamoAppConfigElementDaoTest {
     
     @Test
     public void getMostRecentElementsNoResults() {
-        when(mockIndexHelper.queryKeys(DynamoAppConfigElement.class, "studyId", TestConstants.TEST_STUDY.getIdentifier(),
-                null)).thenReturn(ImmutableList.of());
-        
         List<AppConfigElement> returned = dao.getMostRecentElements(TestConstants.TEST_STUDY, false);
         assertTrue(returned.isEmpty());
     }
@@ -190,7 +186,7 @@ public class DynamoAppConfigElementDaoTest {
     @Test
     public void deleteElementRevisionPermanently() {
         AppConfigElement key = new DynamoAppConfigElement();
-        key.setKey("api:id");
+        key.setKey(TestConstants.TEST_STUDY, "id");
         key.setRevision(3L);
         when(mockMapper.load(key)).thenReturn(key);
         
@@ -232,12 +228,12 @@ public class DynamoAppConfigElementDaoTest {
     
     private List<DynamoAppConfigElement> appConfigElementListId1() {
         DynamoAppConfigElement el1V1 = new DynamoAppConfigElement();
-        el1V1.setKey("api:id1");
+        el1V1.setKey(TestConstants.TEST_STUDY, "id1");
         el1V1.setId("id1");
         el1V1.setRevision(1L);
         
         DynamoAppConfigElement el1V2 = new DynamoAppConfigElement();
-        el1V2.setKey("api:id1");
+        el1V2.setKey(TestConstants.TEST_STUDY, "id1");
         el1V2.setId("id1");
         el1V2.setRevision(2L);
         
@@ -246,38 +242,45 @@ public class DynamoAppConfigElementDaoTest {
     
     private List<DynamoAppConfigElement> appConfigElementListId1And2() {
         DynamoAppConfigElement el1V1 = new DynamoAppConfigElement();
-        el1V1.setKey("api:id1");
+        el1V1.setKey(TestConstants.TEST_STUDY, "id1");
         el1V1.setId("id1");
         el1V1.setRevision(1L);
         
         DynamoAppConfigElement el1V2 = new DynamoAppConfigElement();
-        el1V2.setKey("api:id1");
+        el1V2.setKey(TestConstants.TEST_STUDY, "id1");
         el1V2.setId("id1");
         el1V2.setRevision(2L);
         
         DynamoAppConfigElement el1V3 = new DynamoAppConfigElement();
-        el1V3.setKey("api:id1");
+        el1V3.setKey(TestConstants.TEST_STUDY, "id1");
         el1V3.setId("id1");
         el1V3.setRevision(3L);
         
         DynamoAppConfigElement el2V1 = new DynamoAppConfigElement();
-        el2V1.setKey("api:id2");
+        el2V1.setKey(TestConstants.TEST_STUDY, "id2");
         el2V1.setId("id2");
         el2V1.setRevision(1L);
         
         DynamoAppConfigElement el2V2 = new DynamoAppConfigElement();
-        el2V2.setKey("api:id2");
+        el2V2.setKey(TestConstants.TEST_STUDY, "id2");
         el2V2.setId("id2");
         el2V2.setRevision(2L);
         
         DynamoAppConfigElement el2V3 = new DynamoAppConfigElement();
-        el2V3.setKey("api:id2");
+        el2V3.setKey(TestConstants.TEST_STUDY, "id2");
         el2V3.setId("id2");
         el2V3.setRevision(3L);
         
         el1V3.setDeleted(true);
         el2V2.setDeleted(true);
         return ImmutableList.of(el1V1, el1V2, el1V3, el2V1, el2V2, el2V3);
+    }
+    
+    private Map<String,List<DynamoAppConfigElement>> appConfigElementMapId1And2() {
+        // I do not get the impression it puts elements under multiple keys and I'm not sure the conditions
+        // where it will.
+        return new ImmutableMap.Builder<String, List<DynamoAppConfigElement>>()
+                .put("DynamoAppConfigElement", appConfigElementListId1And2()).build();
     }
     
     private void assertIdAndRevision(AppConfigElement element, String id, long revision) {

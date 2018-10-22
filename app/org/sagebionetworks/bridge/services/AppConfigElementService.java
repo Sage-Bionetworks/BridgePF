@@ -50,7 +50,7 @@ public class AppConfigElementService {
         // Validate that ID exists before you try and use it to set the key
         Validate.entityThrowingException(AppConfigElementValidator.INSTANCE, element);
         
-        element.setKey(studyId.getIdentifier() + ":" + element.getId());
+        element.setKey(studyId, element.getId());
         element.setStudyId(studyId.getIdentifier());
         element.setVersion(null);
         element.setDeleted(false);
@@ -108,7 +108,7 @@ public class AppConfigElementService {
         if (existing.isPublished()) {
             throw new EntityPublishedException("App config element cannot be changed, it is published.");
         }
-        element.setKey(studyId.getIdentifier() + ":" + element.getId());
+        element.setKey(studyId, element.getId());
         element.setStudyId(studyId.getIdentifier());
         element.setModifiedOn(getDateTime().getMillis());
         // cannot unpublish something or change the creation timestamp

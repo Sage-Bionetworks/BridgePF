@@ -6,8 +6,10 @@ import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperFieldModel.DynamoDBAttributeType;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
@@ -41,6 +43,10 @@ public final class DynamoAppConfigElement implements AppConfigElement {
     }
     public void setKey(String key) {
         this.key = key;
+    }
+    @DynamoDBIgnore
+    public void setKey(StudyIdentifier studyId, String id) {
+        this.setKey(studyId.getIdentifier() + ":" + id);
     }
     @DynamoDBRangeKey
     public Long getRevision() {

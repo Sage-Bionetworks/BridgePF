@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
@@ -34,7 +35,7 @@ public class DynamoAppConfigElementTest {
     @Test
     public void canSerialize() throws Exception {
         DynamoAppConfigElement element = new DynamoAppConfigElement();
-        element.setKey("studyId:id");
+        element.setKey(TestConstants.TEST_STUDY, "id");
         element.setStudyId("studyId");
         element.setRevision(1L);
         element.setId("id");

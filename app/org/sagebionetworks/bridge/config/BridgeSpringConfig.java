@@ -338,13 +338,6 @@ public class BridgeSpringConfig {
         return dynamoUtils.getMapper(DynamoAppConfigElement.class);
     }
     
-    @Bean(name = "appConfigElementStudyIndex")
-    @Autowired
-    public DynamoIndexHelper appConfigElementStudyIndex(AmazonDynamoDBClient dynamoDBClient, DynamoUtils dynamoUtils,
-            DynamoNamingHelper dynamoNamingHelper) {
-        return DynamoIndexHelper.create(DynamoAppConfigElement.class, "studyId-index", dynamoDBClient, dynamoNamingHelper, dynamoUtils);
-    }
-    
     @Bean(name = "surveyMapper")
     @Autowired
     public DynamoDBMapper surveyDdbMapper(DynamoUtils dynamoUtils) {

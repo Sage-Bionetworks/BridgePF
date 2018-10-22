@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.appconfig;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoAppConfigElement;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -13,8 +14,10 @@ public interface AppConfigElement extends BridgeEntity {
         return new DynamoAppConfigElement();
     }
     
-    void setKey(String key);
+    void setKey(String key); // For DDB load
+    void setKey(StudyIdentifier studyId, String id); // For programmers
     String getKey();
+    
     
     void setStudyId(String studyId);
     String getStudyId();
