@@ -55,7 +55,7 @@ public class DynamoSmsMessageDaoTest {
         verify(mockMapper).queryPage(eq(DynamoSmsMessage.class), queryCaptor.capture());
 
         DynamoDBQueryExpression<DynamoSmsMessage> query = queryCaptor.getValue();
-        assertEquals(PHONE_NUMBER, query.getHashKeyValues().getNumber());
+        assertEquals(PHONE_NUMBER, query.getHashKeyValues().getPhoneNumber());
         assertFalse(query.isScanIndexForward());
         assertEquals(1, query.getLimit().intValue());
     }

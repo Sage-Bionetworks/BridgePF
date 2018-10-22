@@ -44,7 +44,7 @@ public class DynamoSmsOptOutSettingsDaoTest {
         verify(mockMapper).load(hashKeyCaptor.capture());
 
         SmsOptOutSettings hashKey = hashKeyCaptor.getValue();
-        assertEquals(PHONE_NUMBER, hashKey.getNumber());
+        assertEquals(PHONE_NUMBER, hashKey.getPhoneNumber());
     }
 
     @Test

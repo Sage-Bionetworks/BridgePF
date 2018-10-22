@@ -19,10 +19,10 @@ public interface SmsMessage extends BridgeEntity {
     }
 
     /** The phone number we sent the message to. */
-    String getNumber();
+    String getPhoneNumber();
 
-    /** @see #getNumber */
-    void setNumber(String number);
+    /** @see #getPhoneNumber */
+    void setPhoneNumber(String phoneNumber);
 
     /** Timestamp in epoch milliseconds when we sent the message. */
     long getSentOn();

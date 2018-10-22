@@ -50,7 +50,7 @@ public class TwilioHelper {
         IncomingSms incomingSms = new IncomingSms();
         incomingSms.setMessageId(formPostMap.get(WEBHOOK_KEY_MESSAGE_SID)[0]);
         incomingSms.setBody(formPostMap.get(WEBHOOK_KEY_BODY)[0]);
-        incomingSms.setSenderNumber(formPostMap.get(WEBHOOK_KEY_FROM)[0]);
+        incomingSms.setSenderPhoneNumber(formPostMap.get(WEBHOOK_KEY_FROM)[0]);
         return incomingSms;
     }
 

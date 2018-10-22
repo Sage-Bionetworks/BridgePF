@@ -23,7 +23,7 @@ public class DynamoSmsMessageTest {
     public void serialize() throws Exception {
         // Start with JSON.
         String jsonText = "{\n" +
-                "   \"number\":\"" + PHONE_NUMBER + "\",\n" +
+                "   \"phoneNumber\":\"" + PHONE_NUMBER + "\",\n" +
                 "   \"sentOn\":\"" + SENT_ON_STRING + "\",\n" +
                 "   \"messageBody\":\"" + MESSAGE_BODY + "\",\n" +
                 "   \"messageId\":\"" + MESSAGE_ID + "\",\n" +
@@ -33,7 +33,7 @@ public class DynamoSmsMessageTest {
 
         // Convert to POJO.
         SmsMessage smsMessage = BridgeObjectMapper.get().readValue(jsonText, SmsMessage.class);
-        assertEquals(PHONE_NUMBER, smsMessage.getNumber());
+        assertEquals(PHONE_NUMBER, smsMessage.getPhoneNumber());
         assertEquals(SENT_ON_MILLIS, smsMessage.getSentOn());
         assertEquals(MESSAGE_BODY, smsMessage.getMessageBody());
         assertEquals(MESSAGE_ID, smsMessage.getMessageId());
@@ -42,7 +42,7 @@ public class DynamoSmsMessageTest {
 
         // Convert back to JSON node.
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(smsMessage, JsonNode.class);
-        assertEquals(PHONE_NUMBER, jsonNode.get("number").textValue());
+        assertEquals(PHONE_NUMBER, jsonNode.get("phoneNumber").textValue());
         assertEquals(SENT_ON_STRING, jsonNode.get("sentOn").textValue());
         assertEquals(MESSAGE_BODY, jsonNode.get("messageBody").textValue());
         assertEquals(MESSAGE_ID, jsonNode.get("messageId").textValue());

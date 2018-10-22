@@ -28,7 +28,7 @@ public class SmsMessageValidator implements Validator {
             SmsMessage message = (SmsMessage) target;
 
             // number
-            if (StringUtils.isBlank(message.getNumber())) {
+            if (StringUtils.isBlank(message.getPhoneNumber())) {
                 errors.rejectValue("number", "is required");
             }
 

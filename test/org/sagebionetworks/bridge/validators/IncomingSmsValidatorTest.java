@@ -91,7 +91,7 @@ public class IncomingSmsValidatorTest {
     @Test
     public void nullSenderNumber() {
         IncomingSms incomingSms = makeValidIncomingSms();
-        incomingSms.setSenderNumber(null);
+        incomingSms.setSenderPhoneNumber(null);
         assertValidatorMessage(IncomingSmsValidator.INSTANCE, incomingSms, "senderNumber",
                 "is required");
     }
@@ -99,7 +99,7 @@ public class IncomingSmsValidatorTest {
     @Test
     public void emptySenderNumber() {
         IncomingSms incomingSms = makeValidIncomingSms();
-        incomingSms.setSenderNumber("");
+        incomingSms.setSenderPhoneNumber("");
         assertValidatorMessage(IncomingSmsValidator.INSTANCE, incomingSms, "senderNumber",
                 "is required");
     }
@@ -107,7 +107,7 @@ public class IncomingSmsValidatorTest {
     @Test
     public void blankSenderNumber() {
         IncomingSms incomingSms = makeValidIncomingSms();
-        incomingSms.setSenderNumber("   ");
+        incomingSms.setSenderPhoneNumber("   ");
         assertValidatorMessage(IncomingSmsValidator.INSTANCE, incomingSms, "senderNumber",
                 "is required");
     }
@@ -116,7 +116,7 @@ public class IncomingSmsValidatorTest {
         IncomingSms incomingSms = new IncomingSms();
         incomingSms.setMessageId(MESSAGE_ID);
         incomingSms.setBody(MESSAGE_BODY);
-        incomingSms.setSenderNumber(PHONE_NUMBER);
+        incomingSms.setSenderPhoneNumber(PHONE_NUMBER);
         return incomingSms;
     }
 }

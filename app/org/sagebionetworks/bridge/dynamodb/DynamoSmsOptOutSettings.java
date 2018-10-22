@@ -4,14 +4,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperFieldModel;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTyped;
 
 import org.sagebionetworks.bridge.models.sms.SmsOptOutSettings;
 
 @DynamoThroughput(readCapacity=1, writeCapacity=1)
 @DynamoDBTable(tableName = "SmsOptOut")
 public class DynamoSmsOptOutSettings implements SmsOptOutSettings {
-    private String number;
+    private String phoneNumber;
     private boolean globalPromotionalOptOut;
     private Map<String, Boolean> promotionalOptOuts = new HashMap<>();
     private Map<String, Boolean> transactionalOptOuts = new HashMap<>();
@@ -19,17 +21,18 @@ public class DynamoSmsOptOutSettings implements SmsOptOutSettings {
     /** {@inheritDoc} */
     @DynamoDBHashKey
     @Override
-    public String getNumber() {
-        return number;
+    public String getPhoneNumber() {
+        return phoneNumber;
     }
 
     /** {@inheritDoc} */
     @Override
-    public void setNumber(String number) {
-        this.number = number;
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 
     /** {@inheritDoc} */
+    @DynamoDBTyped(DynamoDBMapperFieldModel.DynamoDBAttributeType.BOOL)
     @Override
     public boolean getGlobalPromotionalOptOut() {
         return globalPromotionalOptOut;

@@ -52,21 +52,21 @@ public class SmsMessageValidatorTest {
     @Test
     public void nullPhoneNumber() {
         SmsMessage message = makeValidSmsMessage();
-        message.setNumber(null);
+        message.setPhoneNumber(null);
         assertValidatorMessage(SmsMessageValidator.INSTANCE, message, "number", "is required");
     }
 
     @Test
     public void emptyPhoneNumber() {
         SmsMessage message = makeValidSmsMessage();
-        message.setNumber("");
+        message.setPhoneNumber("");
         assertValidatorMessage(SmsMessageValidator.INSTANCE, message, "number", "is required");
     }
 
     @Test
     public void blankPhoneNumber() {
         SmsMessage message = makeValidSmsMessage();
-        message.setNumber("   ");
+        message.setPhoneNumber("   ");
         assertValidatorMessage(SmsMessageValidator.INSTANCE, message, "number", "is required");
     }
 
@@ -156,7 +156,7 @@ public class SmsMessageValidatorTest {
 
     private static SmsMessage makeValidSmsMessage() {
         SmsMessage message = SmsMessage.create();
-        message.setNumber(PHONE_NUMBER);
+        message.setPhoneNumber(PHONE_NUMBER);
         message.setSentOn(SENT_ON);
         message.setMessageId(MESSAGE_ID);
         message.setMessageBody(MESSAGE_BODY);

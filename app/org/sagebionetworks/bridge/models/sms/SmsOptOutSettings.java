@@ -18,10 +18,10 @@ public interface SmsOptOutSettings extends BridgeEntity {
     }
 
     /** The phone number who has opt-outs. */
-    String getNumber();
+    String getPhoneNumber();
 
-    /** @see #getNumber */
-    void setNumber(String number);
+    /** @see #getPhoneNumber */
+    void setPhoneNumber(String phoneNumber);
 
     /** True if the phone number has opted out of (unsubscribed from) promotional messages on all studies. */
     boolean getGlobalPromotionalOptOut();

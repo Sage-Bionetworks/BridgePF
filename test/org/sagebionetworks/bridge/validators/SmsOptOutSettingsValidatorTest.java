@@ -47,27 +47,27 @@ public class SmsOptOutSettingsValidatorTest {
     @Test
     public void nullPhoneNumber() {
         SmsOptOutSettings settings = makeValidOptOutSettings();
-        settings.setNumber(null);
+        settings.setPhoneNumber(null);
         assertValidatorMessage(SmsOptOutSettingsValidator.INSTANCE, settings, "number", "is required");
     }
 
     @Test
     public void emptyPhoneNumber() {
         SmsOptOutSettings settings = makeValidOptOutSettings();
-        settings.setNumber("");
+        settings.setPhoneNumber("");
         assertValidatorMessage(SmsOptOutSettingsValidator.INSTANCE, settings, "number", "is required");
     }
 
     @Test
     public void blankPhoneNumber() {
         SmsOptOutSettings settings = makeValidOptOutSettings();
-        settings.setNumber("   ");
+        settings.setPhoneNumber("   ");
         assertValidatorMessage(SmsOptOutSettingsValidator.INSTANCE, settings, "number", "is required");
     }
 
     private static SmsOptOutSettings makeValidOptOutSettings() {
         SmsOptOutSettings settings = SmsOptOutSettings.create();
-        settings.setNumber(PHONE_NUMBER);
+        settings.setPhoneNumber(PHONE_NUMBER);
         return settings;
     }
 }

@@ -1,7 +1,14 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.nio.charset.Charset;
 import java.util.Set;
 
+import javax.annotation.Resource;
+
+import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.model.PublishResult;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -9,15 +16,22 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.SmsMessageDao;
 import org.sagebionetworks.bridge.dao.SmsOptOutSettingsDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.sms.SmsMessage;
 import org.sagebionetworks.bridge.models.sms.SmsOptOutSettings;
 import org.sagebionetworks.bridge.models.sms.SmsType;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.sms.IncomingSms;
+import org.sagebionetworks.bridge.sms.SmsMessageProvider;
+import org.sagebionetworks.bridge.sms.TwilioHelper;
+import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.validators.IncomingSmsValidator;
 import org.sagebionetworks.bridge.validators.SmsMessageValidator;
 import org.sagebionetworks.bridge.validators.SmsOptOutSettingsValidator;
@@ -30,6 +44,7 @@ public class SmsService {
 
     private static final Set<String> OPT_IN_STRING_SET = ImmutableSet.of("opt in" , "opt-in", "start", "subscribe",
             "unstop");
+    private static final String OPT_OUT_TEXT = "Text STOP to unsubscribe.";
     private static final Set<String> OPT_OUT_STRING_SET = ImmutableSet.of("cancel", "end", "opt out", "opt-out",
             "optout", "quit", "remove", "stop", "stop all", "stopall", "unsubscribe");
     private static final String RESPONSE_HELP = "This channel sends account management messages, notifications, and " +
@@ -41,10 +56,17 @@ public class SmsService {
     private static final String RESPONSE_OPT_OUT_TRANSACTIONAL = "You have opted out of account management messages " +
             "from %s. To opt back in, reply with \"START\".";
 
+    // mPower 2.0 study burst notifications can be fairly long. The longest one has 230 chars of fixed content, an app
+    // url that's 53 characters long, and some freeform text that can be potentially 255 characters long, for a total
+    // of 538 characters. Round to a nice round 600 characters (about 4.5 SMS messages, if broken up).
+    private static final int SMS_CHARACTER_LIMIT = 600;
+
     private SmsMessageDao messageDao;
     private SmsOptOutSettingsDao optOutSettingsDao;
     private ParticipantService participantService;
+    private AmazonSNSClient snsClient;
     private StudyService studyService;
+    private TwilioHelper twilioHelper;
 
     /** Message DAO, for writing to and reading from the SMS message log. */
     @Autowired
@@ -64,10 +86,22 @@ public class SmsService {
         this.participantService = participantService;
     }
 
+    /** SNS client, to send SMS through AWS. */
+    @Resource(name = "snsClient")
+    public final void setSnsClient(AmazonSNSClient snsClient) {
+        this.snsClient = snsClient;
+    }
+
     /** Study service, to get basic study attributes like short name. */
     @Autowired
     public final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
+    }
+
+    /** Twilio helper, used for sending SMS through Twilio. */
+    @Autowired
+    public final void setTwilioHelper(TwilioHelper twilioHelper) {
+        this.twilioHelper = twilioHelper;
     }
 
     /**
@@ -81,7 +115,7 @@ public class SmsService {
         LOG.info("Received SMS with messageId=" + incomingSms.getMessageId());
 
         // Get the most recent message we sent to this sender. This is how we know which study they are responding to.
-        String senderNumber = incomingSms.getSenderNumber();
+        String senderNumber = incomingSms.getSenderPhoneNumber();
         SmsMessage mostRecentSentMessage = getMostRecentMessage(senderNumber);
         if (mostRecentSentMessage == null) {
             // If we've never sent a message to this number, there's no way we can meaningfully interact with them.
@@ -115,7 +149,7 @@ public class SmsService {
         if (optOut == null) {
             // Create a new empty opt-out for the user.
             optOut = SmsOptOutSettings.create();
-            optOut.setNumber(number);
+            optOut.setPhoneNumber(number);
         }
 
         // The most conservative interpretation of the FCC regulations says that if a user sends STOP to a short code,
@@ -152,6 +186,93 @@ public class SmsService {
         }
 
         return String.format(RESPONSE_OPT_IN, study.getShortName());
+    }
+
+    /** Sends an SMS message using the given message provider. */
+    public void sendSmsMessage(SmsMessageProvider provider) {
+        checkNotNull(provider);
+        StudyIdentifier studyId = provider.getStudy().getStudyIdentifier();
+        Phone recipientPhone = provider.getPhone();
+        String message = provider.getFormattedMessage();
+
+        // Check max SMS length.
+        if (message.getBytes(Charset.forName("US-ASCII")).length > SMS_CHARACTER_LIMIT) {
+            throw new BridgeServiceException("SMS message cannot be longer than 600 UTF-8/ASCII characters.");
+        }
+
+        // Check SMS opt-out.
+        SmsOptOutSettings smsOptOutSettings = getOptOutSettings(recipientPhone.getNumber());
+        if (smsOptOutSettings != null) {
+            switch (provider.getSmsTypeEnum()) {
+                case PROMOTIONAL:
+                    if (smsOptOutSettings.getPromotionalOptOutForStudy(studyId.getIdentifier())) {
+                        return;
+                    }
+                    break;
+                case TRANSACTIONAL:
+                    if (smsOptOutSettings.getTransactionalOptOutForStudy(studyId.getIdentifier())) {
+                        return;
+                    }
+                    break;
+                default:
+                    LOG.error("Unexpected SMS type " + provider.getSmsType());
+                    break;
+            }
+        }
+
+        // Send SMS.
+        String messageId;
+        Study study = studyService.getStudy(studyId);
+        switch (study.getSmsServiceProvider()) {
+            case AWS:
+                PublishResult result = snsClient.publish(provider.getSmsRequest());
+                messageId = result.getMessageId();
+                break;
+            case TWILIO:
+                message = formatMessageForTwilio(study, message);
+                messageId = sendSmsViaTwilio(recipientPhone, message);
+                break;
+            default:
+                throw new BridgeServiceException("Unexpected SMS service provider " + study.getSmsServiceProvider() +
+                        " for study " + studyId.getIdentifier());
+        }
+
+        // Log SMS message.
+        SmsMessage smsMessage = SmsMessage.create();
+        smsMessage.setPhoneNumber(recipientPhone.getNumber());
+        smsMessage.setSentOn(DateUtils.getCurrentMillisFromEpoch());
+        smsMessage.setMessageBody(message);
+        smsMessage.setMessageId(messageId);
+        smsMessage.setSmsType(provider.getSmsTypeEnum());
+        smsMessage.setStudyId(studyId.getIdentifier());
+        logMessage(smsMessage);
+
+        LOG.debug("Sent SMS message, study=" + studyId.getIdentifier() + ", message ID=" + messageId);
+    }
+
+    private String formatMessageForTwilio(Study study, String message) {
+        // Message must include study short name.
+        String studyShortName = study.getShortName();
+        if (!message.contains(studyShortName)) {
+            message = studyShortName + ": " + message;
+        }
+
+        // Message must contain "Text STOP to unsubscribe."
+        if (!message.contains(OPT_OUT_TEXT)) {
+            message = message + " " + OPT_OUT_TEXT;
+        }
+
+        return message;
+    }
+
+    private String sendSmsViaTwilio(Phone recipientPhone, String message) {
+        // We currently only support sending to US numbers.
+        if (!BridgeConstants.PHONE_REGION_US.equals(recipientPhone.getRegionCode())) {
+            throw new BadRequestException("SMS is not supported for non-US phone numbers");
+        }
+
+        // Send message.
+        return twilioHelper.sendSms(recipientPhone, message);
     }
 
     /** Gets the message we most recently sent to the given phone number. */
@@ -217,7 +338,7 @@ public class SmsService {
         }
 
         // Ensure the phone number of the settings matches the user's phone number.
-        optOutSettings.setNumber(participant.getPhone().getNumber());
+        optOutSettings.setPhoneNumber(participant.getPhone().getNumber());
 
         setOptOutSettings(optOutSettings);
     }

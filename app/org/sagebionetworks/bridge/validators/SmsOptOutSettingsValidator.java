@@ -28,7 +28,7 @@ public class SmsOptOutSettingsValidator implements Validator {
             SmsOptOutSettings settings = (SmsOptOutSettings) target;
 
             // number
-            if (StringUtils.isBlank(settings.getNumber())) {
+            if (StringUtils.isBlank(settings.getPhoneNumber())) {
                 errors.rejectValue("number", "is required");
             }
 

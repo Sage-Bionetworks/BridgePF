@@ -23,7 +23,7 @@ public class DynamoSmsOptOutSettingsDao implements SmsOptOutSettingsDao {
     public SmsOptOutSettings getOptOutSettings(String phoneNumber) {
         // Hash key needs to be an object.
         DynamoSmsOptOutSettings key = new DynamoSmsOptOutSettings();
-        key.setNumber(phoneNumber);
+        key.setPhoneNumber(phoneNumber);
         return mapper.load(key);
     }
 

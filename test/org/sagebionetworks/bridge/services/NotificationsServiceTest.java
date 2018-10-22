@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestUtils.getNotificationMessage;
 import static org.sagebionetworks.bridge.TestUtils.getNotificationRegistration;
@@ -18,22 +16,16 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
-import org.joda.time.DateTimeUtils;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.NotificationRegistrationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.NotImplementedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
@@ -41,16 +33,11 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
-import org.sagebionetworks.bridge.models.sms.SmsMessage;
-import org.sagebionetworks.bridge.models.sms.SmsOptOutSettings;
-import org.sagebionetworks.bridge.models.sms.SmsType;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
-import org.sagebionetworks.bridge.sms.TwilioHelper;
-import org.sagebionetworks.bridge.time.DateUtils;
 
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.model.InvalidParameterException;
@@ -63,8 +50,6 @@ import com.google.common.collect.Maps;
 @RunWith(MockitoJUnitRunner.class)
 public class NotificationsServiceTest {
     private static final String MESSAGE_BODY = "This is my SMS message.";
-    private static final String MESSAGE_ID = "message-id";
-    private static final long MOCK_NOW_MILLIS = DateUtils.convertToMillisFromEpoch("2018-10-17T16:21:52.749Z");
     private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("test-study");
     private static final String USER_ID = "user-id";
     private static final String HEALTH_CODE = "ABC";
@@ -99,24 +84,13 @@ public class NotificationsServiceTest {
     @Mock
     private Study mockStudy;
 
-    @Mock
-    private TwilioHelper mockTwilioHelper;
-
     @Captor
     private ArgumentCaptor<PublishRequest> requestCaptor;
 
     private NotificationsService service;
 
-    @BeforeClass
-    public static void mockNow() {
-        DateTimeUtils.setCurrentMillisFixed(MOCK_NOW_MILLIS);
-    }
-
     @Before
     public void before() {
-        when(mockPublishResult.getMessageId()).thenReturn(MESSAGE_ID);
-        when(mockTwilioHelper.sendSms(any(), any())).thenReturn(MESSAGE_ID);
-
         service = new NotificationsService();
         service.setNotificationTopicService(mockNotificationTopicService);
         service.setParticipantService(mockParticipantService);
@@ -124,7 +98,7 @@ public class NotificationsServiceTest {
         service.setStudyService(mockStudyService);
         service.setNotificationRegistrationDao(mockRegistrationDao);
         service.setSnsClient(mockSnsClient);
-        service.setTwilioHelper(mockTwilioHelper);
+        //service.setTwilioHelper(mockTwilioHelper);
 
         Map<String,String> map = Maps.newHashMap();
         map.put(OS_NAME, PLATFORM_ARN);
@@ -132,11 +106,6 @@ public class NotificationsServiceTest {
      
         doReturn(mockStudy).when(mockStudyService).getStudy(STUDY_ID);
         doReturn(TestConstants.TEST_STUDY).when(mockStudy).getStudyIdentifier();
-    }
-
-    @AfterClass
-    public static void unmockNow() {
-        DateTimeUtils.setCurrentMillisSystem();
     }
 
     @Test
@@ -361,194 +330,18 @@ public class NotificationsServiceTest {
         NotificationMessage message = getNotificationMessage();
         service.sendNotificationToUser(STUDY_ID, HEALTH_CODE, message);
     }
-    
+
     @Test
     public void sendTransactionalSMSMessageOK() {
-        doReturn(mockPublishResult).when(mockSnsClient).publish(any());
-        
-        SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(mockStudy)
-                .withSmsTemplate(new SmsTemplate(MESSAGE_BODY))
-                .withTransactionType()
-                .withPhone(TestConstants.PHONE).build();
-        
-        service.sendSmsMessage(provider);
-        
-        verify(mockSnsClient).publish(requestCaptor.capture());
-        
-        PublishRequest request = requestCaptor.getValue();
-        assertEquals(TestConstants.PHONE.getNumber(), request.getPhoneNumber());
-        assertEquals(MESSAGE_BODY, request.getMessage());
-        assertEquals("Transactional",
-                request.getMessageAttributes().get(BridgeConstants.AWS_SMS_TYPE).getStringValue());
-        assertEquals("Bridge", 
-                request.getMessageAttributes().get(BridgeConstants.AWS_SMS_SENDER_ID).getStringValue());
-
-        // We log the SMS message.
-        verifyLoggedSmsMessage(SmsType.TRANSACTIONAL);
-
-        // We don't call Twilio.
-        verify(mockTwilioHelper, never()).sendSms(any(), any());
-    }
-    
-    @Test
-    public void sendPromotionalSMSMessageOK() {
-        doReturn(mockPublishResult).when(mockSnsClient).publish(any());
-        
-        SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(mockStudy)
-                .withSmsTemplate(new SmsTemplate(MESSAGE_BODY))
-                .withPromotionType()
-                .withPhone(TestConstants.PHONE).build();
-        
-        service.sendSmsMessage(provider);
-        
-        verify(mockSnsClient).publish(requestCaptor.capture());
-        
-        PublishRequest request = requestCaptor.getValue();
-        assertEquals(TestConstants.PHONE.getNumber(), request.getPhoneNumber());
-        assertEquals(MESSAGE_BODY, request.getMessage());
-        assertEquals("Promotional",
-                request.getMessageAttributes().get(BridgeConstants.AWS_SMS_TYPE).getStringValue());
-        assertEquals("Bridge", 
-                request.getMessageAttributes().get(BridgeConstants.AWS_SMS_SENDER_ID).getStringValue());
-
-        // We log the SMS message.
-        verifyLoggedSmsMessage(SmsType.PROMOTIONAL);
-
-        // We don't call Twilio.
-        verify(mockTwilioHelper, never()).sendSms(any(), any());
-    }
-
-    @Test(expected = BridgeServiceException.class)
-    public void sendSMSMessageTooLongInvalid() {
-        doReturn(mockPublishResult).when(mockSnsClient).publish(any());
-        String message = "This is my SMS message.";
-        for (int i=0; i < 5; i++) {
-            message += message;
-        }
-        SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(mockStudy)
-                .withSmsTemplate(new SmsTemplate(message))
-                .withTransactionType()
-                .withPhone(TestConstants.PHONE).build();
-        
-        service.sendSmsMessage(provider);
-    }
-
-    @Test
-    public void sendSmsViaTwilio() {
-        enableTwilio();
-
-        // Set up input.
-        SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(mockStudy)
-                .withSmsTemplate(new SmsTemplate(MESSAGE_BODY))
-                .withPromotionType()
-                .withPhone(TestConstants.PHONE).build();
-
-        // Execute.
-        service.sendSmsMessage(provider);
-
-        // Verify Twilio call.
-        verify(mockTwilioHelper).sendSms(TestConstants.PHONE, MESSAGE_BODY);
-
-        // We log the SMS message.
-        verifyLoggedSmsMessage(SmsType.PROMOTIONAL);
-
-        // We don't call SNS.
-        verify(mockSnsClient, never()).publish(any());
-
-    }
-
-    @Test
-    public void optedOutOfPromotional() {
-        enableTwilio();
-        setupPromotionalOptOut();
-
-        // Set up input.
-        SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(mockStudy)
-                .withSmsTemplate(new SmsTemplate(MESSAGE_BODY))
-                .withPromotionType()
-                .withPhone(TestConstants.PHONE).build();
-
-        // Execute.
-        service.sendSmsMessage(provider);
-
-        // We don't send or log any messages.
-        verify(mockSnsClient, never()).publish(any());
-        verify(mockTwilioHelper, never()).sendSms(any(), any());
-        verify(mockSmsService, never()).logMessage(any());
-    }
-
-    @Test
-    public void promotionalOptOutDoesntStopTransactional() {
-        enableTwilio();
-        setupPromotionalOptOut();
-
-        // Set up input.
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
                 .withStudy(mockStudy)
                 .withSmsTemplate(new SmsTemplate(MESSAGE_BODY))
                 .withTransactionType()
                 .withPhone(TestConstants.PHONE).build();
 
-        // Execute.
         service.sendSmsMessage(provider);
 
-        // Verify Twilio call.
-        verify(mockTwilioHelper).sendSms(TestConstants.PHONE, MESSAGE_BODY);
-
-        // SMS send is verified in detail in other tests.
-    }
-
-    @Test
-    public void optedOutOfTransactional() {
-        enableTwilio();
-        setupTransactionalOptOut();
-
-        // Set up input.
-        SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(mockStudy)
-                .withSmsTemplate(new SmsTemplate(MESSAGE_BODY))
-                .withTransactionType()
-                .withPhone(TestConstants.PHONE).build();
-
-        // Execute.
-        service.sendSmsMessage(provider);
-
-        // We don't send or log any messages.
-        verify(mockSnsClient, never()).publish(any());
-        verify(mockTwilioHelper, never()).sendSms(any(), any());
-        verify(mockSmsService, never()).logMessage(any());
-    }
-
-    @Test
-    public void transactionalOptOutDoesntStopPromotional() {
-        enableTwilio();
-        setupTransactionalOptOut();
-
-        // Set up input.
-        SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(mockStudy)
-                .withSmsTemplate(new SmsTemplate(MESSAGE_BODY))
-                .withPromotionType()
-                .withPhone(TestConstants.PHONE).build();
-
-        // Execute.
-        service.sendSmsMessage(provider);
-
-        // Verify Twilio call.
-        verify(mockTwilioHelper).sendSms(TestConstants.PHONE, MESSAGE_BODY);
-
-        // SMS send is verified in detail in other tests.
-    }
-
-    private void enableTwilio() {
-        BridgeConfig mockConfig = mock(BridgeConfig.class);
-        when(mockConfig.get(NotificationsService.CONFIG_KEY_TWILIO_ENABLED)).thenReturn("true");
-        service.setBridgeConfig(mockConfig);
+        verify(mockSmsService).sendSmsMessage(provider);
     }
 
     private static NotificationRegistration getSmsNotificationRegistration() {
@@ -557,30 +350,5 @@ public class NotificationsServiceTest {
         registration.setProtocol(NotificationProtocol.SMS);
         registration.setEndpoint(TestConstants.PHONE.getNumber());
         return registration;
-    }
-
-    private void setupPromotionalOptOut() {
-        SmsOptOutSettings optOutSettings = SmsOptOutSettings.create();
-        optOutSettings.getPromotionalOptOuts().put(TestConstants.TEST_STUDY_IDENTIFIER, true);
-        when(mockSmsService.getOptOutSettings(TestConstants.PHONE.getNumber())).thenReturn(optOutSettings);
-    }
-
-    private void setupTransactionalOptOut() {
-        SmsOptOutSettings optOutSettings = SmsOptOutSettings.create();
-        optOutSettings.getTransactionalOptOuts().put(TestConstants.TEST_STUDY_IDENTIFIER, true);
-        when(mockSmsService.getOptOutSettings(TestConstants.PHONE.getNumber())).thenReturn(optOutSettings);
-    }
-
-    private void verifyLoggedSmsMessage(SmsType expectedSmsType) {
-        ArgumentCaptor<SmsMessage> loggedMessageCaptor = ArgumentCaptor.forClass(SmsMessage.class);
-        verify(mockSmsService).logMessage(loggedMessageCaptor.capture());
-
-        SmsMessage loggedMessage = loggedMessageCaptor.getValue();
-        assertEquals(TestConstants.PHONE.getNumber(), loggedMessage.getNumber());
-        assertEquals(MOCK_NOW_MILLIS, loggedMessage.getSentOn());
-        assertEquals(MESSAGE_BODY, loggedMessage.getMessageBody());
-        assertEquals(MESSAGE_ID, loggedMessage.getMessageId());
-        assertEquals(expectedSmsType, loggedMessage.getSmsType());
-        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, loggedMessage.getStudyId());
     }
 }

@@ -68,7 +68,7 @@ public class TwilioHelperTest {
         IncomingSms incomingSms = TwilioHelper.convertIncomingSms(formPostMap);
         assertEquals(MESSAGE_SID, incomingSms.getMessageId());
         assertEquals(MESSAGE_BODY, incomingSms.getBody());
-        assertEquals(SENDER_NUMBER, incomingSms.getSenderNumber());
+        assertEquals(SENDER_NUMBER, incomingSms.getSenderPhoneNumber());
     }
 
     @Test

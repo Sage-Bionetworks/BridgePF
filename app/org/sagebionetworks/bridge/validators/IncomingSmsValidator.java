@@ -38,7 +38,7 @@ public class IncomingSmsValidator implements Validator {
             }
 
             // senderNumber
-            if (StringUtils.isBlank(incomingSms.getSenderNumber())) {
+            if (StringUtils.isBlank(incomingSms.getSenderPhoneNumber())) {
                 errors.rejectValue("senderNumber", "is required");
             }
         }

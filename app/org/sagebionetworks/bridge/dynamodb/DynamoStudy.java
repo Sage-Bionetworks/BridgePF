@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
+import org.sagebionetworks.bridge.sms.SmsServiceProvider;
 
 @DynamoDBTable(tableName = "Study")
 @BridgeTypeName("Study")
@@ -62,6 +63,7 @@ public final class DynamoStudy implements Study {
     private Map<String, String> automaticCustomEvents;
     private boolean autoVerificationEmailSuppressed;
     private boolean participantIpLockingEnabled;
+    private SmsServiceProvider smsServiceProvider;
     private boolean studyIdExcludedInExport;
     private String supportEmail;
     private Long synapseDataAccessTeamId;
@@ -224,7 +226,20 @@ public final class DynamoStudy implements Study {
     public void setParticipantIpLockingEnabled(boolean participantIpLockingEnabled) {
         this.participantIpLockingEnabled = participantIpLockingEnabled;
     }
-    
+
+    /** {@inheritDoc} */
+    @DynamoDBTypeConverted(converter=EnumMarshaller.class)
+    @Override
+    public SmsServiceProvider getSmsServiceProvider() {
+        return smsServiceProvider != null ? smsServiceProvider : SmsServiceProvider.AWS;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setSmsServiceProvider(SmsServiceProvider smsServiceProvider) {
+        this.smsServiceProvider = smsServiceProvider;
+    }
+
     /** {@inheritDoc} */
     @Override
     public boolean isVerifyChannelOnSignInEnabled() {
@@ -759,7 +774,7 @@ public final class DynamoStudy implements Study {
     @Override
     public int hashCode() {
         return Objects.hash(name, shortName, sponsorName, identifier, automaticCustomEvents, autoVerificationEmailSuppressed,
-                participantIpLockingEnabled,
+                participantIpLockingEnabled, smsServiceProvider,
                 studyIdExcludedInExport, supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail,
                 usesCustomExportSchedule, uploadMetadataFieldDefinitions, uploadValidationStrictness,
                 consentNotificationEmail, consentNotificationEmailVerified, minAgeOfConsent, accountLimit, version,
@@ -785,6 +800,7 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(automaticCustomEvents, other.automaticCustomEvents)
                 && Objects.equals(autoVerificationEmailSuppressed, other.autoVerificationEmailSuppressed)
                 && Objects.equals(participantIpLockingEnabled, other.participantIpLockingEnabled)
+                && Objects.equals(smsServiceProvider, other.smsServiceProvider)
                 && Objects.equals(studyIdExcludedInExport, other.studyIdExcludedInExport)
                 && Objects.equals(supportEmail, other.supportEmail)
                 && Objects.equals(uploadMetadataFieldDefinitions, other.uploadMetadataFieldDefinitions)
@@ -841,7 +857,8 @@ public final class DynamoStudy implements Study {
     public String toString() {
         return String.format(
                 "DynamoStudy [name=%s, shortName=%s, active=%s, sponsorName=%s, identifier=%s, automaticCustomEvents=%s"
-                        + "autoVerificationEmailSuppressed=%b, minAgeOfConsent=%s, participantIpLockingEnabled=%b, studyIdExcludedInExport=%b, "
+                        + "autoVerificationEmailSuppressed=%b, minAgeOfConsent=%s, participantIpLockingEnabled=%b, "
+                        + "smsServiceProvider=%s, studyIdExcludedInExport=%b, "
                         + "supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, technicalEmail=%s, "
                         + "uploadValidationStrictness=%s, consentNotificationEmail=%s, consentNotificationEmailVerified=%s, "
                         + "version=%s, userProfileAttributes=%s, taskIdentifiers=%s, activityEventKeys=%s, dataGroups=%s, "
@@ -855,7 +872,8 @@ public final class DynamoStudy implements Study {
                         + "verifyPhoneSmsTemplate=%s, accountExistsSmsTemplate=%s, autoVerificationPhoneSuppressed=%s, "
                         + "signedConsentTemplate=%s, signedConsentSmsTemplate=%s, verifyChannelOnSignInEnabled=%s",
                 name, shortName, active, sponsorName, identifier, automaticCustomEvents,
-                autoVerificationEmailSuppressed, minAgeOfConsent, participantIpLockingEnabled, studyIdExcludedInExport, supportEmail,
+                autoVerificationEmailSuppressed, minAgeOfConsent, participantIpLockingEnabled,
+                smsServiceProvider, studyIdExcludedInExport, supportEmail,
                 synapseDataAccessTeamId, synapseProjectId, technicalEmail, uploadValidationStrictness,
                 consentNotificationEmail, consentNotificationEmailVerified, version, profileAttributes, taskIdentifiers,
                 activityEventKeys, dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate,

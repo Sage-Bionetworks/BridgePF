@@ -125,7 +125,7 @@ public class SmsControllerTest {
         IncomingSms incomingSms = incomingSmsCaptor.getValue();
         assertEquals(MESSAGE_ID, incomingSms.getMessageId());
         assertEquals(MESSAGE_BODY, incomingSms.getBody());
-        assertEquals(PHONE_NUMBER, incomingSms.getSenderNumber());
+        assertEquals(PHONE_NUMBER, incomingSms.getSenderPhoneNumber());
     }
 
     @Test
@@ -147,7 +147,7 @@ public class SmsControllerTest {
     public void getOptOutSettings() throws Exception {
         // Setup test. This method is a passthrough for SmsOptOutSettings, so just verify one attribute.
         SmsOptOutSettings svcOutput = SmsOptOutSettings.create();
-        svcOutput.setNumber(PHONE_NUMBER);
+        svcOutput.setPhoneNumber(PHONE_NUMBER);
         when(mockSmsService.getOptOutSettings(DUMMY_STUDY, USER_ID)).thenReturn(svcOutput);
 
         // Execute and verify.
@@ -155,14 +155,14 @@ public class SmsControllerTest {
         assertEquals(200, result.status());
 
         SmsOptOutSettings controllerOutput = TestUtils.getResponsePayload(result, SmsOptOutSettings.class);
-        assertEquals(PHONE_NUMBER, controllerOutput.getNumber());
+        assertEquals(PHONE_NUMBER, controllerOutput.getPhoneNumber());
     }
 
     @Test
     public void setOptOutSettings() throws Exception {
         // Setup test. This method is a passthrough for SmsOptOutSettings, so just verify one attribute.
         SmsOptOutSettings controllerInput = SmsOptOutSettings.create();
-        controllerInput.setNumber(PHONE_NUMBER);
+        controllerInput.setPhoneNumber(PHONE_NUMBER);
         TestUtils.mockPlayContextWithJson(controllerInput);
 
         // Execute and verify.
@@ -174,6 +174,6 @@ public class SmsControllerTest {
         verify(mockSmsService).setOptOutSettings(same(DUMMY_STUDY), eq(USER_ID), svcInputCaptor.capture());
 
         SmsOptOutSettings svcInput = svcInputCaptor.getValue();
-        assertEquals(PHONE_NUMBER, svcInput.getNumber());
+        assertEquals(PHONE_NUMBER, svcInput.getPhoneNumber());
     }
 }

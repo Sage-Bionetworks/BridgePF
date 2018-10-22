@@ -15,7 +15,7 @@ import org.sagebionetworks.bridge.models.sms.SmsType;
 @DynamoThroughput(readCapacity=1, writeCapacity=1)
 @DynamoDBTable(tableName = "SmsMessage")
 public class DynamoSmsMessage implements SmsMessage {
-    private String number;
+    private String phoneNumber;
     private long sentOn;
     private String messageBody;
     private String messageId;
@@ -25,14 +25,14 @@ public class DynamoSmsMessage implements SmsMessage {
     /** {@inheritDoc} */
     @DynamoDBHashKey
     @Override
-    public String getNumber() {
-        return number;
+    public String getPhoneNumber() {
+        return phoneNumber;
     }
 
     /** {@inheritDoc} */
     @Override
-    public void setNumber(String number) {
-        this.number = number;
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 
     /** {@inheritDoc} */

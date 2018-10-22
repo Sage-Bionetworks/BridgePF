@@ -6,7 +6,7 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 public class IncomingSms implements BridgeEntity {
     private String messageId;
     private String body;
-    private String senderNumber;
+    private String senderPhoneNumber;
 
     /** Uniquely identifies this message. */
     public String getMessageId() {
@@ -29,12 +29,12 @@ public class IncomingSms implements BridgeEntity {
     }
 
     /** The phone number that sent this message. */
-    public String getSenderNumber() {
-        return senderNumber;
+    public String getSenderPhoneNumber() {
+        return senderPhoneNumber;
     }
 
-    /** @see #getSenderNumber */
-    public void setSenderNumber(String senderNumber) {
-        this.senderNumber = senderNumber;
+    /** @see #getSenderPhoneNumber */
+    public void setSenderPhoneNumber(String senderPhoneNumber) {
+        this.senderPhoneNumber = senderPhoneNumber;
     }
 }

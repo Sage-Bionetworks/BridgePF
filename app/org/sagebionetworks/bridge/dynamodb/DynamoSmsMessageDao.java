@@ -26,7 +26,7 @@ public class DynamoSmsMessageDao implements SmsMessageDao {
     public SmsMessage getMostRecentMessage(String phoneNumber) {
         // Hash key needs to be an object.
         DynamoSmsMessage key = new DynamoSmsMessage();
-        key.setNumber(phoneNumber);
+        key.setPhoneNumber(phoneNumber);
 
         // Get the most recent message. This is accomplished by scanning the range key backwards.
         DynamoDBQueryExpression<DynamoSmsMessage> query = new DynamoDBQueryExpression<DynamoSmsMessage>()

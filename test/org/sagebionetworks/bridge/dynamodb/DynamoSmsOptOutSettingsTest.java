@@ -42,12 +42,12 @@ public class DynamoSmsOptOutSettingsTest {
     public void deserializeWithoutOptionalFields() throws Exception {
         // Start with JSON.
         String jsonText = "{\n" +
-                "   \"number\":\"" + PHONE_NUMBER + "\"\n" +
+                "   \"phoneNumber\":\"" + PHONE_NUMBER + "\"\n" +
                 "}";
 
         // Convert to POJO.
         SmsOptOutSettings optOutSettings = BridgeObjectMapper.get().readValue(jsonText, SmsOptOutSettings.class);
-        assertEquals(PHONE_NUMBER, optOutSettings.getNumber());
+        assertEquals(PHONE_NUMBER, optOutSettings.getPhoneNumber());
         assertFalse(optOutSettings.getGlobalPromotionalOptOut());
         assertTrue(optOutSettings.getPromotionalOptOuts().isEmpty());
         assertTrue(optOutSettings.getTransactionalOptOuts().isEmpty());
@@ -59,7 +59,7 @@ public class DynamoSmsOptOutSettingsTest {
     public void serialize() throws Exception {
         // Start with JSON.
         String jsonText = "{\n" +
-                "   \"number\":\"" + PHONE_NUMBER + "\",\n" +
+                "   \"phoneNumber\":\"" + PHONE_NUMBER + "\",\n" +
                 "   \"globalPromotionalOptOut\":true,\n" +
                 "   \"promotionalOptOuts\":{\"foo\": true},\n" +
                 "   \"transactionalOptOuts\":{\"bar\": true}\n" +
@@ -67,14 +67,14 @@ public class DynamoSmsOptOutSettingsTest {
 
         // Convert to POJO.
         SmsOptOutSettings optOutSettings = BridgeObjectMapper.get().readValue(jsonText, SmsOptOutSettings.class);
-        assertEquals(PHONE_NUMBER, optOutSettings.getNumber());
+        assertEquals(PHONE_NUMBER, optOutSettings.getPhoneNumber());
         assertTrue(optOutSettings.getGlobalPromotionalOptOut());
         assertEquals(DUMMY_OPT_OUT_MAP_FOO, optOutSettings.getPromotionalOptOuts());
         assertEquals(DUMMY_OPT_OUT_MAP_BAR, optOutSettings.getTransactionalOptOuts());
 
         // Convert back to JSON.
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(optOutSettings, JsonNode.class);
-        assertEquals(PHONE_NUMBER, jsonNode.get("number").textValue());
+        assertEquals(PHONE_NUMBER, jsonNode.get("phoneNumber").textValue());
         assertTrue(jsonNode.get("globalPromotionalOptOut").booleanValue());
 
         JsonNode promotionalOptOutNode = jsonNode.get("promotionalOptOuts");
