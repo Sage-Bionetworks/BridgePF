@@ -3,13 +3,11 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.nio.charset.Charset;
-import java.util.Set;
 
 import javax.annotation.Resource;
 
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.model.PublishResult;
-import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,14 +23,11 @@ import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.sms.SmsMessage;
 import org.sagebionetworks.bridge.models.sms.SmsOptOutSettings;
-import org.sagebionetworks.bridge.models.sms.SmsType;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.sms.IncomingSms;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.sms.TwilioHelper;
 import org.sagebionetworks.bridge.time.DateUtils;
-import org.sagebionetworks.bridge.validators.IncomingSmsValidator;
 import org.sagebionetworks.bridge.validators.SmsMessageValidator;
 import org.sagebionetworks.bridge.validators.SmsOptOutSettingsValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -42,19 +37,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 public class SmsService {
     private static final Logger LOG = LoggerFactory.getLogger(SmsService.class);
 
-    private static final Set<String> OPT_IN_STRING_SET = ImmutableSet.of("opt in" , "opt-in", "start", "subscribe",
-            "unstop");
     private static final String OPT_OUT_TEXT = "Text STOP to unsubscribe.";
-    private static final Set<String> OPT_OUT_STRING_SET = ImmutableSet.of("cancel", "end", "opt out", "opt-out",
-            "optout", "quit", "remove", "stop", "stop all", "stopall", "unsubscribe");
-    private static final String RESPONSE_HELP = "This channel sends account management messages, notifications, and " +
-            "subscriptions for %s. To opt out, reply with \"STOP\". To opt in, reply with \"START\".";
-    private static final String RESPONSE_OPT_IN = "You have opted into messages from %s. To opt back out, reply " +
-            "with \"STOP\".";
-    private static final String RESPONSE_OPT_OUT_PROMOTIONAL = "You have opted out of notifications and " +
-            "subscriptions from %s. To opt back in, reply with \"START\".";
-    private static final String RESPONSE_OPT_OUT_TRANSACTIONAL = "You have opted out of account management messages " +
-            "from %s. To opt back in, reply with \"START\".";
 
     // mPower 2.0 study burst notifications can be fairly long. The longest one has 230 chars of fixed content, an app
     // url that's 53 characters long, and some freeform text that can be potentially 255 characters long, for a total
@@ -102,90 +85,6 @@ public class SmsService {
     @Autowired
     public final void setTwilioHelper(TwilioHelper twilioHelper) {
         this.twilioHelper = twilioHelper;
-    }
-
-    /**
-     * Handles the incoming SMS. Responds with the content of the SMS response, or null if there should be no response.
-     */
-    public String handleIncomingSms(IncomingSms incomingSms) {
-        // Validate input. Note that this simply validates that the incoming SMS was transformed into a usable
-        // representation, not necessarily that the incoming SMS is meaningful.
-        Validate.entityThrowingException(IncomingSmsValidator.INSTANCE, incomingSms);
-
-        LOG.info("Received SMS with messageId=" + incomingSms.getMessageId());
-
-        // Get the most recent message we sent to this sender. This is how we know which study they are responding to.
-        String senderNumber = incomingSms.getSenderPhoneNumber();
-        SmsMessage mostRecentSentMessage = getMostRecentMessage(senderNumber);
-        if (mostRecentSentMessage == null) {
-            // If we've never sent a message to this number, there's no way we can meaningfully interact with them.
-            // This isn't an error per se, if someone gets a hold of our short code and starts messaging us. We should
-            // log the message ID and inform Twilio to not respond.
-            LOG.warn("Received SMS from unidentified sender, messageId=" + incomingSms.getMessageId());
-            return null;
-        }
-
-        // We need to get the study of the most recent message. We use the study name to construct responses.
-        Study study = studyService.getStudy(mostRecentSentMessage.getStudyId());
-
-        // Canonicalize the text message to lower case and look for keywords.
-        String messageBody = incomingSms.getBody().toLowerCase();
-        String response;
-        if (OPT_OUT_STRING_SET.contains(messageBody)) {
-            response = handleOptOutMessage(study, senderNumber, mostRecentSentMessage.getSmsType());
-        } else if (OPT_IN_STRING_SET.contains(messageBody)) {
-            response = handleOptInMessage(study, senderNumber);
-        } else {
-            // All other incoming messages default to "HELP".
-            response = String.format(RESPONSE_HELP, study.getShortName());
-        }
-        return response;
-    }
-
-    // Helper method to handle opt-out messages.
-    private String handleOptOutMessage(Study study, String number, SmsType smsType) {
-        // Get existing opt-outs.
-        SmsOptOutSettings optOut = getOptOutSettings(number);
-        if (optOut == null) {
-            // Create a new empty opt-out for the user.
-            optOut = SmsOptOutSettings.create();
-            optOut.setPhoneNumber(number);
-        }
-
-        // The most conservative interpretation of the FCC regulations says that if a user sends STOP to a short code,
-        // we need to opt them _all_ promotional messages on that short code. To handle that, we set the global
-        // promotional opt-out and clearing the per-study promotional opt-outs so that they fall back to the global
-        // flag.
-        optOut.setGlobalPromotionalOptOut(true);
-        optOut.getPromotionalOptOuts().clear();
-
-        String response;
-        if (smsType == SmsType.TRANSACTIONAL) {
-            // User wants to opt out from transactional messages. We should honor that.
-            optOut.getTransactionalOptOuts().put(study.getIdentifier(), true);
-            response = String.format(RESPONSE_OPT_OUT_TRANSACTIONAL, study.getShortName());
-        } else {
-            response = String.format(RESPONSE_OPT_OUT_PROMOTIONAL, study.getShortName());
-        }
-
-        // Save opt-outs.
-        setOptOutSettings(optOut);
-
-        return response;
-    }
-
-    // Helper method to handle opt-in messages.
-    private String handleOptInMessage(Study study, String number) {
-        // Get existing opt-outs. If the opt-out doesn't exist, then the user is already opted in.
-        SmsOptOutSettings optOut = getOptOutSettings(number);
-        if (optOut != null) {
-            // Opt users in just for the current study.
-            optOut.getPromotionalOptOuts().put(study.getIdentifier(), false);
-            optOut.getTransactionalOptOuts().put(study.getIdentifier(), false);
-            setOptOutSettings(optOut);
-        }
-
-        return String.format(RESPONSE_OPT_IN, study.getShortName());
     }
 
     /** Sends an SMS message using the given message provider. */

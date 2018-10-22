@@ -50,9 +50,6 @@ POST /v3/export/start @org.sagebionetworks.bridge.play.controllers.ExportControl
 # Health Data
 POST /v3/healthdata @org.sagebionetworks.bridge.play.controllers.HealthDataController.submitHealthData
 
-# SMS Webhook
-POST /v3/sms/response @org.sagebionetworks.bridge.play.controllers.SmsController.handleIncomingSms
-
 # Users
 POST   /v3/users                          @org.sagebionetworks.bridge.play.controllers.UserManagementController.createUser
 DELETE /v3/users/:userId                  @org.sagebionetworks.bridge.play.controllers.UserManagementController.deleteUser(userId: String)

@@ -1,10 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.mock;
@@ -36,7 +33,6 @@ import org.sagebionetworks.bridge.models.sms.SmsOptOutSettings;
 import org.sagebionetworks.bridge.models.sms.SmsType;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.sms.IncomingSms;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.sms.SmsServiceProvider;
 import org.sagebionetworks.bridge.sms.TwilioHelper;
@@ -44,11 +40,8 @@ import org.sagebionetworks.bridge.time.DateUtils;
 
 public class SmsServiceTest {
     private static final String EXPECTED_TWILIO_MESSAGE_BODY = "My Study: lorem ipsum Text STOP to unsubscribe.";
-    private static final String MESSAGE_HELP = "HELP";
     private static final String MESSAGE_BODY = "lorem ipsum";
     private static final String MESSAGE_ID = "my-message-id";
-    private static final String MESSAGE_START = "START";
-    private static final String MESSAGE_STOP = "STOP";
     private static final long MOCK_NOW_MILLIS = DateUtils.convertToMillisFromEpoch("2018-10-17T16:21:52.749Z");
     private static final String PHONE_NUMBER = "+12065550123";
     private static final long SENT_ON = 1539732997760L;
@@ -111,123 +104,6 @@ public class SmsServiceTest {
     @AfterClass
     public static void unmockNow() {
         DateTimeUtils.setCurrentMillisSystem();
-    }
-
-    @Test(expected = InvalidEntityException.class)
-    public void handleIncomingSmsValidatesInput() {
-        svc.handleIncomingSms(new IncomingSms());
-    }
-
-    @Test
-    public void handleIncomingSms_NoSentMessages() {
-        when(mockMessageDao.getMostRecentMessage(PHONE_NUMBER)).thenReturn(null);
-        String response = svc.handleIncomingSms(makeIncomingSms(MESSAGE_HELP));
-        assertNull(response);
-        verify(mockOptOutSettingsDao, never()).setOptOutSettings(any());
-    }
-
-    @Test
-    public void handleIncomingSms_OptOutFromPromotionalMessages() {
-        // Mock DAOs.
-        when(mockMessageDao.getMostRecentMessage(PHONE_NUMBER)).thenReturn(makeSmsMessage(SmsType.PROMOTIONAL));
-
-        SmsOptOutSettings optOutSettings = makeValidOptOutSettings();
-        optOutSettings.getPromotionalOptOuts().put("other_study", false);
-        when(mockOptOutSettingsDao.getOptOutSettings(PHONE_NUMBER)).thenReturn(optOutSettings);
-
-        // Execute and validate. We set the global promotion opt-out and clear any per-study overrides.
-        String response = svc.handleIncomingSms(makeIncomingSms(MESSAGE_STOP));
-        assertTrue(response.contains("You have opted out of notifications and subscriptions"));
-
-        verify(mockOptOutSettingsDao).setOptOutSettings(same(optOutSettings));
-        assertTrue(optOutSettings.getGlobalPromotionalOptOut());
-        assertTrue(optOutSettings.getPromotionalOptOuts().isEmpty());
-    }
-
-    @Test
-    public void handleIncomingSms_OptOutFromTransactionalMessages() {
-        // Mock DAOs.
-        when(mockMessageDao.getMostRecentMessage(PHONE_NUMBER)).thenReturn(makeSmsMessage(SmsType.TRANSACTIONAL));
-
-        SmsOptOutSettings optOutSettings = makeValidOptOutSettings();
-        optOutSettings.getPromotionalOptOuts().put("other_study", false);
-        when(mockOptOutSettingsDao.getOptOutSettings(PHONE_NUMBER)).thenReturn(optOutSettings);
-
-        // Execute and validate. We set the global promotion opt-out and clear any per-study overrides. We also set the
-        // transactional opt-out for the stsudy.
-        String response = svc.handleIncomingSms(makeIncomingSms(MESSAGE_STOP));
-        assertTrue(response.contains("You have opted out of account management messages"));
-
-        verify(mockOptOutSettingsDao).setOptOutSettings(same(optOutSettings));
-        assertTrue(optOutSettings.getGlobalPromotionalOptOut());
-        assertTrue(optOutSettings.getPromotionalOptOuts().isEmpty());
-        assertTrue(optOutSettings.getTransactionalOptOutForStudy(TestConstants.TEST_STUDY_IDENTIFIER));
-    }
-
-    @Test
-    public void handleIncomingSms_CreateNewOptOutSettings() {
-        // Mock DAOs.
-        when(mockMessageDao.getMostRecentMessage(PHONE_NUMBER)).thenReturn(makeSmsMessage(SmsType.PROMOTIONAL));
-        when(mockOptOutSettingsDao.getOptOutSettings(PHONE_NUMBER)).thenReturn(null);
-
-        // Execute and validate. This test just tests that we created the new opt-out settings.
-        svc.handleIncomingSms(makeIncomingSms(MESSAGE_STOP));
-
-        ArgumentCaptor<SmsOptOutSettings> savedOptOutSettingsCaptor = ArgumentCaptor.forClass(SmsOptOutSettings.class);
-        verify(mockOptOutSettingsDao).setOptOutSettings(savedOptOutSettingsCaptor.capture());
-        assertEquals(PHONE_NUMBER, savedOptOutSettingsCaptor.getValue().getPhoneNumber());
-    }
-
-    @Test
-    public void handleIncomingSms_OptInWithNoOptOuts() {
-        // Mock DAOs.
-        when(mockMessageDao.getMostRecentMessage(PHONE_NUMBER)).thenReturn(makeSmsMessage(SmsType.PROMOTIONAL));
-        when(mockOptOutSettingsDao.getOptOutSettings(PHONE_NUMBER)).thenReturn(null);
-
-        // Execute and validate. Since the user was never opted out, we do nothing.
-        String response = svc.handleIncomingSms(makeIncomingSms(MESSAGE_START));
-        assertTrue(response.contains("You have opted into messages"));
-
-        verify(mockOptOutSettingsDao, never()).setOptOutSettings(any());
-    }
-
-    @Test
-    public void handleIncomingSms_OptInAfterOptOut() {
-        // Mock DAOs.
-        when(mockMessageDao.getMostRecentMessage(PHONE_NUMBER)).thenReturn(makeSmsMessage(SmsType.PROMOTIONAL));
-
-        SmsOptOutSettings optOutSettings = makeValidOptOutSettings();
-        when(mockOptOutSettingsDao.getOptOutSettings(PHONE_NUMBER)).thenReturn(optOutSettings);
-
-        // Execute and validate. Since the user was never opted out, we do nothing.
-        String response = svc.handleIncomingSms(makeIncomingSms(MESSAGE_START));
-        assertTrue(response.contains("You have opted into messages"));
-
-        verify(mockOptOutSettingsDao).setOptOutSettings(same(optOutSettings));
-        assertFalse(optOutSettings.getPromotionalOptOutForStudy(TestConstants.TEST_STUDY_IDENTIFIER));
-        assertFalse(optOutSettings.getTransactionalOptOutForStudy(TestConstants.TEST_STUDY_IDENTIFIER));
-    }
-
-    @Test
-    public void handleIncomingSmS_InfoMessage() {
-        when(mockMessageDao.getMostRecentMessage(PHONE_NUMBER)).thenReturn(makeSmsMessage(SmsType.PROMOTIONAL));
-        String response = svc.handleIncomingSms(makeIncomingSms(MESSAGE_HELP));
-        assertTrue(response.contains("This channel sends account management messages, notifications, and subscriptions"));
-    }
-
-    private static IncomingSms makeIncomingSms(String message) {
-        IncomingSms incomingSms = new IncomingSms();
-        incomingSms.setMessageId(MESSAGE_ID);
-        incomingSms.setBody(message);
-        incomingSms.setSenderPhoneNumber(PHONE_NUMBER);
-        return incomingSms;
-    }
-
-    private static SmsMessage makeSmsMessage(SmsType type) {
-        SmsMessage message = makeValidSmsMessage();
-        message.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
-        message.setSmsType(type);
-        return message;
     }
 
     @Test

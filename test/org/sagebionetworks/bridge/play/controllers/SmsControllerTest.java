@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.doReturn;
@@ -11,15 +9,10 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Map;
-
-import com.google.common.collect.ImmutableMap;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import play.mvc.Http;
 import play.mvc.Result;
-import play.test.Helpers;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
@@ -30,13 +23,9 @@ import org.sagebionetworks.bridge.models.sms.SmsOptOutSettings;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.SmsService;
 import org.sagebionetworks.bridge.services.StudyService;
-import org.sagebionetworks.bridge.sms.IncomingSms;
-import org.sagebionetworks.bridge.sms.TwilioHelper;
 
 public class SmsControllerTest {
-    private static final String DUMMY_RESPONSE = "dummy response";
     private static final String MESSAGE_ID = "my-message-id";
-    private static final String MESSAGE_BODY = "lorem ipsum";
     private static final String PHONE_NUMBER = "+12065550123";
     private static final String USER_ID = "test-user";
 
@@ -67,65 +56,6 @@ public class SmsControllerTest {
         UserSession session = new UserSession();
         session.setStudyIdentifier(TestConstants.TEST_STUDY);
         doReturn(session).when(controller).getAuthenticatedSession(Roles.ADMIN);
-    }
-
-    @Test
-    public void handleIncomingSms_noopResponse() {
-        // Setup test.
-        setupHandleIncomingSmsTest();
-        when(mockSmsService.handleIncomingSms(any())).thenReturn(null);
-
-        // Execute and verify.
-        Result result = controller.handleIncomingSms();
-        assertEquals("application/xml", result.contentType());
-        assertEquals(200, result.status());
-        assertEquals(TwilioHelper.RESPONSE_NOOP, Helpers.contentAsString(result));
-
-        verifyServiceInput();
-    }
-
-    @Test
-    public void handleIncomingSms_normalCase() {
-        // Setup test.
-        setupHandleIncomingSmsTest();
-        when(mockSmsService.handleIncomingSms(any())).thenReturn(DUMMY_RESPONSE);
-
-        // Execute and verify.
-        Result result = controller.handleIncomingSms();
-        assertEquals("application/xml", result.contentType());
-        assertEquals(200, result.status());
-
-        String responseContent = Helpers.contentAsString(result);
-        assertTrue(responseContent.contains("<Response>"));
-        assertTrue(responseContent.contains("<Say>"));
-        assertTrue(responseContent.contains(DUMMY_RESPONSE));
-
-        verifyServiceInput();
-    }
-
-    private static void setupHandleIncomingSmsTest() {
-        Map<String, String[]> formPostMap = ImmutableMap.<String, String[]>builder()
-                .put(TwilioHelper.WEBHOOK_KEY_MESSAGE_SID, new String[] { MESSAGE_ID })
-                .put(TwilioHelper.WEBHOOK_KEY_BODY, new String[] { MESSAGE_BODY })
-                .put(TwilioHelper.WEBHOOK_KEY_FROM, new String[] { PHONE_NUMBER }).build();
-
-        Http.RequestBody body = mock(Http.RequestBody.class);
-        when(body.asFormUrlEncoded()).thenReturn(formPostMap);
-
-        Http.Request request = mock(Http.Request.class);
-        when(request.body()).thenReturn(body);
-
-        TestUtils.mockPlayContext(request);
-    }
-
-    private void verifyServiceInput() {
-        ArgumentCaptor<IncomingSms> incomingSmsCaptor = ArgumentCaptor.forClass(IncomingSms.class);
-        verify(mockSmsService).handleIncomingSms(incomingSmsCaptor.capture());
-
-        IncomingSms incomingSms = incomingSmsCaptor.getValue();
-        assertEquals(MESSAGE_ID, incomingSms.getMessageId());
-        assertEquals(MESSAGE_BODY, incomingSms.getBody());
-        assertEquals(PHONE_NUMBER, incomingSms.getSenderPhoneNumber());
     }
 
     @Test
