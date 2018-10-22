@@ -38,6 +38,10 @@ import com.google.common.collect.ImmutableMap;
 @RunWith(MockitoJUnitRunner.class)
 public class DynamoAppConfigElementDaoTest {
 
+    private static final String ID_2 = "id2";
+
+    private static final String ID_1 = "id1";
+
     @Mock
     private DynamoDBMapper mockMapper;
     
@@ -65,8 +69,8 @@ public class DynamoAppConfigElementDaoTest {
         
         List<AppConfigElement> returned = dao.getMostRecentElements(TestConstants.TEST_STUDY, true);
         assertEquals(2, returned.size());
-        assertIdAndRevision(returned.get(0), "id1", 3L);
-        assertIdAndRevision(returned.get(1), "id2", 3L);
+        assertIdAndRevision(returned.get(0), ID_1, 3L);
+        assertIdAndRevision(returned.get(1), ID_2, 3L);
     }
     
     @Mock
@@ -79,8 +83,8 @@ public class DynamoAppConfigElementDaoTest {
         
         List<AppConfigElement> returned = dao.getMostRecentElements(TestConstants.TEST_STUDY, false);
         assertEquals(2, returned.size());
-        assertIdAndRevision(returned.get(0), "id1", 2L);
-        assertIdAndRevision(returned.get(1), "id2", 3L);
+        assertIdAndRevision(returned.get(0), ID_1, 2L);
+        assertIdAndRevision(returned.get(1), ID_2, 3L);
     }
     
     @Test
@@ -109,10 +113,6 @@ public class DynamoAppConfigElementDaoTest {
         Condition deleteCondition = query.getQueryFilter().get("deleted");
         assertEquals("EQ", deleteCondition.getComparisonOperator());
         assertFalse(deleteCondition.getAttributeValueList().get(0).getBOOL());
-        
-        Condition publishedCondition = query.getQueryFilter().get("published");
-        assertEquals("EQ", publishedCondition.getComparisonOperator());
-        assertTrue(publishedCondition.getAttributeValueList().get(0).getBOOL());
     }
 
     @Test
@@ -129,7 +129,7 @@ public class DynamoAppConfigElementDaoTest {
         when(mockMapper.query(eq(DynamoAppConfigElement.class), any())).thenReturn(mockResults);
         when(mockResults.stream()).thenReturn(appConfigElementListId1().stream());
         
-        List<AppConfigElement> returned = dao.getElementRevisions(TestConstants.TEST_STUDY, "id1", true);
+        List<AppConfigElement> returned = dao.getElementRevisions(TestConstants.TEST_STUDY, ID_1, true);
         assertEquals(appConfigElementListId1(), returned);
         
         verify(mockMapper).query(eq(DynamoAppConfigElement.class), queryCaptor.capture());
@@ -145,7 +145,7 @@ public class DynamoAppConfigElementDaoTest {
         when(mockMapper.query(eq(DynamoAppConfigElement.class), any())).thenReturn(mockResults);
         when(mockResults.stream()).thenReturn(appConfigElementListId1().stream());
         
-        List<AppConfigElement> returned = dao.getElementRevisions(TestConstants.TEST_STUDY, "id1", false);
+        List<AppConfigElement> returned = dao.getElementRevisions(TestConstants.TEST_STUDY, ID_1, false);
         assertEquals(appConfigElementListId1(), returned);
         
         verify(mockMapper).query(eq(DynamoAppConfigElement.class), queryCaptor.capture());
@@ -228,13 +228,11 @@ public class DynamoAppConfigElementDaoTest {
     
     private List<DynamoAppConfigElement> appConfigElementListId1() {
         DynamoAppConfigElement el1V1 = new DynamoAppConfigElement();
-        el1V1.setKey(TestConstants.TEST_STUDY, "id1");
-        el1V1.setId("id1");
+        el1V1.setKey(TestConstants.TEST_STUDY, ID_1);
         el1V1.setRevision(1L);
         
         DynamoAppConfigElement el1V2 = new DynamoAppConfigElement();
-        el1V2.setKey(TestConstants.TEST_STUDY, "id1");
-        el1V2.setId("id1");
+        el1V2.setKey(TestConstants.TEST_STUDY, ID_1);
         el1V2.setRevision(2L);
         
         return ImmutableList.of(el1V1, el1V2);
@@ -242,33 +240,27 @@ public class DynamoAppConfigElementDaoTest {
     
     private List<DynamoAppConfigElement> appConfigElementListId1And2() {
         DynamoAppConfigElement el1V1 = new DynamoAppConfigElement();
-        el1V1.setKey(TestConstants.TEST_STUDY, "id1");
-        el1V1.setId("id1");
+        el1V1.setKey(TestConstants.TEST_STUDY, ID_1);
         el1V1.setRevision(1L);
         
         DynamoAppConfigElement el1V2 = new DynamoAppConfigElement();
-        el1V2.setKey(TestConstants.TEST_STUDY, "id1");
-        el1V2.setId("id1");
+        el1V2.setKey(TestConstants.TEST_STUDY, ID_1);
         el1V2.setRevision(2L);
         
         DynamoAppConfigElement el1V3 = new DynamoAppConfigElement();
-        el1V3.setKey(TestConstants.TEST_STUDY, "id1");
-        el1V3.setId("id1");
+        el1V3.setKey(TestConstants.TEST_STUDY, ID_1);
         el1V3.setRevision(3L);
         
         DynamoAppConfigElement el2V1 = new DynamoAppConfigElement();
-        el2V1.setKey(TestConstants.TEST_STUDY, "id2");
-        el2V1.setId("id2");
+        el2V1.setKey(TestConstants.TEST_STUDY, ID_2);
         el2V1.setRevision(1L);
         
         DynamoAppConfigElement el2V2 = new DynamoAppConfigElement();
-        el2V2.setKey(TestConstants.TEST_STUDY, "id2");
-        el2V2.setId("id2");
+        el2V2.setKey(TestConstants.TEST_STUDY, ID_2);
         el2V2.setRevision(2L);
         
         DynamoAppConfigElement el2V3 = new DynamoAppConfigElement();
-        el2V3.setKey(TestConstants.TEST_STUDY, "id2");
-        el2V3.setId("id2");
+        el2V3.setKey(TestConstants.TEST_STUDY, ID_2);
         el2V3.setRevision(3L);
         
         el1V3.setDeleted(true);
@@ -280,12 +272,10 @@ public class DynamoAppConfigElementDaoTest {
         // I do not get the impression it puts elements under multiple keys and I'm not sure the conditions
         // where it will.
         return new ImmutableMap.Builder<String, List<DynamoAppConfigElement>>()
-                .put("DynamoAppConfigElement", appConfigElementListId1And2()).build();
+                .put(DynamoAppConfigElement.class.getSimpleName(), appConfigElementListId1And2()).build();
     }
     
     private void assertIdAndRevision(AppConfigElement element, String id, long revision) {
-        String key = TestConstants.TEST_STUDY_IDENTIFIER + ":" + id;
-        assertTrue("Missing: " + id + ", " + revision,
-                element.getKey().equals(key) && element.getRevision() == revision);
+        assertTrue("Missing: " + id + ", " + revision, element.getId().equals(id) && element.getRevision() == revision);
     }    
 }

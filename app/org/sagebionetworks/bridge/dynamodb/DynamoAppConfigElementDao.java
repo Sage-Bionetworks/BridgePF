@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -63,15 +65,16 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
                 if (!includeDeleted && oneElement.isDeleted()) {
                     continue;
                 }
-                String elementKey = studyId.getIdentifier() + ":" + oneElement.getId();
-                AppConfigElement existingElement = versionMap.get(elementKey);
+                AppConfigElement existingElement = versionMap.get(oneElement.getId());
                 Long existingRevision = (existingElement == null) ? null : existingElement.getRevision();
                 if (existingRevision == null || oneElement.getRevision() > existingRevision) {
-                    versionMap.put(elementKey, oneElement);
+                    versionMap.put(oneElement.getId(), oneElement);
                 }
             }
         }
-        return Lists.newArrayList(versionMap.values());
+        List<AppConfigElement> elements = Lists.newArrayList(versionMap.values());
+        Collections.sort(elements, Comparator.comparing(AppConfigElement::getId));
+        return elements; 
     }
 
     @Override

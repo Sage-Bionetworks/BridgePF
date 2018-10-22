@@ -45,6 +45,8 @@ public final class DynamoAppConfigElement implements AppConfigElement {
     }
     @DynamoDBIgnore
     public void setKey(StudyIdentifier studyId, String id) {
+        this.studyId = studyId.getIdentifier();
+        this.id = id;
         this.setKey(studyId.getIdentifier() + ":" + id);
     }
     @DynamoDBRangeKey
