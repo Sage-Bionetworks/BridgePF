@@ -71,10 +71,16 @@ public class DynamoAppConfigElementDaoTest {
         assertEquals(2, returned.size());
         assertIdAndRevision(returned.get(0), ID_1, 3L);
         assertIdAndRevision(returned.get(1), ID_2, 3L);
+        
+        verify(mockMapper).query(eq(DynamoAppConfigElement.class), queryCaptor.capture());
+        DynamoDBQueryExpression<DynamoAppConfigElement> query = queryCaptor.getValue();
+        
+        assertEquals(DynamoAppConfigElementDao.STUDY_ID_INDEX_NAME, query.getIndexName());
+        assertFalse(query.isConsistentRead());
+        assertFalse(query.isScanIndexForward());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, query.getHashKeyValues().getStudyId());
+        assertNull(query.getHashKeyValues().getId());
     }
-    
-    @Mock
-    private PaginatedQueryList<DynamoAppConfigElement> mockQueryList;
     
     @SuppressWarnings("unchecked")
     @Test
@@ -186,7 +192,8 @@ public class DynamoAppConfigElementDaoTest {
     @Test
     public void deleteElementRevisionPermanently() {
         AppConfigElement key = new DynamoAppConfigElement();
-        key.setKey(TestConstants.TEST_STUDY, "id");
+        key.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        key.setId("id");
         key.setRevision(3L);
         when(mockMapper.load(key)).thenReturn(key);
         
@@ -228,39 +235,48 @@ public class DynamoAppConfigElementDaoTest {
     
     private List<DynamoAppConfigElement> appConfigElementListId1() {
         DynamoAppConfigElement el1V1 = new DynamoAppConfigElement();
-        el1V1.setKey(TestConstants.TEST_STUDY, ID_1);
+        el1V1.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        el1V1.setId(ID_1);
         el1V1.setRevision(1L);
         
         DynamoAppConfigElement el1V2 = new DynamoAppConfigElement();
-        el1V2.setKey(TestConstants.TEST_STUDY, ID_1);
+        el1V2.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        el1V2.setId(ID_1);
         el1V2.setRevision(2L);
+
         
         return ImmutableList.of(el1V1, el1V2);
     }
     
     private List<DynamoAppConfigElement> appConfigElementListId1And2() {
         DynamoAppConfigElement el1V1 = new DynamoAppConfigElement();
-        el1V1.setKey(TestConstants.TEST_STUDY, ID_1);
+        el1V1.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        el1V1.setId(ID_1);
         el1V1.setRevision(1L);
         
         DynamoAppConfigElement el1V2 = new DynamoAppConfigElement();
-        el1V2.setKey(TestConstants.TEST_STUDY, ID_1);
+        el1V2.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        el1V2.setId(ID_1);
         el1V2.setRevision(2L);
         
         DynamoAppConfigElement el1V3 = new DynamoAppConfigElement();
-        el1V3.setKey(TestConstants.TEST_STUDY, ID_1);
+        el1V3.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        el1V3.setId(ID_1);
         el1V3.setRevision(3L);
         
         DynamoAppConfigElement el2V1 = new DynamoAppConfigElement();
-        el2V1.setKey(TestConstants.TEST_STUDY, ID_2);
+        el2V1.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        el2V1.setId(ID_2);
         el2V1.setRevision(1L);
         
         DynamoAppConfigElement el2V2 = new DynamoAppConfigElement();
-        el2V2.setKey(TestConstants.TEST_STUDY, ID_2);
+        el2V2.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        el2V2.setId(ID_2);
         el2V2.setRevision(2L);
         
         DynamoAppConfigElement el2V3 = new DynamoAppConfigElement();
-        el2V3.setKey(TestConstants.TEST_STUDY, ID_2);
+        el2V3.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        el2V3.setId(ID_2);
         el2V3.setRevision(3L);
         
         el1V3.setDeleted(true);
@@ -269,8 +285,11 @@ public class DynamoAppConfigElementDaoTest {
     }
     
     private Map<String,List<DynamoAppConfigElement>> appConfigElementMapId1And2() {
-        // I do not get the impression it puts elements under multiple keys and I'm not sure the conditions
-        // where it will.
+        // Regarding the map structure, from the javadocs: "A map of the loaded objects. Each key in the map 
+        // is the name of a DynamoDB table. Each value in the map is a list of objects that have been loaded 
+        // from that table. All objects for each table can be cast to the associated user defined type that 
+        // is annotated as mapping that table." Given our queries on a single table, this is going to be a map
+        // with a single key.
         return new ImmutableMap.Builder<String, List<DynamoAppConfigElement>>()
                 .put(DynamoAppConfigElement.class.getSimpleName(), appConfigElementListId1And2()).build();
     }

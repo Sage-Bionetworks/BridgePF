@@ -2,14 +2,13 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import java.util.Objects;
 
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperFieldModel.DynamoDBAttributeType;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
@@ -25,7 +24,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @DynamoDBTable(tableName = "AppConfigElement")
 @BridgeTypeName("AppConfigElement")
 public final class DynamoAppConfigElement implements AppConfigElement {
-    private String key;
     private String id;
     private String studyId;
     private Long revision;
@@ -38,16 +36,21 @@ public final class DynamoAppConfigElement implements AppConfigElement {
     @DynamoDBHashKey
     @JsonIgnore
     public String getKey() {
-        return key;
+        if (StringUtils.isBlank(studyId) || StringUtils.isBlank(id)) {
+            return null;
+        }
+        return String.format("%s:%s", studyId, id);
     }
     public void setKey(String key) {
-        this.key = key;
-    }
-    @DynamoDBIgnore
-    public void setKey(StudyIdentifier studyId, String id) {
-        this.studyId = studyId.getIdentifier();
-        this.id = id;
-        this.setKey(studyId.getIdentifier() + ":" + id);
+        this.studyId = null;
+        this.id = null;
+        if (key != null) {
+            String[] components = key.split(":", 2);
+            if (components.length == 2) {
+                this.studyId = components[0];
+                this.id = components[1];
+            }
+        }
     }
     @DynamoDBRangeKey
     public Long getRevision() {
@@ -111,7 +114,7 @@ public final class DynamoAppConfigElement implements AppConfigElement {
     
     @Override
     public int hashCode() {
-        return Objects.hash(key, studyId, id, revision, deleted, data, createdOn, modifiedOn, version);
+        return Objects.hash(studyId, id, revision, deleted, data, createdOn, modifiedOn, version);
     }
     @Override
     public boolean equals(Object obj) {
@@ -120,8 +123,7 @@ public final class DynamoAppConfigElement implements AppConfigElement {
         if (obj == null || getClass() != obj.getClass())
             return false;
         DynamoAppConfigElement other = (DynamoAppConfigElement) obj;
-        return Objects.equals(key, other.key) &&
-                Objects.equals(studyId, other.studyId) &&
+        return Objects.equals(studyId, other.studyId) &&
                 Objects.equals(id, other.id) &&
                 Objects.equals(revision, other.revision) &&
                 Objects.equals(deleted, other.deleted) &&

@@ -44,8 +44,8 @@ public class AppConfigElementService {
         // Validate that ID exists before you try and use it to set the key
         Validate.entityThrowingException(AppConfigElementValidator.INSTANCE, element);
         
-        element.setKey(studyId, element.getId());
         element.setStudyId(studyId.getIdentifier());
+        element.setId(element.getId());
         element.setVersion(null);
         element.setDeleted(false);
         element.setCreatedOn(DateTime.now().getMillis());
@@ -99,8 +99,8 @@ public class AppConfigElementService {
         if (element.isDeleted() && existing.isDeleted()) {
             throw new EntityNotFoundException(AppConfigElement.class);
         }
-        element.setKey(studyId, element.getId());
         element.setStudyId(studyId.getIdentifier());
+        element.setId(element.getId());
         element.setModifiedOn(DateTime.now().getMillis());
         // cannot unpublish something or change the creation timestamp
         element.setCreatedOn(existing.getCreatedOn());

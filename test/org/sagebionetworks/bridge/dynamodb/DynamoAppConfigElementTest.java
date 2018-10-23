@@ -20,8 +20,48 @@ import nl.jqno.equalsverifier.Warning;
 
 public class DynamoAppConfigElementTest {
     
+    private static final String KEY = "api:confusing: key: divider";
+    private static final String ID = "confusing: key: divider";
     private static final DateTime CREATED_ON = DateTime.now(DateTimeZone.UTC);
     private static final DateTime MODIFIED_ON = CREATED_ON.plusHours(2);
+    
+    @Test
+    public void keyParsing() {
+        // set through setters, get key
+        DynamoAppConfigElement element = new DynamoAppConfigElement();
+        element.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        element.setId(ID);
+        assertEquals(KEY, element.getKey());
+        
+        // set key, get through getters
+        element = new DynamoAppConfigElement();
+        element.setKey(KEY);
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, element.getStudyId());
+        assertEquals(ID, element.getId());
+        
+        // set key, get through getters
+        element = new DynamoAppConfigElement();
+        element.setKey(KEY);
+        assertEquals(KEY, element.getKey());
+        
+        // setters nullify key
+        element = new DynamoAppConfigElement();
+        element.setKey(KEY);
+        element.setStudyId(null);
+        assertNull(element.getKey());
+        
+        element = new DynamoAppConfigElement();
+        element.setKey(KEY);
+        element.setId(null);
+        assertNull(element.getId());
+        
+        element = new DynamoAppConfigElement();
+        element.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        element.setId(ID);
+        element.setKey(null);
+        assertNull(element.getStudyId());
+        assertNull(element.getId());
+    }
     
     @Test
     public void hashCodeEquals() {
@@ -35,10 +75,9 @@ public class DynamoAppConfigElementTest {
     @Test
     public void canSerialize() throws Exception {
         DynamoAppConfigElement element = new DynamoAppConfigElement();
-        element.setKey(TestConstants.TEST_STUDY, "id");
-        element.setStudyId("studyId");
+        element.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        element.setId(ID);
         element.setRevision(1L);
-        element.setId("id");
         element.setDeleted(true);
         element.setData(TestUtils.getClientData());
         element.setCreatedOn(CREATED_ON.getMillis());
@@ -49,7 +88,7 @@ public class DynamoAppConfigElementTest {
         assertNull(node.get("key"));
         assertNull(node.get("studyId"));
         assertEquals(1L, node.get("revision").longValue());
-        assertEquals("id", node.get("id").textValue());
+        assertEquals(ID, node.get("id").textValue());
         assertTrue(node.get("deleted").booleanValue());
         assertEquals(TestUtils.getClientData(), node.get("data"));
         assertEquals(CREATED_ON.toString(), node.get("createdOn").textValue());
@@ -58,9 +97,7 @@ public class DynamoAppConfigElementTest {
         assertEquals("AppConfigElement", node.get("type").textValue());
         
         AppConfigElement deser = BridgeObjectMapper.get().readValue(node.toString(), AppConfigElement.class);
-        element.setKey(null);
-        element.setStudyId(null);
-        
+        deser.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         assertEquals(element, deser);
     }
     

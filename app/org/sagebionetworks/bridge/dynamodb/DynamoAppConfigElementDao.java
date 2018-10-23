@@ -80,7 +80,8 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
     @Override
     public AppConfigElement getMostRecentElement(StudyIdentifier studyId, String id) {
         DynamoAppConfigElement key = new DynamoAppConfigElement();
-        key.setKey(studyId, id);
+        key.setStudyId(studyId.getIdentifier());
+        key.setId(id);        
 
         DynamoDBQueryExpression<DynamoAppConfigElement> query = new DynamoDBQueryExpression<DynamoAppConfigElement>()
                 .withHashKeyValues(key);
@@ -96,7 +97,8 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
     @Override
     public List<AppConfigElement> getElementRevisions(StudyIdentifier studyId, String id, boolean includeDeleted) {
         DynamoAppConfigElement key = new DynamoAppConfigElement();
-        key.setKey(studyId, id);
+        key.setStudyId(studyId.getIdentifier());
+        key.setId(id);        
 
         DynamoDBQueryExpression<DynamoAppConfigElement> query = new DynamoDBQueryExpression<DynamoAppConfigElement>()
                 .withHashKeyValues(key)
@@ -118,7 +120,8 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
     @Override
     public AppConfigElement getElementRevision(StudyIdentifier studyId, String id, long revision) {
         AppConfigElement key = new DynamoAppConfigElement();
-        key.setKey(studyId, id);
+        key.setStudyId(studyId.getIdentifier());
+        key.setId(id);
         key.setRevision(revision);
         
         return mapper.load(key);
