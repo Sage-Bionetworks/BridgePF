@@ -16,6 +16,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
+import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -23,6 +24,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -40,6 +42,9 @@ public class DynamoAppConfigTest {
     private static final List<SchemaReference> SCHEMA_REFS = new ImmutableList.Builder<SchemaReference>()
             .add(new SchemaReference("schemaA", 1))
             .add(new SchemaReference("schemaB", 2)).build();
+    private static final List<ConfigReference> CONFIG_REFS = new ImmutableList.Builder<ConfigReference>()
+            .add(new ConfigReference("config1", 1L))
+            .add(new ConfigReference("config2", 2L)).build();
     private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl(TestUtils.randomName(DynamoAppConfigDaoTest.class));
     
     @Test
@@ -66,12 +71,18 @@ public class DynamoAppConfigTest {
         appConfig.setModifiedOn(TIMESTAMP.getMillis());
         appConfig.setSurveyReferences(SURVEY_REFS);
         appConfig.setSchemaReferences(SCHEMA_REFS);
+        appConfig.setConfigReferences(CONFIG_REFS);
+        appConfig.setConfigIncluded(true);
+        appConfig.setConfigElements(new ImmutableMap.Builder<String,JsonNode>()
+                .put("config1", TestUtils.getClientData())
+                .build());
         appConfig.setClientData(clientData);
         appConfig.setVersion(3L);
         appConfig.setDeleted(true);
         
         Set<String> fields = Sets.newHashSet("criteria", "label", "createdOn", "modifiedOn", "clientData",
-                "surveyReferences", "schemaReferences", "version", "type", "deleted");
+                "surveyReferences", "schemaReferences", "configReferences", "configIncluded", "configElements",
+                "version", "type", "deleted");
                 
         JsonNode node = BridgeObjectMapper.get().valueToTree(appConfig);
         assertEquals(fields, Sets.newHashSet(node.fieldNames()));
@@ -87,6 +98,9 @@ public class DynamoAppConfigTest {
         assertEquals(appConfig.getClientData().toString(), deser.getClientData().toString());
         assertEquals(appConfig.getSurveyReferences(), deser.getSurveyReferences());
         assertEquals(appConfig.getSchemaReferences(), deser.getSchemaReferences());
+        assertEquals(appConfig.getConfigReferences(), deser.getConfigReferences());
+        assertEquals(appConfig.isConfigIncluded(), deser.isConfigIncluded());
+        assertEquals(appConfig.getConfigElements(), deser.getConfigElements());
         assertEquals(appConfig.getCreatedOn(), deser.getCreatedOn());
         assertEquals(appConfig.getModifiedOn(), deser.getModifiedOn());
         assertEquals(appConfig.getGuid(), deser.getGuid());

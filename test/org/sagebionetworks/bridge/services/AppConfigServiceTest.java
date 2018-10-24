@@ -24,6 +24,7 @@ import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AppConfigDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -34,11 +35,15 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
+import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -60,6 +65,9 @@ public class AppConfigServiceTest {
     
     @Mock
     private StudyService mockStudyService;
+    
+    @Mock
+    private AppConfigElementService mockAppConfigElementService;
     
     @Mock
     private SurveyService surveyService;
@@ -85,7 +93,8 @@ public class AppConfigServiceTest {
     public void before() {
         service.setAppConfigDao(mockDao);
         service.setStudyService(mockStudyService);
-        service.setSurveyService(surveyService);    
+        service.setSurveyService(surveyService);
+        service.setAppConfigElementService(mockAppConfigElementService);
         
         when(service.getCurrentTimestamp()).thenReturn(TIMESTAMP.getMillis());
         when(service.getGUID()).thenReturn(GUID);
@@ -181,6 +190,52 @@ public class AppConfigServiceTest {
         
         // Verify that we called the resolver on this as well
         assertEquals("theIdentifier", match.getSurveyReferences().get(0).getIdentifier());
+    }
+    
+    @Test
+    public void getAppConfigForUserIncludesElements() {
+        JsonNode clientData1 = TestUtils.getClientData();
+        AppConfigElement element1 = AppConfigElement.create();
+        element1.setId("id1");
+        element1.setRevision(1L);
+        element1.setData(clientData1);
+        
+        JsonNode clientData2 = TestUtils.getClientData();
+        ((ObjectNode)clientData2).put("stringValue", "different value");
+        AppConfigElement element2 = AppConfigElement.create();
+        element2.setId("id2");
+        element2.setRevision(2L);
+        element2.setData(clientData2);
+
+        ConfigReference ref1 = new ConfigReference("id1", 1L);
+        ConfigReference ref2 = new ConfigReference("id2", 2L);
+        List<ConfigReference> refs = ImmutableList.of(ref1, ref2);
+        
+        when(mockAppConfigElementService.getElementRevision(TEST_STUDY, "id1", 1L)).thenReturn(element1);
+        when(mockAppConfigElementService.getElementRevision(TEST_STUDY, "id2", 2L)).thenReturn(element2);
+        
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
+                .withStudyIdentifier(TEST_STUDY).build();
+        
+        AppConfig appConfig = setupConfigsForUser();
+        appConfig.setSurveyReferences(null);
+        appConfig.setSchemaReferences(null);
+        appConfig.setConfigReferences(refs);
+        appConfig.setConfigIncluded(true);
+        
+        AppConfig match = service.getAppConfigForUser(context, true);
+        
+        assertEquals(2, match.getConfigElements().size());
+        assertEquals(clientData1, match.getConfigElements().get("id1"));
+        assertEquals(clientData2, match.getConfigElements().get("id2"));
+        
+        // The references are still there. They list the versions being used
+        assertEquals(2, match.getConfigReferences().size());
+        assertEquals("id1", match.getConfigReferences().get(0).getId());
+        assertEquals(new Long(1), match.getConfigReferences().get(0).getRevision());
+        assertEquals("id2", match.getConfigReferences().get(1).getId());
+        assertEquals(new Long(2), match.getConfigReferences().get(1).getRevision());
     }
 
     @Test

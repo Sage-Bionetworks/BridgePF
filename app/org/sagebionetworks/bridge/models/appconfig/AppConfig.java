@@ -1,10 +1,12 @@
 package org.sagebionetworks.bridge.models.appconfig;
 
 import java.util.List;
+import java.util.Map;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoAppConfig;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.Criteria;
+import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 
@@ -44,6 +46,15 @@ public interface AppConfig extends BridgeEntity {
 
     List<SchemaReference> getSchemaReferences();
     void setSchemaReferences(List<SchemaReference> references);
+    
+    List<ConfigReference> getConfigReferences();
+    void setConfigReferences(List<ConfigReference> references);
+    
+    boolean isConfigIncluded();
+    void setConfigIncluded(boolean configIncluded);
+    
+    Map<String,JsonNode> getConfigElements();
+    void setConfigElements(Map<String,JsonNode> configElements);
     
     Long getVersion();
     void setVersion(Long versions);

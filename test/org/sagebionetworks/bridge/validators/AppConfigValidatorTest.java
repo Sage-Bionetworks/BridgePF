@@ -4,6 +4,8 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
+import java.util.List;
+
 import org.joda.time.DateTime;
 
 import static org.mockito.Mockito.when;
@@ -19,12 +21,16 @@ import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
+import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.services.AppConfigElementService;
 import org.sagebionetworks.bridge.services.SurveyService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -42,6 +48,9 @@ public class AppConfigValidatorTest {
     @Mock
     private UploadSchemaService schemaService;
     
+    @Mock
+    private AppConfigElementService appConfigElementService;
+    
     private AppConfigValidator newValidator;
     
     private AppConfigValidator updateValidator;
@@ -53,8 +62,45 @@ public class AppConfigValidatorTest {
         appConfig = AppConfig.create();
         appConfig.setStudyId(TEST_STUDY_IDENTIFIER);
         
-        this.newValidator = new AppConfigValidator(surveyService, schemaService, Sets.newHashSet("foo","bar"), true);
-        this.updateValidator = new AppConfigValidator(surveyService, schemaService, Sets.newHashSet("foo","bar"), false);
+        this.newValidator = new AppConfigValidator(surveyService, schemaService, appConfigElementService, Sets.newHashSet("foo","bar"), true);
+        this.updateValidator = new AppConfigValidator(surveyService, schemaService, appConfigElementService, Sets.newHashSet("foo","bar"), false);
+    }
+    
+    @Test
+    public void configReferenceValidated() {
+        ConfigReference ref1 = new ConfigReference("id:1", 1L);
+        ConfigReference ref2 = new ConfigReference("id:2", 2L);
+        
+        List<ConfigReference> references = ImmutableList.of(ref1, ref2);
+        appConfig.setConfigReferences(references);
+        
+        // This succeeds because the mock does not throw an exception
+        assertValidatorMessage(newValidator, appConfig, "criteria", "are required");
+    }
+    
+    @Test
+    public void configReferenceInvalid() {
+        ConfigReference ref = new ConfigReference(null, null);
+        
+        appConfig.setConfigReferences(ImmutableList.of(ref));
+        
+        // This succeeds because the mock does not throw an exception
+        assertValidatorMessage(newValidator, appConfig, "configReferences[0].id", "is required");
+        assertValidatorMessage(newValidator, appConfig, "configReferences[0].revision", "is required");
+    }
+    
+    @Test
+    public void configReferenceNotFound() { 
+        ConfigReference ref1 = new ConfigReference("id:1", 1L);
+        ConfigReference ref2 = new ConfigReference("id:2", 2L);
+        appConfig.setConfigReferences(ImmutableList.of(ref1, ref2));
+        appConfig.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        
+        when(appConfigElementService.getElementRevision(TestConstants.TEST_STUDY, "id:1", 1L))
+                .thenThrow(new EntityNotFoundException(AppConfigElement.class));
+        
+        // This succeeds because the mock does not throw an exception
+        assertValidatorMessage(newValidator, appConfig, "configReferences[0]", "does not refer to a configuration element");
     }
     
     @Test

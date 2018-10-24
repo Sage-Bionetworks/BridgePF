@@ -19,6 +19,8 @@ import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
+import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -32,11 +34,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableMap;
+
 @Component
 public class AppConfigService {
     private static final Logger LOG = LoggerFactory.getLogger(AppConfigService.class);
     
     private AppConfigDao appConfigDao;
+    
+    private AppConfigElementService appConfigElementService;
     
     private StudyService studyService;
     
@@ -62,6 +69,11 @@ public class AppConfigService {
     @Autowired
     final void setUploadSchemaService(UploadSchemaService schemaService) {
         this.schemaService = schemaService;
+    }
+    
+    @Autowired
+    final void setAppConfigElementService(AppConfigElementService appConfigElementService) {
+        this.appConfigElementService = appConfigElementService;
     }
     
     // In order to mock this value;
@@ -112,7 +124,27 @@ public class AppConfigService {
         // Resolve survey references to pick up survey identifiers
         matched.setSurveyReferences(matched.getSurveyReferences().stream()
             .map(surveyReference -> resolveSurvey(context.getStudyIdentifier(), surveyReference)).collect(Collectors.toList()));
+        
+        if (matched.isConfigIncluded()) {
+            ImmutableMap.Builder<String, JsonNode> builder = new ImmutableMap.Builder<>();
+            for (ConfigReference configRef : matched.getConfigReferences()) {
+                AppConfigElement element = appConfigElementService.getElementRevision(
+                        context.getStudyIdentifier(), configRef.getId(), configRef.getRevision());
+                builder.put(configRef.getId(), element.getData());    
+            }
+            matched.setConfigElements(builder.build());
+        }
         return matched;
+    }
+
+    protected AppConfigElement retrieveConfigElement2(CriteriaContext context, ConfigReference configRef) {
+        try {
+            return appConfigElementService.getElementRevision(context.getStudyIdentifier(), 
+                    configRef.getId(), configRef.getRevision());
+        } catch(Exception e) {
+            LOG.error("Error retrieving element to include in an app config", e);
+        }
+        return null;
     }
 
     /**
@@ -139,7 +171,8 @@ public class AppConfigService {
         appConfig.setStudyId(studyId.getIdentifier());
         
         Study study = studyService.getStudy(studyId);
-        Validator validator = new AppConfigValidator(surveyService, schemaService, study.getDataGroups(), true);
+        Validator validator = new AppConfigValidator(surveyService, schemaService, appConfigElementService,
+                study.getDataGroups(), true);
         Validate.entityThrowingException(validator, appConfig);
 
         long timestamp = getCurrentTimestamp();
@@ -167,7 +200,8 @@ public class AppConfigService {
         appConfig.setStudyId(studyId.getIdentifier());
         
         Study study = studyService.getStudy(studyId);
-        Validator validator = new AppConfigValidator(surveyService, schemaService, study.getDataGroups(), false);
+        Validator validator = new AppConfigValidator(surveyService, schemaService, appConfigElementService,
+                study.getDataGroups(), false);
         Validate.entityThrowingException(validator, appConfig);
         
         // Throw a 404 if the GUID is not valid.
