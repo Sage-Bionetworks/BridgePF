@@ -45,6 +45,7 @@ public class AppConfigElementsController extends BaseController {
         AppConfigElement element = parseJson(request(), AppConfigElement.class);
         
         VersionHolder version = service.createElement(session.getStudyIdentifier(), element);
+
         // App config elements are included in the app configs, so allow cache to update
         cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getStudyIdentifier()));
         return createdResult(version);
@@ -69,7 +70,7 @@ public class AppConfigElementsController extends BaseController {
     }
 
     public Result getElementRevision(String id, String revisionString) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getSessionEitherConsentedOrInRole(DEVELOPER);
         Long revision = BridgeUtils.getLongOrDefault(revisionString, null);
         if (revision == null) {
             throw new BadRequestException("Revision is not a valid revision number");
@@ -92,6 +93,7 @@ public class AppConfigElementsController extends BaseController {
         element.setRevision(revision);
         
         VersionHolder holder = service.updateElementRevision(session.getStudyIdentifier(), element);
+
         // App config elements are included in the app configs, so allow cache to update
         cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getStudyIdentifier()));
         return okResult(holder);

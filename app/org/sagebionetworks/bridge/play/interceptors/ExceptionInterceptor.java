@@ -33,7 +33,7 @@ public class ExceptionInterceptor implements MethodInterceptor {
     
     // We serialize exceptions to JSON, but do not want any of the root properties of Throwable 
     // to be exposed, so these are removed;
-    private static final Set<String> UNEXPOSED_FIELD_NAMES = Sets.newHashSet("stackTrace", "localizedMessage",
+    public static final Set<String> UNEXPOSED_FIELD_NAMES = Sets.newHashSet("stackTrace", "localizedMessage",
             "suppressed", "cause", "errorType", "errorMessage", "retryable", "requestId", "serviceName", "httpHeaders",
             "errorCode", "rawResponse", "rawResponseContent");
     

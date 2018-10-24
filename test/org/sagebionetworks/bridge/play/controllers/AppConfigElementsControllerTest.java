@@ -73,6 +73,7 @@ public class AppConfigElementsControllerTest {
         session = new UserSession(new StudyParticipant.Builder().build());
         session.setStudyIdentifier(TestConstants.TEST_STUDY);
         
+        doReturn(session).when(controller).getSessionEitherConsentedOrInRole(Roles.DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedSession(Roles.DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
     }
@@ -214,9 +215,10 @@ public class AppConfigElementsControllerTest {
         assertEquals(200, result.status());
         assertEquals("element-id", returnedElement.getId());
         
+        verify(controller).getSessionEitherConsentedOrInRole(Roles.DEVELOPER);
         verify(service).getElementRevision(TestConstants.TEST_STUDY, "id", 3L);
     }
-
+    
     @Test(expected = BadRequestException.class)
     public void getElementRevisionBadRevisionNumber() throws Exception {
         controller.getElementRevision("id", "three");
