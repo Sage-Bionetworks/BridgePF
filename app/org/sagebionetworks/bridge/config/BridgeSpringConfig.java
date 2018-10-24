@@ -35,7 +35,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoNotificationRegistration;
 import org.sagebionetworks.bridge.dynamodb.DynamoNotificationTopic;
 import org.sagebionetworks.bridge.dynamodb.DynamoOAuthAccessGrant;
 import org.sagebionetworks.bridge.dynamodb.DynamoSmsMessage;
-import org.sagebionetworks.bridge.dynamodb.DynamoSmsOptOutSettings;
 import org.sagebionetworks.bridge.dynamodb.DynamoTopicSubscription;
 
 import org.hibernate.SessionFactory;
@@ -295,12 +294,6 @@ public class BridgeSpringConfig {
     @Autowired
     public DynamoDBMapper smsMessageDdbMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoSmsMessage.class);
-    }
-
-    @Bean(name = "smsOptOutDdbMapper")
-    @Autowired
-    public DynamoDBMapper smsOptOutDdbMapper(DynamoUtils dynamoUtils) {
-        return dynamoUtils.getMapper(DynamoSmsOptOutSettings.class);
     }
 
     @Bean(name = "reportDataMapper")

@@ -38,7 +38,6 @@ import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
-import org.sagebionetworks.bridge.sms.SmsServiceProvider;
 
 @ContextConfiguration("classpath:test-context.xml")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -128,7 +127,6 @@ public class StudyServiceTest {
         assertFalse(study.isConsentNotificationEmailVerified());
         assertNotNull("Version has been set", study.getVersion());
         assertTrue(study.isActive());
-        assertEquals(SmsServiceProvider.AWS, study.getSmsServiceProvider());
         assertFalse(study.isStrictUploadValidationEnabled());
         assertTrue(study.isStudyIdExcludedInExport());
         assertEquals(UploadValidationStrictness.REPORT, study.getUploadValidationStrictness());
@@ -333,7 +331,6 @@ public class StudyServiceTest {
     @Test
     public void adminsCanChangeSomeValuesResearchersCannot() {
         study = TestUtils.getValidStudy(StudyServiceTest.class);
-        study.setSmsServiceProvider(SmsServiceProvider.TWILIO);
         study.setStudyIdExcludedInExport(true);
         study.setEmailVerificationEnabled(true);
         study.setExternalIdValidationEnabled(false);
@@ -357,7 +354,6 @@ public class StudyServiceTest {
         changeStudyDefaults(study);
         study = studyService.updateStudy(study, true);
         // These values have all successfully been changed from the defaults
-        assertEquals(SmsServiceProvider.TWILIO, study.getSmsServiceProvider());
         assertFalse(study.isStudyIdExcludedInExport());
         assertFalse(study.isEmailVerificationEnabled());
         assertFalse(study.isVerifyChannelOnSignInEnabled());
@@ -371,7 +367,6 @@ public class StudyServiceTest {
     }
 
     private void assertStudyDefaults(Study study) {
-        assertEquals(SmsServiceProvider.AWS, study.getSmsServiceProvider());
         assertTrue(study.isStudyIdExcludedInExport());
         assertTrue(study.isEmailVerificationEnabled());
         assertTrue(study.isVerifyChannelOnSignInEnabled());
@@ -384,7 +379,6 @@ public class StudyServiceTest {
     }
     
     private void changeStudyDefaults(Study study) {
-        study.setSmsServiceProvider(SmsServiceProvider.TWILIO);
         study.setStudyIdExcludedInExport(false);
         study.setEmailVerificationEnabled(false);
         study.setVerifyChannelOnSignInEnabled(false);

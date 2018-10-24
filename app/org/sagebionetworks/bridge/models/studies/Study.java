@@ -9,7 +9,6 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
-import org.sagebionetworks.bridge.sms.SmsServiceProvider;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -101,12 +100,6 @@ public interface Study extends BridgeEntity, StudyIdentifier {
 
     /** @see #isParticipantIpLockingEnabled */
     void setParticipantIpLockingEnabled(boolean participantIpLockingEnabled);
-
-    /** The SMS Service provider this study should use. */
-    SmsServiceProvider getSmsServiceProvider();
-
-    /** @see #getSmsServiceProvider */
-    void setSmsServiceProvider(SmsServiceProvider smsServiceProvider);
 
     /**
      * If true, the channel (email or phone number) used to sign in will be checked and must be verified

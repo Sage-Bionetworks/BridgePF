@@ -98,7 +98,6 @@ public class NotificationsServiceTest {
         service.setStudyService(mockStudyService);
         service.setNotificationRegistrationDao(mockRegistrationDao);
         service.setSnsClient(mockSnsClient);
-        //service.setTwilioHelper(mockTwilioHelper);
 
         Map<String,String> map = Maps.newHashMap();
         map.put(OS_NAME, PLATFORM_ARN);

@@ -78,7 +78,6 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
-import org.sagebionetworks.bridge.sms.SmsServiceProvider;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -422,7 +421,6 @@ public class StudyService {
 
         study.setActive(true);
         study.setConsentNotificationEmailVerified(false);
-        study.setSmsServiceProvider(SmsServiceProvider.AWS);
         study.setStudyIdExcludedInExport(true);
         study.setVerifyChannelOnSignInEnabled(true);
         study.setEmailVerificationEnabled(true);
@@ -573,7 +571,6 @@ public class StudyService {
             study.setPhoneSignInEnabled(originalStudy.isPhoneSignInEnabled());
             study.setReauthenticationEnabled(originalStudy.isReauthenticationEnabled());
             study.setAccountLimit(originalStudy.getAccountLimit());
-            study.setSmsServiceProvider(originalStudy.getSmsServiceProvider());
             study.setStudyIdExcludedInExport(originalStudy.isStudyIdExcludedInExport());
             study.setVerifyChannelOnSignInEnabled(originalStudy.isVerifyChannelOnSignInEnabled());
         }

@@ -7,7 +7,6 @@ import play.mvc.Result;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.sms.SmsMessage;
-import org.sagebionetworks.bridge.models.sms.SmsOptOutSettings;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.SmsService;
 
@@ -30,24 +29,5 @@ public class SmsController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
         SmsMessage message = smsService.getMostRecentMessage(study, userId);
         return okResult(message);
-    }
-
-    /** Returns the opt-out settings for the phone number of the given user. Used by integration tests. */
-    public Result getOptOutSettings(String userId) {
-        UserSession session = getAuthenticatedSession(Roles.ADMIN);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
-        SmsOptOutSettings optOutSettings = smsService.getOptOutSettings(study, userId);
-        return okResult(optOutSettings);
-    }
-
-    /** Sets the opt-out settings for the phone number of the given user. Used by integration tests. */
-    public Result setOptOutSettings(String userId) {
-        UserSession session = getAuthenticatedSession(Roles.ADMIN);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
-
-        SmsOptOutSettings optOutSettings = parseJson(request(), SmsOptOutSettings.class);
-        smsService.setOptOutSettings(study, userId, optOutSettings);
-
-        return okResult("SMS opt-out settings updated");
     }
 }

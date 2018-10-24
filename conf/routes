@@ -91,8 +91,6 @@ POST   /v3/participants/self/identifiers @org.sagebionetworks.bridge.play.contro
 GET    /v3/participants/:userId                                        @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipant(userId: String, consents: Boolean ?= true)
 POST   /v3/participants/:userId                                        @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateParticipant(userId: String)
 DELETE /v3/participants/:userId                                        @org.sagebionetworks.bridge.play.controllers.ParticipantController.deleteTestParticipant(userId: String)
-GET    /v3/participants/:userId/sms/optout                             @org.sagebionetworks.bridge.play.controllers.SmsController.getOptOutSettings(userId: String)
-POST   /v3/participants/:userId/sms/optout                             @org.sagebionetworks.bridge.play.controllers.SmsController.setOptOutSettings(userId: String)
 GET    /v3/participants/:userId/sms/recent                             @org.sagebionetworks.bridge.play.controllers.SmsController.getMostRecentMessage(userId: String)
 GET    /v3/participants/:userId/uploads                                @org.sagebionetworks.bridge.play.controllers.ParticipantController.getUploads(userId: String, startTime: String ?= null, endTime: String ?= null, pageSize: Integer ?= null, offsetKey: String ?= null)
 GET    /v3/participants/:userId/requestInfo                            @org.sagebionetworks.bridge.play.controllers.ParticipantController.getRequestInfo(userId: String)

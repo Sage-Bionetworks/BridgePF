@@ -54,8 +54,6 @@ libraryDependencies ++= Seq(
   "com.google.guava" % "guava" % "18.0",
   // Guice
   "com.google.inject" % "guice" % "4.0",
-  // Twilio (SMS Service)
-  "com.twilio.sdk" % "twilio" % "7.27.0",
   // Quartz
   "org.quartz-scheduler" % "quartz" % "2.2.1",
   // Mail
@@ -75,8 +73,6 @@ libraryDependencies ++= Seq(
   javaWs % Test,
   "junit" % "junit" % "4.12" % Test,
   "org.mockito" % "mockito-core" % "1.10.19" % Test,
-  "org.powermock" % "powermock-api-mockito" % "1.7.4" % Test,
-  "org.powermock" % "powermock-module-junit4" % "1.7.4" % Test,
   "org.sagebionetworks" % "BridgeTestUtils" % "1.4" % Test,
   "org.springframework" % "spring-test" % "4.3.18.RELEASE" % Test,
   "nl.jqno.equalsverifier" % "equalsverifier" % "1.7.2" % Test

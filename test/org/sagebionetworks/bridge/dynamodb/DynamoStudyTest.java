@@ -36,7 +36,6 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
-import org.sagebionetworks.bridge.sms.SmsServiceProvider;
 
 /**
  * Main functionality we want to verify in this test is that study can be serialized with all values, 
@@ -60,21 +59,6 @@ public class DynamoStudyTest {
         // Set to null makes it empty again
         study.setAutomaticCustomEvents(null);
         assertTrue(study.getAutomaticCustomEvents().isEmpty());
-    }
-
-    @Test
-    public void smsServiceProvider() {
-        // Defaults to AWS.
-        Study study = Study.create();
-        assertEquals(SmsServiceProvider.AWS, study.getSmsServiceProvider());
-
-        // Set to Twilio.
-        study.setSmsServiceProvider(SmsServiceProvider.TWILIO);
-        assertEquals(SmsServiceProvider.TWILIO, study.getSmsServiceProvider());
-
-        // Set to null, defaults to AWS again.
-        study.setSmsServiceProvider(null);
-        assertEquals(SmsServiceProvider.AWS, study.getSmsServiceProvider());
     }
 
     @Test
@@ -127,7 +111,6 @@ public class DynamoStudyTest {
         assertTrue(node.get("autoVerificationEmailSuppressed").booleanValue());
         assertEqualsAndNotNull(study.getConsentNotificationEmail(), node.get("consentNotificationEmail").asText());
         assertFalse(node.get("participantIpLockingEnabled").booleanValue());
-        assertEquals(SmsServiceProvider.TWILIO.name().toLowerCase(), node.get("smsServiceProvider").textValue());
         assertTrue(node.get("studyIdExcludedInExport").booleanValue());
         assertEqualsAndNotNull(study.getSupportEmail(), node.get("supportEmail").asText());
         assertEqualsAndNotNull(study.getSynapseDataAccessTeamId(), node.get("synapseDataAccessTeamId").longValue());

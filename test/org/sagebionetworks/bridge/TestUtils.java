@@ -43,7 +43,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.sms.SmsServiceProvider;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.OperatingSystem;
@@ -415,7 +414,6 @@ public class TestUtils {
         study.setShortName("ShortName");
         study.setAutoVerificationEmailSuppressed(true);
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        study.setSmsServiceProvider(SmsServiceProvider.TWILIO);
         study.setStudyIdExcludedInExport(true);
         study.setVerifyEmailTemplate(new EmailTemplate("verifyEmail subject", "body with ${url}", MimeType.TEXT));
         study.setResetPasswordTemplate(new EmailTemplate("resetPassword subject", "body with ${url}", MimeType.TEXT));

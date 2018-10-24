@@ -1,17 +1,13 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 import play.mvc.Result;
 
 import org.sagebionetworks.bridge.Roles;
@@ -19,14 +15,12 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.sms.SmsMessage;
-import org.sagebionetworks.bridge.models.sms.SmsOptOutSettings;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.SmsService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 public class SmsControllerTest {
     private static final String MESSAGE_ID = "my-message-id";
-    private static final String PHONE_NUMBER = "+12065550123";
     private static final String USER_ID = "test-user";
 
     private static final Study DUMMY_STUDY;
@@ -71,39 +65,5 @@ public class SmsControllerTest {
 
         SmsMessage controllerOutput = TestUtils.getResponsePayload(result, SmsMessage.class);
         assertEquals(MESSAGE_ID, controllerOutput.getMessageId());
-    }
-
-    @Test
-    public void getOptOutSettings() throws Exception {
-        // Setup test. This method is a passthrough for SmsOptOutSettings, so just verify one attribute.
-        SmsOptOutSettings svcOutput = SmsOptOutSettings.create();
-        svcOutput.setPhoneNumber(PHONE_NUMBER);
-        when(mockSmsService.getOptOutSettings(DUMMY_STUDY, USER_ID)).thenReturn(svcOutput);
-
-        // Execute and verify.
-        Result result = controller.getOptOutSettings(USER_ID);
-        assertEquals(200, result.status());
-
-        SmsOptOutSettings controllerOutput = TestUtils.getResponsePayload(result, SmsOptOutSettings.class);
-        assertEquals(PHONE_NUMBER, controllerOutput.getPhoneNumber());
-    }
-
-    @Test
-    public void setOptOutSettings() throws Exception {
-        // Setup test. This method is a passthrough for SmsOptOutSettings, so just verify one attribute.
-        SmsOptOutSettings controllerInput = SmsOptOutSettings.create();
-        controllerInput.setPhoneNumber(PHONE_NUMBER);
-        TestUtils.mockPlayContextWithJson(controllerInput);
-
-        // Execute and verify.
-        Result result = controller.setOptOutSettings(USER_ID);
-        TestUtils.assertResult(result, 200, "SMS opt-out settings updated");
-
-        // Verify service call.
-        ArgumentCaptor<SmsOptOutSettings> svcInputCaptor = ArgumentCaptor.forClass(SmsOptOutSettings.class);
-        verify(mockSmsService).setOptOutSettings(same(DUMMY_STUDY), eq(USER_ID), svcInputCaptor.capture());
-
-        SmsOptOutSettings svcInput = svcInputCaptor.getValue();
-        assertEquals(PHONE_NUMBER, svcInput.getPhoneNumber());
     }
 }
