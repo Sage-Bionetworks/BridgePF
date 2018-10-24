@@ -243,6 +243,16 @@ POST   /v3/topics/:guid                  @org.sagebionetworks.bridge.play.contro
 DELETE /v3/topics/:guid                  @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.deleteTopic(guid: String, physical: String ?= "false")
 POST   /v3/topics/:guid/sendNotification @org.sagebionetworks.bridge.play.controllers.NotificationTopicController.sendNotification(guid: String)
 
+# AppConfig Elements
+GET    /v3/appconfigs/elements                                 @org.sagebionetworks.bridge.play.controllers.AppConfigElementsController.getMostRecentElements(includeDeleted: String ?= "false")
+POST   /v3/appconfigs/elements                                 @org.sagebionetworks.bridge.play.controllers.AppConfigElementsController.createElement
+GET    /v3/appconfigs/elements/:id                             @org.sagebionetworks.bridge.play.controllers.AppConfigElementsController.getElementRevisions(id: String, includeDeleted: String ?= "false")
+DELETE /v3/appconfigs/elements/:id                             @org.sagebionetworks.bridge.play.controllers.AppConfigElementsController.deleteElementAllRevisions(id: String, physical: String ?= "false")
+GET    /v3/appconfigs/elements/:id/recent                      @org.sagebionetworks.bridge.play.controllers.AppConfigElementsController.getMostRecentElement(id: String)
+GET    /v3/appconfigs/elements/:id/revisions/:revision         @org.sagebionetworks.bridge.play.controllers.AppConfigElementsController.getElementRevision(id: String, revision: String)
+POST   /v3/appconfigs/elements/:id/revisions/:revision         @org.sagebionetworks.bridge.play.controllers.AppConfigElementsController.updateElementRevision(id: String, revision: String)
+DELETE /v3/appconfigs/elements/:id/revisions/:revision         @org.sagebionetworks.bridge.play.controllers.AppConfigElementsController.deleteElementRevision(id : String, revision: String, physical: String ?= "false")
+
 # AppConfigs
 GET    /v3/appconfigs        @org.sagebionetworks.bridge.play.controllers.AppConfigController.getAppConfigs(includeDeleted: String ?= "false")
 GET    /v3/appconfigs/:guid  @org.sagebionetworks.bridge.play.controllers.AppConfigController.getAppConfig(guid: String)
