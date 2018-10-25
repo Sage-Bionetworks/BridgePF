@@ -24,8 +24,6 @@ import org.sagebionetworks.bridge.dao.SmsMessageDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.models.accounts.Phone;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.sms.SmsMessage;
 import org.sagebionetworks.bridge.models.sms.SmsType;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
@@ -40,16 +38,8 @@ public class SmsServiceTest {
     private static final String PHONE_NUMBER = "+12065550123";
     private static final long SENT_ON = 1539732997760L;
     private static final String STUDY_SHORT_NAME = "My Study";
-    private static final String USER_ID = "test-user";
-
-    private static final Phone PHONE = new Phone(PHONE_NUMBER, "US");
-    private static final StudyParticipant PARTICIPANT_WITH_NO_PHONE = new StudyParticipant.Builder().withId(USER_ID)
-            .build();
-    private static final StudyParticipant PARTICIPANT_WITH_PHONE = new StudyParticipant.Builder().withId(USER_ID)
-            .withPhone(PHONE).build();
 
     private SmsMessageDao mockMessageDao;
-    private ParticipantService mockParticipantService;
     private AmazonSNSClient mockSnsClient;
     private Study study;
     private SmsService svc;
@@ -70,18 +60,12 @@ public class SmsServiceTest {
         study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         study.setShortName(STUDY_SHORT_NAME);
 
-        StudyService mockStudyService = mock(StudyService.class);
-        when(mockStudyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(study);
-        when(mockStudyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
-
         // Mock other DAOs and services.
         mockMessageDao = mock(SmsMessageDao.class);
-        mockParticipantService = mock(ParticipantService.class);
 
         // Set up service.
         svc = new SmsService();
         svc.setMessageDao(mockMessageDao);
-        svc.setParticipantService(mockParticipantService);
         svc.setSnsClient(mockSnsClient);
     }
 
@@ -189,26 +173,6 @@ public class SmsServiceTest {
         when(mockMessageDao.getMostRecentMessage(PHONE_NUMBER)).thenReturn(daoOutput);
 
         SmsMessage svcOutput = svc.getMostRecentMessage(PHONE_NUMBER);
-        assertSame(daoOutput, svcOutput);
-    }
-
-    @Test(expected = BadRequestException.class)
-    public void getMostRecentMessage_ParticipantWithNoPhone() {
-        when(mockParticipantService.getParticipant(study, USER_ID, false)).thenReturn(
-                PARTICIPANT_WITH_NO_PHONE);
-        svc.getMostRecentMessage(study, USER_ID);
-    }
-
-    @Test
-    public void getMostRecentMessage_ParticipantWithPhone() {
-        // Mock dependencies.
-        SmsMessage daoOutput = makeValidSmsMessage();
-        when(mockMessageDao.getMostRecentMessage(PHONE_NUMBER)).thenReturn(daoOutput);
-
-        when(mockParticipantService.getParticipant(study, USER_ID, false)).thenReturn(
-                PARTICIPANT_WITH_PHONE);
-
-        SmsMessage svcOutput = svc.getMostRecentMessage(study, USER_ID);
         assertSame(daoOutput, svcOutput);
     }
 

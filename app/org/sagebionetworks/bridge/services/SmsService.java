@@ -18,9 +18,7 @@ import org.sagebionetworks.bridge.dao.SmsMessageDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.Phone;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.sms.SmsMessage;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -38,19 +36,12 @@ public class SmsService {
     private static final int SMS_CHARACTER_LIMIT = 600;
 
     private SmsMessageDao messageDao;
-    private ParticipantService participantService;
     private AmazonSNSClient snsClient;
 
     /** Message DAO, for writing to and reading from the SMS message log. */
     @Autowired
     public final void setMessageDao(SmsMessageDao messageDao) {
         this.messageDao = messageDao;
-    }
-
-    /** Participant service, used to get a phone number for an account. */
-    @Autowired
-    public final void setParticipantService(ParticipantService participantService) {
-        this.participantService = participantService;
     }
 
     /** SNS client, to send SMS through AWS. */
@@ -95,16 +86,6 @@ public class SmsService {
             throw new BadRequestException("number is required");
         }
         return messageDao.getMostRecentMessage(number);
-    }
-
-    /** Gets the message we most recently sent to the phone number associated with the given account. */
-    public SmsMessage getMostRecentMessage(Study study, String userId) {
-        StudyParticipant participant = participantService.getParticipant(study, userId, false);
-        if (participant.getPhone() == null) {
-            throw new BadRequestException("participant has no phone number");
-        }
-
-        return getMostRecentMessage(participant.getPhone().getNumber());
     }
 
     /** Saves an SMS message that we sent to the SMS message log. */

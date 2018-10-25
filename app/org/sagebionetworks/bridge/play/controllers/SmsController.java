@@ -5,9 +5,12 @@ import org.springframework.stereotype.Controller;
 import play.mvc.Result;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.sms.SmsMessage;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.SmsService;
 
 /**
@@ -15,7 +18,14 @@ import org.sagebionetworks.bridge.services.SmsService;
  */
 @Controller
 public class SmsController extends BaseController {
+    private ParticipantService participantService;
     private SmsService smsService;
+
+    /** Participant service, used to get a phone number for an account. */
+    @Autowired
+    public final void setParticipantService(ParticipantService participantService) {
+        this.participantService = participantService;
+    }
 
     /** SMS service. */
     @Autowired
@@ -27,7 +37,15 @@ public class SmsController extends BaseController {
     public Result getMostRecentMessage(String userId) {
         UserSession session = getAuthenticatedSession(Roles.ADMIN);
         Study study = studyService.getStudy(session.getStudyIdentifier());
-        SmsMessage message = smsService.getMostRecentMessage(study, userId);
+
+        // Get phone number for participant.
+        StudyParticipant participant = participantService.getParticipant(study, userId, false);
+        if (participant.getPhone() == null) {
+            throw new BadRequestException("participant has no phone number");
+        }
+
+        // Get SMS message for phone number.
+        SmsMessage message = smsService.getMostRecentMessage(participant.getPhone().getNumber());
         return okResult(message);
     }
 }
