@@ -16,7 +16,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.sagebionetworks.client.exceptions.SynapseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -64,13 +63,13 @@ public class StudyServiceTest {
     private Study study;
 
     @Before
-    public void before() throws SynapseException {
+    public void before() {
         mockCache = mock(CacheProvider.class);
         studyService.setCacheProvider(mockCache);
     }
     
     @After
-    public void after() throws SynapseException {
+    public void after() {
         if (study != null) {
             studyService.deleteStudy(study.getIdentifier(), true);
         }

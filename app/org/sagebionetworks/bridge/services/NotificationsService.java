@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeUtils.SEMICOLON_SPACE_JOINER;
 
-import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Set;
 
@@ -14,9 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
 import org.sagebionetworks.bridge.dao.NotificationRegistrationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.NotImplementedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
@@ -45,12 +44,8 @@ import com.google.common.collect.Sets;
 public class NotificationsService {
     private static final Logger LOG = LoggerFactory.getLogger(NotificationsService.class);
 
-    // mPower 2.0 study burst notifications can be fairly long. The longest one has 230 chars of fixed content, an app
-    // url that's 53 characters long, and some freeform text that can be potentially 255 characters long, for a total
-    // of 538 characters. Round to a nice round 600 characters (about 4.5 SMS messages, if broken up).
-    private static final int SMS_CHARACTER_LIMIT = 600;
-
     private ParticipantService participantService;
+    private SmsService smsService;
     private StudyService studyService;
     private NotificationRegistrationDao notificationRegistrationDao;
     private NotificationTopicService notificationTopicService;
@@ -60,6 +55,12 @@ public class NotificationsService {
     @Autowired
     public final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
+    }
+
+    /** SMS service, used for managing SMS log and opt-outs. */
+    @Autowired
+    public final void setSmsService(SmsService smsService) {
+        this.smsService = smsService;
     }
 
     @Autowired
@@ -85,7 +86,7 @@ public class NotificationsService {
     final void setSnsClient(AmazonSNSClient snsClient) {
         this.snsClient = snsClient;
     }
-    
+
     /**
      * Return all the registrations for this user. There may be more than one, if a user installs 
      * the application on different devices. It is possible there may be multiple registrations on 
@@ -250,18 +251,8 @@ public class NotificationsService {
     }
     
     public void sendSmsMessage(SmsMessageProvider provider) {
-        checkNotNull(provider);
-        
-        PublishRequest request = provider.getSmsRequest();
-
-        if (request.getMessage().getBytes(Charset.forName("US-ASCII")).length > SMS_CHARACTER_LIMIT) {
-            throw new BridgeServiceException("SMS message cannot be longer than 140 UTF-8/ASCII characters.");
-        }
-        
-        PublishResult result = snsClient.publish(request);
-
-        LOG.debug("Sent SMS message, study=" + provider.getStudy().getStudyIdentifier().getIdentifier()
-                + ", message ID=" + result.getMessageId());
+        // This is now a call-through to SmsService.
+        smsService.sendSmsMessage(provider);
     }
 
     private String getPlatformARN(Study study, NotificationRegistration registration) {

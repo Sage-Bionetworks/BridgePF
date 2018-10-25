@@ -97,6 +97,10 @@
         <property name="targetName" value="exportController"/>
     </bean>
 
+    <bean id="SmsControllerProxied" parent="proxiedController">
+        <property name="targetName" value="smsController"/>
+    </bean>
+
     <bean id="SharedModuleControllerProxied" parent="proxiedController">
         <property name="targetName" value="sharedModuleController"/>
     </bean>
