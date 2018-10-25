@@ -26,6 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.model.CheckIfPhoneNumberIsOptedOutRequest;
+import com.amazonaws.services.sns.model.CheckIfPhoneNumberIsOptedOutResult;
+import com.amazonaws.services.sns.model.OptInPhoneNumberRequest;
 import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -163,7 +167,10 @@ public class ParticipantServiceTest {
     
     @Mock
     private ScheduledActivityDao activityDao;
-    
+
+    @Mock
+    public AmazonSNSClient snsClient;
+
     @Mock
     private SubpopulationService subpopService;
     
@@ -199,13 +206,7 @@ public class ParticipantServiceTest {
     
     @Captor
     ArgumentCaptor<Account> accountCaptor;
-    
-    @Captor
-    ArgumentCaptor<Set<Roles>> rolesCaptor;
 
-    @Captor
-    ArgumentCaptor<UserSession> sessionCaptor;
-    
     @Captor
     ArgumentCaptor<Study> studyCaptor;
     
@@ -214,10 +215,7 @@ public class ParticipantServiceTest {
     
     @Captor
     ArgumentCaptor<AccountId> accountIdCaptor;
-    
-    @Captor
-    ArgumentCaptor<String> stringCaptor;
-    
+
     @Captor
     ArgumentCaptor<SmsMessageProvider> providerCaptor;
     
@@ -231,6 +229,7 @@ public class ParticipantServiceTest {
         STUDY.setAccountLimit(0);
         participantService = new ParticipantService();
         participantService.setAccountDao(accountDao);
+        participantService.setSnsClient(snsClient);
         participantService.setSubpopulationService(subpopService);
         participantService.setUserConsent(consentService);
         participantService.setCacheProvider(cacheProvider);
@@ -242,6 +241,10 @@ public class ParticipantServiceTest {
         participantService.setAccountWorkflowService(accountWorkflowService);
         
         account = Account.create();
+
+        // Mock SNS client check opted out request so that phone tests don't crash with NPE.
+        when(snsClient.checkIfPhoneNumberIsOptedOut(any())).thenReturn(new CheckIfPhoneNumberIsOptedOutResult()
+                .withIsOptedOut(false));
     }
     
     private void mockHealthCodeAndAccountRetrieval() {
@@ -463,6 +466,46 @@ public class ParticipantServiceTest {
         verify(accountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any());
         assertEquals(AccountStatus.ENABLED, account.getStatus());
         assertNull(account.getPhoneVerified());
+    }
+
+    @Test
+    public void createPhoneParticipant_PhoneNotOptedOut() {
+        // Set up and execute test.
+        mockHealthCodeAndAccountRetrieval(null, PHONE);
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
+
+        // Verify calls to SNS.
+        ArgumentCaptor<CheckIfPhoneNumberIsOptedOutRequest> checkRequestCaptor = ArgumentCaptor.forClass(
+                CheckIfPhoneNumberIsOptedOutRequest.class);
+        verify(snsClient).checkIfPhoneNumberIsOptedOut(checkRequestCaptor.capture());
+        CheckIfPhoneNumberIsOptedOutRequest checkRequest = checkRequestCaptor.getValue();
+        assertEquals(PHONE.getNumber(), checkRequest.getPhoneNumber());
+
+        verify(snsClient, never()).optInPhoneNumber(any());
+    }
+
+    @Test
+    public void createPhoneParticipant_OptPhoneBackIn() {
+        // Mock SNS client to return true to check if opted out request.
+        when(snsClient.checkIfPhoneNumberIsOptedOut(any())).thenReturn(new CheckIfPhoneNumberIsOptedOutResult()
+                .withIsOptedOut(true));
+
+        // Set up and execute test.
+        mockHealthCodeAndAccountRetrieval(null, PHONE);
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
+
+        // Verify calls to SNS.
+        ArgumentCaptor<CheckIfPhoneNumberIsOptedOutRequest> checkRequestCaptor = ArgumentCaptor.forClass(
+                CheckIfPhoneNumberIsOptedOutRequest.class);
+        verify(snsClient).checkIfPhoneNumberIsOptedOut(checkRequestCaptor.capture());
+        CheckIfPhoneNumberIsOptedOutRequest checkRequest = checkRequestCaptor.getValue();
+        assertEquals(PHONE.getNumber(), checkRequest.getPhoneNumber());
+
+        ArgumentCaptor<OptInPhoneNumberRequest> optInRequestCaptor = ArgumentCaptor.forClass(
+                OptInPhoneNumberRequest.class);
+        verify(snsClient).optInPhoneNumber(optInRequestCaptor.capture());
+        OptInPhoneNumberRequest optInRequest = optInRequestCaptor.getValue();
+        assertEquals(PHONE.getNumber(), optInRequest.getPhoneNumber());
     }
 
     @Test

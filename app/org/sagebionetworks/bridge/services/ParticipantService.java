@@ -12,6 +12,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.model.CheckIfPhoneNumberIsOptedOutRequest;
+import com.amazonaws.services.sns.model.CheckIfPhoneNumberIsOptedOutResult;
+import com.amazonaws.services.sns.model.OptInPhoneNumberRequest;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -43,6 +47,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
@@ -86,6 +91,8 @@ public class ParticipantService {
     private NotificationsService notificationsService;
 
     private ScheduledActivityService scheduledActivityService;
+
+    private AmazonSNSClient snsClient;
 
     private ActivityEventService activityEventService;
 
@@ -139,6 +146,12 @@ public class ParticipantService {
     @Autowired
     final void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
         this.scheduledActivityService = scheduledActivityService;
+    }
+
+    /** Simple Notification Service (SNS), used to opt users in to receiving SMS when they create a new account. */
+    @Autowired
+    final void setSnsClient(AmazonSNSClient snsClient) {
+        this.snsClient = snsClient;
     }
 
     @Autowired
@@ -347,9 +360,32 @@ public class ParticipantService {
         if (sendEmailVerification && !study.isAutoVerificationEmailSuppressed()) {
             accountWorkflowService.sendEmailVerificationToken(study, accountId, account.getEmail());
         }
+
+        // If you create an account with a phone number, this opts the phone number in to receiving SMS. We do this
+        // _before_ phone verification / sign-in, because we need to opt the user in to SMS in order to send phone
+        // verification / sign-in.
+        Phone phone = account.getPhone();
+        if (phone != null) {
+            // Check if phone number is opted out.
+            CheckIfPhoneNumberIsOptedOutRequest checkRequest = new CheckIfPhoneNumberIsOptedOutRequest()
+                    .withPhoneNumber(phone.getNumber());
+            CheckIfPhoneNumberIsOptedOutResult checkResult = snsClient.checkIfPhoneNumberIsOptedOut(checkRequest);
+
+            if (Boolean.TRUE.equals(checkResult.isOptedOut())) {
+                LOG.info("Opting in user " + accountId + " for SMS messages");
+
+                // User was previously opted out. They created a new account (almost certainly in a new study). We need
+                // to opt them back in. Note that according to AWS, this can only be done once every 30 days to prevent
+                // abuse.
+                OptInPhoneNumberRequest optInRequest = new OptInPhoneNumberRequest().withPhoneNumber(
+                        phone.getNumber());
+                snsClient.optInPhoneNumber(optInRequest);
+            }
+        }
+
         // send verify phone number
         if (shouldSendVerification && !study.isAutoVerificationPhoneSuppressed()) {
-            accountWorkflowService.sendPhoneVerificationToken(study, accountId, account.getPhone());
+            accountWorkflowService.sendPhoneVerificationToken(study, accountId, phone);
         }
         return new IdentifierHolder(accountId);
     }
