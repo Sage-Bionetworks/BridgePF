@@ -2,12 +2,14 @@ package org.sagebionetworks.bridge.models.schedules;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public final class ConfigReference {
     private final String id;
     private final Long revision;
 
+    @JsonCreator
     public ConfigReference(@JsonProperty("id") String id, @JsonProperty("revision") Long revision) {
         this.id = id;
         this.revision = revision;

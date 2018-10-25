@@ -236,10 +236,74 @@ public class AppConfigServiceTest {
         assertEquals("id2", match.getConfigReferences().get(1).getId());
         assertEquals(new Long(2), match.getConfigReferences().get(1).getRevision());
     }
+    
+    @Test
+    public void getAppConfigForUserReferencingMissingElement() {
+        JsonNode clientData2 = TestUtils.getClientData();
+        ((ObjectNode)clientData2).put("stringValue", "different value");
+        AppConfigElement element2 = AppConfigElement.create();
+        element2.setId("id2");
+        element2.setRevision(2L);
+        element2.setData(clientData2);
+
+        ConfigReference ref1 = new ConfigReference("id1", 1L);
+        ConfigReference ref2 = new ConfigReference("id2", 2L);
+        List<ConfigReference> refs = ImmutableList.of(ref1, ref2);
+        
+        when(mockAppConfigElementService.getElementRevision(TEST_STUDY, "id1", 1L))
+                .thenThrow(new EntityNotFoundException(AppConfigElement.class));
+        when(mockAppConfigElementService.getElementRevision(TEST_STUDY, "id2", 2L)).thenReturn(element2);
+        
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
+                .withStudyIdentifier(TEST_STUDY).build();
+        
+        AppConfig appConfig = setupConfigsForUser();
+        appConfig.setGuid("abc-def");
+        appConfig.setConfigReferences(refs);
+        
+        AppConfig match = service.getAppConfigForUser(context, true);
+        
+        assertEquals(1, match.getConfigElements().size());
+        // id1 is not included but this does not prevent id2 from being included.
+        assertNull(match.getConfigElements().get("id1"));
+        assertEquals(clientData2, match.getConfigElements().get("id2"));
+        
+        verify(service).logError("AppConfig[guid=abc-def] references missing AppConfigElement[id=id1, revision=1]");
+    }
 
     @Test
+    public void getAppConfigForUserMatchesMultipleAppConfigs() throws Exception {
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
+                .withStudyIdentifier(TEST_STUDY).build();
+        
+        AppConfig appConfig1 = AppConfig.create();
+        appConfig1.setLabel("AppConfig1");
+        appConfig1.setCriteria(Criteria.create());
+        appConfig1.setCreatedOn(LATER_TIMESTAMP);
+        RESULTS.add(appConfig1);
+        
+        AppConfig appConfig2 = AppConfig.create();
+        appConfig2.setLabel("AppConfig2");
+        appConfig2.setCriteria(Criteria.create());
+        appConfig2.setCreatedOn(EARLIER_TIMESTAMP);
+        RESULTS.add(appConfig2);
+        
+        when(mockDao.getAppConfigs(TEST_STUDY, false)).thenReturn(RESULTS);
+        
+        AppConfig appConfig = service.getAppConfigForUser(context, false);
+
+        verify(service).logError("CriteriaContext matches more than one app config: criteriaContext=" + 
+                context + ", appConfigs=" + Lists.newArrayList(appConfig2, appConfig1));
+        assertEquals(appConfig2, appConfig);
+    }
+    
+    // This should not actually ever happen. We're suppressing exceptions if the survey is missing.
+    @Test
     public void getAppConfigForUserSurveyDoesNotExist() throws Exception {
-        when(surveyService.getSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, false, true)).thenThrow(new EntityNotFoundException(Survey.class));
+        when(surveyService.getSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, false, true))
+                .thenThrow(new EntityNotFoundException(Survey.class));
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))

@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -26,26 +27,23 @@ public class ConfigReferenceTest {
 
     @Test
     public void nullProps() {
-        ConfigReference schemaRef = new ConfigReference(null, null);
-        assertNull(schemaRef.getId());
-        assertNull(schemaRef.getRevision());
+        ConfigReference configRef = new ConfigReference(null, null);
+        assertNull(configRef.getId());
+        assertNull(configRef.getRevision());
     }
 
     @Test
     public void jsonSerialization() throws Exception {
         // start with JSON
-        String jsonText = "{\n" +
-                "   \"id\":\"test-config\",\n" +
-                "   \"revision\":7\n" +
-                "}";
+        String jsonText = TestUtils.createJson("{'id':'test-config', 'revision':7}");
 
         // convert to POJO
-        ConfigReference schemaRef = BridgeObjectMapper.get().readValue(jsonText, ConfigReference.class);
-        assertEquals("test-config", schemaRef.getId());
-        assertEquals(7L, schemaRef.getRevision().longValue());
+        ConfigReference configRef = BridgeObjectMapper.get().readValue(jsonText, ConfigReference.class);
+        assertEquals("test-config", configRef.getId());
+        assertEquals(7L, configRef.getRevision().longValue());
 
         // convert back to JSON
-        JsonNode jsonNode = BridgeObjectMapper.get().convertValue(schemaRef, JsonNode.class);
+        JsonNode jsonNode = BridgeObjectMapper.get().convertValue(configRef, JsonNode.class);
         assertEquals(3, jsonNode.size());
         assertEquals("test-config", jsonNode.get("id").textValue());
         assertEquals(7, jsonNode.get("revision").longValue());

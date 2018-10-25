@@ -36,15 +36,15 @@ public class DynamoAppConfigTest {
     private static final DateTime TIMESTAMP = DateTime.now(DateTimeZone.UTC);
     private static final HashSet<String> SET_B = Sets.newHashSet("c","d");
     private static final HashSet<String> SET_A = Sets.newHashSet("a","b");
-    private static final List<SurveyReference> SURVEY_REFS = new ImmutableList.Builder<SurveyReference>()
-            .add(new SurveyReference("surveyA", BridgeUtils.generateGuid(), DateTime.now(DateTimeZone.UTC)))
-            .add(new SurveyReference("surveyB", BridgeUtils.generateGuid(), DateTime.now(DateTimeZone.UTC))).build();
-    private static final List<SchemaReference> SCHEMA_REFS = new ImmutableList.Builder<SchemaReference>()
-            .add(new SchemaReference("schemaA", 1))
-            .add(new SchemaReference("schemaB", 2)).build();
-    private static final List<ConfigReference> CONFIG_REFS = new ImmutableList.Builder<ConfigReference>()
-            .add(new ConfigReference("config1", 1L))
-            .add(new ConfigReference("config2", 2L)).build();
+    private static final List<SurveyReference> SURVEY_REFS = ImmutableList.of(
+            new SurveyReference("surveyA", BridgeUtils.generateGuid(), DateTime.now(DateTimeZone.UTC)),
+            new SurveyReference("surveyB", BridgeUtils.generateGuid(), DateTime.now(DateTimeZone.UTC)));
+    private static final List<SchemaReference> SCHEMA_REFS = ImmutableList.of(
+            new SchemaReference("schemaA", 1),
+            new SchemaReference("schemaB", 2));
+    private static final List<ConfigReference> CONFIG_REFS = ImmutableList.of(
+            new ConfigReference("config1", 1L),
+            new ConfigReference("config2", 2L));
     private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl(TestUtils.randomName(DynamoAppConfigDaoTest.class));
     
     @Test
@@ -72,16 +72,14 @@ public class DynamoAppConfigTest {
         appConfig.setSurveyReferences(SURVEY_REFS);
         appConfig.setSchemaReferences(SCHEMA_REFS);
         appConfig.setConfigReferences(CONFIG_REFS);
-        appConfig.setConfigElements(new ImmutableMap.Builder<String,JsonNode>()
-                .put("config1", TestUtils.getClientData())
-                .build());
+        appConfig.setConfigElements(ImmutableMap.of("config1", TestUtils.getClientData()));
         appConfig.setClientData(clientData);
         appConfig.setVersion(3L);
         appConfig.setDeleted(true);
         
         Set<String> fields = Sets.newHashSet("criteria", "label", "createdOn", "modifiedOn", "clientData",
-                "surveyReferences", "schemaReferences", "configReferences", "configIncluded", "configElements",
-                "version", "type", "deleted");
+                "surveyReferences", "schemaReferences", "configReferences", "configElements", "version", 
+                "type", "deleted");
                 
         JsonNode node = BridgeObjectMapper.get().valueToTree(appConfig);
         assertEquals(fields, Sets.newHashSet(node.fieldNames()));

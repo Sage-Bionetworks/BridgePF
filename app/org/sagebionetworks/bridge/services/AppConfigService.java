@@ -118,32 +118,39 @@ public class AppConfigService {
             }
         } else if (matches.size() != 1) {
             // If there is more than one match, return the one created first, but log an error
-            LOG.error("CriteriaContext matches more than one app config: criteriaContext=" + context + ", appConfigs="+matches);
+            logError("CriteriaContext matches more than one app config: criteriaContext=" + context + ", appConfigs="+matches);
         }
         AppConfig matched = matches.get(0);
         // Resolve survey references to pick up survey identifiers
         matched.setSurveyReferences(matched.getSurveyReferences().stream()
-            .map(surveyReference -> resolveSurvey(context.getStudyIdentifier(), surveyReference)).collect(Collectors.toList()));
+            .map(surveyReference -> resolveSurvey(context.getStudyIdentifier(), surveyReference))
+            .collect(Collectors.toList()));
         
         ImmutableMap.Builder<String, JsonNode> builder = new ImmutableMap.Builder<>();
         for (ConfigReference configRef : matched.getConfigReferences()) {
-            AppConfigElement element = appConfigElementService.getElementRevision(
-                    context.getStudyIdentifier(), configRef.getId(), configRef.getRevision());
-            builder.put(configRef.getId(), element.getData());    
+            AppConfigElement element = retrieveConfigElement(context.getStudyIdentifier(), configRef, matched.getGuid());
+            if (element != null) {
+                builder.put(configRef.getId(), element.getData());    
+            }
         }
         matched.setConfigElements(builder.build());
 
         return matched;
     }
 
-    protected AppConfigElement retrieveConfigElement2(CriteriaContext context, ConfigReference configRef) {
+    protected AppConfigElement retrieveConfigElement(StudyIdentifier studyId, ConfigReference configRef, String appConfigGuid) {
         try {
-            return appConfigElementService.getElementRevision(context.getStudyIdentifier(), 
-                    configRef.getId(), configRef.getRevision());
-        } catch(Exception e) {
-            LOG.error("Error retrieving element to include in an app config", e);
+            return appConfigElementService.getElementRevision(studyId, configRef.getId(), configRef.getRevision());
+        } catch(EntityNotFoundException e) {
+            String message = String.format("AppConfig[guid=%s] references missing AppConfigElement[id=%s, revision=%d]",
+                    appConfigGuid, configRef.getId(), configRef.getRevision());
+            logError(message);
         }
         return null;
+    }
+    
+    protected void logError(String message) {
+        LOG.error(message);
     }
 
     /**
