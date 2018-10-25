@@ -125,15 +125,14 @@ public class AppConfigService {
         matched.setSurveyReferences(matched.getSurveyReferences().stream()
             .map(surveyReference -> resolveSurvey(context.getStudyIdentifier(), surveyReference)).collect(Collectors.toList()));
         
-        if (matched.isConfigIncluded()) {
-            ImmutableMap.Builder<String, JsonNode> builder = new ImmutableMap.Builder<>();
-            for (ConfigReference configRef : matched.getConfigReferences()) {
-                AppConfigElement element = appConfigElementService.getElementRevision(
-                        context.getStudyIdentifier(), configRef.getId(), configRef.getRevision());
-                builder.put(configRef.getId(), element.getData());    
-            }
-            matched.setConfigElements(builder.build());
+        ImmutableMap.Builder<String, JsonNode> builder = new ImmutableMap.Builder<>();
+        for (ConfigReference configRef : matched.getConfigReferences()) {
+            AppConfigElement element = appConfigElementService.getElementRevision(
+                    context.getStudyIdentifier(), configRef.getId(), configRef.getRevision());
+            builder.put(configRef.getId(), element.getData());    
         }
+        matched.setConfigElements(builder.build());
+
         return matched;
     }
 

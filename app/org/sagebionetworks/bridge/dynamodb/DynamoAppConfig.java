@@ -182,16 +182,6 @@ public class DynamoAppConfig implements AppConfig {
     }
     
     @Override
-    public boolean isConfigIncluded() {
-        return configIncluded;
-    }
-    
-    @Override
-    public void setConfigIncluded(boolean configIncluded) {
-        this.configIncluded = configIncluded;
-    }
-    
-    @Override
     public Map<String,JsonNode> getConfigElements() {
         if (configElements == null) {
             configElements = new HashMap<>();

@@ -70,7 +70,7 @@ public class AppConfigElementsController extends BaseController {
     }
 
     public Result getElementRevision(String id, String revisionString) {
-        UserSession session = getSessionEitherConsentedOrInRole(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         Long revision = BridgeUtils.getLongOrDefault(revisionString, null);
         if (revision == null) {
             throw new BadRequestException("Revision is not a valid revision number");

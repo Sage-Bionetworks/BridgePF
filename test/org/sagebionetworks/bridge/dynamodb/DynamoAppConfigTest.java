@@ -72,7 +72,6 @@ public class DynamoAppConfigTest {
         appConfig.setSurveyReferences(SURVEY_REFS);
         appConfig.setSchemaReferences(SCHEMA_REFS);
         appConfig.setConfigReferences(CONFIG_REFS);
-        appConfig.setConfigIncluded(true);
         appConfig.setConfigElements(new ImmutableMap.Builder<String,JsonNode>()
                 .put("config1", TestUtils.getClientData())
                 .build());
@@ -99,7 +98,6 @@ public class DynamoAppConfigTest {
         assertEquals(appConfig.getSurveyReferences(), deser.getSurveyReferences());
         assertEquals(appConfig.getSchemaReferences(), deser.getSchemaReferences());
         assertEquals(appConfig.getConfigReferences(), deser.getConfigReferences());
-        assertEquals(appConfig.isConfigIncluded(), deser.isConfigIncluded());
         assertEquals(appConfig.getConfigElements(), deser.getConfigElements());
         assertEquals(appConfig.getCreatedOn(), deser.getCreatedOn());
         assertEquals(appConfig.getModifiedOn(), deser.getModifiedOn());

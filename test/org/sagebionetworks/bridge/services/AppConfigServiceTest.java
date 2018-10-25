@@ -222,7 +222,6 @@ public class AppConfigServiceTest {
         appConfig.setSurveyReferences(null);
         appConfig.setSchemaReferences(null);
         appConfig.setConfigReferences(refs);
-        appConfig.setConfigIncluded(true);
         
         AppConfig match = service.getAppConfigForUser(context, true);
         

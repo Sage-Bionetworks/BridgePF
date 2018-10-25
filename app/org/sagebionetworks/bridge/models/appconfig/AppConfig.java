@@ -50,9 +50,6 @@ public interface AppConfig extends BridgeEntity {
     List<ConfigReference> getConfigReferences();
     void setConfigReferences(List<ConfigReference> references);
     
-    boolean isConfigIncluded();
-    void setConfigIncluded(boolean configIncluded);
-    
     Map<String,JsonNode> getConfigElements();
     void setConfigElements(Map<String,JsonNode> configElements);
     
