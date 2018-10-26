@@ -103,13 +103,13 @@ public class StudyValidatorTest {
     @Test
     public void cannotCreateIdentifierWithUppercase() {
         study.setIdentifier("Test");
-        assertValidatorMessage(INSTANCE, study, "identifier", StudyValidator.BRIDGE_IDENTIFIER_ERROR);
+        assertValidatorMessage(INSTANCE, study, "identifier", BridgeConstants.BRIDGE_IDENTIFIER_ERROR);
     }
 
     @Test
     public void cannotCreateInvalidIdentifierWithSpaces() {
         study.setIdentifier("test test");
-        assertValidatorMessage(INSTANCE, study, "identifier", StudyValidator.BRIDGE_IDENTIFIER_ERROR);
+        assertValidatorMessage(INSTANCE, study, "identifier", BridgeConstants.BRIDGE_IDENTIFIER_ERROR);
     }
 
     @Test
@@ -127,13 +127,13 @@ public class StudyValidatorTest {
     @Test
     public void rejectEventKeysWithColons() {
         study.setActivityEventKeys(Sets.newHashSet("a-1", "b:2"));
-        assertValidatorMessage(INSTANCE, study, "activityEventKeys", StudyValidator.BRIDGE_EVENT_ID_ERROR);
+        assertValidatorMessage(INSTANCE, study, "activityEventKeys", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
     }
 
     @Test
     public void cannotCreateIdentifierWithColons() {
         study.setActivityEventKeys(Sets.newHashSet("a-1", "b:2"));
-        assertValidatorMessage(INSTANCE, study, "activityEventKeys", StudyValidator.BRIDGE_EVENT_ID_ERROR);
+        assertValidatorMessage(INSTANCE, study, "activityEventKeys", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
     }
 
     @Test
@@ -820,7 +820,7 @@ public class StudyValidatorTest {
     @Test
     public void invalidAutomaticCustomEventKey() {
         study.setAutomaticCustomEvents(ImmutableMap.of("@not-valid", "activities_retrieved:P-14D"));
-        assertValidatorMessage(INSTANCE, study, "automaticCustomEvents[@not-valid]", StudyValidator.BRIDGE_EVENT_ID_ERROR);
+        assertValidatorMessage(INSTANCE, study, "automaticCustomEvents[@not-valid]", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
     }
     
     @Test

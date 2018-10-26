@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 
@@ -29,6 +30,12 @@ public class AppConfigElementValidatorTest {
         
         element.setId("");
         assertValidatorMessage(VALIDATOR, element, "id", "is required");
+    }
+    
+    @Test
+    public void idInvalid() {
+        element.setId("@bad");
+        assertValidatorMessage(VALIDATOR, element, "id", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
     }
     
     @Test
