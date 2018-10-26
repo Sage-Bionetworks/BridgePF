@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.accounts.Phone;
+import org.sagebionetworks.bridge.models.sms.SmsType;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 
@@ -18,14 +19,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
 public class SmsMessageProvider {
-    
     private final Study study;
     private final Map<String,String> tokenMap;
     private final Phone phone;
-    private final String smsType;
+    private final SmsType smsType;
     private final SmsTemplate template;
-    
-    private SmsMessageProvider(Study study, SmsTemplate template, String smsType, Phone phone,
+
+    private SmsMessageProvider(Study study, SmsTemplate template, SmsType smsType, Phone phone,
             Map<String, String> tokenMap) {
         this.study = study;
         this.smsType = smsType;
@@ -43,11 +43,27 @@ public class SmsMessageProvider {
     public Phone getPhone() {
         return phone;
     }
+
+    /**
+     * Returns the SMS type as a string. This method exists for backwards compatibility. To get the enum, use
+     * {@link #getSmsTypeEnum}.
+     */
     public String getSmsType() {
+        return smsType.getValue();
+    }
+
+    /** Returns the SMS type (Promotional vs Transactional). */
+    public SmsType getSmsTypeEnum() {
         return smsType;
     }
+
     public Map<String,String> getTokenMap() {
         return tokenMap;
+    }
+
+    /** SMS message to send, with template variables resolved. */
+    public String getFormattedMessage() {
+        return BridgeUtils.resolveTemplate(template.getMessage(), tokenMap).trim();
     }
 
     public PublishRequest getSmsRequest() {
@@ -57,9 +73,8 @@ public class SmsMessageProvider {
         // Costs seem too low to worry about this, but if need be, this is how we'd cap it.
         // smsAttributes.put("AWS.SNS.SMS.MaxPrice", attribute("0.50")); max price set to $.50
 
-        String formattedMessage = BridgeUtils.resolveTemplate(template.getMessage(), tokenMap);
         return new PublishRequest()
-                .withMessage(formattedMessage.trim())
+                .withMessage(getFormattedMessage())
                 .withPhoneNumber(phone.getNumber())
                 .withMessageAttributes(smsAttributes);
     }
@@ -72,7 +87,7 @@ public class SmsMessageProvider {
         private Study study;
         private Map<String,String> tokenMap = Maps.newHashMap();
         private Phone phone;
-        private String smsType;
+        private SmsType smsType;
         private SmsTemplate template;
 
         public Builder withStudy(Study study) {
@@ -92,11 +107,11 @@ public class SmsMessageProvider {
             return this;
         }
         public Builder withTransactionType() {
-            this.smsType = "Transactional";
+            this.smsType = SmsType.TRANSACTIONAL;
             return this;
         }
         public Builder withPromotionType() {
-            this.smsType = "Promotional";
+            this.smsType = SmsType.PROMOTIONAL;
             return this;
         }
         public Builder withExpirationPeriod(String name, int expireInSeconds) {

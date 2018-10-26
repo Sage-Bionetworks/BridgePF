@@ -23,11 +23,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.NotificationRegistrationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.NotImplementedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
@@ -51,6 +49,7 @@ import com.google.common.collect.Maps;
 
 @RunWith(MockitoJUnitRunner.class)
 public class NotificationsServiceTest {
+    private static final String MESSAGE_BODY = "This is my SMS message.";
     private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("test-study");
     private static final String USER_ID = "user-id";
     private static final String HEALTH_CODE = "ABC";
@@ -68,6 +67,9 @@ public class NotificationsServiceTest {
     private ParticipantService mockParticipantService;
 
     @Mock
+    private SmsService mockSmsService;
+
+    @Mock
     private StudyService mockStudyService;
     
     @Mock
@@ -81,21 +83,22 @@ public class NotificationsServiceTest {
     
     @Mock
     private Study mockStudy;
-    
+
     @Captor
     private ArgumentCaptor<PublishRequest> requestCaptor;
 
     private NotificationsService service;
-    
+
     @Before
     public void before() {
         service = new NotificationsService();
         service.setNotificationTopicService(mockNotificationTopicService);
         service.setParticipantService(mockParticipantService);
+        service.setSmsService(mockSmsService);
         service.setStudyService(mockStudyService);
         service.setNotificationRegistrationDao(mockRegistrationDao);
         service.setSnsClient(mockSnsClient);
-        
+
         Map<String,String> map = Maps.newHashMap();
         map.put(OS_NAME, PLATFORM_ARN);
         doReturn(map).when(mockStudy).getPushNotificationARNs();
@@ -103,7 +106,7 @@ public class NotificationsServiceTest {
         doReturn(mockStudy).when(mockStudyService).getStudy(STUDY_ID);
         doReturn(TestConstants.TEST_STUDY).when(mockStudy).getStudyIdentifier();
     }
-    
+
     @Test
     public void listRegistrations() {
         List<NotificationRegistration> list = Lists.newArrayList(getNotificationRegistration());
@@ -326,69 +329,18 @@ public class NotificationsServiceTest {
         NotificationMessage message = getNotificationMessage();
         service.sendNotificationToUser(STUDY_ID, HEALTH_CODE, message);
     }
-    
+
     @Test
     public void sendTransactionalSMSMessageOK() {
-        doReturn(mockPublishResult).when(mockSnsClient).publish(any());
-        
-        String message = "This is my SMS message.";
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
                 .withStudy(mockStudy)
-                .withSmsTemplate(new SmsTemplate(message))
+                .withSmsTemplate(new SmsTemplate(MESSAGE_BODY))
                 .withTransactionType()
                 .withPhone(TestConstants.PHONE).build();
-        
+
         service.sendSmsMessage(provider);
-        
-        verify(mockSnsClient).publish(requestCaptor.capture());
-        
-        PublishRequest request = requestCaptor.getValue();
-        assertEquals(TestConstants.PHONE.getNumber(), request.getPhoneNumber());
-        assertEquals(message, request.getMessage());
-        assertEquals("Transactional",
-                request.getMessageAttributes().get(BridgeConstants.AWS_SMS_TYPE).getStringValue());
-        assertEquals("Bridge", 
-                request.getMessageAttributes().get(BridgeConstants.AWS_SMS_SENDER_ID).getStringValue());
-    }
-    
-    @Test
-    public void sendPromotionalSMSMessageOK() {
-        doReturn(mockPublishResult).when(mockSnsClient).publish(any());
-        
-        String message = "This is my SMS message.";
-        SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(mockStudy)
-                .withSmsTemplate(new SmsTemplate(message))
-                .withPromotionType()
-                .withPhone(TestConstants.PHONE).build();
-        
-        service.sendSmsMessage(provider);
-        
-        verify(mockSnsClient).publish(requestCaptor.capture());
-        
-        PublishRequest request = requestCaptor.getValue();
-        assertEquals(TestConstants.PHONE.getNumber(), request.getPhoneNumber());
-        assertEquals(message, request.getMessage());
-        assertEquals("Promotional",
-                request.getMessageAttributes().get(BridgeConstants.AWS_SMS_TYPE).getStringValue());
-        assertEquals("Bridge", 
-                request.getMessageAttributes().get(BridgeConstants.AWS_SMS_SENDER_ID).getStringValue());
-    }
-    
-    @Test(expected = BridgeServiceException.class)
-    public void sendSMSMessageTooLongInvalid() {
-        doReturn(mockPublishResult).when(mockSnsClient).publish(any());
-        String message = "This is my SMS message.";
-        for (int i=0; i < 5; i++) {
-            message += message;
-        }
-        SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(mockStudy)
-                .withSmsTemplate(new SmsTemplate(message))
-                .withTransactionType()
-                .withPhone(TestConstants.PHONE).build();
-        
-        service.sendSmsMessage(provider);
+
+        verify(mockSmsService).sendSmsMessage(provider);
     }
 
     private static NotificationRegistration getSmsNotificationRegistration() {

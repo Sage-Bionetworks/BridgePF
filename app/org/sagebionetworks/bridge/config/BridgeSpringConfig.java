@@ -34,6 +34,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoNamingHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoNotificationRegistration;
 import org.sagebionetworks.bridge.dynamodb.DynamoNotificationTopic;
 import org.sagebionetworks.bridge.dynamodb.DynamoOAuthAccessGrant;
+import org.sagebionetworks.bridge.dynamodb.DynamoSmsMessage;
 import org.sagebionetworks.bridge.dynamodb.DynamoTopicSubscription;
 
 import org.hibernate.SessionFactory;
@@ -288,6 +289,12 @@ public class BridgeSpringConfig {
     @Autowired
     public DynamoDBMapper compoundActivityDefinitionDdbMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoCompoundActivityDefinition.class);
+    }
+
+    @Bean(name = "smsMessageDdbMapper")
+    @Autowired
+    public DynamoDBMapper smsMessageDdbMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoSmsMessage.class);
     }
 
     @Bean(name = "reportDataMapper")

@@ -224,7 +224,7 @@ public final class DynamoStudy implements Study {
     public void setParticipantIpLockingEnabled(boolean participantIpLockingEnabled) {
         this.participantIpLockingEnabled = participantIpLockingEnabled;
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public boolean isVerifyChannelOnSignInEnabled() {
@@ -841,7 +841,8 @@ public final class DynamoStudy implements Study {
     public String toString() {
         return String.format(
                 "DynamoStudy [name=%s, shortName=%s, active=%s, sponsorName=%s, identifier=%s, automaticCustomEvents=%s"
-                        + "autoVerificationEmailSuppressed=%b, minAgeOfConsent=%s, participantIpLockingEnabled=%b, studyIdExcludedInExport=%b, "
+                        + "autoVerificationEmailSuppressed=%b, minAgeOfConsent=%s, participantIpLockingEnabled=%b, "
+                        + "studyIdExcludedInExport=%b, "
                         + "supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, technicalEmail=%s, "
                         + "uploadValidationStrictness=%s, consentNotificationEmail=%s, consentNotificationEmailVerified=%s, "
                         + "version=%s, userProfileAttributes=%s, taskIdentifiers=%s, activityEventKeys=%s, dataGroups=%s, "
@@ -855,7 +856,8 @@ public final class DynamoStudy implements Study {
                         + "verifyPhoneSmsTemplate=%s, accountExistsSmsTemplate=%s, autoVerificationPhoneSuppressed=%s, "
                         + "signedConsentTemplate=%s, signedConsentSmsTemplate=%s, verifyChannelOnSignInEnabled=%s",
                 name, shortName, active, sponsorName, identifier, automaticCustomEvents,
-                autoVerificationEmailSuppressed, minAgeOfConsent, participantIpLockingEnabled, studyIdExcludedInExport, supportEmail,
+                autoVerificationEmailSuppressed, minAgeOfConsent, participantIpLockingEnabled,
+                studyIdExcludedInExport, supportEmail,
                 synapseDataAccessTeamId, synapseProjectId, technicalEmail, uploadValidationStrictness,
                 consentNotificationEmail, consentNotificationEmailVerified, version, profileAttributes, taskIdentifiers,
                 activityEventKeys, dataGroups, passwordPolicy, verifyEmailTemplate, resetPasswordTemplate,
