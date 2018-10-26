@@ -5,10 +5,14 @@ import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.model.CheckIfPhoneNumberIsOptedOutRequest;
+import com.amazonaws.services.sns.model.CheckIfPhoneNumberIsOptedOutResult;
+import com.amazonaws.services.sns.model.OptInPhoneNumberRequest;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.amazonaws.services.sns.model.PublishResult;
 import org.joda.time.DateTimeUtils;
@@ -24,6 +28,7 @@ import org.sagebionetworks.bridge.dao.SmsMessageDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.sms.SmsMessage;
 import org.sagebionetworks.bridge.models.sms.SmsType;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
@@ -38,6 +43,7 @@ public class SmsServiceTest {
     private static final String PHONE_NUMBER = "+12065550123";
     private static final long SENT_ON = 1539732997760L;
     private static final String STUDY_SHORT_NAME = "My Study";
+    private static final String USER_ID = "test-user";
 
     private SmsMessageDao mockMessageDao;
     private AmazonSNSClient mockSnsClient;
@@ -205,5 +211,72 @@ public class SmsServiceTest {
         message.setSmsType(SmsType.PROMOTIONAL);
         message.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         return message;
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void optInPhoneNumber_NullUserId() {
+        svc.optInPhoneNumber(null, TestConstants.PHONE);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void optInPhoneNumber_EmptyUserId() {
+        svc.optInPhoneNumber("", TestConstants.PHONE);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void optInPhoneNumber_BlankUserId() {
+        svc.optInPhoneNumber("   ", TestConstants.PHONE);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void optInPhoneNumber_NullPhone() {
+        svc.optInPhoneNumber(USER_ID, null);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void optInPhoneNumber_InvalidPhone() {
+        svc.optInPhoneNumber(USER_ID, new Phone("NaN", "US"));
+    }
+
+    @Test
+    public void createPhoneParticipant_PhoneNotOptedOut() {
+        // Mock SNS client to return false.
+        when(mockSnsClient.checkIfPhoneNumberIsOptedOut(any())).thenReturn(new CheckIfPhoneNumberIsOptedOutResult()
+                .withIsOptedOut(false));
+
+        // Execute.
+        svc.optInPhoneNumber(USER_ID, TestConstants.PHONE);
+
+        // Verify calls to SNS.
+        ArgumentCaptor<CheckIfPhoneNumberIsOptedOutRequest> checkRequestCaptor = ArgumentCaptor.forClass(
+                CheckIfPhoneNumberIsOptedOutRequest.class);
+        verify(mockSnsClient).checkIfPhoneNumberIsOptedOut(checkRequestCaptor.capture());
+        CheckIfPhoneNumberIsOptedOutRequest checkRequest = checkRequestCaptor.getValue();
+        assertEquals(TestConstants.PHONE.getNumber(), checkRequest.getPhoneNumber());
+
+        verify(mockSnsClient, never()).optInPhoneNumber(any());
+    }
+
+    @Test
+    public void createPhoneParticipant_OptPhoneBackIn() {
+        // Mock SNS client to return true.
+        when(mockSnsClient.checkIfPhoneNumberIsOptedOut(any())).thenReturn(new CheckIfPhoneNumberIsOptedOutResult()
+                .withIsOptedOut(true));
+
+        // Execute.
+        svc.optInPhoneNumber(USER_ID, TestConstants.PHONE);
+
+        // Verify calls to SNS.
+        ArgumentCaptor<CheckIfPhoneNumberIsOptedOutRequest> checkRequestCaptor = ArgumentCaptor.forClass(
+                CheckIfPhoneNumberIsOptedOutRequest.class);
+        verify(mockSnsClient).checkIfPhoneNumberIsOptedOut(checkRequestCaptor.capture());
+        CheckIfPhoneNumberIsOptedOutRequest checkRequest = checkRequestCaptor.getValue();
+        assertEquals(TestConstants.PHONE.getNumber(), checkRequest.getPhoneNumber());
+
+        ArgumentCaptor<OptInPhoneNumberRequest> optInRequestCaptor = ArgumentCaptor.forClass(
+                OptInPhoneNumberRequest.class);
+        verify(mockSnsClient).optInPhoneNumber(optInRequestCaptor.capture());
+        OptInPhoneNumberRequest optInRequest = optInRequestCaptor.getValue();
+        assertEquals(TestConstants.PHONE.getNumber(), optInRequest.getPhoneNumber());
     }
 }

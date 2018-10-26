@@ -26,6 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.amazonaws.services.sns.model.CheckIfPhoneNumberIsOptedOutRequest;
+import com.amazonaws.services.sns.model.CheckIfPhoneNumberIsOptedOutResult;
+import com.amazonaws.services.sns.model.OptInPhoneNumberRequest;
 import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -163,7 +166,10 @@ public class ParticipantServiceTest {
     
     @Mock
     private ScheduledActivityDao activityDao;
-    
+
+    @Mock
+    private SmsService smsService;
+
     @Mock
     private SubpopulationService subpopService;
     
@@ -199,13 +205,7 @@ public class ParticipantServiceTest {
     
     @Captor
     ArgumentCaptor<Account> accountCaptor;
-    
-    @Captor
-    ArgumentCaptor<Set<Roles>> rolesCaptor;
 
-    @Captor
-    ArgumentCaptor<UserSession> sessionCaptor;
-    
     @Captor
     ArgumentCaptor<Study> studyCaptor;
     
@@ -214,10 +214,7 @@ public class ParticipantServiceTest {
     
     @Captor
     ArgumentCaptor<AccountId> accountIdCaptor;
-    
-    @Captor
-    ArgumentCaptor<String> stringCaptor;
-    
+
     @Captor
     ArgumentCaptor<SmsMessageProvider> providerCaptor;
     
@@ -231,6 +228,7 @@ public class ParticipantServiceTest {
         STUDY.setAccountLimit(0);
         participantService = new ParticipantService();
         participantService.setAccountDao(accountDao);
+        participantService.setSmsService(smsService);
         participantService.setSubpopulationService(subpopService);
         participantService.setUserConsent(consentService);
         participantService.setCacheProvider(cacheProvider);
@@ -240,7 +238,7 @@ public class ParticipantServiceTest {
         participantService.setNotificationsService(notificationsService);
         participantService.setScheduledActivityService(scheduledActivityService);
         participantService.setAccountWorkflowService(accountWorkflowService);
-        
+
         account = Account.create();
     }
     
@@ -463,6 +461,16 @@ public class ParticipantServiceTest {
         verify(accountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any());
         assertEquals(AccountStatus.ENABLED, account.getStatus());
         assertNull(account.getPhoneVerified());
+    }
+
+    @Test
+    public void createPhoneParticipant_OptInPhoneNumber() {
+        // Set up and execute test.
+        mockHealthCodeAndAccountRetrieval(null, PHONE);
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
+
+        // Verify calls to SmsService.
+        verify(smsService).optInPhoneNumber(ID, PHONE);
     }
 
     @Test
