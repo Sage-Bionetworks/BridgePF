@@ -12,10 +12,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import com.amazonaws.services.sns.AmazonSNSClient;
-import com.amazonaws.services.sns.model.CheckIfPhoneNumberIsOptedOutRequest;
-import com.amazonaws.services.sns.model.CheckIfPhoneNumberIsOptedOutResult;
-import com.amazonaws.services.sns.model.OptInPhoneNumberRequest;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -92,7 +88,7 @@ public class ParticipantService {
 
     private ScheduledActivityService scheduledActivityService;
 
-    private AmazonSNSClient snsClient;
+    private SmsService smsService;
 
     private ActivityEventService activityEventService;
 
@@ -148,10 +144,10 @@ public class ParticipantService {
         this.scheduledActivityService = scheduledActivityService;
     }
 
-    /** Simple Notification Service (SNS), used to opt users in to receiving SMS when they create a new account. */
+    /** SMS service, used to opt users in to receiving SMS when they create a new account. */
     @Autowired
-    final void setSnsClient(AmazonSNSClient snsClient) {
-        this.snsClient = snsClient;
+    final void setSmsService(SmsService smsService) {
+        this.smsService = smsService;
     }
 
     @Autowired
@@ -366,21 +362,8 @@ public class ParticipantService {
         // verification / sign-in.
         Phone phone = account.getPhone();
         if (phone != null) {
-            // Check if phone number is opted out.
-            CheckIfPhoneNumberIsOptedOutRequest checkRequest = new CheckIfPhoneNumberIsOptedOutRequest()
-                    .withPhoneNumber(phone.getNumber());
-            CheckIfPhoneNumberIsOptedOutResult checkResult = snsClient.checkIfPhoneNumberIsOptedOut(checkRequest);
-
-            if (Boolean.TRUE.equals(checkResult.isOptedOut())) {
-                LOG.info("Opting in user " + accountId + " for SMS messages");
-
-                // User was previously opted out. They created a new account (almost certainly in a new study). We need
-                // to opt them back in. Note that according to AWS, this can only be done once every 30 days to prevent
-                // abuse.
-                OptInPhoneNumberRequest optInRequest = new OptInPhoneNumberRequest().withPhoneNumber(
-                        phone.getNumber());
-                snsClient.optInPhoneNumber(optInRequest);
-            }
+            // Note that there is no object with both accuntId and phone, so we need to pass them in separately.
+            smsService.optInPhoneNumber(accountId, phone);
         }
 
         // send verify phone number
