@@ -362,7 +362,7 @@ public class ParticipantService {
         // verification / sign-in.
         Phone phone = account.getPhone();
         if (phone != null) {
-            // Note that there is no object with both accuntId and phone, so we need to pass them in separately.
+            // Note that there is no object with both accountId and phone, so we need to pass them in separately.
             smsService.optInPhoneNumber(accountId, phone);
         }
 
