@@ -81,9 +81,11 @@ public class AppConfigValidatorTest {
         
         List<ConfigReference> references = ImmutableList.of(ref1, ref2);
         appConfig.setConfigReferences(references);
+        appConfig.setLabel("label");
+        appConfig.setCriteria(Criteria.create());
         
         // This succeeds because the mock does not throw an exception
-        assertValidatorMessage(newValidator, appConfig, "criteria", "are required");
+        Validate.entityThrowingException(newValidator, appConfig);
     }
     
     @Test

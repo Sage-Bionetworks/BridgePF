@@ -292,7 +292,10 @@ public class AppConfigElementsControllerTest {
         
         Result result = controller.deleteElementRevision("id", "3", "false");
         TestUtils.assertResult(result, 200, "App config element revision deleted.");
-     
+
+        verify(cacheProvider).removeSetOfCacheKeys(cacheKeyCaptor.capture());
+        assertEquals("api:AppConfigList", cacheKeyCaptor.getValue().toString());
+
         verify(service).deleteElementRevision(TestConstants.TEST_STUDY, "id", 3L);
     }
     

@@ -26,9 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.amazonaws.services.sns.model.CheckIfPhoneNumberIsOptedOutRequest;
-import com.amazonaws.services.sns.model.CheckIfPhoneNumberIsOptedOutResult;
-import com.amazonaws.services.sns.model.OptInPhoneNumberRequest;
 import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;

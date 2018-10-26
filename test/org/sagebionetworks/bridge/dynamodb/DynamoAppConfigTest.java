@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 
@@ -52,6 +53,25 @@ public class DynamoAppConfigTest {
         EqualsVerifier.forClass(DynamoCriteria.class).suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed()
                 .verify();
     }
+    
+    @Test
+    public void collectionsDoNotReturnNull() {
+        AppConfig config = AppConfig.create();
+        assertNotNull(config.getConfigElements());
+        assertNotNull(config.getConfigReferences());
+        assertNotNull(config.getSchemaReferences());
+        assertNotNull(config.getSurveyReferences());
+        
+        config.setConfigElements(null);
+        config.setConfigReferences(null);
+        config.setSchemaReferences(null);
+        config.setSurveyReferences(null);
+        
+        assertNotNull(config.getConfigElements());
+        assertNotNull(config.getConfigReferences());
+        assertNotNull(config.getSchemaReferences());
+        assertNotNull(config.getSurveyReferences());
+    }
 
     @Test
     public void canSerialize() throws Exception {
@@ -61,6 +81,7 @@ public class DynamoAppConfigTest {
         criteria.setMaxAppVersion(ANDROID, 15);
         criteria.setLanguage("fr");
 
+        String clientDataString = TestUtils.createJson("{'booleanFlag':true,'stringValue':'testString','intValue':4}");
         JsonNode clientData = TestUtils.getClientData();
         
         AppConfig appConfig = AppConfig.create();
@@ -84,15 +105,17 @@ public class DynamoAppConfigTest {
         JsonNode node = BridgeObjectMapper.get().valueToTree(appConfig);
         assertEquals(fields, Sets.newHashSet(node.fieldNames()));
         
+        assertEquals(clientDataString, node.get("clientData").toString());
         assertEquals("AppConfig", node.get("type").asText());
         assertEquals(TIMESTAMP.toString(), node.get("createdOn").textValue());
         assertEquals(TIMESTAMP.toString(), node.get("modifiedOn").textValue());
         
         AppConfig deser = BridgeObjectMapper.get().treeToValue(node, AppConfig.class);
         assertNull(deser.getStudyId());
+        assertEquals(clientDataString, deser.getClientData().toString());
+        assertEquals(clientDataString, deser.getConfigElements().get("config1").toString());
         assertEquals(appConfig.getCriteria(), deser.getCriteria());
         assertEquals(appConfig.getLabel(), deser.getLabel());
-        assertEquals(appConfig.getClientData().toString(), deser.getClientData().toString());
         assertEquals(appConfig.getSurveyReferences(), deser.getSurveyReferences());
         assertEquals(appConfig.getSchemaReferences(), deser.getSchemaReferences());
         assertEquals(appConfig.getConfigReferences(), deser.getConfigReferences());

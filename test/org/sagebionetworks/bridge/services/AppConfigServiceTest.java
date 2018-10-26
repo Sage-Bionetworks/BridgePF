@@ -62,6 +62,7 @@ public class AppConfigServiceTest {
     private static final List<SurveyReference> SURVEY_REF_LIST = ImmutableList
             .of(new SurveyReference(null, "guid", DateTime.now()));
     private static final List<SchemaReference> SCHEMA_REF_LIST = ImmutableList.of(new SchemaReference("id", 3));
+    private static final List<ConfigReference> CONFIG_REF_LIST = ImmutableList.of(new ConfigReference("id", 1L));
     private static final GuidCreatedOnVersionHolder SURVEY_KEY = new GuidCreatedOnVersionHolderImpl(SURVEY_REF_LIST.get(0));
     
     @Mock
@@ -398,9 +399,9 @@ public class AppConfigServiceTest {
         
         AppConfig newConfig = setupAppConfig();
         newConfig.setClientData(TestUtils.getClientData());
-        newConfig.setSurveyReferences(ImmutableList.of(new SurveyReference("id", "guid", DateTime.now())));
-        newConfig.setSchemaReferences(ImmutableList.of(new SchemaReference("id", 1 )));
-        newConfig.setConfigReferences(ImmutableList.of(new ConfigReference("id", 1L)));
+        newConfig.setSurveyReferences(SURVEY_REF_LIST);
+        newConfig.setSchemaReferences(SCHEMA_REF_LIST);
+        newConfig.setConfigReferences(CONFIG_REF_LIST);
         
         AppConfig returnValue = service.createAppConfig(TEST_STUDY, newConfig);
         
@@ -409,10 +410,10 @@ public class AppConfigServiceTest {
         assertEquals(GUID, returnValue.getGuid());
         assertEquals(newConfig.getLabel(), returnValue.getLabel()); //
         assertEquals(TEST_STUDY.getIdentifier(), returnValue.getStudyId()); //
-        assertNotNull(returnValue.getClientData());
-        assertNotNull(returnValue.getSurveyReferences());
-        assertNotNull(returnValue.getSchemaReferences());
-        assertNotNull(returnValue.getConfigReferences());
+        assertEquals(TestUtils.getClientData().toString(), returnValue.getClientData().toString());
+        assertEquals(SURVEY_REF_LIST, returnValue.getSurveyReferences());
+        assertEquals(SCHEMA_REF_LIST, returnValue.getSchemaReferences());
+        assertEquals(CONFIG_REF_LIST, returnValue.getConfigReferences());
         
         verify(mockDao).createAppConfig(appConfigCaptor.capture());
         
