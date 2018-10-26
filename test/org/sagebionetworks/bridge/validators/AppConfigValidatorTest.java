@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.validators;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 
 import java.util.List;
 
@@ -26,6 +28,7 @@ import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.services.AppConfigElementService;
 import org.sagebionetworks.bridge.services.SurveyService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
@@ -43,6 +46,7 @@ public class AppConfigValidatorTest {
             VALID_UNRESOLVED_SURVEY_REF);
     private static final SchemaReference INVALID_SCHEMA_REF = new SchemaReference("guid", null);
     private static final SchemaReference VALID_SCHEMA_REF = new SchemaReference("guid", 3);
+    private static final ConfigReference VALID_CONFIG_REF = new ConfigReference("id", 3L);
     
     @Mock
     private SurveyService surveyService;
@@ -73,6 +77,8 @@ public class AppConfigValidatorTest {
         ConfigReference ref1 = new ConfigReference("id:1", 1L);
         ConfigReference ref2 = new ConfigReference("id:2", 2L);
         
+        when(appConfigElementService.getElementRevision(any(), any(), anyLong())).thenReturn(AppConfigElement.create());
+        
         List<ConfigReference> references = ImmutableList.of(ref1, ref2);
         appConfig.setConfigReferences(references);
         
@@ -93,8 +99,7 @@ public class AppConfigValidatorTest {
     @Test
     public void configReferenceNotFound() { 
         ConfigReference ref1 = new ConfigReference("id:1", 1L);
-        ConfigReference ref2 = new ConfigReference("id:2", 2L);
-        appConfig.setConfigReferences(ImmutableList.of(ref1, ref2));
+        appConfig.setConfigReferences(ImmutableList.of(ref1));
         appConfig.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         
         when(appConfigElementService.getElementRevision(TestConstants.TEST_STUDY, "id:1", 1L))
@@ -227,5 +232,40 @@ public class AppConfigValidatorTest {
         appConfig.setCriteria(criteria);
         
         assertValidatorMessage(newValidator, appConfig, "noneOfGroups", "'bad-group' is not in enumeration: bar, foo");
+    }
+    
+    @Test
+    public void rejectsReferenceToLogicallyDeletedSurvey() {
+        Survey survey = Survey.create();
+        survey.setDeleted(true);
+        when(surveyService.getSurvey(TestConstants.TEST_STUDY, VALID_RESOLVED_SURVEY_KEYS, false, false)).thenReturn(survey);
+        
+        appConfig.getSurveyReferences().add(VALID_UNRESOLVED_SURVEY_REF);
+        
+        assertValidatorMessage(updateValidator, appConfig, "surveyReferences[0]", "does not refer to a survey");
+    }
+    
+    @Test
+    public void rejectsReferenceToLogicallyDeletedSchema() {
+        UploadSchema schema = UploadSchema.create();
+        schema.setDeleted(true);
+        
+        when(schemaService.getUploadSchemaByIdAndRev(TEST_STUDY, "guid", 3)).thenReturn(schema);
+        
+        appConfig.getSchemaReferences().add(VALID_SCHEMA_REF);
+        
+        assertValidatorMessage(updateValidator, appConfig, "schemaReferences[0]", "does not refer to an upload schema");
+    }
+
+    @Test
+    public void rejectsReferenceToLogicallyDeletedConfigElement() {
+        AppConfigElement element = AppConfigElement.create();
+        element.setDeleted(true);
+        
+        when(appConfigElementService.getElementRevision(any(), any(), anyLong())).thenReturn(element);
+        
+        appConfig.getConfigReferences().add(VALID_CONFIG_REF);
+        
+        assertValidatorMessage(updateValidator, appConfig, "configReferences[0]", "does not refer to a configuration element");
     }
 }

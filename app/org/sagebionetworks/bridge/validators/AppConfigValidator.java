@@ -10,12 +10,14 @@ import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.services.AppConfigElementService;
 import org.sagebionetworks.bridge.services.SurveyService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
@@ -77,7 +79,15 @@ public class AppConfigValidator implements Validator {
                     }
                     if (StringUtils.isNotBlank(ref.getId()) && ref.getRevision() != null) {
                         try {
-                            schemaService.getUploadSchemaByIdAndRev(studyId, ref.getId(), ref.getRevision());    
+                            UploadSchema schema = schemaService.getUploadSchemaByIdAndRev(studyId, ref.getId(),
+                                    ref.getRevision());
+                            // We do throw a validation error if the object is logically deleted because while the
+                            // object will still be accessible through the API, it was deleted, suggesting the intention
+                            // to stop using it, which is not reflected in this appConfig
+                            if (schema.isDeleted()) {
+                                errors.rejectValue("", "does not refer to an upload schema"); 
+                            }
+                            
                         } catch(EntityNotFoundException e) {
                             errors.rejectValue("", "does not refer to an upload schema");
                         }
@@ -97,7 +107,14 @@ public class AppConfigValidator implements Validator {
                     }
                     if (StringUtils.isNotBlank(ref.getId()) && ref.getRevision() != null) {
                         try {
-                            appConfigElementService.getElementRevision(studyId, ref.getId(), ref.getRevision());
+                            AppConfigElement element = appConfigElementService.getElementRevision(studyId, ref.getId(),
+                                    ref.getRevision());
+                            // We do throw a validation error if the object is logically deleted because while the
+                            // object will still be accessible through the API, it was deleted, suggesting the intention
+                            // to stop using it, which is not reflected in this appConfig
+                            if (element.isDeleted()) {
+                                errors.rejectValue("", "does not refer to a configuration element"); 
+                            }
                         } catch(EntityNotFoundException e) {
                             errors.rejectValue("", "does not refer to a configuration element");
                         }
@@ -117,7 +134,10 @@ public class AppConfigValidator implements Validator {
                     StudyIdentifier studyId = new StudyIdentifierImpl(appConfig.getStudyId());
                     GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(ref);
                     Survey survey = surveyService.getSurvey(studyId, keys, false, false);
-                    if (survey == null) {
+                    // We do throw a validation error if the object is logically deleted because while the
+                    // object will still be accessible through the API, it was deleted, suggesting the intention
+                    // to stop using it, which is not reflected in this appConfig
+                    if (survey == null || survey.isDeleted()) {
                         errors.rejectValue("", "does not refer to a survey");    
                     } else if (!survey.isPublished()) {
                         errors.rejectValue("", "has not been published");

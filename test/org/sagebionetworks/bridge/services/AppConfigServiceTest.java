@@ -5,6 +5,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -41,6 +44,7 @@ import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -70,7 +74,19 @@ public class AppConfigServiceTest {
     private AppConfigElementService mockAppConfigElementService;
     
     @Mock
-    private SurveyService surveyService;
+    private SurveyService mockSurveyService;
+    
+    @Mock
+    private UploadSchemaService mockSchemaService;
+    
+    @Mock
+    private UploadSchema mockUploadSchema;
+    
+    @Mock
+    private AppConfigElement mockConfigElement;
+    
+    @Mock
+    private Survey mockSurvey;
     
     @Mock
     private ReferenceResolver referenceResolver;
@@ -93,7 +109,8 @@ public class AppConfigServiceTest {
     public void before() {
         service.setAppConfigDao(mockDao);
         service.setStudyService(mockStudyService);
-        service.setSurveyService(surveyService);
+        service.setSurveyService(mockSurveyService);
+        service.setUploadSchemaService(mockSchemaService);
         service.setAppConfigElementService(mockAppConfigElementService);
         
         when(service.getCurrentTimestamp()).thenReturn(TIMESTAMP.getMillis());
@@ -177,7 +194,7 @@ public class AppConfigServiceTest {
         survey.setIdentifier("theIdentifier");
         survey.setGuid(SURVEY_REF_LIST.get(0).getGuid());
         survey.setCreatedOn(SURVEY_REF_LIST.get(0).getCreatedOn().getMillis());
-        when(surveyService.getSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, false, false)).thenReturn(survey);
+        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, false, false)).thenReturn(survey);
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
@@ -302,7 +319,7 @@ public class AppConfigServiceTest {
     // This should not actually ever happen. We're suppressing exceptions if the survey is missing.
     @Test
     public void getAppConfigForUserSurveyDoesNotExist() throws Exception {
-        when(surveyService.getSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, false, true))
+        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, false, true))
                 .thenThrow(new EntityNotFoundException(Survey.class));
         
         CriteriaContext context = new CriteriaContext.Builder()
@@ -329,7 +346,7 @@ public class AppConfigServiceTest {
         AppConfig match = service.getAppConfigForUser(context, true);
         
         assertEquals("anIdentifier", match.getSurveyReferences().get(0).getIdentifier());
-        verify(surveyService, never()).getSurvey(eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true));
+        verify(mockSurveyService, never()).getSurvey(eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true));
     }
     
     @Test(expected = EntityNotFoundException.class)
@@ -359,7 +376,7 @@ public class AppConfigServiceTest {
         survey.setIdentifier("theIdentifier");
         survey.setGuid(SURVEY_REF_LIST.get(0).getGuid());
         survey.setCreatedOn(SURVEY_REF_LIST.get(0).getCreatedOn().getMillis());
-        when(surveyService.getSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, false, true)).thenReturn(survey);
+        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, false, true)).thenReturn(survey);
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("iPhone/6 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
@@ -373,13 +390,29 @@ public class AppConfigServiceTest {
     @Test
     public void createAppConfig() {
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockSchemaService.getUploadSchemaByIdAndRev(any(), any(), anyInt())).thenReturn(mockUploadSchema);
+        when(mockSurveyService.getSurvey(any(), any(), anyBoolean(), anyBoolean())).thenReturn(mockSurvey);
+        when(mockAppConfigElementService.getElementRevision(any(), any(), anyLong())).thenReturn(mockConfigElement);
+        
+        when(mockSurvey.isPublished()).thenReturn(true);
         
         AppConfig newConfig = setupAppConfig();
+        newConfig.setClientData(TestUtils.getClientData());
+        newConfig.setSurveyReferences(ImmutableList.of(new SurveyReference("id", "guid", DateTime.now())));
+        newConfig.setSchemaReferences(ImmutableList.of(new SchemaReference("id", 1 )));
+        newConfig.setConfigReferences(ImmutableList.of(new ConfigReference("id", 1L)));
         
         AppConfig returnValue = service.createAppConfig(TEST_STUDY, newConfig);
+        
         assertEquals(TIMESTAMP.getMillis(), returnValue.getCreatedOn());
         assertEquals(TIMESTAMP.getMillis(), returnValue.getModifiedOn());
         assertEquals(GUID, returnValue.getGuid());
+        assertEquals(newConfig.getLabel(), returnValue.getLabel()); //
+        assertEquals(TEST_STUDY.getIdentifier(), returnValue.getStudyId()); //
+        assertNotNull(returnValue.getClientData());
+        assertNotNull(returnValue.getSurveyReferences());
+        assertNotNull(returnValue.getSchemaReferences());
+        assertNotNull(returnValue.getConfigReferences());
         
         verify(mockDao).createAppConfig(appConfigCaptor.capture());
         

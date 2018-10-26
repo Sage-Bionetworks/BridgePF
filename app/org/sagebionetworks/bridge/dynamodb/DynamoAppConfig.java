@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoCompoundActivityDefinition.SchemaReferenceListMarshaller;
 import org.sagebionetworks.bridge.dynamodb.DynamoCompoundActivityDefinition.SurveyReferenceListMarshaller;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
@@ -148,12 +149,13 @@ public class DynamoAppConfig implements AppConfig {
         return surveyReferences;
     }
 
+    @DynamoDBTypeConverted(converter=SurveyReferenceListMarshaller.class)
     @Override
     public void setSurveyReferences(List<SurveyReference> references) {
         this.surveyReferences = references; 
     }
 
-    @DynamoDBTypeConverted(converter=DynamoCompoundActivityDefinition.SchemaReferenceListMarshaller.class)
+    @DynamoDBTypeConverted(converter=SchemaReferenceListMarshaller.class)
     @Override
     public List<SchemaReference> getSchemaReferences() {
         if (schemaReferences == null) {
@@ -162,9 +164,10 @@ public class DynamoAppConfig implements AppConfig {
         return schemaReferences;
     }
 
+    @DynamoDBTypeConverted(converter=SchemaReferenceListMarshaller.class)
     @Override
-    public void setConfigReferences(List<ConfigReference> references) {
-        this.configReferences = references;
+    public void setSchemaReferences(List<SchemaReference> references) {
+        this.schemaReferences = references;
     }
     
     @DynamoDBTypeConverted(converter=ConfigReferenceListMarshaller.class)
@@ -175,12 +178,14 @@ public class DynamoAppConfig implements AppConfig {
         }
         return configReferences;
     }
-
+    
+    @DynamoDBTypeConverted(converter=ConfigReferenceListMarshaller.class)
     @Override
-    public void setSchemaReferences(List<SchemaReference> references) {
-        this.schemaReferences = references;
+    public void setConfigReferences(List<ConfigReference> references) {
+        this.configReferences = references;
     }
     
+    @DynamoDBIgnore
     @Override
     public Map<String,JsonNode> getConfigElements() {
         if (configElements == null) {
