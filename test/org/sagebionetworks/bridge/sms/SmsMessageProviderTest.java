@@ -8,6 +8,7 @@ import java.util.Map;
 import org.junit.Test;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.models.sms.SmsType;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 
@@ -15,7 +16,7 @@ import com.amazonaws.services.sns.model.PublishRequest;
 
 public class SmsMessageProviderTest {
     @Test
-    public void test() throws Exception {
+    public void test() {
         // Set up dependencies
         Study study = Study.create();
         study.setName("Name");
@@ -27,6 +28,7 @@ public class SmsMessageProviderTest {
         study.setConsentNotificationEmail("consent@email.com,consent2@email.com");
 
         SmsTemplate template = new SmsTemplate("${studyShortName} ${url} ${supportEmail} ${expirationPeriod}");
+        String expectedMessage = "ShortName some-url support@email.com 4 hours";
         
         // Create
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
@@ -36,10 +38,13 @@ public class SmsMessageProviderTest {
             .withTransactionType()
             .withExpirationPeriod("expirationPeriod", 60*60*4) // 4 hours
             .withToken("url", "some-url").build();
-        
+        assertEquals("Transactional", provider.getSmsType());
+        assertEquals(SmsType.TRANSACTIONAL, provider.getSmsTypeEnum());
+        assertEquals(expectedMessage, provider.getFormattedMessage());
+
         // Check email
         PublishRequest request = provider.getSmsRequest();
-        assertEquals("ShortName some-url support@email.com 4 hours", request.getMessage());
+        assertEquals(expectedMessage, request.getMessage());
         assertEquals(study.getShortName(),
                 request.getMessageAttributes().get(BridgeConstants.AWS_SMS_SENDER_ID).getStringValue());
         assertEquals("Transactional",
@@ -95,6 +100,6 @@ public class SmsMessageProviderTest {
                 .withSmsTemplate(new SmsTemplate(""))
                 .withPromotionType().build();
         assertEquals("Promotional", provider.getSmsType());
+        assertEquals(SmsType.PROMOTIONAL, provider.getSmsTypeEnum());
     }
-
 }
