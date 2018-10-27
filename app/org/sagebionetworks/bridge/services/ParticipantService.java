@@ -43,6 +43,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
@@ -355,10 +356,19 @@ public class ParticipantService {
         if (sendEmailVerification && !study.isAutoVerificationEmailSuppressed()) {
             accountWorkflowService.sendEmailVerificationToken(study, accountId, account.getEmail());
         }
+
+        // If you create an account with a phone number, this opts the phone number in to receiving SMS. We do this
+        // _before_ phone verification / sign-in, because we need to opt the user in to SMS in order to send phone
+        // verification / sign-in.
+        Phone phone = account.getPhone();
+        if (phone != null) {
+            // Note that there is no object with both accountId and phone, so we need to pass them in separately.
+            smsService.optInPhoneNumber(accountId, phone);
+        }
+
         // send verify phone number
         if (shouldSendVerification && !study.isAutoVerificationPhoneSuppressed()) {
-            accountWorkflowService.sendPhoneVerificationToken(study, accountId, account.getHealthCode(),
-                    account.getPhone());
+            accountWorkflowService.sendPhoneVerificationToken(study, accountId, account.getHealthCode(), phone);
         }
         return new IdentifierHolder(accountId);
     }

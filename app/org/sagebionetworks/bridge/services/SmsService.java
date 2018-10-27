@@ -7,6 +7,9 @@ import java.nio.charset.Charset;
 import javax.annotation.Resource;
 
 import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.model.CheckIfPhoneNumberIsOptedOutRequest;
+import com.amazonaws.services.sns.model.CheckIfPhoneNumberIsOptedOutResult;
+import com.amazonaws.services.sns.model.OptInPhoneNumberRequest;
 import com.amazonaws.services.sns.model.PublishResult;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -99,5 +102,37 @@ public class SmsService {
         }
         Validate.entityThrowingException(SmsMessageValidator.INSTANCE, message);
         messageDao.logMessage(message);
+    }
+
+    /**
+     * Opt a phone number back in if it is opted out. This is only used when a new account is created, generally in
+     * a new study. User ID is used for logging.
+     */
+    public void optInPhoneNumber(String userId, Phone phone) {
+        if (StringUtils.isBlank(userId)) {
+            throw new BadRequestException("userId is required");
+        }
+        if (phone == null) {
+            throw new BadRequestException("phone is required");
+        }
+        if (!Phone.isValid(phone)) {
+            throw new BadRequestException("phone is invalid");
+        }
+
+        // Check if phone number is opted out.
+        CheckIfPhoneNumberIsOptedOutRequest checkRequest = new CheckIfPhoneNumberIsOptedOutRequest()
+                .withPhoneNumber(phone.getNumber());
+        CheckIfPhoneNumberIsOptedOutResult checkResult = snsClient.checkIfPhoneNumberIsOptedOut(checkRequest);
+
+        if (Boolean.TRUE.equals(checkResult.isOptedOut())) {
+            LOG.info("Opting in user " + userId + " for SMS messages");
+
+            // User was previously opted out. They created a new account (almost certainly in a new study). We need
+            // to opt them back in. Note that according to AWS, this can only be done once every 30 days to prevent
+            // abuse.
+            OptInPhoneNumberRequest optInRequest = new OptInPhoneNumberRequest().withPhoneNumber(
+                    phone.getNumber());
+            snsClient.optInPhoneNumber(optInRequest);
+        }
     }
 }

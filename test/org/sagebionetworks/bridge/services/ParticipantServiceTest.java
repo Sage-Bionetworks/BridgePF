@@ -26,6 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.amazonaws.services.sns.model.CheckIfPhoneNumberIsOptedOutRequest;
+import com.amazonaws.services.sns.model.CheckIfPhoneNumberIsOptedOutResult;
+import com.amazonaws.services.sns.model.OptInPhoneNumberRequest;
 import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -235,7 +238,7 @@ public class ParticipantServiceTest {
         participantService.setNotificationsService(notificationsService);
         participantService.setScheduledActivityService(scheduledActivityService);
         participantService.setAccountWorkflowService(accountWorkflowService);
-        
+
         account = Account.create();
     }
     
@@ -458,6 +461,16 @@ public class ParticipantServiceTest {
         verify(accountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any(), any());
         assertEquals(AccountStatus.ENABLED, account.getStatus());
         assertNull(account.getPhoneVerified());
+    }
+
+    @Test
+    public void createPhoneParticipant_OptInPhoneNumber() {
+        // Set up and execute test.
+        mockHealthCodeAndAccountRetrieval(null, PHONE);
+        participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
+
+        // Verify calls to SmsService.
+        verify(smsService).optInPhoneNumber(ID, PHONE);
     }
 
     @Test
