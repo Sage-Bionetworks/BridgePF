@@ -33,11 +33,9 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
-import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.model.InvalidParameterException;
@@ -49,7 +47,6 @@ import com.google.common.collect.Maps;
 
 @RunWith(MockitoJUnitRunner.class)
 public class NotificationsServiceTest {
-    private static final String MESSAGE_BODY = "This is my SMS message.";
     private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("test-study");
     private static final String USER_ID = "user-id";
     private static final String HEALTH_CODE = "ABC";
@@ -65,9 +62,6 @@ public class NotificationsServiceTest {
 
     @Mock
     private ParticipantService mockParticipantService;
-
-    @Mock
-    private SmsService mockSmsService;
 
     @Mock
     private StudyService mockStudyService;
@@ -94,7 +88,6 @@ public class NotificationsServiceTest {
         service = new NotificationsService();
         service.setNotificationTopicService(mockNotificationTopicService);
         service.setParticipantService(mockParticipantService);
-        service.setSmsService(mockSmsService);
         service.setStudyService(mockStudyService);
         service.setNotificationRegistrationDao(mockRegistrationDao);
         service.setSnsClient(mockSnsClient);
@@ -328,19 +321,6 @@ public class NotificationsServiceTest {
         
         NotificationMessage message = getNotificationMessage();
         service.sendNotificationToUser(STUDY_ID, HEALTH_CODE, message);
-    }
-
-    @Test
-    public void sendTransactionalSMSMessageOK() {
-        SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(mockStudy)
-                .withSmsTemplate(new SmsTemplate(MESSAGE_BODY))
-                .withTransactionType()
-                .withPhone(TestConstants.PHONE).build();
-
-        service.sendSmsMessage(provider);
-
-        verify(mockSmsService).sendSmsMessage(provider);
     }
 
     private static NotificationRegistration getSmsNotificationRegistration() {

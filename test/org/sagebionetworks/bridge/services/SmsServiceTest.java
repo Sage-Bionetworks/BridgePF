@@ -32,6 +32,7 @@ import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.time.DateUtils;
 
 public class SmsServiceTest {
+    private static final String HEALTH_CODE = "health-code";
     private static final String MESSAGE_BODY = "lorem ipsum";
     private static final String MESSAGE_ID = "my-message-id";
     private static final long MOCK_NOW_MILLIS = DateUtils.convertToMillisFromEpoch("2018-10-17T16:21:52.749Z");
@@ -82,7 +83,7 @@ public class SmsServiceTest {
                 .withTransactionType()
                 .withPhone(TestConstants.PHONE).build();
 
-        svc.sendSmsMessage(provider);
+        svc.sendSmsMessage(HEALTH_CODE, provider);
 
         ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
         verify(mockSnsClient).publish(requestCaptor.capture());
@@ -96,7 +97,7 @@ public class SmsServiceTest {
                 request.getMessageAttributes().get(BridgeConstants.AWS_SMS_SENDER_ID).getStringValue());
 
         // We log the SMS message.
-        verifyLoggedSmsMessage(MESSAGE_BODY, SmsType.TRANSACTIONAL);
+        verifyLoggedSmsMessage(HEALTH_CODE, MESSAGE_BODY, SmsType.TRANSACTIONAL);
     }
 
     @Test
@@ -107,7 +108,7 @@ public class SmsServiceTest {
                 .withPromotionType()
                 .withPhone(TestConstants.PHONE).build();
 
-        svc.sendSmsMessage(provider);
+        svc.sendSmsMessage(HEALTH_CODE, provider);
 
         ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
         verify(mockSnsClient).publish(requestCaptor.capture());
@@ -121,7 +122,21 @@ public class SmsServiceTest {
                 request.getMessageAttributes().get(BridgeConstants.AWS_SMS_SENDER_ID).getStringValue());
 
         // We log the SMS message.
-        verifyLoggedSmsMessage(MESSAGE_BODY, SmsType.PROMOTIONAL);
+        verifyLoggedSmsMessage(HEALTH_CODE, MESSAGE_BODY, SmsType.PROMOTIONAL);
+    }
+
+    @Test
+    public void sendSmsMessage_NullHealthCodeOkay() {
+        // Set up test and execute.
+        SmsMessageProvider provider = new SmsMessageProvider.Builder()
+                .withStudy(study)
+                .withSmsTemplate(new SmsTemplate(MESSAGE_BODY))
+                .withPromotionType()
+                .withPhone(TestConstants.PHONE).build();
+        svc.sendSmsMessage(null, provider);
+
+        // Everything else is verified. Just verified that the sent message contains no health code.
+        verifyLoggedSmsMessage(null, MESSAGE_BODY, SmsType.PROMOTIONAL);
     }
 
     @Test(expected = BridgeServiceException.class)
@@ -136,16 +151,17 @@ public class SmsServiceTest {
                 .withTransactionType()
                 .withPhone(TestConstants.PHONE).build();
 
-        svc.sendSmsMessage(provider);
+        svc.sendSmsMessage(HEALTH_CODE, provider);
     }
 
-    private void verifyLoggedSmsMessage(String expectedMessage, SmsType expectedSmsType) {
+    private void verifyLoggedSmsMessage(String expectedHealthCode, String expectedMessage, SmsType expectedSmsType) {
         ArgumentCaptor<SmsMessage> loggedMessageCaptor = ArgumentCaptor.forClass(SmsMessage.class);
         verify(mockMessageDao).logMessage(loggedMessageCaptor.capture());
 
         SmsMessage loggedMessage = loggedMessageCaptor.getValue();
         assertEquals(TestConstants.PHONE.getNumber(), loggedMessage.getPhoneNumber());
         assertEquals(MOCK_NOW_MILLIS, loggedMessage.getSentOn());
+        assertEquals(expectedHealthCode, loggedMessage.getHealthCode());
         assertEquals(expectedMessage, loggedMessage.getMessageBody());
         assertEquals(MESSAGE_ID, loggedMessage.getMessageId());
         assertEquals(expectedSmsType, loggedMessage.getSmsType());

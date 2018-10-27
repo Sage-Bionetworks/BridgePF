@@ -30,6 +30,15 @@ public interface SmsMessage extends BridgeEntity {
     /** @see #getSentOn */
     void setSentOn(long sentOn);
 
+    /**
+     * Health code of the account we sent the SMS to, if the phone number is associated with an account. (The only case
+     * where it currently isn't is in the Intent-to-Participate code path.)
+     */
+    String getHealthCode();
+
+    /** @see #getHealthCode */
+    void setHealthCode(String healthCode);
+
     /** The message content we sent. */
     String getMessageBody();
 

@@ -50,8 +50,11 @@ public class SmsService {
         this.snsClient = snsClient;
     }
 
-    /** Sends an SMS message using the given message provider. */
-    public void sendSmsMessage(SmsMessageProvider provider) {
+    /**
+     * Sends an SMS message using the given message provider. Health code is logged to the SMS message log. If the
+     * recipient doesn't have an account, this can be left null.
+     */
+    public void sendSmsMessage(String healthCode, SmsMessageProvider provider) {
         checkNotNull(provider);
         StudyIdentifier studyId = provider.getStudy().getStudyIdentifier();
         Phone recipientPhone = provider.getPhone();
@@ -71,6 +74,7 @@ public class SmsService {
         SmsMessage smsMessage = SmsMessage.create();
         smsMessage.setPhoneNumber(recipientPhone.getNumber());
         smsMessage.setSentOn(DateUtils.getCurrentMillisFromEpoch());
+        smsMessage.setHealthCode(healthCode);
         smsMessage.setMessageBody(message);
         smsMessage.setMessageId(messageId);
         smsMessage.setSmsType(provider.getSmsTypeEnum());

@@ -67,9 +67,11 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
 public class ParticipantService {
-    private static Logger LOG = LoggerFactory.getLogger(ParticipantService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ParticipantService.class);
 
     private AccountDao accountDao;
+
+    private SmsService smsService;
 
     private SubpopulationService subpopService;
 
@@ -99,6 +101,12 @@ public class ParticipantService {
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
+    }
+
+    /** SMS Service, used to send text messages to participants. */
+    @Autowired
+    public void setSmsService(SmsService smsService) {
+        this.smsService = smsService;
     }
 
     @Autowired
@@ -349,7 +357,8 @@ public class ParticipantService {
         }
         // send verify phone number
         if (shouldSendVerification && !study.isAutoVerificationPhoneSuppressed()) {
-            accountWorkflowService.sendPhoneVerificationToken(study, accountId, account.getPhone());
+            accountWorkflowService.sendPhoneVerificationToken(study, accountId, account.getHealthCode(),
+                    account.getPhone());
         }
         return new IdentifierHolder(accountId);
     }
@@ -598,7 +607,7 @@ public class ParticipantService {
         for (Map.Entry<String, String> entry : variables.entrySet()) {
             builder.withToken(entry.getKey(), entry.getValue());
         }
-        notificationsService.sendSmsMessage(builder.build());
+        smsService.sendSmsMessage(account.getHealthCode(), builder.build());
     }
     
     public List<ActivityEvent> getActivityEvents(Study study, String userId) {
