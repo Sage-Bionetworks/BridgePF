@@ -407,7 +407,7 @@ public class AppConfigServiceTest {
         assertEquals(GUID, returnValue.getGuid());
         assertEquals(newConfig.getLabel(), returnValue.getLabel()); //
         assertEquals(TEST_STUDY.getIdentifier(), returnValue.getStudyId()); //
-        TestUtils.assertNode(TestUtils.getClientData(), returnValue.getClientData());
+        assertEquals(TestUtils.getClientData(), returnValue.getClientData());
         assertEquals(SURVEY_REF_LIST, returnValue.getSurveyReferences());
         assertEquals(SCHEMA_REF_LIST, returnValue.getSchemaReferences());
         assertEquals(CONFIG_REF_LIST, returnValue.getConfigReferences());

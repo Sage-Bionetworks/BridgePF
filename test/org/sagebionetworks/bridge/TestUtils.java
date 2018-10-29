@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -12,12 +11,10 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Map.Entry;
 import java.util.function.Consumer;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -537,18 +534,6 @@ public class TestUtils {
         JsonNode clientData = TestUtils.getClientData();
         ((ObjectNode)clientData).put("newField", "newValue");
         return clientData;
-    }
-    
-    public static void assertNode(JsonNode expected, JsonNode actual) {
-        assertEquals(expected.size(), actual.size());
-        
-        for (Iterator<Entry<String,JsonNode>> i = expected.fields(); i.hasNext();) {
-            Entry<String,JsonNode> expectedProperty = i.next();
-
-            JsonNode actualProperty = actual.get(expectedProperty.getKey());
-            assertNotNull(actualProperty);
-            assertEquals(expectedProperty.getValue().getNodeType(), actualProperty.getNodeType());
-        }
     }
     
     /**
