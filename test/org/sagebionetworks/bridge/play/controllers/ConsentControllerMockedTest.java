@@ -207,7 +207,7 @@ public class ConsentControllerMockedTest {
         String json = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
 
-        assertEquals(5, TestUtils.getFieldNamesSet(node).size());
+        assertEquals(5, node.size());
         assertEquals("Jack Aubrey", node.get("name").asText());
         assertEquals("1970-10-10", node.get("birthdate").asText());
         assertEquals("ConsentSignature", node.get("type").asText());
@@ -314,7 +314,7 @@ public class ConsentControllerMockedTest {
         String json = Helpers.contentAsString(result);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
 
-        assertEquals(5, TestUtils.getFieldNamesSet(node).size());
+        assertEquals(5, node.size());
         assertEquals("Jack Aubrey", node.get("name").asText());
         assertEquals("1970-10-10", node.get("birthdate").asText());
         assertEquals("ConsentSignature", node.get("type").asText());

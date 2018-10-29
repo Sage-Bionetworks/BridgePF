@@ -297,7 +297,7 @@ public class DynamoScheduledActivityTest {
         assertEquals("2015-10-01T14:10:10.000-06:00", node.get("expiresOn").textValue());
         assertNull(node.get("referentType"));
         // all the above, plus activity, and nothing else
-        assertEquals(10, TestUtils.getFieldNamesSet(node).size());
+        assertEquals(10, node.size());
 
         JsonNode activityNode = node.get("activity");
         assertEquals("Activity1", activityNode.get("label").textValue());
@@ -305,7 +305,7 @@ public class DynamoScheduledActivityTest {
         assertEquals("survey", activityNode.get("activityType").textValue());
         assertEquals("Activity", activityNode.get("type").textValue());
         // all the above, plus survey, and nothing else
-        assertEquals(5, TestUtils.getFieldNamesSet(activityNode).size());
+        assertEquals(5, activityNode.size());
         
         JsonNode surveyNode = activityNode.get("survey");
         assertEquals("identifier1", surveyNode.get("identifier").textValue());
@@ -313,7 +313,7 @@ public class DynamoScheduledActivityTest {
         assertNotNull("href", surveyNode.get("href").textValue());
         assertEquals("SurveyReference", surveyNode.get("type").textValue());
         // all the above and nothing else
-        assertEquals(4, TestUtils.getFieldNamesSet(surveyNode).size());
+        assertEquals(4, surveyNode.size());
         
         // Were you to set scheduledOn/expiresOn directly, rather than time zone + local variants,
         // it would still preserve the timezone, that is, the time zone you set separately, not the 

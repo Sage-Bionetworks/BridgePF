@@ -13,7 +13,6 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
@@ -65,10 +64,8 @@ public class DynamoAppConfigElementTest {
     
     @Test
     public void hashCodeEquals() {
-        JsonNode clientData2 = TestUtils.getClientData();
-        ((ObjectNode)clientData2).put("test", "tones");
         EqualsVerifier.forClass(DynamoAppConfigElement.class)
-                .withPrefabValues(JsonNode.class, TestUtils.getClientData(), clientData2)
+                .withPrefabValues(JsonNode.class, TestUtils.getClientData(), TestUtils.getOtherClientData())
                 .suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();
     }
     

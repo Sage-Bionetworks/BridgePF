@@ -81,7 +81,6 @@ public class DynamoAppConfigTest {
         criteria.setMaxAppVersion(ANDROID, 15);
         criteria.setLanguage("fr");
 
-        String clientDataString = TestUtils.createJson("{'booleanFlag':true,'stringValue':'testString','intValue':4}");
         JsonNode clientData = TestUtils.getClientData();
         
         AppConfig appConfig = AppConfig.create();
@@ -105,15 +104,16 @@ public class DynamoAppConfigTest {
         JsonNode node = BridgeObjectMapper.get().valueToTree(appConfig);
         assertEquals(fields, Sets.newHashSet(node.fieldNames()));
         
-        assertEquals(clientDataString, node.get("clientData").toString());
+        TestUtils.assertNode(clientData, node.get("clientData"));
         assertEquals("AppConfig", node.get("type").asText());
         assertEquals(TIMESTAMP.toString(), node.get("createdOn").textValue());
         assertEquals(TIMESTAMP.toString(), node.get("modifiedOn").textValue());
         
         AppConfig deser = BridgeObjectMapper.get().treeToValue(node, AppConfig.class);
         assertNull(deser.getStudyId());
-        assertEquals(clientDataString, deser.getClientData().toString());
-        assertEquals(clientDataString, deser.getConfigElements().get("config1").toString());
+        
+        TestUtils.assertNode(clientData, deser.getClientData());
+        TestUtils.assertNode(clientData, deser.getConfigElements().get("config1"));
         assertEquals(appConfig.getCriteria(), deser.getCriteria());
         assertEquals(appConfig.getLabel(), deser.getLabel());
         assertEquals(appConfig.getSurveyReferences(), deser.getSurveyReferences());
@@ -126,5 +126,4 @@ public class DynamoAppConfigTest {
         assertEquals(appConfig.getVersion(), deser.getVersion());
         assertEquals(appConfig.isDeleted(), deser.isDeleted());
     }
-    
 }

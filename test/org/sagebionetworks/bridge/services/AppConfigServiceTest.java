@@ -47,7 +47,6 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -218,8 +217,7 @@ public class AppConfigServiceTest {
         element1.setRevision(1L);
         element1.setData(clientData1);
         
-        JsonNode clientData2 = TestUtils.getClientData();
-        ((ObjectNode)clientData2).put("stringValue", "different value");
+        JsonNode clientData2 = TestUtils.getOtherClientData();
         AppConfigElement element2 = AppConfigElement.create();
         element2.setId("id2");
         element2.setRevision(2L);
@@ -257,8 +255,7 @@ public class AppConfigServiceTest {
     
     @Test
     public void getAppConfigForUserReferencingMissingElement() {
-        JsonNode clientData2 = TestUtils.getClientData();
-        ((ObjectNode)clientData2).put("stringValue", "different value");
+        JsonNode clientData2 = TestUtils.getOtherClientData();
         AppConfigElement element2 = AppConfigElement.create();
         element2.setId("id2");
         element2.setRevision(2L);
@@ -410,7 +407,7 @@ public class AppConfigServiceTest {
         assertEquals(GUID, returnValue.getGuid());
         assertEquals(newConfig.getLabel(), returnValue.getLabel()); //
         assertEquals(TEST_STUDY.getIdentifier(), returnValue.getStudyId()); //
-        assertEquals(TestUtils.getClientData().toString(), returnValue.getClientData().toString());
+        TestUtils.assertNode(TestUtils.getClientData(), returnValue.getClientData());
         assertEquals(SURVEY_REF_LIST, returnValue.getSurveyReferences());
         assertEquals(SCHEMA_REF_LIST, returnValue.getSchemaReferences());
         assertEquals(CONFIG_REF_LIST, returnValue.getConfigReferences());
