@@ -30,7 +30,9 @@ public class IntentService {
     
     /** Hold on to the intent for 4 hours. */
     private static final int EXPIRATION_IN_SECONDS = 4 * 60 * 60;
-    
+
+    private SmsService smsService;
+
     private StudyService studyService;
     
     private SubpopulationService subpopService;
@@ -38,13 +40,17 @@ public class IntentService {
     private ConsentService consentService;
     
     private CacheProvider cacheProvider;
-    
-    private NotificationsService notificationsService;
-    
+
     private AccountDao accountDao;
     
     private ParticipantService participantService;
-    
+
+    /** SMS Service, used to send app install links via text message. */
+    @Autowired
+    final void setSmsService(SmsService smsService) {
+        this.smsService = smsService;
+    }
+
     @Autowired
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
@@ -64,12 +70,7 @@ public class IntentService {
     final void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
     }
-    
-    @Autowired
-    final void setNotificationsService(NotificationsService notificationsService) {
-        this.notificationsService = notificationsService;
-    }
-    
+
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
@@ -116,7 +117,10 @@ public class IntentService {
                         .withTransactionType()
                         .withPhone(intent.getPhone())
                         .withToken(APP_INSTALL_URL_KEY, url).build();
-                notificationsService.sendSmsMessage(provider);
+
+                // Account hasn't been created yet, so there is no health code yet. Pass in null healthCode to
+                // SMS Service.
+                smsService.sendSmsMessage(null, provider);
             }
         }
     }

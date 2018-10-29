@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
@@ -46,7 +47,10 @@ public class IntentServiceTest {
     private static final long TIMESTAMP = 1000L; 
     
     IntentService service;
-    
+
+    @Mock
+    private SmsService mockSmsService;
+
     @Mock
     StudyService mockStudyService;
     
@@ -58,10 +62,7 @@ public class IntentServiceTest {
     
     @Mock
     CacheProvider mockCacheProvider;
-    
-    @Mock
-    NotificationsService mockNotificationsService;
-    
+
     @Mock
     ParticipantService mockParticipantService;
     
@@ -78,19 +79,16 @@ public class IntentServiceTest {
     ArgumentCaptor<CacheKey> keyCaptor;
 
     @Captor
-    ArgumentCaptor<IntentToParticipate> intentCaptor;
-    
-    @Captor
     ArgumentCaptor<SmsMessageProvider> smsMessageProviderCaptor;
     
     @Before
     public void before() {
         service = new IntentService();
+        service.setSmsService(mockSmsService);
         service.setStudyService(mockStudyService);
         service.setSubpopulationService(mockSubpopService);
         service.setConsentService(mockConsentService);
         service.setCacheProvider(mockCacheProvider);
-        service.setNotificationsService(mockNotificationsService);
         service.setAccountDao(accountDao);
         service.setParticipantService(mockParticipantService);
     }
@@ -117,9 +115,9 @@ public class IntentServiceTest {
         
         verify(mockCacheProvider).setObject(keyCaptor.capture(), eq(intent), eq(4 * 60 * 60));
         assertEquals(cacheKey, keyCaptor.getValue());
-        
-        verify(mockNotificationsService).sendSmsMessage(smsMessageProviderCaptor.capture());
-        
+
+        verify(mockSmsService).sendSmsMessage(isNull(String.class), smsMessageProviderCaptor.capture());
+
         SmsMessageProvider provider = smsMessageProviderCaptor.getValue();
         assertEquals(mockStudy, provider.getStudy());
         assertEquals(intent.getPhone(), provider.getPhone());
@@ -153,9 +151,9 @@ public class IntentServiceTest {
         // We do store the intent
         verify(mockCacheProvider).setObject(keyCaptor.capture(), eq(intent), eq(4 * 60 * 60));
         assertEquals(cacheKey, keyCaptor.getValue());
-        
+
         // But we don't send a message because installLinks map is empty
-        verify(mockNotificationsService, never()).sendSmsMessage(any());
+        verify(mockSmsService, never()).sendSmsMessage(any(), any());
     }
     
     @Test
@@ -178,10 +176,10 @@ public class IntentServiceTest {
         
         verify(mockSubpopService).getSubpopulation(eq(mockStudy), subpopGuidCaptor.capture());
         assertEquals(intent.getSubpopGuid(), subpopGuidCaptor.getValue().getGuid());
-        
+
         // These are not called.
         verify(mockCacheProvider, never()).setObject(cacheKey, intent, (4 * 60 * 60));
-        verify(mockNotificationsService, never()).sendSmsMessage(any());
+        verify(mockSmsService, never()).sendSmsMessage(any(), any());
     }
     
     @Test
@@ -199,7 +197,7 @@ public class IntentServiceTest {
         verifyNoMoreInteractions(mockStudyService);
         verifyNoMoreInteractions(mockSubpopService);
         verifyNoMoreInteractions(mockCacheProvider);
-        verifyNoMoreInteractions(mockNotificationsService);
+        verifyNoMoreInteractions(mockSmsService);
     }
 
     @Test
@@ -241,7 +239,7 @@ public class IntentServiceTest {
     }
     
     @Test
-    public void registerIntentToParticipateWithMultipleConsents() throws Exception {
+    public void registerIntentToParticipateWithMultipleConsents() {
         Subpopulation subpopA = Subpopulation.create();
         subpopA.setGuidString("AAA");
         Subpopulation subpopB = Subpopulation.create();

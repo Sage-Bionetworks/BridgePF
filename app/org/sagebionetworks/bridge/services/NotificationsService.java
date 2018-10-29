@@ -25,7 +25,6 @@ import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.validators.NotificationMessageValidator;
 import org.sagebionetworks.bridge.validators.NotificationRegistrationValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -45,7 +44,6 @@ public class NotificationsService {
     private static final Logger LOG = LoggerFactory.getLogger(NotificationsService.class);
 
     private ParticipantService participantService;
-    private SmsService smsService;
     private StudyService studyService;
     private NotificationRegistrationDao notificationRegistrationDao;
     private NotificationTopicService notificationTopicService;
@@ -55,12 +53,6 @@ public class NotificationsService {
     @Autowired
     public final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
-    }
-
-    /** SMS service, used for managing SMS log and opt-outs. */
-    @Autowired
-    public final void setSmsService(SmsService smsService) {
-        this.smsService = smsService;
     }
 
     @Autowired
@@ -248,11 +240,6 @@ public class NotificationsService {
                     + SEMICOLON_SPACE_JOINER.join(erroredRegistrations) + ".");
         }
         return erroredRegistrations;
-    }
-    
-    public void sendSmsMessage(SmsMessageProvider provider) {
-        // This is now a call-through to SmsService.
-        smsService.sendSmsMessage(provider);
     }
 
     private String getPlatformARN(Study study, NotificationRegistration registration) {
