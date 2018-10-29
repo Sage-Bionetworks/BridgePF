@@ -3,11 +3,11 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -35,11 +35,12 @@ public class DynamoAppConfigTest {
 
     private static final String LABEL = "label";
     private static final DateTime TIMESTAMP = DateTime.now(DateTimeZone.UTC);
+    private static final DateTime SURVEY_PUB_DATE = DateTime.now(DateTimeZone.UTC);
     private static final HashSet<String> SET_B = Sets.newHashSet("c","d");
     private static final HashSet<String> SET_A = Sets.newHashSet("a","b");
     private static final List<SurveyReference> SURVEY_REFS = ImmutableList.of(
-            new SurveyReference("surveyA", BridgeUtils.generateGuid(), DateTime.now(DateTimeZone.UTC)),
-            new SurveyReference("surveyB", BridgeUtils.generateGuid(), DateTime.now(DateTimeZone.UTC)));
+            new SurveyReference("surveyA", BridgeUtils.generateGuid(), SURVEY_PUB_DATE),
+            new SurveyReference("surveyB", BridgeUtils.generateGuid(), SURVEY_PUB_DATE));
     private static final List<SchemaReference> SCHEMA_REFS = ImmutableList.of(
             new SchemaReference("schemaA", 1),
             new SchemaReference("schemaB", 2));
@@ -97,23 +98,60 @@ public class DynamoAppConfigTest {
         appConfig.setVersion(3L);
         appConfig.setDeleted(true);
         
-        Set<String> fields = Sets.newHashSet("criteria", "label", "createdOn", "modifiedOn", "clientData",
-                "surveyReferences", "schemaReferences", "configReferences", "configElements", "version", 
-                "type", "deleted");
-                
         JsonNode node = BridgeObjectMapper.get().valueToTree(appConfig);
-        assertEquals(fields, Sets.newHashSet(node.fieldNames()));
         
-        TestUtils.assertNode(clientData, node.get("clientData"));
-        assertEquals("AppConfig", node.get("type").asText());
+        assertEquals(12, node.size());
+        JsonNode critNode = node.get("criteria");
+        assertEquals("fr", critNode.get("language").textValue());
+        assertEquals(2, critNode.get("allOfGroups").size());
+        assertEquals("a", critNode.get("allOfGroups").get(0).textValue());
+        assertEquals("b", critNode.get("allOfGroups").get(1).textValue());
+        assertEquals(2, critNode.get("noneOfGroups").size());
+        assertEquals("d", critNode.get("noneOfGroups").get(0).textValue());
+        assertEquals("c", critNode.get("noneOfGroups").get(1).textValue());
+        assertEquals(2, critNode.get("minAppVersions").get("iPhone OS").intValue());
+        assertEquals(10, critNode.get("minAppVersions").get("Android").intValue());
+        assertEquals(8, critNode.get("maxAppVersions").get("iPhone OS").intValue());
+        assertEquals(15, critNode.get("maxAppVersions").get("Android").intValue());
+        assertEquals("Criteria", critNode.get("type").textValue());
+        
+        assertTrue(node.get("deleted").booleanValue());
         assertEquals(TIMESTAMP.toString(), node.get("createdOn").textValue());
         assertEquals(TIMESTAMP.toString(), node.get("modifiedOn").textValue());
+        assertEquals("AppConfig", node.get("type").textValue());
+        assertEquals(LABEL, node.get("label").textValue());
+        assertEquals(3L, node.get("version").longValue());
+        assertEquals(clientData, node.get("clientData"));
+        assertEquals(clientData, node.get("configElements").get("config1"));
+        assertEquals(1, node.get("configElements").size());
+        
+        assertEquals(2, node.get("configReferences").size());
+        assertEquals("config1", node.get("configReferences").get(0).get("id").textValue());
+        assertEquals(1L, node.get("configReferences").get(0).get("revision").longValue());
+        assertEquals("config2", node.get("configReferences").get(1).get("id").textValue());
+        assertEquals(2L, node.get("configReferences").get(1).get("revision").longValue());
+        
+        assertEquals(2, node.get("schemaReferences").size());
+        assertEquals("schemaA", node.get("schemaReferences").get(0).get("id").textValue());
+        assertEquals(1L, node.get("schemaReferences").get(0).get("revision").longValue());
+        assertEquals("schemaB", node.get("schemaReferences").get(1).get("id").textValue());
+        assertEquals(2L, node.get("schemaReferences").get(1).get("revision").longValue());
+        
+        assertEquals(2, node.get("surveyReferences").size());
+        assertEquals("surveyA", node.get("surveyReferences").get(0).get("identifier").textValue());
+        assertEquals(appConfig.getSurveyReferences().get(0).getGuid(),
+                node.get("surveyReferences").get(0).get("guid").textValue());
+        assertEquals(SURVEY_PUB_DATE.toString(), node.get("surveyReferences").get(0).get("createdOn").textValue());
+        assertEquals("surveyB", node.get("surveyReferences").get(1).get("identifier").textValue());
+        assertEquals(appConfig.getSurveyReferences().get(1).getGuid(),
+                node.get("surveyReferences").get(1).get("guid").textValue());
+        assertEquals(SURVEY_PUB_DATE.toString(), node.get("surveyReferences").get(1).get("createdOn").textValue());
         
         AppConfig deser = BridgeObjectMapper.get().treeToValue(node, AppConfig.class);
         assertNull(deser.getStudyId());
         
-        TestUtils.assertNode(clientData, deser.getClientData());
-        TestUtils.assertNode(clientData, deser.getConfigElements().get("config1"));
+        assertEquals(clientData, deser.getClientData());
+        assertEquals(clientData, deser.getConfigElements().get("config1"));
         assertEquals(appConfig.getCriteria(), deser.getCriteria());
         assertEquals(appConfig.getLabel(), deser.getLabel());
         assertEquals(appConfig.getSurveyReferences(), deser.getSurveyReferences());
