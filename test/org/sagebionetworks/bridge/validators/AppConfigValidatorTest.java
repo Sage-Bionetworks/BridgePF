@@ -3,6 +3,10 @@ package org.sagebionetworks.bridge.validators;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+
+import java.util.List;
 
 import org.joda.time.DateTime;
 
@@ -19,28 +23,39 @@ import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
+import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.surveys.Survey;
+import org.sagebionetworks.bridge.models.upload.UploadSchema;
+import org.sagebionetworks.bridge.services.AppConfigElementService;
 import org.sagebionetworks.bridge.services.SurveyService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AppConfigValidatorTest {
     
-    private static final SurveyReference UNRESOLVED_SURVEY_REF = new SurveyReference(null, "guid", null);
-    private static final SurveyReference RESOLVED_SURVEY_REF = new SurveyReference(null, "guid", DateTime.now());
-    private static final GuidCreatedOnVersionHolder RESOLVED_SURVEY_KEYS = new GuidCreatedOnVersionHolderImpl(RESOLVED_SURVEY_REF);
-    private static final SchemaReference UNRESOLVED_SCHEMA_REF = new SchemaReference("guid",null);
-    private static final SchemaReference RESOLVED_SCHEMA_REF = new SchemaReference("guid", 3);
+    private static final SurveyReference INVALID_SURVEY_REF = new SurveyReference(null, "guid", null);
+    private static final SurveyReference VALID_UNRESOLVED_SURVEY_REF = new SurveyReference(null, "guid",
+            DateTime.now());
+    private static final GuidCreatedOnVersionHolder VALID_RESOLVED_SURVEY_KEYS = new GuidCreatedOnVersionHolderImpl(
+            VALID_UNRESOLVED_SURVEY_REF);
+    private static final SchemaReference INVALID_SCHEMA_REF = new SchemaReference("guid", null);
+    private static final SchemaReference VALID_SCHEMA_REF = new SchemaReference("guid", 3);
+    private static final ConfigReference VALID_CONFIG_REF = new ConfigReference("id", 3L);
     
     @Mock
     private SurveyService surveyService;
     
     @Mock
     private UploadSchemaService schemaService;
+    
+    @Mock
+    private AppConfigElementService appConfigElementService;
     
     private AppConfigValidator newValidator;
     
@@ -53,8 +68,47 @@ public class AppConfigValidatorTest {
         appConfig = AppConfig.create();
         appConfig.setStudyId(TEST_STUDY_IDENTIFIER);
         
-        this.newValidator = new AppConfigValidator(surveyService, schemaService, Sets.newHashSet("foo","bar"), true);
-        this.updateValidator = new AppConfigValidator(surveyService, schemaService, Sets.newHashSet("foo","bar"), false);
+        this.newValidator = new AppConfigValidator(surveyService, schemaService, appConfigElementService, Sets.newHashSet("foo","bar"), true);
+        this.updateValidator = new AppConfigValidator(surveyService, schemaService, appConfigElementService, Sets.newHashSet("foo","bar"), false);
+    }
+    
+    @Test
+    public void configReferenceValidated() {
+        ConfigReference ref1 = new ConfigReference("id:1", 1L);
+        ConfigReference ref2 = new ConfigReference("id:2", 2L);
+        
+        when(appConfigElementService.getElementRevision(any(), any(), anyLong())).thenReturn(AppConfigElement.create());
+        
+        List<ConfigReference> references = ImmutableList.of(ref1, ref2);
+        appConfig.setConfigReferences(references);
+        appConfig.setLabel("label");
+        appConfig.setCriteria(Criteria.create());
+        
+        // This succeeds because the mock does not throw an exception
+        Validate.entityThrowingException(newValidator, appConfig);
+    }
+    
+    @Test
+    public void configReferenceInvalid() {
+        ConfigReference ref = new ConfigReference(null, null);
+        
+        appConfig.setConfigReferences(ImmutableList.of(ref));
+        
+        assertValidatorMessage(newValidator, appConfig, "configReferences[0].id", "is required");
+        assertValidatorMessage(newValidator, appConfig, "configReferences[0].revision", "is required");
+    }
+    
+    @Test
+    public void configReferenceNotFound() { 
+        ConfigReference ref1 = new ConfigReference("id:1", 1L);
+        appConfig.setConfigReferences(ImmutableList.of(ref1));
+        appConfig.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        
+        when(appConfigElementService.getElementRevision(TestConstants.TEST_STUDY, "id:1", 1L))
+                .thenThrow(new EntityNotFoundException(AppConfigElement.class));
+        
+        // This succeeds because the mock does not throw an exception
+        assertValidatorMessage(newValidator, appConfig, "configReferences[0]", "does not refer to a configuration element");
     }
     
     @Test
@@ -89,14 +143,22 @@ public class AppConfigValidatorTest {
     
     @Test
     public void surveyReferencesHaveCreatedOnTimestamps() { 
-        appConfig.getSurveyReferences().add(UNRESOLVED_SURVEY_REF);
+        appConfig.getSurveyReferences().add(INVALID_SURVEY_REF);
         
         assertValidatorMessage(newValidator, appConfig, "surveyReferences[0].createdOn", "is required");
+    }
+
+    @Test
+    public void schemaReferencesHaveId() {
+        SchemaReference invalidSchemaRef = new SchemaReference(null, 3);
+        appConfig.getSchemaReferences().add(invalidSchemaRef);
+        
+        assertValidatorMessage(newValidator, appConfig, "schemaReferences[0].id", "is required");
     }
     
     @Test
     public void schemaReferencesHaveRevision() { 
-        appConfig.getSchemaReferences().add(UNRESOLVED_SCHEMA_REF);
+        appConfig.getSchemaReferences().add(INVALID_SCHEMA_REF);
         
         assertValidatorMessage(newValidator, appConfig, "schemaReferences[0].revision", "is required");
     }
@@ -106,7 +168,7 @@ public class AppConfigValidatorTest {
         when(schemaService.getUploadSchemaByIdAndRev(TEST_STUDY, "guid", 3))
                 .thenThrow(new EntityNotFoundException(AppConfig.class));
         
-        appConfig.getSchemaReferences().add(RESOLVED_SCHEMA_REF);
+        appConfig.getSchemaReferences().add(VALID_SCHEMA_REF);
         
         assertValidatorMessage(newValidator, appConfig, "schemaReferences[0]", "does not refer to an upload schema");
     }
@@ -116,7 +178,7 @@ public class AppConfigValidatorTest {
         when(schemaService.getUploadSchemaByIdAndRev(TEST_STUDY, "guid", 3))
             .thenThrow(new EntityNotFoundException(AppConfig.class));
         
-        appConfig.getSchemaReferences().add(RESOLVED_SCHEMA_REF);
+        appConfig.getSchemaReferences().add(VALID_SCHEMA_REF);
         
         assertValidatorMessage(updateValidator, appConfig, "schemaReferences[0]", "does not refer to an upload schema");
     }
@@ -124,20 +186,20 @@ public class AppConfigValidatorTest {
     
     @Test
     public void surveyDoesNotExistOnCreate() {
-        when(surveyService.getSurvey(TestConstants.TEST_STUDY, RESOLVED_SURVEY_KEYS, false, true))
+        when(surveyService.getSurvey(TestConstants.TEST_STUDY, VALID_RESOLVED_SURVEY_KEYS, false, true))
                 .thenThrow(new EntityNotFoundException(Survey.class));
         
-        appConfig.getSurveyReferences().add(RESOLVED_SURVEY_REF);
+        appConfig.getSurveyReferences().add(VALID_UNRESOLVED_SURVEY_REF);
         
         assertValidatorMessage(newValidator, appConfig, "surveyReferences[0]", "does not refer to a survey");
     }
     
     @Test
     public void surveyDoesNotExistOnUpdate() {
-        when(surveyService.getSurvey(TestConstants.TEST_STUDY, RESOLVED_SURVEY_KEYS, false, true))
+        when(surveyService.getSurvey(TestConstants.TEST_STUDY, VALID_RESOLVED_SURVEY_KEYS, false, true))
                 .thenThrow(new EntityNotFoundException(Survey.class));
         
-        appConfig.getSurveyReferences().add(RESOLVED_SURVEY_REF);
+        appConfig.getSurveyReferences().add(VALID_UNRESOLVED_SURVEY_REF);
         
         assertValidatorMessage(updateValidator, appConfig, "surveyReferences[0]", "does not refer to a survey");
     }    
@@ -146,9 +208,9 @@ public class AppConfigValidatorTest {
     public void surveyIsNotPublishedOnCreate() {
         Survey survey = Survey.create();
         survey.setPublished(false);
-        when(surveyService.getSurvey(TestConstants.TEST_STUDY, RESOLVED_SURVEY_KEYS, false, false)).thenReturn(survey);
+        when(surveyService.getSurvey(TestConstants.TEST_STUDY, VALID_RESOLVED_SURVEY_KEYS, false, false)).thenReturn(survey);
         
-        appConfig.getSurveyReferences().add(RESOLVED_SURVEY_REF);
+        appConfig.getSurveyReferences().add(VALID_UNRESOLVED_SURVEY_REF);
         
         assertValidatorMessage(newValidator, appConfig, "surveyReferences[0]", "has not been published");
     }
@@ -157,9 +219,9 @@ public class AppConfigValidatorTest {
     public void surveyIsNotPublishedOnUpdate() {
         Survey survey = Survey.create();
         survey.setPublished(false);
-        when(surveyService.getSurvey(TestConstants.TEST_STUDY, RESOLVED_SURVEY_KEYS, false, false)).thenReturn(survey);
+        when(surveyService.getSurvey(TestConstants.TEST_STUDY, VALID_RESOLVED_SURVEY_KEYS, false, false)).thenReturn(survey);
         
-        appConfig.getSurveyReferences().add(RESOLVED_SURVEY_REF);
+        appConfig.getSurveyReferences().add(VALID_UNRESOLVED_SURVEY_REF);
         
         assertValidatorMessage(updateValidator, appConfig, "surveyReferences[0]", "has not been published");
     }
@@ -172,5 +234,40 @@ public class AppConfigValidatorTest {
         appConfig.setCriteria(criteria);
         
         assertValidatorMessage(newValidator, appConfig, "noneOfGroups", "'bad-group' is not in enumeration: bar, foo");
+    }
+    
+    @Test
+    public void rejectsReferenceToLogicallyDeletedSurvey() {
+        Survey survey = Survey.create();
+        survey.setDeleted(true);
+        when(surveyService.getSurvey(TestConstants.TEST_STUDY, VALID_RESOLVED_SURVEY_KEYS, false, false)).thenReturn(survey);
+        
+        appConfig.getSurveyReferences().add(VALID_UNRESOLVED_SURVEY_REF);
+        
+        assertValidatorMessage(updateValidator, appConfig, "surveyReferences[0]", "does not refer to a survey");
+    }
+    
+    @Test
+    public void rejectsReferenceToLogicallyDeletedSchema() {
+        UploadSchema schema = UploadSchema.create();
+        schema.setDeleted(true);
+        
+        when(schemaService.getUploadSchemaByIdAndRev(TEST_STUDY, "guid", 3)).thenReturn(schema);
+        
+        appConfig.getSchemaReferences().add(VALID_SCHEMA_REF);
+        
+        assertValidatorMessage(updateValidator, appConfig, "schemaReferences[0]", "does not refer to an upload schema");
+    }
+
+    @Test
+    public void rejectsReferenceToLogicallyDeletedConfigElement() {
+        AppConfigElement element = AppConfigElement.create();
+        element.setDeleted(true);
+        
+        when(appConfigElementService.getElementRevision(any(), any(), anyLong())).thenReturn(element);
+        
+        appConfig.getConfigReferences().add(VALID_CONFIG_REF);
+        
+        assertValidatorMessage(updateValidator, appConfig, "configReferences[0]", "does not refer to a configuration element");
     }
 }

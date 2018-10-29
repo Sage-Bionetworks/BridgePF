@@ -11,8 +11,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -536,14 +534,6 @@ public class TestUtils {
         JsonNode clientData = TestUtils.getClientData();
         ((ObjectNode)clientData).put("newField", "newValue");
         return clientData;
-    }
-    
-    public static Set<String> getFieldNamesSet(JsonNode node) {
-        HashSet<String> set = new HashSet<>();
-        for (Iterator<String> i = node.fieldNames(); i.hasNext(); ) {
-            set.add(i.next());
-        }
-        return set;
     }
     
     /**

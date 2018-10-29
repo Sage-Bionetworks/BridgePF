@@ -1,14 +1,19 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
+import org.sagebionetworks.bridge.dynamodb.DynamoCompoundActivityDefinition.SchemaReferenceListMarshaller;
+import org.sagebionetworks.bridge.dynamodb.DynamoCompoundActivityDefinition.SurveyReferenceListMarshaller;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
+import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 
@@ -20,6 +25,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -27,6 +33,16 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @DynamoDBTable(tableName = "AppConfig")
 @BridgeTypeName("AppConfig")
 public class DynamoAppConfig implements AppConfig {
+    public static class ConfigReferenceListMarshaller extends ListMarshaller<ConfigReference> {
+        private static final TypeReference<List<ConfigReference>> CONFIG_REF_LIST_TYPE =
+                new TypeReference<List<ConfigReference>>() {};
+
+        /** {@inheritDoc} */
+        @Override
+        public TypeReference<List<ConfigReference>> getTypeReference() {
+            return CONFIG_REF_LIST_TYPE;
+        }
+    }
 
     private String studyId;
     private String label;
@@ -37,6 +53,9 @@ public class DynamoAppConfig implements AppConfig {
     private JsonNode clientData;
     private List<SurveyReference> surveyReferences;
     private List<SchemaReference> schemaReferences;
+    private List<ConfigReference> configReferences;
+    boolean configIncluded;
+    private Map<String,JsonNode> configElements;
     private Long version;
     private boolean deleted;
     
@@ -121,7 +140,7 @@ public class DynamoAppConfig implements AppConfig {
         this.clientData = clientData;
     }
     
-    @DynamoDBTypeConverted(converter=DynamoCompoundActivityDefinition.SurveyReferenceListMarshaller.class)
+    @DynamoDBTypeConverted(converter=SurveyReferenceListMarshaller.class)
     @Override
     public List<SurveyReference> getSurveyReferences() {
         if (surveyReferences == null) {
@@ -130,12 +149,13 @@ public class DynamoAppConfig implements AppConfig {
         return surveyReferences;
     }
 
+    @DynamoDBTypeConverted(converter=SurveyReferenceListMarshaller.class)
     @Override
     public void setSurveyReferences(List<SurveyReference> references) {
         this.surveyReferences = references; 
     }
 
-    @DynamoDBTypeConverted(converter=DynamoCompoundActivityDefinition.SchemaReferenceListMarshaller.class)
+    @DynamoDBTypeConverted(converter=SchemaReferenceListMarshaller.class)
     @Override
     public List<SchemaReference> getSchemaReferences() {
         if (schemaReferences == null) {
@@ -144,11 +164,41 @@ public class DynamoAppConfig implements AppConfig {
         return schemaReferences;
     }
 
+    @DynamoDBTypeConverted(converter=SchemaReferenceListMarshaller.class)
     @Override
     public void setSchemaReferences(List<SchemaReference> references) {
         this.schemaReferences = references;
     }
     
+    @DynamoDBTypeConverted(converter=ConfigReferenceListMarshaller.class)
+    @Override
+    public List<ConfigReference> getConfigReferences() {
+        if (configReferences == null) {
+            configReferences = new ArrayList<>();
+        }
+        return configReferences;
+    }
+    
+    @DynamoDBTypeConverted(converter=ConfigReferenceListMarshaller.class)
+    @Override
+    public void setConfigReferences(List<ConfigReference> references) {
+        this.configReferences = references;
+    }
+    
+    @DynamoDBIgnore
+    @Override
+    public Map<String,JsonNode> getConfigElements() {
+        if (configElements == null) {
+            configElements = new HashMap<>();
+        }
+        return configElements;
+    }
+    
+    @Override
+    public void setConfigElements(Map<String,JsonNode> configElements) {
+        this.configElements = configElements;
+    };
+        
     @DynamoDBVersionAttribute
     @Override
     public Long getVersion() {

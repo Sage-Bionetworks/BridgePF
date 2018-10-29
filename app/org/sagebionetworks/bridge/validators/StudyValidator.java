@@ -39,9 +39,6 @@ import org.springframework.validation.Validator;
 public class StudyValidator implements Validator {
     public static final StudyValidator INSTANCE = new StudyValidator();
     
-    static final String BRIDGE_IDENTIFIER_ERROR = "must contain only lower-case letters and/or numbers with optional dashes";
-    static final String BRIDGE_EVENT_ID_ERROR = "must contain only lower- or upper-case letters, numbers, dashes, and/or underscores";
-    
     private static final int MAX_SYNAPSE_LENGTH = 250;
     private static final Pattern FINGERPRINT_PATTERN = Pattern.compile("^[0-9a-fA-F:]{95,95}$");
     protected static final String EMAIL_ERROR = "is not a comma-separated list of email addresses";
@@ -73,7 +70,7 @@ public class StudyValidator implements Validator {
             errors.rejectValue("identifier", "is required");
         } else {
             if (!study.getIdentifier().matches(BridgeConstants.BRIDGE_IDENTIFIER_PATTERN)) {
-                errors.rejectValue("identifier", BRIDGE_IDENTIFIER_ERROR);
+                errors.rejectValue("identifier", BridgeConstants.BRIDGE_IDENTIFIER_ERROR);
             }
             if (study.getIdentifier().length() < 2) {
                 errors.rejectValue("identifier", "must be at least 2 characters");
@@ -81,7 +78,7 @@ public class StudyValidator implements Validator {
         }
         if (study.getActivityEventKeys().stream()
                 .anyMatch(k -> !k.matches(BridgeConstants.BRIDGE_EVENT_ID_PATTERN))) {
-            errors.rejectValue("activityEventKeys", BRIDGE_EVENT_ID_ERROR);
+            errors.rejectValue("activityEventKeys", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
         }
         if (study.getAutomaticCustomEvents() != null) {
             for (Map.Entry<String, String> entry : study.getAutomaticCustomEvents().entrySet()) {
@@ -90,7 +87,7 @@ public class StudyValidator implements Validator {
                 
                 // Validate that the key follows the same rules for activity event keys
                 if (!key.matches(BridgeConstants.BRIDGE_EVENT_ID_PATTERN)) {
-                    errors.rejectValue("automaticCustomEvents["+key+"]", BRIDGE_EVENT_ID_ERROR);
+                    errors.rejectValue("automaticCustomEvents["+key+"]", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
                 }
                 
                 Tuple<String> autoEventSpec = BridgeUtils.parseAutoEventValue(value);

@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import java.util.List;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
@@ -44,6 +45,9 @@ public class AppConfigElementsController extends BaseController {
         AppConfigElement element = parseJson(request(), AppConfigElement.class);
         
         VersionHolder version = service.createElement(session.getStudyIdentifier(), element);
+
+        // App config elements are included in the app configs, so allow cache to update
+        cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getStudyIdentifier()));
         return createdResult(version);
     }
 
@@ -89,6 +93,9 @@ public class AppConfigElementsController extends BaseController {
         element.setRevision(revision);
         
         VersionHolder holder = service.updateElementRevision(session.getStudyIdentifier(), element);
+
+        // App config elements are included in the app configs, so allow cache to update
+        cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getStudyIdentifier()));
         return okResult(holder);
     }
     
@@ -100,6 +107,8 @@ public class AppConfigElementsController extends BaseController {
         } else {
             service.deleteElementAllRevisions(session.getStudyIdentifier(), id);
         }
+        // App config elements are included in the app configs, so allow cache to update
+        cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getStudyIdentifier()));
         return okResult("App config element deleted.");
     }
     
@@ -116,6 +125,8 @@ public class AppConfigElementsController extends BaseController {
         } else {
             service.deleteElementRevision(session.getStudyIdentifier(), id, revision);
         }
+        // App config elements are included in the app configs, so allow cache to update
+        cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getStudyIdentifier()));
         return okResult("App config element revision deleted.");
     }
     

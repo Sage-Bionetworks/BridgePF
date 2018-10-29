@@ -22,6 +22,8 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.cache.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
@@ -52,14 +54,21 @@ public class AppConfigElementsControllerTest {
     @Captor
     private ArgumentCaptor<AppConfigElement> elementCaptor;
     
+    @Captor
+    private ArgumentCaptor<CacheKey> cacheKeyCaptor;
+    
     @Mock
     private AppConfigElementService service;
+    
+    @Mock
+    private CacheProvider cacheProvider;
     
     private UserSession session;
     
     @Before
     public void before() { 
         controller.setAppConfigElementService(service);
+        controller.setCacheProvider(cacheProvider);
         
         session = new UserSession(new StudyParticipant.Builder().build());
         session.setStudyIdentifier(TestConstants.TEST_STUDY);
@@ -125,6 +134,9 @@ public class AppConfigElementsControllerTest {
         assertEquals(201, result.status());
         VersionHolder returnedHolder = TestUtils.getResponsePayload(result, VersionHolder.class);
         assertEquals(new Long(1), returnedHolder.getVersion());
+        
+        verify(cacheProvider).removeSetOfCacheKeys(cacheKeyCaptor.capture());
+        assertEquals("api:AppConfigList", cacheKeyCaptor.getValue().toString());
         
         verify(service).createElement(eq(TestConstants.TEST_STUDY), elementCaptor.capture());
         assertEquals("element-id", elementCaptor.getValue().getId());
@@ -204,7 +216,7 @@ public class AppConfigElementsControllerTest {
         
         verify(service).getElementRevision(TestConstants.TEST_STUDY, "id", 3L);
     }
-
+    
     @Test(expected = BadRequestException.class)
     public void getElementRevisionBadRevisionNumber() throws Exception {
         controller.getElementRevision("id", "three");
@@ -224,6 +236,9 @@ public class AppConfigElementsControllerTest {
         assertEquals(200, result.status());
         assertEquals(new Long(1), returnedHolder.getVersion());
         
+        verify(cacheProvider).removeSetOfCacheKeys(cacheKeyCaptor.capture());
+        assertEquals("api:AppConfigList", cacheKeyCaptor.getValue().toString());
+        
         verify(service).updateElementRevision(eq(TestConstants.TEST_STUDY), elementCaptor.capture());
         assertEquals("id", elementCaptor.getValue().getId());
         assertEquals(new Long(1), elementCaptor.getValue().getRevision());
@@ -241,6 +256,9 @@ public class AppConfigElementsControllerTest {
         Result result = controller.deleteElementAllRevisions("id", "false");
         TestUtils.assertResult(result, 200, "App config element deleted.");
      
+        verify(cacheProvider).removeSetOfCacheKeys(cacheKeyCaptor.capture());
+        assertEquals("api:AppConfigList", cacheKeyCaptor.getValue().toString());
+        
         verify(service).deleteElementAllRevisions(TestConstants.TEST_STUDY, "id");
     }
     
@@ -251,7 +269,10 @@ public class AppConfigElementsControllerTest {
         
         Result result = controller.deleteElementAllRevisions("id", "true");
         TestUtils.assertResult(result, 200, "App config element deleted.");
-     
+        
+        verify(cacheProvider).removeSetOfCacheKeys(cacheKeyCaptor.capture());
+        assertEquals("api:AppConfigList", cacheKeyCaptor.getValue().toString());
+
         verify(service).deleteElementAllRevisionsPermanently(TestConstants.TEST_STUDY, "id");
     }
     
@@ -271,7 +292,10 @@ public class AppConfigElementsControllerTest {
         
         Result result = controller.deleteElementRevision("id", "3", "false");
         TestUtils.assertResult(result, 200, "App config element revision deleted.");
-     
+
+        verify(cacheProvider).removeSetOfCacheKeys(cacheKeyCaptor.capture());
+        assertEquals("api:AppConfigList", cacheKeyCaptor.getValue().toString());
+
         verify(service).deleteElementRevision(TestConstants.TEST_STUDY, "id", 3L);
     }
     
