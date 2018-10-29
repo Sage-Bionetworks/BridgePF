@@ -67,6 +67,7 @@ public class ConsentService {
     protected static final String USERSIGNED_CONSENTS_BUCKET = BridgeConfigFactory.getConfig().get("usersigned.consents.bucket");
     private AccountDao accountDao;
     private SendMailService sendMailService;
+    private SmsService smsService;
     private NotificationsService notificationsService;
     private StudyConsentService studyConsentService;
     private ActivityEventService activityEventService;
@@ -87,6 +88,13 @@ public class ConsentService {
     final void setSendMailService(SendMailService sendMailService) {
         this.sendMailService = sendMailService;
     }
+
+    /** SMS Service, used to send consent via text message. */
+    @Autowired
+    final void setSmsService(SmsService smsService) {
+        this.smsService = smsService;
+    }
+
     @Autowired
     final void setNotificationsService(NotificationsService notificationsService) {
         this.notificationsService = notificationsService;
@@ -397,7 +405,7 @@ public class ConsentService {
                 .withSmsTemplate(study.getSignedConsentSmsTemplate())
                 .withToken(BridgeConstants.CONSENT_URL, shortUrl)
                 .build();
-        notificationsService.sendSmsMessage(provider);
+        smsService.sendSmsMessage(participant.getHealthCode(), provider);
     }
     
     protected String getSignedConsentUrl() {

@@ -419,7 +419,7 @@ public class ParticipantServiceTest {
         
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, false);
         
-        verify(accountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any());
+        verify(accountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any(), any());
         assertEquals(AccountStatus.ENABLED, account.getStatus());
         assertEquals(Boolean.TRUE, account.getPhoneVerified());
     }
@@ -431,7 +431,7 @@ public class ParticipantServiceTest {
         STUDY.setEmailVerificationEnabled(true);
         participantService.createParticipant(STUDY, CALLER_ROLES, PARTICIPANT, true);
 
-        verify(accountWorkflowService).sendPhoneVerificationToken(any(), any(), any());
+        verify(accountWorkflowService).sendPhoneVerificationToken(STUDY, ID, HEALTH_CODE, PHONE);
         assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
         assertNull(account.getPhoneVerified());
     }
@@ -445,7 +445,7 @@ public class ParticipantServiceTest {
         study.setEmailVerificationEnabled(true);
         participantService.createParticipant(study, CALLER_ROLES, PARTICIPANT, true);
 
-        verify(accountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any());
+        verify(accountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any(), any());
         assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
         assertNull(account.getPhoneVerified());
     }
@@ -458,7 +458,7 @@ public class ParticipantServiceTest {
         StudyParticipant emailParticipant = new StudyParticipant.Builder().withEmail(EMAIL).build();
         participantService.createParticipant(STUDY, CALLER_ROLES, emailParticipant, false);
 
-        verify(accountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any());
+        verify(accountWorkflowService, never()).sendPhoneVerificationToken(any(), any(), any(), any());
         assertEquals(AccountStatus.ENABLED, account.getStatus());
         assertNull(account.getPhoneVerified());
     }
@@ -1816,6 +1816,7 @@ public class ParticipantServiceTest {
     @Test
     public void sendSmsMessage() {
         when(accountDao.getAccount(any())).thenReturn(account);
+        account.setHealthCode(HEALTH_CODE);
         account.setPhone(TestConstants.PHONE);
         account.setPhoneVerified(true);
         
@@ -1823,7 +1824,7 @@ public class ParticipantServiceTest {
         
         participantService.sendSmsMessage(STUDY, ID, template);
 
-        verify(notificationsService).sendSmsMessage(providerCaptor.capture());
+        verify(smsService).sendSmsMessage(eq(HEALTH_CODE), providerCaptor.capture());
         
         SmsMessageProvider provider = providerCaptor.getValue();
         assertEquals(TestConstants.PHONE, provider.getPhone());

@@ -68,7 +68,7 @@ import com.google.common.collect.Iterables;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AccountWorkflowServiceTest {
-    
+    private static final String HEALTH_CODE = "health-code";
     private static final String SUPPORT_EMAIL = "support@support.com";
     private static final String STUDY_ID = TestConstants.TEST_STUDY_IDENTIFIER;
     private static final String SPTOKEN = "GHI-JKL";
@@ -106,14 +106,14 @@ public class AccountWorkflowServiceTest {
     private BridgeConfig mockBridgeConfig;
 
     @Mock
+    private SmsService mockSmsService;
+
+    @Mock
     private StudyService mockStudyService;
     
     @Mock
     private SendMailService mockSendMailService;
-    
-    @Mock
-    private NotificationsService mockNotificationsService;
-    
+
     @Mock
     private AccountDao mockAccountDao;
     
@@ -177,8 +177,11 @@ public class AccountWorkflowServiceTest {
         service.setCacheProvider(mockCacheProvider);
         service.setJedisOps(new InMemoryJedisOps());
         service.setSendMailService(mockSendMailService);
+        service.setSmsService(mockSmsService);
         service.setStudyService(mockStudyService);
-        service.setNotificationsService(mockNotificationsService);
+
+        // Add params to mock account.
+        when(mockAccount.getHealthCode()).thenReturn(HEALTH_CODE);
     }
     
     @Test
@@ -216,7 +219,7 @@ public class AccountWorkflowServiceTest {
     }
     
     @Test
-    public void sendEmailVerificationTokenNoEmail() throws Exception {
+    public void sendEmailVerificationTokenNoEmail() {
         service.sendEmailVerificationToken(study, USER_ID, null);
         verify(mockSendMailService, never()).sendEmail(any());
         verifyNoMoreInteractions(mockCacheProvider);
@@ -235,10 +238,10 @@ public class AccountWorkflowServiceTest {
     @Test
     public void sendPhoneVerificationToken() throws Exception {
         when(service.getNextPhoneToken()).thenReturn("012345");
-        
-        service.sendPhoneVerificationToken(study, USER_ID, TestConstants.PHONE);
-        
-        verify(mockNotificationsService).sendSmsMessage(smsMessageProviderCaptor.capture());
+
+        service.sendPhoneVerificationToken(study, USER_ID, HEALTH_CODE, TestConstants.PHONE);
+
+        verify(mockSmsService).sendSmsMessage(eq(HEALTH_CODE), smsMessageProviderCaptor.capture());
         verify(mockCacheProvider).setObject(eq(PHONE_TOKEN_CACHE_KEY), stringCaptor.capture(), eq(AccountWorkflowService.VERIFY_OR_RESET_EXPIRE_IN_SECONDS));
         
         String string = stringCaptor.getValue();
@@ -259,9 +262,9 @@ public class AccountWorkflowServiceTest {
     }
     
     @Test
-    public void sendPhoneVerificationTokenNoPhone() throws Exception {
-        service.sendPhoneVerificationToken(study, USER_ID, null);
-        verify(mockNotificationsService, never()).sendSmsMessage(any());
+    public void sendPhoneVerificationTokenNoPhone() {
+        service.sendPhoneVerificationToken(study, USER_ID, HEALTH_CODE, null);
+        verify(mockSmsService, never()).sendSmsMessage(any(), any());
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
         verifyNoMoreInteractions(mockCacheProvider);
     }
@@ -270,10 +273,10 @@ public class AccountWorkflowServiceTest {
     public void sendPhoneVerificationTokenThrottled() {
         // Throttle limit is 2. Make 3 requests, and send only 2 emails.
         when(service.getNextToken()).thenReturn(TOKEN);
-        service.sendPhoneVerificationToken(study, USER_ID, TestConstants.PHONE);
-        service.sendPhoneVerificationToken(study, USER_ID, TestConstants.PHONE);
-        service.sendPhoneVerificationToken(study, USER_ID, TestConstants.PHONE);
-        verify(mockNotificationsService, times(2)).sendSmsMessage(any());
+        service.sendPhoneVerificationToken(study, USER_ID, HEALTH_CODE, TestConstants.PHONE);
+        service.sendPhoneVerificationToken(study, USER_ID, HEALTH_CODE, TestConstants.PHONE);
+        service.sendPhoneVerificationToken(study, USER_ID, HEALTH_CODE, TestConstants.PHONE);
+        verify(mockSmsService, times(2)).sendSmsMessage(any(), any());
     }
     
     @Test
@@ -338,7 +341,7 @@ public class AccountWorkflowServiceTest {
         
         service.resendVerificationToken(ChannelType.PHONE, ACCOUNT_ID_WITH_PHONE);
         
-        verify(service).sendPhoneVerificationToken(study, USER_ID, TestConstants.PHONE);
+        verify(service).sendPhoneVerificationToken(study, USER_ID, HEALTH_CODE, TestConstants.PHONE);
         
         verify(mockCacheProvider).setObject(eq(PHONE_TOKEN_CACHE_KEY), stringCaptor.capture(),
                 eq(AccountWorkflowService.VERIFY_OR_RESET_EXPIRE_IN_SECONDS));
@@ -356,7 +359,7 @@ public class AccountWorkflowServiceTest {
         } catch(EntityNotFoundException e) {
             // expected exception
         }
-        verify(service, never()).sendPhoneVerificationToken(any(), any(), any());
+        verify(service, never()).sendPhoneVerificationToken(any(), any(), any(), any());
         verifyNoMoreInteractions(mockCacheProvider);
     }
     
@@ -368,7 +371,7 @@ public class AccountWorkflowServiceTest {
         
         service.resendVerificationToken(ChannelType.EMAIL, ACCOUNT_ID_WITH_PHONE);
         
-        verify(service, never()).sendPhoneVerificationToken(any(), any(), any());
+        verify(service, never()).sendPhoneVerificationToken(any(), any(), any(), any());
         verifyNoMoreInteractions(mockCacheProvider);
     }
     
@@ -642,7 +645,7 @@ public class AccountWorkflowServiceTest {
         verify(mockCacheProvider).setObject(PASSWORD_RESET_FOR_PHONE, 
                 BridgeObjectMapper.get().writeValueAsString(TestConstants.PHONE), 
                 AccountWorkflowService.VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
-        verify(mockNotificationsService).sendSmsMessage(smsMessageProviderCaptor.capture());
+        verify(mockSmsService).sendSmsMessage(eq(HEALTH_CODE), smsMessageProviderCaptor.capture());
         
         String message = smsMessageProviderCaptor.getValue().getSmsRequest().getMessage();
         assertTrue(message.contains("Account for ShortName already exists. Reset password: "));
@@ -667,7 +670,7 @@ public class AccountWorkflowServiceTest {
         verify(mockCacheProvider).setObject(PASSWORD_RESET_FOR_PHONE, 
                 BridgeObjectMapper.get().writeValueAsString(TestConstants.PHONE), 
                 AccountWorkflowService.VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
-        verify(mockNotificationsService).sendSmsMessage(smsMessageProviderCaptor.capture());
+        verify(mockSmsService).sendSmsMessage(eq(HEALTH_CODE), smsMessageProviderCaptor.capture());
         
         String message = smsMessageProviderCaptor.getValue().getSmsRequest().getMessage();
         assertTrue(message.contains("Account for ShortName already exists. Reset password: "));
@@ -678,7 +681,7 @@ public class AccountWorkflowServiceTest {
     }
     
     @Test
-    public void notifyAccountExistsWithPhoneAutoVerifySuppressed() throws Exception {
+    public void notifyAccountExistsWithPhoneAutoVerifySuppressed() {
         when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         study.setPhoneSignInEnabled(true);
         study.setAutoVerificationPhoneSuppressed(true);
@@ -693,11 +696,11 @@ public class AccountWorkflowServiceTest {
         service.notifyAccountExists(study, accountId);
         
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
-        verify(mockNotificationsService, never()).sendSmsMessage(any());
+        verify(mockSmsService, never()).sendSmsMessage(any(), any());
     }
     
     @Test
-    public void notifyAccountExistsWithEmailAutoVerifySuppressed() throws Exception {
+    public void notifyAccountExistsWithEmailAutoVerifySuppressed() {
         // In this path email sign in is also enabled, so we will generate a link to sign in that can 
         // be used in lieu of directing the user to a password reset.
         study.setEmailSignInEnabled(true);
@@ -718,7 +721,7 @@ public class AccountWorkflowServiceTest {
     }
     
     @Test
-    public void notifyAccountExistsWithEmailVerifyOff() throws Exception {
+    public void notifyAccountExistsWithEmailVerifyOff() {
         // In this path email sign in is also enabled, so we will generate a link to sign in that can 
         // be used in lieu of directing the user to a password reset.
         study.setEmailSignInEnabled(true);
@@ -782,7 +785,7 @@ public class AccountWorkflowServiceTest {
         service.requestResetPassword(study, false, ACCOUNT_ID_WITH_PHONE);
         
         verify(mockCacheProvider).setObject(eq(PASSWORD_RESET_FOR_PHONE), stringCaptor.capture(), eq(60*60*2));
-        verify(mockNotificationsService).sendSmsMessage(smsMessageProviderCaptor.capture());
+        verify(mockSmsService).sendSmsMessage(eq(HEALTH_CODE), smsMessageProviderCaptor.capture());
         
         assertEquals(study, smsMessageProviderCaptor.getValue().getStudy());
         assertEquals(TestConstants.PHONE, smsMessageProviderCaptor.getValue().getPhone());
@@ -807,7 +810,7 @@ public class AccountWorkflowServiceTest {
         service.requestResetPassword(study, false, ACCOUNT_ID_WITH_PHONE);
         
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
-        verify(mockNotificationsService, never()).sendSmsMessage(any());
+        verify(mockSmsService, never()).sendSmsMessage(any(), any());
         verifyNoMoreInteractions(mockCacheProvider);
     }
 
@@ -822,12 +825,12 @@ public class AccountWorkflowServiceTest {
         service.requestResetPassword(study, false, ACCOUNT_ID_WITH_PHONE);
         
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
-        verify(mockNotificationsService, never()).sendSmsMessage(any());
+        verify(mockSmsService, never()).sendSmsMessage(any(), any());
         verifyNoMoreInteractions(mockCacheProvider);
     }
     
     @Test
-    public void requestResetPasswordInvalidEmailFailsQuietly() throws Exception {
+    public void requestResetPasswordInvalidEmailFailsQuietly() {
         when(service.getNextToken()).thenReturn(TOKEN);
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(null);
         
@@ -839,7 +842,7 @@ public class AccountWorkflowServiceTest {
     }
 
     @Test
-    public void requestRestPasswordUnverifiedEmailFailsQuietly() throws Exception {
+    public void requestRestPasswordUnverifiedEmailFailsQuietly() {
         when(service.getNextToken()).thenReturn(TOKEN);
         when(mockAccount.getEmail()).thenReturn(EMAIL);
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(mockAccount);
@@ -847,12 +850,12 @@ public class AccountWorkflowServiceTest {
         service.requestResetPassword(study, false, ACCOUNT_ID_WITH_EMAIL);
         
         verifyNoMoreInteractions(mockSendMailService);
-        verifyNoMoreInteractions(mockNotificationsService);
+        verifyNoMoreInteractions(mockSmsService);
         verifyNoMoreInteractions(mockCacheProvider);
     }
     
     @Test
-    public void requestRestPasswordUnverifiedPhoneFailsQuietly() throws Exception {
+    public void requestRestPasswordUnverifiedPhoneFailsQuietly() {
         when(service.getNextToken()).thenReturn(TOKEN);
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
@@ -860,12 +863,12 @@ public class AccountWorkflowServiceTest {
         service.requestResetPassword(study, false, ACCOUNT_ID_WITH_PHONE);
         
         verifyNoMoreInteractions(mockSendMailService);
-        verifyNoMoreInteractions(mockNotificationsService);
+        verifyNoMoreInteractions(mockSmsService);
         verifyNoMoreInteractions(mockCacheProvider);
     }
     
     @Test
-    public void requestResetPasswordByAdminDoesNotRequireEmailVerification() throws Exception {
+    public void requestResetPasswordByAdminDoesNotRequireEmailVerification() {
         when(service.getNextToken()).thenReturn(SPTOKEN);
         when(mockAccount.getEmail()).thenReturn(EMAIL);
         when(mockAccount.getEmailVerified()).thenReturn(false);
@@ -878,7 +881,7 @@ public class AccountWorkflowServiceTest {
     }
     
     @Test
-    public void requestResetPasswordByAdminDoesNotRequirePhoneVerification() throws Exception {
+    public void requestResetPasswordByAdminDoesNotRequirePhoneVerification() {
         when(service.getNextToken()).thenReturn(SPTOKEN);
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
@@ -887,11 +890,11 @@ public class AccountWorkflowServiceTest {
         service.requestResetPassword(study, true, ACCOUNT_ID_WITH_PHONE);
         
         verify(mockCacheProvider).setObject(eq(PASSWORD_RESET_FOR_PHONE), stringCaptor.capture(), eq(60*60*2));
-        verify(mockNotificationsService).sendSmsMessage(any());
+        verify(mockSmsService).sendSmsMessage(any(), any());
     }
     
     @Test
-    public void requestResetPasswordQuietlyFailsForDisabledAccount() throws Exception {
+    public void requestResetPasswordQuietlyFailsForDisabledAccount() {
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
         when(mockAccount.getPhoneVerified()).thenReturn(Boolean.TRUE);
@@ -902,7 +905,7 @@ public class AccountWorkflowServiceTest {
         service.requestResetPassword(study, false, ACCOUNT_ID_WITH_PHONE);
         
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
-        verify(mockNotificationsService, never()).sendSmsMessage(any());
+        verify(mockSmsService, never()).sendSmsMessage(any(), any());
         verifyNoMoreInteractions(mockCacheProvider);
     }
     
@@ -921,7 +924,7 @@ public class AccountWorkflowServiceTest {
     }
     
     @Test
-    public void resetPasswordWithPhone() throws Exception {
+    public void resetPasswordWithPhone() {
         when(mockCacheProvider.getObject(PASSWORD_RESET_FOR_PHONE, Phone.class)).thenReturn(TestConstants.PHONE);
         when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
@@ -1010,7 +1013,7 @@ public class AccountWorkflowServiceTest {
     }
     
     @Test
-    public void requestEmailSignInFailureDelays() throws Exception {
+    public void requestEmailSignInFailureDelays() {
         study.setEmailSignInEnabled(true);
         service.getEmailSignInRequestInMillis().set(1000);
         when(mockAccountDao.getAccount(any())).thenReturn(null);
@@ -1055,7 +1058,7 @@ public class AccountWorkflowServiceTest {
     }
     
     @Test
-    public void requestEmailSignInThrottles() throws Exception {
+    public void requestEmailSignInThrottles() {
         study.setEmailSignInEnabled(true);
         when(service.getNextToken()).thenReturn(SPTOKEN);
         when(mockAccountDao.getAccount(any())).thenReturn(mockAccount);
@@ -1121,8 +1124,8 @@ public class AccountWorkflowServiceTest {
         
         verify(mockCacheProvider).getObject(PHONE_SIGNIN_CACHE_KEY, String.class);
         verify(mockCacheProvider).setObject(PHONE_SIGNIN_CACHE_KEY, "123456", AccountWorkflowService.SIGNIN_EXPIRE_IN_SECONDS);
-        verify(mockNotificationsService).sendSmsMessage(smsMessageProviderCaptor.capture());
-        
+        verify(mockSmsService).sendSmsMessage(eq(HEALTH_CODE), smsMessageProviderCaptor.capture());
+
         assertEquals(study, smsMessageProviderCaptor.getValue().getStudy());
         assertEquals(TestConstants.PHONE, smsMessageProviderCaptor.getValue().getPhone());
         assertEquals("Transactional", smsMessageProviderCaptor.getValue().getSmsType());
@@ -1140,7 +1143,7 @@ public class AccountWorkflowServiceTest {
         service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
         
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
-        verify(mockNotificationsService, never()).sendSmsMessage(any());
+        verify(mockSmsService, never()).sendSmsMessage(any(),any());
         verifyNoMoreInteractions(mockCacheProvider);
     }
 
@@ -1154,7 +1157,7 @@ public class AccountWorkflowServiceTest {
         service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
         service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
         service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
-        verify(mockNotificationsService, times(3)).sendSmsMessage(any());
+        verify(mockSmsService, times(3)).sendSmsMessage(any(), any());
     }
 
     @Test

@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
@@ -17,6 +19,7 @@ import org.sagebionetworks.bridge.models.sms.SmsType;
 public class DynamoSmsMessage implements SmsMessage {
     private String phoneNumber;
     private long sentOn;
+    private String healthCode;
     private String messageBody;
     private String messageId;
     private SmsType smsType;
@@ -36,6 +39,7 @@ public class DynamoSmsMessage implements SmsMessage {
     }
 
     /** {@inheritDoc} */
+    @DynamoDBIndexRangeKey(attributeName = "sentOn", globalSecondaryIndexName = "study-sentOn-index")
     @DynamoDBRangeKey
     @JsonSerialize(using = DateTimeToLongSerializer.class)
     @Override
@@ -48,6 +52,18 @@ public class DynamoSmsMessage implements SmsMessage {
     @Override
     public void setSentOn(long sentOn) {
         this.sentOn = sentOn;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public String getHealthCode() {
+        return healthCode;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setHealthCode(String healthCode) {
+        this.healthCode = healthCode;
     }
 
     /** {@inheritDoc} */
@@ -88,6 +104,7 @@ public class DynamoSmsMessage implements SmsMessage {
     }
 
     /** {@inheritDoc} */
+    @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "study-sentOn-index")
     @Override
     public String getStudyId() {
         return studyId;

@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -45,6 +44,7 @@ import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
+import org.sagebionetworks.bridge.util.TriConsumer;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -142,11 +142,11 @@ public class AccountWorkflowService {
 
     // Dependent services
     private JedisOps jedisOps;
+    private SmsService smsService;
     private StudyService studyService;
     private SendMailService sendMailService;
     private AccountDao accountDao;
     private CacheProvider cacheProvider;
-    private NotificationsService notificationsService;
 
     /** Bridge config, used to get config values such as throttle configuration. */
     @Autowired
@@ -159,6 +159,12 @@ public class AccountWorkflowService {
     @Autowired
     public final void setJedisOps(JedisOps jedisOps) {
         this.jedisOps = jedisOps;
+    }
+
+    /** SMS Service, used to send account workflow text messages. */
+    @Autowired
+    public final void setSmsService(SmsService smsService) {
+        this.smsService = smsService;
     }
 
     @Autowired
@@ -180,12 +186,7 @@ public class AccountWorkflowService {
     final void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
     }
-    
-    @Autowired
-    final void setNotificationsService(NotificationsService notificationsService) {
-        this.notificationsService = notificationsService;
-    }
-    
+
     final AtomicLong getEmailSignInRequestInMillis() {
         return emailSignInRequestInMillis;
     }
@@ -234,7 +235,7 @@ public class AccountWorkflowService {
         sendMailService.sendEmail(provider);
     }
     
-    public void sendPhoneVerificationToken(Study study, String userId, Phone phone) {
+    public void sendPhoneVerificationToken(Study study, String userId, String healthCode, Phone phone) {
         checkNotNull(study);
         checkArgument(isNotBlank(userId));
         
@@ -258,7 +259,7 @@ public class AccountWorkflowService {
                 .withTransactionType()
                 .withExpirationPeriod(PHONE_VERIFICATION_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS)
                 .withPhone(phone).build();
-        notificationsService.sendSmsMessage(provider);
+        smsService.sendSmsMessage(healthCode, provider);
     }
         
     /**
@@ -274,7 +275,7 @@ public class AccountWorkflowService {
             if (type == ChannelType.EMAIL) {
                 sendEmailVerificationToken(study, account.getId(), account.getEmail());
             } else if (type == ChannelType.PHONE) {
-                sendPhoneVerificationToken(study, account.getId(), account.getPhone());
+                sendPhoneVerificationToken(study, account.getId(), account.getHealthCode(), account.getPhone());
             } else {
                 throw new UnsupportedOperationException("Channel type not implemented");
             }
@@ -325,7 +326,7 @@ public class AccountWorkflowService {
         if (verifiedEmail && sendEmail) {
             sendPasswordResetRelatedEmail(study, account.getEmail(), true, study.getAccountExistsTemplate());
         } else if (verifiedPhone && sendPhone) {
-            sendPasswordResetRelatedSMS(study, account.getPhone(), true, study.getAccountExistsSmsTemplate());
+            sendPasswordResetRelatedSMS(study, account, true, study.getAccountExistsSmsTemplate());
         }
     }
     
@@ -350,7 +351,7 @@ public class AccountWorkflowService {
             if (account.getEmail() != null && emailVerified) {
                 sendPasswordResetRelatedEmail(study, account.getEmail(), false, study.getResetPasswordTemplate());
             } else if (account.getPhone() != null && phoneVerified) {
-                sendPasswordResetRelatedSMS(study, account.getPhone(), false, study.getResetPasswordSmsTemplate());
+                sendPasswordResetRelatedSMS(study, account, false, study.getResetPasswordSmsTemplate());
             }
         }
     }
@@ -381,7 +382,7 @@ public class AccountWorkflowService {
         if (includeEmailSignIn && study.isEmailSignInEnabled()) {
             SignIn signIn = new SignIn.Builder().withEmail(email).withStudy(study.getIdentifier()).build();
             requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, emailSignInRequestInMillis,
-                signIn, false, this::getNextToken, (theStudy, token) -> {
+                signIn, false, this::getNextToken, (theStudy, account, token) -> {
                     // get and add the sign in URLs.
                     String emailShortUrl = getShortEmailSignInURL(signIn.getEmail(), theStudy.getIdentifier(), token);
                     
@@ -396,7 +397,9 @@ public class AccountWorkflowService {
         sendMailService.sendEmail(builder.build());
     }
     
-    private void sendPasswordResetRelatedSMS(Study study, Phone phone, boolean includePhoneSignIn, SmsTemplate template) {
+    private void sendPasswordResetRelatedSMS(Study study, Account account, boolean includePhoneSignIn,
+            SmsTemplate template) {
+        Phone phone = account.getPhone();
         String sptoken = getNextToken();
         
         CacheKey cacheKey = CacheKey.passwordResetForPhone(sptoken, study.getIdentifier());
@@ -416,13 +419,13 @@ public class AccountWorkflowService {
         if (includePhoneSignIn && study.isPhoneSignInEnabled()) {
             SignIn signIn = new SignIn.Builder().withPhone(phone).withStudy(study.getIdentifier()).build();
             requestChannelSignIn(PHONE, PHONE_SIGNIN_REQUEST, phoneSignInRequestInMillis,
-                signIn, false, this::getNextPhoneToken, (theStudy, token) -> {
+                signIn, false, this::getNextPhoneToken, (theStudy, account2, token) -> {
                     String formattedToken = token.substring(0,3) + "-" + token.substring(3,6);
                     builder.withToken(TOKEN_KEY, formattedToken);
                     builder.withExpirationPeriod(PHONE_SIGNIN_EXPIRATION_PERIOD, SIGNIN_EXPIRE_IN_SECONDS);
                 });
         }
-        notificationsService.sendSmsMessage(builder.build());
+        smsService.sendSmsMessage(account.getHealthCode(), builder.build());
     }
 
     /**
@@ -469,7 +472,7 @@ public class AccountWorkflowService {
      */
     public void requestPhoneSignIn(SignIn signIn) {
         requestChannelSignIn(PHONE, PHONE_SIGNIN_REQUEST, phoneSignInRequestInMillis, 
-                signIn, true, this::getNextPhoneToken, (study, token) -> {
+                signIn, true, this::getNextPhoneToken, (study, account, token) -> {
             // Put a dash in the token so it's easier to enter into the UI. All this should
             // eventually come from a template
             String formattedToken = token.substring(0,3) + "-" + token.substring(3,6); 
@@ -481,7 +484,7 @@ public class AccountWorkflowService {
                     .withPhone(signIn.getPhone())
                     .withExpirationPeriod(PHONE_SIGNIN_EXPIRATION_PERIOD, SIGNIN_EXPIRE_IN_SECONDS)
                     .withToken(TOKEN_KEY, formattedToken).build();
-            notificationsService.sendSmsMessage(provider);
+            smsService.sendSmsMessage(account.getHealthCode(), provider);
         });
     }
     
@@ -493,7 +496,7 @@ public class AccountWorkflowService {
      */
     public void requestEmailSignIn(SignIn signIn) {
         requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, emailSignInRequestInMillis, 
-                signIn, true, this::getNextToken, (study, token) -> {
+                signIn, true, this::getNextToken, (study, account, token) -> {
             String url = getEmailSignInURL(signIn.getEmail(), study.getIdentifier(), token);
             String shortUrl = getShortEmailSignInURL(signIn.getEmail(), study.getIdentifier(), token);
             
@@ -520,7 +523,7 @@ public class AccountWorkflowService {
     
     private void requestChannelSignIn(ChannelType channelType, Validator validator, AtomicLong atomicLong,
             SignIn signIn, boolean shouldThrottle, Supplier<String> tokenSupplier,
-            BiConsumer<Study, String> messageSender) {
+            TriConsumer<Study, Account, String> messageSender) {
         long startTime = System.currentTimeMillis();
         Validate.entityThrowingException(validator, signIn);
 
@@ -569,7 +572,7 @@ public class AccountWorkflowService {
             cacheProvider.setObject(cacheKey, token, SIGNIN_EXPIRE_IN_SECONDS);
         }
 
-        messageSender.accept(study, token);
+        messageSender.accept(study, account, token);
         atomicLong.set(System.currentTimeMillis()-startTime);
     }
 

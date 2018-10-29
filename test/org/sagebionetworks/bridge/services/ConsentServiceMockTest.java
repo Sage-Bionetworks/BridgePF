@@ -100,6 +100,8 @@ public class ConsentServiceMockTest {
     @Mock
     private SendMailService sendMailService;
     @Mock
+    private SmsService smsService;
+    @Mock
     private StudyConsentService studyConsentService;
     @Mock
     private ActivityEventService activityEventService;
@@ -118,24 +120,21 @@ public class ConsentServiceMockTest {
     @Captor
     private ArgumentCaptor<BasicEmailProvider> emailCaptor;
     @Captor
-    private ArgumentCaptor<WithdrawConsentEmailProvider> withdrawalProviderCaptor;
-    @Captor
     private ArgumentCaptor<SmsMessageProvider> smsProviderCaptor;
     @Captor
     private ArgumentCaptor<Account> accountCaptor;
-    
-    private String documentString;
 
     private Account account;
     
     @Before
     public void before() throws IOException {
-        documentString = IOUtils.toString(new FileInputStream("conf/study-defaults/consent-page.xhtml"));
+        String documentString = IOUtils.toString(new FileInputStream("conf/study-defaults/consent-page.xhtml"));
         
         consentService = new ConsentService();
         consentService.setAccountDao(accountDao);
         consentService.setSendMailService(sendMailService);
         consentService.setActivityEventService(activityEventService);
+        consentService.setSmsService(smsService);
         consentService.setStudyConsentService(studyConsentService);
         consentService.setSubpopulationService(subpopService);
         consentService.setS3Helper(s3Helper);
@@ -747,7 +746,7 @@ public class ConsentServiceMockTest {
     public void consentToResearchWithPhoneOK() {
         consentService.consentToResearch(study, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING, true);
         
-        verify(notificationsService).sendSmsMessage(smsProviderCaptor.capture());
+        verify(smsService).sendSmsMessage(eq(HEALTH_CODE), smsProviderCaptor.capture());
         
         SmsMessageProvider provider = smsProviderCaptor.getValue();
         assertEquals(PHONE_PARTICIPANT.getPhone(), provider.getPhone());
@@ -762,8 +761,8 @@ public class ConsentServiceMockTest {
         when(subpopulation.isAutoSendConsentSuppressed()).thenReturn(true);
         
         consentService.consentToResearch(study, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING, true);
-        
-        verify(notificationsService, never()).sendSmsMessage(any());
+
+        verify(smsService, never()).sendSmsMessage(any(), any());
     }
 
     @Test
@@ -774,14 +773,14 @@ public class ConsentServiceMockTest {
         consentService.consentToResearch(study, SUBPOP_GUID, phoneAndEmail, CONSENT_SIGNATURE, SharingScope.NO_SHARING, true);
         
         verify(sendMailService).sendEmail(any());
-        verify(notificationsService, never()).sendSmsMessage(any());
+        verify(smsService, never()).sendSmsMessage(any(), any());
     }
 
     @Test
     public void consentToResearchWithPhoneSuppressedByCallFlag() {
         consentService.consentToResearch(study, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING, false);
         
-        verify(notificationsService, never()).sendSmsMessage(any());
+        verify(smsService, never()).sendSmsMessage(any(), any());
     }
 
     @Test
@@ -789,9 +788,9 @@ public class ConsentServiceMockTest {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
         
         consentService.resendConsentAgreement(study, SUBPOP_GUID, PHONE_PARTICIPANT);
-        
-        verify(notificationsService).sendSmsMessage(smsProviderCaptor.capture());
-        
+
+        verify(smsService).sendSmsMessage(eq(HEALTH_CODE), smsProviderCaptor.capture());
+
         SmsMessageProvider provider = smsProviderCaptor.getValue();
         assertEquals(PHONE_PARTICIPANT.getPhone(), provider.getPhone());
         assertEquals(study, provider.getStudy());
@@ -810,8 +809,7 @@ public class ConsentServiceMockTest {
         consentService.resendConsentAgreement(study, SUBPOP_GUID, phoneAndEmail);
         
         verify(sendMailService).sendEmail(any());
-        verify(notificationsService, never()).sendSmsMessage(any());
-        
+        verify(smsService, never()).sendSmsMessage(any(), any());
     }
     
     @Test(expected = BadRequestException.class)
