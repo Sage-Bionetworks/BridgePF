@@ -255,7 +255,7 @@ public abstract class BaseController extends Controller {
         List<String> languages = getLanguagesFromAcceptLanguageHeader();
         if (!languages.isEmpty()) {
             accountDao.editAccount(session.getStudyIdentifier(), session.getHealthCode(),
-                    account -> account.setLanguages(ImmutableList.copyOf(languages)));
+                    account -> account.setLanguages(languages));
 
             CriteriaContext newContext = new CriteriaContext.Builder().withContext(getCriteriaContext(session))
                     .withLanguages(languages).build();
