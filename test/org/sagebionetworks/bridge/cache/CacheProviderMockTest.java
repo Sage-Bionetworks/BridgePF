@@ -49,6 +49,7 @@ import org.sagebionetworks.bridge.redis.JedisTransaction;
 import redis.clients.jedis.JedisPool;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -414,7 +415,7 @@ public class CacheProviderMockTest {
         assertEquals(SharingScope.NO_SHARING, participant.getSharingScope());
         assertEquals(DateTime.parse("2016-04-21T16:48:22.386Z"), participant.getCreatedOn());
         assertEquals(Sets.newHashSet(Roles.ADMIN), participant.getRoles());
-        assertEquals(Sets.newHashSet("en","fr"), participant.getLanguages());
+        assertEquals(ImmutableList.of("en","fr"), participant.getLanguages());
         assertEquals("ABC", participant.getExternalId());
         
         assertEquals(participant.getHealthCode(), ENCRYPTOR.decrypt(ENCRYPTED_SESSION_TOKEN));

@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.joda.time.DateTime;
 import org.junit.Test;
-
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -124,11 +124,11 @@ public class HibernateAccountTest {
     
     @Test
     public void accountSummaryConstructor() {
-        HibernateAccount account = new HibernateAccount(new Long(123), "studyId", "firstName", "lastName", "email",
-                TestConstants.PHONE, "externalId", "id", AccountStatus.UNVERIFIED);
+        HibernateAccount account = new HibernateAccount(new DateTime(123L), TestConstants.TEST_STUDY_IDENTIFIER, "firstName",
+                "lastName", "email", TestConstants.PHONE, "externalId", "id", AccountStatus.UNVERIFIED);
 
-        assertEquals(new Long(123), account.getCreatedOn());
-        assertEquals("studyId", account.getStudyId());
+        assertEquals(123L, account.getCreatedOn().getMillis());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, account.getStudyIdentifier());
         assertEquals("firstName", account.getFirstName());
         assertEquals("lastName", account.getLastName());
         assertEquals("email", account.getEmail());

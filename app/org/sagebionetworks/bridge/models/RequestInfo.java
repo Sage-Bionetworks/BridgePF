@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models;
 
-import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -24,7 +24,7 @@ public final class RequestInfo {
     private final String userId;
     private final ClientInfo clientInfo;
     private final String userAgent;
-    private final LinkedHashSet<String> languages;
+    private final List<String> languages;
     private final Set<String> userDataGroups;
     private final DateTime activitiesAccessedOn;
     private final DateTime signedInOn;
@@ -34,7 +34,7 @@ public final class RequestInfo {
 
     @JsonCreator
     private RequestInfo(@JsonProperty("userId") String userId, @JsonProperty("clientInfo") ClientInfo clientInfo,
-            @JsonProperty("userAgent") String userAgent, @JsonProperty("languages") LinkedHashSet<String> languages,
+            @JsonProperty("userAgent") String userAgent, @JsonProperty("languages") List<String> languages,
             @JsonProperty("userDataGroups") Set<String> userDataGroups,
             @JsonProperty("activitiesAccessedOn") DateTime activitiesAccessedOn,
             @JsonProperty("signedInOn") DateTime signedInOn, @JsonProperty("uploadedOn") DateTime uploadedOn, 
@@ -63,7 +63,7 @@ public final class RequestInfo {
         return userAgent;
     }
 
-    public LinkedHashSet<String> getLanguages() {
+    public List<String> getLanguages() {
         return languages;
     }
 
@@ -131,7 +131,7 @@ public final class RequestInfo {
         private String userId;
         private ClientInfo clientInfo;
         private String userAgent;
-        private LinkedHashSet<String> languages;
+        private List<String> languages;
         private Set<String> userDataGroups;
         private DateTime activitiesAccessedOn;
         private DateTime signedInOn;
@@ -172,7 +172,7 @@ public final class RequestInfo {
             }
             return this;
         }
-        public Builder withLanguages(LinkedHashSet<String> languages) {
+        public Builder withLanguages(List<String> languages) {
             if (languages != null) {
                 this.languages = languages;
             }

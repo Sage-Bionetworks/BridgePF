@@ -65,6 +65,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
 public abstract class BaseController extends Controller {
@@ -246,15 +247,15 @@ public abstract class BaseController extends Controller {
      * then they may have to reconsent in the new language they are using for the study. Any warnings to 
      * that effect will need to be included in the application.
      */
-    LinkedHashSet<String> getLanguages(UserSession session) {
+    List<String> getLanguages(UserSession session) {
         StudyParticipant participant = session.getParticipant();
         if (!participant.getLanguages().isEmpty()) {
             return participant.getLanguages();
         }
-        LinkedHashSet<String> languages = getLanguagesFromAcceptLanguageHeader();
+        List<String> languages = getLanguagesFromAcceptLanguageHeader();
         if (!languages.isEmpty()) {
             accountDao.editAccount(session.getStudyIdentifier(), session.getHealthCode(),
-                    account -> account.setLanguages(languages));
+                    account -> account.setLanguages(ImmutableList.copyOf(languages)));
 
             CriteriaContext newContext = new CriteriaContext.Builder().withContext(getCriteriaContext(session))
                     .withLanguages(languages).build();
@@ -270,14 +271,15 @@ public abstract class BaseController extends Controller {
      * language option).
      * @return
      */
-    LinkedHashSet<String> getLanguagesFromAcceptLanguageHeader() {
+    List<String> getLanguagesFromAcceptLanguageHeader() {
         String acceptLanguageHeader = request().getHeader(ACCEPT_LANGUAGE);
         if (isNotBlank(acceptLanguageHeader)) {
             try {
                 List<LanguageRange> ranges = Locale.LanguageRange.parse(acceptLanguageHeader);
-                return ranges.stream().map(range -> {
+                LinkedHashSet<String> languageSet = ranges.stream().map(range -> {
                     return Locale.forLanguageTag(range.getRange()).getLanguage();
                 }).collect(Collectors.toCollection(LinkedHashSet::new));
+                return ImmutableList.copyOf(languageSet);
             } catch(IllegalArgumentException e) {
                 // Accept-Language header was not properly formatted, do not throw an exception over 
                 // a malformed header, just return that no languages were found.
@@ -287,7 +289,7 @@ public abstract class BaseController extends Controller {
 
         // if no Accept-Language header detected, we shall add an extra warning header
         addWarningMessage(BridgeConstants.WARN_NO_ACCEPT_LANGUAGE);
-        return new LinkedHashSet<>();
+        return ImmutableList.of();
     }
     
     ClientInfo getClientInfoFromUserAgentHeader() {

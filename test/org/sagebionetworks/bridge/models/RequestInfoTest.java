@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.models;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.joda.time.DateTime;
@@ -10,13 +10,13 @@ import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -27,7 +27,7 @@ public class RequestInfoTest {
     private static final String USER_ID = "userId";
     private static final ClientInfo CLIENT_INFO = ClientInfo.parseUserAgentString("app/20");
     private static final String USER_AGENT_STRING = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.116 Safari/537.36";
-    private static final LinkedHashSet<String> LANGUAGES = TestUtils.newLinkedHashSet("en", "fr");
+    private static final List<String> LANGUAGES = ImmutableList.of("en", "fr");
     private static final DateTimeZone PST = DateTimeZone.forOffsetHours(-7);
     private static final DateTimeZone MST = DateTimeZone.forOffsetHours(3);
     private static final DateTime ACTIVITIES_REQUESTED_ON = DateUtils.getCurrentDateTime().withZone(PST);

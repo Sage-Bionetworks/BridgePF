@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules;
 
-import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -185,7 +185,7 @@ public final class ScheduleContext {
             }
             return this;
         }
-        public Builder withLanguages(LinkedHashSet<String> languages) {
+        public Builder withLanguages(List<String> languages) {
             contextBuilder.withLanguages(languages);
             return this;
         }

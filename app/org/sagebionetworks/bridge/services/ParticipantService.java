@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -55,6 +56,8 @@ import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
@@ -249,13 +252,7 @@ public class ParticipantService {
         builder.withId(account.getId());
         builder.withHealthCode(account.getHealthCode());
         builder.withClientData(account.getClientData());
-
-        Map<String, String> attributes = Maps.newHashMap();
-        for (String attribute : study.getUserProfileAttributes()) {
-            String value = account.getAttribute(attribute);
-            attributes.put(attribute, value);
-        }
-        builder.withAttributes(attributes);
+        builder.withAttributes(account.getAttributes());
 
         if (includeHistory) {
             Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
@@ -432,13 +429,13 @@ public class ParticipantService {
         account.setSharingScope(participant.getSharingScope());
         account.setNotifyByEmail(participant.isNotifyByEmail());
         account.setDataGroups(participant.getDataGroups());
-        account.setLanguages(participant.getLanguages());
+        account.setLanguages(ImmutableList.copyOf(participant.getLanguages()));
         account.setMigrationVersion(AccountDao.MIGRATION_VERSION);
         // Do not copy timezone or external ID. Neither can be updated once set.
         
         for (String attribute : study.getUserProfileAttributes()) {
             String value = participant.getAttributes().get(attribute);
-            account.setAttribute(attribute, value);
+            account.getAttributes().put(attribute, value);
         }
         if (callerIsAdmin(callerRoles)) {
             updateRoles(callerRoles, participant, account);
@@ -544,8 +541,10 @@ public class ParticipantService {
      * Get a history of all consent records for a given subpopulation, whether user is withdrawn or not.
      */
     public List<UserConsentHistory> getUserConsentHistory(Account account, SubpopulationGuid subpopGuid) {
+        final StudyIdentifier studyId = new StudyIdentifierImpl(account.getStudyIdentifier());
+        
         return account.getConsentSignatureHistory(subpopGuid).stream().map(signature -> {
-            Subpopulation subpop = subpopService.getSubpopulation(account.getStudyIdentifier(), subpopGuid);
+            Subpopulation subpop = subpopService.getSubpopulation(studyId, subpopGuid);
             boolean hasSignedActiveConsent = (signature.getConsentCreatedOn() == subpop.getPublishedConsentCreatedOn());
 
             return new UserConsentHistory.Builder()

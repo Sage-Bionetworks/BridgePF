@@ -31,6 +31,7 @@ import org.hibernate.query.Query;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 
 @SuppressWarnings("unchecked")
@@ -274,7 +275,7 @@ public class HibernateHelperTest {
         doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId("testStudy");
+        account.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         
         when(mockExceptionConverter.convert(ex, account)).thenReturn(TEST_EXCEPTION);
         
@@ -295,7 +296,7 @@ public class HibernateHelperTest {
         doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId("testStudy");
+        account.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         
         when(mockExceptionConverter.convert(ex, null)).thenReturn(TEST_EXCEPTION);
         
@@ -316,7 +317,7 @@ public class HibernateHelperTest {
         doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId("testStudy");
+        account.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         
         when(mockExceptionConverter.convert(ex, null)).thenReturn(TEST_EXCEPTION);
         
@@ -337,7 +338,7 @@ public class HibernateHelperTest {
         doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId("testStudy");
+        account.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         
         when(mockExceptionConverter.convert(ex, null)).thenReturn(TEST_EXCEPTION);
         
@@ -358,7 +359,7 @@ public class HibernateHelperTest {
         doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId("testStudy");
+        account.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         
         when(mockExceptionConverter.convert(ex, null)).thenReturn(TEST_EXCEPTION);
         
@@ -382,7 +383,7 @@ public class HibernateHelperTest {
         doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId("testStudy");
+        account.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         
         when(mockExceptionConverter.convert(ex, null)).thenReturn(TEST_EXCEPTION);
         
@@ -407,7 +408,7 @@ public class HibernateHelperTest {
         doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId("testStudy");
+        account.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
 
         when(mockExceptionConverter.convert(ex, account)).thenReturn(TEST_EXCEPTION);
 
@@ -429,7 +430,7 @@ public class HibernateHelperTest {
         doThrow(pe).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId("testStudy");
+        account.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         
         // This does not convert the exception, it hands it back.
         when(mockExceptionConverter.convert(pe, account)).thenReturn(pe);

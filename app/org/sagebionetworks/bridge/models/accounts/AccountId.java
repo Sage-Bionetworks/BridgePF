@@ -43,7 +43,7 @@ public final class AccountId implements BridgeEntity {
         checkNotNull(externalId);
         return new AccountId(studyId, null, null, null, null, externalId, true);
     }
-    
+
     private final String studyId;
     private final String id;
     private final String email;
@@ -59,8 +59,8 @@ public final class AccountId implements BridgeEntity {
         this(studyId, id, email, phone, healthCode, externalId, true);
     }
     
-    private AccountId(String studyId, String id, String email, Phone phone, String healthCode, String externalId,
-            boolean usePreconditions) {
+    private AccountId(String studyId, String id, String email, Phone phone, String healthCode,
+            String externalId, boolean usePreconditions) {
         this.studyId = studyId;
         this.id = id;
         this.email = email;

@@ -47,6 +47,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 @Component("authenticationService")
@@ -407,7 +408,7 @@ public class AuthenticationService {
             
             // Note that the context does not have the healthCode, you must use the participant
             accountDao.editAccount(study.getStudyIdentifier(), participant.getHealthCode(),
-                    accountToEdit -> accountToEdit.setLanguages(context.getLanguages()));
+                    accountToEdit -> accountToEdit.setLanguages(ImmutableList.copyOf(context.getLanguages())));
         }
 
         // As per https://sagebionetworks.jira.com/browse/BRIDGE-2127, signing in should invalidate any old sessions.

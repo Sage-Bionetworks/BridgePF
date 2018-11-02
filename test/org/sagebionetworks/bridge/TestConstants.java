@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge;
 
-import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -83,7 +83,7 @@ public class TestConstants {
     
     public static final Set<String> USER_DATA_GROUPS = Sets.newHashSet("group1","group2");
     
-    public static final LinkedHashSet<String> LANGUAGES = TestUtils.newLinkedHashSet("en","fr");
+    public static final List<String> LANGUAGES = Lists.newArrayList("en","fr");
     
     public static final Phone PHONE = new Phone("9712486796", "US");
     

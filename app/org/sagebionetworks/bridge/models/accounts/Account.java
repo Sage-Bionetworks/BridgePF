@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.accounts;
 
-import java.util.LinkedHashSet;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -8,12 +8,17 @@ import java.util.Set;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.hibernate.HibernateAccount;
+import org.sagebionetworks.bridge.hibernate.HibernateAccountConsent;
+import org.sagebionetworks.bridge.hibernate.HibernateAccountConsentKey;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 /**
  * Encryption of account values is handled transparently by the account implementation. 
@@ -22,7 +27,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 public interface Account extends BridgeEntity {
 
     static Account create() {
-        return new GenericAccount();
+        return new HibernateAccount();
     }
     
     default ConsentSignature getActiveConsentSignature(SubpopulationGuid subpopGuid) {
@@ -34,14 +39,90 @@ public interface Account extends BridgeEntity {
         return null;
     }
     
+    /**
+     * Gets an immutable copy of the consents this account has for the given subpopulation. Consents should be returned
+     * in the order they were signed (earliest first). Returns an empty list if there are no consents.
+     */
+    default List<ConsentSignature> getConsentSignatureHistory(SubpopulationGuid subpopGuid) {
+        List<ConsentSignature> signatures = Lists.newArrayList();
+        for (Map.Entry<HibernateAccountConsentKey, HibernateAccountConsent> entry : getConsents().entrySet()) {
+            HibernateAccountConsentKey key = entry.getKey();
+            HibernateAccountConsent consent = entry.getValue();
+            
+            if (key.getSubpopulationGuid().equals(subpopGuid.getGuid())) {
+                ConsentSignature signature = new ConsentSignature.Builder()
+                    .withName(consent.getName())
+                    .withBirthdate(consent.getBirthdate())
+                    .withImageData(consent.getSignatureImageData())
+                    .withImageMimeType(consent.getSignatureImageMimeType())
+                    .withConsentCreatedOn(consent.getConsentCreatedOn())
+                    .withSignedOn(key.getSignedOn())
+                    .withWithdrewOn(consent.getWithdrewOn()).build();
+                signatures.add(signature);
+            }
+        }
+        signatures.sort(Comparator.comparing(ConsentSignature::getSignedOn));
+        return ImmutableList.copyOf(signatures);
+    }
+
+    /**
+     * Sets the consents for the given subpopulation into the account. The consents should be in the order they were
+     * signed (earliest first). A copy of the consent list is mode, so that changes to the input list does not
+     * propagate to the account.
+     */
+    default void setConsentSignatureHistory(SubpopulationGuid subpopGuid, List<ConsentSignature> consentSignatureList) {
+        for (ConsentSignature signature : consentSignatureList) {
+            HibernateAccountConsentKey key = new HibernateAccountConsentKey(subpopGuid.getGuid(), signature.getSignedOn());
+            HibernateAccountConsent consent = new HibernateAccountConsent();
+            consent.setBirthdate(signature.getBirthdate());
+            consent.setConsentCreatedOn(signature.getConsentCreatedOn());
+            consent.setName(signature.getName());
+            consent.setSignatureImageData(signature.getImageData());
+            consent.setSignatureImageMimeType(signature.getImageMimeType());
+            consent.setWithdrewOn(signature.getWithdrewOn());
+            getConsents().put(key, consent);
+        }
+    }
+
+    /** Returns an immutable copy of all consents in the account, keyed by subpopulation. */
+    default Map<SubpopulationGuid, List<ConsentSignature>> getAllConsentSignatureHistories() {
+        Map<SubpopulationGuid, List<ConsentSignature>> map = Maps.newHashMap();
+        
+        for (Map.Entry<HibernateAccountConsentKey, HibernateAccountConsent> entry : getConsents().entrySet()) {
+            HibernateAccountConsentKey key = entry.getKey();
+            HibernateAccountConsent consent = entry.getValue();
+            
+            SubpopulationGuid guid = SubpopulationGuid.create(key.getSubpopulationGuid());
+            
+            List<ConsentSignature> signatures = map.get(guid);
+            if (signatures == null) {
+                signatures = Lists.newArrayList();
+                map.put(guid, signatures);
+            }
+            ConsentSignature signature = new ConsentSignature.Builder()
+                    .withName(consent.getName())
+                    .withBirthdate(consent.getBirthdate())
+                    .withImageData(consent.getSignatureImageData())
+                    .withImageMimeType(consent.getSignatureImageMimeType())
+                    .withConsentCreatedOn(consent.getConsentCreatedOn())
+                    .withSignedOn(key.getSignedOn())
+                    .withWithdrewOn(consent.getWithdrewOn()).build();
+            signatures.add(signature);
+        }
+        return map;
+    }
+    
+    Map<HibernateAccountConsentKey, HibernateAccountConsent> getConsents();
+    void setConsents(Map<HibernateAccountConsentKey, HibernateAccountConsent> consents);
+    
     String getFirstName();
     void setFirstName(String firstName);
     
     String getLastName();
     void setLastName(String lastName);
     
-    String getAttribute(String name);
-    void setAttribute(String name, String value);
+    Map<String,String> getAttributes();
+    void setAttributes(Map<String,String> attributes);
 
     String getEmail();
     void setEmail(String email);
@@ -58,30 +139,14 @@ public interface Account extends BridgeEntity {
     String getReauthToken();
     void setReauthToken(String reauthToken);
 
-    /**
-     * Gets an immutable copy of the consents this account has for the given subpopulation. Consents should be returned
-     * in the order they were signed (earliest first). Returns an empty list if there are no consents.
-     */
-    List<ConsentSignature> getConsentSignatureHistory(SubpopulationGuid subpopGuid);
-
-    /**
-     * Sets the consents for the given subpopulation into the account. The consents should be in the order they were
-     * signed (earliest first). A copy of the consent list is mode, so that changes to the input list does not
-     * propagate to the account.
-     */
-    void setConsentSignatureHistory(SubpopulationGuid subpopGuid, List<ConsentSignature> consentSignatureList);
-
-    /** Returns an immutable copy of all consents in the account, keyed by subpopulation. */
-    Map<SubpopulationGuid,List<ConsentSignature>> getAllConsentSignatureHistories();
-    
     String getHealthCode();
     void setHealthCode(String healthCode);
 
     AccountStatus getStatus();
     void setStatus(AccountStatus status);
 
-    StudyIdentifier getStudyIdentifier();
-    void setStudyId(StudyIdentifier studyId);
+    String getStudyIdentifier();
+    void setStudyIdentifier(String studyId);
 
     /** Gets an immutable copy of the set of roles attached to this account. */
     Set<Roles> getRoles();
@@ -100,6 +165,10 @@ public interface Account extends BridgeEntity {
     void setId(String id);
 
     DateTime getCreatedOn();
+    void setCreatedOn(DateTime createdOn);
+    
+    DateTime getModifiedOn();
+    void setModifiedOn(DateTime modifiedOn);
     
     /**
      * Arbitrary JsonNode data that can be persisted by the client application for a specific user. Like other account data, 
@@ -129,8 +198,8 @@ public interface Account extends BridgeEntity {
     void setDataGroups(Set<String> dataGroups);
     
     /** The languages that have been captured from HTTP requests for this account. */
-    LinkedHashSet<String> getLanguages();
-    void setLanguages(LinkedHashSet<String> languages);
+    List<String> getLanguages();
+    void setLanguages(List<String> languages);
     
     /** A flag used to track changes in the contents of the table across migrations. */
     int getMigrationVersion();
@@ -138,4 +207,22 @@ public interface Account extends BridgeEntity {
     
     int getVersion();
     void setVersion(int version);
+
+    String getPasswordHash();
+    void setPasswordHash(String passwordHash);
+    
+    DateTime getPasswordModifiedOn();
+    void setPasswordModifiedOn(DateTime passwordModifiedOn);
+    
+    PasswordAlgorithm getPasswordAlgorithm();
+    void setPasswordAlgorithm(PasswordAlgorithm passwordAlgorithm);
+    
+    PasswordAlgorithm getReauthTokenAlgorithm();
+    void setReauthTokenAlgorithm(PasswordAlgorithm reauthTokenAlgorithm);
+    
+    String getReauthTokenHash();
+    void setReauthTokenHash(String reauthTokenHash);
+    
+    DateTime getReauthTokenModifiedOn();
+    void setReauthTokenModifiedOn(DateTime reauthTokenModifiedOn);
 }

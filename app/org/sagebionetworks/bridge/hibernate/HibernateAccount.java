@@ -7,8 +7,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.persistence.AttributeOverride;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
+import javax.persistence.Convert;
 import javax.persistence.ElementCollection;
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
@@ -20,13 +23,19 @@ import javax.persistence.JoinColumn;
 import javax.persistence.MapKeyClass;
 import javax.persistence.MapKeyColumn;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 import javax.persistence.Version;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 /** MySQL implementation of accounts via Hibernate. */
 // Note: We use a separate class entirely and marshall it to/from GenericAccount instead of using the Account interface
@@ -35,7 +44,8 @@ import org.sagebionetworks.bridge.models.accounts.SharingScope;
 // well with Hibernate. While not ideal, it was ultimately cleaner to do it this way.
 @Entity
 @Table(name = "Accounts")
-public class HibernateAccount {
+@AttributeOverride(name = "studyIdentifier", column = @Column(name = "studyId"))
+public class HibernateAccount implements Account {
     private String id;
     private String studyId;
     private String email;
@@ -44,22 +54,23 @@ public class HibernateAccount {
     private Boolean phoneVerified;
     private Map<String, String> attributes;
     private Map<HibernateAccountConsentKey, HibernateAccountConsent> consents;
-    private Long createdOn;
+    private DateTime createdOn;
     private String healthCode;
-    private Long modifiedOn;
+    private DateTime modifiedOn;
     private String firstName;
     private String lastName;
     private PasswordAlgorithm passwordAlgorithm;
     private String passwordHash;
-    private Long passwordModifiedOn;
+    private DateTime passwordModifiedOn;
     private PasswordAlgorithm reauthTokenAlgorithm;
     private String reauthTokenHash;
-    private Long reauthTokenModifiedOn;
+    private String reauthToken;
+    private DateTime reauthTokenModifiedOn;
     private Set<Roles> roles;
     private AccountStatus status;
     private int version;
-    private String clientData;
-    private String timeZone;
+    private JsonNode clientData;
+    private DateTimeZone timeZone;
     private SharingScope sharingScope;
     private Boolean notifyByEmail;
     private String externalId;
@@ -77,8 +88,8 @@ public class HibernateAccount {
      * construct this object with just the indicated fields using a select clause, without also 
      * specifying a constructor.
      */
-    public HibernateAccount(Long createdOn, String studyId, String firstName, String lastName, String email,
-            Phone phone, String externalId, String id, AccountStatus status) {
+    public HibernateAccount(DateTime createdOn, String studyId, String firstName, String lastName,
+            String email, Phone phone, String externalId, String id, AccountStatus status) {
         this.createdOn = createdOn;
         this.studyId = studyId;
         this.firstName = firstName;
@@ -105,12 +116,12 @@ public class HibernateAccount {
     }
 
     /** Study ID the account lives in. */
-    public String getStudyId() {
+    public String getStudyIdentifier() {
         return studyId;
     }
 
     /** @see #getStudyId */
-    public void setStudyId(String studyId) {
+    public void setStudyIdentifier(String studyId) {
         this.studyId = studyId;
     }
 
@@ -142,6 +153,12 @@ public class HibernateAccount {
     
     /** @see #getEmailVerified */
     public Boolean getEmailVerified() {
+        // Old accounts did not have an emailVerified flag, and so consequently, did not set it. If the
+        // account is enabled with an email, we have to assume for these accounts that they have been 
+        // verified.
+        if (emailVerified == null && email != null && phone == null && status == AccountStatus.ENABLED) {
+            return Boolean.TRUE;
+        }
         return emailVerified;
     }
     
@@ -193,12 +210,13 @@ public class HibernateAccount {
     }
 
     /** Epoch milliseconds when the account was created. */
-    public Long getCreatedOn() {
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
+    public DateTime getCreatedOn() {
         return createdOn;
     }
 
     /** @see #getCreatedOn */
-    public void setCreatedOn(Long createdOn) {
+    public void setCreatedOn(DateTime createdOn) {
         this.createdOn = createdOn;
     }
 
@@ -214,12 +232,13 @@ public class HibernateAccount {
 
     /** Epoch milliseconds when the account was last modified, including password but NOT 
      * reauthentication token changes. */
-    public Long getModifiedOn() {
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
+    public DateTime getModifiedOn() {
         return modifiedOn;
     }
 
     /** @see #getModifiedOn */
-    public void setModifiedOn(Long modifiedOn) {
+    public void setModifiedOn(DateTime modifiedOn) {
         this.modifiedOn = modifiedOn;
     }
 
@@ -269,12 +288,13 @@ public class HibernateAccount {
     }
 
     /** Epoch milliseconds when the user last changed their password. */
-    public Long getPasswordModifiedOn() {
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
+    public DateTime getPasswordModifiedOn() {
         return passwordModifiedOn;
     }
 
     /** @see #getPasswordModifiedOn */
-    public void setPasswordModifiedOn(Long passwordModifiedOn) {
+    public void setPasswordModifiedOn(DateTime passwordModifiedOn) {
         this.passwordModifiedOn = passwordModifiedOn;
     }
 
@@ -308,12 +328,13 @@ public class HibernateAccount {
     }
 
     /** Epoch milliseconds when the user last changed their reauthentication token. */
-    public Long getReauthTokenModifiedOn() {
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
+    public DateTime getReauthTokenModifiedOn() {
         return reauthTokenModifiedOn;
     }
 
     /** @see #getReauthTokenModifiedOn */
-    public void setReauthTokenModifiedOn(Long reauthTokenModifiedOn) {
+    public void setReauthTokenModifiedOn(DateTime reauthTokenModifiedOn) {
         this.reauthTokenModifiedOn = reauthTokenModifiedOn;
     }
 
@@ -356,12 +377,13 @@ public class HibernateAccount {
     
     /** @see #getClientData */
     @Column(columnDefinition = "mediumtext", name = "clientData", nullable = true)
-    public String getClientData() {
+    @Convert(converter = JsonNodeAttributeConverter.class)
+    public JsonNode getClientData() {
         return clientData;
     }
     
-    /** The serialized content of clientData JSON. */
-    public void setClientData(String clientData) {
+    /** The clientData JSON. */
+    public void setClientData(JsonNode clientData) {
         this.clientData = clientData;
     }
     
@@ -378,19 +400,20 @@ public class HibernateAccount {
     
     /** The time zone initially captured from this user's requests, used to correctly calculate 
      * schedules for the user. Should not be updated once set. */
-    public String getTimeZone() {
+    @Convert(converter = DateTimeZoneAttributeConverter.class)
+    public DateTimeZone getTimeZone() {
         return timeZone;
     }
 
     /** @see #getTimeZone */
-    public void setTimeZone(String timeZone) {
+    public void setTimeZone(DateTimeZone timeZone) {
         this.timeZone = timeZone;
     }
 
     /** The sharing scope set for data being generated by this study participant. */
     @Enumerated(EnumType.STRING)
     public SharingScope getSharingScope() {
-        return sharingScope;
+        return (sharingScope == null) ? SharingScope.NO_SHARING : sharingScope;
     }
 
     /** @see #getSharingScope */
@@ -400,7 +423,7 @@ public class HibernateAccount {
 
     /** Has this user consented to receive email from the study administrators? */
     public Boolean getNotifyByEmail() {
-        return notifyByEmail;
+        return (notifyByEmail == null) ? true : notifyByEmail;
     }
 
     /** @see #getNotifyByEmail */
@@ -461,5 +484,14 @@ public class HibernateAccount {
     /** @see #getMigrationVersion */
     public void setMigrationVersion(int migrationVersion) {
         this.migrationVersion = migrationVersion;
+    }
+    
+    @Transient // do not persist in Hibernate (the hash is persisted instead)
+    public String getReauthToken() {
+        return reauthToken;
+    }
+
+    public void setReauthToken(String reauthToken) {
+        this.reauthToken = reauthToken; 
     }
 }

@@ -186,7 +186,7 @@ public class IntentServiceTest {
     public void submitIntentToParticipateAccountExists() {
         IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP);
         
-        AccountId accountId = AccountId.forPhone(intent.getStudyId(), intent.getPhone()); 
+        AccountId accountId = AccountId.forPhone(TestConstants.TEST_STUDY_IDENTIFIER, intent.getPhone()); 
         
         Account account = Account.create();
         when(accountDao.getAccount(accountId)).thenReturn(account);

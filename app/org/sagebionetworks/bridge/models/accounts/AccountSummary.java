@@ -4,8 +4,8 @@ import java.util.Objects;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -26,7 +26,7 @@ public final class AccountSummary {
             @JsonProperty("email") String email, @JsonProperty("phone") Phone phone,
             @JsonProperty("externalId") String externalId, @JsonProperty("id") String id,
             @JsonProperty("createdOn") DateTime createdOn, @JsonProperty("status") AccountStatus status,
-            @JsonProperty("studyIdentifier") StudyIdentifier studyIdentifier) {
+            @JsonProperty("studyIdentifier") String studyId) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -35,7 +35,7 @@ public final class AccountSummary {
         this.id = id;
         this.createdOn = (createdOn == null) ? null : createdOn.withZone(DateTimeZone.UTC);
         this.status = status;
-        this.studyIdentifier = studyIdentifier;
+        this.studyIdentifier = (studyId == null) ? null : new StudyIdentifierImpl(studyId);
     }
 
     public String getFirstName() {
