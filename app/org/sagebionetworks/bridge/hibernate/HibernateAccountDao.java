@@ -60,11 +60,11 @@ public class HibernateAccountDao implements AccountDao {
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
 
     static final String ACCOUNT_SUMMARY_QUERY_PREFIX = "select new " + HibernateAccount.class.getCanonicalName() +
-            "(createdOn, studyIdentifier, firstName, lastName, email, phone, externalId, id, status) ";
-    static final String EMAIL_QUERY = "from HibernateAccount where studyIdentifier=:studyId and email=:email";
-    static final String HEALTH_CODE_QUERY = "from HibernateAccount where studyIdentifier=:studyId and healthCode=:healthCode";
-    static final String PHONE_QUERY = "from HibernateAccount where studyIdentifier=:studyId and phone.number=:number and phone.regionCode=:regionCode";
-    static final String EXTID_QUERY = "from HibernateAccount where studyIdentifier=:studyId and externalId=:externalId";
+            "(createdOn, studyId, firstName, lastName, email, phone, externalId, id, status) ";
+    static final String EMAIL_QUERY = "from HibernateAccount where studyId=:studyId and email=:email";
+    static final String HEALTH_CODE_QUERY = "from HibernateAccount where studyId=:studyId and healthCode=:healthCode";
+    static final String PHONE_QUERY = "from HibernateAccount where studyId=:studyId and phone.number=:number and phone.regionCode=:regionCode";
+    static final String EXTID_QUERY = "from HibernateAccount where studyId=:studyId and externalId=:externalId";
     
     private HibernateHelper hibernateHelper;
     private CacheProvider cacheProvider;
@@ -245,7 +245,7 @@ public class HibernateAccountDao implements AccountDao {
             return false;
         }
         CacheKey reauthTokenKey = CacheKey.reauthTokenLookupKey(hibernateAccount.getId(),
-                new StudyIdentifierImpl(hibernateAccount.getStudyIdentifier()));
+                new StudyIdentifierImpl(hibernateAccount.getStudyId()));
         
         // We cache the reauthentication token for 15 seconds so that concurrent sign in 
         // requests don't throw 409 concurrent modification exceptions as an optimistic lock
@@ -275,7 +275,7 @@ public class HibernateAccountDao implements AccountDao {
     public Account constructAccount(Study study, String email, Phone phone, String externalId, String password) {
         // Set basic params from inputs.
         Account account = Account.create();
-        account.setStudyIdentifier(study.getIdentifier());
+        account.setStudyId(study.getIdentifier());
         account.setEmail(email);
         account.setPhone(phone);
         account.setEmailVerified(Boolean.FALSE);
@@ -304,7 +304,7 @@ public class HibernateAccountDao implements AccountDao {
     public String createAccount(Study study, Account account) {
         String userId = BridgeUtils.generateGuid();
         account.setId(userId);
-        account.setStudyIdentifier(study.getIdentifier());
+        account.setStudyId(study.getIdentifier());
         DateTime timestamp = DateUtils.getCurrentDateTime();
         account.setCreatedOn(timestamp);
         account.setModifiedOn(timestamp);
@@ -327,7 +327,7 @@ public class HibernateAccountDao implements AccountDao {
             throw new EntityNotFoundException(Account.class, "Account " + accountId + " not found");
         }
         // None of these values should be changeable by the user.
-        account.setStudyIdentifier(persistedAccount.getStudyIdentifier());
+        account.setStudyId(persistedAccount.getStudyId());
         account.setCreatedOn(persistedAccount.getCreatedOn());
         account.setPasswordAlgorithm(persistedAccount.getPasswordAlgorithm());
         account.setPasswordHash(persistedAccount.getPasswordHash());
@@ -476,7 +476,7 @@ public class HibernateAccountDao implements AccountDao {
         Map<String,Object> parameters = new HashMap<>();
         parameters.put("studyId", study.getIdentifier());
         List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet(
-                "from HibernateAccount where studyIdentifier=:studyId", parameters, null, null, HibernateAccount.class);
+                "from HibernateAccount where studyId=:studyId", parameters, null, null, HibernateAccount.class);
         return hibernateAccountList.stream().map(HibernateAccountDao::unmarshallAccountSummary).iterator();
     }
 
@@ -516,7 +516,7 @@ public class HibernateAccountDao implements AccountDao {
     protected String assembleSearchQuery(String studyId, AccountSummarySearch search, Map<String,Object> parameters) {
         StringBuilder queryBuilder = new StringBuilder();
 
-        queryBuilder.append("from HibernateAccount as acct where studyIdentifier=:studyId");
+        queryBuilder.append("from HibernateAccount as acct where studyId=:studyId");
         parameters.put("studyId", studyId);
 
         if (StringUtils.isNotBlank(search.getEmailFilter())) {
@@ -585,10 +585,14 @@ public class HibernateAccountDao implements AccountDao {
             createdOn = new DateTime(hibernateAccount.getCreatedOn());
         }
 
+        StudyIdentifier studyId = null;
+        if (StringUtils.isNotBlank(hibernateAccount.getStudyId())) {
+            studyId = new StudyIdentifierImpl(hibernateAccount.getStudyId());
+        }
+        
         // Unmarshall single account
         return new AccountSummary(hibernateAccount.getFirstName(), hibernateAccount.getLastName(),
                 hibernateAccount.getEmail(), hibernateAccount.getPhone(), hibernateAccount.getExternalId(),
-                hibernateAccount.getId(), createdOn, hibernateAccount.getStatus(),
-                hibernateAccount.getStudyIdentifier());
+                hibernateAccount.getId(), createdOn, hibernateAccount.getStatus(), studyId);
     }
 }

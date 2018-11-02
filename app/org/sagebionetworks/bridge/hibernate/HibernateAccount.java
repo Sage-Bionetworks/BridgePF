@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.persistence.AttributeOverride;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.Convert;
@@ -44,7 +43,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 // well with Hibernate. While not ideal, it was ultimately cleaner to do it this way.
 @Entity
 @Table(name = "Accounts")
-@AttributeOverride(name = "studyIdentifier", column = @Column(name = "studyId"))
 public class HibernateAccount implements Account {
     private String id;
     private String studyId;
@@ -116,12 +114,12 @@ public class HibernateAccount implements Account {
     }
 
     /** Study ID the account lives in. */
-    public String getStudyIdentifier() {
+    public String getStudyId() {
         return studyId;
     }
 
     /** @see #getStudyId */
-    public void setStudyIdentifier(String studyId) {
+    public void setStudyId(String studyId) {
         this.studyId = studyId;
     }
 

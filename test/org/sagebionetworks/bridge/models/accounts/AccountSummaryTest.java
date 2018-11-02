@@ -26,9 +26,10 @@ public class AccountSummaryTest {
         // equal below (to demonstrate the ISO 8601 string is in UTC time zone).
         DateTime dateTime = DateTime.now().withZone(DateTimeZone.forOffsetHours(-8));
         AccountSummary summary = new AccountSummary("firstName", "lastName", "email@email.com", TestConstants.PHONE,
-                "externalId", "ABC", dateTime, AccountStatus.UNVERIFIED, TestConstants.TEST_STUDY_IDENTIFIER);
+                "externalId", "ABC", dateTime, AccountStatus.UNVERIFIED, TestConstants.TEST_STUDY);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(summary);
+        System.out.println(node.toString());
         assertEquals("firstName", node.get("firstName").textValue());
         assertEquals("lastName", node.get("lastName").textValue());
         assertEquals("email@email.com", node.get("email").textValue());
@@ -39,7 +40,7 @@ public class AccountSummaryTest {
         assertEquals("externalId", node.get("externalId").textValue());
         assertEquals(dateTime.withZone(DateTimeZone.UTC).toString(), node.get("createdOn").textValue());
         assertEquals("unverified", node.get("status").textValue());
-        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, node.get("studyIdentifier").textValue());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, node.get("studyIdentifier").get("identifier").textValue());
         assertEquals("AccountSummary", node.get("type").textValue());
         
         AccountSummary newSummary = BridgeObjectMapper.get().treeToValue(node, AccountSummary.class);

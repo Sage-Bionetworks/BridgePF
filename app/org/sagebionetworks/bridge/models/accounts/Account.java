@@ -17,6 +17,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -109,7 +110,7 @@ public interface Account extends BridgeEntity {
                     .withWithdrewOn(consent.getWithdrewOn()).build();
             signatures.add(signature);
         }
-        return map;
+        return ImmutableMap.copyOf(map);
     }
     
     Map<HibernateAccountConsentKey, HibernateAccountConsent> getConsents();
@@ -145,8 +146,8 @@ public interface Account extends BridgeEntity {
     AccountStatus getStatus();
     void setStatus(AccountStatus status);
 
-    String getStudyIdentifier();
-    void setStudyIdentifier(String studyId);
+    String getStudyId();
+    void setStudyId(String studyId);
 
     /** Gets an immutable copy of the set of roles attached to this account. */
     Set<Roles> getRoles();

@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -83,7 +84,7 @@ public class TestConstants {
     
     public static final Set<String> USER_DATA_GROUPS = Sets.newHashSet("group1","group2");
     
-    public static final List<String> LANGUAGES = Lists.newArrayList("en","fr");
+    public static final List<String> LANGUAGES = ImmutableList.of("en","fr");
     
     public static final Phone PHONE = new Phone("9712486796", "US");
     

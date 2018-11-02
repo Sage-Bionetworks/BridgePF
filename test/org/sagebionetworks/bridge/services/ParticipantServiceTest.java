@@ -248,7 +248,7 @@ public class ParticipantServiceTest {
         account.setEmail(email);
         account.setPhone(phone);
         account.setExternalId(EXTERNAL_ID);
-        account.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         when(accountDao.constructAccount(any(), any(), any(), any(), any())).thenReturn(account);
         when(accountDao.createAccount(same(STUDY), same(account))).thenReturn(ID);
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
@@ -703,7 +703,7 @@ public class ParticipantServiceTest {
         // A lot of mocks have to be set up first, this call aggregates almost everything we know about the user
         DateTime createdOn = DateTime.now();
         account.setHealthCode(HEALTH_CODE);
-        account.setStudyIdentifier(STUDY.getIdentifier());
+        account.setStudyId(STUDY.getIdentifier());
         account.setId(ID);
         account.setCreatedOn(createdOn);
         account.setFirstName(FIRST_NAME);

@@ -47,13 +47,13 @@ public class AccountPersistenceExceptionConverter implements PersistenceExceptio
                 EntityAlreadyExistsException eae = null;
                 if (message.matches("Duplicate entry.*for key 'Accounts-StudyId-ExternalId-Index'")) {
                     eae = createEntityAlreadyExistsException("External ID",
-                            AccountId.forExternalId(account.getStudyIdentifier(), account.getExternalId()));
+                            AccountId.forExternalId(account.getStudyId(), account.getExternalId()));
                 } else if (message.matches("Duplicate entry.*for key 'Accounts-StudyId-Email-Index'")) {
                     eae = createEntityAlreadyExistsException("Email address",
-                            AccountId.forEmail(account.getStudyIdentifier(), account.getEmail()));
+                            AccountId.forEmail(account.getStudyId(), account.getEmail()));
                 } else if (message.matches("Duplicate entry.*for key 'Accounts-StudyId-Phone-Index'")) {
                     eae = createEntityAlreadyExistsException("Phone number",
-                            AccountId.forPhone(account.getStudyIdentifier(), account.getPhone()));
+                            AccountId.forPhone(account.getStudyId(), account.getPhone()));
                 }
                 if (eae != null) {
                     return eae;

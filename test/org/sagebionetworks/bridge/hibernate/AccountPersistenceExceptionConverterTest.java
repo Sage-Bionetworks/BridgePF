@@ -43,12 +43,12 @@ public class AccountPersistenceExceptionConverterTest {
     @Test
     public void entityAlreadyExistsForEmail() {
         HibernateAccount account = new HibernateAccount();
-        account.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         account.setEmail(TestConstants.EMAIL);
         
         Account existing = Account.create();
         existing.setId("userId");
-        existing.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        existing.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         existing.setEmail(TestConstants.EMAIL);
         
         when(accountDao.getAccount(AccountId.forEmail(TestConstants.TEST_STUDY_IDENTIFIER, TestConstants.EMAIL)))
@@ -67,12 +67,12 @@ public class AccountPersistenceExceptionConverterTest {
     @Test
     public void entityAlreadyExistsForPhone() {
         HibernateAccount account = new HibernateAccount();
-        account.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         account.setPhone(TestConstants.PHONE);
         
         Account existing = Account.create();
         existing.setId("userId");
-        existing.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        existing.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         existing.setPhone(TestConstants.PHONE);
         
         when(accountDao.getAccount(AccountId.forPhone(TestConstants.TEST_STUDY_IDENTIFIER, TestConstants.PHONE)))
@@ -91,12 +91,12 @@ public class AccountPersistenceExceptionConverterTest {
     @Test
     public void entityAlreadyExistsForExternalId() {
         HibernateAccount account = new HibernateAccount();
-        account.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         account.setExternalId("ext");
         
         Account existing = Account.create();
         existing.setId("userId");
-        existing.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        existing.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         existing.setExternalId("ext");
         
         when(accountDao.getAccount(AccountId.forExternalId(TestConstants.TEST_STUDY_IDENTIFIER, "ext"))).thenReturn(existing);
@@ -115,7 +115,7 @@ public class AccountPersistenceExceptionConverterTest {
     @Test
     public void entityAlreadyExistsIfAccountCannotBeFound() {
         HibernateAccount account = new HibernateAccount();
-        account.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         account.setExternalId("ext");
         
         org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException(
@@ -142,7 +142,7 @@ public class AccountPersistenceExceptionConverterTest {
     @Test
     public void constraintViolationExceptionMessageIsHidden() {
         HibernateAccount account = new HibernateAccount();
-        account.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         
         org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException(
                 "This is a generic constraint violation.", null, null);
@@ -156,7 +156,7 @@ public class AccountPersistenceExceptionConverterTest {
     @Test
     public void optimisticLockException() { 
         HibernateAccount account = new HibernateAccount();
-        account.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         
         OptimisticLockException ole = new OptimisticLockException();
         

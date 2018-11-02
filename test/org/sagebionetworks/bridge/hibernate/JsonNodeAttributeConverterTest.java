@@ -5,12 +5,9 @@ import static org.junit.Assert.assertNull;
 
 import java.io.IOException;
 
-import javax.persistence.PersistenceException;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

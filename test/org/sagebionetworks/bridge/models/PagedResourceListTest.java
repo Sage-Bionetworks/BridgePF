@@ -25,9 +25,9 @@ public class PagedResourceListTest {
     public void canSerialize() throws Exception {
         List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
         accounts.add(new AccountSummary("firstName1", "lastName1", "email1@email.com", TestConstants.PHONE,
-                "externalId1", "id", DateTime.now(), AccountStatus.DISABLED, TestConstants.TEST_STUDY_IDENTIFIER));
+                "externalId1", "id", DateTime.now(), AccountStatus.DISABLED, TestConstants.TEST_STUDY));
         accounts.add(new AccountSummary("firstName2", "lastName2", "email2@email.com", TestConstants.PHONE,
-                "externalId2", "id2", DateTime.now(), AccountStatus.ENABLED, TestConstants.TEST_STUDY_IDENTIFIER));
+                "externalId2", "id2", DateTime.now(), AccountStatus.ENABLED, TestConstants.TEST_STUDY));
 
         DateTime startTime = DateTime.parse("2016-02-03T10:10:10.000-08:00");
         DateTime endTime = DateTime.parse("2016-02-23T14:14:14.000-08:00");

@@ -128,7 +128,7 @@ public class HibernateAccountTest {
                 "lastName", "email", TestConstants.PHONE, "externalId", "id", AccountStatus.UNVERIFIED);
 
         assertEquals(123L, account.getCreatedOn().getMillis());
-        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, account.getStudyIdentifier());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, account.getStudyId());
         assertEquals("firstName", account.getFirstName());
         assertEquals("lastName", account.getLastName());
         assertEquals("email", account.getEmail());

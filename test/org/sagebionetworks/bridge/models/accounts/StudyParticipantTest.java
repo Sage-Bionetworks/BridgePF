@@ -379,4 +379,12 @@ public class StudyParticipantTest {
         
         return builder;
     }
+    
+    @Test
+    public void duplicateLanguagesAreRemoved() {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withLanguages(Lists.newArrayList("en", "fr", "en", "de")).build();
+        
+        assertEquals(Lists.newArrayList("en","fr","de"), participant.getLanguages());
+    }
 }

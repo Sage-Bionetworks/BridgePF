@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -429,7 +428,7 @@ public class ParticipantService {
         account.setSharingScope(participant.getSharingScope());
         account.setNotifyByEmail(participant.isNotifyByEmail());
         account.setDataGroups(participant.getDataGroups());
-        account.setLanguages(ImmutableList.copyOf(participant.getLanguages()));
+        account.setLanguages(participant.getLanguages());
         account.setMigrationVersion(AccountDao.MIGRATION_VERSION);
         // Do not copy timezone or external ID. Neither can be updated once set.
         
@@ -541,7 +540,7 @@ public class ParticipantService {
      * Get a history of all consent records for a given subpopulation, whether user is withdrawn or not.
      */
     public List<UserConsentHistory> getUserConsentHistory(Account account, SubpopulationGuid subpopGuid) {
-        final StudyIdentifier studyId = new StudyIdentifierImpl(account.getStudyIdentifier());
+        final StudyIdentifier studyId = new StudyIdentifierImpl(account.getStudyId());
         
         return account.getConsentSignatureHistory(subpopGuid).stream().map(signature -> {
             Subpopulation subpop = subpopService.getSubpopulation(studyId, subpopGuid);
