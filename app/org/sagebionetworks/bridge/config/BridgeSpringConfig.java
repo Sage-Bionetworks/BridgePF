@@ -58,7 +58,6 @@ import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptorCacheLoader;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoIndexHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoReportData;
@@ -84,6 +83,7 @@ import org.sagebionetworks.bridge.hibernate.AccountPersistenceExceptionConverter
 import org.sagebionetworks.bridge.hibernate.HibernateAccount;
 import org.sagebionetworks.bridge.hibernate.HibernateHelper;
 import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
+import org.sagebionetworks.bridge.hibernate.HibernateSubstudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
@@ -555,14 +555,22 @@ public class BridgeSpringConfig {
         // For whatever reason, we need to list each Hibernate-enabled class individually.
         MetadataSources metadataSources = new MetadataSources(reg);
         metadataSources.addAnnotatedClass(HibernateAccount.class);
+        metadataSources.addAnnotatedClass(HibernateSubstudy.class);
         metadataSources.addAnnotatedClass(HibernateSharedModuleMetadata.class);
 
         return metadataSources.buildMetadata().buildSessionFactory();
     }
 
+    @Bean(name = "substudyHibernateHelper")
+    @Autowired
+    public HibernateHelper substudyHibernateHelper(SessionFactory sessionFactory,
+            AccountPersistenceExceptionConverter converter) {
+        return new HibernateHelper(sessionFactory, converter);
+    }
+    
     @Bean(name = "accountHibernateHelper")
     @Autowired
-    public HibernateHelper accountHibernateHelper(AccountDao accountDao, SessionFactory sessionFactory,
+    public HibernateHelper accountHibernateHelper(SessionFactory sessionFactory,
             AccountPersistenceExceptionConverter converter) {
         return new HibernateHelper(sessionFactory, converter);
     }

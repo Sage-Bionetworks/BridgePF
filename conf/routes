@@ -124,6 +124,13 @@ GET    /v3/sharedmodules/metadata/:id/versions/:version @org.sagebionetworks.bri
 POST   /v3/sharedmodules/metadata/:id/versions/:version @org.sagebionetworks.bridge.play.controllers.SharedModuleMetadataController.updateMetadata(id: String, version: Int)
 DELETE /v3/sharedmodules/metadata/:id/versions/:version @org.sagebionetworks.bridge.play.controllers.SharedModuleMetadataController.deleteMetadataByIdAndVersion(id: String, version: Int, physical: String ?= "false")
 
+# Sub-studies
+GET    /v3/substudies     @org.sagebionetworks.bridge.play.controllers.SubstudyController.getSubstudies(includeDeleted: String ?= "false")
+POST   /v3/substudies     @org.sagebionetworks.bridge.play.controllers.SubstudyController.createSubstudy
+GET    /v3/substudies/:id @org.sagebionetworks.bridge.play.controllers.SubstudyController.getSubstudy(id: String)
+POST   /v3/substudies/:id @org.sagebionetworks.bridge.play.controllers.SubstudyController.updateSubstudy(id: String)
+DELETE /v3/substudies/:id @org.sagebionetworks.bridge.play.controllers.SubstudyController.deleteSubstudy(id: String, physical: String ?= "false")
+
 # Study Subpopulations
 GET    /v3/subpopulations        @org.sagebionetworks.bridge.play.controllers.SubpopulationController.getAllSubpopulations(includeDeleted: String ?= "false")
 POST   /v3/subpopulations        @org.sagebionetworks.bridge.play.controllers.SubpopulationController.createSubpopulation
