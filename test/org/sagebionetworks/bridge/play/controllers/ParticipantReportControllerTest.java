@@ -3,10 +3,12 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
@@ -23,6 +25,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -59,33 +62,22 @@ import play.test.Helpers;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ParticipantReportControllerTest {
-    
+    public static final String NEXT_PAGE_OFFSET_KEY = "nextPageOffsetKey";
     private static final String REPORT_ID = "foo";
-
     private static final String VALID_LANGUAGE_HEADER = "en-US";
-
     private static final String VALID_USER_AGENT_HEADER = "Unknown Client/14 BridgeJavaSDK/10";
-
     private static final String OTHER_PARTICIPANT_HEALTH_CODE = "ABC";
-
     private static final String OTHER_PARTICIPANT_ID = "userId";
-    
     private static final AccountId OTHER_ACCOUNT_ID = AccountId.forId(TEST_STUDY_IDENTIFIER, OTHER_PARTICIPANT_ID);
-
     private static final String HEALTH_CODE = "healthCode";
-    
     private static final LocalDate START_DATE = LocalDate.parse("2015-01-02");
-    
     private static final LocalDate END_DATE = LocalDate.parse("2015-02-02");
-
     private static final DateTime START_TIME = DateTime.parse("2015-01-02T08:32:50.000-07:00");
-    
     private static final DateTime END_TIME = DateTime.parse("2015-02-02T15:00:32.123-07:00");
-    
     private static final String OFFSET_KEY = "offsetKey";
-    
     private static final String PAGE_SIZE = "20";
-    
+    private static final int PAGE_SIZE_INT = 20;
+
     @Mock
     ReportService mockReportService;
     
@@ -179,15 +171,16 @@ public class ParticipantReportControllerTest {
         
         Result result = controller.getParticipantReportForSelf(REPORT_ID, START_DATE.toString(), END_DATE.toString());
         TestUtils.assertResult(result, 200);
-        assertResultContent(result);
+        assertResultContent(START_DATE, END_DATE, result);
     }
     
     @Test
     public void getParticipantReportDataForSelfV4() throws Exception {
         setupContext();
         
-        doReturn(makePagedResults()).when(mockReportService).getParticipantReportV4(session.getStudyIdentifier(),
-                REPORT_ID, HEALTH_CODE, START_TIME, END_TIME, OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
+        doReturn(makePagedResults(START_TIME, END_TIME, OFFSET_KEY, PAGE_SIZE_INT)).when(mockReportService)
+                .getParticipantReportV4(session.getStudyIdentifier(), REPORT_ID, HEALTH_CODE, START_TIME, END_TIME,
+                        OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
         
         Result result = controller.getParticipantReportForSelfV4(REPORT_ID, START_TIME.toString(), END_TIME.toString(),
                 OFFSET_KEY, PAGE_SIZE);
@@ -195,12 +188,7 @@ public class ParticipantReportControllerTest {
         
         ForwardCursorPagedResourceList<ReportData> page = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), ReportData.PAGED_REPORT_DATA);
-        
-        assertEquals("nextPageOffsetKey", page.getNextPageOffsetKey());
-        assertEquals(OFFSET_KEY, page.getRequestParams().get(ResourceList.OFFSET_KEY));
-        assertEquals(Integer.parseInt(PAGE_SIZE), page.getRequestParams().get(ResourceList.PAGE_SIZE));
-        assertEquals(START_TIME.toString(), page.getRequestParams().get(ResourceList.START_TIME));
-        assertEquals(END_TIME.toString(), page.getRequestParams().get(ResourceList.END_TIME));
+        assertReportDataPage(START_TIME, END_TIME, OFFSET_KEY, PAGE_SIZE_INT, page);
     }
     
     @Test
@@ -233,7 +221,7 @@ public class ParticipantReportControllerTest {
         Result result = controller.getParticipantReportForSelf(REPORT_ID, null, null);
         TestUtils.assertResult(result, 200);
 
-        assertResultContent(result);
+        assertResultContent(START_DATE, END_DATE, result);
     }
 
     @Test
@@ -245,8 +233,9 @@ public class ParticipantReportControllerTest {
         
         doReturn(mockAccount).when(mockAccountDao).getAccount(OTHER_ACCOUNT_ID);
         
-        doReturn(makePagedResults()).when(mockReportService).getParticipantReportV4(session.getStudyIdentifier(),
-                REPORT_ID, HEALTH_CODE, START_TIME, END_TIME, OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
+        doReturn(makePagedResults(START_TIME, END_TIME, OFFSET_KEY, PAGE_SIZE_INT)).when(mockReportService)
+                .getParticipantReportV4(session.getStudyIdentifier(), REPORT_ID, HEALTH_CODE, START_TIME, END_TIME,
+                        OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
         
         Result result = controller.getParticipantReportV4(OTHER_PARTICIPANT_ID, REPORT_ID, START_TIME.toString(),
                 END_TIME.toString(), OFFSET_KEY, PAGE_SIZE);
@@ -254,14 +243,57 @@ public class ParticipantReportControllerTest {
         
         ForwardCursorPagedResourceList<ReportData> page = BridgeObjectMapper.get()
                 .readValue(Helpers.contentAsString(result), ReportData.PAGED_REPORT_DATA);
-        
-        assertEquals("nextPageOffsetKey", page.getNextPageOffsetKey());
-        assertEquals(OFFSET_KEY, page.getRequestParams().get(ResourceList.OFFSET_KEY));
-        assertEquals(Integer.parseInt(PAGE_SIZE), page.getRequestParams().get(ResourceList.PAGE_SIZE));
-        assertEquals(START_TIME.toString(), page.getRequestParams().get(ResourceList.START_TIME));
-        assertEquals(END_TIME.toString(), page.getRequestParams().get(ResourceList.END_TIME));
+        assertReportDataPage(START_TIME, END_TIME, OFFSET_KEY, PAGE_SIZE_INT, page);
     }
-    
+
+    @Test
+    public void getParticipantReportForWorkerV4_DefaultParams() throws Exception {
+        // Mock dependencies
+        when(mockAccountDao.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
+
+        ForwardCursorPagedResourceList<ReportData> expectedPage = makePagedResults(START_TIME, END_TIME, null,
+                BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        when(mockReportService.getParticipantReportV4(TEST_STUDY, REPORT_ID, HEALTH_CODE, null,
+                null, null, BridgeConstants.API_DEFAULT_PAGE_SIZE)).thenReturn(expectedPage);
+
+        // Execute and validate.
+        Result result = controller.getParticipantReportForWorkerV4(TEST_STUDY_IDENTIFIER, OTHER_PARTICIPANT_ID,
+                REPORT_ID, null, null, null, null);
+        TestUtils.assertResult(result, 200);
+
+        ForwardCursorPagedResourceList<ReportData> page = BridgeObjectMapper.get().readValue(
+                Helpers.contentAsString(result), ReportData.PAGED_REPORT_DATA);
+        assertReportDataPage(START_TIME, END_TIME, null, BridgeConstants.API_DEFAULT_PAGE_SIZE, page);
+
+        // Verify dependent service call.
+        verify(mockReportService).getParticipantReportV4(TEST_STUDY, REPORT_ID, HEALTH_CODE, null,
+                null, null, BridgeConstants.API_DEFAULT_PAGE_SIZE);
+    }
+
+    @Test
+    public void getParticipantReportForWorkerV4_OptionalParams() throws Exception {
+        // Mock dependencies
+        when(mockAccountDao.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
+
+        ForwardCursorPagedResourceList<ReportData> expectedPage = makePagedResults(START_TIME, END_TIME, OFFSET_KEY,
+                PAGE_SIZE_INT);
+        when(mockReportService.getParticipantReportV4(TEST_STUDY, REPORT_ID, HEALTH_CODE, START_TIME, END_TIME,
+                OFFSET_KEY, PAGE_SIZE_INT)).thenReturn(expectedPage);
+
+        // Execute and validate.
+        Result result = controller.getParticipantReportForWorkerV4(TEST_STUDY_IDENTIFIER, OTHER_PARTICIPANT_ID,
+                REPORT_ID, START_TIME.toString(), END_TIME.toString(), OFFSET_KEY, PAGE_SIZE);
+        TestUtils.assertResult(result, 200);
+
+        ForwardCursorPagedResourceList<ReportData> page = BridgeObjectMapper.get().readValue(
+                Helpers.contentAsString(result), ReportData.PAGED_REPORT_DATA);
+        assertReportDataPage(START_TIME, END_TIME, OFFSET_KEY, PAGE_SIZE_INT, page);
+
+        // Verify dependent service call.
+        verify(mockReportService).getParticipantReportV4(TEST_STUDY, REPORT_ID, HEALTH_CODE, START_TIME, END_TIME,
+                OFFSET_KEY, PAGE_SIZE_INT);
+    }
+
     @Test
     public void getParticipantReportDataAsResearcher() throws Exception {
         // No consents so user is not consented, but is a researcher and can also see these reports
@@ -278,9 +310,48 @@ public class ParticipantReportControllerTest {
         Result result = controller.getParticipantReport(OTHER_PARTICIPANT_ID, REPORT_ID, START_DATE.toString(),
                 END_DATE.toString());
         TestUtils.assertResult(result, 200);
-        assertResultContent(result);
+        assertResultContent(START_DATE, END_DATE, result);
     }
-    
+
+    @Test
+    public void getParticipantReportForWorker_DefaultParams() throws Exception {
+        // Mock dependencies
+        when(mockAccountDao.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
+
+        DateRangeResourceList<ReportData> expectedPage = makeResults(START_DATE, END_DATE);
+        doReturn(expectedPage).when(mockReportService).getParticipantReport(TEST_STUDY, REPORT_ID, HEALTH_CODE,
+                null, null);
+
+        // Execute and validate.
+        Result result = controller.getParticipantReportForWorker(TEST_STUDY_IDENTIFIER, OTHER_PARTICIPANT_ID,
+                REPORT_ID, null, null);
+        TestUtils.assertResult(result, 200);
+        assertResultContent(START_DATE, END_DATE, result);
+
+        // Verify dependent service call.
+        verify(mockReportService).getParticipantReport(TEST_STUDY, REPORT_ID, HEALTH_CODE, null,
+                null);
+    }
+
+    @Test
+    public void getParticipantReportForWorker_OptionalParams() throws Exception {
+        // Mock dependencies
+        when(mockAccountDao.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
+
+        DateRangeResourceList<ReportData> expectedPage = makeResults(START_DATE, END_DATE);
+        doReturn(expectedPage).when(mockReportService).getParticipantReport(TEST_STUDY, REPORT_ID, HEALTH_CODE,
+                START_DATE, END_DATE);
+
+        // Execute and validate.
+        Result result = controller.getParticipantReportForWorker(TEST_STUDY_IDENTIFIER, OTHER_PARTICIPANT_ID,
+                REPORT_ID, START_DATE.toString(), END_DATE.toString());
+        TestUtils.assertResult(result, 200);
+        assertResultContent(START_DATE, END_DATE, result);
+
+        // Verify dependent service call.
+        verify(mockReportService).getParticipantReport(TEST_STUDY, REPORT_ID, HEALTH_CODE, START_DATE, END_DATE);
+    }
+
     @Test
     public void saveParticipantReportData() throws Exception {
         String json = TestUtils.createJson("{'date':'2015-02-12','data':{'field1':'Last','field2':'Name'}}");
@@ -383,10 +454,10 @@ public class ParticipantReportControllerTest {
     
     @Test
     public void adminCanDeleteParticipantIndex() throws Exception {
-        StudyParticipant regularUser = new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withRoles(Sets.newHashSet(Roles.ADMIN)).build();
-            session.setParticipant(regularUser);
-        
+        // Mock getAuthenticatedSession().
+        doReturn(session).when(controller).getAuthenticatedSession(Roles.ADMIN);
+
+        // Execute and validate.
         Result result = controller.deleteParticipantReportIndex(REPORT_ID);
         TestUtils.assertResult(result, 200, "Report index deleted.");
         
@@ -394,11 +465,16 @@ public class ParticipantReportControllerTest {
     }
     
     @Test(expected = UnauthorizedException.class)
-    public void nonAdminCannotDeleteParticipantIndex() throws Exception {
+    public void nonAdminCannotDeleteParticipantIndex() {
+        // Mock getAuthenticatedSession().
+        doThrow(UnauthorizedException.class).when(controller).getAuthenticatedSession(Roles.ADMIN);
+
+        // Execute and validate.
         controller.deleteParticipantReportIndex(REPORT_ID);
     }
     
-    private void assertResultContent(Result result) throws Exception {
+    private void assertResultContent(LocalDate expectedStartDate, LocalDate expectedEndDate, Result result)
+            throws Exception {
         JsonNode node = BridgeObjectMapper.get().readTree(Helpers.contentAsString(result));
         assertEquals("2015-01-02", node.get("startDate").asText());
         assertEquals("2015-02-02", node.get("endDate").asText());
@@ -418,19 +494,50 @@ public class ParticipantReportControllerTest {
         JsonNode child2Data = child2.get("data");
         assertEquals("Last", child2Data.get("field1").asText());
         assertEquals("Name", child2Data.get("field2").asText());
+
+        // Verify request params.
+        JsonNode requestParamsNode = node.get("requestParams");
+        assertEquals(expectedStartDate.toString(),requestParamsNode.get("startDate").textValue());
+        assertEquals(expectedEndDate.toString(),requestParamsNode.get("endDate").textValue());
+        assertEquals("RequestParams", requestParamsNode.get("type").textValue());
     }
     
-    private ForwardCursorPagedResourceList<ReportData> makePagedResults() {
+    private ForwardCursorPagedResourceList<ReportData> makePagedResults(DateTime startTime, DateTime endTime,
+            String offsetKey, int pageSize) {
         List<ReportData> list = Lists.newArrayList();
         list.add(createReport(DateTime.parse("2015-02-10T00:00:00.000Z"), "First", "Name"));
         list.add(createReport(DateTime.parse("2015-02-12T00:00:00.000Z"), "Last", "Name"));
-        return new ForwardCursorPagedResourceList<ReportData>(list, "nextPageOffsetKey")
-            .withRequestParam(ResourceList.OFFSET_KEY, OFFSET_KEY)
-            .withRequestParam(ResourceList.PAGE_SIZE, Integer.parseInt(PAGE_SIZE))
-            .withRequestParam(ResourceList.START_TIME, START_TIME)
-            .withRequestParam(ResourceList.END_TIME, END_TIME);
+        return new ForwardCursorPagedResourceList<>(list, NEXT_PAGE_OFFSET_KEY)
+            .withRequestParam(ResourceList.OFFSET_KEY, offsetKey)
+            .withRequestParam(ResourceList.PAGE_SIZE, pageSize)
+            .withRequestParam(ResourceList.START_TIME, startTime)
+            .withRequestParam(ResourceList.END_TIME, endTime);
     }
-    
+
+    private static void assertReportDataPage(DateTime expectedStartTime, DateTime expectedEndTime,
+            String expectedOffsetKey, int expectedPageSize, ForwardCursorPagedResourceList<ReportData> page) {
+        // Verify metadata.
+        assertEquals(NEXT_PAGE_OFFSET_KEY, page.getNextPageOffsetKey());
+        assertEquals(expectedStartTime.toString(), page.getRequestParams().get(ResourceList.START_TIME));
+        assertEquals(expectedEndTime.toString(), page.getRequestParams().get(ResourceList.END_TIME));
+        assertEquals(expectedOffsetKey, page.getRequestParams().get(ResourceList.OFFSET_KEY));
+        assertEquals(expectedPageSize, page.getRequestParams().get(ResourceList.PAGE_SIZE));
+
+        // Verify items. Note that key doesn't show up, because it's tagged with @JsonIgnore,
+        List<ReportData> list = page.getItems();
+        assertEquals(2, list.size());
+
+        assertEquals("2015-02-10T00:00:00.000Z", list.get(0).getDateTime().toString());
+        assertEquals(2, list.get(0).getData().size());
+        assertEquals("First", list.get(0).getData().get("field1").textValue());
+        assertEquals("Name", list.get(0).getData().get("field2").textValue());
+
+        assertEquals("2015-02-12T00:00:00.000Z", list.get(1).getDateTime().toString());
+        assertEquals(2, list.get(1).getData().size());
+        assertEquals("Last", list.get(1).getData().get("field1").textValue());
+        assertEquals("Name", list.get(1).getData().get("field2").textValue());
+    }
+
     private DateRangeResourceList<ReportData> makeResults(LocalDate startDate, LocalDate endDate){
         List<ReportData> list = Lists.newArrayList();
         list.add(createReport(LocalDate.parse("2015-02-10"), "First", "Name"));

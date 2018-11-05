@@ -25,6 +25,8 @@ import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.ReportService;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -93,52 +95,78 @@ public class ParticipantReportController extends BaseController {
     /**
      * Get a list of the identifiers used for participant reports in this study.
      */
-    public Result listParticipantReportIndices() throws Exception {
+    public Result listParticipantReportIndices() {
         UserSession session = getAuthenticatedSession();
         
         ReportTypeResourceList<? extends ReportIndex> indices = reportService
                 .getReportIndices(session.getStudyIdentifier(), ReportType.PARTICIPANT);
         return okResult(indices);
     }
-    
+
+    /** API to get reports for the given user by date. */
     public Result getParticipantReport(String userId, String identifier, String startDateString, String endDateString) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
-        
+        return getParticipantReportInternal(session.getStudyIdentifier(), userId, identifier, startDateString,
+                endDateString);
+    }
+
+    /** Worker API to get reports for the given user in the given study by date. */
+    public Result getParticipantReportForWorker(String studyId, String userId, String reportId, String startDateString,
+            String endDateString) {
+        getAuthenticatedSession(WORKER);
+        return getParticipantReportInternal(new StudyIdentifierImpl(studyId), userId, reportId, startDateString,
+                endDateString);
+    }
+
+    private Result getParticipantReportInternal(StudyIdentifier studyId, String userId, String reportId,
+            String startDateString, String endDateString) {
         LocalDate startDate = getLocalDateOrDefault(startDateString, null);
         LocalDate endDate = getLocalDateOrDefault(endDateString, null);
-        
-        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), userId));
-        
+
+        Account account = accountDao.getAccount(AccountId.forId(studyId.getIdentifier(), userId));
+
         DateRangeResourceList<? extends ReportData> results = reportService.getParticipantReport(
-                session.getStudyIdentifier(), identifier, account.getHealthCode(), startDate, endDate);
-        
+                studyId, reportId, account.getHealthCode(), startDate, endDate);
+
         return okResult(results);
     }
-    
+
+    /** API to get reports for the given user by date-time. */
     public Result getParticipantReportV4(String userId, String identifier, String startTimeString, String endTimeString,
             String offsetKey, String pageSizeString) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
-        
+        return getParticipantReportInternalV4(session.getStudyIdentifier(), userId, identifier, startTimeString,
+                endTimeString, offsetKey, pageSizeString);
+    }
+
+    /** Worker API to get reports for the given user in the given study by date-time. */
+    public Result getParticipantReportForWorkerV4(String studyId, String userId, String reportId, String startTimeString,
+            String endTimeString, String offsetKey, String pageSizeString) {
+        getAuthenticatedSession(WORKER);
+        return getParticipantReportInternalV4(new StudyIdentifierImpl(studyId), userId, reportId, startTimeString,
+                endTimeString, offsetKey, pageSizeString);
+    }
+
+    // Helper method, shared by both getParticipantReportV4() and getParticipantReportForWorkerV4().
+    private Result getParticipantReportInternalV4(StudyIdentifier studyId, String userId, String reportId,
+            String startTimeString, String endTimeString, String offsetKey, String pageSizeString) {
         DateTime startTime = getDateTimeOrDefault(startTimeString, null);
         DateTime endTime = getDateTimeOrDefault(endTimeString, null);
         int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
-        
-        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), userId));
-        
-        ForwardCursorPagedResourceList<ReportData> page = reportService.getParticipantReportV4(
-                session.getStudyIdentifier(), identifier, account.getHealthCode(), startTime, endTime, offsetKey,
-                pageSize);
-        
+
+        Account account = accountDao.getAccount(AccountId.forId(studyId.getIdentifier(), userId));
+
+        ForwardCursorPagedResourceList<ReportData> page = reportService.getParticipantReportV4(studyId, reportId,
+                account.getHealthCode(), startTime, endTime, offsetKey, pageSize);
+
         return okResult(page);
     }
-    
+
     /**
      * Report participant data can be saved by developers or by worker processes. The JSON for these must 
      * include a healthCode field. This is validated when constructing the DataReportKey.
      */
-    public Result saveParticipantReport(String userId, String identifier) throws Exception {
+    public Result saveParticipantReport(String userId, String identifier) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
