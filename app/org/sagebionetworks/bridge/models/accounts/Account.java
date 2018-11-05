@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.accounts;
 
-import java.util.Comparator;
+import static java.util.Comparator.comparing;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -62,7 +63,7 @@ public interface Account extends BridgeEntity {
                 signatures.add(signature);
             }
         }
-        signatures.sort(Comparator.comparing(ConsentSignature::getSignedOn));
+        signatures.sort(comparing(ConsentSignature::getSignedOn));
         return ImmutableList.copyOf(signatures);
     }
 
@@ -110,6 +111,7 @@ public interface Account extends BridgeEntity {
                     .withWithdrewOn(consent.getWithdrewOn()).build();
             signatures.add(signature);
         }
+        map.values().forEach(list -> list.sort(comparing(ConsentSignature::getSignedOn)));
         return ImmutableMap.copyOf(map);
     }
     

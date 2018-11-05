@@ -37,10 +37,6 @@ import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /** MySQL implementation of accounts via Hibernate. */
-// Note: We use a separate class entirely and marshall it to/from GenericAccount instead of using the Account interface
-// directly. This is because (1) some of the methods we would need in the Account interface don't really have an
-// equivalent in Stormpath, and (2) some of the patterns (especially around embedded collections) don't work really
-// well with Hibernate. While not ideal, it was ultimately cleaner to do it this way.
 @Entity
 @Table(name = "Accounts")
 public class HibernateAccount implements Account {
@@ -151,12 +147,6 @@ public class HibernateAccount implements Account {
     
     /** @see #getEmailVerified */
     public Boolean getEmailVerified() {
-        // Old accounts did not have an emailVerified flag, and so consequently, did not set it. If the
-        // account is enabled with an email, we have to assume for these accounts that they have been 
-        // verified.
-        if (emailVerified == null && email != null && phone == null && status == AccountStatus.ENABLED) {
-            return Boolean.TRUE;
-        }
         return emailVerified;
     }
     

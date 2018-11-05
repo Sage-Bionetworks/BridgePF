@@ -65,7 +65,7 @@ public class HibernateAccountDaoTest {
     private static final Phone OTHER_PHONE = new Phone("+12065881469", "US");
     private static final String OTHER_EMAIL = "other-email@example.com";
     private static final String HEALTH_CODE = "health-code";
-    private static final DateTime MOCK_NOW_MILLIS = DateTime.parse("2017-05-19T14:45:27.593-0700");
+    private static final DateTime MOCK_DATETIME = DateTime.parse("2017-05-19T14:45:27.593-0700");
     private static final String FIRST_NAME = "Eggplant";
     private static final String LAST_NAME = "McTester";
     private static final String REAUTH_TOKEN = "reauth-token";
@@ -107,7 +107,7 @@ public class HibernateAccountDaoTest {
 
     @BeforeClass
     public static void mockNow() {
-        DateTimeUtils.setCurrentMillisFixed(MOCK_NOW_MILLIS.getMillis());
+        DateTimeUtils.setCurrentMillisFixed(MOCK_DATETIME.getMillis());
     }
 
     @AfterClass
@@ -343,9 +343,9 @@ public class HibernateAccountDaoTest {
 
         HibernateAccount updatedAccount = updatedAccountCaptor.getValue();
         assertEquals(ACCOUNT_ID, updatedAccount.getId());
-        assertEquals(MOCK_NOW_MILLIS.getMillis(), updatedAccount.getModifiedOn().getMillis());
+        assertEquals(MOCK_DATETIME.getMillis(), updatedAccount.getModifiedOn().getMillis());
         assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, updatedAccount.getPasswordAlgorithm());
-        assertEquals(MOCK_NOW_MILLIS.getMillis(), updatedAccount.getPasswordModifiedOn().getMillis());
+        assertEquals(MOCK_DATETIME.getMillis(), updatedAccount.getPasswordModifiedOn().getMillis());
         assertTrue(updatedAccount.getEmailVerified());
         assertNull(updatedAccount.getPhoneVerified());
         assertEquals(AccountStatus.ENABLED, updatedAccount.getStatus());
@@ -848,9 +848,9 @@ public class HibernateAccountDaoTest {
         HibernateAccount createdHibernateAccount = createdHibernateAccountCaptor.getValue();
         assertEquals(daoOutputAcountId, createdHibernateAccount.getId());
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, createdHibernateAccount.getStudyId());
-        assertEquals(MOCK_NOW_MILLIS.getMillis(), createdHibernateAccount.getCreatedOn().getMillis());
-        assertEquals(MOCK_NOW_MILLIS.getMillis(), createdHibernateAccount.getModifiedOn().getMillis());
-        assertEquals(MOCK_NOW_MILLIS.getMillis(), createdHibernateAccount.getPasswordModifiedOn().getMillis());
+        assertEquals(MOCK_DATETIME.getMillis(), createdHibernateAccount.getCreatedOn().getMillis());
+        assertEquals(MOCK_DATETIME.getMillis(), createdHibernateAccount.getModifiedOn().getMillis());
+        assertEquals(MOCK_DATETIME.getMillis(), createdHibernateAccount.getPasswordModifiedOn().getMillis());
         assertEquals(AccountStatus.ENABLED, createdHibernateAccount.getStatus());
         assertEquals(AccountDao.MIGRATION_VERSION, createdHibernateAccount.getMigrationVersion());
     }
@@ -899,7 +899,7 @@ public class HibernateAccountDaoTest {
         assertEquals(Boolean.FALSE, updatedHibernateAccount.getPhoneVerified());
         assertEquals(1234, updatedHibernateAccount.getCreatedOn().getMillis());
         assertEquals(5678, updatedHibernateAccount.getPasswordModifiedOn().getMillis());
-        assertEquals(MOCK_NOW_MILLIS.getMillis(), updatedHibernateAccount.getModifiedOn().getMillis());
+        assertEquals(MOCK_DATETIME.getMillis(), updatedHibernateAccount.getModifiedOn().getMillis());
         assertEquals(EXTERNAL_ID, updatedHibernateAccount.getExternalId());
     }
     
@@ -912,10 +912,10 @@ public class HibernateAccountDaoTest {
         account.setId(ACCOUNT_ID);
         account.setPasswordAlgorithm(PasswordAlgorithm.STORMPATH_HMAC_SHA_256);
         account.setPasswordHash("bad password hash");
-        account.setPasswordModifiedOn(MOCK_NOW_MILLIS);
+        account.setPasswordModifiedOn(MOCK_DATETIME);
         account.setReauthTokenAlgorithm(PasswordAlgorithm.STORMPATH_HMAC_SHA_256);
         account.setReauthTokenHash("bad reauth token hash");
-        account.setReauthTokenModifiedOn(MOCK_NOW_MILLIS);
+        account.setReauthTokenModifiedOn(MOCK_DATETIME);
         
         dao.updateAccount(account);
         
@@ -1672,17 +1672,6 @@ public class HibernateAccountDaoTest {
         assertTrue(query.contains(":notin2 not in elements(acct.dataGroups)"));
     }
     
-    public void authenticateAccountUnverifiedEmailSucceedsForLegacy() throws Exception {
-        HibernateAccount hibernateAccount = makeValidHibernateAccount(true, true);
-        hibernateAccount.setEmailVerified(false);
-        
-        // mock hibernate
-        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
-                .thenReturn(ImmutableList.of(hibernateAccount));
-
-        dao.authenticate(study, PASSWORD_SIGNIN);
-    }
-    
     @Test(expected = UnauthorizedException.class)
     public void authenticateAccountUnverifiedEmailFails() throws Exception {
         study.setVerifyChannelOnSignInEnabled(true);
@@ -1695,21 +1684,6 @@ public class HibernateAccountDaoTest {
                 .thenReturn(ImmutableList.of(hibernateAccount));
 
         dao.authenticate(study, PASSWORD_SIGNIN);
-    }
-    
-    public void authenticateAccountUnverifiedPhoneSucceedsForLegacy() throws Exception {
-        HibernateAccount hibernateAccount = makeValidHibernateAccount(true, true);
-        hibernateAccount.setPhoneVerified(null);
-        
-        // mock hibernate
-        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
-                .thenReturn(ImmutableList.of(hibernateAccount));
-
-        // execute and verify - Verify just ID, study, and email, and health code mapping is enough.
-        SignIn phoneSignIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
-                .withPhone(PHONE).withPassword(DUMMY_PASSWORD).build();
-        
-        dao.authenticate(study, phoneSignIn);
     }
     
     @Test(expected = UnauthorizedException.class)
@@ -1751,7 +1725,7 @@ public class HibernateAccountDaoTest {
         HibernateAccount updatedAccount = updatedAccountCaptor.getValue();
         assertEquals(ACCOUNT_ID, updatedAccount.getId());
         assertEquals(HEALTH_CODE, updatedAccount.getHealthCode());
-        assertEquals(MOCK_NOW_MILLIS.getMillis(), updatedAccount.getModifiedOn().getMillis());
+        assertEquals(MOCK_DATETIME.getMillis(), updatedAccount.getModifiedOn().getMillis());
     }
 
     // Create minimal generic account for everything that will be used by HibernateAccountDao.

@@ -308,7 +308,7 @@ public class HibernateAccountDao implements AccountDao {
         DateTime timestamp = DateUtils.getCurrentDateTime();
         account.setCreatedOn(timestamp);
         account.setModifiedOn(timestamp);
-        account.setPasswordModifiedOn(DateUtils.getCurrentDateTime());
+        account.setPasswordModifiedOn(timestamp);
         account.setMigrationVersion(AccountDao.MIGRATION_VERSION);
 
         // Create account

@@ -29,7 +29,6 @@ public class AccountSummaryTest {
                 "externalId", "ABC", dateTime, AccountStatus.UNVERIFIED, TestConstants.TEST_STUDY);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(summary);
-        System.out.println(node.toString());
         assertEquals("firstName", node.get("firstName").textValue());
         assertEquals("lastName", node.get("lastName").textValue());
         assertEquals("email@email.com", node.get("email").textValue());

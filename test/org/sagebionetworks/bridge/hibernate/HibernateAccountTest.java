@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
@@ -15,8 +16,12 @@ import org.junit.Test;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class HibernateAccountTest {
@@ -173,5 +178,96 @@ public class HibernateAccountTest {
         // Setting to null makes it an empty set.
         account.setLanguages(null);
         assertTrue(account.getLanguages().isEmpty());
-    }    
+    }
+    
+    @Test
+    public void sharingDefaultsToNoSharing() {
+        HibernateAccount account = new HibernateAccount();
+        assertEquals(SharingScope.NO_SHARING, account.getSharingScope());
+    }
+    
+    @Test
+    public void getNotifyByEmailDefaultsToTrue() {
+        HibernateAccount account = new HibernateAccount();
+        assertTrue(account.getNotifyByEmail());
+    }
+
+    @Test
+    public void consentSignatureHistories() {
+        long TIME1 = 100L;
+        long TIME2 = 200L;
+        long TIME3 = 300L;
+        long TIME4 = 400L;
+        long TIME5 = 500L;
+        
+        SubpopulationGuid guid1 = SubpopulationGuid.create("guid1");
+        SubpopulationGuid guid2 = SubpopulationGuid.create("guid2");
+        
+        HibernateAccountConsentKey key1A = new HibernateAccountConsentKey(guid1.getGuid(), TIME1);
+        HibernateAccountConsentKey key1B = new HibernateAccountConsentKey(guid1.getGuid(), TIME2);
+        HibernateAccountConsentKey key1C = new HibernateAccountConsentKey(guid1.getGuid(), TIME3);
+        HibernateAccountConsentKey key2A = new HibernateAccountConsentKey(guid2.getGuid(), TIME4);
+        HibernateAccountConsentKey key2B = new HibernateAccountConsentKey(guid2.getGuid(), TIME5);
+        
+        HibernateAccountConsent consent1A = getHibernateAccountConsent(null);
+        HibernateAccountConsent consent1B = getHibernateAccountConsent(null);
+        HibernateAccountConsent consent1C = getHibernateAccountConsent(400L);
+        HibernateAccountConsent consent2A = getHibernateAccountConsent(null);
+        HibernateAccountConsent consent2B = getHibernateAccountConsent(null);
+        
+        // Add these out of order to verify that they are sorted by date of signing
+        Map<HibernateAccountConsentKey, HibernateAccountConsent> consents = Maps.newHashMap();
+        consents.put(key1A, consent1A);
+        consents.put(key1C, consent1C);
+        consents.put(key1B, consent1B);
+        consents.put(key2B, consent2B);
+        consents.put(key2A, consent2A);
+        
+        HibernateAccount account = new HibernateAccount();
+        account.setConsents(consents);
+        
+        Map<SubpopulationGuid, List<ConsentSignature>> histories = account.getAllConsentSignatureHistories();
+        
+        List<ConsentSignature> history1 = histories.get(guid1);
+        assertEquals(3, history1.size());
+        // Signed on values are copied over from keys
+        assertEquals(TIME1, history1.get(0).getSignedOn());
+        assertEquals(TIME2, history1.get(1).getSignedOn());
+        assertEquals(TIME3, history1.get(2).getSignedOn());
+        
+        List<ConsentSignature> history2 = histories.get(guid2);
+        assertEquals(2, history2.size());
+        // Signed on values are copied over from keys
+        assertEquals(TIME4, history2.get(0).getSignedOn());
+        assertEquals(TIME5, history2.get(1).getSignedOn());
+        
+        // The last consent in the series was withdrawn, so this consent is not active.
+        ConsentSignature sig1 = account.getActiveConsentSignature(guid1);
+        assertNull(sig1);
+        
+        ConsentSignature sig2 = account.getActiveConsentSignature(guid2);
+        assertEquals(sig2, history2.get(1));
+        
+        // Add a consent to the withdrawn series.
+        ConsentSignature sig3 = new ConsentSignature.Builder().withBirthdate("1980-01-01")
+                .withConsentCreatedOn(1L).withName("Name").withSignedOn(600L).build();
+        
+        List<ConsentSignature> signatures = Lists.newArrayList();
+        signatures.addAll(history1);
+        signatures.add(sig3);
+        account.setConsentSignatureHistory(guid1, signatures);
+        
+        sig1 = account.getActiveConsentSignature(guid1);
+        assertEquals(sig1, account.getAllConsentSignatureHistories().get(guid1).get(3));
+    }
+    
+    private HibernateAccountConsent getHibernateAccountConsent(Long withdrewOn) {
+        HibernateAccountConsent consent = new HibernateAccountConsent();
+        consent.setBirthdate("1980-01-01");
+        consent.setConsentCreatedOn(1L);
+        consent.setName("Test User");
+        consent.setWithdrewOn(withdrewOn);
+        return consent;
+    }
+    
 }
