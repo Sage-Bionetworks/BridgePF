@@ -4,7 +4,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
 import java.util.HashSet;
-import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -136,7 +136,7 @@ public class TestUserAdminHelper {
         private Set<String> dataGroups;
         private String email;
         private String password;
-        private LinkedHashSet<String> languages;
+        private List<String> languages;
         
         private Builder(Class<?> cls) {
             this.cls = cls;
@@ -171,7 +171,7 @@ public class TestUserAdminHelper {
             this.dataGroups = dataGroups;
             return this;
         }
-        public Builder withLanguages(LinkedHashSet<String> languages) {
+        public Builder withLanguages(List<String> languages) {
             this.languages = languages;
             return this;
         }

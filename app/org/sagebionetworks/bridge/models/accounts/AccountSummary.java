@@ -4,9 +4,7 @@ import java.util.Objects;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 

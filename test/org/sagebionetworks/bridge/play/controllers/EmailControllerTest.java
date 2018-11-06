@@ -43,7 +43,7 @@ public class EmailControllerTest {
     private static final String STUDY2 = "study";
     private static final String API = TestConstants.TEST_STUDY_IDENTIFIER;
     private static final String EMAIL_ADDRESS = "bridge-testing@sagebase.org";
-    private static final AccountId ACCOUNT_ID = AccountId.forEmail(API, EMAIL_ADDRESS);
+    private static final AccountId ACCOUNT_ID = AccountId.forEmail(TestConstants.TEST_STUDY_IDENTIFIER, EMAIL_ADDRESS);
 
     @Mock
     private StudyService studyService;

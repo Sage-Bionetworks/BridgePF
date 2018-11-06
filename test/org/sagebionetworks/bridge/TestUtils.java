@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -277,7 +278,7 @@ public class TestUtils {
                 .withImageData("image-data")
                 .withImageMimeType("image/png").build();
         IntentToParticipate itp = new IntentToParticipate.Builder()
-                .withStudyId("studyId")
+                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
                 .withScope(SharingScope.SPONSORS_AND_PARTNERS)
                 .withPhone(TestConstants.PHONE)
                 .withSubpopGuid("subpopGuid")
@@ -309,7 +310,7 @@ public class TestUtils {
                 .withNotifyByEmail(true)
                 .withDataGroups(Sets.newHashSet("group1"))
                 .withAttributes(new ImmutableMap.Builder<String,String>().put("can_be_recontacted","true").build())
-                .withLanguages(TestUtils.newLinkedHashSet("fr")).build();
+                .withLanguages(ImmutableList.of("fr")).build();
     }
     
     public static List<ScheduledActivity> runSchedulerForActivities(List<SchedulePlan> plans, ScheduleContext context) {

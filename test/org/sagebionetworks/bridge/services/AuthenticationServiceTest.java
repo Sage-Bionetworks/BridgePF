@@ -12,7 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
-import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -62,6 +62,7 @@ import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
 @ContextConfiguration("classpath:test-context.xml")
@@ -247,7 +248,7 @@ public class AuthenticationServiceTest {
     @Test
     public void canResendEmailVerification() throws Exception {
         testUser = helper.getBuilder(AuthenticationServiceTest.class).withConsent(false).withSignIn(false).build();
-        AccountId accountId = AccountId.forEmail(testUser.getStudyIdentifier().getIdentifier(), testUser.getEmail());
+        AccountId accountId = AccountId.forEmail(testUser.getStudy().getIdentifier(), testUser.getEmail());
         authService.resendVerification(ChannelType.EMAIL, accountId);
     }
 
@@ -379,7 +380,7 @@ public class AuthenticationServiceTest {
     
     @Test
     public void resendEmailVerificationLooksSuccessfulWhenNoAccount() throws Exception {
-        AccountId accountId = AccountId.forEmail(TEST_STUDY_IDENTIFIER, "notarealaccount@sagebase.org");
+        AccountId accountId = AccountId.forEmail(TestConstants.TEST_STUDY_IDENTIFIER, "notarealaccount@sagebase.org");
         authService.resendVerification(ChannelType.EMAIL, accountId);
     }
     
@@ -410,7 +411,7 @@ public class AuthenticationServiceTest {
     
     @Test
     public void existingLanguagePreferencesAreLoaded() {
-        LinkedHashSet<String> LANGS = TestUtils.newLinkedHashSet("en","es");
+        List<String> LANGS = ImmutableList.of("en","es");
         testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(true).withLanguages(LANGS).withSignIn(true).build();
         
@@ -425,7 +426,7 @@ public class AuthenticationServiceTest {
     
     @Test
     public void languagePreferencesAreRetrievedFromContext() {
-        LinkedHashSet<String> LANGS = TestUtils.newLinkedHashSet("fr","es");
+        List<String> LANGS = ImmutableList.of("fr","es");
         testUser = helper.getBuilder(AuthenticationServiceTest.class)
                 .withConsent(true).withSignIn(true).build();
         

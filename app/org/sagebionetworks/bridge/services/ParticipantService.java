@@ -55,6 +55,8 @@ import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
@@ -249,13 +251,7 @@ public class ParticipantService {
         builder.withId(account.getId());
         builder.withHealthCode(account.getHealthCode());
         builder.withClientData(account.getClientData());
-
-        Map<String, String> attributes = Maps.newHashMap();
-        for (String attribute : study.getUserProfileAttributes()) {
-            String value = account.getAttribute(attribute);
-            attributes.put(attribute, value);
-        }
-        builder.withAttributes(attributes);
+        builder.withAttributes(account.getAttributes());
 
         if (includeHistory) {
             Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
@@ -438,7 +434,7 @@ public class ParticipantService {
         
         for (String attribute : study.getUserProfileAttributes()) {
             String value = participant.getAttributes().get(attribute);
-            account.setAttribute(attribute, value);
+            account.getAttributes().put(attribute, value);
         }
         if (callerIsAdmin(callerRoles)) {
             updateRoles(callerRoles, participant, account);
@@ -544,8 +540,10 @@ public class ParticipantService {
      * Get a history of all consent records for a given subpopulation, whether user is withdrawn or not.
      */
     public List<UserConsentHistory> getUserConsentHistory(Account account, SubpopulationGuid subpopGuid) {
+        final StudyIdentifier studyId = new StudyIdentifierImpl(account.getStudyId());
+        
         return account.getConsentSignatureHistory(subpopGuid).stream().map(signature -> {
-            Subpopulation subpop = subpopService.getSubpopulation(account.getStudyIdentifier(), subpopGuid);
+            Subpopulation subpop = subpopService.getSubpopulation(studyId, subpopGuid);
             boolean hasSignedActiveConsent = (signature.getConsentCreatedOn() == subpop.getPublishedConsentCreatedOn());
 
             return new UserConsentHistory.Builder()

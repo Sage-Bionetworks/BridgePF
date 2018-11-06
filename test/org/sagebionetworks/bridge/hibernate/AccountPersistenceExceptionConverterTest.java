@@ -19,7 +19,6 @@ import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AccountPersistenceExceptionConverterTest {
@@ -44,15 +43,16 @@ public class AccountPersistenceExceptionConverterTest {
     @Test
     public void entityAlreadyExistsForEmail() {
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId("testStudy");
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         account.setEmail(TestConstants.EMAIL);
         
         Account existing = Account.create();
         existing.setId("userId");
-        existing.setStudyId(new StudyIdentifierImpl("testStudy"));
+        existing.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         existing.setEmail(TestConstants.EMAIL);
         
-        when(accountDao.getAccount(AccountId.forEmail("testStudy", TestConstants.EMAIL))).thenReturn(existing);
+        when(accountDao.getAccount(AccountId.forEmail(TestConstants.TEST_STUDY_IDENTIFIER, TestConstants.EMAIL)))
+                .thenReturn(existing);
         
         org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException(
                 "Duplicate entry 'testStudy-"+TestConstants.EMAIL+"' for key 'Accounts-StudyId-Email-Index'", null, null);
@@ -67,15 +67,16 @@ public class AccountPersistenceExceptionConverterTest {
     @Test
     public void entityAlreadyExistsForPhone() {
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId("testStudy");
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         account.setPhone(TestConstants.PHONE);
         
         Account existing = Account.create();
         existing.setId("userId");
-        existing.setStudyId(new StudyIdentifierImpl("testStudy"));
+        existing.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         existing.setPhone(TestConstants.PHONE);
         
-        when(accountDao.getAccount(AccountId.forPhone("testStudy", TestConstants.PHONE))).thenReturn(existing);
+        when(accountDao.getAccount(AccountId.forPhone(TestConstants.TEST_STUDY_IDENTIFIER, TestConstants.PHONE)))
+                .thenReturn(existing);
         
         org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException(
                 "Duplicate entry 'testStudy-"+TestConstants.PHONE.getNationalFormat()+"' for key 'Accounts-StudyId-Phone-Index'", null, null);
@@ -90,15 +91,15 @@ public class AccountPersistenceExceptionConverterTest {
     @Test
     public void entityAlreadyExistsForExternalId() {
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId("testStudy");
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         account.setExternalId("ext");
         
         Account existing = Account.create();
         existing.setId("userId");
-        existing.setStudyId(new StudyIdentifierImpl("testStudy"));
+        existing.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         existing.setExternalId("ext");
         
-        when(accountDao.getAccount(AccountId.forExternalId("testStudy", "ext"))).thenReturn(existing);
+        when(accountDao.getAccount(AccountId.forExternalId(TestConstants.TEST_STUDY_IDENTIFIER, "ext"))).thenReturn(existing);
         
         org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException(
                 "Duplicate entry 'testStudy-ext' for key 'Accounts-StudyId-ExternalId-Index'", null, null);
@@ -114,7 +115,7 @@ public class AccountPersistenceExceptionConverterTest {
     @Test
     public void entityAlreadyExistsIfAccountCannotBeFound() {
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId("testStudy");
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         account.setExternalId("ext");
         
         org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException(
@@ -141,7 +142,7 @@ public class AccountPersistenceExceptionConverterTest {
     @Test
     public void constraintViolationExceptionMessageIsHidden() {
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId("testStudy");
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         
         org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException(
                 "This is a generic constraint violation.", null, null);
@@ -155,7 +156,7 @@ public class AccountPersistenceExceptionConverterTest {
     @Test
     public void optimisticLockException() { 
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId("testStudy");
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         
         OptimisticLockException ole = new OptimisticLockException();
         

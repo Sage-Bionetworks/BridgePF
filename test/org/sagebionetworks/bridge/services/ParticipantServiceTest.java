@@ -21,7 +21,6 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import java.util.EnumSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -61,7 +60,6 @@ import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
-import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -117,7 +115,7 @@ public class ParticipantServiceTest {
     private static final int PAGE_SIZE = 50;
     private static final Set<Roles> CALLER_ROLES = Sets.newHashSet(RESEARCHER);
     private static final Set<Roles> USER_ROLES = Sets.newHashSet(DEVELOPER);
-    private static final LinkedHashSet<String> USER_LANGUAGES = (LinkedHashSet<String>)BridgeUtils.commaListToOrderedSet("de,fr");
+    private static final List<String> USER_LANGUAGES = ImmutableList.copyOf(BridgeUtils.commaListToOrderedSet("de,fr"));
     private static final String EMAIL = "email@email.com";
     private static final String ID = "ASDF";
     private static final DateTimeZone USER_TIME_ZONE = DateTimeZone.forOffsetHours(-3);
@@ -245,11 +243,12 @@ public class ParticipantServiceTest {
     
     private void mockHealthCodeAndAccountRetrieval(String email, Phone phone) {
         TestUtils.mockEditAccount(accountDao, account);
-        ((GenericAccount)account).setId(ID);
-        ((GenericAccount)account).setHealthCode(HEALTH_CODE);
+        account.setId(ID);
+        account.setHealthCode(HEALTH_CODE);
         account.setEmail(email);
         account.setPhone(phone);
         account.setExternalId(EXTERNAL_ID);
+        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         when(accountDao.constructAccount(any(), any(), any(), any(), any())).thenReturn(account);
         when(accountDao.createAccount(same(STUDY), same(account))).thenReturn(ID);
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
@@ -257,8 +256,8 @@ public class ParticipantServiceTest {
     
     private void mockAccountNoEmail() {
         TestUtils.mockEditAccount(accountDao, account);
-        ((GenericAccount)account).setId(ID);
-        ((GenericAccount)account).setHealthCode(HEALTH_CODE);
+        account.setId(ID);
+        account.setHealthCode(HEALTH_CODE);
         when(accountDao.constructAccount(any(), any(), any(), any(), any())).thenReturn(account);
         when(accountDao.createAccount(same(STUDY), same(account))).thenReturn(ID);
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
@@ -286,7 +285,7 @@ public class ParticipantServiceTest {
         Account account = accountCaptor.getValue();
         assertEquals(FIRST_NAME, account.getFirstName());
         assertEquals(LAST_NAME, account.getLastName());
-        assertEquals("true", account.getAttribute("can_be_recontacted"));
+        assertEquals("true", account.getAttributes().get("can_be_recontacted"));
         assertEquals(USER_ROLES, account.getRoles());
         assertEquals(TestUtils.getClientData(), account.getClientData());
         assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
@@ -296,7 +295,7 @@ public class ParticipantServiceTest {
         assertEquals(EXTERNAL_ID, account.getExternalId());
         assertNull(account.getTimeZone());
         assertEquals(Sets.newHashSet("group1","group2"), account.getDataGroups());
-        assertEquals(TestUtils.newLinkedHashSet("de","fr"), account.getLanguages());
+        assertEquals(ImmutableList.of("de","fr"), account.getLanguages());
         
         // don't update cache
         verify(cacheProvider, never()).removeSessionByUserId(ID);
@@ -400,7 +399,8 @@ public class ParticipantServiceTest {
     public void createParticipantPhoneNoEmailVerificationWanted() {
         STUDY.setEmailVerificationEnabled(true);
         mockHealthCodeAndAccountRetrieval();
-
+        account.setEmail(null);
+        
         // Make minimal phone participant.
         StudyParticipant phoneParticipant = new StudyParticipant.Builder().withPhone(PHONE).build();
         participantService.createParticipant(STUDY, CALLER_ROLES, phoneParticipant, false);
@@ -702,16 +702,16 @@ public class ParticipantServiceTest {
     public void getStudyParticipant() {
         // A lot of mocks have to be set up first, this call aggregates almost everything we know about the user
         DateTime createdOn = DateTime.now();
-        ((GenericAccount)account).setHealthCode(HEALTH_CODE);
-        ((GenericAccount)account).setStudyId(STUDY.getStudyIdentifier());
-        ((GenericAccount)account).setId(ID);
-        ((GenericAccount)account).setCreatedOn(createdOn);
+        account.setHealthCode(HEALTH_CODE);
+        account.setStudyId(STUDY.getIdentifier());
+        account.setId(ID);
+        account.setCreatedOn(createdOn);
         account.setFirstName(FIRST_NAME);
         account.setLastName(LAST_NAME);
         account.setEmailVerified(Boolean.TRUE);
         account.setPhoneVerified(Boolean.FALSE);
         account.setStatus(AccountStatus.DISABLED);
-        account.setAttribute("attr2", "anAttribute2");
+        account.getAttributes().put("attr2", "anAttribute2");
         List<ConsentSignature> sigs1 = Lists.newArrayList(new ConsentSignature.Builder()
                 .withName("Name 1").withBirthdate("1980-01-01").build());
         account.setConsentSignatureHistory(SUBPOP_GUID_1, sigs1);
@@ -805,7 +805,7 @@ public class ParticipantServiceTest {
     public void signOutUser() {
         // Setup
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
-        ((GenericAccount)account).setId("userId");
+        account.setId("userId");
 
         // Execute
         participantService.signUserOut(STUDY, ID, false);
@@ -820,7 +820,7 @@ public class ParticipantServiceTest {
     public void signOutUserDeleteReauthToken() {
         // Setup
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
-        ((GenericAccount)account).setId("userId");
+        account.setId("userId");
 
         // Execute
         participantService.signUserOut(STUDY, ID, true);
@@ -860,13 +860,13 @@ public class ParticipantServiceTest {
         Account account = accountCaptor.getValue();
         assertEquals(FIRST_NAME, account.getFirstName());
         assertEquals(LAST_NAME, account.getLastName());
-        assertEquals("true", account.getAttribute("can_be_recontacted"));
+        assertEquals("true", account.getAttributes().get("can_be_recontacted"));
         assertEquals(TestUtils.getClientData(), account.getClientData());
         
         assertEquals(SharingScope.ALL_QUALIFIED_RESEARCHERS, account.getSharingScope());
         assertEquals(Boolean.TRUE, account.getNotifyByEmail());
         assertEquals(Sets.newHashSet("group1","group2"), account.getDataGroups());
-        assertEquals(TestUtils.newLinkedHashSet("de","fr"), account.getLanguages());
+        assertEquals(ImmutableList.of("de","fr"), account.getLanguages());
         assertEquals(EXTERNAL_ID, account.getExternalId());
         assertNull(account.getTimeZone());
     }
@@ -1493,7 +1493,7 @@ public class ParticipantServiceTest {
     @Test
     public void updateIdentifiersAuthenticatingToAnotherAccountInvalid() {
         // This ID does not match the ID in the request's context, and that will fail
-        ((GenericAccount)account).setId("another-user-id");
+        account.setId("another-user-id");
         when(accountDao.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
         
         IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "email@email.com", null, null);
