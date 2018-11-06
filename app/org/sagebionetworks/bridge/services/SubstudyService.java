@@ -12,6 +12,8 @@ import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
+import org.sagebionetworks.bridge.validators.SubstudyValidator;
+import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -48,13 +50,14 @@ public class SubstudyService {
         checkNotNull(studyId);
         checkNotNull(substudy);
         
-        //Validate.entityThrowingException(AppConfigElementValidator.INSTANCE, substudy);
-        
         substudy.setStudyId(studyId.getIdentifier());
+        Validate.entityThrowingException(SubstudyValidator.INSTANCE, substudy);
+        
         substudy.setVersion(null);
         substudy.setDeleted(false);
-        substudy.setCreatedOn(DateTime.now());
-        substudy.setModifiedOn(substudy.getCreatedOn());
+        DateTime timestamp = DateTime.now();
+        substudy.setCreatedOn(timestamp);
+        substudy.setModifiedOn(timestamp);
         
         Substudy existing = substudyDao.getSubstudy(studyId, substudy.getId());
         if (existing != null) {
@@ -75,17 +78,18 @@ public class SubstudyService {
         checkNotNull(studyId);
         checkNotNull(substudy);
         
-        //Validate.entityThrowingException(AppConfigElementValidator.INSTANCE, element);
+        substudy.setStudyId(studyId.getIdentifier());
+        Validate.entityThrowingException(SubstudyValidator.INSTANCE, substudy);
         
         Substudy existing = getSubstudy(studyId, substudy.getId());
         if (substudy.isDeleted() && existing.isDeleted()) {
             throw new EntityNotFoundException(AppConfigElement.class);
         }
-        substudy.setStudyId(studyId.getIdentifier());
-        substudy.setId(substudy.getId());
-        substudy.setModifiedOn(DateTime.now());
+        substudy.setId(existing.getId());
         // cannot change the creation timestamp
         substudy.setCreatedOn(existing.getCreatedOn());
+        substudy.setModifiedOn(DateTime.now());
+        
         return substudyDao.updateSubstudy(substudy);
     }
     

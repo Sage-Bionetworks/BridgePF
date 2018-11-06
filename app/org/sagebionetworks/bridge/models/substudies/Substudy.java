@@ -8,6 +8,10 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonDeserialize(as=HibernateSubstudy.class)
 public interface Substudy extends BridgeEntity {
+    
+    public static Substudy create() {
+        return new HibernateSubstudy();
+    }
 
     String getId();
     void setId(String id);
