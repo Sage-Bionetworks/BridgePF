@@ -565,14 +565,6 @@ public class BridgeSpringConfig {
     @Bean(name = "substudyHibernateHelper")
     @Autowired
     public HibernateHelper substudyHibernateHelper(SessionFactory sessionFactory,
-            AccountPersistenceExceptionConverter converter) {
-        return new HibernateHelper(sessionFactory, converter);
-    }
-    
-
-    @Bean(name = "substudyHibernateHelper")
-    @Autowired
-    public HibernateHelper substudyHibernateHelper(SessionFactory sessionFactory,
             SubstudyPersistenceExceptionConverter converter) {
         return new HibernateHelper(sessionFactory, converter);
     }

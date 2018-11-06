@@ -53,7 +53,7 @@ public class SubstudyService {
         substudy.setStudyId(studyId.getIdentifier());
         Validate.entityThrowingException(SubstudyValidator.INSTANCE, substudy);
         
-        substudy.setVersion(null);
+        substudy.setVersion(1L);
         substudy.setDeleted(false);
         DateTime timestamp = DateTime.now();
         substudy.setCreatedOn(timestamp);
@@ -85,8 +85,6 @@ public class SubstudyService {
         if (substudy.isDeleted() && existing.isDeleted()) {
             throw new EntityNotFoundException(AppConfigElement.class);
         }
-        substudy.setId(existing.getId());
-        // cannot change the creation timestamp
         substudy.setCreatedOn(existing.getCreatedOn());
         substudy.setModifiedOn(DateTime.now());
         

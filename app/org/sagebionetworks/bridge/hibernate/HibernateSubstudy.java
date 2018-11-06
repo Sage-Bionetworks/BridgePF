@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.IdClass;
@@ -20,8 +21,11 @@ public class HibernateSubstudy implements Substudy {
     private String studyId;
     private String name;
     private boolean deleted;
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime createdOn;
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime modifiedOn;
+    @Version
     private Long version;
     
     @Override
@@ -63,7 +67,6 @@ public class HibernateSubstudy implements Substudy {
         this.deleted = deleted;
     }
     
-    @Version
     @Override
     public Long getVersion() {
         return version;

@@ -42,8 +42,11 @@ public class HibernateSubstudyDao implements SubstudyDao {
         checkNotNull(studyId);
         checkNotNull(id);
 
-        SubstudyId substudyId = new SubstudyId(studyId.getIdentifier(), id);
-        return hibernateHelper.getById(HibernateSubstudy.class, substudyId);
+        Map<String,Object> parameters = ImmutableMap.of("studyId", studyId.getIdentifier(), "id", id);
+        String query = "from HibernateSubstudy as substudy where studyId=:studyId and id=:id";
+        
+        List<HibernateSubstudy> list = hibernateHelper.queryGet(query, parameters, 0, 1, HibernateSubstudy.class);
+        return (list.isEmpty()) ? null : list.get(0); 
     }
     
     @Override
@@ -63,11 +66,15 @@ public class HibernateSubstudyDao implements SubstudyDao {
     }
 
     @Override
-    public void deleteSubstudyPermanently(StudyIdentifier studyId, String id) {
+    public boolean deleteSubstudyPermanently(StudyIdentifier studyId, String id) {
         checkNotNull(studyId);
         checkNotNull(id);
         
-        SubstudyId substudyId = new SubstudyId(studyId.getIdentifier(), id);
-        hibernateHelper.deleteById(HibernateSubstudy.class, substudyId);
+        HibernateSubstudy substudy = (HibernateSubstudy)getSubstudy(studyId, id);
+        if (substudy != null) {
+            hibernateHelper.delete(HibernateSubstudy.class, substudy);
+            return true;
+        }
+        return false;
     }
 }
