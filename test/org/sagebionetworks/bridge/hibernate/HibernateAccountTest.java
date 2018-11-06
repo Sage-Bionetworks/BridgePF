@@ -226,6 +226,7 @@ public class HibernateAccountTest {
         HibernateAccount account = new HibernateAccount();
         account.setConsents(consents);
         
+        // Test getAllConsentSignaturehistories()
         Map<SubpopulationGuid, List<ConsentSignature>> histories = account.getAllConsentSignatureHistories();
         
         List<ConsentSignature> history1 = histories.get(guid1);
@@ -236,6 +237,20 @@ public class HibernateAccountTest {
         assertEquals(TIME3, history1.get(2).getSignedOn());
         
         List<ConsentSignature> history2 = histories.get(guid2);
+        assertEquals(2, history2.size());
+        // Signed on values are copied over from keys
+        assertEquals(TIME4, history2.get(0).getSignedOn());
+        assertEquals(TIME5, history2.get(1).getSignedOn());
+        
+        // Test getConsentSignatureHistory(guid). Should produce identical results.
+        history1 = account.getConsentSignatureHistory(guid1);
+        assertEquals(3, history1.size());
+        // Signed on values are copied over from keys
+        assertEquals(TIME1, history1.get(0).getSignedOn());
+        assertEquals(TIME2, history1.get(1).getSignedOn());
+        assertEquals(TIME3, history1.get(2).getSignedOn());
+        
+        history2 = account.getConsentSignatureHistory(guid2);
         assertEquals(2, history2.size());
         // Signed on values are copied over from keys
         assertEquals(TIME4, history2.get(0).getSignedOn());
