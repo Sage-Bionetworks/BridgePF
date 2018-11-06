@@ -1717,7 +1717,39 @@ public class HibernateAccountDaoTest {
 
         dao.authenticate(study, PASSWORD_SIGNIN);
     }
+    
+    @Test
+    public void authenticateAccountUnverifiedEmailSucceedsForLegacy() throws Exception {
+        study.setVerifyChannelOnSignInEnabled(false);
 
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(true, true);
+        hibernateAccount.setEmailVerified(false);
+        
+        // mock hibernate
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
+                .thenReturn(ImmutableList.of(hibernateAccount));
+
+        dao.authenticate(study, PASSWORD_SIGNIN);
+    }
+
+    @Test
+    public void authenticateAccountUnverifiedPhoneSucceedsForLegacy() throws Exception {
+        study.setVerifyChannelOnSignInEnabled(false);
+        
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(true, true);
+        hibernateAccount.setPhoneVerified(null);
+        
+        // mock hibernate
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
+                .thenReturn(ImmutableList.of(hibernateAccount));
+
+        // execute and verify - Verify just ID, study, and email, and health code mapping is enough.
+        SignIn phoneSignIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withPhone(PHONE).withPassword(DUMMY_PASSWORD).build();
+        
+        dao.authenticate(study, phoneSignIn);
+    }
+    
     private void verifyCreatedHealthCode() {
         ArgumentCaptor<HibernateAccount> updatedAccountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
         verify(mockHibernateHelper).update(updatedAccountCaptor.capture());
