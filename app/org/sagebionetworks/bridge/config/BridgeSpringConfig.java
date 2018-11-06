@@ -84,6 +84,7 @@ import org.sagebionetworks.bridge.hibernate.HibernateAccount;
 import org.sagebionetworks.bridge.hibernate.HibernateHelper;
 import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
 import org.sagebionetworks.bridge.hibernate.HibernateSubstudy;
+import org.sagebionetworks.bridge.hibernate.SubstudyPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
@@ -565,6 +566,14 @@ public class BridgeSpringConfig {
     @Autowired
     public HibernateHelper substudyHibernateHelper(SessionFactory sessionFactory,
             AccountPersistenceExceptionConverter converter) {
+        return new HibernateHelper(sessionFactory, converter);
+    }
+    
+
+    @Bean(name = "substudyHibernateHelper")
+    @Autowired
+    public HibernateHelper substudyHibernateHelper(SessionFactory sessionFactory,
+            SubstudyPersistenceExceptionConverter converter) {
         return new HibernateHelper(sessionFactory, converter);
     }
     

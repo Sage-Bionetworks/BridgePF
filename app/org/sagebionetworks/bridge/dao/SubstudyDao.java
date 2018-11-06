@@ -12,7 +12,9 @@ public interface SubstudyDao {
     
     Substudy getSubstudy(StudyIdentifier studyId, String id);
     
-    VersionHolder saveSubstudy(Substudy substudy);
+    VersionHolder createSubstudy(Substudy substudy);
+    
+    VersionHolder updateSubstudy(Substudy substudy);
     
     void deleteSubstudyPermanently(StudyIdentifier studyId, String id);
 

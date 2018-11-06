@@ -45,9 +45,17 @@ public class HibernateSubstudyDao implements SubstudyDao {
         SubstudyId substudyId = new SubstudyId(studyId.getIdentifier(), id);
         return hibernateHelper.getById(HibernateSubstudy.class, substudyId);
     }
+    
+    @Override
+    public VersionHolder createSubstudy(Substudy substudy) {
+        checkNotNull(substudy);
+        
+        hibernateHelper.create(substudy);
+        return new VersionHolder(substudy.getVersion());
+    }
 
     @Override
-    public VersionHolder saveSubstudy(Substudy substudy) {
+    public VersionHolder updateSubstudy(Substudy substudy) {
         checkNotNull(substudy);
         
         hibernateHelper.update(substudy);

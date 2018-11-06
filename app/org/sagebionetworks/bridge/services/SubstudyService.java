@@ -61,7 +61,7 @@ public class SubstudyService {
             throw new EntityAlreadyExistsException(AppConfigElement.class,
                     ImmutableMap.of("id", existing.getId()));
         }
-        return substudyDao.saveSubstudy(substudy);
+        return substudyDao.createSubstudy(substudy);
     }
 
     public List<Substudy> getSubstudies(StudyIdentifier studyId, String id, boolean includeDeleted) {
@@ -86,7 +86,7 @@ public class SubstudyService {
         substudy.setModifiedOn(DateTime.now());
         // cannot change the creation timestamp
         substudy.setCreatedOn(existing.getCreatedOn());
-        return substudyDao.saveSubstudy(substudy);
+        return substudyDao.updateSubstudy(substudy);
     }
     
     public void deleteSubstudy(StudyIdentifier studyId, String id) {
@@ -96,7 +96,7 @@ public class SubstudyService {
         Substudy existing = getSubstudy(studyId, id);
         existing.setDeleted(true);
         existing.setModifiedOn(DateTime.now());
-        substudyDao.saveSubstudy(existing);
+        substudyDao.updateSubstudy(existing);
     }
     
     public void deleteSubstudyPermanently(StudyIdentifier studyId, String id) {
