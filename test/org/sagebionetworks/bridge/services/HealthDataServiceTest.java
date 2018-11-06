@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -11,6 +12,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.junit.Test;
 
@@ -24,7 +26,10 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest;
 
 public class HealthDataServiceTest {
-    private static final Long TEST_CREATED_ON = 1427970429000L;
+    private static final long TEST_CREATED_ON = 1427970429000L;
+    private static final DateTime TEST_CREATED_ON_DATE_TIME = new DateTime(TEST_CREATED_ON);
+    private static final long TEST_CREATED_ON_END = 1427970471979L;
+    private static final DateTime TEST_CREATED_ON_END_DATE_TIME = new DateTime(TEST_CREATED_ON_END);
     private static final JsonNode TEST_DATA = BridgeObjectMapper.get().createObjectNode();
     private static final String TEST_HEALTH_CODE = "valid healthcode";
     private static final JsonNode TEST_METADATA = BridgeObjectMapper.get().createObjectNode();
@@ -169,7 +174,7 @@ public class HealthDataServiceTest {
     }
 
     @Test
-    public void updateRecordSuccess() throws Exception {
+    public void updateRecordSuccess() {
         // first create a mock record
         // record
         HealthDataRecord record = makeValidRecord();
@@ -208,12 +213,88 @@ public class HealthDataServiceTest {
 
     }
 
-    private RecordExportStatusRequest createMockRecordExportStatusRequest() throws Exception {
+    private RecordExportStatusRequest createMockRecordExportStatusRequest() {
         RecordExportStatusRequest request = new RecordExportStatusRequest();
         request.setRecordIds(ImmutableList.of(TEST_RECORD_ID, TEST_RECORD_ID_2));
         request.setSynapseExporterStatus(HealthDataRecord.ExporterStatus.SUCCEEDED);
 
         return request;
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getRecordsByHealthCodeCreatedOn_NullHealthCode() {
+        new HealthDataService().getRecordsByHealthCodeCreatedOn(null, TEST_CREATED_ON_DATE_TIME,
+                TEST_CREATED_ON_END_DATE_TIME);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getRecordsByHealthCodeCreatedOn_EmptyHealthCode() {
+        new HealthDataService().getRecordsByHealthCodeCreatedOn("", TEST_CREATED_ON_DATE_TIME,
+                TEST_CREATED_ON_END_DATE_TIME);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getRecordsByHealthCodeCreatedOn_BlankHealthCode() {
+        new HealthDataService().getRecordsByHealthCodeCreatedOn("   ", TEST_CREATED_ON_DATE_TIME,
+                TEST_CREATED_ON_END_DATE_TIME);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getRecordsByHealthCodeCreatedOn_NullCreatedOnStart() {
+        new HealthDataService().getRecordsByHealthCodeCreatedOn(TEST_HEALTH_CODE, null,
+                TEST_CREATED_ON_END_DATE_TIME);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getRecordsByHealthCodeCreatedOn_NullCreatedOnEnd() {
+        new HealthDataService().getRecordsByHealthCodeCreatedOn(TEST_HEALTH_CODE, TEST_CREATED_ON_DATE_TIME,
+                null);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getRecordsByHealthCodeCreatedOn_StartOnAfterEndOn() {
+        new HealthDataService().getRecordsByHealthCodeCreatedOn(null, TEST_CREATED_ON_END_DATE_TIME,
+                TEST_CREATED_ON_DATE_TIME);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void getRecordsByHealthCodeCreatedOn_DateRangeTooLarge() {
+        new HealthDataService().getRecordsByHealthCodeCreatedOn(null, TEST_CREATED_ON_DATE_TIME,
+                TEST_CREATED_ON_DATE_TIME.plusDays(16));
+    }
+
+    @Test
+    public void getRecordsByHealthCodeCreatedOn_Success() {
+        // Mock DAO.
+        List<HealthDataRecord> mockResult = ImmutableList.of(makeValidRecord());
+        HealthDataDao mockDao = mock(HealthDataDao.class);
+        when(mockDao.getRecordsByHealthCodeCreatedOn(TEST_HEALTH_CODE, TEST_CREATED_ON, TEST_CREATED_ON_END)).
+                thenReturn(mockResult);
+
+        HealthDataService svc = new HealthDataService();
+        svc.setHealthDataDao(mockDao);
+
+        // Execute and verify.
+        List<HealthDataRecord> retList = svc.getRecordsByHealthCodeCreatedOn(TEST_HEALTH_CODE,
+                TEST_CREATED_ON_DATE_TIME, TEST_CREATED_ON_END_DATE_TIME);
+        assertEquals(mockResult, retList);
+    }
+
+    @Test
+    public void getRecordsByHealthCodeCreatedOn_SameTimeOkay() {
+        // Mock DAO.
+        List<HealthDataRecord> mockResult = ImmutableList.of(makeValidRecord());
+        HealthDataDao mockDao = mock(HealthDataDao.class);
+        when(mockDao.getRecordsByHealthCodeCreatedOn(TEST_HEALTH_CODE, TEST_CREATED_ON, TEST_CREATED_ON)).
+                thenReturn(mockResult);
+
+        HealthDataService svc = new HealthDataService();
+        svc.setHealthDataDao(mockDao);
+
+        // Execute and verify.
+        List<HealthDataRecord> retList = svc.getRecordsByHealthCodeCreatedOn(TEST_HEALTH_CODE,
+                TEST_CREATED_ON_DATE_TIME, TEST_CREATED_ON_DATE_TIME);
+        assertEquals(mockResult, retList);
     }
 
     @Test(expected = BadRequestException.class)
@@ -224,11 +305,6 @@ public class HealthDataServiceTest {
     @Test(expected = BadRequestException.class)
     public void getRecordsByNullHealthcodeCreatedOnSchemaId() {
         new HealthDataService().getRecordsByHealthcodeCreatedOnSchemaId(null, TEST_CREATED_ON, TEST_SCHEMA_ID);
-    }
-
-    @Test(expected = BadRequestException.class)
-    public void getRecordsByHealthcodeNullCreatedOnSchemaId() {
-        new HealthDataService().getRecordsByHealthcodeCreatedOnSchemaId(TEST_HEALTH_CODE, null, TEST_SCHEMA_ID);
     }
 
     @Test(expected = BadRequestException.class)
@@ -243,16 +319,29 @@ public class HealthDataServiceTest {
 
     @Test
     public void getRecordsByHealthcodeCreatedOnSchemaId() {
+        // For branch coverage, first record has the wrong schema ID.
+        HealthDataRecord wrongSchemaRecord = makeValidRecord();
+        wrongSchemaRecord.setId("wrong-schema-record");
+        wrongSchemaRecord.setSchemaId("wrong-" + TEST_SCHEMA_ID);
+
+        // Normal record, which will be returned by our mock.
+        HealthDataRecord record = makeValidRecord();
+
         // mock dao
-        List<HealthDataRecord> mockResult = ImmutableList.of(makeValidRecord());
         HealthDataDao mockDao = mock(HealthDataDao.class);
-        when(mockDao.getRecordsByHealthCodeCreatedOnSchemaId(TEST_HEALTH_CODE, TEST_CREATED_ON, TEST_SCHEMA_ID)).thenReturn(mockResult);
+        when(mockDao.getRecordsByHealthCodeCreatedOn(TEST_HEALTH_CODE,
+                TEST_CREATED_ON - HealthDataService.CREATED_ON_OFFSET_MILLIS,
+                TEST_CREATED_ON + HealthDataService.CREATED_ON_OFFSET_MILLIS))
+                .thenReturn(ImmutableList.of(wrongSchemaRecord, record));
+
         HealthDataService svc = new HealthDataService();
         svc.setHealthDataDao(mockDao);
 
         // execute and verify
-        List<HealthDataRecord> retList = svc.getRecordsByHealthcodeCreatedOnSchemaId(TEST_HEALTH_CODE, TEST_CREATED_ON, TEST_SCHEMA_ID);
-        assertEquals(mockResult, retList);
+        List<HealthDataRecord> retList = svc.getRecordsByHealthcodeCreatedOnSchemaId(TEST_HEALTH_CODE, TEST_CREATED_ON,
+                TEST_SCHEMA_ID);
+        assertEquals(1, retList.size());
+        assertSame(record, retList.get(0));
     }
 
     private static HealthDataRecord makeValidRecord() {

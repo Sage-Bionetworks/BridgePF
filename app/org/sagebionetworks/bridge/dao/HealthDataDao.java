@@ -46,17 +46,6 @@ public interface HealthDataDao {
      */
     List<HealthDataRecord> getRecordsForUploadDate(@Nonnull String uploadDate);
 
-    /**
-     * Get a list of records with the same healthCode and schemaId that are within an hour of the createdOn. For
-     * performance reasons, this caps the number of results returned to 10.
-     *
-     * @param healthCode
-     *      healthCode in String format
-     * @param createdOn
-     *      createdOn in Long format -- same as in ddb
-     * @param schemaId
-     *      schemaId in String format
-     * @return list of all health records matching criterion
-     */
-    List<HealthDataRecord> getRecordsByHealthCodeCreatedOnSchemaId(@Nonnull String healthCode, @Nonnull Long createdOn, @Nonnull String schemaId);
+    /** Gets a list of records for the given healthCode between the specified createdOn times (inclusive). */
+    List<HealthDataRecord> getRecordsByHealthCodeCreatedOn(String healthCode, long createdOnStart, long createdOnEnd);
 }

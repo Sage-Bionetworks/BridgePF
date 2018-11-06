@@ -746,7 +746,7 @@ public class ConsentServiceMockTest {
     public void consentToResearchWithPhoneOK() {
         consentService.consentToResearch(study, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING, true);
         
-        verify(smsService).sendSmsMessage(eq(HEALTH_CODE), smsProviderCaptor.capture());
+        verify(smsService).sendSmsMessage(eq(ID), smsProviderCaptor.capture());
         
         SmsMessageProvider provider = smsProviderCaptor.getValue();
         assertEquals(PHONE_PARTICIPANT.getPhone(), provider.getPhone());
@@ -789,7 +789,7 @@ public class ConsentServiceMockTest {
         
         consentService.resendConsentAgreement(study, SUBPOP_GUID, PHONE_PARTICIPANT);
 
-        verify(smsService).sendSmsMessage(eq(HEALTH_CODE), smsProviderCaptor.capture());
+        verify(smsService).sendSmsMessage(eq(ID), smsProviderCaptor.capture());
 
         SmsMessageProvider provider = smsProviderCaptor.getValue();
         assertEquals(PHONE_PARTICIPANT.getPhone(), provider.getPhone());

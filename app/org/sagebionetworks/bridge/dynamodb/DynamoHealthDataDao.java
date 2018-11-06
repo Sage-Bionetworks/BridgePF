@@ -3,8 +3,6 @@ package org.sagebionetworks.bridge.dynamodb;
 import javax.annotation.Nonnull;
 import javax.annotation.Resource;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
@@ -13,9 +11,9 @@ import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.HealthDataDao;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
@@ -27,8 +25,6 @@ import org.springframework.stereotype.Component;
 /** DynamoDB implementation of {@link org.sagebionetworks.bridge.dao.HealthDataDao}. */
 @Component
 public class DynamoHealthDataDao implements HealthDataDao {
-    private static final long CREATED_ON_OFFSET_MILLIS = TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS);
-
     private DynamoDBMapper mapper;
     private DynamoIndexHelper healthCodeIndex;
     private DynamoIndexHelper uploadDateIndex;
@@ -109,26 +105,28 @@ public class DynamoHealthDataDao implements HealthDataDao {
 
     /** {@inheritDoc} */
     @Override
-    public List<HealthDataRecord> getRecordsByHealthCodeCreatedOnSchemaId(@Nonnull String healthCode, @Nonnull Long createdOn, @Nonnull String schemaId) {
-        Condition rangeKeyCondition = new Condition()
-                .withComparisonOperator(ComparisonOperator.BETWEEN)
-                .withAttributeValueList(new AttributeValue().withN(String.valueOf((createdOn - CREATED_ON_OFFSET_MILLIS)))
-                        , new AttributeValue().withN(String.valueOf((createdOn + CREATED_ON_OFFSET_MILLIS))));
-
+    public List<HealthDataRecord> getRecordsByHealthCodeCreatedOn(String healthCode, long createdOnStart,
+            long createdOnEnd) {
+        // Hash key.
         DynamoHealthDataRecord queryRecord = new DynamoHealthDataRecord();
         queryRecord.setHealthCode(healthCode);
 
-        DynamoDBQueryExpression<DynamoHealthDataRecord> expression = new DynamoDBQueryExpression<DynamoHealthDataRecord>()
-                .withConsistentRead(false)
-                .withHashKeyValues(queryRecord)
-                .withRangeKeyCondition("createdOn", rangeKeyCondition)
-                .withLimit(BridgeConstants.DUPE_RECORDS_MAX_COUNT);
+        // Range key.
+        Condition rangeKeyCondition = new Condition().withComparisonOperator(ComparisonOperator.BETWEEN)
+                .withAttributeValueList(new AttributeValue().withN(String.valueOf(createdOnStart)),
+                        new AttributeValue().withN(String.valueOf(createdOnEnd)));
 
+        // Construct query.
+        DynamoDBQueryExpression<DynamoHealthDataRecord> expression =
+                new DynamoDBQueryExpression<DynamoHealthDataRecord>()
+                        .withConsistentRead(false)
+                        .withHashKeyValues(queryRecord)
+                        .withRangeKeyCondition("createdOn", rangeKeyCondition);
+
+        // Execute query.
         QueryResultPage<DynamoHealthDataRecord> resultPage = mapper.queryPage(DynamoHealthDataRecord.class, expression);
         List<DynamoHealthDataRecord> recordList = resultPage.getResults();
 
-        // Filter out schemas that don't match and convert it to a list of the parent type.
-        return recordList.stream().filter(record -> schemaId.equals(record.getSchemaId())).collect(
-                Collectors.toList());
+        return ImmutableList.copyOf(recordList);
     }
 }

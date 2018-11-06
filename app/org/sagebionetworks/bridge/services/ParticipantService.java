@@ -368,7 +368,7 @@ public class ParticipantService {
 
         // send verify phone number
         if (shouldSendVerification && !study.isAutoVerificationPhoneSuppressed()) {
-            accountWorkflowService.sendPhoneVerificationToken(study, accountId, account.getHealthCode(), phone);
+            accountWorkflowService.sendPhoneVerificationToken(study, accountId, phone);
         }
         return new IdentifierHolder(accountId);
     }
@@ -617,7 +617,7 @@ public class ParticipantService {
         for (Map.Entry<String, String> entry : variables.entrySet()) {
             builder.withToken(entry.getKey(), entry.getValue());
         }
-        smsService.sendSmsMessage(account.getHealthCode(), builder.build());
+        smsService.sendSmsMessage(userId, builder.build());
     }
     
     public List<ActivityEvent> getActivityEvents(Study study, String userId) {

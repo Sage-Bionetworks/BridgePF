@@ -118,7 +118,7 @@ public class IntentService {
                         .withPhone(intent.getPhone())
                         .withToken(APP_INSTALL_URL_KEY, url).build();
 
-                // Account hasn't been created yet, so there is no health code yet. Pass in null healthCode to
+                // Account hasn't been created yet, so there is no ID yet. Pass in null user ID to
                 // SMS Service.
                 smsService.sendSmsMessage(null, provider);
             }
