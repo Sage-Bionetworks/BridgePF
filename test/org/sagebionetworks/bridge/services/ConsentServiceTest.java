@@ -154,8 +154,7 @@ public class ConsentServiceTest {
         long signedOn = signature.getSignedOn();
         
         // Before consent if you ask, no sharing
-        AccountId accountId = AccountId.forHealthCode(testUser.getStudyIdentifier().getIdentifier(),
-                testUser.getHealthCode());
+        AccountId accountId = AccountId.forHealthCode(testUser.getStudy().getIdentifier(), testUser.getHealthCode());
         Account account = accountDao.getAccount(accountId);
         assertEquals(SharingScope.NO_SHARING, account.getSharingScope());
         

@@ -13,13 +13,13 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockPlayContext;
-import static org.sagebionetworks.bridge.TestUtils.newLinkedHashSet;
 
 import java.util.HashMap;
-import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -57,6 +57,7 @@ import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -74,7 +75,7 @@ public class BaseControllerTest {
     private static final DateTime ACTIVITIES_ACCESSED_ON = DateTime.now().minusHours(2);
     private static final DateTime SIGNED_IN_ON = DateTime.now().minusHours(3);
     private static final String DUMMY_JSON = createJson("{'dummy-key':'dummy-value'}");
-    private static final LinkedHashSet<String> LANGUAGE_SET = newLinkedHashSet("en","fr");
+    private static final List<String> LANGUAGES = ImmutableList.of("en","fr");
     private static final String TEST_WARNING_MSG = "test warning msg";
     private static final String TEST_WARNING_MSG_2 = "test warning msg 2";
     private static final String TEST_WARNING_MSG_COMBINED = TEST_WARNING_MSG + "; " + TEST_WARNING_MSG_2;
@@ -354,38 +355,35 @@ public class BaseControllerTest {
         mockPlayContext();
         
         // with no accept language header at all, things don't break;
-        LinkedHashSet<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
-        // testing this because the rest of these tests will use ImmutableSet.of()
-        assertTrue(langs instanceof LinkedHashSet); 
-        assertEquals(ImmutableSet.of(), langs);
+        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        assertEquals(ImmutableList.of(), langs);
 
         mockHeader(ACCEPT_LANGUAGE, "de-de;q=0.4,de;q=0.2,en-ca,en;q=0.8,en-us;q=0.6");
         
         langs = controller.getLanguagesFromAcceptLanguageHeader();
             
-        LinkedHashSet<String> set = newLinkedHashSet("en","de");
-        assertEquals(set, langs);
+        assertEquals(ImmutableList.of("en", "de"), langs);
 
         mockHeader(ACCEPT_LANGUAGE, null);
         langs = controller.getLanguagesFromAcceptLanguageHeader();
-        assertEquals(ImmutableSet.of(), langs);
+        assertEquals(ImmutableList.of(), langs);
             
         mockHeader(ACCEPT_LANGUAGE, "");
         langs = controller.getLanguagesFromAcceptLanguageHeader();
-        assertEquals(ImmutableSet.of(), langs);
+        assertEquals(ImmutableList.of(), langs);
             
         mockHeader(ACCEPT_LANGUAGE, "en-US");
         langs = controller.getLanguagesFromAcceptLanguageHeader();
-        assertEquals(ImmutableSet.of("en"), langs);
+        assertEquals(ImmutableList.of("en"), langs);
             
         mockHeader(ACCEPT_LANGUAGE, "FR,en-US");
         langs = controller.getLanguagesFromAcceptLanguageHeader();
-        assertEquals(ImmutableSet.of("fr","en"), langs);
+        assertEquals(ImmutableList.of("fr","en"), langs);
         
         // Real header from Chrome... works fine
         mockHeader(ACCEPT_LANGUAGE, "en-US,en;q=0.8");
         langs = controller.getLanguagesFromAcceptLanguageHeader();
-        assertEquals(ImmutableSet.of("en"), langs);
+        assertEquals(ImmutableList.of("en"), langs);
     }
     
     // We don't want to throw a BadRequestException due to a malformed header. Just return no languages.
@@ -397,7 +395,7 @@ public class BaseControllerTest {
         // This is apparently a bad User-Agent header some browser is sending to us; any failure will do though.
         mockHeader(ACCEPT_LANGUAGE, "chrome://global/locale/intl.properties");
         
-        LinkedHashSet<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
         assertTrue(langs.isEmpty());
     }
     
@@ -412,13 +410,13 @@ public class BaseControllerTest {
         controller.setSessionUpdateService(mockSessionUpdateService);
 
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
-                .withLanguages(LANGUAGE_SET).build();
+                .withLanguages(LANGUAGES).build();
         UserSession session = makeValidSession();
         session.setParticipant(participant);
 
         // Execute test.
-        LinkedHashSet<String> languages = controller.getLanguages(session);
-        assertEquals(LANGUAGE_SET, languages);
+        List<String> languages = controller.getLanguages(session);
+        assertEquals(LANGUAGES, languages);
 
         // Participant already has languages. Nothing to save.
         verifyZeroInteractions(mockAccountDao);
@@ -442,24 +440,24 @@ public class BaseControllerTest {
 
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE)
-                .withLanguages(Sets.newLinkedHashSet()).build();
+                .withLanguages(ImmutableList.of()).build();
         UserSession session = makeValidSession();
         session.setParticipant(participant);
         session.setSessionToken("aSessionToken");
         
         // Verify as well that the values retrieved from the header have been saved in session and ParticipantOptions table.
-        LinkedHashSet<String> languages = controller.getLanguages(session);
-        assertEquals(LANGUAGE_SET, languages);
+        List<String> languages = controller.getLanguages(session);
+        assertEquals(LANGUAGES, languages);
 
         // Verify we saved the language to the account.
         verify(accountDao).editAccount(eq(TEST_STUDY), eq(HEALTH_CODE), any());
-        verify(account).setLanguages(LANGUAGE_SET);
+        verify(account).setLanguages(ImmutableList.copyOf(LANGUAGES));
 
         // Verify we call through to the session update service. (This updates both the cache and the participant, as
         // well as other things outside the scope of this test.)
         ArgumentCaptor<CriteriaContext> contextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
         verify(mockSessionUpdateService).updateLanguage(same(session), contextCaptor.capture());
-        assertEquals(LANGUAGE_SET, contextCaptor.getValue().getLanguages());
+        assertEquals(LANGUAGES, contextCaptor.getValue().getLanguages());
     }
     
     @Test
@@ -475,12 +473,12 @@ public class BaseControllerTest {
 
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE)
-                .withLanguages(Sets.newLinkedHashSet()).build();
+                .withLanguages(Lists.newArrayList()).build();
         UserSession session = makeValidSession();
         session.setParticipant(participant);
 
         // Execute test.
-        LinkedHashSet<String> languages = controller.getLanguages(session);
+        List<String> languages = controller.getLanguages(session);
         assertTrue(languages.isEmpty());
 
         // No languages means nothing to save.
@@ -504,10 +502,8 @@ public class BaseControllerTest {
         mockPlayContext();
 
         // with no accept language header at all, things don't break;
-        LinkedHashSet<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
-        // testing this because the rest of these tests will use ImmutableSet.of()
-        assertTrue(langs instanceof LinkedHashSet);
-        assertEquals(ImmutableSet.of(), langs);
+        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        assertEquals(ImmutableList.of(), langs);
 
         // verify if it set warning header
         Http.Response mockResponse = BaseController.response();
@@ -521,10 +517,8 @@ public class BaseControllerTest {
         mockHeader(ACCEPT_LANGUAGE, "");
 
         // with no accept language header at all, things don't break;
-        LinkedHashSet<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
-        // testing this because the rest of these tests will use ImmutableSet.of()
-        assertTrue(langs instanceof LinkedHashSet);
-        assertEquals(ImmutableSet.of(), langs);
+        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        assertEquals(ImmutableList.of(), langs);
 
         // verify if it set warning header
         Http.Response mockResponse = BaseController.response();
@@ -538,10 +532,8 @@ public class BaseControllerTest {
         mockHeader(ACCEPT_LANGUAGE, null);
 
         // with no accept language header at all, things don't break;
-        LinkedHashSet<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
-        // testing this because the rest of these tests will use ImmutableSet.of()
-        assertTrue(langs instanceof LinkedHashSet);
-        assertEquals(ImmutableSet.of(), langs);
+        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        assertEquals(ImmutableList.of(), langs);
 
         // verify if it set warning header
         Http.Response mockResponse = BaseController.response();
@@ -555,10 +547,8 @@ public class BaseControllerTest {
         mockHeader(ACCEPT_LANGUAGE, "ThisIsAnVvalidAcceptLanguage");
 
         // with no accept language header at all, things don't break;
-        LinkedHashSet<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
-        // testing this because the rest of these tests will use ImmutableSet.of()
-        assertTrue(langs instanceof LinkedHashSet);
-        assertEquals(ImmutableSet.of(), langs);
+        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
+        assertEquals(ImmutableList.of(), langs);
 
         // verify if it set warning header
         Http.Response mockResponse = BaseController.response();
@@ -848,7 +838,7 @@ public class BaseControllerTest {
         UserSession session = new UserSession();
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withId("userId")
-                .withLanguages(LANGUAGE_SET)
+                .withLanguages(LANGUAGES)
                 .withDataGroups(GROUPS)
                 .withTimeZone(MSK)
                 .build();
@@ -866,7 +856,7 @@ public class BaseControllerTest {
         RequestInfo info = controller.getRequestInfoBuilder(session).build();
         
         assertEquals("userId", info.getUserId());
-        assertEquals(LANGUAGE_SET, info.getLanguages());
+        assertEquals(LANGUAGES, info.getLanguages());
         assertEquals(GROUPS, info.getUserDataGroups());
         assertEquals(MSK, info.getTimeZone());
         assertEquals("app/10", info.getUserAgent());
@@ -881,14 +871,14 @@ public class BaseControllerTest {
     public void getCriteriaContextForStudy() {
         // Set up BaseController, spy out methods that are tested elsewhere.
         BaseController controller = spy(new SchedulePlanController());
-        doReturn(LANGUAGE_SET).when(controller).getLanguagesFromAcceptLanguageHeader();
+        doReturn(LANGUAGES).when(controller).getLanguagesFromAcceptLanguageHeader();
         doReturn(CLIENTINFO).when(controller).getClientInfoFromUserAgentHeader();
         doReturn(IP_ADDRESS).when(controller).getRemoteAddress();
 
         // Execute and validate
         CriteriaContext context = controller.getCriteriaContext(TEST_STUDY);
         assertEquals(TEST_STUDY, context.getStudyIdentifier());
-        assertEquals(LANGUAGE_SET, context.getLanguages());
+        assertEquals(LANGUAGES, context.getLanguages());
         assertEquals(CLIENTINFO, context.getClientInfo());
         assertEquals(IP_ADDRESS, context.getIpAddress());
     }
@@ -901,7 +891,7 @@ public class BaseControllerTest {
 
         // Set up participant and session.
         StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID)
-                .withDataGroups(TestConstants.USER_DATA_GROUPS).withHealthCode(HEALTH_CODE).withLanguages(LANGUAGE_SET)
+                .withDataGroups(TestConstants.USER_DATA_GROUPS).withHealthCode(HEALTH_CODE).withLanguages(LANGUAGES)
                 .build();
 
         UserSession session = new UserSession(participant);
@@ -910,7 +900,7 @@ public class BaseControllerTest {
 
         // Execute and validate
         CriteriaContext context = controller.getCriteriaContext(session);
-        assertEquals(LANGUAGE_SET, context.getLanguages());
+        assertEquals(LANGUAGES, context.getLanguages());
         assertEquals(CLIENTINFO, context.getClientInfo());
         assertEquals(HEALTH_CODE, context.getHealthCode());
         assertEquals(IP_ADDRESS, context.getIpAddress());

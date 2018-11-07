@@ -92,7 +92,7 @@ public class CriteriaUtils {
 
     // This is a simple match: if a criteria declares a language, the user must declare the language
     // This does NOT necessarily return the user's most desired language.
-    private static boolean languageDoesNotMatch(Set<String> preferredLanguages, String targetLanguage) {
+    private static boolean languageDoesNotMatch(List<String> preferredLanguages, String targetLanguage) {
         // It doesn't match if 1) target language has been specified or 
         // 2) user has declared the required language. 
         if (targetLanguage == null) {

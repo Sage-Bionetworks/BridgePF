@@ -4,12 +4,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
 
-import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -37,7 +34,6 @@ import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -46,23 +42,16 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.accounts.GenericAccount;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
-import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
-import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Joiner;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 /** Hibernate implementation of Account Dao. */
 @Component
@@ -129,7 +118,7 @@ public class HibernateAccountDao implements AccountDao {
                 account.setStatus(AccountStatus.ENABLED);
                 hibernateAccount.setStatus(AccountStatus.ENABLED);
             }
-            hibernateAccount.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+            hibernateAccount.setModifiedOn(DateUtils.getCurrentDateTime());
             hibernateHelper.update(hibernateAccount);    
         }
     }
@@ -149,7 +138,7 @@ public class HibernateAccountDao implements AccountDao {
         }
 
         // Update
-        long modifiedOn = DateUtils.getCurrentMillisFromEpoch();
+        DateTime modifiedOn = DateUtils.getCurrentDateTime();
         hibernateAccount.setModifiedOn(modifiedOn);
         hibernateAccount.setPasswordAlgorithm(passwordAlgorithm);
         hibernateAccount.setPasswordHash(passwordHash);
@@ -213,13 +202,12 @@ public class HibernateAccountDao implements AccountDao {
         
         // Unmarshall account
         boolean accountUpdated = validateHealthCode(hibernateAccount);
-        Account account = unmarshallAccount(hibernateAccount);
-        accountUpdated = updateReauthToken(study, hibernateAccount, account) || accountUpdated;
+        accountUpdated = updateReauthToken(study, hibernateAccount) || accountUpdated;
         if (accountUpdated) {
             HibernateAccount updated = hibernateHelper.update(hibernateAccount);
-            account.setVersion(updated.getVersion());
+            hibernateAccount.setVersion(updated.getVersion());
         }
-        return account;
+        return hibernateAccount;
     }
 
     @Override
@@ -228,13 +216,12 @@ public class HibernateAccountDao implements AccountDao {
 
         if (hibernateAccount != null) {
             boolean accountUpdated = validateHealthCode(hibernateAccount);
-            Account account = unmarshallAccount(hibernateAccount);
-            accountUpdated = updateReauthToken(null, hibernateAccount, account) || accountUpdated;
+            accountUpdated = updateReauthToken(null, hibernateAccount) || accountUpdated;
             if (accountUpdated) {
                 HibernateAccount updated = hibernateHelper.update(hibernateAccount);
-                account.setVersion(updated.getVersion());
+                hibernateAccount.setVersion(updated.getVersion());
             }
-            return account;
+            return hibernateAccount;
         } else {
             // In keeping with the email implementation, just return null
             return null;
@@ -252,19 +239,20 @@ public class HibernateAccountDao implements AccountDao {
         }
     }
     
-    private boolean updateReauthToken(Study study, HibernateAccount hibernateAccount, Account account) {
+    private boolean updateReauthToken(Study study, HibernateAccount hibernateAccount) {
         if (study != null && !study.isReauthenticationEnabled()) {
-            account.setReauthToken(null);
+            hibernateAccount.setReauthToken(null);
             return false;
         }
-        CacheKey reauthTokenKey = CacheKey.reauthTokenLookupKey(account.getId(), account.getStudyIdentifier());
+        CacheKey reauthTokenKey = CacheKey.reauthTokenLookupKey(hibernateAccount.getId(),
+                new StudyIdentifierImpl(hibernateAccount.getStudyId()));
         
         // We cache the reauthentication token for 15 seconds so that concurrent sign in 
         // requests don't throw 409 concurrent modification exceptions as an optimistic lock
         // prevents (correctly) updating the reauth token that is issued over and over.
         String cachedReauthToken = cacheProvider.getObject(reauthTokenKey, String.class);
         if (cachedReauthToken != null) {
-            account.setReauthToken(cachedReauthToken);
+            hibernateAccount.setReauthToken(cachedReauthToken);
             return false;
         }
         String reauthToken = SecureTokenGenerator.INSTANCE.nextToken();
@@ -275,10 +263,10 @@ public class HibernateAccountDao implements AccountDao {
         String reauthTokenHash = hashCredential(passwordAlgorithm, "reauth token", reauthToken);
         hibernateAccount.setReauthTokenHash(reauthTokenHash);
         hibernateAccount.setReauthTokenAlgorithm(passwordAlgorithm);
-        hibernateAccount.setReauthTokenModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+        hibernateAccount.setReauthTokenModifiedOn(DateUtils.getCurrentDateTime());
         // We must get the current version to return from the DAO, or subsequent updates to the 
         // account, even in the same call, will fail (e.g. to update languages captured from a request).
-        account.setReauthToken(reauthToken);
+        hibernateAccount.setReauthToken(reauthToken);
         return true;
     }
     
@@ -286,8 +274,8 @@ public class HibernateAccountDao implements AccountDao {
     @Override
     public Account constructAccount(Study study, String email, Phone phone, String externalId, String password) {
         // Set basic params from inputs.
-        GenericAccount account = new GenericAccount();
-        account.setStudyId(study.getStudyIdentifier());
+        Account account = Account.create();
+        account.setStudyId(study.getIdentifier());
         account.setEmail(email);
         account.setPhone(phone);
         account.setEmailVerified(Boolean.FALSE);
@@ -315,16 +303,16 @@ public class HibernateAccountDao implements AccountDao {
     @Override
     public String createAccount(Study study, Account account) {
         String userId = BridgeUtils.generateGuid();
-        HibernateAccount hibernateAccount = marshallAccount(account);
-        hibernateAccount.setId(userId);
-        hibernateAccount.setStudyId(study.getIdentifier());
-        hibernateAccount.setCreatedOn(DateUtils.getCurrentMillisFromEpoch());
-        hibernateAccount.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        hibernateAccount.setPasswordModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        hibernateAccount.setMigrationVersion(AccountDao.MIGRATION_VERSION);
+        account.setId(userId);
+        account.setStudyId(study.getIdentifier());
+        DateTime timestamp = DateUtils.getCurrentDateTime();
+        account.setCreatedOn(timestamp);
+        account.setModifiedOn(timestamp);
+        account.setPasswordModifiedOn(timestamp);
+        account.setMigrationVersion(AccountDao.MIGRATION_VERSION);
 
         // Create account
-        hibernateHelper.create(hibernateAccount);
+        hibernateHelper.create(account);
         return userId;
     }
 
@@ -332,7 +320,6 @@ public class HibernateAccountDao implements AccountDao {
     @Override
     public void updateAccount(Account account) {
         String accountId = account.getId();
-        HibernateAccount accountToUpdate = marshallAccount(account);
 
         // Can't change study, email, phone, emailVerified, phoneVerified, createdOn, or passwordModifiedOn.
         HibernateAccount persistedAccount = hibernateHelper.getById(HibernateAccount.class, accountId);
@@ -340,19 +327,19 @@ public class HibernateAccountDao implements AccountDao {
             throw new EntityNotFoundException(Account.class, "Account " + accountId + " not found");
         }
         // None of these values should be changeable by the user.
-        accountToUpdate.setStudyId(persistedAccount.getStudyId());
-        accountToUpdate.setCreatedOn(persistedAccount.getCreatedOn());
-        accountToUpdate.setPasswordAlgorithm(persistedAccount.getPasswordAlgorithm());
-        accountToUpdate.setPasswordHash(persistedAccount.getPasswordHash());
-        accountToUpdate.setPasswordModifiedOn(persistedAccount.getPasswordModifiedOn());
-        accountToUpdate.setReauthTokenAlgorithm(persistedAccount.getReauthTokenAlgorithm());
-        accountToUpdate.setReauthTokenHash(persistedAccount.getReauthTokenHash());
-        accountToUpdate.setReauthTokenModifiedOn(persistedAccount.getReauthTokenModifiedOn());
+        account.setStudyId(persistedAccount.getStudyId());
+        account.setCreatedOn(persistedAccount.getCreatedOn());
+        account.setPasswordAlgorithm(persistedAccount.getPasswordAlgorithm());
+        account.setPasswordHash(persistedAccount.getPasswordHash());
+        account.setPasswordModifiedOn(persistedAccount.getPasswordModifiedOn());
+        account.setReauthTokenAlgorithm(persistedAccount.getReauthTokenAlgorithm());
+        account.setReauthTokenHash(persistedAccount.getReauthTokenHash());
+        account.setReauthTokenModifiedOn(persistedAccount.getReauthTokenModifiedOn());
         // Update modifiedOn.
-        accountToUpdate.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+        account.setModifiedOn(DateUtils.getCurrentDateTime());
 
         // Update
-        hibernateHelper.update(accountToUpdate);            
+        hibernateHelper.update(account);            
     }
     
     /** {@inheritDoc} */
@@ -372,12 +359,11 @@ public class HibernateAccountDao implements AccountDao {
         HibernateAccount hibernateAccount = getHibernateAccount(accountId);
         if (hibernateAccount != null) {
             boolean accountUpdated = validateHealthCode(hibernateAccount);
-            Account account = unmarshallAccount(hibernateAccount);
             if (accountUpdated) {
                 HibernateAccount updated = hibernateHelper.update(hibernateAccount);
-                account.setVersion(updated.getVersion());
+                hibernateAccount.setVersion(updated.getVersion());
             }
-            return account;
+            return hibernateAccount;
         } else {
             // In keeping with the email implementation, just return null
             return null;
@@ -544,11 +530,11 @@ public class HibernateAccountDao implements AccountDao {
         }
         if (search.getStartTime() != null) {
             queryBuilder.append(" and createdOn >= :startTime");
-            parameters.put("startTime", search.getStartTime().getMillis());
+            parameters.put("startTime", search.getStartTime());
         }
         if (search.getEndTime() != null) {
             queryBuilder.append(" and createdOn <= :endTime");
-            parameters.put("endTime", search.getEndTime().getMillis());
+            parameters.put("endTime", search.getEndTime());
         }
         if (search.getLanguage() != null) {
             queryBuilder.append(" and :language in elements(acct.languages)");
@@ -574,95 +560,6 @@ public class HibernateAccountDao implements AccountDao {
         }
     }
     
-    // Helper method which marshalls a GenericAccount into a HibernateAccount.
-    // Package-scoped to facilitate unit tests.
-    static HibernateAccount marshallAccount(Account account) {
-        // Currently does not work with StormpathAccount. This is because StormpathAccount doesn't support certain
-        // behaviors we need to make this work.
-        if (!(account instanceof GenericAccount)) {
-            throw new BridgeServiceException("Hibernate can't marshall a StormpathAccount");
-        }
-        GenericAccount genericAccount = (GenericAccount) account;
-
-        // Simple attributes
-        HibernateAccount hibernateAccount = new HibernateAccount();
-        hibernateAccount.setId(genericAccount.getId());
-        hibernateAccount.setEmail(genericAccount.getEmail());
-        hibernateAccount.setPhone(genericAccount.getPhone());
-        hibernateAccount.setEmailVerified(genericAccount.getEmailVerified());
-        hibernateAccount.setPhoneVerified(genericAccount.getPhoneVerified());
-        hibernateAccount.setHealthCode(genericAccount.getHealthCode());
-        hibernateAccount.setFirstName(genericAccount.getFirstName());
-        hibernateAccount.setLastName(genericAccount.getLastName());
-        hibernateAccount.setRoles(genericAccount.getRoles());
-        hibernateAccount.setStatus(genericAccount.getStatus());
-        hibernateAccount.setVersion(genericAccount.getVersion());
-        hibernateAccount.setPasswordAlgorithm(genericAccount.getPasswordAlgorithm());
-        hibernateAccount.setPasswordHash(genericAccount.getPasswordHash());
-        hibernateAccount.setPasswordModifiedOn(genericAccount.getPasswordModifiedOn());
-        hibernateAccount.setReauthTokenAlgorithm(genericAccount.getReauthTokenAlgorithm());
-        hibernateAccount.setReauthTokenHash(genericAccount.getReauthTokenHash());
-        hibernateAccount.setReauthTokenModifiedOn(genericAccount.getReauthTokenModifiedOn());
-        hibernateAccount.setTimeZone(DateUtils.timeZoneToOffsetString(genericAccount.getTimeZone()));
-        hibernateAccount.setSharingScope(genericAccount.getSharingScope());
-        hibernateAccount.setNotifyByEmail(genericAccount.getNotifyByEmail());
-        hibernateAccount.setExternalId(genericAccount.getExternalId());
-        hibernateAccount.setDataGroups(genericAccount.getDataGroups());
-        hibernateAccount.setLanguages(Lists.newArrayList(genericAccount.getLanguages()));
-        hibernateAccount.setMigrationVersion(genericAccount.getMigrationVersion());
-
-        if (genericAccount.getClientData() != null) {
-            hibernateAccount.setClientData(genericAccount.getClientData().toString());
-        } else {
-            hibernateAccount.setClientData(null);
-        }
-
-        // Attributes that need parsing.
-        if (genericAccount.getStudyIdentifier() != null) {
-            hibernateAccount.setStudyId(genericAccount.getStudyIdentifier().getIdentifier());
-        }
-        if (genericAccount.getCreatedOn() != null) {
-            hibernateAccount.setCreatedOn(genericAccount.getCreatedOn().getMillis());
-        }
-
-        // Attribute map
-        Map<String, String> hibernateAttrMap = hibernateAccount.getAttributes();
-        for (String oneAttrName : genericAccount.getAttributeNameSet()) {
-            hibernateAttrMap.put(oneAttrName, genericAccount.getAttribute(oneAttrName));
-        }
-
-        // Consents
-        Map<HibernateAccountConsentKey, HibernateAccountConsent> hibernateConsentMap = hibernateAccount.getConsents();
-        for (Map.Entry<SubpopulationGuid, List<ConsentSignature>> consentListForSubpop :
-                genericAccount.getAllConsentSignatureHistories().entrySet()) {
-            String subpopGuidString = consentListForSubpop.getKey().getGuid();
-
-            for (ConsentSignature oneConsent : consentListForSubpop.getValue()) {
-                // Consent key
-                HibernateAccountConsentKey hibernateConsentKey = new HibernateAccountConsentKey(subpopGuidString,
-                        oneConsent.getSignedOn());
-
-                // Simple consent attributes.
-                HibernateAccountConsent hibernateConsentValue = new HibernateAccountConsent();
-                hibernateConsentValue.setConsentCreatedOn(oneConsent.getConsentCreatedOn());
-                hibernateConsentValue.setName(oneConsent.getName());
-                hibernateConsentValue.setSignatureImageData(oneConsent.getImageData());
-                hibernateConsentValue.setSignatureImageMimeType(oneConsent.getImageMimeType());
-                hibernateConsentValue.setWithdrewOn(oneConsent.getWithdrewOn());
-
-                // We need to parse birthdate.
-                if (StringUtils.isNotBlank(oneConsent.getBirthdate())) {
-                    hibernateConsentValue.setBirthdate(oneConsent.getBirthdate());
-                }
-
-                // Store in hibernate account.
-                hibernateConsentMap.put(hibernateConsentKey, hibernateConsentValue);
-            }
-        }
-
-        return hibernateAccount;
-    }
-    
     // Callers of AccountDao assume that an Account will always a health code and health ID. All accounts created
     // through the DAO will automatically have health code and ID populated, but accounts created in the DB directly
     // are left in a bad state. This method validates the health code mapping on a HibernateAccount and updates it as
@@ -672,116 +569,11 @@ public class HibernateAccountDao implements AccountDao {
             hibernateAccount.setHealthCode(generateHealthCode());
 
             // We modified it. Update modifiedOn.
-            long modifiedOn = DateUtils.getCurrentMillisFromEpoch();
+            DateTime modifiedOn = DateUtils.getCurrentDateTime();
             hibernateAccount.setModifiedOn(modifiedOn);
             return true;
         }
         return false;
-    }
-
-    // Helper method which unmarshall a HibernateAccount into a GenericAccount.
-    // Package-scoped to facilitate unit tests.
-    static Account unmarshallAccount(HibernateAccount hibernateAccount) {
-        // Simple attributes
-        GenericAccount account = new GenericAccount();
-        account.setId(hibernateAccount.getId());
-        account.setEmail(hibernateAccount.getEmail());
-        account.setPhone(hibernateAccount.getPhone());
-        account.setEmailVerified(hibernateAccount.getEmailVerified());
-        account.setPhoneVerified(hibernateAccount.getPhoneVerified());
-        account.setFirstName(hibernateAccount.getFirstName());
-        account.setLastName(hibernateAccount.getLastName());
-        account.setPasswordAlgorithm(hibernateAccount.getPasswordAlgorithm());
-        account.setPasswordHash(hibernateAccount.getPasswordHash());
-        account.setPasswordModifiedOn(hibernateAccount.getPasswordModifiedOn());
-        account.setReauthTokenAlgorithm(hibernateAccount.getReauthTokenAlgorithm());
-        account.setReauthTokenHash(hibernateAccount.getReauthTokenHash());
-        account.setReauthTokenModifiedOn(hibernateAccount.getReauthTokenModifiedOn());
-        account.setHealthCode(hibernateAccount.getHealthCode());
-        account.setStatus(hibernateAccount.getStatus());
-        account.setRoles(hibernateAccount.getRoles());
-        account.setVersion(hibernateAccount.getVersion());
-        account.setTimeZone(DateUtils.parseZoneFromOffsetString(hibernateAccount.getTimeZone()));
-        account.setSharingScope(hibernateAccount.getSharingScope());
-        account.setNotifyByEmail(hibernateAccount.getNotifyByEmail());
-        account.setExternalId(hibernateAccount.getExternalId());
-        account.setDataGroups(hibernateAccount.getDataGroups());
-        account.setLanguages(Sets.newLinkedHashSet(hibernateAccount.getLanguages()));
-        account.setMigrationVersion(hibernateAccount.getMigrationVersion());
-        
-        // sharing scope defaults to no sharing
-        if (account.getSharingScope() == null) {
-            account.setSharingScope(SharingScope.NO_SHARING);
-        }
-        // email notifications are opt-out
-        if (account.getNotifyByEmail() == null) {
-            account.setNotifyByEmail(true);
-        }
-        
-        // For accounts prior to the introduction of the email/phone verification flags, where 
-        // the flag was not set on creation or verification of the email address, return the right value.
-        if (account.getEmailVerified() == null) {
-            if (account.getStatus() == AccountStatus.ENABLED) {
-                account.setEmailVerified(Boolean.TRUE);
-            } else if (account.getStatus() == AccountStatus.UNVERIFIED) {
-                account.setEmailVerified(Boolean.FALSE);
-            }
-        }
-        
-        if (hibernateAccount.getClientData() != null) {
-            try {
-                JsonNode clientData = BridgeObjectMapper.get().readTree(hibernateAccount.getClientData());
-                account.setClientData(clientData);
-            } catch (IOException e) {
-                throw new BridgeServiceException(e);
-            }
-        }
-
-        // attributes that need parsing
-        if (StringUtils.isNotBlank(hibernateAccount.getStudyId())) {
-            account.setStudyId(new StudyIdentifierImpl(hibernateAccount.getStudyId()));
-        }
-        if (hibernateAccount.getCreatedOn() != null) {
-            account.setCreatedOn(new DateTime(hibernateAccount.getCreatedOn()));
-        }
-
-        // Attributes
-        for (Map.Entry<String, String> oneAttrEntry : hibernateAccount.getAttributes().entrySet()) {
-            account.setAttribute(oneAttrEntry.getKey(), oneAttrEntry.getValue());
-        }
-
-        // Consents
-        Map<SubpopulationGuid, List<ConsentSignature>> tempConsentsBySubpop = new HashMap<>();
-        for (Map.Entry<HibernateAccountConsentKey, HibernateAccountConsent> oneConsent : hibernateAccount
-                .getConsents().entrySet()) {
-            // Consent key
-            HibernateAccountConsentKey consentKey = oneConsent.getKey();
-            SubpopulationGuid subpopGuid = SubpopulationGuid.create(consentKey.getSubpopulationGuid());
-            long signedOn = consentKey.getSignedOn();
-
-            // Unmarshall consent
-            HibernateAccountConsent consentValue = oneConsent.getValue();
-            ConsentSignature consentSignature = new ConsentSignature.Builder().withName(consentValue.getName())
-                    .withBirthdate(consentValue.getBirthdate()).withImageData(consentValue.getSignatureImageData())
-                    .withImageMimeType(consentValue.getSignatureImageMimeType())
-                    .withConsentCreatedOn(consentValue.getConsentCreatedOn()).withSignedOn(signedOn)
-                    .withWithdrewOn(consentValue.getWithdrewOn()).build();
-
-            // Store in map.
-            tempConsentsBySubpop.putIfAbsent(subpopGuid, new ArrayList<>());
-            tempConsentsBySubpop.get(subpopGuid).add(consentSignature);
-        }
-
-        // Sort consents by signedOn, from oldest to newest.
-        for (Map.Entry<SubpopulationGuid, List<ConsentSignature>> consentSignatureListForSubpop :
-                tempConsentsBySubpop.entrySet()) {
-            SubpopulationGuid subpopGuid = consentSignatureListForSubpop.getKey();
-            List<ConsentSignature> consentListCopy = new ArrayList<>(consentSignatureListForSubpop.getValue());
-            Collections.sort(consentListCopy, (c1, c2) -> Long.compare(c1.getSignedOn(), c2.getSignedOn()));
-            account.setConsentSignatureHistory(subpopGuid, consentListCopy);
-        }
-
-        return account;
     }
 
     // Helper method to unmarshall a HibernateAccount into an AccountSummary.
@@ -797,7 +589,7 @@ public class HibernateAccountDao implements AccountDao {
         if (StringUtils.isNotBlank(hibernateAccount.getStudyId())) {
             studyId = new StudyIdentifierImpl(hibernateAccount.getStudyId());
         }
-
+        
         // Unmarshall single account
         return new AccountSummary(hibernateAccount.getFirstName(), hibernateAccount.getLastName(),
                 hibernateAccount.getEmail(), hibernateAccount.getPhone(), hibernateAccount.getExternalId(),

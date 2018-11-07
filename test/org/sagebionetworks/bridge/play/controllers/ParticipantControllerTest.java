@@ -26,6 +26,7 @@ import java.util.Set;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -387,7 +388,7 @@ public class ParticipantControllerTest {
         assertTrue(participant.isNotifyByEmail());
         assertEquals(Sets.newHashSet("group2","group1"), participant.getDataGroups());
         assertEquals("true", participant.getAttributes().get("can_be_recontacted"));
-        assertEquals(Sets.newHashSet("en","fr"), participant.getLanguages());
+        assertEquals(ImmutableList.of("en","fr"), participant.getLanguages());
     }
     
     @SuppressWarnings("deprecation")
@@ -432,7 +433,7 @@ public class ParticipantControllerTest {
         assertTrue(participant.isNotifyByEmail());
         assertEquals(Sets.newHashSet("group2","group1"), participant.getDataGroups());
         assertEquals("123456789", participant.getAttributes().get("phone"));
-        assertEquals(Sets.newHashSet("en","fr"), participant.getLanguages());
+        assertEquals(ImmutableList.of("en","fr"), participant.getLanguages());
     }
 
     @Test
@@ -574,7 +575,7 @@ public class ParticipantControllerTest {
                 .withNotifyByEmail(true)
                 .withDataGroups(Sets.newHashSet("group1","group2"))
                 .withAttributes(attrs)
-                .withLanguages(TestUtils.newLinkedHashSet("en"))
+                .withLanguages(ImmutableList.of("en"))
                 .withStatus(AccountStatus.DISABLED)
                 .withExternalId("POWERS").build();
         doReturn(participant).when(mockParticipantService).getParticipant(study, ID, false);
@@ -605,7 +606,7 @@ public class ParticipantControllerTest {
         assertNull(captured.getAttributes().get("foo"));
         assertEquals("belgium", captured.getAttributes().get("baz"));
         assertEquals(AccountStatus.ENABLED, captured.getStatus());
-        assertEquals(Sets.newHashSet("fr"), captured.getLanguages());
+        assertEquals(ImmutableList.of("fr"), captured.getLanguages());
         assertEquals("simpleStringChange", captured.getExternalId());
     }
     

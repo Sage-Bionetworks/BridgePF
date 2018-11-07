@@ -749,7 +749,7 @@ public class AccountWorkflowServiceTest {
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
         when(mockAccount.getEmail()).thenReturn(EMAIL);
         when(mockAccount.getEmailVerified()).thenReturn(Boolean.TRUE);        
-        when(mockAccount.getStudyIdentifier()).thenReturn(TEST_STUDY);
+        when(mockAccount.getStudyId()).thenReturn(TEST_STUDY_IDENTIFIER);
         
         service.requestResetPassword(study, false, ACCOUNT_ID_WITH_EMAIL);
         
@@ -780,7 +780,7 @@ public class AccountWorkflowServiceTest {
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
         when(mockAccount.getPhoneVerified()).thenReturn(Boolean.TRUE);        
-        when(mockAccount.getStudyIdentifier()).thenReturn(TEST_STUDY);
+        when(mockAccount.getStudyId()).thenReturn(TEST_STUDY_IDENTIFIER);
         
         service.requestResetPassword(study, false, ACCOUNT_ID_WITH_PHONE);
         
@@ -805,7 +805,7 @@ public class AccountWorkflowServiceTest {
         when(mockAccount.getEmail()).thenReturn(EMAIL);
         when(mockAccount.getPhoneVerified()).thenReturn(Boolean.FALSE);
         when(mockAccount.getEmailVerified()).thenReturn(Boolean.FALSE);
-        when(mockAccount.getStudyIdentifier()).thenReturn(TEST_STUDY);
+        when(mockAccount.getStudyId()).thenReturn(TEST_STUDY_IDENTIFIER);
 
         service.requestResetPassword(study, false, ACCOUNT_ID_WITH_PHONE);
         
@@ -820,7 +820,7 @@ public class AccountWorkflowServiceTest {
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
         when(mockAccount.getPhoneVerified()).thenReturn(Boolean.FALSE);
         when(mockAccount.getEmailVerified()).thenReturn(Boolean.FALSE);
-        when(mockAccount.getStudyIdentifier()).thenReturn(TEST_STUDY);
+        when(mockAccount.getStudyId()).thenReturn(TEST_STUDY_IDENTIFIER);
         
         service.requestResetPassword(study, false, ACCOUNT_ID_WITH_PHONE);
         
@@ -899,7 +899,7 @@ public class AccountWorkflowServiceTest {
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
         when(mockAccount.getPhoneVerified()).thenReturn(Boolean.TRUE);
         when(mockAccount.getEmailVerified()).thenReturn(Boolean.TRUE);
-        when(mockAccount.getStudyIdentifier()).thenReturn(TEST_STUDY);
+        when(mockAccount.getStudyId()).thenReturn(TEST_STUDY_IDENTIFIER);
         when(mockAccount.getStatus()).thenReturn(AccountStatus.DISABLED);
         
         service.requestResetPassword(study, false, ACCOUNT_ID_WITH_PHONE);

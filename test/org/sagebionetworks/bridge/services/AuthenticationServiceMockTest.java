@@ -19,7 +19,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 
-import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -74,6 +74,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 import org.sagebionetworks.bridge.validators.ValidatorUtils;
 import org.springframework.validation.Errors;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -82,7 +83,7 @@ import com.google.common.collect.Sets;
 public class AuthenticationServiceMockTest {
     private static final Set<String> DATA_GROUP_SET = ImmutableSet.of("group1", "group2");
     private static final String IP_ADDRESS = "ip-address";
-    private static final LinkedHashSet<String> LANGUAGES = TestUtils.newLinkedHashSet("es","de");
+    private static final List<String> LANGUAGES = ImmutableList.of("es","de");
     private static final String SUPPORT_EMAIL = "support@support.com";
     private static final String STUDY_ID = TestConstants.TEST_STUDY_IDENTIFIER;
     private static final String RECIPIENT_EMAIL = "email@email.com";
@@ -117,7 +118,7 @@ public class AuthenticationServiceMockTest {
     private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
             .withStudyIdentifier(TestConstants.TEST_STUDY).build();
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder().build();
-    private static final AccountId ACCOUNT_ID = AccountId.forId(STUDY_ID, USER_ID);
+    private static final AccountId ACCOUNT_ID = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, USER_ID);
     private static final String EXTERNAL_ID = "ext-id";
     private static final String HEALTH_CODE = "health-code";
 
@@ -494,7 +495,7 @@ public class AuthenticationServiceMockTest {
         
         AccountId captured = accountIdCaptor.getValue();
         assertEquals("user-id", captured.getId());
-        assertEquals(STUDY_ID, captured.getStudyId());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, captured.getStudyId());
     }
     
     @Test
@@ -602,7 +603,7 @@ public class AuthenticationServiceMockTest {
         service.getSession(study, context);
         
         verify(accountDao).editAccount(eq(TestConstants.TEST_STUDY), eq("healthCode"), any());
-        verify(mockAccount).setLanguages(LANGUAGES);
+        verify(mockAccount).setLanguages(ImmutableList.copyOf(LANGUAGES));
     }
 
     @Test
@@ -703,7 +704,7 @@ public class AuthenticationServiceMockTest {
         } catch(EntityAlreadyExistsException e) {
             // expected exception
         }
-        verify(accountDao).getAccount(AccountId.forExternalId(STUDY_ID, EXTERNAL_ID));
+        verify(accountDao).getAccount(AccountId.forExternalId(TestConstants.TEST_STUDY_IDENTIFIER, EXTERNAL_ID));
         verify(participantService).createParticipant(eq(study), eq(ImmutableSet.of()), any(), eq(false));
         verifyNoMoreInteractions(accountDao);
         verifyNoMoreInteractions(participantService);

@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.accounts;
 
-import java.util.LinkedHashSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -23,7 +23,9 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 
 /**
  * This object represents a participant in the system.
@@ -66,7 +68,7 @@ public final class StudyParticipant implements BridgeEntity {
     private final Map<String,List<UserConsentHistory>> consentHistories;
     private final Boolean consented;
     private final Set<Roles> roles;
-    private final LinkedHashSet<String> languages;
+    private final List<String> languages;
     private final AccountStatus status;
     private final DateTime createdOn;
     private final String id;
@@ -76,8 +78,9 @@ public final class StudyParticipant implements BridgeEntity {
     private StudyParticipant(String firstName, String lastName, String email, Phone phone, Boolean emailVerified,
             Boolean phoneVerified, String externalId, String password, SharingScope sharingScope, Boolean notifyByEmail,
             Set<String> dataGroups, String healthCode, Map<String, String> attributes,
-            Map<String, List<UserConsentHistory>> consentHistories, Boolean consented, Set<Roles> roles, LinkedHashSet<String> languages,
-            AccountStatus status, DateTime createdOn, String id, DateTimeZone timeZone, JsonNode clientData) {
+            Map<String, List<UserConsentHistory>> consentHistories, Boolean consented, Set<Roles> roles,
+            List<String> languages, AccountStatus status, DateTime createdOn, String id, DateTimeZone timeZone,
+            JsonNode clientData) {
         
         ImmutableMap.Builder<String, List<UserConsentHistory>> immutableConsentsBuilder = new ImmutableMap.Builder<>();
         if (consentHistories != null) {
@@ -105,7 +108,7 @@ public final class StudyParticipant implements BridgeEntity {
         this.consentHistories = immutableConsentsBuilder.build();
         this.consented = consented;
         this.roles = BridgeUtils.nullSafeImmutableSet(roles);
-        this.languages = (languages == null) ? new LinkedHashSet<>() : languages;
+        this.languages = (languages == null) ? new ArrayList<>() : languages;
         this.status = status;
         this.createdOn = createdOn;
         this.id = id;
@@ -171,7 +174,7 @@ public final class StudyParticipant implements BridgeEntity {
     public Set<Roles> getRoles() {
         return roles;
     }
-    public LinkedHashSet<String> getLanguages() {
+    public List<String> getLanguages() {
         return languages;
     }
     public AccountStatus getStatus() {
@@ -236,7 +239,7 @@ public final class StudyParticipant implements BridgeEntity {
         private Map<String,List<UserConsentHistory>> consentHistories;
         private Boolean consented;
         private Set<Roles> roles;
-        private LinkedHashSet<String> languages;
+        private List<String> languages;
         private AccountStatus status;
         private DateTime createdOn;
         private String id;
@@ -413,7 +416,7 @@ public final class StudyParticipant implements BridgeEntity {
             }
             return this;
         }
-        public Builder withLanguages(LinkedHashSet<String> languages) {
+        public Builder withLanguages(List<String> languages) {
             if (languages != null) {
                 this.languages = languages;
             }
@@ -448,6 +451,10 @@ public final class StudyParticipant implements BridgeEntity {
                 } else if (status == AccountStatus.UNVERIFIED) {
                     emailVerified = Boolean.FALSE;
                 }
+            }
+            // deduplicate language codes if they have been doubled
+            if (languages != null) {
+                languages = ImmutableList.copyOf(Sets.newLinkedHashSet(languages));
             }
             return new StudyParticipant(firstName, lastName, email, phone, emailVerified, phoneVerified, externalId,
                     password, sharingScope, notifyByEmail, dataGroups, healthCode, attributes, consentHistories, consented, roles,

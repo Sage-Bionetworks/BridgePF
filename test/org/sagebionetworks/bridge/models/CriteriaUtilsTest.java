@@ -6,7 +6,7 @@ import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
 
-import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -15,10 +15,10 @@ import org.junit.Test;
 import org.springframework.validation.Errors;
 
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -323,8 +323,7 @@ public class CriteriaUtilsTest {
     }
     
     private CriteriaContext getContextWithLanguage(String lang) {
-        LinkedHashSet<String> list = (lang == null) ?
-                TestUtils.newLinkedHashSet() : TestUtils.newLinkedHashSet(lang);
+        List<String> list = (lang == null) ? Lists.newArrayList() : Lists.newArrayList(lang);
         return new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY)
             .withLanguages(list).build();
     }

@@ -9,7 +9,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +26,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -41,7 +41,7 @@ public class StudyParticipantTest {
     private static final DateTime CREATED_ON_UTC = CREATED_ON.withZone(DateTimeZone.UTC);
     private static final Phone PHONE = TestConstants.PHONE;
     private static final Set<Roles> ROLES = Sets.newHashSet(Roles.ADMIN, Roles.WORKER);
-    private static final LinkedHashSet<String> LANGS = TestUtils.newLinkedHashSet("en","fr");
+    private static final List<String> LANGS = ImmutableList.of("en","fr");
     private static final Set<String> DATA_GROUPS = Sets.newHashSet("group1","group2");
     private static final DateTimeZone TIME_ZONE = DateTimeZone.forOffsetHours(4);
     private static final Map<String,String> ATTRIBUTES = ImmutableMap.<String,String>builder()
@@ -220,9 +220,10 @@ public class StudyParticipantTest {
     public void canCopyGetRoles() {
         assertCopyField("roles", (builder)-> verify(builder).withRoles(any()));
     }
+    @SuppressWarnings("unchecked")
     @Test
     public void canCopyGetLanguages() {
-        assertCopyField("languages", (builder)-> verify(builder).withLanguages(any()));
+        assertCopyField("languages", (builder)-> verify(builder).withLanguages(any(List.class)));
     }
     @Test
     public void canCopyGetStatus() {
@@ -377,5 +378,13 @@ public class StudyParticipantTest {
         builder.withConsentHistories(historiesMap);
         
         return builder;
+    }
+    
+    @Test
+    public void duplicateLanguagesAreRemoved() {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withLanguages(Lists.newArrayList("en", "fr", "en", "de")).build();
+        
+        assertEquals(Lists.newArrayList("en","fr","de"), participant.getLanguages());
     }
 }

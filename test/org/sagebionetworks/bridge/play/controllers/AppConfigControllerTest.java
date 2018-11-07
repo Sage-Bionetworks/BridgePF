@@ -43,6 +43,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AppConfigService;
 import org.sagebionetworks.bridge.services.StudyService;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -105,7 +106,7 @@ public class AppConfigControllerTest {
         session.setStudyIdentifier(TEST_STUDY);
         session.setParticipant(new StudyParticipant.Builder()
                 .withDataGroups(Sets.newHashSet("B","A"))
-                .withLanguages(TestUtils.newLinkedHashSet("en"))
+                .withLanguages(ImmutableList.of("en"))
                 .withRoles(Sets.newHashSet(DEVELOPER))
                 .withHealthCode("healthCode")
                 .build());
@@ -129,7 +130,7 @@ public class AppConfigControllerTest {
         assertEquals(TestConstants.TEST_STUDY, capturedContext.getStudyIdentifier());
         assertEquals("Asthma", capturedContext.getClientInfo().getAppName());
         assertEquals(new Integer(26), capturedContext.getClientInfo().getAppVersion());
-        assertEquals(TestUtils.newLinkedHashSet("en"), capturedContext.getLanguages());
+        assertEquals(ImmutableList.of("en"), capturedContext.getLanguages());
         assertEquals("iPhone OS", capturedContext.getClientInfo().getOsName());        
     }
     

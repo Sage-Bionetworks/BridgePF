@@ -9,10 +9,11 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
 
-import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.joda.time.DateTimeZone;
 import org.junit.Before;
@@ -85,8 +86,7 @@ public class SessionUpdateServiceTest {
         UserSession session = new UserSession();
         session.setParticipant(EMPTY_PARTICIPANT);
 
-        LinkedHashSet<String> languages = new LinkedHashSet<>();
-        languages.add("es");
+        List<String> languages = ImmutableList.of("es");
         CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(API_STUDY_ID)
                 .withLanguages(languages).build();
 
