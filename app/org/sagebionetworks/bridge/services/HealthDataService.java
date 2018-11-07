@@ -4,12 +4,13 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -57,8 +58,11 @@ import org.springframework.validation.Validator;
 /** Service handler for health data APIs. */
 @Component
 public class HealthDataService {
+    private static final int MAX_DATE_RANGE_DAYS = 15;
+
     // Package-scoped for unit tests.
     static final String ATTACHMENT_BUCKET = BridgeConfigFactory.getConfig().getProperty("attachment.bucket");
+    static final long CREATED_ON_OFFSET_MILLIS = TimeUnit.MILLISECONDS.convert(1, TimeUnit.HOURS);
     static final String RAW_ATTACHMENT_SUFFIX = "-raw.json";
 
     private HealthDataDao healthDataDao;
@@ -243,7 +247,7 @@ public class HealthDataService {
      * Fields that are not present in the schema are silently dropped.
      */
     private void filterAttachments(String recordId, UploadSchema schema, JsonNode inputData, ObjectNode outputData)
-            throws JsonProcessingException, UploadValidationException {
+            throws UploadValidationException {
         for (UploadFieldDefinition oneFieldDef : schema.getFieldDefinitions()) {
             String fieldName = oneFieldDef.getName();
             JsonNode fieldValue = inputData.get(fieldName);
@@ -397,18 +401,40 @@ public class HealthDataService {
         return healthDataDao.getRecordsForUploadDate(uploadDate);
     }
 
-    public List<HealthDataRecord> getRecordsByHealthcodeCreatedOnSchemaId(String healthCode, Long createdOn, String schemaId) {
+    /** Gets a list of records for the given healthCode between the specified createdOn times (inclusive). */
+    public List<HealthDataRecord> getRecordsByHealthCodeCreatedOn(String healthCode, DateTime createdOnStart,
+            DateTime createdOnEnd) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(healthCode));
+        if (createdOnStart == null) {
+            throw new BadRequestException(String.format(Validate.CANNOT_BE_NULL, "createdOnStart"));
+        }
+        if (createdOnEnd == null) {
+            throw new BadRequestException(String.format(Validate.CANNOT_BE_NULL, "createdOnEnd"));
+        }
+        if (createdOnStart.isAfter(createdOnEnd)) {
+            throw new BadRequestException("createdOnStart can't be after createdOnEnd");
+        }
+        if (createdOnStart.plusDays(MAX_DATE_RANGE_DAYS).isBefore(createdOnEnd)) {
+            throw new BadRequestException("maximum date range is " + MAX_DATE_RANGE_DAYS + " days");
+        }
+
+        return healthDataDao.getRecordsByHealthCodeCreatedOn(healthCode, createdOnStart.getMillis(),
+                createdOnEnd.getMillis());
+    }
+
+    /** Get a list of records with the same healthCode and schemaId that are within an hour of the createdOn. */
+    public List<HealthDataRecord> getRecordsByHealthcodeCreatedOnSchemaId(String healthCode, long createdOn, String schemaId) {
         if (StringUtils.isBlank(healthCode)) {
             throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "healthCode"));
         }
         if (StringUtils.isBlank(schemaId)) {
             throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "schemaId"));
         }
-        if (createdOn == null) {
-            throw new BadRequestException(String.format(Validate.CANNOT_BE_NULL, "createdOn"));
-        }
 
-        return healthDataDao.getRecordsByHealthCodeCreatedOnSchemaId(healthCode, createdOn, schemaId);
+        List<HealthDataRecord> recordList = healthDataDao.getRecordsByHealthCodeCreatedOn(healthCode,
+                createdOn - CREATED_ON_OFFSET_MILLIS, createdOn + CREATED_ON_OFFSET_MILLIS);
+        return recordList.stream().filter(record -> schemaId.equals(record.getSchemaId())).collect(
+                Collectors.toList());
     }
 
     /**

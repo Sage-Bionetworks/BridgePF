@@ -48,6 +48,7 @@ POST   /v3/compoundactivitydefinitions/:taskId @org.sagebionetworks.bridge.play.
 POST /v3/export/start @org.sagebionetworks.bridge.play.controllers.ExportController.startOnDemandExport
 
 # Health Data
+GET  /v3/healthdata @org.sagebionetworks.bridge.play.controllers.HealthDataController.getRecordsByCreatedOn(createdOnStart: String ?= null, createdOnEnd: String ?= null)
 POST /v3/healthdata @org.sagebionetworks.bridge.play.controllers.HealthDataController.submitHealthData
 
 # Users

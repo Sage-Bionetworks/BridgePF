@@ -1,7 +1,8 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.RequestInfo;
@@ -12,6 +13,8 @@ import org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.sagebionetworks.bridge.upload.UploadValidationException;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import play.mvc.Result;
@@ -23,12 +26,29 @@ import static org.sagebionetworks.bridge.Roles.WORKER;
 
 @Controller
 public class HealthDataController extends BaseController {
+    static final TypeReference<DateTimeRangeResourceList<HealthDataRecord>> RECORD_RESOURCE_LIST_TYPE_REF =
+            new TypeReference<DateTimeRangeResourceList<HealthDataRecord>>() {};
 
     private HealthDataService healthDataService;
 
     @Autowired
     final void setHealthDataService(HealthDataService healthDataService) {
         this.healthDataService = healthDataService;
+    }
+
+    /** Gets a list of records for the given healthCode between the specified createdOn times (inclusive). */
+    public Result getRecordsByCreatedOn(String createdOnStartString, String createdOnEndString) throws IOException {
+        UserSession session = getAuthenticatedAndConsentedSession();
+
+        DateTime createdOnStart = BridgeUtils.getDateTimeOrDefault(createdOnStartString, null);
+        DateTime createdOnEnd = BridgeUtils.getDateTimeOrDefault(createdOnEndString, null);
+
+        List<HealthDataRecord> recordList = healthDataService.getRecordsByHealthCodeCreatedOn(session.getHealthCode(),
+                createdOnStart, createdOnEnd);
+        DateTimeRangeResourceList<HealthDataRecord> recordResourceList = new DateTimeRangeResourceList<>(recordList)
+                .withRequestParam(ResourceList.START_TIME, createdOnStart)
+                .withRequestParam(ResourceList.END_TIME, createdOnEnd);
+        return okResult(HealthDataRecord.PUBLIC_RECORD_WRITER, recordResourceList);
     }
 
     /**
@@ -58,7 +78,7 @@ public class HealthDataController extends BaseController {
         return createdResult(HealthDataRecord.PUBLIC_RECORD_WRITER, savedRecord);
     }
 
-    public Result updateRecordsStatus() throws JsonProcessingException{
+    public Result updateRecordsStatus() {
         getAuthenticatedSession(WORKER);
 
         RecordExportStatusRequest recordExportStatusRequest = parseJson(request(), RecordExportStatusRequest.class);
