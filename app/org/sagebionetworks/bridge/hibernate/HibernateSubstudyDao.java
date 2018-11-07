@@ -32,7 +32,9 @@ public class HibernateSubstudyDao implements SubstudyDao {
         
         Map<String,Object> parameters = ImmutableMap.of("studyId", studyId.getIdentifier());
         String query = "from HibernateSubstudy as substudy where studyId=:studyId";
-        
+        if (!includeDeleted) {
+            query += " and deleted != 1";
+        }
         return hibernateHelper.queryGet(query, parameters, 0, 1000, HibernateSubstudy.class)
                 .stream().map((oneSubstudy) -> (Substudy) oneSubstudy).collect(Collectors.toList());
     }
@@ -42,11 +44,8 @@ public class HibernateSubstudyDao implements SubstudyDao {
         checkNotNull(studyId);
         checkNotNull(id);
 
-        Map<String,Object> parameters = ImmutableMap.of("studyId", studyId.getIdentifier(), "id", id);
-        String query = "from HibernateSubstudy as substudy where studyId=:studyId and id=:id";
-        
-        List<HibernateSubstudy> list = hibernateHelper.queryGet(query, parameters, 0, 1, HibernateSubstudy.class);
-        return (list.isEmpty()) ? null : list.get(0); 
+        SubstudyId substudyId = new SubstudyId(studyId.getIdentifier(), id);
+        return hibernateHelper.getById(HibernateSubstudy.class, substudyId);
     }
     
     @Override
@@ -70,7 +69,8 @@ public class HibernateSubstudyDao implements SubstudyDao {
         checkNotNull(studyId);
         checkNotNull(id);
         
-        HibernateSubstudy substudy = (HibernateSubstudy)getSubstudy(studyId, id);
+        SubstudyId substudyId = new SubstudyId(studyId.getIdentifier(), id);
+        HibernateSubstudy substudy = hibernateHelper.getById(HibernateSubstudy.class, substudyId);
         if (substudy != null) {
             hibernateHelper.delete(HibernateSubstudy.class, substudy);
             return true;
