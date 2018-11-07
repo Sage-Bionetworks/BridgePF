@@ -401,10 +401,10 @@ public class UploadUtilTest {
         Boolean[][] testCases = {
                 { null, null, true, true },
                 { null, false, true, true },
-                { null, true, true, false },
+                { null, true, true, true },
                 { false, null, true, true },
                 { false, false, true, true },
-                { false, true, true, false },
+                { false, true, true, true },
                 { true, null, false, false },
                 { true, false, false, false },
                 { true, true, true, true },
@@ -447,7 +447,7 @@ public class UploadUtilTest {
                 { 10, 5, false },
                 { 999, 1000, true },
                 { 1001, 1001, true },
-                { 1000, 1001, false },
+                { 1000, 1001, true },
         };
 
         for (Object[] oneTestCase : testCases) {

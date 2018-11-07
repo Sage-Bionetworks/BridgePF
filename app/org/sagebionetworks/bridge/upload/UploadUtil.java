@@ -68,7 +68,6 @@ public class UploadUtil {
 
     // Misc constants
     private static final int DEFAULT_MAX_LENGTH = 100;
-    private static final int MAX_MAX_LENGTH = 1000;
 
     // Map of allowed field type changes. Key is the old type. Value is the new type.
     //
@@ -459,14 +458,6 @@ public class UploadUtil {
             // If max lengths aren't specified, Bridge treats the max length as 100.
             int newMaxLength = (newFieldDef.getMaxLength() != null) ? newFieldDef.getMaxLength() : DEFAULT_MAX_LENGTH;
 
-            // Special case: if oldMaxLength is less than 1000, but newMaxLength is more than 1000, then Bridge
-            // converts this into an unbounded string (LargeText). There is a bug in Synapse that prevents this from
-            // working, so block this in Bridge.
-            // See also https://sagebionetworks.jira.com/browse/PLFM-4028
-            if (oldMaxLength <= MAX_MAX_LENGTH && newMaxLength > MAX_MAX_LENGTH) {
-                return false;
-            }
-
             // You can't decrease max length.
             if (newMaxLength < oldMaxLength) {
                 return false;
@@ -493,11 +484,9 @@ public class UploadUtil {
         }
 
         // Converting from unbounded text may result in data loss, so it's not allowed.
-        // Converting to an unbounded text fails in Synapse due to a bug.
-        // See https://sagebionetworks.jira.com/browse/PLFM-4028
         boolean oldIsUnboundedText = oldFieldDef.isUnboundedText() != null ? oldFieldDef.isUnboundedText() : false;
         boolean newIsUnboundedText = newFieldDef.isUnboundedText() != null ? newFieldDef.isUnboundedText() : false;
-        if (oldIsUnboundedText != newIsUnboundedText) {
+        if (oldIsUnboundedText && !newIsUnboundedText) {
             return false;
         }
 
