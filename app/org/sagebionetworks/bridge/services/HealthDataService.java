@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -403,9 +404,7 @@ public class HealthDataService {
     /** Gets a list of records for the given healthCode between the specified createdOn times (inclusive). */
     public List<HealthDataRecord> getRecordsByHealthCodeCreatedOn(String healthCode, DateTime createdOnStart,
             DateTime createdOnEnd) {
-        if (StringUtils.isBlank(healthCode)) {
-            throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "healthCode"));
-        }
+        Preconditions.checkArgument(StringUtils.isNotBlank(healthCode));
         if (createdOnStart == null) {
             throw new BadRequestException(String.format(Validate.CANNOT_BE_NULL, "createdOnStart"));
         }

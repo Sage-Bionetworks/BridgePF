@@ -221,19 +221,19 @@ public class HealthDataServiceTest {
         return request;
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void getRecordsByHealthCodeCreatedOn_NullHealthCode() {
         new HealthDataService().getRecordsByHealthCodeCreatedOn(null, TEST_CREATED_ON_DATE_TIME,
                 TEST_CREATED_ON_END_DATE_TIME);
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void getRecordsByHealthCodeCreatedOn_EmptyHealthCode() {
         new HealthDataService().getRecordsByHealthCodeCreatedOn("", TEST_CREATED_ON_DATE_TIME,
                 TEST_CREATED_ON_END_DATE_TIME);
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void getRecordsByHealthCodeCreatedOn_BlankHealthCode() {
         new HealthDataService().getRecordsByHealthCodeCreatedOn("   ", TEST_CREATED_ON_DATE_TIME,
                 TEST_CREATED_ON_END_DATE_TIME);
@@ -253,13 +253,13 @@ public class HealthDataServiceTest {
 
     @Test(expected = BadRequestException.class)
     public void getRecordsByHealthCodeCreatedOn_StartOnAfterEndOn() {
-        new HealthDataService().getRecordsByHealthCodeCreatedOn(null, TEST_CREATED_ON_END_DATE_TIME,
+        new HealthDataService().getRecordsByHealthCodeCreatedOn(TEST_HEALTH_CODE, TEST_CREATED_ON_END_DATE_TIME,
                 TEST_CREATED_ON_DATE_TIME);
     }
 
     @Test(expected = BadRequestException.class)
     public void getRecordsByHealthCodeCreatedOn_DateRangeTooLarge() {
-        new HealthDataService().getRecordsByHealthCodeCreatedOn(null, TEST_CREATED_ON_DATE_TIME,
+        new HealthDataService().getRecordsByHealthCodeCreatedOn(TEST_HEALTH_CODE, TEST_CREATED_ON_DATE_TIME,
                 TEST_CREATED_ON_DATE_TIME.plusDays(16));
     }
 
