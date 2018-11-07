@@ -23,6 +23,14 @@ public class SubstudyId implements Serializable {
         this.studyId = studyId;
         this.id = id;
     }
+    
+    public String getStudyId() {
+        return studyId;
+    }
+    
+    public String getId() {
+        return id;
+    }
 
     @Override
     public int hashCode() {

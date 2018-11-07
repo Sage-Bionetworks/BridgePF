@@ -63,6 +63,7 @@ public class SubstudyControllerTest {
         controller.setSubstudyService(service);
         
         doReturn(session).when(controller).getAuthenticatedSession(Roles.ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(Roles.ADMIN, Roles.DEVELOPER);
     }
     
     @Test
@@ -147,22 +148,58 @@ public class SubstudyControllerTest {
     }
     
     @Test
-    public void updateSubstudy() {
+    public void updateSubstudy() throws Exception {
+        Substudy substudy = Substudy.create();
+        substudy.setId("oneId");
+        substudy.setName("oneName");
+        TestUtils.mockPlayContextWithJson(substudy);
+        
+        when(service.updateSubstudy(eq(TestConstants.TEST_STUDY), any())).thenReturn(VERSION_HOLDER);
+        
+        Result result = controller.updateSubstudy("id");
+        assertEquals(200, result.status());
+        
+        VersionHolder returnedValue = TestUtils.getResponsePayload(result, VersionHolder.class);
+        assertEquals(VERSION_HOLDER.getVersion(), returnedValue.getVersion());
+        
+        verify(service).updateSubstudy(eq(TestConstants.TEST_STUDY), substudyCaptor.capture());
+        
+        Substudy persisted = substudyCaptor.getValue();
+        assertEquals("oneId", persisted.getId());
+        assertEquals("oneName", persisted.getName());
     }
     
     @Test
-    public void deleteSubstudyLogical() {
-    }    
+    public void deleteSubstudyLogical() throws Exception {
+        Result result = controller.deleteSubstudy("id", "false");
+        TestUtils.assertResult(result, 200, "Substudy deleted.");
+        
+        verify(service).deleteSubstudy(TestConstants.TEST_STUDY, "id");
+    }
     
     @Test
-    public void deleteSubstudyPhysical() {
+    public void deleteSubstudyPhysical() throws Exception {
+        Result result = controller.deleteSubstudy("id", "true");
+        TestUtils.assertResult(result, 200, "Substudy deleted.");
+        
+        verify(service).deleteSubstudyPermanently(TestConstants.TEST_STUDY, "id");
+    }
+
+    @Test
+    public void deleteSubstudyDefaultsToLogical() throws Exception {
+        Result result = controller.deleteSubstudy("id", null);
+        TestUtils.assertResult(result, 200, "Substudy deleted.");
+        
+        verify(service).deleteSubstudy(TestConstants.TEST_STUDY, "id");
     }    
 
     @Test
-    public void deleteSubstudyDefaultsToLogical() {
-    }    
-
-    @Test
-    public void deleteSubstudyDeveloperCannotPhysicallyDelete() {
-    }    
+    public void deleteSubstudyDeveloperCannotPhysicallyDelete() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.DEVELOPER)).build());
+        
+        Result result = controller.deleteSubstudy("id", "true");
+        TestUtils.assertResult(result, 200, "Substudy deleted.");
+        
+        verify(service).deleteSubstudy(TestConstants.TEST_STUDY, "id");
+    }
 }

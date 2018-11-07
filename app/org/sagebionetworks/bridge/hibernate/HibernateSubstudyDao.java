@@ -22,7 +22,7 @@ public class HibernateSubstudyDao implements SubstudyDao {
     private HibernateHelper hibernateHelper;
     
     @Resource(name = "substudyHibernateHelper")
-    public final void setHibernateHelper(HibernateHelper hibernateHelper) {
+    final void setHibernateHelper(HibernateHelper hibernateHelper) {
         this.hibernateHelper = hibernateHelper;
     }
 
@@ -35,7 +35,7 @@ public class HibernateSubstudyDao implements SubstudyDao {
         if (!includeDeleted) {
             query += " and deleted != 1";
         }
-        return hibernateHelper.queryGet(query, parameters, 0, 1000, HibernateSubstudy.class)
+        return hibernateHelper.queryGet(query, parameters, null, null, HibernateSubstudy.class)
                 .stream().map((oneSubstudy) -> (Substudy) oneSubstudy).collect(Collectors.toList());
     }
 

@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
 import java.util.List;
 
@@ -64,7 +65,7 @@ public class SubstudyController extends BaseController {
     }
     
     public Result deleteSubstudy(String id, String physical) {
-        UserSession session = getAuthenticatedSession(ADMIN);
+        UserSession session = getAuthenticatedSession(ADMIN, DEVELOPER);
         
         if ("true".equals(physical) && session.isInRole(Roles.ADMIN)) {
             service.deleteSubstudyPermanently(session.getStudyIdentifier(), id);

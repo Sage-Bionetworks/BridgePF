@@ -67,17 +67,10 @@ public class SubstudyService {
         return substudyDao.createSubstudy(substudy);
     }
 
-    public List<Substudy> getSubstudies(StudyIdentifier studyId, String id, boolean includeDeleted) {
-        checkNotNull(studyId);
-        checkNotNull(id);
-        
-        return substudyDao.getSubstudies(studyId, includeDeleted);
-    }
-    
     public VersionHolder updateSubstudy(StudyIdentifier studyId, Substudy substudy) {
         checkNotNull(studyId);
         checkNotNull(substudy);
-        
+
         substudy.setStudyId(studyId.getIdentifier());
         Validate.entityThrowingException(SubstudyValidator.INSTANCE, substudy);
         
@@ -109,5 +102,4 @@ public class SubstudyService {
         getSubstudy(studyId, id);
         substudyDao.deleteSubstudyPermanently(studyId, id);
     }
-    
 }
