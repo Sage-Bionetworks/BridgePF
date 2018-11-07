@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import java.util.List;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
@@ -17,6 +18,7 @@ import play.mvc.Result;
 @Controller
 public class SubstudyController extends BaseController {
 
+    private static final String INCLUDE_DELETED = "includeDeleted";
     private SubstudyService service;
     
     @Autowired
@@ -29,7 +31,8 @@ public class SubstudyController extends BaseController {
         boolean includeDeleted = Boolean.valueOf(includeDeletedStr);
         
         List<Substudy> substudies = service.getSubstudies(session.getStudyIdentifier(), includeDeleted);
-        return okResult(substudies);
+        
+        return okResult(new ResourceList<>(substudies).withRequestParam(INCLUDE_DELETED, includeDeleted));
     }
     
     public Result createSubstudy() {
