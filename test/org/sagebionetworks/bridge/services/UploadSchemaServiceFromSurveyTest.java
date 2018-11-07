@@ -883,11 +883,11 @@ public class UploadSchemaServiceFromSurveyTest {
 
     @Test
     public void mergeSurveySchemaFieldsNotCompatible() {
-        // incompatible field, like changing a short string to an unbounded string
+        // incompatible field, like changing a short string to an int
         List<UploadFieldDefinition> oldFieldDefList = ImmutableList.of(new UploadFieldDefinition.Builder()
                 .withName("field").withType(UploadFieldType.STRING).withMaxLength(24).build());
         List<UploadFieldDefinition> newFieldDefList = ImmutableList.of(new UploadFieldDefinition.Builder()
-                .withName("field").withType(UploadFieldType.STRING).withUnboundedText(true).build());
+                .withName("field").withType(UploadFieldType.INT).build());
 
         // execute and validate
         UploadSchemaService.MergeSurveySchemaResult mergeResult = UploadSchemaService.mergeSurveySchemaFields(
