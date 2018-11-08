@@ -43,16 +43,6 @@ public class HibernateHelper {
         });
     }
 
-    public <T> void delete(Class<T> clazz, T object) {
-        // Hibernate optimistic versioning also applies to deletes. However, unlike updates, when we delete something,
-        // we want it gone, so we generally don't care about optimistic versioning. In order to handle this in
-        // Hibernate, we need to load the whole object before deleting it.
-        executeWithExceptionHandling(null, session -> {
-            session.delete(object);
-            return null;
-        });
-    }
-    
     /** Get by the table's primary key. Returns null if the object doesn't exist. */
     public <T> T getById(Class<T> clazz, Serializable id) {
         return executeWithExceptionHandling(null, session -> session.get(clazz, id));

@@ -8,12 +8,16 @@ import javax.persistence.Table;
 import javax.persistence.Version;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
 import org.sagebionetworks.bridge.models.substudies.SubstudyId;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "Substudies")
 @IdClass(SubstudyId.class)
+@BridgeTypeName("Substudy")
 public class HibernateSubstudy implements Substudy {
     @Id
     private String id;
@@ -38,6 +42,7 @@ public class HibernateSubstudy implements Substudy {
         this.id = id;
     }
 
+    @JsonIgnore
     @Override
     public String getStudyId() {
         return studyId;

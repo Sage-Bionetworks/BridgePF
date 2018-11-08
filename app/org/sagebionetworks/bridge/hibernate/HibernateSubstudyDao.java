@@ -65,16 +65,11 @@ public class HibernateSubstudyDao implements SubstudyDao {
     }
 
     @Override
-    public boolean deleteSubstudyPermanently(StudyIdentifier studyId, String id) {
+    public void deleteSubstudyPermanently(StudyIdentifier studyId, String id) {
         checkNotNull(studyId);
         checkNotNull(id);
         
         SubstudyId substudyId = new SubstudyId(studyId.getIdentifier(), id);
-        HibernateSubstudy substudy = hibernateHelper.getById(HibernateSubstudy.class, substudyId);
-        if (substudy != null) {
-            hibernateHelper.delete(HibernateSubstudy.class, substudy);
-            return true;
-        }
-        return false;
+        hibernateHelper.deleteById(HibernateSubstudy.class, substudyId);
     }
 }

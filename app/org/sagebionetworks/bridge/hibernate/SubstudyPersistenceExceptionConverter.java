@@ -9,7 +9,7 @@ public class SubstudyPersistenceExceptionConverter implements PersistenceExcepti
 
     @Override
     public RuntimeException convert(PersistenceException exception, Object entity) {
-        throw new RuntimeException(exception);
+        return exception;
     }
 
 }

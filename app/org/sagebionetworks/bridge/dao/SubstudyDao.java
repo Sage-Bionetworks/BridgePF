@@ -16,6 +16,6 @@ public interface SubstudyDao {
     
     VersionHolder updateSubstudy(Substudy substudy);
     
-    boolean deleteSubstudyPermanently(StudyIdentifier studyId, String id);
+    void deleteSubstudyPermanently(StudyIdentifier studyId, String id);
 
 }

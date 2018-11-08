@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -12,6 +13,8 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
+
+import javax.persistence.PersistenceException;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -137,17 +140,18 @@ public class HibernateSubstudyDaoTest {
         HibernateSubstudy substudy = new HibernateSubstudy();
         when(hibernateHelper.getById(eq(HibernateSubstudy.class), any())).thenReturn(substudy);
         
-        boolean result = dao.deleteSubstudyPermanently(TestConstants.TEST_STUDY, "oneId");
-        assertTrue(result);
+        dao.deleteSubstudyPermanently(TestConstants.TEST_STUDY, "oneId");
         
-        verify(hibernateHelper).delete(eq(HibernateSubstudy.class), substudyCaptor.capture());
+        verify(hibernateHelper).deleteById(eq(HibernateSubstudy.class), substudyIdCaptor.capture());
+        SubstudyId substudyId = substudyIdCaptor.getValue();
+        assertEquals("oneId", substudyId.getId());
+        assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, substudyId.getStudyId());
     }    
 
-    @Test
+    @Test(expected = PersistenceException.class)
     public void deleteSubstudyPermanentlyNotFound() {
-        boolean result = dao.deleteSubstudyPermanently(TestConstants.TEST_STUDY, "oneId");
-        assertFalse(result);
-        
-        verify(hibernateHelper, never()).delete(eq(HibernateSubstudy.class), substudyCaptor.capture());
+        doThrow(new PersistenceException()).when(hibernateHelper).deleteById(eq(HibernateSubstudy.class), any());
+            
+        dao.deleteSubstudyPermanently(TestConstants.TEST_STUDY, "oneId");
     }    
 }
