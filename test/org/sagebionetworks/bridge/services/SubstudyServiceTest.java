@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
@@ -106,7 +107,7 @@ public class SubstudyServiceTest {
         assertEquals("oneId", persisted.getId());
         assertEquals("oneName", persisted.getName());
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, persisted.getStudyId());
-        assertEquals(new Long(1), persisted.getVersion());
+        assertNull(persisted.getVersion());
         assertFalse(persisted.isDeleted());
         assertNotEquals(timestamp, persisted.getCreatedOn());
         assertNotEquals(timestamp, persisted.getModifiedOn());

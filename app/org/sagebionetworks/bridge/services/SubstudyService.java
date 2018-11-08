@@ -9,7 +9,6 @@ import org.sagebionetworks.bridge.dao.SubstudyDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.VersionHolder;
-import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
 import org.sagebionetworks.bridge.validators.SubstudyValidator;
@@ -53,7 +52,7 @@ public class SubstudyService {
         substudy.setStudyId(studyId.getIdentifier());
         Validate.entityThrowingException(SubstudyValidator.INSTANCE, substudy);
         
-        substudy.setVersion(1L);
+        substudy.setVersion(null);
         substudy.setDeleted(false);
         DateTime timestamp = DateTime.now();
         substudy.setCreatedOn(timestamp);
@@ -61,7 +60,7 @@ public class SubstudyService {
         
         Substudy existing = substudyDao.getSubstudy(studyId, substudy.getId());
         if (existing != null) {
-            throw new EntityAlreadyExistsException(AppConfigElement.class,
+            throw new EntityAlreadyExistsException(Substudy.class,
                     ImmutableMap.of("id", existing.getId()));
         }
         return substudyDao.createSubstudy(substudy);
@@ -76,7 +75,7 @@ public class SubstudyService {
         
         Substudy existing = getSubstudy(studyId, substudy.getId());
         if (substudy.isDeleted() && existing.isDeleted()) {
-            throw new EntityNotFoundException(AppConfigElement.class);
+            throw new EntityNotFoundException(Substudy.class);
         }
         substudy.setCreatedOn(existing.getCreatedOn());
         substudy.setModifiedOn(DateTime.now());
