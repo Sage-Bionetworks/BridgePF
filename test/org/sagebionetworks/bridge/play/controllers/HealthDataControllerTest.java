@@ -27,7 +27,11 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
 import org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.HealthDataService;
+import org.sagebionetworks.bridge.services.ParticipantService;
+import org.sagebionetworks.bridge.services.StudyService;
+
 import play.mvc.Result;
 import play.test.Helpers;
 
@@ -48,6 +52,8 @@ public class HealthDataControllerTest {
     private static final DateTime CREATED_ON_END = DateTime.parse(CREATED_ON_END_STR);
     private static final String HEALTH_CODE = "health-code";
     private static final long MOCK_NOW_MILLIS = DateTime.parse("2017-05-19T14:45:27.593-0700").getMillis();
+    private static final StudyParticipant OTHER_PARTICIPANT = new StudyParticipant.Builder()
+            .withHealthCode(HEALTH_CODE).build();
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
             .build();
     private static final String PHONE_INFO = "Unit Tests";
@@ -55,6 +61,13 @@ public class HealthDataControllerTest {
     private static final int SCHEMA_REV = 3;
     private static final String TEST_RECORD_ID = "record-to-update";
     private static final HealthDataRecord.ExporterStatus TEST_STATUS = HealthDataRecord.ExporterStatus.SUCCEEDED;
+    private static final String USER_ID = "test-user";
+
+    private static final Study STUDY;
+    static {
+        STUDY = Study.create();
+        STUDY.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+    }
 
     private static final String TEST_STATUS_JSON = "{\n" +
             "   \"recordIds\":[\"record-to-update\"],\n" +
@@ -71,6 +84,12 @@ public class HealthDataControllerTest {
 
     @Mock
     private HealthDataService healthDataService;
+
+    @Mock
+    private ParticipantService participantService;
+
+    @Mock
+    private StudyService studyService;
 
     @Mock
     private Metrics metrics;
@@ -91,9 +110,15 @@ public class HealthDataControllerTest {
         controller = spy(new HealthDataController());
         controller.setCacheProvider(cacheProvider);
         controller.setHealthDataService(healthDataService);
+        controller.setParticipantService(participantService);
+        controller.setStudyService(studyService);
 
         // mock Metrics
         doReturn(metrics).when(controller).getMetrics();
+
+        // Mock services.
+        when(participantService.getParticipant(same(STUDY), eq(USER_ID), anyBoolean())).thenReturn(OTHER_PARTICIPANT);
+        when(studyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(STUDY);
 
         // mock session
         UserSession mockSession = new UserSession();
@@ -196,6 +221,57 @@ public class HealthDataControllerTest {
 
         RequestInfo requestInfo = requestInfoCaptor.getValue();
         assertEquals(MOCK_NOW_MILLIS, requestInfo.getUploadedOn().getMillis());
+    }
+
+    @Test
+    public void submitHealthDataForParticipant() throws Exception {
+        // mock request JSON
+        String jsonText = "{\n" +
+                "   \"appVersion\":\"" + APP_VERSION + "\",\n" +
+                "   \"createdOn\":\"" + CREATED_ON_STR + "\",\n" +
+                "   \"phoneInfo\":\"" + PHONE_INFO + "\",\n" +
+                "   \"schemaId\":\"" + SCHEMA_ID + "\",\n" +
+                "   \"schemaRevision\":" + SCHEMA_REV + ",\n" +
+                "   \"data\":{\n" +
+                "       \"foo\":\"other value\",\n" +
+                "       \"bar\":37\n" +
+                "   }\n" +
+                "}";
+        TestUtils.mockPlayContextWithJson(jsonText);
+
+        // mock back-end call - We only care about record ID. Also add Health Code to make sure it's being filtered.
+        HealthDataRecord svcRecord = HealthDataRecord.create();
+        svcRecord.setId(TEST_RECORD_ID);
+        svcRecord.setHealthCode(HEALTH_CODE);
+        when(healthDataService.submitHealthData(any(), any(), any())).thenReturn(svcRecord);
+
+        // execute and validate - Just check record ID. Health Code is filtered out.
+        Result result = controller.submitHealthDataForParticipant(USER_ID);
+        TestUtils.assertResult(result, 201);
+        HealthDataRecord controllerRecord = BridgeObjectMapper.get().readValue(Helpers.contentAsString(result),
+                HealthDataRecord.class);
+        assertEquals(TEST_RECORD_ID, controllerRecord.getId());
+        assertNull(controllerRecord.getHealthCode());
+
+        // validate call to healthDataService
+        ArgumentCaptor<HealthDataSubmission> submissionCaptor = ArgumentCaptor.forClass(HealthDataSubmission.class);
+        verify(healthDataService).submitHealthData(eq(TestConstants.TEST_STUDY), same(OTHER_PARTICIPANT),
+                submissionCaptor.capture());
+
+        HealthDataSubmission submission = submissionCaptor.getValue();
+        assertEquals(APP_VERSION, submission.getAppVersion());
+        assertEquals(CREATED_ON, submission.getCreatedOn());
+        assertEquals(PHONE_INFO, submission.getPhoneInfo());
+        assertEquals(SCHEMA_ID, submission.getSchemaId());
+        assertEquals(SCHEMA_REV, submission.getSchemaRevision().intValue());
+
+        JsonNode data = submission.getData();
+        assertEquals(2, data.size());
+        assertEquals("other value", data.get("foo").textValue());
+        assertEquals(37, data.get("bar").intValue());
+
+        // validate metrics
+        verify(metrics).setRecordId(TEST_RECORD_ID);
     }
 
     @Test

@@ -1,17 +1,10 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
-import org.sagebionetworks.bridge.models.ResourceList;
-import org.sagebionetworks.bridge.time.DateUtils;
-import org.sagebionetworks.bridge.models.Metrics;
-import org.sagebionetworks.bridge.models.RequestInfo;
-import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
-import org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest;
-import org.sagebionetworks.bridge.services.HealthDataService;
-import org.sagebionetworks.bridge.upload.UploadValidationException;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
+
+import java.io.IOException;
+import java.util.List;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.joda.time.DateTime;
@@ -19,10 +12,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import play.mvc.Result;
 
-import java.io.IOException;
-import java.util.List;
-
-import static org.sagebionetworks.bridge.Roles.WORKER;
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
+import org.sagebionetworks.bridge.models.Metrics;
+import org.sagebionetworks.bridge.models.RequestInfo;
+import org.sagebionetworks.bridge.models.ResourceList;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
+import org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.HealthDataService;
+import org.sagebionetworks.bridge.services.ParticipantService;
+import org.sagebionetworks.bridge.time.DateUtils;
+import org.sagebionetworks.bridge.upload.UploadValidationException;
 
 @Controller
 public class HealthDataController extends BaseController {
@@ -30,10 +34,17 @@ public class HealthDataController extends BaseController {
             new TypeReference<DateTimeRangeResourceList<HealthDataRecord>>() {};
 
     private HealthDataService healthDataService;
+    private ParticipantService participantService;
 
     @Autowired
     final void setHealthDataService(HealthDataService healthDataService) {
         this.healthDataService = healthDataService;
+    }
+
+    /** Gets the participant for developer APIs. */
+    @Autowired
+    final void setParticipantService(ParticipantService participantService) {
+        this.participantService = participantService;
     }
 
     /** Gets a list of records for the given healthCode between the specified createdOn times (inclusive). */
@@ -73,6 +84,29 @@ public class HealthDataController extends BaseController {
         RequestInfo requestInfo = getRequestInfoBuilder(session).withUploadedOn(DateUtils.getCurrentDateTime())
                 .build();
         cacheProvider.updateRequestInfo(requestInfo);
+
+        // Return the record produced by this submission. Filter out Health Code, of course.
+        return createdResult(HealthDataRecord.PUBLIC_RECORD_WRITER, savedRecord);
+    }
+
+    /** Allows a developer to submit health data on behalf of the participant. This is generally used for backfills. */
+    public Result submitHealthDataForParticipant(String userId) throws IOException, UploadValidationException {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+
+        // Get participant.
+        StudyParticipant participant = participantService.getParticipant(study, userId, false);
+
+        // Submit health data.
+        HealthDataSubmission healthDataSubmission = parseJson(request(), HealthDataSubmission.class);
+        HealthDataRecord savedRecord = healthDataService.submitHealthData(study.getStudyIdentifier(), participant,
+                healthDataSubmission);
+
+        // Write record ID into the metrics, for logging and diagnostics.
+        Metrics metrics = getMetrics();
+        if (metrics != null) {
+            metrics.setRecordId(savedRecord.getId());
+        }
 
         // Return the record produced by this submission. Filter out Health Code, of course.
         return createdResult(HealthDataRecord.PUBLIC_RECORD_WRITER, savedRecord);
