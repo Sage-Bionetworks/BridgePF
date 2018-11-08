@@ -102,7 +102,7 @@ public class AppConfigElementService {
         element.setStudyId(studyId.getIdentifier());
         element.setId(element.getId());
         element.setModifiedOn(DateTime.now().getMillis());
-        // cannot unpublish something or change the creation timestamp
+        // cannot change the creation timestamp
         element.setCreatedOn(existing.getCreatedOn());
         return appConfigElementDao.saveElementRevision(element);
     }

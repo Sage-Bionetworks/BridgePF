@@ -217,6 +217,10 @@
         <property name="targetName" value="appConfigElementsController" />
     </bean>
     
+    <bean id="SubstudyControllerProxied" parent="proxiedController">
+        <property name="targetName" value="substudyController" />
+    </bean>
+    
     <bean id="IntentControllerProxied" parent="proxiedController">
         <property name="targetName" value="intentController" />
     </bean>
