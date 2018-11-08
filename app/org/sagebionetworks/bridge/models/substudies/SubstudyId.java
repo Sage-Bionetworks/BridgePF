@@ -7,7 +7,7 @@ import javax.persistence.Column;
 import javax.persistence.Embeddable;
 
 @Embeddable
-public class SubstudyId implements Serializable {
+public final class SubstudyId implements Serializable {
     private static final long serialVersionUID = 3414483917399974708L;
     
     @Column(name = "studyId")
@@ -15,7 +15,7 @@ public class SubstudyId implements Serializable {
 
     @Column(name = "id")
     private String id;
-    
+
     public SubstudyId() {
     }
  

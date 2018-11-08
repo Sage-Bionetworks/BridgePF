@@ -63,7 +63,6 @@ public class SubstudyControllerTest {
         controller.setSubstudyService(service);
         
         doReturn(session).when(controller).getAuthenticatedSession(Roles.ADMIN);
-        doReturn(session).when(controller).getAuthenticatedSession(Roles.ADMIN, Roles.DEVELOPER);
     }
     
     @Test

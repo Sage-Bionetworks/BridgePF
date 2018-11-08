@@ -15,5 +15,5 @@ public interface PersistenceExceptionConverter {
      * @return
      *      return new exception if converted, or the original exception if no conversion is to take place.
      */
-    RuntimeException convert(PersistenceException exception,Object entity);
+    RuntimeException convert(PersistenceException exception, Object entity);
 }
