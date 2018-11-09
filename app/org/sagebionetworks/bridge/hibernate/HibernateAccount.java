@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.persistence.CascadeType;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.Convert;
@@ -21,6 +22,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.MapKeyClass;
 import javax.persistence.MapKeyColumn;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.persistence.Version;
@@ -71,6 +73,7 @@ public class HibernateAccount implements Account {
     private Set<String> dataGroups;
     private List<String> languages;
     private int migrationVersion;
+    private Set<HibernateAccountSubstudy> accountSubstudies = new HashSet<>(); 
 
     /**
      * No args constructor, required and used by Hibernate for full object initialization.
@@ -481,5 +484,16 @@ public class HibernateAccount implements Account {
 
     public void setReauthToken(String reauthToken) {
         this.reauthToken = reauthToken; 
+    }
+    
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Override
+    public Set<HibernateAccountSubstudy> getAccountSubstudies() {
+        return accountSubstudies;
+    }
+
+    @Override
+    public void setAccountSubstudies(Set<HibernateAccountSubstudy> accountSubstudies) {
+        this.accountSubstudies = accountSubstudies;
     }
 }

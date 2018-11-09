@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.hibernate.HibernateAccount;
 import org.sagebionetworks.bridge.hibernate.HibernateAccountConsent;
 import org.sagebionetworks.bridge.hibernate.HibernateAccountConsentKey;
+import org.sagebionetworks.bridge.hibernate.HibernateAccountSubstudy;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -228,4 +229,7 @@ public interface Account extends BridgeEntity {
     
     DateTime getReauthTokenModifiedOn();
     void setReauthTokenModifiedOn(DateTime reauthTokenModifiedOn);
+    
+    void setAccountSubstudies(Set<HibernateAccountSubstudy> accountSubstudies);
+    Set<HibernateAccountSubstudy> getAccountSubstudies();
 }
