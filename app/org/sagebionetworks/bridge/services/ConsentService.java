@@ -405,7 +405,7 @@ public class ConsentService {
                 .withSmsTemplate(study.getSignedConsentSmsTemplate())
                 .withToken(BridgeConstants.CONSENT_URL, shortUrl)
                 .build();
-        smsService.sendSmsMessage(participant.getHealthCode(), provider);
+        smsService.sendSmsMessage(participant.getId(), provider);
     }
     
     protected String getSignedConsentUrl() {

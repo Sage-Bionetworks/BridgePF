@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.notNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -84,7 +85,7 @@ public class UploadValidationTaskTest {
 
         healthDataService = mock(HealthDataService.class);
         when(healthDataService.getRecordById(eq(RECORD_ID))).thenReturn(testRecord);
-        when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), any(), any())).thenReturn(
+        when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), anyLong(), any())).thenReturn(
                 testRecordDupeListNormal);
 
         // Set up context
@@ -232,7 +233,7 @@ public class UploadValidationTaskTest {
     public void dedupeWithoutDuplicate() {
         // only return one test record
         when(healthDataService.getRecordById(any())).thenReturn(testRecord);
-        when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), any(), any())).thenReturn(
+        when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), anyLong(), any())).thenReturn(
                 ImmutableList.of(testRecord));
 
         // execute
@@ -254,7 +255,7 @@ public class UploadValidationTaskTest {
     public void dedupeEmptyList() {
         // return an empty list
         when(healthDataService.getRecordById(any())).thenReturn(testRecord);
-        when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), any(), any())).thenReturn(
+        when(healthDataService.getRecordsByHealthcodeCreatedOnSchemaId(any(), anyLong(), any())).thenReturn(
                 ImmutableList.of());
         task.run();
         verify(task, times(0)).logDuplicateUploadRecords(any(), any());

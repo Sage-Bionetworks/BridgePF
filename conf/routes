@@ -48,6 +48,7 @@ POST   /v3/compoundactivitydefinitions/:taskId @org.sagebionetworks.bridge.play.
 POST /v3/export/start @org.sagebionetworks.bridge.play.controllers.ExportController.startOnDemandExport
 
 # Health Data
+GET  /v3/healthdata @org.sagebionetworks.bridge.play.controllers.HealthDataController.getRecordsByCreatedOn(createdOnStart: String ?= null, createdOnEnd: String ?= null)
 POST /v3/healthdata @org.sagebionetworks.bridge.play.controllers.HealthDataController.submitHealthData
 
 # Users
@@ -91,6 +92,7 @@ POST   /v3/participants/self/identifiers @org.sagebionetworks.bridge.play.contro
 GET    /v3/participants/:userId                                        @org.sagebionetworks.bridge.play.controllers.ParticipantController.getParticipant(userId: String, consents: Boolean ?= true)
 POST   /v3/participants/:userId                                        @org.sagebionetworks.bridge.play.controllers.ParticipantController.updateParticipant(userId: String)
 DELETE /v3/participants/:userId                                        @org.sagebionetworks.bridge.play.controllers.ParticipantController.deleteTestParticipant(userId: String)
+POST   /v3/participants/:userId/healthdata                             @org.sagebionetworks.bridge.play.controllers.HealthDataController.submitHealthDataForParticipant(userId: String)
 GET    /v3/participants/:userId/sms/recent                             @org.sagebionetworks.bridge.play.controllers.SmsController.getMostRecentMessage(userId: String)
 GET    /v3/participants/:userId/uploads                                @org.sagebionetworks.bridge.play.controllers.ParticipantController.getUploads(userId: String, startTime: String ?= null, endTime: String ?= null, pageSize: Integer ?= null, offsetKey: String ?= null)
 GET    /v3/participants/:userId/requestInfo                            @org.sagebionetworks.bridge.play.controllers.ParticipantController.getRequestInfo(userId: String)

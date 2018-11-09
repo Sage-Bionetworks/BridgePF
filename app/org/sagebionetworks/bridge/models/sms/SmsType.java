@@ -14,6 +14,9 @@ public enum SmsType {
      */
     TRANSACTIONAL("Transactional");
 
+    /** If you need to serialize this enum, this is the maximum length that will fit all of the values. */
+    public static final int VALUE_MAX_LENGTH = 13;
+
     private final String value;
 
     SmsType(String value) {

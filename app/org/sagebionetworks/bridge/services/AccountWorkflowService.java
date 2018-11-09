@@ -235,7 +235,7 @@ public class AccountWorkflowService {
         sendMailService.sendEmail(provider);
     }
     
-    public void sendPhoneVerificationToken(Study study, String userId, String healthCode, Phone phone) {
+    public void sendPhoneVerificationToken(Study study, String userId, Phone phone) {
         checkNotNull(study);
         checkArgument(isNotBlank(userId));
         
@@ -259,7 +259,7 @@ public class AccountWorkflowService {
                 .withTransactionType()
                 .withExpirationPeriod(PHONE_VERIFICATION_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS)
                 .withPhone(phone).build();
-        smsService.sendSmsMessage(healthCode, provider);
+        smsService.sendSmsMessage(userId, provider);
     }
         
     /**
@@ -275,7 +275,7 @@ public class AccountWorkflowService {
             if (type == ChannelType.EMAIL) {
                 sendEmailVerificationToken(study, account.getId(), account.getEmail());
             } else if (type == ChannelType.PHONE) {
-                sendPhoneVerificationToken(study, account.getId(), account.getHealthCode(), account.getPhone());
+                sendPhoneVerificationToken(study, account.getId(), account.getPhone());
             } else {
                 throw new UnsupportedOperationException("Channel type not implemented");
             }
@@ -425,7 +425,7 @@ public class AccountWorkflowService {
                     builder.withExpirationPeriod(PHONE_SIGNIN_EXPIRATION_PERIOD, SIGNIN_EXPIRE_IN_SECONDS);
                 });
         }
-        smsService.sendSmsMessage(account.getHealthCode(), builder.build());
+        smsService.sendSmsMessage(account.getId(), builder.build());
     }
 
     /**
@@ -484,7 +484,7 @@ public class AccountWorkflowService {
                     .withPhone(signIn.getPhone())
                     .withExpirationPeriod(PHONE_SIGNIN_EXPIRATION_PERIOD, SIGNIN_EXPIRE_IN_SECONDS)
                     .withToken(TOKEN_KEY, formattedToken).build();
-            smsService.sendSmsMessage(account.getHealthCode(), provider);
+            smsService.sendSmsMessage(account.getId(), provider);
         });
     }
     

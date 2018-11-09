@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
@@ -14,12 +15,14 @@ import java.util.Collections;
 import java.util.List;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.document.Index;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.ItemCollection;
 import com.amazonaws.services.dynamodbv2.document.internal.IteratorSupport;
-import com.amazonaws.services.dynamodbv2.model.WriteRequest;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -30,7 +33,8 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class DynamoHealthDataDaoTest {
     private static final String TEST_HEALTH_CODE = "1234";
-    private static final Long TEST_CREATED_ON = Long.parseLong("1427970429000");
+    private static final long TEST_CREATED_ON = 1427970429000L;
+    private static final long TEST_CREATED_ON_END = 1427970471979L;
     private static final String TEST_SCHEMA_ID = "api";
 
     @Test
@@ -90,7 +94,7 @@ public class DynamoHealthDataDaoTest {
         // we have to mock extra stuff because BridgeUtils.ifFailuresThrowException() checks all these things
         DynamoDBMapper.FailedBatch failure = new DynamoDBMapper.FailedBatch();
         failure.setException(new Exception("dummy exception message"));
-        failure.setUnprocessedItems(Collections.<String, List<WriteRequest>>emptyMap());
+        failure.setUnprocessedItems(Collections.emptyMap());
 
         // mock mapper
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
@@ -150,33 +154,39 @@ public class DynamoHealthDataDaoTest {
 
     @Test
     public void getRecordsByHealthCodeCreatedOnSchemaId() {
-        // For branch coverage, first record has the wrong schema ID.
-        DynamoHealthDataRecord wrongSchemaRecord = new DynamoHealthDataRecord();
-        wrongSchemaRecord.setId("wrong-schema-record");
-        wrongSchemaRecord.setSchemaId("wrong-" + TEST_SCHEMA_ID);
-
-        // Normal record, which will be returned by our mock.
+        // Mock mapper with record.
         DynamoHealthDataRecord record = new DynamoHealthDataRecord();
         record.setHealthCode(TEST_HEALTH_CODE);
         record.setId("test ID");
         record.setCreatedOn(TEST_CREATED_ON);
         record.setSchemaId(TEST_SCHEMA_ID);
 
-        List<DynamoHealthDataRecord> mockResult = ImmutableList.of(wrongSchemaRecord, record);
-        DynamoHealthDataDao dao = new DynamoHealthDataDao();
-
-        // mock mapper
         QueryResultPage<DynamoHealthDataRecord> resultPage = new QueryResultPage<>();
-        resultPage.setResults(mockResult);
+        resultPage.setResults(ImmutableList.of(record));
 
         DynamoDBMapper mockMapper = mock(DynamoDBMapper.class);
         when(mockMapper.queryPage(eq(DynamoHealthDataRecord.class), any())).thenReturn(resultPage);
 
+        DynamoHealthDataDao dao = new DynamoHealthDataDao();
         dao.setMapper(mockMapper);
 
-        // execute and validate
-        List<HealthDataRecord> retVal = dao.getRecordsByHealthCodeCreatedOnSchemaId(TEST_HEALTH_CODE, TEST_CREATED_ON, TEST_SCHEMA_ID);
+        // Execute and validate.
+        List<HealthDataRecord> retVal = dao.getRecordsByHealthCodeCreatedOn(TEST_HEALTH_CODE, TEST_CREATED_ON,
+                TEST_CREATED_ON_END);
         assertEquals(1, retVal.size());
         assertSame(record, retVal.get(0));
+
+        // Verify query.
+        ArgumentCaptor<DynamoDBQueryExpression> queryCaptor = ArgumentCaptor.forClass(DynamoDBQueryExpression.class);
+        verify(mockMapper).queryPage(eq(DynamoHealthDataRecord.class), queryCaptor.capture());
+
+        DynamoDBQueryExpression<DynamoHealthDataRecord> query = queryCaptor.getValue();
+        assertEquals(TEST_HEALTH_CODE, query.getHashKeyValues().getHealthCode());
+        assertFalse(query.isConsistentRead());
+
+        Condition rangeKeyCondition = query.getRangeKeyConditions().get("createdOn");
+        assertEquals(ComparisonOperator.BETWEEN.toString(), rangeKeyCondition.getComparisonOperator());
+        assertEquals(String.valueOf(TEST_CREATED_ON), rangeKeyCondition.getAttributeValueList().get(0).getN());
+        assertEquals(String.valueOf(TEST_CREATED_ON_END), rangeKeyCondition.getAttributeValueList().get(1).getN());
     }
 }
