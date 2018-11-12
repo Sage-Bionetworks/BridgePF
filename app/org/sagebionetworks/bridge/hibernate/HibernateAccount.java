@@ -27,6 +27,8 @@ import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.persistence.Version;
 
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.Roles;
@@ -35,6 +37,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -73,8 +76,8 @@ public class HibernateAccount implements Account {
     private Set<String> dataGroups;
     private List<String> languages;
     private int migrationVersion;
-    private Set<HibernateAccountSubstudy> accountSubstudies = new HashSet<>(); 
-
+    private Set<AccountSubstudy> accountSubstudies = new HashSet<>(); 
+    
     /**
      * No args constructor, required and used by Hibernate for full object initialization.
      */
@@ -486,14 +489,16 @@ public class HibernateAccount implements Account {
         this.reauthToken = reauthToken; 
     }
     
-    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "accountId", cascade = CascadeType.ALL, orphanRemoval = true, 
+        fetch = FetchType.EAGER, targetEntity=HibernateAccountSubstudy.class)
+    @OnDelete(action=OnDeleteAction.CASCADE)
     @Override
-    public Set<HibernateAccountSubstudy> getAccountSubstudies() {
+    public Set<AccountSubstudy> getAccountSubstudies() {
         return accountSubstudies;
     }
 
     @Override
-    public void setAccountSubstudies(Set<HibernateAccountSubstudy> accountSubstudies) {
+    public void setAccountSubstudies(Set<AccountSubstudy> accountSubstudies) {
         this.accountSubstudies = accountSubstudies;
     }
 }

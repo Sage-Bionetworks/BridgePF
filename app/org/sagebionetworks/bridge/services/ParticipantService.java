@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -59,6 +60,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
@@ -252,6 +254,8 @@ public class ParticipantService {
         builder.withHealthCode(account.getHealthCode());
         builder.withClientData(account.getClientData());
         builder.withAttributes(account.getAttributes());
+        builder.withSubstudyIds(account.getAccountSubstudies().stream().map(AccountSubstudy::getSubstudyId)
+                .collect(BridgeCollectors.toImmutableSet()));
 
         if (includeHistory) {
             Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
@@ -419,7 +423,12 @@ public class ParticipantService {
             throw new LimitExceededException(String.format(BridgeConstants.MAX_USERS_ERROR, study.getAccountLimit()));
         }
     }
-
+    
+    private <T> void updatePersistedSet(Set<T> persisted, Set<T> updated) {
+        persisted.removeAll(Sets.difference(persisted, updated));
+        persisted.addAll(updated);
+    }
+    
     private void updateAccountAndRoles(Study study, Set<Roles> callerRoles, Account account,
             StudyParticipant participant) {
         account.setFirstName(participant.getFirstName());
@@ -430,6 +439,13 @@ public class ParticipantService {
         account.setDataGroups(participant.getDataGroups());
         account.setLanguages(participant.getLanguages());
         account.setMigrationVersion(AccountDao.MIGRATION_VERSION);
+        
+        // Adjust the persisted Hibernate collection, w/o concurrency exceptions
+        Set<AccountSubstudy> updatedSubstudies = participant.getSubstudyIds().stream().map((substudyId) -> {
+            return AccountSubstudy.create(account.getStudyId(), substudyId, account.getId());
+        }).collect(Collectors.toSet());
+        updatePersistedSet(account.getAccountSubstudies(), updatedSubstudies);
+        
         // Do not copy timezone or external ID. Neither can be updated once set.
         
         for (String attribute : study.getUserProfileAttributes()) {

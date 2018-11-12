@@ -1,38 +1,61 @@
 package org.sagebionetworks.bridge.hibernate;
 
-import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.ManyToOne;
+import javax.persistence.Id;
+import javax.persistence.IdClass;
 import javax.persistence.Table;
 
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudyId;
 
 @Entity
-@Table(name = "AccountSubstudies")
-//@IdClass(AccountSubstudyId.class)
+@Table(name = "AccountsSubstudies")
+@IdClass(AccountSubstudyId.class)
 public class HibernateAccountSubstudy implements AccountSubstudy {
 
-    @EmbeddedId
-    private AccountSubstudyId accountSubstudyId;
-    
+    @Id
+    private String studyId;
+    @Id
+    private String substudyId;
+    @Id
+    private String accountId;
     private String externalId;
     
-    @ManyToOne(fetch = FetchType.EAGER)
-    private HibernateSubstudy substudy;
- 
-    @ManyToOne(fetch = FetchType.EAGER)
-    private HibernateAccount account;
-    
-    @Override
-    public AccountSubstudyId getAccountSubstudyId() {
-        return accountSubstudyId;
+    public HibernateAccountSubstudy() {
     }
-
-    @Override
+    
+    public HibernateAccountSubstudy(String studyId, String substudyId, String accountId) {
+        this.studyId = studyId;
+        this.substudyId = substudyId;
+        this.accountId = accountId;
+    }
+    
+    public String getStudyId() {
+        return studyId;
+    }
+    /*
+    public void setStudyId(String studyId) {
+        this.studyId = studyId;
+    }
+    */
+    public String getSubstudyId() {
+        return substudyId;
+    }
+    /*
+    public void setSubstudyId(String substudyId) {
+        this.substudyId = substudyId;
+    }*/
+    public String getAccountId() {
+        return accountId;
+    }
+    /*
+    public void setAccountId(String accountId) {
+        this.accountId = accountId;
+    }*/
     public String getExternalId() {
         return externalId;
     }
-    
+    public void setExternalId(String externalId) {
+        this.externalId = externalId;
+    }
 }

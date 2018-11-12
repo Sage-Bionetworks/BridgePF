@@ -282,9 +282,9 @@ public class ParticipantController extends BaseController {
 
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
  
-        participant = new StudyParticipant.Builder()
-                .copyOf(participant)
-                .withId(userId).build();
+        // Force userId of the URL
+        participant = new StudyParticipant.Builder().copyOf(participant).withId(userId).build();
+        
         participantService.updateParticipant(study, session.getParticipant().getRoles(), participant);
 
         return okResult("Participant updated.");

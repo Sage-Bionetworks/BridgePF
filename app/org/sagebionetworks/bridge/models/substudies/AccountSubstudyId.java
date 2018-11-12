@@ -17,15 +17,15 @@ public final class AccountSubstudyId implements Serializable {
     private String substudyId;
     
     @Column(name = "accountId")
-    private String id;
+    private String accountId;
 
     public AccountSubstudyId() {
     }
  
-    public AccountSubstudyId(String studyId, String substudyId, String id) {
+    public AccountSubstudyId(String studyId, String substudyId, String accountId) {
         this.studyId = studyId;
         this.substudyId = substudyId;
-        this.id = id;
+        this.accountId = accountId;
     }
     
     public String getStudyId() {
@@ -36,13 +36,13 @@ public final class AccountSubstudyId implements Serializable {
         return substudyId;
     }
     
-    public String getId() {
-        return id;
+    public String getAccountId() {
+        return accountId;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, substudyId, id);
+        return Objects.hash(studyId, substudyId, accountId);
     }
 
     @Override
@@ -54,7 +54,7 @@ public final class AccountSubstudyId implements Serializable {
         AccountSubstudyId other = (AccountSubstudyId) obj;
         return Objects.equals(studyId, other.studyId) &&
                 Objects.equals(substudyId, other.substudyId) &&
-                Objects.equals(id, other.id);
+                Objects.equals(accountId, other.accountId);
     }    
     
 }
