@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.models.substudies.Substudy;
 import org.sagebionetworks.bridge.models.substudies.SubstudyId;
 import org.springframework.stereotype.Component;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 @Component
@@ -35,8 +36,8 @@ public class HibernateSubstudyDao implements SubstudyDao {
         if (!includeDeleted) {
             query += " and deleted != 1";
         }
-        return hibernateHelper.queryGet(query, parameters, null, null, HibernateSubstudy.class)
-                .stream().map((oneSubstudy) -> (Substudy) oneSubstudy).collect(Collectors.toList());
+        return ImmutableList.copyOf(hibernateHelper.queryGet(query, parameters, 
+                null, null, HibernateSubstudy.class));
     }
 
     @Override

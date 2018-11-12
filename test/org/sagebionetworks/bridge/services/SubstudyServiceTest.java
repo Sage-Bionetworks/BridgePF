@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.SubstudyDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
 
@@ -113,6 +114,11 @@ public class SubstudyServiceTest {
         assertNotEquals(timestamp, persisted.getModifiedOn());
     }
     
+    @Test(expected = InvalidEntityException.class)
+    public void createSubstudyInvalidSubstudy() {
+        service.createSubstudy(TestConstants.TEST_STUDY, Substudy.create());
+    }
+    
     @Test(expected = EntityAlreadyExistsException.class)
     public void createSubstudyAlreadyExists() {
         Substudy substudy = Substudy.create();
@@ -149,6 +155,11 @@ public class SubstudyServiceTest {
         assertEquals("newName", returnedValue.getName());
         assertNotNull(returnedValue.getCreatedOn());
         assertNotNull(returnedValue.getModifiedOn());
+    }
+    
+    @Test(expected = InvalidEntityException.class)
+    public void updateSubstudyInvalidSubstudy() {
+        service.updateSubstudy(TestConstants.TEST_STUDY, Substudy.create());
     }
     
     @Test(expected = EntityNotFoundException.class)
