@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.play.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
-
 import java.util.Map;
 import java.util.Set;
 
@@ -31,6 +29,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -116,7 +115,7 @@ public class UserProfileController extends BaseController {
                 .withLastName(JsonUtils.asText(node, "lastName"))
                 .withAttributes(attributes)
                 .withId(userId).build();
-        participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
+        participantService.updateParticipant(study, ImmutableSet.of(), participant.getSubstudyIds(), updated);
         
         CriteriaContext context = getCriteriaContext(session);
         
@@ -177,7 +176,7 @@ public class UserProfileController extends BaseController {
                 .copyFieldsOf(dataGroups, DATA_GROUPS_SET)
                 .withId(session.getId()).build();
         
-        participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
+        participantService.updateParticipant(study, ImmutableSet.of(), participant.getSubstudyIds(), updated);
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withLanguages(session.getParticipant().getLanguages())

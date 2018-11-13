@@ -147,6 +147,7 @@ public class TestUtils {
             if (e.getErrors().get(fieldName).contains(fieldNameAsLabel+error)) {
                 return;
             }
+            System.out.println(e.getMessage());
             fail("Did not find error message in errors object");
         }
     }

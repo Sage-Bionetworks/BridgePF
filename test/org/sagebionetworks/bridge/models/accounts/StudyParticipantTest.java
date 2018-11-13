@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -40,8 +41,9 @@ public class StudyParticipantTest {
     private static final DateTime CREATED_ON = DateTime.now();
     private static final DateTime CREATED_ON_UTC = CREATED_ON.withZone(DateTimeZone.UTC);
     private static final Phone PHONE = TestConstants.PHONE;
-    private static final Set<Roles> ROLES = Sets.newHashSet(Roles.ADMIN, Roles.WORKER);
+    private static final Set<Roles> ROLES = ImmutableSet.of(Roles.ADMIN, Roles.WORKER);
     private static final List<String> LANGS = ImmutableList.of("en","fr");
+    private static final Set<String> SUBSTUDIES = ImmutableSet.of("substudyA", "substudyB");
     private static final Set<String> DATA_GROUPS = Sets.newHashSet("group1","group2");
     private static final DateTimeZone TIME_ZONE = DateTimeZone.forOffsetHours(4);
     private static final Map<String,String> ATTRIBUTES = ImmutableMap.<String,String>builder()
@@ -74,6 +76,8 @@ public class StudyParticipantTest {
         assertEquals("enabled", node.get("status").asText());
         assertEquals(CREATED_ON_UTC.toString(), node.get("createdOn").asText());
         assertEquals(ACCOUNT_ID, node.get("id").asText());
+        assertEquals("substudyA", node.get("substudyIds").get(0).textValue());
+        assertEquals("substudyB", node.get("substudyIds").get(1).textValue());
         assertEquals("+04:00", node.get("timeZone").asText());
         assertEquals("StudyParticipant", node.get("type").asText());
         
@@ -99,7 +103,7 @@ public class StudyParticipantTest {
 
         assertEquals("B", node.get("attributes").get("A").asText());
         assertEquals("D", node.get("attributes").get("C").asText());
-        assertEquals(23, node.size());
+        assertEquals(24, node.size());
         
         StudyParticipant deserParticipant = BridgeObjectMapper.get().readValue(node.toString(), StudyParticipant.class);
         assertEquals("firstName", deserParticipant.getFirstName());
@@ -111,6 +115,7 @@ public class StudyParticipantTest {
         assertEquals(SharingScope.SPONSORS_AND_PARTNERS, deserParticipant.getSharingScope());
         assertTrue(deserParticipant.isNotifyByEmail());
         assertEquals(DATA_GROUPS, deserParticipant.getDataGroups());
+        assertEquals(SUBSTUDIES, deserParticipant.getSubstudyIds());
         assertEquals(TestConstants.UNENCRYPTED_HEALTH_CODE, deserParticipant.getHealthCode());
         // This is encrypted with different series of characters each time, so just verify it is there.
         assertNotNull(deserParticipant.getEncryptedHealthCode());
@@ -357,6 +362,7 @@ public class StudyParticipantTest {
                 .withConsented(true)
                 .withRoles(ROLES)
                 .withLanguages(LANGS)
+                .withSubstudyIds(SUBSTUDIES)
                 .withCreatedOn(CREATED_ON)
                 .withId(ACCOUNT_ID)
                 .withStatus(AccountStatus.ENABLED)

@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
-import static org.sagebionetworks.bridge.BridgeConstants.NO_CALLER_ROLES;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -19,6 +18,7 @@ import java.util.Set;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -112,7 +112,7 @@ public class ParticipantController extends BaseController {
                 .copyOf(existing)
                 .copyFieldsOf(participant, fieldNames)
                 .withId(session.getId()).build();
-        participantService.updateParticipant(study, NO_CALLER_ROLES, updated);
+        participantService.updateParticipant(study, ImmutableSet.of(), existing.getSubstudyIds(), updated);
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withLanguages(session.getParticipant().getLanguages())
@@ -230,7 +230,7 @@ public class ParticipantController extends BaseController {
         
         StudyParticipant participant = parseJson(request(), StudyParticipant.class);
         IdentifierHolder holder = participantService.createParticipant(study, session.getParticipant().getRoles(),
-                participant, true);
+                session.getParticipant().getSubstudyIds(), participant, true);
         return createdResult(holder);
     }
     
@@ -285,7 +285,8 @@ public class ParticipantController extends BaseController {
         // Force userId of the URL
         participant = new StudyParticipant.Builder().copyOf(participant).withId(userId).build();
         
-        participantService.updateParticipant(study, session.getParticipant().getRoles(), participant);
+        participantService.updateParticipant(study, session.getParticipant().getRoles(),
+                session.getParticipant().getSubstudyIds(), participant);
 
         return okResult("Participant updated.");
     }

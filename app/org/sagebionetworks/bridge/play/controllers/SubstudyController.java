@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.play.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import java.util.List;
 
@@ -27,7 +28,7 @@ public class SubstudyController extends BaseController {
     }
     
     public Result getSubstudies(String includeDeletedStr) {
-        UserSession session = getAuthenticatedSession(ADMIN);
+        UserSession session = getAuthenticatedSession(RESEARCHER, ADMIN);
         boolean includeDeleted = Boolean.valueOf(includeDeletedStr);
         
         List<Substudy> substudies = service.getSubstudies(session.getStudyIdentifier(), includeDeleted);

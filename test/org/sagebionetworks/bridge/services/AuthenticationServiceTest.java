@@ -63,6 +63,7 @@ import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 @ContextConfiguration("classpath:test-context.xml")
@@ -456,7 +457,7 @@ public class AuthenticationServiceTest {
         StudyParticipant participant = participantService.getParticipant(study, userId, false);
         StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant)
                 .withDataGroups(UPDATED_DATA_GROUPS).withId(userId).build();
-        participantService.updateParticipant(study, CALLER_ROLES, updated);
+        participantService.updateParticipant(study, CALLER_ROLES, ImmutableSet.of(), updated);
         
         // Now update the session, these changes should be reflected
         CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(study.getStudyIdentifier())

@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.validators.SignInValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -130,7 +131,7 @@ public class UserAdminService {
         
         IdentifierHolder identifier = null;
         try {
-            identifier = participantService.createParticipant(study, ADMIN_ROLE, participant, false);
+            identifier = participantService.createParticipant(study, ADMIN_ROLE, ImmutableSet.of(), participant, false);
             StudyParticipant updatedParticipant = participantService.getParticipant(study, identifier.getIdentifier(), false);
             
             // We don't filter users by any of these filtering criteria in the admin API.

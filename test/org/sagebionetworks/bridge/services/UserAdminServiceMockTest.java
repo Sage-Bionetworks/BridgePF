@@ -40,8 +40,8 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
 public class UserAdminServiceMockTest {
@@ -120,7 +120,7 @@ public class UserAdminServiceMockTest {
         
         when(authenticationService.signIn(any(), any(), any())).thenReturn(session);
         doReturn(new IdentifierHolder("ABC")).when(participantService).createParticipant(anyObject(), anySet(),
-                anyObject(), anyBoolean());
+                anySet(), anyObject(), anyBoolean());
         doReturn(session).when(authenticationService).getSession(anyObject(), anyObject());
         doReturn(new StudyParticipant.Builder().withId("ABC").build()).when(participantService).getParticipant(any(),
                 anyString(), anyBoolean());
@@ -145,7 +145,8 @@ public class UserAdminServiceMockTest {
         
         service.createUser(study, participant, null, true, true);
         
-        verify(participantService).createParticipant(study, Sets.newHashSet(Roles.ADMIN), participant, false);
+        verify(participantService).createParticipant(study, ImmutableSet.of(Roles.ADMIN), ImmutableSet.of(),
+                participant, false);
         verify(authenticationService).signIn(eq(study), contextCaptor.capture(), signInCaptor.capture());
         
         CriteriaContext context = contextCaptor.getValue();
@@ -171,7 +172,8 @@ public class UserAdminServiceMockTest {
 
         service.createUser(study, participant, null, true, true);
         
-        verify(participantService).createParticipant(study, Sets.newHashSet(Roles.ADMIN), participant, false);
+        verify(participantService).createParticipant(study, ImmutableSet.of(Roles.ADMIN), ImmutableSet.of(),
+                participant, false);
         verify(authenticationService).signIn(eq(study), contextCaptor.capture(), signInCaptor.capture());
         
         CriteriaContext context = contextCaptor.getValue();
@@ -200,7 +202,8 @@ public class UserAdminServiceMockTest {
         
         UserSession session = service.createUser(study, participant, consentedGuid, true, true);
         
-        verify(participantService).createParticipant(study, Sets.newHashSet(Roles.ADMIN), participant, false);
+        verify(participantService).createParticipant(study, ImmutableSet.of(Roles.ADMIN), ImmutableSet.of(),
+                participant, false);
         
         // consented to the indicated subpopulation
         verify(consentService).consentToResearch(eq(study), eq(consentedGuid), any(StudyParticipant.class), any(), eq(SharingScope.NO_SHARING), eq(false));

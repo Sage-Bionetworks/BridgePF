@@ -275,6 +275,7 @@ public class HibernateAccountDao implements AccountDao {
     public Account constructAccount(Study study, String email, Phone phone, String externalId, String password) {
         // Set basic params from inputs.
         Account account = Account.create();
+        account.setId(generateHealthCode());
         account.setStudyId(study.getIdentifier());
         account.setEmail(email);
         account.setPhone(phone);
@@ -302,8 +303,6 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public String createAccount(Study study, Account account) {
-        String userId = BridgeUtils.generateGuid();
-        account.setId(userId);
         account.setStudyId(study.getIdentifier());
         DateTime timestamp = DateUtils.getCurrentDateTime();
         account.setCreatedOn(timestamp);
@@ -313,7 +312,7 @@ public class HibernateAccountDao implements AccountDao {
 
         // Create account
         hibernateHelper.create(account);
-        return userId;
+        return account.getId();
     }
 
     /** {@inheritDoc} */

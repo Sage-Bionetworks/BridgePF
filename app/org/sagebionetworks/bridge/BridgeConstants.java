@@ -1,11 +1,7 @@
 package org.sagebionetworks.bridge;
 
-import java.util.Set;
-
 import org.joda.time.DateTimeZone;
 import org.jsoup.safety.Whitelist;
-
-import com.google.common.collect.ImmutableSet;
 
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -106,8 +102,6 @@ public class BridgeConstants {
     public static final String PAGE_SIZE_ERROR = "pageSize must be from "+API_MINIMUM_PAGE_SIZE+"-"+API_MAXIMUM_PAGE_SIZE+" records";
     
     public static final String TEST_USER_GROUP = "test_user";
-    
-    public static final Set<Roles> NO_CALLER_ROLES = ImmutableSet.of();
     
     public static final String EXPIRATION_PERIOD_KEY = "expirationPeriod";
     

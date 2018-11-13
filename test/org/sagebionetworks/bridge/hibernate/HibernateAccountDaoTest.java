@@ -834,11 +834,12 @@ public class HibernateAccountDaoTest {
         Account account = makeValidGenericAccount();
         account.setStatus(AccountStatus.ENABLED);
         account.setStudyId("wrong-study");
+        account.setId(ACCOUNT_ID);
 
         // execute - We generate a new account ID.
         String daoOutputAcountId = dao.createAccount(study, account);
         assertNotNull(daoOutputAcountId);
-        assertNotEquals(ACCOUNT_ID, daoOutputAcountId);
+        assertEquals(ACCOUNT_ID, daoOutputAcountId);
 
         // verify hibernate call
         ArgumentCaptor<HibernateAccount> createdHibernateAccountCaptor = ArgumentCaptor.forClass(

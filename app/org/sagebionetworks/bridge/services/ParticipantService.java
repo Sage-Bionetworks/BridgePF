@@ -314,16 +314,18 @@ public class ParticipantService {
      * Create a study participant. A password must be provided, even if it is added on behalf of a user before
      * triggering a reset password request.
      */
-    public IdentifierHolder createParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant,
-            boolean shouldSendVerification) {
+    public IdentifierHolder createParticipant(Study study, Set<Roles> callerRoles, Set<String> callerSubstudies,
+            StudyParticipant participant, boolean shouldSendVerification) {
         checkNotNull(study);
         checkNotNull(callerRoles);
+        checkNotNull(callerSubstudies);
         checkNotNull(participant);
         
         if (study.getAccountLimit() > 0) {
             throwExceptionIfLimitMetOrExceeded(study);
         }
-        Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, study, true), participant);
+        Validate.entityThrowingException(
+                new StudyParticipantValidator(externalIdService, study, callerSubstudies, true), participant);
         
         Account account = accountDao.constructAccount(study, participant.getEmail(), participant.getPhone(),
                 participant.getExternalId(), participant.getPassword());
@@ -378,12 +380,15 @@ public class ParticipantService {
             participant.getExternalId() != null && participant.getPassword() != null;
     }
 
-    public void updateParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant) {
+    public void updateParticipant(Study study, Set<Roles> callerRoles, Set<String> callerSubstudies,
+            StudyParticipant participant) {
         checkNotNull(study);
         checkNotNull(callerRoles);
+        checkNotNull(callerSubstudies);
         checkNotNull(participant);
         
-        Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, study, false), participant);
+        Validate.entityThrowingException(
+                new StudyParticipantValidator(externalIdService, study, callerSubstudies, false), participant);
         
         Account account = getAccountThrowingException(study, participant.getId());
         
