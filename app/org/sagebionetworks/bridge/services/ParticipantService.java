@@ -351,12 +351,12 @@ public class ParticipantService {
         if (shouldEnableCompleteExternalIdAccount(participant)) {
             account.setStatus(AccountStatus.ENABLED);
         }
-        String accountId = accountDao.createAccount(study, account);
+        accountDao.createAccount(study, account);
         externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());    
         
         // send verify email
         if (sendEmailVerification && !study.isAutoVerificationEmailSuppressed()) {
-            accountWorkflowService.sendEmailVerificationToken(study, accountId, account.getEmail());
+            accountWorkflowService.sendEmailVerificationToken(study, account.getId(), account.getEmail());
         }
 
         // If you create an account with a phone number, this opts the phone number in to receiving SMS. We do this
@@ -365,14 +365,14 @@ public class ParticipantService {
         Phone phone = account.getPhone();
         if (phone != null) {
             // Note that there is no object with both accountId and phone, so we need to pass them in separately.
-            smsService.optInPhoneNumber(accountId, phone);
+            smsService.optInPhoneNumber(account.getId(), phone);
         }
 
         // send verify phone number
         if (shouldSendVerification && !study.isAutoVerificationPhoneSuppressed()) {
-            accountWorkflowService.sendPhoneVerificationToken(study, accountId, phone);
+            accountWorkflowService.sendPhoneVerificationToken(study, account.getId(), phone);
         }
-        return new IdentifierHolder(accountId);
+        return new IdentifierHolder(account.getId());
     }
     
     private boolean shouldEnableCompleteExternalIdAccount(StudyParticipant participant) {

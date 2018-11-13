@@ -251,7 +251,6 @@ public class ParticipantServiceTest {
         account.setExternalId(EXTERNAL_ID);
         account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         when(accountDao.constructAccount(any(), any(), any(), any(), any())).thenReturn(account);
-        when(accountDao.createAccount(same(STUDY), same(account))).thenReturn(ID);
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
     }
     
@@ -260,7 +259,6 @@ public class ParticipantServiceTest {
         account.setId(ID);
         account.setHealthCode(HEALTH_CODE);
         when(accountDao.constructAccount(any(), any(), any(), any(), any())).thenReturn(account);
-        when(accountDao.createAccount(same(STUDY), same(account))).thenReturn(ID);
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
     }
     
@@ -1610,8 +1608,8 @@ public class ParticipantServiceTest {
         identifier.setHealthCode("AAA");
         when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(identifier);
         
-        when(accountDao.createAccount(any(), any()))
-                .thenThrow(new EntityAlreadyExistsException(Account.class, (String) null, (Map<String, Object>) null));
+        doThrow(new EntityAlreadyExistsException(Account.class, (String) null, (Map<String, Object>) null))
+                .when(accountDao).createAccount(any(), any());
         try {
             participantService.createParticipant(STUDY, RESEARCH_CALLER_ROLES, CALLER_SUBS, PARTICIPANT, false);
             fail("Should have thrown exception");

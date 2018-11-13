@@ -33,25 +33,12 @@ public class HibernateAccountSubstudy implements AccountSubstudy {
     public String getStudyId() {
         return studyId;
     }
-    /*
-    public void setStudyId(String studyId) {
-        this.studyId = studyId;
-    }
-    */
     public String getSubstudyId() {
         return substudyId;
     }
-    /*
-    public void setSubstudyId(String substudyId) {
-        this.substudyId = substudyId;
-    }*/
     public String getAccountId() {
         return accountId;
     }
-    /*
-    public void setAccountId(String accountId) {
-        this.accountId = accountId;
-    }*/
     public String getExternalId() {
         return externalId;
     }

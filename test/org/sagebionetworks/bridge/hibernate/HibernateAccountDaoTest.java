@@ -837,9 +837,7 @@ public class HibernateAccountDaoTest {
         account.setId(ACCOUNT_ID);
 
         // execute - We generate a new account ID.
-        String daoOutputAcountId = dao.createAccount(study, account);
-        assertNotNull(daoOutputAcountId);
-        assertEquals(ACCOUNT_ID, daoOutputAcountId);
+        dao.createAccount(study, account);
 
         // verify hibernate call
         ArgumentCaptor<HibernateAccount> createdHibernateAccountCaptor = ArgumentCaptor.forClass(
@@ -847,7 +845,7 @@ public class HibernateAccountDaoTest {
         verify(mockHibernateHelper).create(createdHibernateAccountCaptor.capture());
 
         HibernateAccount createdHibernateAccount = createdHibernateAccountCaptor.getValue();
-        assertEquals(daoOutputAcountId, createdHibernateAccount.getId());
+        assertEquals(ACCOUNT_ID, createdHibernateAccount.getId());
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, createdHibernateAccount.getStudyId());
         assertEquals(MOCK_DATETIME.getMillis(), createdHibernateAccount.getCreatedOn().getMillis());
         assertEquals(MOCK_DATETIME.getMillis(), createdHibernateAccount.getModifiedOn().getMillis());

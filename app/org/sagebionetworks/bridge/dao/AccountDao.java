@@ -76,7 +76,7 @@ public interface AccountDao {
      * Create an account. The account object should initially be retrieved from the 
      * constructAccount() factory method. Returns the created account's ID.
      */
-    String createAccount(Study study, Account account);
+    void createAccount(Study study, Account account);
     
     /**
      * Save account changes. Account should have been retrieved from the getAccount() method 

@@ -302,7 +302,7 @@ public class HibernateAccountDao implements AccountDao {
 
     /** {@inheritDoc} */
     @Override
-    public String createAccount(Study study, Account account) {
+    public void createAccount(Study study, Account account) {
         account.setStudyId(study.getIdentifier());
         DateTime timestamp = DateUtils.getCurrentDateTime();
         account.setCreatedOn(timestamp);
@@ -312,7 +312,6 @@ public class HibernateAccountDao implements AccountDao {
 
         // Create account
         hibernateHelper.create(account);
-        return account.getId();
     }
 
     /** {@inheritDoc} */
