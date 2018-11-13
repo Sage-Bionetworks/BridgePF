@@ -368,6 +368,7 @@ public class StudyParticipantValidatorTest {
     }
     @Test
     public void substudyAllowedIfCallerHasNoSubstudies() {
+        // In other words, you can "taint" a user with substudies, putting them in a limited security role.
         StudyParticipant participant = withSubstudies("substudyA", "substudyB");
         
         validator = new StudyParticipantValidator(externalIdService, study, ImmutableSet.of(), true);
@@ -375,6 +376,7 @@ public class StudyParticipantValidatorTest {
     }
     @Test
     public void substudyRequiredIfCallerHasSubstudies() {
+        // Once a user has a substudy taint, it must be passed to any accounts that user creates (or a subset of it)
         StudyParticipant participant = withEmail("email@email.com");
         
         validator = new StudyParticipantValidator(externalIdService, study, ImmutableSet.of("substudyA"), true);
@@ -382,13 +384,15 @@ public class StudyParticipantValidatorTest {
     }
     @Test
     public void invalidSubstudyIfCallerHasSubstudies() { 
+        // Nor can the user add a participant to substudies that they do not belong to
         StudyParticipant participant = withSubstudies("substudyA", "substudyB");
         
         validator = new StudyParticipantValidator(externalIdService, study, ImmutableSet.of("substudyA", "substudyC"), true);
         assertValidatorMessage(validator, participant, "substudyIds[substudyB]", "is not a substudy of the caller");
     }
     @Test
-    public void substudiesOK() {
+    public void subsetOfsubstudiesOK() {
+        // The user (in three substudies) can create a participant in only one of those substudies
         StudyParticipant participant = withSubstudies("substudyB");
         
         validator = new StudyParticipantValidator(externalIdService, study, ImmutableSet.of("substudyA", "substudyB", "substudyC"), true);

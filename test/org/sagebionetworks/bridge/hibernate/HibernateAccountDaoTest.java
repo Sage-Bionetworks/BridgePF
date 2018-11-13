@@ -132,7 +132,7 @@ public class HibernateAccountDaoTest {
         dao = spy(new HibernateAccountDao());
         dao.setHibernateHelper(mockHibernateHelper);
         dao.setCacheProvider(mockCacheProvider);
-        when(dao.generateHealthCode()).thenReturn(HEALTH_CODE);
+        when(dao.generateGUID()).thenReturn(HEALTH_CODE);
         
         study = Study.create();
         study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
@@ -804,7 +804,10 @@ public class HibernateAccountDaoTest {
         assertEquals(PHONE.getNationalFormat(), account.getPhone().getNationalFormat());
         assertEquals(Boolean.FALSE, account.getEmailVerified());
         assertEquals(Boolean.FALSE, account.getPhoneVerified());
+        // These are the same because we've mocked the GUID-creation method to always return
+        // this value.
         assertEquals(HEALTH_CODE, account.getHealthCode());
+        assertEquals(HEALTH_CODE, account.getId());
         assertEquals(EXTERNAL_ID, account.getExternalId());
         assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, account.getPasswordAlgorithm());
 

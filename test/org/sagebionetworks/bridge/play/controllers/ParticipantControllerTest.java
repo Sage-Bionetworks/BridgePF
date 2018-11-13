@@ -377,7 +377,9 @@ public class ParticipantControllerTest {
         Result result = controller.updateParticipant(ID);
         assertResult(result, 200, "Participant updated.");
         
-        verify(mockParticipantService).updateParticipant(eq(study), eq(CALLER_ROLES), eq(ImmutableSet.of("substudyA")), participantCaptor.capture());
+        // Both the caller roles and the caller's substudies are passed to participantService
+        verify(mockParticipantService).updateParticipant(eq(study), eq(CALLER_ROLES), eq(ImmutableSet.of("substudyA")),
+                participantCaptor.capture());
         
         StudyParticipant participant = participantCaptor.getValue();
         assertEquals(ID, participant.getId());
@@ -531,6 +533,8 @@ public class ParticipantControllerTest {
         // All values should be copied over here, also add a healthCode to verify it is not unset.
         StudyParticipant participant = new StudyParticipant.Builder()
                 .copyOf(TestUtils.getStudyParticipant(ParticipantControllerTest.class))
+                .withRoles(ImmutableSet.of(Roles.DEVELOPER)) // <-- should not be passed along
+                .withSubstudyIds(ImmutableSet.of("substudyA", "substudyB"))
                 .withHealthCode("healthCode").build();
         
         doReturn(participant).when(mockParticipantService).getParticipant(study, ID, false);
@@ -548,7 +552,9 @@ public class ParticipantControllerTest {
         
         // verify the object is passed to service, one field is sufficient
         verify(mockCacheProvider).setUserSession(any());
-        verify(mockParticipantService).updateParticipant(eq(study), eq(ImmutableSet.of()), eq(ImmutableSet.of()), participantCaptor.capture());
+        // No roles are passed in this method, and the substudies of the user are passed 
+        verify(mockParticipantService).updateParticipant(eq(study), eq(ImmutableSet.of()),
+                eq(ImmutableSet.of("substudyA", "substudyB")), participantCaptor.capture());
 
         // Just test the different types and verify they are there.
         StudyParticipant captured = participantCaptor.getValue();
@@ -596,7 +602,8 @@ public class ParticipantControllerTest {
         JsonNode node = TestUtils.getJson(result);
         assertEquals("UserSessionInfo", node.get("type").asText());
 
-        verify(mockParticipantService).updateParticipant(eq(study), eq(ImmutableSet.of()), eq(ImmutableSet.of()), participantCaptor.capture());
+        verify(mockParticipantService).updateParticipant(eq(study), eq(ImmutableSet.of()),
+                eq(ImmutableSet.of()), participantCaptor.capture());
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals(ID, captured.getId());
         assertEquals("firstName", captured.getFirstName());

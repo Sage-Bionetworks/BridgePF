@@ -78,6 +78,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 
@@ -298,6 +299,34 @@ public class ParticipantServiceTest {
         
         // don't update cache
         verify(cacheProvider, never()).removeSessionByUserId(ID);
+    }
+    
+    @Test
+    public void createParticipantTransfersSubstudyIds() {
+        Set<String> substudies = ImmutableSet.of("substudyA", "substudyB");
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .copyOf(PARTICIPANT).withSubstudyIds(substudies).build();
+        
+        mockHealthCodeAndAccountRetrieval();
+        
+        participantService.createParticipant(STUDY, ImmutableSet.of(), substudies, participant, false);
+        
+        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture());
+        
+        Set<AccountSubstudy> accountSubstudies = accountCaptor.getValue().getAccountSubstudies();
+        assertEquals(2, accountSubstudies.size());
+        
+        AccountSubstudy substudyA = accountSubstudies.stream()
+                .filter((as) -> as.getSubstudyId().equals("substudyA")).findAny().get();
+        assertEquals(STUDY.getIdentifier(), substudyA.getStudyId());
+        assertEquals("substudyA", substudyA.getSubstudyId());
+        assertEquals(ID, substudyA.getAccountId());
+        
+        AccountSubstudy substudyB = accountSubstudies.stream()
+                .filter((as) -> as.getSubstudyId().equals("substudyB")).findAny().get();
+        assertEquals(STUDY.getIdentifier(), substudyB.getStudyId());
+        assertEquals("substudyB", substudyB.getSubstudyId());
+        assertEquals(ID, substudyB.getAccountId());
     }
     
     @Test
@@ -868,6 +897,38 @@ public class ParticipantServiceTest {
         assertEquals(ImmutableList.of("de","fr"), account.getLanguages());
         assertEquals(EXTERNAL_ID, account.getExternalId());
         assertNull(account.getTimeZone());
+    }
+    
+    @Test
+    public void updateParticipantTransfersSubstudyIds() {
+        Set<String> substudies = ImmutableSet.of("substudyA", "substudyB");
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .copyOf(PARTICIPANT).withSubstudyIds(substudies).build();
+        
+        // Make this test more robust by including accountSubstudies that should
+        // be either kept or removed. These do not change the final persisted set.
+        mockHealthCodeAndAccountRetrieval();
+        account.getAccountSubstudies().add(AccountSubstudy.create(STUDY.getIdentifier(), "substudyC", ID));
+        account.getAccountSubstudies().add(AccountSubstudy.create(STUDY.getIdentifier(), "substudyA", ID));
+        
+        participantService.updateParticipant(STUDY, ImmutableSet.of(), substudies, participant);
+        
+        verify(accountDao).updateAccount(accountCaptor.capture());
+        
+        Set<AccountSubstudy> accountSubstudies = accountCaptor.getValue().getAccountSubstudies();
+        assertEquals(2, accountSubstudies.size());
+        
+        AccountSubstudy substudyA = accountSubstudies.stream()
+                .filter((as) -> as.getSubstudyId().equals("substudyA")).findAny().get();
+        assertEquals(STUDY.getIdentifier(), substudyA.getStudyId());
+        assertEquals("substudyA", substudyA.getSubstudyId());
+        assertEquals(ID, substudyA.getAccountId());
+        
+        AccountSubstudy substudyB = accountSubstudies.stream()
+                .filter((as) -> as.getSubstudyId().equals("substudyB")).findAny().get();
+        assertEquals(STUDY.getIdentifier(), substudyB.getStudyId());
+        assertEquals("substudyB", substudyB.getSubstudyId());
+        assertEquals(ID, substudyB.getAccountId());
     }
     
     @Test

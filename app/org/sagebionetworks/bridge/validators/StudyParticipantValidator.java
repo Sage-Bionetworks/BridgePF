@@ -78,7 +78,7 @@ public class StudyParticipantValidator implements Validator {
 
         // If the caller is not in a substudy, any substudy tags are allowed. If there 
         // are any substudies assigned to the caller, then the participant must be assigned 
-        // to one or more of those specific substudies.
+        // to one or more of those substudies, and only those substudies.
         if (!callerSubstudies.isEmpty()) {
             if (participant.getSubstudyIds().isEmpty()) {
                 errors.rejectValue("substudyIds", "must be assigned to this participant");

@@ -61,6 +61,7 @@ public class UserSessionInfoTest {
         assertEquals("staging", node.get("environment").textValue());
         assertEquals("reauthToken", node.get("reauthToken").textValue());
         assertEquals(participant.getId(), node.get("id").textValue());
+        assertEquals(1, node.get("substudyIds").size());
         assertEquals("substudyA", node.get("substudyIds").get(0).textValue());
         assertFalse(node.get("notifyByEmail").booleanValue());
         assertNull(node.get("healthCode"));

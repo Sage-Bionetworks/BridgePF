@@ -275,13 +275,13 @@ public class HibernateAccountDao implements AccountDao {
     public Account constructAccount(Study study, String email, Phone phone, String externalId, String password) {
         // Set basic params from inputs.
         Account account = Account.create();
-        account.setId(generateHealthCode());
+        account.setId(generateGUID());
         account.setStudyId(study.getIdentifier());
         account.setEmail(email);
         account.setPhone(phone);
         account.setEmailVerified(Boolean.FALSE);
         account.setPhoneVerified(Boolean.FALSE);
-        account.setHealthCode(generateHealthCode());
+        account.setHealthCode(generateGUID());
         account.setExternalId(externalId);
 
         // Hash password if it has been supplied.
@@ -296,7 +296,7 @@ public class HibernateAccountDao implements AccountDao {
     }
     
     // Provided to override in tests
-    protected String generateHealthCode() {
+    protected String generateGUID() {
         return BridgeUtils.generateGuid();
     }
 
@@ -564,7 +564,7 @@ public class HibernateAccountDao implements AccountDao {
     // is necessary.
     private boolean validateHealthCode(HibernateAccount hibernateAccount) {
         if (StringUtils.isBlank(hibernateAccount.getHealthCode())) {
-            hibernateAccount.setHealthCode(generateHealthCode());
+            hibernateAccount.setHealthCode(generateGUID());
 
             // We modified it. Update modifiedOn.
             DateTime modifiedOn = DateUtils.getCurrentDateTime();

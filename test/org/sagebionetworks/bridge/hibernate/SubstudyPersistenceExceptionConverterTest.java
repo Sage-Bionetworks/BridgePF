@@ -2,18 +2,35 @@ package org.sagebionetworks.bridge.hibernate;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import javax.persistence.OptimisticLockException;
 import javax.persistence.PersistenceException;
 
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 
+@RunWith(MockitoJUnitRunner.class)
 public class SubstudyPersistenceExceptionConverterTest {
     
     private SubstudyPersistenceExceptionConverter converter;
+    
+    @Mock
+    private ConstraintViolationException cve;
     
     @Before
     public void before() {
@@ -38,5 +55,32 @@ public class SubstudyPersistenceExceptionConverterTest {
         assertEquals(ConcurrentModificationException.class, result.getClass());
         assertEquals("Substudy has the wrong version number; it may have been saved in the background.", result.getMessage());
     }
+    
+    @Test
+    public void genericConstraintViolationException() {
+        HibernateSubstudy substudy = new HibernateSubstudy();
+        substudy.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
 
+        PersistenceException ex = new PersistenceException(cve);
+        when(cve.getMessage()).thenReturn("This is some generic constraint violation message");
+
+        RuntimeException result = converter.convert(ex, substudy);
+
+        assertEquals(org.sagebionetworks.bridge.exceptions.ConstraintViolationException.class, result.getClass());
+        assertEquals("Substudy table constraint prevented save or update.", result.getMessage());
+    }
+    
+    @Test
+    public void usedByAccountsConstraintViolationException() {
+        HibernateSubstudy substudy = new HibernateSubstudy();
+        substudy.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+
+        PersistenceException ex = new PersistenceException(cve);
+        when(cve.getMessage()).thenReturn("abc a foreign key constraint fails abc REFERENCES `Substudies`abc");
+
+        RuntimeException result = converter.convert(ex, substudy);
+
+        assertEquals(org.sagebionetworks.bridge.exceptions.ConstraintViolationException.class, result.getClass());
+        assertEquals("Substudy cannot be deleted, it is referenced by an account", result.getMessage());
+    }
 }

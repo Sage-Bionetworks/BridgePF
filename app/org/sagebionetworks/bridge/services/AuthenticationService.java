@@ -260,7 +260,8 @@ public class AuthenticationService {
         }
 
         try {
-            // Since caller has no roles, no roles can be assigned on sign up.
+            // Since caller has no roles, no roles can be assigned on sign up. Right now public sign up cannot
+            // assign the user to a substudy.
             return participantService.createParticipant(study, ImmutableSet.of(), ImmutableSet.of(), participant, true);
         } catch(EntityAlreadyExistsException e) {
             // Suppress this and send an email to notify the user that the account already exists. From 
@@ -343,6 +344,8 @@ public class AuthenticationService {
         if (account == null) {
             // Create an account with password and external ID assigned. If the external ID has been 
             // assigned to another account, this creation will fail (external ID is a unique column).
+            // Currently this user cannot be assigned to a substudy, but the external ID will eventually 
+            // establish such a relationship.
             StudyParticipant participant = new StudyParticipant.Builder()
                     .withExternalId(externalId).withPassword(password).build();
             userId = participantService.createParticipant(study, ImmutableSet.of(), ImmutableSet.of(), 

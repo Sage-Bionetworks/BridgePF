@@ -276,6 +276,19 @@ public class HibernateAccountTest {
         assertEquals(sig1, account.getAllConsentSignatureHistories().get(guid1).get(3));
     }
     
+    @Test
+    public void collectionsNotNull() {
+        HibernateAccount account = new HibernateAccount();
+        assertTrue(account.getAccountSubstudies().isEmpty());
+        assertTrue(account.getAttributes().isEmpty());
+        assertTrue(account.getConsents().isEmpty());
+        assertTrue(account.getDataGroups().isEmpty());
+        assertTrue(account.getLanguages().isEmpty());
+        assertTrue(account.getRoles().isEmpty());
+        assertTrue(account.getConsentSignatureHistory(SubpopulationGuid.create("nada")).isEmpty());
+        assertTrue(account.getAllConsentSignatureHistories().isEmpty());
+    }
+    
     private HibernateAccountConsent getHibernateAccountConsent(Long withdrewOn) {
         HibernateAccountConsent consent = new HibernateAccountConsent();
         consent.setBirthdate("1980-01-01");

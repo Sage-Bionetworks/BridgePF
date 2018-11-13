@@ -21,6 +21,7 @@ public class HibernateAccountSubstudy implements AccountSubstudy {
     private String accountId;
     private String externalId;
     
+    // Needed for Hibernate, or else you have to create an instantiation helper class
     public HibernateAccountSubstudy() {
     }
     

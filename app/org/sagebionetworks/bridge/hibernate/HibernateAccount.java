@@ -76,7 +76,7 @@ public class HibernateAccount implements Account {
     private Set<String> dataGroups;
     private List<String> languages;
     private int migrationVersion;
-    private Set<AccountSubstudy> accountSubstudies = new HashSet<>(); 
+    private Set<AccountSubstudy> accountSubstudies; 
     
     /**
      * No args constructor, required and used by Hibernate for full object initialization.
@@ -494,6 +494,9 @@ public class HibernateAccount implements Account {
     @OnDelete(action=OnDeleteAction.CASCADE)
     @Override
     public Set<AccountSubstudy> getAccountSubstudies() {
+        if (accountSubstudies == null) {
+            accountSubstudies = new HashSet<>();
+        }
         return accountSubstudies;
     }
 

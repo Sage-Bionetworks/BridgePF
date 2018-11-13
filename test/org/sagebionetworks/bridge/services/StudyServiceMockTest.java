@@ -1059,9 +1059,9 @@ public class StudyServiceMockTest {
 
         // verify
         verify(participantService, times(2)).createParticipant(any(), any(), any(), any(), anyBoolean());
-        verify(participantService).createParticipant(eq(study), eq(mockUser1.getRoles()), eq(mockUser1.getSubstudyIds()), eq(mockUser1), eq(false));
-        verify(participantService).createParticipant(eq(study), eq(mockUser2.getRoles()), eq(mockUser1.getSubstudyIds()), eq(mockUser2), eq(false));
-        verify(participantService, times(2)).requestResetPassword(eq(study), eq(mockIdentifierHolder.getIdentifier()));
+        verify(participantService).createParticipant(study, mockUser1.getRoles(), ImmutableSet.of(), mockUser1, false);
+        verify(participantService).createParticipant(study, mockUser2.getRoles(), ImmutableSet.of(), mockUser2, false);
+        verify(participantService, times(2)).requestResetPassword(study, mockIdentifierHolder.getIdentifier());
         verify(mockSynapseClient, times(2)).newAccountEmailValidation(any(), eq(SYNAPSE_REGISTER_END_POINT));
         verify(service).createStudy(study);
         verify(service).createSynapseProjectTeam(TEST_ADMIN_IDS, study);
@@ -1341,9 +1341,9 @@ public class StudyServiceMockTest {
 
         // verify
         verify(participantService, times(2)).createParticipant(any(), any(), any(), any(), anyBoolean());
-        verify(participantService).createParticipant(eq(study), eq(mockUser1.getRoles()), eq(mockUser1.getSubstudyIds()), eq(mockUser1), eq(false));
-        verify(participantService).createParticipant(eq(study), eq(mockUser2.getRoles()), eq(mockUser2.getSubstudyIds()), eq(mockUser2), eq(false));
-        verify(participantService, times(2)).requestResetPassword(eq(study), eq(mockIdentifierHolder.getIdentifier()));
+        verify(participantService).createParticipant(study, mockUser1.getRoles(), ImmutableSet.of(), mockUser1, false);
+        verify(participantService).createParticipant(study, mockUser2.getRoles(), ImmutableSet.of(), mockUser2, false);
+        verify(participantService, times(2)).requestResetPassword(study, mockIdentifierHolder.getIdentifier());
         verify(mockSynapseClient, times(2)).newAccountEmailValidation(any(), eq(SYNAPSE_REGISTER_END_POINT));
         verify(service).createStudy(study);
         verify(service).createSynapseProjectTeam(TEST_ADMIN_IDS, study);

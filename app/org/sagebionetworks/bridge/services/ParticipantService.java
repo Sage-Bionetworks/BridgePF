@@ -429,11 +429,6 @@ public class ParticipantService {
         }
     }
     
-    private <T> void updatePersistedSet(Set<T> persisted, Set<T> updated) {
-        persisted.removeAll(Sets.difference(persisted, updated));
-        persisted.addAll(updated);
-    }
-    
     private void updateAccountAndRoles(Study study, Set<Roles> callerRoles, Account account,
             StudyParticipant participant) {
         account.setFirstName(participant.getFirstName());
@@ -460,6 +455,11 @@ public class ParticipantService {
         if (callerIsAdmin(callerRoles)) {
             updateRoles(callerRoles, participant, account);
         }
+    }
+    
+    private <T> void updatePersistedSet(Set<T> persisted, Set<T> updated) {
+        persisted.removeAll(Sets.difference(persisted, updated));
+        persisted.addAll(updated);
     }
 
     public void requestResetPassword(Study study, String userId) {

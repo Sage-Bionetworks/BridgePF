@@ -119,6 +119,7 @@ public class UserAdminServiceMockTest {
         session.setConsentStatuses(statuses);
         
         when(authenticationService.signIn(any(), any(), any())).thenReturn(session);
+        
         doReturn(new IdentifierHolder("ABC")).when(participantService).createParticipant(anyObject(), anySet(),
                 anySet(), anyObject(), anyBoolean());
         doReturn(session).when(authenticationService).getSession(anyObject(), anyObject());

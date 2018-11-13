@@ -178,6 +178,7 @@ public class StudyParticipantTest {
         assertTrue(copy.isConsented());
         assertEquals(CREATED_ON, copy.getCreatedOn());
         assertEquals(AccountStatus.ENABLED, copy.getStatus());
+        assertEquals(SUBSTUDIES, copy.getSubstudyIds());
         assertEquals(ACCOUNT_ID, copy.getId());
         assertEquals(TestUtils.getClientData(), copy.getClientData());
         
@@ -262,6 +263,10 @@ public class StudyParticipantTest {
     public void canCopyPhoneVerified() {
         assertCopyField("phoneVerified", (builder)-> verify(builder).withPhoneVerified(any()));
     }
+    @Test
+    public void canCopySubstudiesVerified() {
+        assertCopyField("substudyIds", (builder)-> verify(builder).withSubstudyIds(any()));
+    }
     
     @Test
     public void testNullResiliency() {
@@ -276,15 +281,17 @@ public class StudyParticipantTest {
         assertTrue(participant.getAttributes().isEmpty());
         assertTrue(participant.getRoles().isEmpty());
         assertTrue(participant.getLanguages().isEmpty());
+        assertTrue(participant.getSubstudyIds().isEmpty());
     }
     
     @Test
     public void nullParametersBreakNothing() {
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
-                .withPassword("password").withConsented(null).build();
+                .withPassword("password").withConsented(null).withSubstudyIds(null).build();
         
-        assertEquals(0, participant.getRoles().size());
-        assertEquals(0, participant.getDataGroups().size());
+        assertTrue(participant.getRoles().isEmpty());
+        assertTrue(participant.getDataGroups().isEmpty());
+        assertTrue(participant.getSubstudyIds().isEmpty());
         assertNull(participant.isConsented());
     }
     

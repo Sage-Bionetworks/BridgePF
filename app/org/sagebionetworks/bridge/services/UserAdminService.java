@@ -131,6 +131,8 @@ public class UserAdminService {
         
         IdentifierHolder identifier = null;
         try {
+            // No substudies are passed through this method, so the user can be in any substudies, or no substudies
+            // The ADMIN role is passed through this method, so the user can have any role(s)
             identifier = participantService.createParticipant(study, ADMIN_ROLE, ImmutableSet.of(), participant, false);
             StudyParticipant updatedParticipant = participantService.getParticipant(study, identifier.getIdentifier(), false);
             

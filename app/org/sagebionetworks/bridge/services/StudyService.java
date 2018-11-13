@@ -368,7 +368,7 @@ public class StudyService {
             study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         }
 
-        // validate participants at first
+        // validate participants first
         for (StudyParticipant user : users) {
             Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, study, ImmutableSet.of(), true), user);
         }
