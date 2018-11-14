@@ -310,7 +310,8 @@ public class HibernateAccountDao implements AccountDao {
         account.setPasswordModifiedOn(timestamp);
         account.setMigrationVersion(AccountDao.MIGRATION_VERSION);
 
-        // Create account
+        // Create account. We don't verify substudies because this is handled
+        // by validation
         hibernateHelper.create(account);
     }
 
@@ -336,7 +337,8 @@ public class HibernateAccountDao implements AccountDao {
         // Update modifiedOn.
         account.setModifiedOn(DateUtils.getCurrentDateTime());
 
-        // Update
+        // Update. We don't verify substudies because this is handled
+        // by validation
         hibernateHelper.update(account);            
     }
     
@@ -345,6 +347,7 @@ public class HibernateAccountDao implements AccountDao {
     public void editAccount(StudyIdentifier studyId, String healthCode, Consumer<Account> accountEdits) {
         AccountId accountId = AccountId.forHealthCode(studyId.getIdentifier(), healthCode);
         Account account = getAccount(accountId);
+        
         if (account != null) {
             accountEdits.accept(account);
             updateAccount(account);
@@ -446,7 +449,7 @@ public class HibernateAccountDao implements AccountDao {
                 LOG.warn("Multiple accounts found email/phone query; example accountId=" + hibernateAccount.getId());
             }
         }
-        return hibernateAccount;
+        return BridgeUtils.filterForSubstudy(hibernateAccount);
     }
 
     /** {@inheritDoc} */

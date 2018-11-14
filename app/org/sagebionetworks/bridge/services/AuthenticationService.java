@@ -202,7 +202,7 @@ public class AuthenticationService {
         // This is effectively equivalent to the app submitting an token identification token and a 19-character reauth
         // token, which is still reasonably secure.
         int reauthHashMod = signIn.getReauthToken().hashCode() % 1000;
-        LOG.debug("Reauth token hash-mod " + reauthHashMod + " submitted in request " + BridgeUtils.getRequestId());
+        LOG.debug("Reauth token hash-mod " + reauthHashMod + " submitted in request " + BridgeUtils.getRequestContext().getId());
 
         CacheKey reauthCacheKey = CacheKey.reauthCacheKey(signIn.getReauthToken(), signIn.getStudyId());
         

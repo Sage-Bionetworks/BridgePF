@@ -28,6 +28,7 @@ import org.joda.time.LocalDateTime;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.hibernate.HibernateAccount;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.Tuple;
@@ -37,7 +38,7 @@ import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
-
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
@@ -66,7 +67,7 @@ public class BridgeUtils {
     // ThreadLocals are weird. They are basically a container that allows us to hold "global variables" for each
     // thread. This can be used, for example, to provide the request ID to any class without having to plumb a
     // "request context" object into every method of every class.
-    private static final ThreadLocal<String> REQUEST_ID_THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
+    private static final ThreadLocal<RequestContext> REQUEST_CONTEXT_THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
 
     public static Tuple<String> parseAutoEventValue(String automaticEventValue) {
         int lastIndex = automaticEventValue.lastIndexOf(":P");
@@ -83,14 +84,34 @@ public class BridgeUtils {
                 participant.getPhone() == null);
     }
 
-    /** Gets the request ID for the current thread. See also RequestIdInterceptor. */
-    public static String getRequestId() {
-        return REQUEST_ID_THREAD_LOCAL.get();
+    /** Gets the request context for the current thread. See also RequestInterceptor. */
+    public static RequestContext getRequestContext() {
+        return REQUEST_CONTEXT_THREAD_LOCAL.get();
     }
 
-    /** @see #getRequestId */
-    public static void setRequestId(String requestId) {
-        REQUEST_ID_THREAD_LOCAL.set(requestId);
+    /** @see #getRequestContext */
+    public static void setRequestContext(RequestContext context) {
+        REQUEST_CONTEXT_THREAD_LOCAL.set(context);
+    }
+    
+    public static HibernateAccount filterForSubstudy(HibernateAccount account) {
+        if (account == null) {
+            return account;
+        }
+        RequestContext context = getRequestContext();
+        if (context == null) {
+            return account;
+        }
+        Set<String> callerSubstudies = context.getCallerSubstudies();
+        if (BridgeUtils.isEmpty(callerSubstudies)) {
+            return account;
+        }
+        for (AccountSubstudy accountSubstudy : account.getAccountSubstudies()) {
+            if (callerSubstudies.contains(accountSubstudy.getSubstudyId())) {
+                return account;
+            }
+        }
+        return null;
     }
 
     /**

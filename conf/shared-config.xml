@@ -76,7 +76,7 @@
                 <value>deprecationInterceptor</value>
                 <value>staticHeadersInterceptor</value>
                 <value>exceptionInterceptor</value>
-                <value>requestIdInterceptor</value>
+                <value>requestInterceptor</value>
             </list>
         </property>
     </bean>
