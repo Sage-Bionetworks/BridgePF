@@ -61,8 +61,14 @@ public class SubstudyServiceTest {
     }
     
     @Test(expected = EntityNotFoundException.class)
-    public void getSubstudyNotFound() {
+    public void getSubstudyNotFoundThrowingException() {
         service.getSubstudy(TestConstants.TEST_STUDY, "id", true);
+    }
+    
+    @Test
+    public void getSubstudyNotFoundNotThrowingException() {
+        Substudy substudy = service.getSubstudy(TestConstants.TEST_STUDY, "id", false);
+        assertNull(substudy);
     }
     
     @Test

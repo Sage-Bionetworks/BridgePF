@@ -6,9 +6,9 @@ import java.util.Objects;
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
 
+@SuppressWarnings("serial")
 @Embeddable
 public final class AccountSubstudyId implements Serializable {
-    private static final long serialVersionUID = -2741510011134968409L;
 
     @Column(name = "studyId")
     private String studyId;

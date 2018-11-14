@@ -454,7 +454,9 @@ public class ParticipantService {
         Set<AccountSubstudy> updatedSubstudies = participant.getSubstudyIds().stream().map((substudyId) -> {
             return AccountSubstudy.create(account.getStudyId(), substudyId, account.getId());
         }).collect(Collectors.toSet());
-        updatePersistedSet(account.getAccountSubstudies(), updatedSubstudies);
+        
+        account.getAccountSubstudies().clear();
+        account.getAccountSubstudies().addAll(updatedSubstudies);
         
         // Do not copy timezone or external ID. Neither can be updated once set.
         
@@ -467,11 +469,6 @@ public class ParticipantService {
         }
     }
     
-    private <T> void updatePersistedSet(Set<T> persisted, Set<T> updated) {
-        persisted.removeAll(Sets.difference(persisted, updated));
-        persisted.addAll(updated);
-    }
-
     public void requestResetPassword(Study study, String userId) {
         checkNotNull(study);
         checkArgument(isNotBlank(userId));

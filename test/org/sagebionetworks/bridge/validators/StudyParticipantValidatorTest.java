@@ -45,11 +45,12 @@ public class StudyParticipantValidatorTest {
     @Mock
     private SubstudyService substudyService;
     
-    @Mock
     private Substudy substudy;
     
     @Before
     public void before() {
+        substudy = Substudy.create();
+        
         study = Study.create();
         study.setIdentifier("test-study");
         study.setHealthCodeExportEnabled(true);

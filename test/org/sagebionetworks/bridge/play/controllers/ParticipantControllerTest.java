@@ -207,7 +207,7 @@ public class ParticipantControllerTest {
         
         participant = new StudyParticipant.Builder()
                 .withRoles(CALLER_ROLES)
-                .withSubstudyIds(ImmutableSet.of("substudyA"))
+                .withSubstudyIds(CALLER_SUBS)
                 .withId(ID).build();
         
         session = new UserSession(participant);
@@ -254,7 +254,7 @@ public class ParticipantControllerTest {
     public void createSmsNotificationRegistration() throws Exception {
         // Requires researcher role.
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withRoles(ImmutableSet.of(Roles.RESEARCHER)).build());
+                .withRoles(CALLER_ROLES).build());
 
         // Execute.
         Result result = controller.createSmsRegistration(ID);
@@ -378,7 +378,7 @@ public class ParticipantControllerTest {
         assertResult(result, 200, "Participant updated.");
         
         // Both the caller roles and the caller's substudies are passed to participantService
-        verify(mockParticipantService).updateParticipant(eq(study), eq(CALLER_ROLES), eq(ImmutableSet.of("substudyA")),
+        verify(mockParticipantService).updateParticipant(eq(study), eq(CALLER_ROLES), eq(CALLER_SUBS),
                 participantCaptor.capture());
         
         StudyParticipant participant = participantCaptor.getValue();
@@ -501,7 +501,7 @@ public class ParticipantControllerTest {
         Result result = controller.updateParticipant("id1");
         assertResult(result, 200, "Participant updated.");
         
-        verify(mockParticipantService).updateParticipant(eq(study), eq(CALLER_ROLES), eq(ImmutableSet.of("substudyA")),
+        verify(mockParticipantService).updateParticipant(eq(study), eq(CALLER_ROLES), eq(CALLER_SUBS),
                 participantCaptor.capture());
         
         StudyParticipant persisted = participantCaptor.getValue();
