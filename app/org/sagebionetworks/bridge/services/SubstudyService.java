@@ -28,12 +28,12 @@ public class SubstudyService {
         this.substudyDao = substudyDao;
     }
     
-    public Substudy getSubstudy(StudyIdentifier studyId, String id) {
+    public Substudy getSubstudy(StudyIdentifier studyId, String id, boolean throwsException) {
         checkNotNull(studyId);
         checkNotNull(id);
         
         Substudy substudy = substudyDao.getSubstudy(studyId, id);
-        if (substudy == null) {
+        if (throwsException && substudy == null) {
             throw new EntityNotFoundException(Substudy.class);
         }
         return substudy;
@@ -73,7 +73,7 @@ public class SubstudyService {
         substudy.setStudyId(studyId.getIdentifier());
         Validate.entityThrowingException(SubstudyValidator.INSTANCE, substudy);
         
-        Substudy existing = getSubstudy(studyId, substudy.getId());
+        Substudy existing = getSubstudy(studyId, substudy.getId(), true);
         if (substudy.isDeleted() && existing.isDeleted()) {
             throw new EntityNotFoundException(Substudy.class);
         }
@@ -87,7 +87,7 @@ public class SubstudyService {
         checkNotNull(studyId);
         checkNotNull(id);
         
-        Substudy existing = getSubstudy(studyId, id);
+        Substudy existing = getSubstudy(studyId, id, true);
         existing.setDeleted(true);
         existing.setModifiedOn(DateTime.now());
         substudyDao.updateSubstudy(existing);
@@ -98,7 +98,7 @@ public class SubstudyService {
         checkNotNull(id);
         
         // Throws exception if the element does not exist.
-        getSubstudy(studyId, id);
+        getSubstudy(studyId, id, true);
         substudyDao.deleteSubstudyPermanently(studyId, id);
     }
 }

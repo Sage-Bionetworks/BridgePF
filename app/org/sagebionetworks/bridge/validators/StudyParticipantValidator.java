@@ -15,19 +15,23 @@ import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.substudies.Substudy;
 import org.sagebionetworks.bridge.services.ExternalIdService;
+import org.sagebionetworks.bridge.services.SubstudyService;
 
 public class StudyParticipantValidator implements Validator {
 
     private static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
     private final ExternalIdService externalIdService;
+    private final SubstudyService substudyService;
     private final Study study;
     private final Set<String> callerSubstudies;
     private final boolean isNew;
     
-    public StudyParticipantValidator(ExternalIdService externalIdService, Study study, Set<String> callerSubstudies,
-            boolean isNew) {
+    public StudyParticipantValidator(ExternalIdService externalIdService, SubstudyService substudyService, Study study,
+            Set<String> callerSubstudies, boolean isNew) {
         this.externalIdService = externalIdService;
+        this.substudyService = substudyService;
         this.study = study;
         this.callerSubstudies = callerSubstudies;
         this.isNew = isNew;
@@ -88,6 +92,12 @@ public class StudyParticipantValidator implements Validator {
                         errors.rejectValue("substudyIds["+substudyId+"]", "is not a substudy of the caller");
                     }
                 }
+            }
+        }
+        for (String substudyId : participant.getSubstudyIds()) {
+            Substudy substudy = substudyService.getSubstudy(study.getStudyIdentifier(), substudyId, false);
+            if (substudy == null) {
+                errors.rejectValue("substudyIds["+substudyId+"]", "is not a substudy");
             }
         }
         

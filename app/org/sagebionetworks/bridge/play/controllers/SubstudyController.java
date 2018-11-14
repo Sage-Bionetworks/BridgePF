@@ -48,7 +48,7 @@ public class SubstudyController extends BaseController {
     public Result getSubstudy(String id) {
         UserSession session = getAuthenticatedSession(ADMIN);
         
-        Substudy substudy = service.getSubstudy(session.getStudyIdentifier(), id);
+        Substudy substudy = service.getSubstudy(session.getStudyIdentifier(), id, true);
         
         return okResult(substudy);
     }

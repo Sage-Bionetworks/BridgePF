@@ -115,6 +115,7 @@ public class StudyService {
     private SynapseClient synapseClient;
     private ParticipantService participantService;
     private ExternalIdService externalIdService;
+    private SubstudyService substudyService;
 
     private String defaultEmailVerificationTemplate;
     private String defaultEmailVerificationTemplateSubject;
@@ -270,6 +271,10 @@ public class StudyService {
     final void setExternalIdService(ExternalIdService externalIdService) {
         this.externalIdService = externalIdService;
     }
+    @Autowired
+    final void setSubstudyService(SubstudyService substudyService) {
+        this.substudyService = substudyService;
+    }
     
     @Autowired
     @Qualifier("bridgePFSynapseClient")
@@ -370,7 +375,7 @@ public class StudyService {
 
         // validate participants first
         for (StudyParticipant user : users) {
-            Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, study, ImmutableSet.of(), true), user);
+            Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, substudyService, study, ImmutableSet.of(), true), user);
         }
 
         // validate roles for each user

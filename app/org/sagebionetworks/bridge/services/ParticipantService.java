@@ -97,6 +97,8 @@ public class ParticipantService {
     private ActivityEventService activityEventService;
 
     private AccountWorkflowService accountWorkflowService;
+    
+    private SubstudyService substudyService;
 
     @Autowired
     public final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
@@ -159,6 +161,11 @@ public class ParticipantService {
         this.activityEventService = activityEventService;
     }
 
+    @Autowired
+    final void setSubstudyService(SubstudyService substudyService) {
+        this.substudyService = substudyService;
+    }
+    
     /**
      * This is a researcher API to backfill SMS notification registrations for a user. We generally prefer the app
      * register notifications, but sometimes the work can't be done on time, so we want study developers to have the
@@ -324,8 +331,10 @@ public class ParticipantService {
         if (study.getAccountLimit() > 0) {
             throwExceptionIfLimitMetOrExceeded(study);
         }
-        Validate.entityThrowingException(
-                new StudyParticipantValidator(externalIdService, study, callerSubstudies, true), participant);
+        
+        StudyParticipantValidator validator = new StudyParticipantValidator(
+                externalIdService, substudyService, study, callerSubstudies, true);
+        Validate.entityThrowingException(validator, participant);
         
         Account account = accountDao.constructAccount(study, participant.getEmail(), participant.getPhone(),
                 participant.getExternalId(), participant.getPassword());
@@ -387,8 +396,9 @@ public class ParticipantService {
         checkNotNull(callerSubstudies);
         checkNotNull(participant);
         
-        Validate.entityThrowingException(
-                new StudyParticipantValidator(externalIdService, study, callerSubstudies, false), participant);
+        StudyParticipantValidator validator = new StudyParticipantValidator(
+                externalIdService, substudyService, study, callerSubstudies, false);
+        Validate.entityThrowingException(validator, participant);
         
         Account account = getAccountThrowingException(study, participant.getId());
         

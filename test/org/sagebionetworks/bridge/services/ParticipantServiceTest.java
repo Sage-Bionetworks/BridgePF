@@ -79,6 +79,7 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.substudies.Substudy;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 
@@ -180,6 +181,9 @@ public class ParticipantServiceTest {
     private UploadService uploadService;
     
     @Mock
+    private SubstudyService substudyService;
+    
+    @Mock
     private Subpopulation subpopulation;
     
     @Mock
@@ -235,6 +239,7 @@ public class ParticipantServiceTest {
         participantService.setNotificationsService(notificationsService);
         participantService.setScheduledActivityService(scheduledActivityService);
         participantService.setAccountWorkflowService(accountWorkflowService);
+        participantService.setSubstudyService(substudyService);
 
         account = Account.create();
     }
@@ -306,6 +311,8 @@ public class ParticipantServiceTest {
         Set<String> substudies = ImmutableSet.of("substudyA", "substudyB");
         StudyParticipant participant = new StudyParticipant.Builder()
                 .copyOf(PARTICIPANT).withSubstudyIds(substudies).build();
+        when(substudyService.getSubstudy(STUDY.getStudyIdentifier(), "substudyA", false)).thenReturn(Substudy.create());
+        when(substudyService.getSubstudy(STUDY.getStudyIdentifier(), "substudyB", false)).thenReturn(Substudy.create());
         
         mockHealthCodeAndAccountRetrieval();
         
@@ -408,7 +415,7 @@ public class ParticipantServiceTest {
         assertEquals(AccountStatus.UNVERIFIED, account.getStatus());
         assertNull(account.getEmailVerified());
     }
-
+    
     @Test
     public void createParticipantAutoVerificationEmailSuppressed() {
         Study study = makeStudy();
@@ -904,6 +911,8 @@ public class ParticipantServiceTest {
         Set<String> substudies = ImmutableSet.of("substudyA", "substudyB");
         StudyParticipant participant = new StudyParticipant.Builder()
                 .copyOf(PARTICIPANT).withSubstudyIds(substudies).build();
+        when(substudyService.getSubstudy(STUDY.getStudyIdentifier(), "substudyA", false)).thenReturn(Substudy.create());
+        when(substudyService.getSubstudy(STUDY.getStudyIdentifier(), "substudyB", false)).thenReturn(Substudy.create());
         
         // Make this test more robust by including accountSubstudies that should
         // be either kept or removed. These do not change the final persisted set.

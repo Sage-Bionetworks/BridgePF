@@ -54,7 +54,7 @@ public class SubstudyServiceTest {
         Substudy substudy = Substudy.create();
         when(substudyDao.getSubstudy(TestConstants.TEST_STUDY, "id")).thenReturn(substudy);
         
-        Substudy returnedValue = service.getSubstudy(TestConstants.TEST_STUDY, "id");
+        Substudy returnedValue = service.getSubstudy(TestConstants.TEST_STUDY, "id", true);
         assertEquals(substudy, returnedValue);
         
         verify(substudyDao).getSubstudy(TestConstants.TEST_STUDY, "id");
@@ -62,7 +62,7 @@ public class SubstudyServiceTest {
     
     @Test(expected = EntityNotFoundException.class)
     public void getSubstudyNotFound() {
-        service.getSubstudy(TestConstants.TEST_STUDY, "id");
+        service.getSubstudy(TestConstants.TEST_STUDY, "id", true);
     }
     
     @Test
