@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 public class UserSessionInfoTest {
@@ -28,7 +29,8 @@ public class UserSessionInfoTest {
                 .withNotifyByEmail(false)
                 .withEncryptedHealthCode(TestConstants.ENCRYPTED_HEALTH_CODE)
                 .withId("user-identifier")
-                .withRoles(Sets.newHashSet(RESEARCHER))
+                .withRoles(ImmutableSet.of(RESEARCHER))
+                .withSubstudyIds(ImmutableSet.of("substudyA"))
                 .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
                 .withDataGroups(Sets.newHashSet("foo")).build();
         
@@ -59,6 +61,8 @@ public class UserSessionInfoTest {
         assertEquals("staging", node.get("environment").textValue());
         assertEquals("reauthToken", node.get("reauthToken").textValue());
         assertEquals(participant.getId(), node.get("id").textValue());
+        assertEquals(1, node.get("substudyIds").size());
+        assertEquals("substudyA", node.get("substudyIds").get(0).textValue());
         assertFalse(node.get("notifyByEmail").booleanValue());
         assertNull(node.get("healthCode"));
         assertNull(node.get("encryptedHealthCode"));
@@ -76,7 +80,7 @@ public class UserSessionInfoTest {
         assertEquals(6, consentStatus.size());
         
         // ... and no things that shouldn't be there
-        assertEquals(20, node.size());
+        assertEquals(21, node.size());
     }
     
     @Test

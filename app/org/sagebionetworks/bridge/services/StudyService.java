@@ -115,6 +115,7 @@ public class StudyService {
     private SynapseClient synapseClient;
     private ParticipantService participantService;
     private ExternalIdService externalIdService;
+    private SubstudyService substudyService;
 
     private String defaultEmailVerificationTemplate;
     private String defaultEmailVerificationTemplateSubject;
@@ -270,6 +271,10 @@ public class StudyService {
     final void setExternalIdService(ExternalIdService externalIdService) {
         this.externalIdService = externalIdService;
     }
+    @Autowired
+    final void setSubstudyService(SubstudyService substudyService) {
+        this.substudyService = substudyService;
+    }
     
     @Autowired
     @Qualifier("bridgePFSynapseClient")
@@ -368,9 +373,9 @@ public class StudyService {
             study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         }
 
-        // validate participants at first
+        // validate participants first
         for (StudyParticipant user : users) {
-            Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, study, true), user);
+            Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, substudyService, study, ImmutableSet.of(), true), user);
         }
 
         // validate roles for each user
@@ -389,7 +394,7 @@ public class StudyService {
         // then create users for that study
         // send verification email from both Bridge and Synapse as well
         for (StudyParticipant user: users) {
-            IdentifierHolder identifierHolder = participantService.createParticipant(study, user.getRoles(), user, false);
+            IdentifierHolder identifierHolder = participantService.createParticipant(study, user.getRoles(), ImmutableSet.of(), user, false);
 
             NewUser synapseUser = new NewUser();
             synapseUser.setEmail(user.getEmail());

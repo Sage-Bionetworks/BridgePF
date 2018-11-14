@@ -35,8 +35,8 @@ import com.amazonaws.services.dynamodbv2.model.AmazonDynamoDBException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 import play.mvc.Http;
 import play.mvc.Result;
@@ -80,8 +80,9 @@ public class ExceptionInterceptorTest {
                 .withHealthCode("healthCode")
                 .withNotifyByEmail(true)
                 .withId("userId")
+                .withSubstudyIds(ImmutableSet.of("substudyA"))
                 .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
-                .withDataGroups(Sets.newHashSet("group1")).build();
+                .withDataGroups(ImmutableSet.of("group1")).build();
         
         UserSession session = new UserSession(participant);
         session.setAuthenticated(true);
@@ -114,6 +115,7 @@ public class ExceptionInterceptorTest {
         assertEquals("reauthToken", node.get("reauthToken").textValue());
         assertTrue(node.get("dataSharing").booleanValue());
         assertTrue(node.get("notifyByEmail").booleanValue());
+        assertEquals("substudyA", node.get("substudyIds").get(0).textValue());
         assertEquals("UserSessionInfo", node.get("type").textValue());
         ArrayNode array = (ArrayNode)node.get("roles");
         assertEquals(0, array.size());
@@ -122,7 +124,7 @@ public class ExceptionInterceptorTest {
         assertEquals("group1", array.get(0).textValue());
         assertEquals(0, node.get("consentStatuses").size());
         // And no further properties
-        assertEquals(20, node.size());
+        assertEquals(21, node.size());
     }
     
     @Test

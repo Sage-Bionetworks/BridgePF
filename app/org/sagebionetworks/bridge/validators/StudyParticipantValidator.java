@@ -15,18 +15,25 @@ import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.substudies.Substudy;
 import org.sagebionetworks.bridge.services.ExternalIdService;
+import org.sagebionetworks.bridge.services.SubstudyService;
 
 public class StudyParticipantValidator implements Validator {
 
     private static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
     private final ExternalIdService externalIdService;
+    private final SubstudyService substudyService;
     private final Study study;
+    private final Set<String> callerSubstudies;
     private final boolean isNew;
     
-    public StudyParticipantValidator(ExternalIdService externalIdService, Study study, boolean isNew) {
+    public StudyParticipantValidator(ExternalIdService externalIdService, SubstudyService substudyService, Study study,
+            Set<String> callerSubstudies, boolean isNew) {
         this.externalIdService = externalIdService;
+        this.substudyService = substudyService;
         this.study = study;
+        this.callerSubstudies = callerSubstudies;
         this.isNew = isNew;
     }
     
@@ -72,6 +79,28 @@ public class StudyParticipantValidator implements Validator {
                 errors.rejectValue("id", "is required");
             }
         }
+
+        // If the caller is not in a substudy, any substudy tags are allowed. If there 
+        // are any substudies assigned to the caller, then the participant must be assigned 
+        // to one or more of those substudies, and only those substudies.
+        if (!callerSubstudies.isEmpty()) {
+            if (participant.getSubstudyIds().isEmpty()) {
+                errors.rejectValue("substudyIds", "must be assigned to this participant");
+            } else {
+                for (String substudyId : participant.getSubstudyIds()) {
+                    if (!callerSubstudies.contains(substudyId)) {
+                        errors.rejectValue("substudyIds["+substudyId+"]", "is not a substudy of the caller");
+                    }
+                }
+            }
+        }
+        for (String substudyId : participant.getSubstudyIds()) {
+            Substudy substudy = substudyService.getSubstudy(study.getStudyIdentifier(), substudyId, false);
+            if (substudy == null) {
+                errors.rejectValue("substudyIds["+substudyId+"]", "is not a substudy");
+            }
+        }
+        
         // External ID can be updated during creation or on update. We validate it if IDs are 
         // managed. If it's already assigned to another user, the database constraints will 
         // prevent this record's persistence.

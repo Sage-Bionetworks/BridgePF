@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.persistence.CascadeType;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.Convert;
@@ -21,10 +22,13 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.MapKeyClass;
 import javax.persistence.MapKeyColumn;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.persistence.Version;
 
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.Roles;
@@ -33,6 +37,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -71,7 +76,8 @@ public class HibernateAccount implements Account {
     private Set<String> dataGroups;
     private List<String> languages;
     private int migrationVersion;
-
+    private Set<AccountSubstudy> accountSubstudies; 
+    
     /**
      * No args constructor, required and used by Hibernate for full object initialization.
      */
@@ -481,5 +487,21 @@ public class HibernateAccount implements Account {
 
     public void setReauthToken(String reauthToken) {
         this.reauthToken = reauthToken; 
+    }
+    
+    @OneToMany(mappedBy = "accountId", cascade = CascadeType.ALL, orphanRemoval = true, 
+        fetch = FetchType.EAGER, targetEntity=HibernateAccountSubstudy.class)
+    @OnDelete(action=OnDeleteAction.CASCADE)
+    @Override
+    public Set<AccountSubstudy> getAccountSubstudies() {
+        if (accountSubstudies == null) {
+            accountSubstudies = new HashSet<>();
+        }
+        return accountSubstudies;
+    }
+
+    @Override
+    public void setAccountSubstudies(Set<AccountSubstudy> accountSubstudies) {
+        this.accountSubstudies = accountSubstudies;
     }
 }

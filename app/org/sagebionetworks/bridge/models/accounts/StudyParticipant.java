@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -74,13 +75,14 @@ public final class StudyParticipant implements BridgeEntity {
     private final String id;
     private final DateTimeZone timeZone;
     private final JsonNode clientData;
+    private final Set<String> substudyIds;
     
     private StudyParticipant(String firstName, String lastName, String email, Phone phone, Boolean emailVerified,
             Boolean phoneVerified, String externalId, String password, SharingScope sharingScope, Boolean notifyByEmail,
             Set<String> dataGroups, String healthCode, Map<String, String> attributes,
             Map<String, List<UserConsentHistory>> consentHistories, Boolean consented, Set<Roles> roles,
             List<String> languages, AccountStatus status, DateTime createdOn, String id, DateTimeZone timeZone,
-            JsonNode clientData) {
+            JsonNode clientData, Set<String> substudyIds) {
         
         ImmutableMap.Builder<String, List<UserConsentHistory>> immutableConsentsBuilder = new ImmutableMap.Builder<>();
         if (consentHistories != null) {
@@ -114,6 +116,7 @@ public final class StudyParticipant implements BridgeEntity {
         this.id = id;
         this.timeZone = timeZone;
         this.clientData = clientData;
+        this.substudyIds = (substudyIds == null) ? new HashSet<>() : substudyIds;
     }
     
     public String getFirstName() {
@@ -192,12 +195,15 @@ public final class StudyParticipant implements BridgeEntity {
     public JsonNode getClientData() {
         return clientData;
     }
+    public Set<String> getSubstudyIds() {
+        return substudyIds;
+    }
     
     @Override
     public int hashCode() {
         return Objects.hash(attributes, consentHistories, consented, createdOn, dataGroups, email, phone, emailVerified,
                 phoneVerified, externalId, firstName, healthCode, id, languages, lastName, notifyByEmail, password,
-                roles, sharingScope, status, timeZone, clientData);
+                roles, sharingScope, status, timeZone, clientData, substudyIds);
     }
 
     @Override
@@ -219,7 +225,8 @@ public final class StudyParticipant implements BridgeEntity {
                 && Objects.equals(password, other.password) && Objects.equals(roles, other.roles)
                 && Objects.equals(sharingScope, other.sharingScope) && Objects.equals(status, other.status)
                 && Objects.equals(timeZone, other.timeZone)
-                && Objects.equals(clientData, other.clientData);
+                && Objects.equals(clientData, other.clientData)
+                && Objects.equals(substudyIds, other.substudyIds);
     }
 
     public static class Builder {
@@ -245,6 +252,7 @@ public final class StudyParticipant implements BridgeEntity {
         private String id;
         private DateTimeZone timeZone;
         private JsonNode clientData;
+        private Set<String> substudyIds;
         
         public Builder copyOf(StudyParticipant participant) {
             this.firstName = participant.getFirstName();
@@ -269,6 +277,7 @@ public final class StudyParticipant implements BridgeEntity {
             this.id = participant.getId();
             this.timeZone = participant.getTimeZone();
             this.clientData = participant.getClientData();
+            this.substudyIds = participant.getSubstudyIds();
             return this;
         }
         public Builder copyFieldsOf(StudyParticipant participant, Set<String> fieldNames) {
@@ -337,6 +346,9 @@ public final class StudyParticipant implements BridgeEntity {
             }
             if (fieldNames.contains("clientData")) {
                 withClientData(participant.getClientData());
+            }
+            if (fieldNames.contains("substudyIds")) {
+                withSubstudyIds(participant.getSubstudyIds());
             }
             return this;
         }
@@ -442,7 +454,10 @@ public final class StudyParticipant implements BridgeEntity {
             this.clientData = clientData;
             return this;
         }
-        
+        public Builder withSubstudyIds(Set<String> substudyIds) {
+            this.substudyIds = substudyIds;
+            return this;
+        }
         public StudyParticipant build() {
             Boolean emailVerified = this.emailVerified;
             if (emailVerified == null) {
@@ -458,7 +473,7 @@ public final class StudyParticipant implements BridgeEntity {
             }
             return new StudyParticipant(firstName, lastName, email, phone, emailVerified, phoneVerified, externalId,
                     password, sharingScope, notifyByEmail, dataGroups, healthCode, attributes, consentHistories, consented, roles,
-                    languages, status, createdOn, id, timeZone, clientData);
+                    languages, status, createdOn, id, timeZone, clientData, substudyIds);
         }
     }
 

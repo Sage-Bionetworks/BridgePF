@@ -275,12 +275,13 @@ public class HibernateAccountDao implements AccountDao {
     public Account constructAccount(Study study, String email, Phone phone, String externalId, String password) {
         // Set basic params from inputs.
         Account account = Account.create();
+        account.setId(generateGUID());
         account.setStudyId(study.getIdentifier());
         account.setEmail(email);
         account.setPhone(phone);
         account.setEmailVerified(Boolean.FALSE);
         account.setPhoneVerified(Boolean.FALSE);
-        account.setHealthCode(generateHealthCode());
+        account.setHealthCode(generateGUID());
         account.setExternalId(externalId);
 
         // Hash password if it has been supplied.
@@ -295,15 +296,13 @@ public class HibernateAccountDao implements AccountDao {
     }
     
     // Provided to override in tests
-    protected String generateHealthCode() {
+    protected String generateGUID() {
         return BridgeUtils.generateGuid();
     }
 
     /** {@inheritDoc} */
     @Override
-    public String createAccount(Study study, Account account) {
-        String userId = BridgeUtils.generateGuid();
-        account.setId(userId);
+    public void createAccount(Study study, Account account) {
         account.setStudyId(study.getIdentifier());
         DateTime timestamp = DateUtils.getCurrentDateTime();
         account.setCreatedOn(timestamp);
@@ -313,7 +312,6 @@ public class HibernateAccountDao implements AccountDao {
 
         // Create account
         hibernateHelper.create(account);
-        return userId;
     }
 
     /** {@inheritDoc} */
@@ -566,7 +564,7 @@ public class HibernateAccountDao implements AccountDao {
     // is necessary.
     private boolean validateHealthCode(HibernateAccount hibernateAccount) {
         if (StringUtils.isBlank(hibernateAccount.getHealthCode())) {
-            hibernateAccount.setHealthCode(generateHealthCode());
+            hibernateAccount.setHealthCode(generateGUID());
 
             // We modified it. Update modifiedOn.
             DateTime modifiedOn = DateUtils.getCurrentDateTime();

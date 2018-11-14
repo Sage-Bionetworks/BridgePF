@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -59,6 +60,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
@@ -95,6 +97,8 @@ public class ParticipantService {
     private ActivityEventService activityEventService;
 
     private AccountWorkflowService accountWorkflowService;
+    
+    private SubstudyService substudyService;
 
     @Autowired
     public final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
@@ -157,6 +161,11 @@ public class ParticipantService {
         this.activityEventService = activityEventService;
     }
 
+    @Autowired
+    final void setSubstudyService(SubstudyService substudyService) {
+        this.substudyService = substudyService;
+    }
+    
     /**
      * This is a researcher API to backfill SMS notification registrations for a user. We generally prefer the app
      * register notifications, but sometimes the work can't be done on time, so we want study developers to have the
@@ -252,6 +261,8 @@ public class ParticipantService {
         builder.withHealthCode(account.getHealthCode());
         builder.withClientData(account.getClientData());
         builder.withAttributes(account.getAttributes());
+        builder.withSubstudyIds(account.getAccountSubstudies().stream().map(AccountSubstudy::getSubstudyId)
+                .collect(BridgeCollectors.toImmutableSet()));
 
         if (includeHistory) {
             Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
@@ -310,16 +321,20 @@ public class ParticipantService {
      * Create a study participant. A password must be provided, even if it is added on behalf of a user before
      * triggering a reset password request.
      */
-    public IdentifierHolder createParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant,
-            boolean shouldSendVerification) {
+    public IdentifierHolder createParticipant(Study study, Set<Roles> callerRoles, Set<String> callerSubstudies,
+            StudyParticipant participant, boolean shouldSendVerification) {
         checkNotNull(study);
         checkNotNull(callerRoles);
+        checkNotNull(callerSubstudies);
         checkNotNull(participant);
         
         if (study.getAccountLimit() > 0) {
             throwExceptionIfLimitMetOrExceeded(study);
         }
-        Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, study, true), participant);
+        
+        StudyParticipantValidator validator = new StudyParticipantValidator(
+                externalIdService, substudyService, study, callerSubstudies, true);
+        Validate.entityThrowingException(validator, participant);
         
         Account account = accountDao.constructAccount(study, participant.getEmail(), participant.getPhone(),
                 participant.getExternalId(), participant.getPassword());
@@ -345,12 +360,12 @@ public class ParticipantService {
         if (shouldEnableCompleteExternalIdAccount(participant)) {
             account.setStatus(AccountStatus.ENABLED);
         }
-        String accountId = accountDao.createAccount(study, account);
+        accountDao.createAccount(study, account);
         externalIdService.assignExternalId(study, participant.getExternalId(), account.getHealthCode());    
         
         // send verify email
         if (sendEmailVerification && !study.isAutoVerificationEmailSuppressed()) {
-            accountWorkflowService.sendEmailVerificationToken(study, accountId, account.getEmail());
+            accountWorkflowService.sendEmailVerificationToken(study, account.getId(), account.getEmail());
         }
 
         // If you create an account with a phone number, this opts the phone number in to receiving SMS. We do this
@@ -359,14 +374,14 @@ public class ParticipantService {
         Phone phone = account.getPhone();
         if (phone != null) {
             // Note that there is no object with both accountId and phone, so we need to pass them in separately.
-            smsService.optInPhoneNumber(accountId, phone);
+            smsService.optInPhoneNumber(account.getId(), phone);
         }
 
         // send verify phone number
         if (shouldSendVerification && !study.isAutoVerificationPhoneSuppressed()) {
-            accountWorkflowService.sendPhoneVerificationToken(study, accountId, phone);
+            accountWorkflowService.sendPhoneVerificationToken(study, account.getId(), phone);
         }
-        return new IdentifierHolder(accountId);
+        return new IdentifierHolder(account.getId());
     }
     
     private boolean shouldEnableCompleteExternalIdAccount(StudyParticipant participant) {
@@ -374,12 +389,16 @@ public class ParticipantService {
             participant.getExternalId() != null && participant.getPassword() != null;
     }
 
-    public void updateParticipant(Study study, Set<Roles> callerRoles, StudyParticipant participant) {
+    public void updateParticipant(Study study, Set<Roles> callerRoles, Set<String> callerSubstudies,
+            StudyParticipant participant) {
         checkNotNull(study);
         checkNotNull(callerRoles);
+        checkNotNull(callerSubstudies);
         checkNotNull(participant);
         
-        Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, study, false), participant);
+        StudyParticipantValidator validator = new StudyParticipantValidator(
+                externalIdService, substudyService, study, callerSubstudies, false);
+        Validate.entityThrowingException(validator, participant);
         
         Account account = getAccountThrowingException(study, participant.getId());
         
@@ -419,7 +438,7 @@ public class ParticipantService {
             throw new LimitExceededException(String.format(BridgeConstants.MAX_USERS_ERROR, study.getAccountLimit()));
         }
     }
-
+    
     private void updateAccountAndRoles(Study study, Set<Roles> callerRoles, Account account,
             StudyParticipant participant) {
         account.setFirstName(participant.getFirstName());
@@ -430,6 +449,15 @@ public class ParticipantService {
         account.setDataGroups(participant.getDataGroups());
         account.setLanguages(participant.getLanguages());
         account.setMigrationVersion(AccountDao.MIGRATION_VERSION);
+        
+        // Adjust the persisted Hibernate collection, w/o concurrency exceptions
+        Set<AccountSubstudy> updatedSubstudies = participant.getSubstudyIds().stream().map((substudyId) -> {
+            return AccountSubstudy.create(account.getStudyId(), substudyId, account.getId());
+        }).collect(Collectors.toSet());
+        
+        account.getAccountSubstudies().clear();
+        account.getAccountSubstudies().addAll(updatedSubstudies);
+        
         // Do not copy timezone or external ID. Neither can be updated once set.
         
         for (String attribute : study.getUserProfileAttributes()) {
@@ -440,7 +468,7 @@ public class ParticipantService {
             updateRoles(callerRoles, participant, account);
         }
     }
-
+    
     public void requestResetPassword(Study study, String userId) {
         checkNotNull(study);
         checkArgument(isNotBlank(userId));

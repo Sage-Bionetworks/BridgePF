@@ -26,7 +26,6 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
@@ -51,6 +50,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -62,7 +62,6 @@ public class UserProfileControllerTest {
     private static final Map<SubpopulationGuid,ConsentStatus> CONSENT_STATUSES_MAP = Maps.newHashMap();
     private static final Set<String> TEST_STUDY_DATA_GROUPS = Sets.newHashSet("group1", "group2");
     private static final Set<String> TEST_STUDY_ATTRIBUTES = Sets.newHashSet("foo","bar"); 
-    private static final Set<Roles> NO_ROLES = Sets.newHashSet();
     private static final String ID = "ABC";
     private static final String HEALTH_CODE = "healthCode";
     
@@ -202,6 +201,7 @@ public class UserProfileControllerTest {
                 .withExternalId("originalId")
                 .withFirstName("OldFirstName")
                 .withLastName("OldLastName")
+                .withSubstudyIds(ImmutableSet.of("substudyA"))
                 .withId(ID).build();
         doReturn(participant).when(participantService).getParticipant(study, ID, false);
         
@@ -219,12 +219,13 @@ public class UserProfileControllerTest {
         assertEquals("originalId", node.get("externalId").asText());
                 
         // Verify that existing user information (health code) has been retrieved and used when updating session
-        verify(participantService).updateParticipant(eq(study), any(), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(study), any(), any(), participantCaptor.capture());
         StudyParticipant capturedParticipant = participantCaptor.getValue();
         assertEquals("existingHealthCode", capturedParticipant.getHealthCode());
         assertEquals("originalId", capturedParticipant.getExternalId());
         
-        verify(participantService).updateParticipant(eq(study), eq(Sets.newHashSet()), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(study), eq(ImmutableSet.of()), eq(ImmutableSet.of("substudyA")),
+                participantCaptor.capture());
         
         StudyParticipant persisted = participantCaptor.getValue();
         assertEquals(ID, persisted.getId());
@@ -256,6 +257,7 @@ public class UserProfileControllerTest {
         StudyParticipant existing = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE)
                 .withId(ID)
+                .withSubstudyIds(ImmutableSet.of("substudyA"))
                 .withFirstName("First").build();
         doReturn(existing).when(participantService).getParticipant(study, ID, false);
         session.setParticipant(existing);
@@ -270,7 +272,7 @@ public class UserProfileControllerTest {
         assertEquals("First", node.get("firstName").asText());
         assertEquals("group1", node.get("dataGroups").get(0).asText());
         
-        verify(participantService).updateParticipant(eq(study), eq(NO_ROLES), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(study), eq(ImmutableSet.of()), eq(ImmutableSet.of("substudyA")), participantCaptor.capture());
         verify(consentService).getConsentStatuses(contextCaptor.capture());
         
         StudyParticipant participant = participantCaptor.getValue();
@@ -293,7 +295,8 @@ public class UserProfileControllerTest {
     public void invalidDataGroupsRejected() throws Exception {
         StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").build();
         doReturn(existing).when(participantService).getParticipant(study, ID, false);
-        doThrow(new InvalidEntityException("Invalid data groups")).when(participantService).updateParticipant(eq(study), eq(NO_ROLES), any());
+        doThrow(new InvalidEntityException("Invalid data groups")).when(participantService).updateParticipant(eq(study),
+                eq(ImmutableSet.of()), eq(ImmutableSet.of()), any());
         
         TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"completelyInvalidGroup\"]}");
         try {
@@ -329,6 +332,7 @@ public class UserProfileControllerTest {
         StudyParticipant existing = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE)
                 .withId(ID)
+                .withSubstudyIds(ImmutableSet.of("substudyA"))
                 .withFirstName("First").build();
         doReturn(existing).when(participantService).getParticipant(study, ID, false);
         session.setParticipant(existing);
@@ -340,7 +344,8 @@ public class UserProfileControllerTest {
         JsonNode node = TestUtils.getJson(result);
         assertEquals("First", node.get("firstName").asText());
         
-        verify(participantService).updateParticipant(eq(study), eq(NO_ROLES), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(study), eq(ImmutableSet.of()), eq(ImmutableSet.of("substudyA")),
+                participantCaptor.capture());
         
         StudyParticipant updated = participantCaptor.getValue();
         assertEquals(ID, updated.getId());

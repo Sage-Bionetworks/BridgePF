@@ -132,7 +132,7 @@ public class HibernateAccountDaoTest {
         dao = spy(new HibernateAccountDao());
         dao.setHibernateHelper(mockHibernateHelper);
         dao.setCacheProvider(mockCacheProvider);
-        when(dao.generateHealthCode()).thenReturn(HEALTH_CODE);
+        when(dao.generateGUID()).thenReturn(HEALTH_CODE);
         
         study = Study.create();
         study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
@@ -804,7 +804,10 @@ public class HibernateAccountDaoTest {
         assertEquals(PHONE.getNationalFormat(), account.getPhone().getNationalFormat());
         assertEquals(Boolean.FALSE, account.getEmailVerified());
         assertEquals(Boolean.FALSE, account.getPhoneVerified());
+        // These are the same because we've mocked the GUID-creation method to always return
+        // this value.
         assertEquals(HEALTH_CODE, account.getHealthCode());
+        assertEquals(HEALTH_CODE, account.getId());
         assertEquals(EXTERNAL_ID, account.getExternalId());
         assertEquals(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM, account.getPasswordAlgorithm());
 
@@ -834,11 +837,10 @@ public class HibernateAccountDaoTest {
         Account account = makeValidGenericAccount();
         account.setStatus(AccountStatus.ENABLED);
         account.setStudyId("wrong-study");
+        account.setId(ACCOUNT_ID);
 
         // execute - We generate a new account ID.
-        String daoOutputAcountId = dao.createAccount(study, account);
-        assertNotNull(daoOutputAcountId);
-        assertNotEquals(ACCOUNT_ID, daoOutputAcountId);
+        dao.createAccount(study, account);
 
         // verify hibernate call
         ArgumentCaptor<HibernateAccount> createdHibernateAccountCaptor = ArgumentCaptor.forClass(
@@ -846,7 +848,7 @@ public class HibernateAccountDaoTest {
         verify(mockHibernateHelper).create(createdHibernateAccountCaptor.capture());
 
         HibernateAccount createdHibernateAccount = createdHibernateAccountCaptor.getValue();
-        assertEquals(daoOutputAcountId, createdHibernateAccount.getId());
+        assertEquals(ACCOUNT_ID, createdHibernateAccount.getId());
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, createdHibernateAccount.getStudyId());
         assertEquals(MOCK_DATETIME.getMillis(), createdHibernateAccount.getCreatedOn().getMillis());
         assertEquals(MOCK_DATETIME.getMillis(), createdHibernateAccount.getModifiedOn().getMillis());

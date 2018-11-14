@@ -1051,17 +1051,17 @@ public class StudyServiceMockTest {
         when(mockSynapseClient.createTeam(teamCaptor.capture())).thenReturn(mockTeam);
 
         // stub
-        when(participantService.createParticipant(any(), any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
+        when(participantService.createParticipant(any(), any(), any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
         doNothing().when(mockSynapseClient).newAccountEmailValidation(any(), any());
 
         // execute
         service.createStudyAndUsers(mockStudyAndUsers);
 
         // verify
-        verify(participantService, times(2)).createParticipant(any(), any(), any(), anyBoolean());
-        verify(participantService).createParticipant(eq(study), eq(mockUser1.getRoles()), eq(mockUser1), eq(false));
-        verify(participantService).createParticipant(eq(study), eq(mockUser2.getRoles()), eq(mockUser2), eq(false));
-        verify(participantService, times(2)).requestResetPassword(eq(study), eq(mockIdentifierHolder.getIdentifier()));
+        verify(participantService, times(2)).createParticipant(any(), any(), any(), any(), anyBoolean());
+        verify(participantService).createParticipant(study, mockUser1.getRoles(), ImmutableSet.of(), mockUser1, false);
+        verify(participantService).createParticipant(study, mockUser2.getRoles(), ImmutableSet.of(), mockUser2, false);
+        verify(participantService, times(2)).requestResetPassword(study, mockIdentifierHolder.getIdentifier());
         verify(mockSynapseClient, times(2)).newAccountEmailValidation(any(), eq(SYNAPSE_REGISTER_END_POINT));
         verify(service).createStudy(study);
         verify(service).createSynapseProjectTeam(TEST_ADMIN_IDS, study);
@@ -1265,7 +1265,7 @@ public class StudyServiceMockTest {
         doReturn(study).when(service).createSynapseProjectTeam(any(), any());
 
         // stub
-        when(participantService.createParticipant(any(), any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
+        when(participantService.createParticipant(any(), any(), any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
         doThrow(SynapseClientException.class).when(mockSynapseClient).newAccountEmailValidation(any(), any());
 
         // execute
@@ -1333,17 +1333,17 @@ public class StudyServiceMockTest {
         doReturn(study).when(service).createSynapseProjectTeam(any(), any());
 
         // stub
-        when(participantService.createParticipant(any(), any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
+        when(participantService.createParticipant(any(), any(), any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
         doThrow(new SynapseServerException(500, "The email address provided is already used.")).when(mockSynapseClient).newAccountEmailValidation(any(), any());
 
         // execute
         service.createStudyAndUsers(mockStudyAndUsers);
 
         // verify
-        verify(participantService, times(2)).createParticipant(any(), any(), any(), anyBoolean());
-        verify(participantService).createParticipant(eq(study), eq(mockUser1.getRoles()), eq(mockUser1), eq(false));
-        verify(participantService).createParticipant(eq(study), eq(mockUser2.getRoles()), eq(mockUser2), eq(false));
-        verify(participantService, times(2)).requestResetPassword(eq(study), eq(mockIdentifierHolder.getIdentifier()));
+        verify(participantService, times(2)).createParticipant(any(), any(), any(), any(), anyBoolean());
+        verify(participantService).createParticipant(study, mockUser1.getRoles(), ImmutableSet.of(), mockUser1, false);
+        verify(participantService).createParticipant(study, mockUser2.getRoles(), ImmutableSet.of(), mockUser2, false);
+        verify(participantService, times(2)).requestResetPassword(study, mockIdentifierHolder.getIdentifier());
         verify(mockSynapseClient, times(2)).newAccountEmailValidation(any(), eq(SYNAPSE_REGISTER_END_POINT));
         verify(service).createStudy(study);
         verify(service).createSynapseProjectTeam(TEST_ADMIN_IDS, study);

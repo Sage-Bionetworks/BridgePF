@@ -63,6 +63,7 @@ public class SubstudyControllerTest {
         controller.setSubstudyService(service);
         
         doReturn(session).when(controller).getAuthenticatedSession(Roles.ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(Roles.RESEARCHER, Roles.ADMIN);
     }
     
     @Test
@@ -134,7 +135,7 @@ public class SubstudyControllerTest {
         Substudy substudy = Substudy.create();
         substudy.setId("oneId");
         substudy.setName("oneName");
-        when(service.getSubstudy(TestConstants.TEST_STUDY, "id")).thenReturn(substudy);
+        when(service.getSubstudy(TestConstants.TEST_STUDY, "id", true)).thenReturn(substudy);
         
         Result result = controller.getSubstudy("id");
         assertEquals(200, result.status());
@@ -143,7 +144,7 @@ public class SubstudyControllerTest {
         assertEquals("oneId", returnedValue.getId());
         assertEquals("oneName", returnedValue.getName());
 
-        verify(service).getSubstudy(TestConstants.TEST_STUDY, "id");
+        verify(service).getSubstudy(TestConstants.TEST_STUDY, "id", true);
     }
     
     @Test
