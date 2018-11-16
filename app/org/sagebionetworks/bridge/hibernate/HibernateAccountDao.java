@@ -9,7 +9,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,6 +51,7 @@ import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableSet;
 
 /** Hibernate implementation of Account Dao. */
 @Component
@@ -455,35 +455,17 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public void deleteAccount(AccountId accountId) {
-        String userId = accountId.getUnguardedAccountId().getId();
-        if (userId == null) {
-            HibernateAccount hibernateAccount = getHibernateAccount(accountId);
-            userId = hibernateAccount.getId();
+        HibernateAccount hibernateAccount = getHibernateAccount(accountId);
+        if (hibernateAccount != null) {
+            String userId = hibernateAccount.getId();
+            hibernateHelper.deleteById(HibernateAccount.class, userId);
         }
-        hibernateHelper.deleteById(HibernateAccount.class, userId);    
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public Iterator<AccountSummary> getAllAccounts() {
-        List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet("from HibernateAccount", null, null,
-                null, HibernateAccount.class);
-        return hibernateAccountList.stream().map(HibernateAccountDao::unmarshallAccountSummary).iterator();
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public Iterator<AccountSummary> getStudyAccounts(Study study) {
-        Map<String,Object> parameters = new HashMap<>();
-        parameters.put("studyId", study.getIdentifier());
-        List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet(
-                "from HibernateAccount where studyId=:studyId", parameters, null, null, HibernateAccount.class);
-        return hibernateAccountList.stream().map(HibernateAccountDao::unmarshallAccountSummary).iterator();
     }
 
     /** {@inheritDoc} */
     @Override
     public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, AccountSummarySearch search) {
+        /*
         // Note: emailFilter can be any substring, not just prefix/suffix. Same with phone.
         // Note: start- and endTime are inclusive.
         Map<String,Object> parameters = new HashMap<>();
@@ -500,9 +482,20 @@ public class HibernateAccountDao implements AccountDao {
 
         // Get count of accounts.
         int count = hibernateHelper.queryCount(query, parameters);
+*/
+        
+        String getQuery = "select new HibernateAccount acct JOIN HibernateAccountSubstudy acctSubstudy "+
+                "WHERE acct.id = acctSubstudy.accountId AND acctSubstudy.substudyId in :substudies";
+        Map<String,Object> parameters = new HashMap<>();
+        parameters.put("substudies", ImmutableSet.of("orgA"));
 
+        List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet(getQuery, parameters,
+                search.getOffsetBy(), search.getPageSize(), HibernateAccount.class);
+        List<AccountSummary> accountSummaryList = hibernateAccountList.stream()
+                .map(HibernateAccountDao::unmarshallAccountSummary).collect(Collectors.toList());
+        
         // Package results and return.
-        return new PagedResourceList<>(accountSummaryList, count)
+        return new PagedResourceList<>(accountSummaryList, /*count*/1)
                 .withRequestParam(ResourceList.OFFSET_BY, search.getOffsetBy())
                 .withRequestParam(ResourceList.PAGE_SIZE, search.getPageSize())
                 .withRequestParam(ResourceList.EMAIL_FILTER, search.getEmailFilter())

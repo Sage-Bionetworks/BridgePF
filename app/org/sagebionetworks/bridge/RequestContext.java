@@ -7,6 +7,8 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import com.google.common.collect.ImmutableSet;
 
 public class RequestContext {
+    
+    public static final RequestContext NULL_INSTANCE = new RequestContext.Builder().build();
 
     final String id;
     final String callerStudyId;
@@ -38,8 +40,7 @@ public class RequestContext {
             return this;
         }
         public Builder withCallerSubstudies(Set<String> callerSubstudies) {
-            this.callerSubstudies = (callerSubstudies == null) ? ImmutableSet.of()
-                    : ImmutableSet.copyOf(callerSubstudies);
+            this.callerSubstudies = (callerSubstudies == null) ? null : ImmutableSet.copyOf(callerSubstudies);
             return this;
         }
         public Builder withRequestId(String id) {
@@ -47,7 +48,10 @@ public class RequestContext {
             return this;
         }
         
-        public RequestContext build() { 
+        public RequestContext build() {
+            if (callerSubstudies == null) {
+                callerSubstudies = ImmutableSet.of();
+            }
             return new RequestContext(id, callerStudyId, callerSubstudies);
         }
     }

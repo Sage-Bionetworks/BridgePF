@@ -43,41 +43,45 @@ public class BridgeUtilsTest {
     private static final LocalDateTime LOCAL_DATE_TIME = LocalDateTime.parse("2010-10-10T10:10:10.111");
     
     @Test
-    public void verifySubstudyNoContextOK() {
-        // no context set does not cause this to break
+    public void filterForSubstudyNoContextReturnsNormalAccount() {
+        BridgeUtils.setRequestContext(null);
         assertNotNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy()));
     }
     
     @Test
-    public void verifySubstudyNullCallerSubstudiesOK() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().build());
+    public void filterForSubstudyNoContextReturnsSubstudyAccount() {
+        BridgeUtils.setRequestContext(null);
+        assertNotNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyA")));
+    }
+    
+    @Test
+    public void filterForSubstudyEmptyContextReturnsNormalAccount() {
+        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
         assertNotNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy()));
     }
 
     @Test
-    public void verifySubstudyNoCallerSubstudiesOK() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of()).build());
-        assertNotNull((BridgeUtils.filterForSubstudy(getAccountWithSubstudy())));
+    public void filterForSubstudyEmptyContextReturnsSubstudyAccount() {
+        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        assertNotNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyA")));
     }
     
     @Test
-    public void verifySubstudyNoAccountOK() {
-        // We want this check, to start, to be as unobtrusive as possible.
-        assertNull(BridgeUtils.filterForSubstudy(null));
+    public void filterForSubstudyWithSubstudiesHidesNormalAccount() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+        assertNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy()));
+    }
+
+    @Test
+    public void filterForSubstudyWithMatchingSubstudiesReturnsSubstudyAccount() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+        assertNotNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyA")));
     }
     
     @Test
-    public void verifySubstudyMatchingSubstudiesOK() {
-        BridgeUtils.setRequestContext(
-                new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("wrongSubstudyId", "substudyId")).build());
-        assertNotNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyId")));
-    }
-    
-    @Test
-    public void verifySubstudyNotMatchingSubstudiesInvalid() {
-        BridgeUtils.setRequestContext(
-                new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("wrongSubstudyId")).build());
-        assertNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyId")));
+    public void filterForSubstudyWithMismatchedSubstudiesHidesSubstudyAccount() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("notSubstudyA")).build());
+        assertNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyA")));
     }
     
     private HibernateAccount getAccountWithSubstudy(String... substudyIds) {
@@ -113,7 +117,7 @@ public class BridgeUtilsTest {
 
         // Request ID is thread local, so a separate thread should see a different request ID.
         Runnable runnable = () -> {
-            assertNull(BridgeUtils.getRequestContext());
+            assertEquals(RequestContext.NULL_INSTANCE, BridgeUtils.getRequestContext());
             BridgeUtils.setRequestContext(otherContext);
             assertEquals("other request ID", BridgeUtils.getRequestContext().getId());
         };
@@ -126,7 +130,7 @@ public class BridgeUtilsTest {
 
         // Setting request ID to null is fine.
         BridgeUtils.setRequestContext(null);
-        assertNull(BridgeUtils.getRequestContext());
+        assertEquals(RequestContext.NULL_INSTANCE, BridgeUtils.getRequestContext());
     }
 
     @Test

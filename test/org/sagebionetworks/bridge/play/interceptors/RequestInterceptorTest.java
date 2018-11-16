@@ -88,6 +88,6 @@ public class RequestInterceptorTest {
         verify(mockMethod).proceed();
 
         // Verify we reset the request ID afterwards.
-        assertNull(BridgeUtils.getRequestContext());
+        assertEquals(RequestContext.NULL_INSTANCE, BridgeUtils.getRequestContext());
     }
 }

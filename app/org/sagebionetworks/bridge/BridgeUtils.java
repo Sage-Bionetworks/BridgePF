@@ -86,7 +86,11 @@ public class BridgeUtils {
 
     /** Gets the request context for the current thread. See also RequestInterceptor. */
     public static RequestContext getRequestContext() {
-        return REQUEST_CONTEXT_THREAD_LOCAL.get();
+        RequestContext context = REQUEST_CONTEXT_THREAD_LOCAL.get();
+        if (context == null) {
+            return RequestContext.NULL_INSTANCE; 
+        }
+        return context;
     }
 
     /** @see #getRequestContext */
@@ -99,9 +103,6 @@ public class BridgeUtils {
             return account;
         }
         RequestContext context = getRequestContext();
-        if (context == null) {
-            return account;
-        }
         Set<String> callerSubstudies = context.getCallerSubstudies();
         if (BridgeUtils.isEmpty(callerSubstudies)) {
             return account;
