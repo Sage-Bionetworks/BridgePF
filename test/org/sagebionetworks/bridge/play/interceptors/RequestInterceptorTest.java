@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.play.interceptors;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,7 +35,7 @@ public class RequestInterceptorTest {
         assertRequestContext(null, (context) -> {
             assertEquals(REQUEST_ID, context.getId());
             assertNull(context.getCallerStudyId());
-            assertNull(context.getCallerSubstudies());
+            assertTrue(context.getCallerSubstudies().isEmpty());
         });
     }
     

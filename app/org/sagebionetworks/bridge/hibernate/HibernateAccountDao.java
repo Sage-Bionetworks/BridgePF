@@ -20,6 +20,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import com.google.common.collect.ImmutableMap;
+
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
@@ -430,7 +433,7 @@ public class HibernateAccountDao implements AccountDao {
         return hibernateAccount;
     }
     
-    private QueryBuilder makeQuery(String prefix, String studyId, AccountId accountId, AccountSummarySearch search, boolean isCount) {
+    QueryBuilder makeQuery(String prefix, String studyId, AccountId accountId, AccountSummarySearch search, boolean isCount) {
         RequestContext context = BridgeUtils.getRequestContext();
         
         QueryBuilder builder = new QueryBuilder();
@@ -442,30 +445,30 @@ public class HibernateAccountDao implements AccountDao {
         if (accountId != null) {
             AccountId unguarded = accountId.getUnguardedAccountId();
             if (unguarded.getEmail() != null) {
-                builder.append("AND email=:email", "email", unguarded.getEmail());
+                builder.append("AND acct.email=:email", "email", unguarded.getEmail());
             } else if (unguarded.getHealthCode() != null) {
-                builder.append("AND healthCode=:healthCode","healthCode", unguarded.getHealthCode());
+                builder.append("AND acct.healthCode=:healthCode","healthCode", unguarded.getHealthCode());
             } else if (unguarded.getPhone() != null) {
-                builder.append("AND phone.number=:number AND phone.regionCode=:regionCode",
+                builder.append("AND acct.phone.number=:number AND acct.phone.regionCode=:regionCode",
                         "number", unguarded.getPhone().getNumber(),
                         "regionCode", unguarded.getPhone().getRegionCode());
             } else {
-                builder.append("AND externalId=:externalId", "externalId", unguarded.getExternalId());
+                builder.append("AND acct.externalId=:externalId", "externalId", unguarded.getExternalId());
             }
         }
         if (search != null) {
             if (StringUtils.isNotBlank(search.getEmailFilter())) {
-                builder.append("AND email LIKE :email", "email", "%"+search.getEmailFilter()+"%");
+                builder.append("AND acct.email LIKE :email", "email", "%"+search.getEmailFilter()+"%");
             }
             if (StringUtils.isNotBlank(search.getPhoneFilter())) {
                 String phoneString = search.getPhoneFilter().replaceAll("\\D*", "");
-                builder.append("AND phone.number LIKE :number", "number", "%"+phoneString+"%");
+                builder.append("AND acct.phone.number LIKE :number", "number", "%"+phoneString+"%");
             }
             if (search.getStartTime() != null) {
-                builder.append("AND createdOn >= :startTime", "startTime", search.getStartTime());
+                builder.append("AND acct.createdOn >= :startTime", "startTime", search.getStartTime());
             }
             if (search.getEndTime() != null) {
-                builder.append("AND createdOn <= :endTime", "endTime", search.getEndTime());
+                builder.append("AND acct.createdOn <= :endTime", "endTime", search.getEndTime());
             }
             if (search.getLanguage() != null) {
                 builder.append("AND :language IN ELEMENTS(acct.languages)", "language", search.getLanguage());
@@ -503,27 +506,11 @@ public class HibernateAccountDao implements AccountDao {
         List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet(builder.getQuery(), builder.getParameters(),
                 search.getOffsetBy(), search.getPageSize(), HibernateAccount.class);
         List<AccountSummary> accountSummaryList = hibernateAccountList.stream()
-                .map(HibernateAccountDao::unmarshallAccountSummary).collect(Collectors.toList());
+                .map(this::unmarshallAccountSummary).collect(Collectors.toList());
 
         // Get count of accounts.
         builder = makeQuery(COUNT_QUERY, study.getIdentifier(), null, search, true);
         int count = hibernateHelper.queryCount(builder.getQuery(), builder.getParameters());
-        
-        // This is crazy and terrible, but Hibernate will not load the collection of substudies once you use 
-        // the constructor form of HQL to limit the data you retrieve from a table. Still working on a 
-        // better solution to this that doesn't cause N queries for N objects. If we go the route of 
-        // selecting one substudy that a caller is associated to, we wouldn't need to do this (since all
-        // records would perforce be in that substudy). But treating substudies as sets, it really seems
-        // like you would want to know this information.
-        for (AccountSummary summary : accountSummaryList) {
-            QueryBuilder builder2 = new QueryBuilder();
-            builder2.append("FROM HibernateAccountSubstudy WHERE accountId=:accountId", "accountId", summary.getId());
-            List<HibernateAccountSubstudy> accountSubstudies = hibernateHelper.queryGet(builder2.getQuery(),
-                    builder2.getParameters(), null, null, HibernateAccountSubstudy.class);
-            
-            summary.setSubstudyIds(accountSubstudies.stream()
-                    .map(AccountSubstudy::getSubstudyId).collect(BridgeCollectors.toImmutableSet()));
-        }
         
         // Package results and return.
         return new PagedResourceList<>(accountSummaryList, count)
@@ -556,15 +543,23 @@ public class HibernateAccountDao implements AccountDao {
 
     // Helper method to unmarshall a HibernateAccount into an AccountSummary.
     // Package-scoped to facilitate unit tests.
-    static AccountSummary unmarshallAccountSummary(HibernateAccount hibernateAccount) {
+    AccountSummary unmarshallAccountSummary(HibernateAccount hibernateAccount) {
         StudyIdentifier studyId = null;
         if (StringUtils.isNotBlank(hibernateAccount.getStudyId())) {
             studyId = new StudyIdentifierImpl(hibernateAccount.getStudyId());
         }
+        // This is crazy and terrible, but Hibernate will not load the collection of substudies once you use 
+        // the constructor form of HQL to limit the data you retrieve from a table. May need to manually construct
+        // the objects to avoid this 1..N query.
+        List<HibernateAccountSubstudy> accountSubstudies = hibernateHelper.queryGet(
+                "FROM HibernateAccountSubstudy WHERE accountId=:accountId",
+                ImmutableMap.of("accountId", hibernateAccount.getId()), null, null, HibernateAccountSubstudy.class);
+        Set<String> substudyIds = accountSubstudies.stream()
+                .map(AccountSubstudy::getSubstudyId).collect(BridgeCollectors.toImmutableSet());
         
         return new AccountSummary(hibernateAccount.getFirstName(), hibernateAccount.getLastName(),
                 hibernateAccount.getEmail(), hibernateAccount.getPhone(), hibernateAccount.getExternalId(),
                 hibernateAccount.getId(), hibernateAccount.getCreatedOn(), hibernateAccount.getStatus(), 
-                studyId);
+                studyId, substudyIds);
     }
 }

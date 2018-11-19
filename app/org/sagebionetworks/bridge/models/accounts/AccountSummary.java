@@ -19,14 +19,15 @@ public final class AccountSummary {
     private final DateTime createdOn;
     private final AccountStatus status;
     private final StudyIdentifier studyIdentifier;
-    private Set<String> substudyIds;
+    private final Set<String> substudyIds;
     
     @JsonCreator
     public AccountSummary(@JsonProperty("firstName") String firstName, @JsonProperty("lastName") String lastName,
             @JsonProperty("email") String email, @JsonProperty("phone") Phone phone,
             @JsonProperty("externalId") String externalId, @JsonProperty("id") String id,
             @JsonProperty("createdOn") DateTime createdOn, @JsonProperty("status") AccountStatus status,
-            @JsonProperty("studyIdentifier") StudyIdentifier studyIdentifier) {
+            @JsonProperty("studyIdentifier") StudyIdentifier studyIdentifier,
+            @JsonProperty("substudyIds") Set<String> substudyIds) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -36,16 +37,9 @@ public final class AccountSummary {
         this.createdOn = (createdOn == null) ? null : createdOn.withZone(DateTimeZone.UTC);
         this.status = status;
         this.studyIdentifier = studyIdentifier;
-    }
-    
-    public Set<String> getSubstudyIds() {
-        return substudyIds;
-    }
-    
-    public void setSubstudyIds(Set<String> substudyIds) {
         this.substudyIds = substudyIds;
     }
-
+    
     public String getFirstName() {
         return firstName;
     }
@@ -81,10 +75,15 @@ public final class AccountSummary {
     public StudyIdentifier getStudyIdentifier() {
         return studyIdentifier;
     }
+    
+    public Set<String> getSubstudyIds() {
+        return substudyIds;
+    }
 
     @Override
     public int hashCode() {
-        return Objects.hash(firstName, lastName, email, phone, externalId, id, createdOn, status, studyIdentifier);
+        return Objects.hash(firstName, lastName, email, phone, externalId, id, createdOn, status, studyIdentifier,
+                substudyIds);
     }
 
     @Override
@@ -98,7 +97,8 @@ public final class AccountSummary {
                 && Objects.equals(email, other.email) && Objects.equals(phone, other.phone)
                 && Objects.equals(externalId, other.externalId) && Objects.equals(createdOn, other.createdOn)
                 && Objects.equals(status, other.status) && Objects.equals(id, other.id)
-                && Objects.equals(studyIdentifier, other.studyIdentifier);
+                && Objects.equals(studyIdentifier, other.studyIdentifier)
+                && Objects.equals(substudyIds, other.substudyIds);
     }
     
     // no toString() method as the information is sensitive.

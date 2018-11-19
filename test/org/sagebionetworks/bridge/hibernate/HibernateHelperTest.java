@@ -113,7 +113,7 @@ public class HibernateHelperTest {
         Query<Long> mockQuery = mock(Query.class);
         when(mockQuery.uniqueResult()).thenReturn(42L);
 
-        when(mockSession.createQuery("select count(*) " + QUERY, Long.class)).thenReturn(mockQuery);
+        when(mockSession.createQuery(QUERY, Long.class)).thenReturn(mockQuery);
 
         // execute and validate
         int count = helper.queryCount(QUERY, null);
@@ -126,7 +126,7 @@ public class HibernateHelperTest {
         Query<Long> mockQuery = mock(Query.class);
         when(mockQuery.uniqueResult()).thenReturn(null);
 
-        when(mockSession.createQuery("select count(*) " + QUERY, Long.class)).thenReturn(mockQuery);
+        when(mockSession.createQuery(QUERY, Long.class)).thenReturn(mockQuery);
 
         // execute and validate
         int count = helper.queryCount(QUERY, null);
@@ -139,7 +139,7 @@ public class HibernateHelperTest {
         Query<Long> mockQuery = mock(Query.class);
         when(mockQuery.uniqueResult()).thenReturn(42L);
 
-        when(mockSession.createQuery("select count(*) " + QUERY, Long.class)).thenReturn(mockQuery);
+        when(mockSession.createQuery(QUERY, Long.class)).thenReturn(mockQuery);
 
         // execute and validate
         int count = helper.queryCount(QUERY, PARAMETERS);
