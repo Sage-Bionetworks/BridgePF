@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import java.util.Objects;
+import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -18,6 +19,7 @@ public final class AccountSummary {
     private final DateTime createdOn;
     private final AccountStatus status;
     private final StudyIdentifier studyIdentifier;
+    private Set<String> substudyIds;
     
     @JsonCreator
     public AccountSummary(@JsonProperty("firstName") String firstName, @JsonProperty("lastName") String lastName,
@@ -34,6 +36,14 @@ public final class AccountSummary {
         this.createdOn = (createdOn == null) ? null : createdOn.withZone(DateTimeZone.UTC);
         this.status = status;
         this.studyIdentifier = studyIdentifier;
+    }
+    
+    public Set<String> getSubstudyIds() {
+        return substudyIds;
+    }
+    
+    public void setSubstudyIds(Set<String> substudyIds) {
+        this.substudyIds = substudyIds;
     }
 
     public String getFirstName() {
