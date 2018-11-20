@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -168,7 +170,6 @@ public abstract class BaseController extends Controller {
         if (session == null || !session.isAuthenticated()) {
             throw new NotAuthenticatedException();
         }
-
         // Sessions are locked to an IP address if (a) it is enabled in the study for unprivileged participant accounts
         // or (b) always for privileged accounts.
         Study study = studyService.getStudy(session.getStudyIdentifier());
@@ -187,6 +188,14 @@ public abstract class BaseController extends Controller {
             verifySupportedVersionOrThrowException(study);
         }
         
+        // Update request context with security-related information about the user.
+        String requestId = RequestUtils.getRequestId(request());
+        RequestContext.Builder builder = new RequestContext.Builder().withRequestId(requestId);
+        builder.withCallerStudyId(session.getStudyIdentifier());
+        builder.withCallerSubstudies(session.getParticipant().getSubstudyIds());
+        builder.withCallerRoles(session.getParticipant().getRoles());
+        BridgeUtils.setRequestContext(builder.build());
+
         // if there are roles, they are required
         boolean rolesRequired = (roles != null && roles.length > 0); 
         boolean isInRole = (rolesRequired) ? !Collections.disjoint(Sets.newHashSet(roles), userRoles) : false;

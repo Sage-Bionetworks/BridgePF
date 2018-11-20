@@ -13,11 +13,13 @@ public class RequestContext {
     final String id;
     final String callerStudyId;
     final Set<String> callerSubstudies;
+    final Set<Roles> callerRoles;
     
-    private RequestContext(String id, String callerStudyId, Set<String> callerSubstudies) {
+    private RequestContext(String id, String callerStudyId, Set<String> callerSubstudies, Set<Roles> callerRoles) {
         this.id = id;
         this.callerStudyId = callerStudyId;
         this.callerSubstudies = callerSubstudies;
+        this.callerRoles = callerRoles;
     }
     
     public String getId() {
@@ -29,10 +31,14 @@ public class RequestContext {
     public Set<String> getCallerSubstudies() {
         return callerSubstudies;
     }
+    public Set<Roles> getCallerRoles() {
+        return callerRoles;
+    }
     
     public static class Builder {
         private String callerStudyId;
         private Set<String> callerSubstudies;
+        private Set<Roles> callerRoles;
         private String id;
 
         public Builder withCallerStudyId(StudyIdentifier studyId) {
@@ -41,6 +47,10 @@ public class RequestContext {
         }
         public Builder withCallerSubstudies(Set<String> callerSubstudies) {
             this.callerSubstudies = (callerSubstudies == null) ? null : ImmutableSet.copyOf(callerSubstudies);
+            return this;
+        }
+        public Builder withCallerRoles(Set<Roles> roles) {
+            this.callerRoles = (roles == null) ? null : ImmutableSet.copyOf(roles);
             return this;
         }
         public Builder withRequestId(String id) {
@@ -52,13 +62,16 @@ public class RequestContext {
             if (callerSubstudies == null) {
                 callerSubstudies = ImmutableSet.of();
             }
-            return new RequestContext(id, callerStudyId, callerSubstudies);
+            if (callerRoles == null) {
+                callerRoles = ImmutableSet.of();
+            }
+            return new RequestContext(id, callerStudyId, callerSubstudies, callerRoles);
         }
     }
 
     @Override
     public String toString() {
         return "RequestContext [callerStudyId=" + callerStudyId + ", callerSubstudies=" + 
-                callerSubstudies + ", id=" + id + "]";
+                callerSubstudies + ", callerRoles=" + callerRoles + ", id=" + id + "]";
     }
 }

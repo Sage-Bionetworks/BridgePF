@@ -13,14 +13,16 @@ import com.google.common.collect.ImmutableSet;
 public class RequestContextTest {
 
     private static final Set<String> SUBSTUDIES = ImmutableSet.of("testA", "testB");
+    private static final Set<Roles> ROLES = ImmutableSet.of(Roles.DEVELOPER, Roles.WORKER);
 
     @Test
     public void nullObjectReturnsNullAndEmpty() { 
         RequestContext nullContext = new RequestContext.Builder().withRequestId(null).withCallerStudyId(null)
-                .withCallerSubstudies(null).build();
+                .withCallerSubstudies(null).withCallerRoles(null).build();
         
         assertNull(nullContext.getId());
         assertTrue(nullContext.getCallerSubstudies().isEmpty());
+        assertTrue(nullContext.getCallerRoles().isEmpty());
         assertNull(nullContext.getCallerStudyId());
     }
 
@@ -28,9 +30,11 @@ public class RequestContextTest {
     public void test() { 
         RequestContext context = new RequestContext.Builder().withRequestId("requestId")
                 .withCallerStudyId(TestConstants.TEST_STUDY).withCallerSubstudies(SUBSTUDIES)
-                .build();
+                .withCallerRoles(ROLES).build();
+
         assertEquals("requestId", context.getId());
         assertEquals(TestConstants.TEST_STUDY_IDENTIFIER, context.getCallerStudyId());
         assertEquals(SUBSTUDIES, context.getCallerSubstudies());
+        assertEquals(ROLES, context.getCallerRoles());
     }
 }

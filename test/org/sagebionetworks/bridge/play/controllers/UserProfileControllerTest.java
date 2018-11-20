@@ -18,6 +18,7 @@ import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,6 +27,8 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
@@ -143,6 +146,11 @@ public class UserProfileControllerTest {
         doReturn(session).when(controller).getAuthenticatedSession();
     }
     
+    @After
+    public void after() {
+        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+    }
+    
     @Test
     @SuppressWarnings("deprecation")
     public void getUserProfile() throws Exception {
@@ -196,6 +204,9 @@ public class UserProfileControllerTest {
     @Test
     @SuppressWarnings("deprecation")
     public void updateUserProfile() throws Exception {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(
+                ImmutableSet.of("substudyA")).build());
+        
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("existingHealthCode")
                 .withExternalId("originalId")
@@ -219,13 +230,12 @@ public class UserProfileControllerTest {
         assertEquals("originalId", node.get("externalId").asText());
                 
         // Verify that existing user information (health code) has been retrieved and used when updating session
-        verify(participantService).updateParticipant(eq(study), any(), any(), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(study), participantCaptor.capture());
         StudyParticipant capturedParticipant = participantCaptor.getValue();
         assertEquals("existingHealthCode", capturedParticipant.getHealthCode());
         assertEquals("originalId", capturedParticipant.getExternalId());
         
-        verify(participantService).updateParticipant(eq(study), eq(ImmutableSet.of()), eq(ImmutableSet.of("substudyA")),
-                participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(study), participantCaptor.capture());
         
         StudyParticipant persisted = participantCaptor.getValue();
         assertEquals(ID, persisted.getId());
@@ -252,6 +262,9 @@ public class UserProfileControllerTest {
     @Test
     @SuppressWarnings("deprecation")
     public void validDataGroupsCanBeAdded() throws Exception {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(
+                ImmutableSet.of("substudyA")).build());
+        
         // We had a bug where this call lost the health code in the user's session, so verify in particular 
         // that healthCode (as well as something like firstName) are in the session. 
         StudyParticipant existing = new StudyParticipant.Builder()
@@ -272,7 +285,7 @@ public class UserProfileControllerTest {
         assertEquals("First", node.get("firstName").asText());
         assertEquals("group1", node.get("dataGroups").get(0).asText());
         
-        verify(participantService).updateParticipant(eq(study), eq(ImmutableSet.of()), eq(ImmutableSet.of("substudyA")), participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(study), participantCaptor.capture());
         verify(consentService).getConsentStatuses(contextCaptor.capture());
         
         StudyParticipant participant = participantCaptor.getValue();
@@ -296,7 +309,7 @@ public class UserProfileControllerTest {
         StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").build();
         doReturn(existing).when(participantService).getParticipant(study, ID, false);
         doThrow(new InvalidEntityException("Invalid data groups")).when(participantService).updateParticipant(eq(study),
-                eq(ImmutableSet.of()), eq(ImmutableSet.of()), any());
+                any());
         
         TestUtils.mockPlayContextWithJson("{\"dataGroups\":[\"completelyInvalidGroup\"]}");
         try {
@@ -329,6 +342,9 @@ public class UserProfileControllerTest {
     @SuppressWarnings({ "deprecation" })
     @Test
     public void evenEmptyJsonActsOK() throws Exception {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(
+                ImmutableSet.of("substudyA")).build());
+        
         StudyParticipant existing = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE)
                 .withId(ID)
@@ -344,8 +360,7 @@ public class UserProfileControllerTest {
         JsonNode node = TestUtils.getJson(result);
         assertEquals("First", node.get("firstName").asText());
         
-        verify(participantService).updateParticipant(eq(study), eq(ImmutableSet.of()), eq(ImmutableSet.of("substudyA")),
-                participantCaptor.capture());
+        verify(participantService).updateParticipant(eq(study), participantCaptor.capture());
         
         StudyParticipant updated = participantCaptor.getValue();
         assertEquals(ID, updated.getId());

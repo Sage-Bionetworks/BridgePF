@@ -457,8 +457,7 @@ public class AuthenticationServiceMockTest {
         
         service.signUp(study, participant);
         
-        verify(participantService).createParticipant(eq(study), eq(ImmutableSet.of()), eq(ImmutableSet.of()),
-                participantCaptor.capture(), eq(true));
+        verify(participantService).createParticipant(eq(study), participantCaptor.capture(), eq(true));
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals(RECIPIENT_EMAIL, captured.getEmail());
         assertEquals(PASSWORD, captured.getPassword());
@@ -472,8 +471,7 @@ public class AuthenticationServiceMockTest {
         
         service.signUp(study, participant);
         
-        verify(participantService).createParticipant(eq(study), eq(ImmutableSet.of()), eq(ImmutableSet.of()),
-                participantCaptor.capture(), eq(true));
+        verify(participantService).createParticipant(eq(study), participantCaptor.capture(), eq(true));
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals(TestConstants.PHONE.getNumber(), captured.getPhone().getNumber());
         assertEquals(PASSWORD, captured.getPassword());
@@ -485,14 +483,13 @@ public class AuthenticationServiceMockTest {
         StudyParticipant participant = new StudyParticipant.Builder().withEmail(RECIPIENT_EMAIL).withPassword(PASSWORD)
                 .build();
         doThrow(new EntityAlreadyExistsException(StudyParticipant.class, "userId", "user-id")).when(participantService)
-                .createParticipant(study, ImmutableSet.of(), ImmutableSet.of(), participant, true);
+                .createParticipant(study, participant, true);
         
         service.signUp(study, participant);
         
         ArgumentCaptor<AccountId> accountIdCaptor = ArgumentCaptor.forClass(AccountId.class);
         
-        verify(participantService).createParticipant(eq(study), eq(ImmutableSet.of()), eq(ImmutableSet.of()), any(),
-                eq(true));
+        verify(participantService).createParticipant(eq(study), any(), eq(true));
         verify(accountWorkflowService).notifyAccountExists(eq(study), accountIdCaptor.capture());
         
         AccountId captured = accountIdCaptor.getValue();
@@ -678,7 +675,7 @@ public class AuthenticationServiceMockTest {
         when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(externalIdentifier);
         
         IdentifierHolder idHolder = new IdentifierHolder("userId");
-        when(participantService.createParticipant(eq(study), eq(ImmutableSet.of()), eq(ImmutableSet.of()), participantCaptor.capture(), eq(false))).thenReturn(idHolder);
+        when(participantService.createParticipant(eq(study), participantCaptor.capture(), eq(false))).thenReturn(idHolder);
         
         GeneratedPassword password = service.generatePassword(study, EXTERNAL_ID, true);
         assertEquals(EXTERNAL_ID, password.getExternalId());
@@ -696,8 +693,7 @@ public class AuthenticationServiceMockTest {
         study.setExternalIdValidationEnabled(true);
         when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(externalIdentifier);
         
-        when(participantService.createParticipant(eq(study), eq(ImmutableSet.of()), eq(ImmutableSet.of()),
-                participantCaptor.capture(), eq(false)))
+        when(participantService.createParticipant(eq(study), participantCaptor.capture(), eq(false)))
                         .thenThrow(new EntityAlreadyExistsException(Account.class, "id", "asdf"));
         
         try {
@@ -707,7 +703,7 @@ public class AuthenticationServiceMockTest {
             // expected exception
         }
         verify(accountDao).getAccount(AccountId.forExternalId(TestConstants.TEST_STUDY_IDENTIFIER, EXTERNAL_ID));
-        verify(participantService).createParticipant(eq(study), eq(ImmutableSet.of()), eq(ImmutableSet.of()), any(), eq(false));
+        verify(participantService).createParticipant(eq(study), any(), eq(false));
         verifyNoMoreInteractions(accountDao);
         verifyNoMoreInteractions(participantService);
     }
@@ -760,7 +756,7 @@ public class AuthenticationServiceMockTest {
                 .withEmail(null).withPhone(null).withExternalId("id").build();
         service.signUp(study, participant);
         
-        verify(participantService).createParticipant(study, ImmutableSet.of(), ImmutableSet.of(), participant, true);
+        verify(participantService).createParticipant(study, participant, true);
     }
     
     @Test

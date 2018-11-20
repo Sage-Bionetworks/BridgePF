@@ -5,11 +5,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
 
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -28,16 +26,11 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.validators.SignInValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component("userAdminService")
 public class UserAdminService {
-    
-    private static final Set<Roles> ADMIN_ROLE = Sets.newHashSet(Roles.ADMIN);
 
     private AuthenticationService authenticationService;
     private NotificationsService notificationsService;
@@ -131,9 +124,7 @@ public class UserAdminService {
         
         IdentifierHolder identifier = null;
         try {
-            // No substudies are passed through this method, so the user can be in any substudies, or no substudies
-            // The ADMIN role is passed through this method, so the user can have any role(s)
-            identifier = participantService.createParticipant(study, ADMIN_ROLE, ImmutableSet.of(), participant, false);
+            identifier = participantService.createParticipant(study, participant, false);
             StudyParticipant updatedParticipant = participantService.getParticipant(study, identifier.getIdentifier(), false);
             
             // We don't filter users by any of these filtering criteria in the admin API.

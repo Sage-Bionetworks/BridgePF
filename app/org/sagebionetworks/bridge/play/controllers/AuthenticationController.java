@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -173,6 +175,9 @@ public class AuthenticationController extends BaseController {
     }
     
     public Result signUp() throws Exception {
+        // Ignore Bridge-Session cookie if it exists. This is not an authenticated request.
+        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        
         JsonNode node = requestToJSON(request());
         StudyParticipant participant = MAPPER.treeToValue(node, StudyParticipant.class);
         
