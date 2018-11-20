@@ -19,7 +19,7 @@ public class HibernateAccountSubstudy implements AccountSubstudy {
     @Id
     private String substudyId;
     @Id
-    @JoinColumn(name = "account_id") // TODO Does this do anything?
+    @JoinColumn(name = "account_id")
     private String accountId;
     private String externalId;
     

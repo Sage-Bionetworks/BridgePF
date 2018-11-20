@@ -26,11 +26,20 @@ public class RequestUtilsTest {
         final Map<String, String[]> headerMap = new HashMap<>();
         headerMap.put("X-Request-Id", new String[]{"123", "789"});
         headerMap.put("User-Agent", new String[]{"ifeng 6"});
+        headerMap.put("Bridge-Session", new String[]{"ABC-DEF"});
+        
         when(mockRequest.headers()).thenReturn(headerMap);
+        
         assertEquals("123", RequestUtils.getRequestId(mockRequest));
+        assertEquals("ABC-DEF", RequestUtils.getSessionToken(mockRequest));
         assertEquals("ifeng 6", RequestUtils.header(mockRequest, "User-Agent", null));
+        assertEquals("ABC-DEF", RequestUtils.header(mockRequest, "Bridge-Session", null));
+        
         headerMap.remove("X-Request-Id");
+        headerMap.remove("Bridge-Session");
         assertFalse("123".equals(RequestUtils.getRequestId(mockRequest)));
+        assertFalse("ABC-DEF".equals(RequestUtils.getSessionToken(mockRequest)));
+        
         assertNotNull(RequestUtils.getRequestId(mockRequest));
         headerMap.remove("User-Agent");
         assertNull(RequestUtils.header(mockRequest, "User-Agent", null));

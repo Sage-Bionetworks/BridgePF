@@ -548,9 +548,9 @@ public class HibernateAccountDao implements AccountDao {
         if (StringUtils.isNotBlank(hibernateAccount.getStudyId())) {
             studyId = new StudyIdentifierImpl(hibernateAccount.getStudyId());
         }
-        // This is crazy and terrible, but Hibernate will not load the collection of substudies once you use 
-        // the constructor form of HQL to limit the data you retrieve from a table. May need to manually construct
-        // the objects to avoid this 1..N query.
+        // Hibernate will not load the collection of substudies once you use the constructor form of HQL 
+        // to limit the data you retrieve from a table. May need to manually construct the objects to 
+        // avoid this 1+N query.
         List<HibernateAccountSubstudy> accountSubstudies = hibernateHelper.queryGet(
                 "FROM HibernateAccountSubstudy WHERE accountId=:accountId",
                 ImmutableMap.of("accountId", hibernateAccount.getId()), null, null, HibernateAccountSubstudy.class);

@@ -15,8 +15,8 @@ import com.google.common.base.Joiner;
  */
 class QueryBuilder {
     
-    List<String> phrases = new ArrayList<>();
-    Map<String,Object> params = new HashMap<>();
+    private final List<String> phrases = new ArrayList<>();
+    private final Map<String,Object> params = new HashMap<>();
     
     public void append(String phrase) {
         phrases.add(phrase);
@@ -39,7 +39,7 @@ class QueryBuilder {
                 clauses.add(":"+varName+" "+operator+" elements(acct.dataGroups)");
                 params.put(varName, oneDataGroup);
             }
-            phrases.add(" AND (" + Joiner.on(" AND ").join(clauses) + ")");
+            phrases.add("AND (" + Joiner.on(" AND ").join(clauses) + ")");
         }
     }
     
@@ -52,7 +52,7 @@ class QueryBuilder {
                 clauses.add(":"+varName+" in elements(acct.accountSubstudies.substudyId)");
                 params.put(varName, oneDataGroup);
             }
-            phrases.add(" AND (" + Joiner.on(" OR ").join(clauses) + ")");
+            phrases.add("AND (" + Joiner.on(" OR ").join(clauses) + ")");
         }
     }
     public String getQuery() {
