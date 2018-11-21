@@ -3,8 +3,6 @@ package org.sagebionetworks.bridge.play.controllers;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;

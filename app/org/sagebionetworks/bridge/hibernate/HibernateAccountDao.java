@@ -457,6 +457,7 @@ public class HibernateAccountDao implements AccountDao {
             }
         }
         if (search != null) {
+            // Note: emailFilter can be any substring, not just prefix/suffix. Same with phone.
             if (StringUtils.isNotBlank(search.getEmailFilter())) {
                 builder.append("AND acct.email LIKE :email", "email", "%"+search.getEmailFilter()+"%");
             }
@@ -464,6 +465,7 @@ public class HibernateAccountDao implements AccountDao {
                 String phoneString = search.getPhoneFilter().replaceAll("\\D*", "");
                 builder.append("AND acct.phone.number LIKE :number", "number", "%"+phoneString+"%");
             }
+            // Note: start- and endTime are inclusive.            
             if (search.getStartTime() != null) {
                 builder.append("AND acct.createdOn >= :startTime", "startTime", search.getStartTime());
             }
