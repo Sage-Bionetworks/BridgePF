@@ -42,19 +42,6 @@ class QueryBuilder {
             phrases.add("AND (" + Joiner.on(" AND ").join(clauses) + ")");
         }
     }
-    
-    public void substudies(Set<String> substudyIds) {
-        if (!BridgeUtils.isEmpty(substudyIds)) {
-            int i = 0;
-            List<String> clauses = new ArrayList<>();
-            for (String oneDataGroup : substudyIds) {
-                String varName = "substudyId" + (++i);
-                clauses.add(":"+varName+" in elements(acct.accountSubstudies.substudyId)");
-                params.put(varName, oneDataGroup);
-            }
-            phrases.add("AND (" + Joiner.on(" OR ").join(clauses) + ")");
-        }
-    }
     public String getQuery() {
         return BridgeUtils.SPACE_JOINER.join(phrases);
     }

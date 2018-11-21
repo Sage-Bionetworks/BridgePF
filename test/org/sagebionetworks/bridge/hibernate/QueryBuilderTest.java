@@ -35,13 +35,4 @@ public class QueryBuilderTest {
         assertEquals("C", builder.getParameters().get("NOTIN1"));
         assertEquals("D", builder.getParameters().get("NOTIN2"));
     }
-    
-    @Test
-    public void testSubstudies() { 
-        QueryBuilder builder = new QueryBuilder();
-        builder.substudies(ImmutableSet.of("A", "B"));
-        
-        assertEquals("AND (:substudyId1 in elements(acct.accountSubstudies.substudyId) OR "+
-                ":substudyId2 in elements(acct.accountSubstudies.substudyId))", builder.getQuery());
-    }
 }
