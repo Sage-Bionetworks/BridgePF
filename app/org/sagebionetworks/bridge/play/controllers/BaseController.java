@@ -170,6 +170,16 @@ public abstract class BaseController extends Controller {
         if (session == null || !session.isAuthenticated()) {
             throw new NotAuthenticatedException();
         }
+        
+        // Update request context with security-related information about the user. This will be
+        // immediately removed from the thread local if an exception is thrown.
+        String requestId = RequestUtils.getRequestId(request());
+        RequestContext.Builder builder = new RequestContext.Builder().withRequestId(requestId);
+        builder.withCallerStudyId(session.getStudyIdentifier());
+        builder.withCallerSubstudies(session.getParticipant().getSubstudyIds());
+        builder.withCallerRoles(session.getParticipant().getRoles());
+        BridgeUtils.setRequestContext(builder.build());
+        
         // Sessions are locked to an IP address if (a) it is enabled in the study for unprivileged participant accounts
         // or (b) always for privileged accounts.
         Study study = studyService.getStudy(session.getStudyIdentifier());
@@ -187,14 +197,6 @@ public abstract class BaseController extends Controller {
         if (consentRequired) {
             verifySupportedVersionOrThrowException(study);
         }
-        
-        // Update request context with security-related information about the user.
-        String requestId = RequestUtils.getRequestId(request());
-        RequestContext.Builder builder = new RequestContext.Builder().withRequestId(requestId);
-        builder.withCallerStudyId(session.getStudyIdentifier());
-        builder.withCallerSubstudies(session.getParticipant().getSubstudyIds());
-        builder.withCallerRoles(session.getParticipant().getRoles());
-        BridgeUtils.setRequestContext(builder.build());
 
         // if there are roles, they are required
         boolean rolesRequired = (roles != null && roles.length > 0); 

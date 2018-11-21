@@ -99,17 +99,16 @@ public class BridgeUtils {
     }
     
     public static HibernateAccount filterForSubstudy(HibernateAccount account) {
-        if (account == null) {
-            return account;
-        }
-        RequestContext context = getRequestContext();
-        Set<String> callerSubstudies = context.getCallerSubstudies();
-        if (BridgeUtils.isEmpty(callerSubstudies)) {
-            return account;
-        }
-        for (AccountSubstudy accountSubstudy : account.getAccountSubstudies()) {
-            if (callerSubstudies.contains(accountSubstudy.getSubstudyId())) {
+        if (account != null) {
+            RequestContext context = getRequestContext();
+            Set<String> callerSubstudies = context.getCallerSubstudies();
+            if (BridgeUtils.isEmpty(callerSubstudies)) {
                 return account;
+            }
+            for (AccountSubstudy accountSubstudy : account.getAccountSubstudies()) {
+                if (callerSubstudies.contains(accountSubstudy.getSubstudyId())) {
+                    return account;
+                }
             }
         }
         return null;
