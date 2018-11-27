@@ -60,11 +60,10 @@ public class CacheProviderMockTest {
     private static final CacheKey CACHE_KEY = CacheKey.study("key");
     private static final Encryptor ENCRYPTOR = new AesGcmEncryptor(BridgeConfigFactory.getConfig().getProperty("bridge.healthcode.redis.key"));
     private static final String USER_ID = "userId";
-    private static final String SESSION_TOKEN = "sessionToken";
     private static final String ENCRYPTED_SESSION_TOKEN = "TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=";
     private static final String DECRYPTED_SESSION_TOKEN = "ccea2978-f5b9-4377-8194-f887a3e2a19b";
-    private static final CacheKey SESSION_KEY = CacheKey.session(SESSION_TOKEN);
-    private static final CacheKey USER_SESSION_KEY = CacheKey.sessionByUserId(USER_ID);
+    private static final CacheKey TOKEN_TO_USER_ID = CacheKey.tokenToUserId(DECRYPTED_SESSION_TOKEN);
+    private static final CacheKey USER_ID_TO_SESSION = CacheKey.userIdToSession(USER_ID);
 
     private CacheProvider cacheProvider;
     
@@ -79,12 +78,10 @@ public class CacheProviderMockTest {
         mockTransaction(transaction);
         
         when(jedisOps.getTransaction()).thenReturn(transaction);
-        
-        when(jedisOps.get(USER_SESSION_KEY.toString())).thenReturn(SESSION_TOKEN);
+        when(jedisOps.get(TOKEN_TO_USER_ID.toString())).thenReturn(USER_ID);
         
         cacheProvider = new CacheProvider();
         cacheProvider.setJedisOps(jedisOps);
-        cacheProvider.setBridgeObjectMapper(BridgeObjectMapper.get());
     }
 
     private void mockTransaction(JedisTransaction trans) {
@@ -96,17 +93,11 @@ public class CacheProviderMockTest {
 
     @Test
     public void testSetUserSession() throws Exception {
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withEmail("userEmail")
-                .withId(USER_ID)
-                .withHealthCode("healthCode").build();
-        
-        UserSession session = new UserSession(participant);
-        session.setSessionToken(SESSION_TOKEN);
+        UserSession session = createUserSession();
         cacheProvider.setUserSession(session);
         
-        verify(transaction).setex(eq(SESSION_KEY.toString()), anyInt(), anyString());
-        verify(transaction).setex(eq(USER_SESSION_KEY.toString()), anyInt(), eq(SESSION_TOKEN));
+        verify(transaction).setex(eq(TOKEN_TO_USER_ID.toString()), anyInt(), eq(USER_ID));
+        verify(transaction).setex(eq(USER_ID_TO_SESSION.toString()), anyInt(), anyString());
         verify(transaction).exec();
     }
 
@@ -125,15 +116,15 @@ public class CacheProviderMockTest {
         } catch(Throwable e) {
             fail(e.getMessage());
         }
-        verify(transaction, never()).setex(eq(SESSION_KEY.toString()), anyInt(), anyString());
-        verify(transaction, never()).setex(eq(USER_SESSION_KEY.toString()), anyInt(), eq(SESSION_TOKEN));
+        verify(transaction, never()).setex(eq(TOKEN_TO_USER_ID.toString()), anyInt(), anyString());
+        verify(transaction, never()).setex(eq(USER_ID_TO_SESSION.toString()), anyInt(), eq(DECRYPTED_SESSION_TOKEN));
         verify(transaction, never()).exec();
     }
 
     @Test
     public void testSetUserSessionNullUser() throws Exception {
         UserSession session = new UserSession();
-        session.setSessionToken(SESSION_TOKEN);
+        session.setSessionToken(DECRYPTED_SESSION_TOKEN);
         try {
             cacheProvider.setUserSession(session);
         } catch(NullPointerException e) {
@@ -141,8 +132,8 @@ public class CacheProviderMockTest {
         } catch(Throwable e) {
             fail(e.getMessage());
         }
-        verify(transaction, never()).setex(eq(SESSION_KEY.toString()), anyInt(), anyString());
-        verify(transaction, never()).setex(eq(USER_SESSION_KEY.toString()), anyInt(), eq(SESSION_TOKEN));
+        verify(transaction, never()).setex(eq(TOKEN_TO_USER_ID.toString()), anyInt(), anyString());
+        verify(transaction, never()).setex(eq(USER_ID_TO_SESSION.toString()), anyInt(), eq(DECRYPTED_SESSION_TOKEN));
         verify(transaction, never()).exec();
     }
 
@@ -153,7 +144,7 @@ public class CacheProviderMockTest {
                 .withHealthCode("healthCode").build();        
         
         UserSession session = new UserSession(participant);
-        session.setSessionToken(SESSION_TOKEN);
+        session.setSessionToken(DECRYPTED_SESSION_TOKEN);
         try {
             cacheProvider.setUserSession(session);
         } catch(NullPointerException e) {
@@ -161,8 +152,8 @@ public class CacheProviderMockTest {
         } catch(Throwable e) {
             fail(e.getMessage());
         }
-        verify(transaction, never()).setex(eq(SESSION_KEY.toString()), anyInt(), anyString());
-        verify(transaction, never()).setex(eq(USER_SESSION_KEY.toString()), anyInt(), eq(SESSION_TOKEN));
+        verify(transaction, never()).setex(eq(TOKEN_TO_USER_ID.toString()), anyInt(), anyString());
+        verify(transaction, never()).setex(eq(USER_ID_TO_SESSION.toString()), anyInt(), eq(DECRYPTED_SESSION_TOKEN));
         verify(transaction, never()).exec();
     }
 
@@ -171,8 +162,7 @@ public class CacheProviderMockTest {
         CacheProvider mockCacheProvider = spy(cacheProvider);
         mockCacheProvider.getUserSessionByUserId(USER_ID);
         
-        verify(jedisOps).get("userId:session:user");
-        verify(jedisOps).get("sessionToken:session");
+        verify(jedisOps).get("userId:session2:user");
     }
 
     @Test
@@ -180,30 +170,44 @@ public class CacheProviderMockTest {
         StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).build();
 
         UserSession session = new UserSession(participant);
-        session.setSessionToken(SESSION_TOKEN);
+        session.setSessionToken(DECRYPTED_SESSION_TOKEN);
         
         cacheProvider.removeSession(session);
-        cacheProvider.getUserSession(SESSION_TOKEN);
+        cacheProvider.getUserSession(DECRYPTED_SESSION_TOKEN);
         
-        verify(transaction).del(SESSION_KEY.toString());
-        verify(transaction).del(USER_SESSION_KEY.toString());
+        verify(transaction).del(TOKEN_TO_USER_ID.toString());
+        verify(transaction).del(USER_ID_TO_SESSION.toString());
         verify(transaction).exec();
     }
 
     @Test
-    public void testRemoveSessionByUserId() {
+    public void testRemoveSessionByUserId() throws Exception {
+        UserSession session = createUserSession();
+        String ser = BridgeObjectMapper.get().writeValueAsString(session);
+
+        when(jedisOps.get(USER_ID_TO_SESSION.toString())).thenReturn(ser);
+        
         cacheProvider.removeSessionByUserId(USER_ID);
         
-        verify(transaction).del(SESSION_KEY.toString());
-        verify(transaction).del(USER_SESSION_KEY.toString());
+        verify(transaction).del(TOKEN_TO_USER_ID.toString());
+        verify(transaction).del(USER_ID_TO_SESSION.toString());
         verify(transaction).exec();
+    }
+
+    private UserSession createUserSession() {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail("userEmail")
+                .withId(USER_ID)
+                .withHealthCode("healthCode").build();        
+        UserSession session = new UserSession(participant);
+        session.setSessionToken(DECRYPTED_SESSION_TOKEN);
+        return session;
     }
 
     @Test
     public void addAndRemoveViewFromCacheProvider() throws Exception {
         final CacheProvider simpleCacheProvider = new CacheProvider();
         simpleCacheProvider.setJedisOps(getJedisOps());
-        simpleCacheProvider.setBridgeObjectMapper(BridgeObjectMapper.get());
 
         final Study study = TestUtils.getValidStudy(CacheProviderMockTest.class);
         study.setIdentifier("test");
@@ -389,17 +393,43 @@ public class CacheProviderMockTest {
         verify(transaction, never()).exec();
     }
     
+    @Test
+    public void getUserSessionFallsbackToOldKeys() throws Exception {
+        UserSession session = createUserSession();
+        String ser = BridgeObjectMapper.get().writeValueAsString(session);
+        
+        // This is the old key... the new keys will not return anything.
+        CacheKey sessionKey = CacheKey.session(session.getSessionToken());
+        when(jedisOps.get(sessionKey.toString())).thenReturn(ser);
+
+        UserSession retrieved = cacheProvider.getUserSession(DECRYPTED_SESSION_TOKEN);
+        assertEquals(session.getSessionToken(), retrieved.getSessionToken());
+    }
+    
+    @Test
+    public void getUserSessionByUserIdFallsbackToOldKeys() throws Exception {
+        UserSession session = createUserSession();
+        String ser = BridgeObjectMapper.get().writeValueAsString(session);
+        
+        // These are the old key... the new keys will not return anything.
+        CacheKey sessionKey = CacheKey.session(session.getSessionToken());
+        CacheKey userKey = CacheKey.sessionByUserId(USER_ID);
+        when(jedisOps.get(userKey.toString())).thenReturn(DECRYPTED_SESSION_TOKEN);
+        when(jedisOps.get(sessionKey.toString())).thenReturn(ser);
+        
+        UserSession retrieved = cacheProvider.getUserSessionByUserId(USER_ID);
+        assertEquals(session.getSessionToken(), retrieved.getSessionToken());
+    }
+    
     private void assertSession(String json) {
         JedisOps jedisOps = mock(JedisOps.class);
         
-        doReturn(SESSION_KEY.toString()).when(jedisOps).get("sessionToken");
-        doReturn(transaction).when(jedisOps).getTransaction(SESSION_KEY.toString());
-        doReturn(json).when(jedisOps).get(SESSION_KEY.toString());
+        when(jedisOps.get(TOKEN_TO_USER_ID.toString())).thenReturn(USER_ID);
+        when(jedisOps.get(USER_ID_TO_SESSION.toString())).thenReturn(json);
         
         cacheProvider.setJedisOps(jedisOps);
-        cacheProvider.setBridgeObjectMapper(BridgeObjectMapper.get());
         
-        UserSession session = cacheProvider.getUserSession("sessionToken");
+        UserSession session = cacheProvider.getUserSession(DECRYPTED_SESSION_TOKEN);
 
         assertTrue(session.isAuthenticated());
         assertEquals(Environment.LOCAL, session.getEnvironment());
