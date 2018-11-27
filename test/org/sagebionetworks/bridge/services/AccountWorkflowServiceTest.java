@@ -742,7 +742,53 @@ public class AccountWorkflowServiceTest {
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
         verify(mockSendMailService, never()).sendEmail(any());
     }
-    
+
+    @Test
+    public void notifyAccountExistsUnverifiedEmailUnverifiedPhone() {
+        // Set study flags so that it would send emails/SMS if they were verified.
+        study.setEmailVerificationEnabled(true);
+        study.setAutoVerificationEmailSuppressed(false);
+        study.setAutoVerificationPhoneSuppressed(false);
+
+        // Mock account DAO.
+        AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
+        when(mockAccount.getEmail()).thenReturn(EMAIL);
+        when(mockAccount.getEmailVerified()).thenReturn(Boolean.FALSE);
+        when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
+        when(mockAccount.getPhoneVerified()).thenReturn(Boolean.FALSE);
+        when(mockAccountDao.getAccount(accountId)).thenReturn(mockAccount);
+
+        // Execute.
+        service.notifyAccountExists(study, accountId);
+
+        // We never send email nor SMS.
+        verify(mockSendMailService, never()).sendEmail(any());
+        verify(mockSmsService, never()).sendSmsMessage(any(), any());
+    }
+
+    @Test
+    public void notifyAccountExistsEmailVerifiedNullPhoneVerifiedNull() {
+        // Set study flags so that it would send emails/SMS if they were verified.
+        study.setEmailVerificationEnabled(true);
+        study.setAutoVerificationEmailSuppressed(false);
+        study.setAutoVerificationPhoneSuppressed(false);
+
+        // Mock account DAO.
+        AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
+        when(mockAccount.getEmail()).thenReturn(EMAIL);
+        when(mockAccount.getEmailVerified()).thenReturn(null);
+        when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
+        when(mockAccount.getPhoneVerified()).thenReturn(null);
+        when(mockAccountDao.getAccount(accountId)).thenReturn(mockAccount);
+
+        // Execute.
+        service.notifyAccountExists(study, accountId);
+
+        // We never send email nor SMS.
+        verify(mockSendMailService, never()).sendEmail(any());
+        verify(mockSmsService, never()).sendSmsMessage(any(), any());
+    }
+
     @Test
     public void requestResetPasswordWithEmail() throws Exception {
         when(service.getNextToken()).thenReturn(SPTOKEN);
