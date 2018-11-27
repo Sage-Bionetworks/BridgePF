@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -163,7 +164,7 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public Account authenticate(Study study, SignIn signIn) {
-        HibernateAccount hibernateAccount = fetchHibernateAccount(signIn);
+        Account hibernateAccount = fetchHibernateAccount(signIn);
         return authenticateInternal(study, hibernateAccount, hibernateAccount.getPasswordAlgorithm(),
                 hibernateAccount.getPasswordHash(), signIn.getPassword(), "password", signIn);
     }
@@ -174,12 +175,12 @@ public class HibernateAccountDao implements AccountDao {
         if (!study.isReauthenticationEnabled()) {
             throw new UnauthorizedException("Reauthentication is not enabled for study: " + study.getName());    
         }
-        HibernateAccount hibernateAccount = fetchHibernateAccount(signIn);
+        Account hibernateAccount = fetchHibernateAccount(signIn);
         return authenticateInternal(study, hibernateAccount, hibernateAccount.getReauthTokenAlgorithm(),
                 hibernateAccount.getReauthTokenHash(), signIn.getReauthToken(), "reauth token", signIn);
     }
     
-    private Account authenticateInternal(Study study, HibernateAccount hibernateAccount, PasswordAlgorithm algorithm,
+    private Account authenticateInternal(Study study, Account hibernateAccount, PasswordAlgorithm algorithm,
             String hash, String credentialValue, String credentialName, SignIn signIn) {
 
         // First check and throw an entity not found exception if the password is wrong.
@@ -205,7 +206,7 @@ public class HibernateAccountDao implements AccountDao {
         boolean accountUpdated = validateHealthCode(hibernateAccount);
         accountUpdated = updateReauthToken(study, hibernateAccount) || accountUpdated;
         if (accountUpdated) {
-            HibernateAccount updated = hibernateHelper.update(hibernateAccount);
+            Account updated = hibernateHelper.update(hibernateAccount);
             hibernateAccount.setVersion(updated.getVersion());
         }
         return hibernateAccount;
@@ -213,13 +214,13 @@ public class HibernateAccountDao implements AccountDao {
 
     @Override
     public Account getAccountAfterAuthentication(AccountId accountId) {
-        HibernateAccount hibernateAccount = getHibernateAccount(accountId);
+        Account hibernateAccount = getHibernateAccount(accountId);
 
         if (hibernateAccount != null) {
             boolean accountUpdated = validateHealthCode(hibernateAccount);
             accountUpdated = updateReauthToken(null, hibernateAccount) || accountUpdated;
             if (accountUpdated) {
-                HibernateAccount updated = hibernateHelper.update(hibernateAccount);
+                Account updated = hibernateHelper.update(hibernateAccount);
                 hibernateAccount.setVersion(updated.getVersion());
             }
             return hibernateAccount;
@@ -231,7 +232,7 @@ public class HibernateAccountDao implements AccountDao {
 
     @Override
     public void deleteReauthToken(AccountId accountId) {
-        HibernateAccount hibernateAccount = getHibernateAccount(accountId);
+        Account hibernateAccount = getHibernateAccount(accountId);
         if (hibernateAccount != null && hibernateAccount.getReauthTokenHash() != null) {
             hibernateAccount.setReauthTokenHash(null);
             hibernateAccount.setReauthTokenAlgorithm(null);
@@ -240,7 +241,7 @@ public class HibernateAccountDao implements AccountDao {
         }
     }
     
-    private boolean updateReauthToken(Study study, HibernateAccount hibernateAccount) {
+    private boolean updateReauthToken(Study study, Account hibernateAccount) {
         if (study != null && !study.isReauthenticationEnabled()) {
             hibernateAccount.setReauthToken(null);
             return false;
@@ -356,11 +357,11 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public Account getAccount(AccountId accountId) {
-        HibernateAccount hibernateAccount = getHibernateAccount(accountId);
+        Account hibernateAccount = getHibernateAccount(accountId);
         if (hibernateAccount != null) {
             boolean accountUpdated = validateHealthCode(hibernateAccount);
             if (accountUpdated) {
-                HibernateAccount updated = hibernateHelper.update(hibernateAccount);
+                Account updated = hibernateHelper.update(hibernateAccount);
                 hibernateAccount.setVersion(updated.getVersion());
             }
             return hibernateAccount;
@@ -370,9 +371,9 @@ public class HibernateAccountDao implements AccountDao {
         }
     }
 
-    private HibernateAccount fetchHibernateAccount(SignIn signIn) {
+    private Account fetchHibernateAccount(SignIn signIn) {
         // Fetch account
-        HibernateAccount hibernateAccount = getHibernateAccount(signIn.getAccountId());
+        Account hibernateAccount = getHibernateAccount(signIn.getAccountId());
         if (hibernateAccount == null) {
             throw new EntityNotFoundException(Account.class);
         }
@@ -407,7 +408,7 @@ public class HibernateAccountDao implements AccountDao {
     }
 
     // Helper method to get a single account for a given study and id, email address, or phone number.
-    private HibernateAccount getHibernateAccount(AccountId accountId) {
+    private Account getHibernateAccount(AccountId accountId) {
         // This is the only method where accessing null values is not an error, since we're searching for 
         // the value that was provided. There will be one.
         HibernateAccount hibernateAccount = null;
@@ -485,14 +486,14 @@ public class HibernateAccountDao implements AccountDao {
         if (!isCount) {
             builder.append("GROUP BY acct.id");        
         }
-       return builder;
+        return builder;
     }
 
 
     /** {@inheritDoc} */
     @Override
     public void deleteAccount(AccountId accountId) {
-        HibernateAccount hibernateAccount = getHibernateAccount(accountId);
+        Account hibernateAccount = getHibernateAccount(accountId);
         if (hibernateAccount != null) {
             String userId = hibernateAccount.getId();
             hibernateHelper.deleteById(HibernateAccount.class, userId);
@@ -531,7 +532,7 @@ public class HibernateAccountDao implements AccountDao {
     // through the DAO will automatically have health code and ID populated, but accounts created in the DB directly
     // are left in a bad state. This method validates the health code mapping on a HibernateAccount and updates it as
     // is necessary.
-    private boolean validateHealthCode(HibernateAccount hibernateAccount) {
+    private boolean validateHealthCode(Account hibernateAccount) {
         if (StringUtils.isBlank(hibernateAccount.getHealthCode())) {
             hibernateAccount.setHealthCode(generateGUID());
 
@@ -553,12 +554,14 @@ public class HibernateAccountDao implements AccountDao {
         // Hibernate will not load the collection of substudies once you use the constructor form of HQL 
         // to limit the data you retrieve from a table. May need to manually construct the objects to 
         // avoid this 1+N query.
-        List<HibernateAccountSubstudy> accountSubstudies = hibernateHelper.queryGet(
-                "FROM HibernateAccountSubstudy WHERE accountId=:accountId",
-                ImmutableMap.of("accountId", hibernateAccount.getId()), null, null, HibernateAccountSubstudy.class);
-        Set<String> substudyIds = accountSubstudies.stream()
-                .map(AccountSubstudy::getSubstudyId).collect(BridgeCollectors.toImmutableSet());
-        
+        Set<String> substudyIds = ImmutableSet.of();
+        if (hibernateAccount.getId() != null) {
+            List<HibernateAccountSubstudy> accountSubstudies = hibernateHelper.queryGet(
+                    "FROM HibernateAccountSubstudy WHERE accountId=:accountId",
+                    ImmutableMap.of("accountId", hibernateAccount.getId()), null, null, HibernateAccountSubstudy.class);
+            substudyIds = accountSubstudies.stream()
+                    .map(AccountSubstudy::getSubstudyId).collect(BridgeCollectors.toImmutableSet());
+        }
         return new AccountSummary(hibernateAccount.getFirstName(), hibernateAccount.getLastName(),
                 hibernateAccount.getEmail(), hibernateAccount.getPhone(), hibernateAccount.getExternalId(),
                 hibernateAccount.getId(), hibernateAccount.getCreatedOn(), hibernateAccount.getStatus(), 

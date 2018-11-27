@@ -10,10 +10,10 @@ public class RequestContext {
     
     public static final RequestContext NULL_INSTANCE = new RequestContext.Builder().build();
 
-    final String id;
-    final String callerStudyId;
-    final Set<String> callerSubstudies;
-    final Set<Roles> callerRoles;
+    private final String id;
+    private final String callerStudyId;
+    private final Set<String> callerSubstudies;
+    private final Set<Roles> callerRoles;
     
     private RequestContext(String id, String callerStudyId, Set<String> callerSubstudies, Set<Roles> callerRoles) {
         this.id = id;

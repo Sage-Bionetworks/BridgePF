@@ -43,6 +43,11 @@ public class BridgeUtilsTest {
     private static final LocalDateTime LOCAL_DATE_TIME = LocalDateTime.parse("2010-10-10T10:10:10.111");
     
     @Test
+    public void filterForSubstudyNullReturnsNull() {
+        assertNull(BridgeUtils.filterForSubstudy(null));
+    }
+    
+    @Test
     public void filterForSubstudyNoContextReturnsNormalAccount() {
         BridgeUtils.setRequestContext(null);
         assertNotNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy()));
@@ -51,18 +56,6 @@ public class BridgeUtilsTest {
     @Test
     public void filterForSubstudyNoContextReturnsSubstudyAccount() {
         BridgeUtils.setRequestContext(null);
-        assertNotNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyA")));
-    }
-    
-    @Test
-    public void filterForSubstudyEmptyContextReturnsNormalAccount() {
-        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
-        assertNotNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy()));
-    }
-
-    @Test
-    public void filterForSubstudyEmptyContextReturnsSubstudyAccount() {
-        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
         assertNotNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyA")));
     }
     

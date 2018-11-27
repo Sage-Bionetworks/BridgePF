@@ -256,6 +256,7 @@ public class AuthenticationServiceTest {
 
     @Test
     public void createResearcherAndSignInWithoutConsentError() {
+        // The AuthenticationService will verify the caller is an ADMIN, so RequestContext must be set
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(Roles.ADMIN)).build());
         
@@ -269,6 +270,7 @@ public class AuthenticationServiceTest {
 
     @Test
     public void createAdminAndSignInWithoutConsentError() {
+        // The AuthenticationService will verify the caller is an ADMIN, so RequestContext must be set
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(Roles.ADMIN)).build());
         

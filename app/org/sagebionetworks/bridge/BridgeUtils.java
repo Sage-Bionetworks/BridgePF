@@ -32,6 +32,7 @@ import org.sagebionetworks.bridge.hibernate.HibernateAccount;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.Tuple;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -98,7 +99,7 @@ public class BridgeUtils {
         REQUEST_CONTEXT_THREAD_LOCAL.set(context);
     }
     
-    public static HibernateAccount filterForSubstudy(HibernateAccount account) {
+    public static Account filterForSubstudy(Account account) {
         if (account != null) {
             RequestContext context = getRequestContext();
             Set<String> callerSubstudies = context.getCallerSubstudies();
